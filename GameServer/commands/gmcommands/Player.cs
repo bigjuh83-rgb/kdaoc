@@ -46,7 +46,7 @@ namespace DOL.GS.Commands
 		"/player startml - Start this players Master Level training.",
 		"/player setml <level> - Set this players current Master Level.",
 		"/player setmlstep <level> <step> [false] - Sets a step for an ML level to finished. 0 to set as unfinished.",
-        "/player allchars <PlayerName>", 
+        "/player allchars <PlayerName>",
         "/player class <list|classID|className> - view a list of classes, or change the targets class.",
         "/player areas - list all the areas the player is currently inside of "
 		)]
@@ -82,7 +82,7 @@ namespace DOL.GS.Commands
 
                         if (character != null)
                         {
-                            client.Out.SendMessage("Duplicate Name!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(T(client, "GMCommands.Player.DuplicateName"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
@@ -90,11 +90,11 @@ namespace DOL.GS.Commands
 
                         player.Name = args[2];
                         player.Out.SendMessage(
-                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has changed your name to " + player.Name +
-                            "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                        client.Out.SendMessage("You successfully changed this players name to " + player.Name + "!",
+                            T(player, "GMCommands.Player.TargetNameChanged", client.Player.Name, client.Account.PrivLevel, player.Name),
+                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                        client.Out.SendMessage(T(client, "GMCommands.Player.NameChanged", player.Name),
                                                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                        client.Out.SendMessage("Tell the player to Log out and back in to complete the change.", eChatType.CT_Important,
+                        client.Out.SendMessage(T(client, "GMCommands.Player.RelogToCompleteNameChange"), eChatType.CT_Important,
                                                eChatLoc.CL_SystemWindow);
 
                         // Log change
@@ -126,9 +126,9 @@ namespace DOL.GS.Commands
                                 {
                                     player.LastName = args[3];
                                     player.Out.SendMessage(
-                                        client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has changed your lastname to " +
-                                        player.LastName + "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                    client.Out.SendMessage("You successfully changed " + player.Name + "'s lastname to " + player.LastName + "!",
+                                        T(player, "GMCommands.Player.TargetLastnameChanged", client.Player.Name, client.Account.PrivLevel, player.LastName),
+                                        eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.LastnameChanged", player.Name, player.LastName),
                                                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     player.SaveIntoDatabase();
                                     break;
@@ -137,10 +137,10 @@ namespace DOL.GS.Commands
                             case "reset":
                                 {
                                     player.LastName = null;
-                                    client.Out.SendMessage("You cleared " + player.Name + "'s lastname successfully!", eChatType.CT_Important,
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.LastnameCleared", player.Name), eChatType.CT_Important,
                                                            eChatLoc.CL_SystemWindow);
                                     player.Out.SendMessage(
-                                        client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has cleared your lastname!",
+                                        T(player, "GMCommands.Player.TargetLastnameCleared", client.Player.Name, client.Account.PrivLevel),
                                         eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     player.SaveIntoDatabase();
                                     break;
@@ -163,27 +163,27 @@ namespace DOL.GS.Commands
                         {
                             pToLevel.Level++;
 
-                            client.Out.SendMessage("You gave " + pToLevel.Name + " a free level!",
+                            client.Out.SendMessage(T(client, "GMCommands.Player.GaveFreeLevel", pToLevel.Name),
                                                        eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
                             if (pToLevel != client.Player)
                                 pToLevel.Out.SendMessage(
-                                    client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you a free level!",
+                                    T(pToLevel, "GMCommands.Player.TargetGivenFreeLevel", client.Player.Name, client.Account.PrivLevel),
                                     eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                         }
                         else
                         {
                             pToLevel.GainExperience(eXPSource.Other, pToLevel.ExperienceForCurrentLevelSecondStage - pToLevel.Experience);
 
-                            client.Out.SendMessage("You gave " + pToLevel.Name + " a free half level!",
+                            client.Out.SendMessage(T(client, "GMCommands.Player.GaveFreeHalfLevel", pToLevel.Name),
                                                        eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
                             if (pToLevel != client.Player)
                                 pToLevel.Out.SendMessage(
-                                    client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you a free half level!",
+                                    T(pToLevel, "GMCommands.Player.TargetGivenFreeHalfLevel", client.Player.Name, client.Account.PrivLevel),
                                     eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                         }
-                        
+
                     }
 
                     break;
@@ -205,7 +205,7 @@ namespace DOL.GS.Commands
 
                             if (newLevel <= 0 || newLevel > 255)
                             {
-                                client.Out.SendMessage(player.Name + "'s level can only be set to a number 1 to 255!", eChatType.CT_Important,
+                                client.Out.SendMessage(T(client, "GMCommands.Player.LevelRange", player.Name), eChatType.CT_Important,
                                                        eChatLoc.CL_SystemWindow);
                                 return;
                             }
@@ -244,17 +244,17 @@ namespace DOL.GS.Commands
 
                             if (args[1] == "reset")
                             {
-                                client.Out.SendMessage("You have reset " + player.Name + "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                client.Out.SendMessage(T(client, "GMCommands.Player.ResetPlayer", player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                 player.Out.SendMessage(
-                                    client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has respecced your skills and reset your spec points!",
+                                    T(player, "GMCommands.Player.TargetResetSkills", client.Player.Name, client.Account.PrivLevel),
                                     eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                             }
                             else
                             {
-                                client.Out.SendMessage("You changed " + player.Name + "'s level successfully to " + newLevel + "!",
+                                client.Out.SendMessage(T(client, "GMCommands.Player.LevelChanged", player.Name, newLevel),
                                                        eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                 player.Out.SendMessage(
-                                    client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has changed your level to " + newLevel + "!",
+                                    T(player, "GMCommands.Player.TargetLevelChanged", client.Player.Name, client.Account.PrivLevel, newLevel),
                                     eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                             }
 
@@ -289,12 +289,12 @@ namespace DOL.GS.Commands
 						{
 							player.Champion = true;
 							player.SaveIntoDatabase();
-							client.Out.SendMessage(player.Name + " is now on the path of the Champion!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-							player.Out.SendMessage(client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has started you on the path of the Champion!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.Player.ChampionStarted", player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(T(player, "GMCommands.Player.TargetChampionStarted", client.Player.Name, client.Account.PrivLevel), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 						}
 						else
 						{
-							client.Out.SendMessage(player.Name + " is already on the path of the Champion!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.Player.ChampionAlreadyStarted", player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 						}
 
 					}
@@ -318,8 +318,8 @@ namespace DOL.GS.Commands
                             player = client.Player;
 
                         player.RemoveChampionLevels();
-                        client.Out.SendMessage("You have cleared " + player.Name + "'s Champion levels!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                        player.Out.SendMessage(client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has cleared your Champion levels!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                        client.Out.SendMessage(T(client, "GMCommands.Player.ChampionLevelsCleared", player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(T(player, "GMCommands.Player.TargetChampionLevelsCleared", client.Player.Name, client.Account.PrivLevel), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                     }
 
                     catch (Exception)
@@ -338,8 +338,8 @@ namespace DOL.GS.Commands
 							player = client.Player;
 
 						player.RespecChampionSkills();
-						client.Out.SendMessage("You have respecced " + player.Name + "'s Champion levels!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-						player.Out.SendMessage(client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has respecced your Champion levels!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(T(client, "GMCommands.Player.ChampionLevelsRespecced", player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(T(player, "GMCommands.Player.TargetChampionLevelsRespecced", client.Player.Name, client.Account.PrivLevel), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					}
 
 					catch (Exception)
@@ -365,12 +365,12 @@ namespace DOL.GS.Commands
 						{
 							player.MLGranted = true;
 							player.SaveIntoDatabase();
-							client.Out.SendMessage(player.Name + " is now ready to start Master Level training!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-							player.Out.SendMessage(client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has started your Master Level training!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.Player.MasterLevelTrainingStarted", player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(T(player, "GMCommands.Player.TargetMasterLevelTrainingStarted", client.Player.Name, client.Account.PrivLevel), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 						}
 						else
 						{
-							client.Out.SendMessage(player.Name + " has already started Master Level training!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.Player.MasterLevelTrainingAlreadyStarted", player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 						}
 					}
 					catch (Exception)
@@ -397,8 +397,8 @@ namespace DOL.GS.Commands
 						player.SaveIntoDatabase();
 						player.Out.SendUpdatePlayer();
 						player.Out.SendMasterLevelWindow((byte)player.MLLevel);
-						client.Out.SendMessage(player.Name + " Master Level is set to " + level + "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-						player.Out.SendMessage(client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has set your Master Level to " + level + "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(T(client, "GMCommands.Player.MasterLevelSet", player.Name, level), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(T(player, "GMCommands.Player.TargetMasterLevelSet", client.Player.Name, client.Account.PrivLevel, level), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					}
 					catch (Exception)
 					{
@@ -425,8 +425,8 @@ namespace DOL.GS.Commands
 						player.Out.SendUpdatePlayerSkills(true);
 						player.Out.SendUpdatePlayer();
 						player.Out.SendMasterLevelWindow((byte)player.MLLevel);
-						client.Out.SendMessage(player.Name + " Master Line is set to " + line + "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-						player.Out.SendMessage(client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has set your Master Line to " + line + "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(T(client, "GMCommands.Player.MasterLineSet", player.Name, line), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(T(player, "GMCommands.Player.TargetMasterLineSet", client.Player.Name, client.Account.PrivLevel, line), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					}
 					catch (Exception)
 					{
@@ -445,14 +445,14 @@ namespace DOL.GS.Commands
 
 						if (player.MLLevel == GamePlayer.ML_MAX_LEVEL)
 						{
-							client.Out.SendMessage(player.Name + " has already finished all Master Levels!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.Player.MasterLevelsAlreadyFinished", player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
 						byte level = Convert.ToByte(args[2]);
 						if (level > GamePlayer.ML_MAX_LEVEL)
 						{
-							client.Out.SendMessage("Valid levels are 0 - " + GamePlayer.ML_MAX_LEVEL + "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.Player.ValidMasterLevels", GamePlayer.ML_MAX_LEVEL), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
@@ -467,24 +467,24 @@ namespace DOL.GS.Commands
 
 						if (setFinished && player.HasFinishedMLStep(player.MLLevel + 1, step))
 						{
-							client.Out.SendMessage(player.Name + " has already finished step " + step + " for Master Level " + (player.MLLevel + 1) + "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.Player.MasterStepAlreadyFinished", player.Name, step, player.MLLevel + 1), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 						}
 						else if (setFinished == false && player.HasFinishedMLStep(player.MLLevel + 1, step) == false)
 						{
-							client.Out.SendMessage(player.Name + " has not yet finished step " + step + " for Master Level " + (player.MLLevel + 1) + "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.Player.MasterStepNotFinished", player.Name, step, player.MLLevel + 1), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 						}
 						else
 						{
 							player.SetFinishedMLStep(player.MLLevel + 1, step, setFinished);
 							if (setFinished)
 							{
-								client.Out.SendMessage(player.Name + " has now finished step " + step + " for Master Level " + (player.MLLevel + 1) + "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-								player.Out.SendMessage(client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has set step " + step + " completed for Master Level " + (player.MLLevel + 1) + "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+								client.Out.SendMessage(T(client, "GMCommands.Player.MasterStepSetFinished", player.Name, step, player.MLLevel + 1), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+								player.Out.SendMessage(T(player, "GMCommands.Player.TargetMasterStepSetFinished", client.Player.Name, client.Account.PrivLevel, step, player.MLLevel + 1), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 							}
 							else
 							{
-								client.Out.SendMessage(player.Name + " has no longer finished step " + step + " for Master Level " + (player.MLLevel + 1) + "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-								player.Out.SendMessage(client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has set step " + step + " as unfinished for Master Level " + (player.MLLevel + 1) + "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+								client.Out.SendMessage(T(client, "GMCommands.Player.MasterStepSetUnfinished", player.Name, step, player.MLLevel + 1), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+								player.Out.SendMessage(T(player, "GMCommands.Player.TargetMasterStepSetUnfinished", client.Player.Name, client.Account.PrivLevel, step, player.MLLevel + 1), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 							}
 							player.SaveIntoDatabase();
 							player.Out.SendMasterLevelWindow(level);
@@ -520,19 +520,18 @@ namespace DOL.GS.Commands
 
                             if (newRealm < 0 || newRealm > 3)
                             {
-                                client.Out.SendMessage(player.Name + "'s realm can only be set to numbers 0-3!", eChatType.CT_Important,
+                                client.Out.SendMessage(T(client, "GMCommands.Player.RealmRange", player.Name), eChatType.CT_Important,
                                                        eChatLoc.CL_SystemWindow);
                                 return;
                             }
 
                             player.Realm = (eRealm)newRealm;
 
-                            client.Out.SendMessage(
-                                "You successfully changed " + player.Name + "'s realm to " + GlobalConstants.RealmToName((eRealm)newRealm) +
-                                "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                            player.Out.SendMessage(
-                                client.Player.Name + " has changed your realm to " + GlobalConstants.RealmToName((eRealm)newRealm) + "!",
-                                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                            string realmName = GlobalConstants.RealmToName((eRealm)newRealm);
+                            client.Out.SendMessage(T(client, "GMCommands.Player.RealmChanged", player.Name, realmName),
+                                                   eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                            player.Out.SendMessage(T(player, "GMCommands.Player.TargetRealmChanged", client.Player.Name, realmName),
+                                                   eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
                             player.Out.SendUpdatePlayer();
                             player.SaveIntoDatabase();
@@ -571,12 +570,11 @@ namespace DOL.GS.Commands
                                 case "reset":
                                     {
                                         player.Model = (ushort)player.Client.Account.Characters[player.Client.ActiveCharIndex].CreationModel;
-                                        client.Out.SendMessage("You changed " + player.Name + " back to his or her original model successfully!",
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.ModelReset", player.Name),
                                                                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                         player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel +
-                                            ") has changed your model back to its original creation model!", eChatType.CT_Important,
-                                            eChatLoc.CL_SystemWindow);
+                                            T(player, "GMCommands.Player.TargetModelReset", client.Player.Name, client.Account.PrivLevel),
+                                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                         player.Out.SendUpdatePlayer();
                                         player.SaveIntoDatabase();
                                     }
@@ -599,11 +597,11 @@ namespace DOL.GS.Commands
                                         }
 
                                         player.Model = modelID;
-                                        client.Out.SendMessage("You successfully changed " + player.Name + "'s form! (ID:#" + modelID + ")",
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.ModelChanged", player.Name, modelID),
                                                                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                         player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has changed your form! (ID:#" + modelID +
-                                            ")", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                            T(player, "GMCommands.Player.TargetModelChanged", client.Player.Name, client.Account.PrivLevel, modelID),
+                                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                         player.Out.SendUpdatePlayer();
                                         player.SaveIntoDatabase();
                                     }
@@ -644,10 +642,10 @@ namespace DOL.GS.Commands
                                         long amount = long.Parse(args[3]);
                                         player.AddMoney(amount);
                                         InventoryLogging.LogInventoryAction(client.Player, player, eInventoryActionType.Other, amount);
-                                        client.Out.SendMessage("You gave " + player.Name + " copper successfully!", eChatType.CT_Important,
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.MoneyGiven", player.Name, T(client, "GMCommands.Player.Currency.Copper")), eChatType.CT_Important,
                                                                eChatLoc.CL_SystemWindow);
                                         player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you some copper!",
+                                            T(player, "GMCommands.Player.TargetMoneyGiven", client.Player.Name, client.Account.PrivLevel, T(player, "GMCommands.Player.Currency.Copper")),
                                             eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                         return;
                                     }
@@ -658,10 +656,10 @@ namespace DOL.GS.Commands
                                         long amount = long.Parse(args[3]) * 100;
                                         player.AddMoney(amount);
                                         InventoryLogging.LogInventoryAction(client.Player, player, eInventoryActionType.Other, amount);
-                                        client.Out.SendMessage("You gave " + player.Name + " silver successfully!", eChatType.CT_Important,
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.MoneyGiven", player.Name, T(client, "GMCommands.Player.Currency.Silver")), eChatType.CT_Important,
                                                                eChatLoc.CL_SystemWindow);
                                         player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you some silver!",
+                                            T(player, "GMCommands.Player.TargetMoneyGiven", client.Player.Name, client.Account.PrivLevel, T(player, "GMCommands.Player.Currency.Silver")),
                                             eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                         return;
                                     }
@@ -671,10 +669,10 @@ namespace DOL.GS.Commands
                                         long amount = long.Parse(args[3]) * 100 * 100;
                                         player.AddMoney(amount);
                                         InventoryLogging.LogInventoryAction(client.Player, player, eInventoryActionType.Other, amount);
-                                        client.Out.SendMessage("You gave " + player.Name + " gold successfully!", eChatType.CT_Important,
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.MoneyGiven", player.Name, T(client, "GMCommands.Player.Currency.Gold")), eChatType.CT_Important,
                                                                eChatLoc.CL_SystemWindow);
                                         player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you some gold!",
+                                            T(player, "GMCommands.Player.TargetMoneyGiven", client.Player.Name, client.Account.PrivLevel, T(player, "GMCommands.Player.Currency.Gold")),
                                             eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                         return;
                                     }
@@ -684,10 +682,10 @@ namespace DOL.GS.Commands
                                         long amount = long.Parse(args[3]) * 100 * 100 * 1000;
                                         player.AddMoney(amount);
                                         InventoryLogging.LogInventoryAction(client.Player, player, eInventoryActionType.Other, amount);
-                                        client.Out.SendMessage("You gave " + player.Name + " platinum successfully!", eChatType.CT_Important,
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.MoneyGiven", player.Name, T(client, "GMCommands.Player.Currency.Platinum")), eChatType.CT_Important,
                                                                eChatLoc.CL_SystemWindow);
                                         player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you some platinum!",
+                                            T(player, "GMCommands.Player.TargetMoneyGiven", client.Player.Name, client.Account.PrivLevel, T(player, "GMCommands.Player.Currency.Platinum")),
                                             eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                         return;
                                     }
@@ -697,10 +695,10 @@ namespace DOL.GS.Commands
                                         long amount = long.Parse(args[3]) * 100 * 100 * 1000 * 1000;
                                         player.AddMoney(amount);
                                         InventoryLogging.LogInventoryAction(client.Player, player, eInventoryActionType.Other, amount);
-                                        client.Out.SendMessage("You gave " + player.Name + " mithril successfully!", eChatType.CT_Important,
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.MoneyGiven", player.Name, T(client, "GMCommands.Player.Currency.Mithril")), eChatType.CT_Important,
                                                                eChatLoc.CL_SystemWindow);
                                         player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you some mithril!",
+                                            T(player, "GMCommands.Player.TargetMoneyGiven", client.Player.Name, client.Account.PrivLevel, T(player, "GMCommands.Player.Currency.Mithril")),
                                             eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                         return;
                                     }
@@ -737,10 +735,10 @@ namespace DOL.GS.Commands
 
                             long amount = long.Parse(args[2]);
                             player.GainRealmPoints(amount, false);
-                            client.Out.SendMessage("You gave " + player.Name + " " + amount + " realmpoints succesfully!",
+                            client.Out.SendMessage(T(client, "GMCommands.Player.PointsGiven", player.Name, amount, T(client, "GMCommands.Player.Point.RealmPoints")),
                                                    eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                             player.Out.SendMessage(
-                                client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you " + amount + " realmpoints!",
+                                T(player, "GMCommands.Player.TargetPointsGiven", client.Player.Name, client.Account.PrivLevel, amount, T(player, "GMCommands.Player.Point.RealmPoints")),
                                 eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                             player.SaveIntoDatabase();
                             player.Out.SendUpdatePlayer();
@@ -777,10 +775,10 @@ namespace DOL.GS.Commands
 
                             long amount = long.Parse(args[2]);
                             player.GainExperience(xpSource, amount, false);
-                            client.Out.SendMessage("You gave " + player.Name + " " + amount + " experience succesfully!",
+                            client.Out.SendMessage(T(client, "GMCommands.Player.PointsGiven", player.Name, amount, T(client, "GMCommands.Player.Point.Experience")),
                                                    eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                             player.Out.SendMessage(
-                                client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you " + amount + " experience!",
+                                T(player, "GMCommands.Player.TargetPointsGiven", client.Player.Name, client.Account.PrivLevel, amount, T(player, "GMCommands.Player.Point.Experience")),
                                 eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                             player.SaveIntoDatabase();
                             player.Out.SendUpdatePlayer();
@@ -809,8 +807,8 @@ namespace DOL.GS.Commands
 
                             long amount = long.Parse(args[2]);
                             player.GainChampionExperience(amount, eXPSource.GM);
-                            client.Out.SendMessage("You gave " + player.Name + " " + amount + " Champion experience succesfully!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                            player.Out.SendMessage(client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you " + amount + " Champion experience!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(T(client, "GMCommands.Player.PointsGiven", player.Name, amount, T(client, "GMCommands.Player.Point.ChampionExperience")), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                            player.Out.SendMessage(T(player, "GMCommands.Player.TargetPointsGiven", client.Player.Name, client.Account.PrivLevel, amount, T(player, "GMCommands.Player.Point.ChampionExperience")), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
 							// now see if player gained any CL and level them up
 							bool gainedLevel = false;
@@ -822,7 +820,7 @@ namespace DOL.GS.Commands
 
 							if (gainedLevel)
 							{
-								player.Out.SendMessage("You reached champion level " + player.ChampionLevel + "!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+								player.Out.SendMessage(T(player, "GMCommands.Player.ChampionLevelReached", player.ChampionLevel), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 							}
 
 
@@ -856,8 +854,8 @@ namespace DOL.GS.Commands
 							long amount = long.Parse(args[2]);
 
 							player.MLExperience += amount;
-							client.Out.SendMessage("You gave " + player.Name + " " + amount + " ML experience succesfully!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-							player.Out.SendMessage(client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you " + amount + " ML experience!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.Player.PointsGiven", player.Name, amount, T(client, "GMCommands.Player.Point.MLExperience")), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(T(player, "GMCommands.Player.TargetPointsGiven", client.Player.Name, client.Account.PrivLevel, amount, T(player, "GMCommands.Player.Point.MLExperience")), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
 							if (player.MLExperience > player.GetMLExperienceForLevel(player.MLLevel + 1))
 							{
@@ -897,10 +895,10 @@ namespace DOL.GS.Commands
 
                             long amount = long.Parse(args[2]);
                             player.GainBountyPoints(amount, false);
-                            client.Out.SendMessage("You gave " + player.Name + " " + amount + " bountypoints succesfully!",
+                            client.Out.SendMessage(T(client, "GMCommands.Player.PointsGiven", player.Name, amount, T(client, "GMCommands.Player.Point.BountyPoints")),
                                                    eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                             player.Out.SendMessage(
-                                client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you " + amount + " bountypoints!",
+                                T(player, "GMCommands.Player.TargetPointsGiven", client.Player.Name, client.Account.PrivLevel, amount, T(player, "GMCommands.Player.Point.BountyPoints")),
                                 eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                             player.SaveIntoDatabase();
                             player.Out.SendUpdatePlayer();
@@ -940,10 +938,9 @@ namespace DOL.GS.Commands
                                 case "dex":
                                     {
                                         player.ChangeBaseStat(eStat.DEX, value);
-                                        player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you " + value + " dexterity!",
-                                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                        client.Out.SendMessage("You gave " + player.Name + " " + value + " dexterity successfully!",
+                                        player.Out.SendMessage(T(player, "GMCommands.Player.TargetStatGiven", client.Player.Name, client.Account.PrivLevel, value, T(player, "GMCommands.Player.Stat.Dexterity")),
+                                                               eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.StatGiven", player.Name, value, T(client, "GMCommands.Player.Stat.Dexterity")),
                                                                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     }
                                     break;
@@ -952,10 +949,9 @@ namespace DOL.GS.Commands
                                 case "str":
                                     {
                                         player.ChangeBaseStat(eStat.STR, value);
-                                        player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you " + value + " strength!",
-                                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                        client.Out.SendMessage("You gave " + player.Name + " " + value + " strength successfully!",
+                                        player.Out.SendMessage(T(player, "GMCommands.Player.TargetStatGiven", client.Player.Name, client.Account.PrivLevel, value, T(player, "GMCommands.Player.Stat.Strength")),
+                                                               eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.StatGiven", player.Name, value, T(client, "GMCommands.Player.Stat.Strength")),
                                                                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     }
                                     break;
@@ -964,10 +960,9 @@ namespace DOL.GS.Commands
                                 case "con":
                                     {
                                         player.ChangeBaseStat(eStat.CON, value);
-                                        player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you " + value +
-                                            " consititution!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                        client.Out.SendMessage("You gave " + player.Name + " " + value + " constitution successfully!",
+                                        player.Out.SendMessage(T(player, "GMCommands.Player.TargetStatGiven", client.Player.Name, client.Account.PrivLevel, value, T(player, "GMCommands.Player.Stat.Constitution")),
+                                                               eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.StatGiven", player.Name, value, T(client, "GMCommands.Player.Stat.Constitution")),
                                                                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     }
                                     break;
@@ -976,10 +971,9 @@ namespace DOL.GS.Commands
                                 case "emp":
                                     {
                                         player.ChangeBaseStat(eStat.EMP, value);
-                                        player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you " + value + " empathy!",
-                                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                        client.Out.SendMessage("You gave " + player.Name + " " + value + " empathy successfully!",
+                                        player.Out.SendMessage(T(player, "GMCommands.Player.TargetStatGiven", client.Player.Name, client.Account.PrivLevel, value, T(player, "GMCommands.Player.Stat.Empathy")),
+                                                               eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.StatGiven", player.Name, value, T(client, "GMCommands.Player.Stat.Empathy")),
                                                                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     }
                                     break;
@@ -988,10 +982,9 @@ namespace DOL.GS.Commands
                                 case "int":
                                     {
                                         player.ChangeBaseStat(eStat.INT, value);
-                                        player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you " + value +
-                                            " intelligence!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                        client.Out.SendMessage("You gave " + player.Name + " " + value + " intelligence successfully!",
+                                        player.Out.SendMessage(T(player, "GMCommands.Player.TargetStatGiven", client.Player.Name, client.Account.PrivLevel, value, T(player, "GMCommands.Player.Stat.Intelligence")),
+                                                               eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.StatGiven", player.Name, value, T(client, "GMCommands.Player.Stat.Intelligence")),
                                                                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     }
                                     break;
@@ -1000,10 +993,9 @@ namespace DOL.GS.Commands
                                 case "pie":
                                     {
                                         player.ChangeBaseStat(eStat.PIE, value);
-                                        player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you " + value + " piety!",
-                                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                        client.Out.SendMessage("You gave " + player.Name + " " + value + " piety successfully!",
+                                        player.Out.SendMessage(T(player, "GMCommands.Player.TargetStatGiven", client.Player.Name, client.Account.PrivLevel, value, T(player, "GMCommands.Player.Stat.Piety")),
+                                                               eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.StatGiven", player.Name, value, T(client, "GMCommands.Player.Stat.Piety")),
                                                                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     }
                                     break;
@@ -1012,10 +1004,9 @@ namespace DOL.GS.Commands
                                 case "qui":
                                     {
                                         player.ChangeBaseStat(eStat.QUI, value);
-                                        player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you " + value + " quickness!",
-                                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                        client.Out.SendMessage("You gave " + player.Name + " " + value + " quickness successfully!",
+                                        player.Out.SendMessage(T(player, "GMCommands.Player.TargetStatGiven", client.Player.Name, client.Account.PrivLevel, value, T(player, "GMCommands.Player.Stat.Quickness")),
+                                                               eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.StatGiven", player.Name, value, T(client, "GMCommands.Player.Stat.Quickness")),
                                                                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     }
                                     break;
@@ -1024,10 +1015,9 @@ namespace DOL.GS.Commands
                                 case "cha":
                                     {
                                         player.ChangeBaseStat(eStat.CHR, value);
-                                        player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you " + value + " charisma!",
-                                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                        client.Out.SendMessage("You gave " + player.Name + " " + value + " charisma successfully!",
+                                        player.Out.SendMessage(T(player, "GMCommands.Player.TargetStatGiven", client.Player.Name, client.Account.PrivLevel, value, T(player, "GMCommands.Player.Stat.Charisma")),
+                                                               eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.StatGiven", player.Name, value, T(client, "GMCommands.Player.Stat.Charisma")),
                                                                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     }
                                     break;
@@ -1043,17 +1033,16 @@ namespace DOL.GS.Commands
                                         player.ChangeBaseStat(eStat.CON, value); //6
                                         player.ChangeBaseStat(eStat.STR, value); //7
                                         player.ChangeBaseStat(eStat.DEX, value); //8
-                                        player.Out.SendMessage(
-                                            client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has given you " + value +
-                                            " to all stats!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                        client.Out.SendMessage("You gave " + player.Name + " " + value + " to all stats successfully!",
+                                        player.Out.SendMessage(T(player, "GMCommands.Player.TargetStatGiven", client.Player.Name, client.Account.PrivLevel, value, T(player, "GMCommands.Player.Stat.All")),
+                                                               eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.StatGiven", player.Name, value, T(client, "GMCommands.Player.Stat.All")),
                                                                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     }
                                     break;
 
                                 default:
                                     {
-                                        client.Out.SendMessage("Try using: dex, str, con, emp, int, pie, qui, cha, or all as a type of stat.",
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.StatTypeUsage"),
                                                                eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                     }
                                     break;
@@ -1087,14 +1076,14 @@ namespace DOL.GS.Commands
 
                         if (player == null)
                         {
-                            client.Out.SendMessage("You need a valid target!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(T(client, "GMCommands.Player.NeedValidTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
                         if (args[2] == "list")
                         {
                             string[] list = player.SerializedFriendsList;
-                            client.Out.SendCustomTextWindow(player.Name + "'s Friend List", list);
+                            client.Out.SendCustomTextWindow(T(client, "GMCommands.Player.FriendListTitle", player.Name), list);
                             return;
                         }
 
@@ -1110,13 +1099,13 @@ namespace DOL.GS.Commands
 
                             if (player.GetFriends().Contains(name) && player.RemoveFriend(name))
                             {
-                                player.Out.SendMessage($"{client.Player.Name} (PrivLevel: {client.Account.PrivLevel}) has removed {name} from your friend list!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                client.Out.SendMessage($"Removed {name} from {player.Name}'s friend list successfully!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                player.Out.SendMessage(T(player, "GMCommands.Player.TargetFriendRemoved", client.Player.Name, client.Account.PrivLevel, name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                client.Out.SendMessage(T(client, "GMCommands.Player.FriendRemoved", name, player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                 return;
                             }
                             else
                             {
-                                client.Out.SendMessage($"No players online with name {name}.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                client.Out.SendMessage(T(client, "GMCommands.Player.NoOnlinePlayerNamed", name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                 return;
                             }
                         }
@@ -1125,7 +1114,7 @@ namespace DOL.GS.Commands
                         {
                             case ClientService.PlayerGuessResult.FOUND_MULTIPLE:
                             {
-                                client.Out.SendMessage("Character name is not unique.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                client.Out.SendMessage(T(client, "GMCommands.Player.CharacterNameNotUnique"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                 return;
                             }
                             case ClientService.PlayerGuessResult.FOUND_EXACT:
@@ -1133,7 +1122,7 @@ namespace DOL.GS.Commands
                             {
                                 if (targetPlayer == player)
                                 {
-                                    client.Out.SendMessage("You can't add that player to his or her own friend list!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.CannotAddSelfFriend"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     return;
                                 }
 
@@ -1141,13 +1130,13 @@ namespace DOL.GS.Commands
 
                                 if (player.GetFriends().Contains(name) && player.RemoveFriend(name))
                                 {
-                                    player.Out.SendMessage($"{client.Player.Name} (PrivLevel: {client.Account.PrivLevel}) has removed {name} from your friend list!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                    client.Out.SendMessage($"Removed {name} from {player.Name}'s friend list successfully!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    player.Out.SendMessage(T(player, "GMCommands.Player.TargetFriendRemoved", client.Player.Name, client.Account.PrivLevel, name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.FriendRemoved", name, player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                 }
                                 else if (player.AddFriend(name))
                                 {
-                                    player.Out.SendMessage($"{client.Player.Name} (PrivLevel: {client.Account.PrivLevel}) has added {name} to your friend list!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                    client.Out.SendMessage($"Added {name} to {player.Name}'s friend list successfully!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    player.Out.SendMessage(T(player, "GMCommands.Player.TargetFriendAdded", client.Player.Name, client.Account.PrivLevel, name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.FriendAdded", name, player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                 }
 
                                 break;
@@ -1195,9 +1184,8 @@ namespace DOL.GS.Commands
                                 {
                                     player.RespecAmountSingleSkill += amount;
                                     player.Client.Out.SendMessage(
-                                        client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has awarded you " + amount +
-                                        " single respec!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                    client.Out.SendMessage(amount + " single respec given successfully to " + player.Name + "!",
+                                        T(player, "GMCommands.Player.TargetRespecAwarded", client.Player.Name, client.Account.PrivLevel, amount, T(player, "GMCommands.Player.Respec.Single")), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.RespecAwarded", amount, T(client, "GMCommands.Player.Respec.Single"), player.Name),
                                                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     break;
                                 }
@@ -1205,9 +1193,8 @@ namespace DOL.GS.Commands
                                 {
                                     player.RespecAmountAllSkill += amount;
                                     player.Client.Out.SendMessage(
-                                        client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has awarded you " + amount +
-                                        " full respec!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                    client.Out.SendMessage(amount + " full respec given successfully to " + player.Name + "!",
+                                        T(player, "GMCommands.Player.TargetRespecAwarded", client.Player.Name, client.Account.PrivLevel, amount, T(player, "GMCommands.Player.Respec.Full")), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.RespecAwarded", amount, T(client, "GMCommands.Player.Respec.Full"), player.Name),
                                                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     break;
                                 }
@@ -1215,9 +1202,8 @@ namespace DOL.GS.Commands
                                 {
                                     player.RespecAmountRealmSkill += amount;
                                     player.Client.Out.SendMessage(
-                                        client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has awarded you " + amount +
-                                        " realm respec!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                    client.Out.SendMessage(amount + " realm respec given successfully to " + player.Name + "!",
+                                        T(player, "GMCommands.Player.TargetRespecAwarded", client.Player.Name, client.Account.PrivLevel, amount, T(player, "GMCommands.Player.Respec.Realm")), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.RespecAwarded", amount, T(client, "GMCommands.Player.Respec.Realm"), player.Name),
                                                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     break;
                                 }
@@ -1225,9 +1211,8 @@ namespace DOL.GS.Commands
                                 {
                                     player.RespecAmountDOL += amount;
                                     player.Client.Out.SendMessage(
-                                        client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has awarded you " + amount +
-                                        " DOL (full) respec!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                    client.Out.SendMessage(amount + " DOL (full) respec given successfully to " + player.Name + "!",
+                                        T(player, "GMCommands.Player.TargetRespecAwarded", client.Player.Name, client.Account.PrivLevel, amount, T(player, "GMCommands.Player.Respec.DOL")), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.RespecAwarded", amount, T(client, "GMCommands.Player.Respec.DOL"), player.Name),
                                                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     break;
                                 }
@@ -1235,9 +1220,8 @@ namespace DOL.GS.Commands
                                 {
                                     player.RespecAmountChampionSkill += amount;
                                     player.Client.Out.SendMessage(
-                                        client.Player.Name + "(PrivLevel: " + client.Account.PrivLevel + ") has awarded you " + amount +
-                                        " Champion respec!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                                    client.Out.SendMessage(amount + " champion respec given successfully to " + player.Name + "!",
+                                        T(player, "GMCommands.Player.TargetRespecAwarded", client.Player.Name, client.Account.PrivLevel, amount, T(player, "GMCommands.Player.Respec.Champion")), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.RespecAwarded", amount, T(client, "GMCommands.Player.Respec.Champion"), player.Name),
                                                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     break;
                                 }
@@ -1271,7 +1255,7 @@ namespace DOL.GS.Commands
 
                         if (player == null)
                         {
-                            client.Out.SendMessage("You need a valid target!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(T(client, "GMCommands.Player.NeedValidTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
@@ -1324,14 +1308,14 @@ namespace DOL.GS.Commands
 
                         if (player == null && args.Length == 2)
                         {
-                            client.Out.SendMessage("You need a valid target!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(T(client, "GMCommands.Player.NeedValidTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
                         if (args.Length == 2 && player != null)
                         {
-                            player.Out.SendMessage($"{client.Player.Name} (PrivLevel: {client.Account.PrivLevel}) has saved your character.",eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                            client.Out.SendMessage($"{player.Name} saved successfully!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                            player.Out.SendMessage(T(player, "GMCommands.Player.TargetCharacterSaved", client.Player.Name, client.Account.PrivLevel),eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(T(client, "GMCommands.Player.CharacterSaved", player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                             player.SaveIntoDatabase();
                         }
 
@@ -1344,7 +1328,7 @@ namespace DOL.GS.Commands
                                     foreach (GamePlayer otherPlayer in ClientService.Instance.GetPlayers())
                                         otherPlayer.SaveIntoDatabase();
 
-                                    client.Out.SendMessage("Saved all characters!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.AllCharactersSaved"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     break;
                                 }
                                 default:
@@ -1373,7 +1357,7 @@ namespace DOL.GS.Commands
 
                         if (player == null && args.Length == 2)
                         {
-                            client.Out.SendMessage("You need a valid target!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(T(client, "GMCommands.Player.NeedValidTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
@@ -1381,9 +1365,8 @@ namespace DOL.GS.Commands
                         {
                             if (player.Client.Account.PrivLevel > 1)
                             {
-                                client.Out.SendMessage(
-                                    "Please use /kick <name> to kick Gamemasters. This is used to prevent accidental kicks.",
-                                    eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                client.Out.SendMessage(T(client, "GMCommands.Player.KickGMUseKickCommand"),
+                                                       eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                 return;
                             }
                             player.Client.Out.SendPlayerQuit(true);
@@ -1399,7 +1382,7 @@ namespace DOL.GS.Commands
                                     {
                                         foreach (GamePlayer otherPlayer in ClientService.Instance.GetNonGmPlayers())
                                         {
-                                            otherPlayer.Out.SendMessage($"{client.Player.Name} (PrivLevel: {client.Account.PrivLevel}) has kicked all players!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                            otherPlayer.Out.SendMessage(T(otherPlayer, "GMCommands.Player.TargetKickAll", client.Player.Name, client.Account.PrivLevel), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                             otherPlayer.Out.SendPlayerQuit(true);
                                             otherPlayer.Client.Disconnect();
                                             continue;
@@ -1433,7 +1416,7 @@ namespace DOL.GS.Commands
 
                         if (player == null && args.Length == 2)
                         {
-                            client.Out.SendMessage("You need a valid target!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(T(client, "GMCommands.Player.NeedValidTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
@@ -1445,16 +1428,16 @@ namespace DOL.GS.Commands
                                 player.Mana = player.MaxMana;
                                 player.Endurance = player.MaxEndurance;
                                 player.MoveTo(client.Player.CurrentRegionID, client.Player.X, client.Player.Y, client.Player.Z, client.Player.Heading);
-                                client.Out.SendMessage($"You resurrected {player.Name} successfully!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                client.Out.SendMessage(T(client, "GMCommands.Player.Resurrected", player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                 player.StopReleaseTimer();
                                 player.Out.SendPlayerRevive(player);
                                 player.Out.SendStatusUpdate();
-                                player.Out.SendMessage($"You have been resurrected by {client.Player.GetName(0, false)}!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                player.Out.SendMessage(T(player, "GMCommands.Player.TargetResurrectedBy", client.Player.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                 player.Notify(GamePlayerEvent.Revive, player);
                             }
                             else
                             {
-                                client.Out.SendMessage("Player is not dead!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                client.Out.SendMessage(T(client, "GMCommands.Player.PlayerNotDead"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                 return;
                             }
                         }
@@ -1476,7 +1459,7 @@ namespace DOL.GS.Commands
                                                 albPlayer.StopReleaseTimer();
                                                 albPlayer.Out.SendPlayerRevive(albPlayer);
                                                 albPlayer.Out.SendStatusUpdate();
-                                                albPlayer.Out.SendMessage($"You have been resurrected by {client.Player.GetName(0, false)}!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                                albPlayer.Out.SendMessage(T(albPlayer, "GMCommands.Player.TargetResurrectedBy", client.Player.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                                 albPlayer.Notify(GamePlayerEvent.Revive, albPlayer);
                                             }
                                         }
@@ -1496,7 +1479,7 @@ namespace DOL.GS.Commands
                                                 hibPlayer.StopReleaseTimer();
                                                 hibPlayer.Out.SendPlayerRevive(hibPlayer);
                                                 hibPlayer.Out.SendStatusUpdate();
-                                                hibPlayer.Out.SendMessage($"You have been resurrected by {client.Player.GetName(0, false)}!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                                hibPlayer.Out.SendMessage(T(hibPlayer, "GMCommands.Player.TargetResurrectedBy", client.Player.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                                 hibPlayer.Notify(GamePlayerEvent.Revive, hibPlayer);
                                             }
                                         }
@@ -1515,7 +1498,7 @@ namespace DOL.GS.Commands
                                                 midPlayer.StopReleaseTimer();
                                                 midPlayer.Out.SendPlayerRevive(midPlayer);
                                                 midPlayer.Out.SendStatusUpdate();
-                                                midPlayer.Out.SendMessage($"You have been resurrected by {client.Player.GetName(0, false)}!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                                midPlayer.Out.SendMessage(T(midPlayer, "GMCommands.Player.TargetResurrectedBy", client.Player.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                                 midPlayer.Notify(GamePlayerEvent.Revive, midPlayer);
                                             }
                                         }
@@ -1532,7 +1515,7 @@ namespace DOL.GS.Commands
                                             self.Mana = self.MaxMana;
                                             self.Endurance = self.MaxEndurance;
                                             self.MoveTo(client.Player.CurrentRegionID, client.Player.X, client.Player.Y, client.Player.Z, client.Player.Heading);
-                                            self.Out.SendMessage("You revive yourself.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                            self.Out.SendMessage(T(self, "GMCommands.Player.ReviveSelf"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                             self.StopReleaseTimer();
                                             self.Out.SendPlayerRevive(self);
                                             self.Out.SendStatusUpdate();
@@ -1540,7 +1523,7 @@ namespace DOL.GS.Commands
                                         }
                                         else
                                         {
-                                            client.Out.SendMessage("You are not dead!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                            client.Out.SendMessage(T(client, "GMCommands.Player.YouAreNotDead"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                             return;
                                         }
                                     }
@@ -1557,7 +1540,7 @@ namespace DOL.GS.Commands
                                             otherPlayer.StopReleaseTimer();
                                             otherPlayer.Out.SendPlayerRevive(otherPlayer);
                                             otherPlayer.Out.SendStatusUpdate();
-                                            otherPlayer.Out.SendMessage($"You have been resurrected by {client.Player.GetName(0, false)}!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                            otherPlayer.Out.SendMessage(T(otherPlayer, "GMCommands.Player.TargetResurrectedBy", client.Player.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                             otherPlayer.Notify(GamePlayerEvent.Revive, otherPlayer);
                                         }
 
@@ -1569,7 +1552,7 @@ namespace DOL.GS.Commands
                                     break;
                                 default:
                                     {
-                                        client.Out.SendMessage("SYNTAX: /player rez <albs|mids|hibs|all>", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.RezSyntax"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                     }
                                     break;
                             }
@@ -1589,7 +1572,7 @@ namespace DOL.GS.Commands
 
                         if (player == null && args.Length == 2)
                         {
-                            client.Out.SendMessage("You need a valid target!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(T(client, "GMCommands.Player.NeedValidTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
@@ -1597,7 +1580,7 @@ namespace DOL.GS.Commands
                         {
                             if (player.Client.Account.PrivLevel > 1)
                             {
-                                client.Out.SendMessage("This command can not be used on Gamemasters!", eChatType.CT_Important,
+                                client.Out.SendMessage(T(client, "GMCommands.Player.CannotUseOnGamemasters"), eChatType.CT_Important,
                                                        eChatLoc.CL_SystemWindow);
                                 return;
                             }
@@ -1605,13 +1588,13 @@ namespace DOL.GS.Commands
                             if (player.IsAlive)
                             {
                                 KillPlayer(client.Player, player);
-                                client.Out.SendMessage("You killed " + player.Name + " successfully!", eChatType.CT_Important,
+                                client.Out.SendMessage(T(client, "GMCommands.Player.KilledPlayer", player.Name), eChatType.CT_Important,
                                                        eChatLoc.CL_SystemWindow);
-                                player.Out.SendMessage(client.Player.Name + " has killed you!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                player.Out.SendMessage(T(player, "GMCommands.Player.TargetKilledBy", client.Player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                             }
                             else
                             {
-                                client.Out.SendMessage("Player is not alive!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                client.Out.SendMessage(T(client, "GMCommands.Player.PlayerNotAlive"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                 return;
                             }
                         }
@@ -1655,13 +1638,13 @@ namespace DOL.GS.Commands
 
                                     if (!self.IsAlive)
                                     {
-                                        client.Out.SendMessage("You are already dead. Use /player rez <self> to resurrect yourself.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.AlreadyDeadUseRezSelf"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                         return;
                                     }
                                     else
                                     {
                                         KillPlayer(client.Player, client.Player);
-                                        client.Out.SendMessage("Good bye cruel world!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                        client.Out.SendMessage(T(client, "GMCommands.Player.KilledSelf"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     }
                                 }
                                 break;
@@ -1678,7 +1661,7 @@ namespace DOL.GS.Commands
 
                             default:
                                 {
-                                    client.Out.SendMessage($"'{args[2]}' is not a valid argument.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.InvalidArgument", args[2]), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                 }
                                 break;
                         }
@@ -1718,7 +1701,7 @@ namespace DOL.GS.Commands
                                         guildMember.MoveTo(client.Player.CurrentRegionID, client.Player.X, client.Player.Y, client.Player.Z, client.Player.Heading);
                                     }
 
-                                    client.Out.SendMessage($"{count} players jumped!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.PlayersJumped", count), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
                                     static bool Predicate(GamePlayer player, string guildName)
                                     {
@@ -1748,7 +1731,7 @@ namespace DOL.GS.Commands
                                         }
                                     }
 
-                                    client.Out.SendMessage($"{count} players jumped!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.PlayersJumped", count), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                 }
                                 break;
 
@@ -1778,7 +1761,7 @@ namespace DOL.GS.Commands
                                         }
                                     }
 
-                                    client.Out.SendMessage($"{count} players jumped!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.PlayersJumped", count), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                 }
                                 break;
 
@@ -1808,13 +1791,13 @@ namespace DOL.GS.Commands
                                         }
                                     }
 
-                                    client.Out.SendMessage($"{count} players jumped!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.PlayersJumped", count), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                 }
                                 break;
 
                             default:
                                 {
-                                    client.Out.SendMessage($"'{args[2]}' is not a valid argument.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    client.Out.SendMessage(T(client, "GMCommands.Player.InvalidArgument", args[2]), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                 }
                                 break;
                         }
@@ -1844,7 +1827,7 @@ namespace DOL.GS.Commands
                         player.Out.SendUpdateMaxSpeed();
                         player.Out.SendStatusUpdate();
                         player.Out.SendCharResistsUpdate();
-                        client.Out.SendMessage(player.Name + " updated successfully!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                        client.Out.SendMessage(T(client, "GMCommands.Player.PlayerUpdated", player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                     }
                     break;
 
@@ -1873,13 +1856,13 @@ namespace DOL.GS.Commands
 							{
 								player.ActiveSaddleBags = activeBags;
 								player.SaveIntoDatabase();
-								client.Player.Out.SendMessage(string.Format("{0}'s active saddlebags set to 0x{1:X2}!", player.Name, player.ActiveSaddleBags), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-								player.Out.SendMessage(string.Format("Your active saddlebags have been set to 0x{0:X2} by {1}!", player.ActiveSaddleBags, client.Player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+								client.Player.Out.SendMessage(T(client, "GMCommands.Player.SaddlebagsSet", player.Name, player.ActiveSaddleBags), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+								player.Out.SendMessage(T(player, "GMCommands.Player.TargetSaddlebagsSet", player.ActiveSaddleBags, client.Player.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 								player.Out.SendSetControlledHorse(player);
 							}
 							else
 							{
-								DisplayMessage(client, "Valid saddlebag values are between 0 and 15!");
+								DisplayMessage(client, T(client, "GMCommands.Player.ValidSaddlebagValues"));
 							}
 						}
 						else
@@ -1945,13 +1928,13 @@ namespace DOL.GS.Commands
 
                         if (player == null)
                         {
-                            client.Out.SendMessage("You need a valid target!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(T(client, "GMCommands.Player.NeedValidTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
                         if (player.Group == null)
                         {
-                            client.Out.SendMessage("Player does not have a group!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(T(client, "GMCommands.Player.NoGroup"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
@@ -1962,7 +1945,7 @@ namespace DOL.GS.Commands
                             text.Add(p.Name + " " + p.Level + " " + p.CharacterClass.Name);
                         }
 
-                        client.Out.SendCustomTextWindow("Group Members", text);
+                        client.Out.SendCustomTextWindow(T(client, "GMCommands.Player.GroupMembersTitle"), text);
                         break;
                     }
                 case "showeffects":
@@ -1977,7 +1960,7 @@ namespace DOL.GS.Commands
 
                         if (player == null)
                         {
-                            client.Out.SendMessage("You need a valid target!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(T(client, "GMCommands.Player.NeedValidTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
@@ -2002,44 +1985,44 @@ namespace DOL.GS.Commands
                             }
 
                             effects.Add(" ");
-                            effects.Add(" - Positive Spell Effects");
+                            effects.Add(T(client, "GMCommands.Player.PositiveSpellEffects"));
                             if (positiveEffects.Count > 0)
                             {
                                 // List active spell effects
                                 foreach (ECSGameSpellEffect e in positiveEffects)
                                 {
-                                    var caster = "NONE";
+                                    var caster = T(client, "GMCommands.Player.EffectCasterNone");
                                     if (e.SpellHandler.Caster.Name != null)
                                     {
                                         caster = e.SpellHandler.Caster.Name;
                                         if (e.SpellHandler.Caster.Name == player.Name)
-                                            caster = "SELF";
+                                            caster = T(client, "GMCommands.Player.EffectCasterSelf");
                                     }
 
-                                    effects.Add(" -- " + e.SpellHandler.Spell.Name + " (" + e.EffectType + ", level " + e.SpellHandler.Spell.Level + "): " + caster + " (Caster), " + (e.GetRemainingTimeForClient() / 1000) + " seconds remaining");
+                                    effects.Add(T(client, "GMCommands.Player.SpellEffectLine", e.SpellHandler.Spell.Name, e.EffectType, e.SpellHandler.Spell.Level, caster, e.GetRemainingTimeForClient() / 1000));
                                 }
                             }
 
                             effects.Add(" ");
-                            effects.Add(" - Negative Spell Effects");
+                            effects.Add(T(client, "GMCommands.Player.NegativeSpellEffects"));
                             if (negativeEffects.Count > 0)
                             {
                                 // List active spell effects
                                 foreach (ECSGameSpellEffect e in negativeEffects)
                                 {
-                                    var caster = "NONE";
+                                    var caster = T(client, "GMCommands.Player.EffectCasterNone");
                                     if (e.SpellHandler.Caster.Name != null)
                                     {
                                         caster = e.SpellHandler.Caster.Name;
                                         if (e.SpellHandler.Caster.Name == player.Name)
-                                            caster = "SELF";
+                                            caster = T(client, "GMCommands.Player.EffectCasterSelf");
                                     }
 
-                                    effects.Add(" -- " + e.SpellHandler.Spell.Name + " (" + e.EffectType + ", level " + e.SpellHandler.Spell.Level + "): " + caster + " (Caster), " + (e.GetRemainingTimeForClient() / 1000) + " seconds remaining");
+                                    effects.Add(T(client, "GMCommands.Player.SpellEffectLine", e.SpellHandler.Spell.Name, e.EffectType, e.SpellHandler.Spell.Level, caster, e.GetRemainingTimeForClient() / 1000));
                                 }
                             }
                         }
-                        client.Out.SendCustomTextWindow("Player Effects", effects);
+                        client.Out.SendCustomTextWindow(T(client, "GMCommands.Player.PlayerEffectsTitle"), effects);
                         break;
                     }
 
@@ -2053,7 +2036,7 @@ namespace DOL.GS.Commands
 
                         if (player == null)
                         {
-                            client.Out.SendMessage("You need a valid target!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(T(client, "GMCommands.Player.NeedValidTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
@@ -2115,7 +2098,7 @@ namespace DOL.GS.Commands
 
                         if (args.Length < 3)
                         {
-                            DisplayMessage(client, "/player class <list|classID|className>");
+                            DisplayMessage(client, T(client, "GMCommands.Player.ClassSyntax"));
                             return;
                         }
 
@@ -2130,14 +2113,14 @@ namespace DOL.GS.Commands
                                         classList.Add(Enum.GetName(typeof(eCharacterClass), cl) + " - " + (int)cl);
                                     }
 
-                                    client.Player.Out.SendCustomTextWindow("[Class IDs List]", classList);
+                                    client.Player.Out.SendCustomTextWindow(T(client, "GMCommands.Player.ClassListTitle"), classList);
                                 }
                                 break;
                             default:
                                 {
                                     if (targetPlayer == null)
                                     {
-                                        DisplayMessage(client, "You must have a player target to use this command!");
+                                        DisplayMessage(client, T(client, "GMCommands.Player.ClassNeedsTarget"));
                                         return;
                                     }
 
@@ -2151,14 +2134,14 @@ namespace DOL.GS.Commands
                                     }
                                     else
                                     {
-                                        DisplayMessage(client, "You must use either the ID or the name of the class. Check /player class list.");
+                                        DisplayMessage(client, T(client, "GMCommands.Player.ClassUseIdOrName"));
                                         return;
                                     }
                                 }
                                 break;
                         }
                     }
-                    break; 
+                    break;
                 #endregion
 
                 #region areas
@@ -2178,24 +2161,24 @@ namespace DOL.GS.Commands
 
                                 if (questArea.DataQuest != null)
                                 {
-                                    areaInfo += " : DataQuest ID: " + questArea.DataQuest.ID;
+                                    areaInfo += T(client, "GMCommands.Player.AreaDataQuestId", questArea.DataQuest.ID);
 
                                     if (questArea.Step > 0)
                                     {
-                                        areaInfo += ", Area Quest Step = " + questArea.Step;
+                                        areaInfo += T(client, "GMCommands.Player.AreaQuestStep", questArea.Step);
                                     }
                                     else
                                     {
-                                        areaInfo += ", Eligible = " + questArea.DataQuest.CheckQuestQualification(targetPlayer);
+                                        areaInfo += T(client, "GMCommands.Player.AreaEligible", questArea.DataQuest.CheckQuestQualification(targetPlayer));
                                     }
                                 }
                             }
                             areaList.Add(areaInfo);
                         }
 
-                        if (areaList.Count == 0) areaList.Add("None");
+                        if (areaList.Count == 0) areaList.Add(T(client, "GMCommands.Player.None"));
 
-                        client.Player.Out.SendCustomTextWindow(targetPlayer.Name + " - Current Areas", areaList);
+                        client.Player.Out.SendCustomTextWindow(T(client, "GMCommands.Player.CurrentAreasTitle", targetPlayer.Name), areaList);
                     }
                     break;
                 #endregion
@@ -2223,9 +2206,8 @@ namespace DOL.GS.Commands
 		private void Show_Inventory(GamePlayer player, GameClient client, string limitType)
 		{
 			var text = new List<string>();
-			text.Add("  - Name Lastname : " + player.Name + " " + player.LastName);
-			text.Add("  - Realm Level Class : " + GlobalConstants.RealmToName(player.Realm) + " " + player.Level + " " +
-					 player.CharacterClass.Name);
+			text.Add(T(client, "GMCommands.Player.InventoryNameLastname", player.Name, player.LastName));
+			text.Add(T(client, "GMCommands.Player.InventoryRealmLevelClass", GlobalConstants.RealmToName(player.Realm), player.Level, player.CharacterClass.Name));
 			text.Add(" ");
 			text.Add(Money.GetShortString(player.GetCurrentMoney()));
 			text.Add(" ");
@@ -2236,7 +2218,7 @@ namespace DOL.GS.Commands
 			if (limitType == string.Empty || limitType == "wear")
 			{
 				limitShown = true;
-				text.Add("  ----- Wearing:");
+				text.Add(T(client, "GMCommands.Player.InventoryWearing"));
 
 				foreach (DbInventoryItem item in player.Inventory.EquippedItems)
 				{
@@ -2248,7 +2230,7 @@ namespace DOL.GS.Commands
 			if (limitType == string.Empty || limitType == "bag")
 			{
 				limitShown = true;
-				text.Add("  ----- Backpack:");
+				text.Add(T(client, "GMCommands.Player.InventoryBackpack"));
 				foreach (DbInventoryItem item in player.Inventory.AllItems)
 				{
 					if (item.SlotPosition >= (int)eInventorySlot.FirstBackpack &&
@@ -2262,7 +2244,7 @@ namespace DOL.GS.Commands
 			if (limitType == "vault")
 			{
 				limitShown = true;
-				text.Add("  ----- Vault:");
+				text.Add(T(client, "GMCommands.Player.InventoryVault"));
 				foreach (DbInventoryItem item in player.Inventory.AllItems)
 				{
 					if (item.SlotPosition >= (int)eInventorySlot.FirstVault && item.SlotPosition <= (int)eInventorySlot.LastVault)
@@ -2275,7 +2257,7 @@ namespace DOL.GS.Commands
 			if (limitType == "house")
 			{
 				limitShown = true;
-				text.Add("  ----- Housing:");
+				text.Add(T(client, "GMCommands.Player.InventoryHousing"));
 				foreach (DbInventoryItem item in player.Inventory.AllItems)
 				{
 					if (item.SlotPosition >= (int)eInventorySlot.HouseVault_First &&
@@ -2289,7 +2271,7 @@ namespace DOL.GS.Commands
 			if (limitType == "cons")
 			{
 				limitShown = true;
-				text.Add("  ----- GameConsignmentMerchant:");
+				text.Add(T(client, "GMCommands.Player.InventoryConsignment"));
 				foreach (DbInventoryItem item in player.Inventory.AllItems)
 				{
 					if (item.SlotPosition >= (int)eInventorySlot.Consignment_First &&
@@ -2302,33 +2284,33 @@ namespace DOL.GS.Commands
 
 			if (!limitShown)
 			{
-				text.Add("Unkown command.  Use wear | bag | vault | house | cons");
+				text.Add(T(client, "GMCommands.Player.InventoryUnknownLimit"));
 			}
 
 
-			client.Out.SendCustomTextWindow("PLAYER INVENTORY LISTING", text);
+			client.Out.SendCustomTextWindow(T(client, "GMCommands.Player.InventoryWindowTitle"), text);
 		}
 
 		private void Show_Info(GamePlayer player, GameClient client)
 		{
 			var text = new List<string>();
 			text.Add(" ");
-			text.Add("PLAYER INFORMATION (Client # " + player.Client.SessionID + ", " + player.GetType().FullName + ")");
-			text.Add("  - Name Lastname : " + player.Name + " " + player.LastName);
-			text.Add("  - Realm Level Gender Class : " + GlobalConstants.RealmToName(player.Realm) + " " + player.Level + " " + player.Gender + " " + player.CharacterClass.Name + " (" + player.CharacterClass.ID + ")");
-			text.Add("  - Guild : " + player.GuildName + " " + (player.GuildRank != null ? "Rank: " + player.GuildRank.RankLevel.ToString() : ""));
-			text.Add("  - XPs/RPs/BPs : " + player.Experience + " xp, " + player.RealmPoints + " rp, " + player.BountyPoints + " bp");
+			text.Add(T(client, "GMCommands.Player.InfoHeader", player.Client.SessionID, player.GetType().FullName));
+			text.Add(T(client, "GMCommands.Player.InfoNameLastname", player.Name, player.LastName));
+			text.Add(T(client, "GMCommands.Player.InfoRealmLevelGenderClass", GlobalConstants.RealmToName(player.Realm), player.Level, player.Gender, player.CharacterClass.Name, player.CharacterClass.ID));
+			text.Add(T(client, "GMCommands.Player.InfoGuild", player.GuildName, player.GuildRank != null ? T(client, "GMCommands.Player.InfoGuildRank", player.GuildRank.RankLevel) : ""));
+			text.Add(T(client, "GMCommands.Player.InfoPoints", player.Experience, player.RealmPoints, player.BountyPoints));
 
 			if (player.Champion)
 			{
-				text.Add("  - Champion :  CL " + player.ChampionLevel + ", " + player.ChampionExperience + " clxp");
+				text.Add(T(client, "GMCommands.Player.InfoChampion", player.ChampionLevel, player.ChampionExperience));
 
-				string activeBags = "None";
+				string activeBags = T(client, "GMCommands.Player.None");
 				if (player.ActiveSaddleBags != 0)
 				{
 					if (player.ActiveSaddleBags == (byte)eHorseSaddleBag.All)
 					{
-						activeBags = "All";
+						activeBags = T(client, "GMCommands.Player.All");
 					}
 					else
 					{
@@ -2339,64 +2321,64 @@ namespace DOL.GS.Commands
 							if (activeBags != string.Empty)
 								activeBags += ", ";
 
-							activeBags += "LeftFront";
+							activeBags += T(client, "GMCommands.Player.SaddlebagLeftFront");
 						}
 						if ((player.ActiveSaddleBags & (byte)eHorseSaddleBag.RightFront) > 0)
 						{
 							if (activeBags != string.Empty)
 								activeBags += ", ";
 
-							activeBags += "RightFront";
+							activeBags += T(client, "GMCommands.Player.SaddlebagRightFront");
 						}
 						if ((player.ActiveSaddleBags & (byte)eHorseSaddleBag.LeftRear) > 0)
 						{
 							if (activeBags != string.Empty)
 								activeBags += ", ";
 
-							activeBags += "LeftRear";
+							activeBags += T(client, "GMCommands.Player.SaddlebagLeftRear");
 						}
 						if ((player.ActiveSaddleBags & (byte)eHorseSaddleBag.RightRear) > 0)
 						{
 							if (activeBags != string.Empty)
 								activeBags += ", ";
 
-							activeBags += "RightRear";
+							activeBags += T(client, "GMCommands.Player.SaddlebagRightRear");
 						}
 					}
 				}
 
-				text.Add(string.Format("  - ActiveSaddleBags : {0} (0x{1:X2})", activeBags, player.ActiveSaddleBags));
+				text.Add(T(client, "GMCommands.Player.InfoActiveSaddlebags", activeBags, player.ActiveSaddleBags));
 			}
 			else
 			{
-				text.Add("  - Champion :  Not Started");
+				text.Add(T(client, "GMCommands.Player.InfoChampionNotStarted"));
 			}
 			if (player.MLGranted)
 			{
-				text.Add("  - Master Levels :  ML " + player.MLLevel + ", " + player.MLExperience + " mlxp , MLLine " + player.MLLine);
+				text.Add(T(client, "GMCommands.Player.InfoMasterLevels", player.MLLevel, player.MLExperience, player.MLLine));
 			}
 			else
 			{
-				text.Add("  - Master Levels :  Not Started");
+				text.Add(T(client, "GMCommands.Player.InfoMasterLevelsNotStarted"));
 			}
-			text.Add("  - Craftingskill : " + player.CraftingPrimarySkill + "");
-			text.Add("  - Money : " + Money.GetString(player.GetCurrentMoney()) + "");
-			text.Add("  - Model ID : " + player.Model);
-			text.Add("  - Region OID : " + player.ObjectID);
-			text.Add("  - AFK Message: " + player.TempProperties.GetProperty<string>(GamePlayer.AFK_MESSAGE) + "");
+			text.Add(T(client, "GMCommands.Player.InfoCraftingSkill", player.CraftingPrimarySkill));
+			text.Add(T(client, "GMCommands.Player.InfoMoney", Money.GetString(player.GetCurrentMoney())));
+			text.Add(T(client, "GMCommands.Player.InfoModelId", player.Model));
+			text.Add(T(client, "GMCommands.Player.InfoRegionOid", player.ObjectID));
+			text.Add(T(client, "GMCommands.Player.InfoAfkMessage", player.TempProperties.GetProperty<string>(GamePlayer.AFK_MESSAGE)));
 			text.Add(" ");
-			text.Add("HOUSE INFORMATION ");
-			text.Add("  - Personal House : " + HouseMgr.GetHouseNumberByPlayer(player));
+			text.Add(T(client, "GMCommands.Player.InfoHouseHeader"));
+			text.Add(T(client, "GMCommands.Player.InfoPersonalHouse", HouseMgr.GetHouseNumberByPlayer(player)));
 			if (player.CurrentHouse != null && player.CurrentHouse.HouseNumber > 0)
-				text.Add("  - Current House : " + player.CurrentHouse.HouseNumber);
-			text.Add("  - In House : " + player.InHouse);
+				text.Add(T(client, "GMCommands.Player.InfoCurrentHouse", player.CurrentHouse.HouseNumber));
+			text.Add(T(client, "GMCommands.Player.InfoInHouse", player.InHouse));
 			text.Add(" ");
-			text.Add("ACCOUNT INFORMATION ");
-			text.Add("  - Account Name & IP : " + player.Client.Account.Name + " from " + player.Client.Account.LastLoginIP);
-			text.Add("  - Priv. Level : " + player.Client.Account.PrivLevel);
-			text.Add("  - Client Version: " + player.Client.Account.LastClientVersion);
+			text.Add(T(client, "GMCommands.Player.InfoAccountHeader"));
+			text.Add(T(client, "GMCommands.Player.InfoAccountNameIp", player.Client.Account.Name, player.Client.Account.LastLoginIP));
+			text.Add(T(client, "GMCommands.Player.InfoPrivLevel", player.Client.Account.PrivLevel));
+			text.Add(T(client, "GMCommands.Player.InfoClientVersion", player.Client.Account.LastClientVersion));
 			text.Add(" ");
-			text.Add("CHARACTER STATS ");
+			text.Add(T(client, "GMCommands.Player.InfoStatsHeader"));
 
 			String sCurrent = string.Empty;
 			String sTitle = string.Empty;
@@ -2408,12 +2390,12 @@ namespace DOL.GS.Commands
 				sCurrent += player.GetModified(stat) + "/";
 				if (cnt == 3)
 				{
-					text.Add("  - Current stats " + sTitle + " : " + sCurrent);
+					text.Add(T(client, "GMCommands.Player.InfoCurrentStats", sTitle, sCurrent));
 					sTitle = string.Empty;
 					sCurrent = string.Empty;
 				}
 			}
-			text.Add("  - Current stats " + sTitle + " : " + sCurrent);
+			text.Add(T(client, "GMCommands.Player.InfoCurrentStats", sTitle, sCurrent));
 
 			sCurrent = string.Empty;
 			sTitle = string.Empty;
@@ -2424,28 +2406,26 @@ namespace DOL.GS.Commands
 				sCurrent += player.GetModified(res) + "/";
 				if (cnt == 2)
 				{
-					text.Add("  - Current " + sTitle + " : " + sCurrent);
+					text.Add(T(client, "GMCommands.Player.InfoCurrentValues", sTitle, sCurrent));
 					sCurrent = string.Empty;
 					sTitle = string.Empty;
 				}
 				if (cnt == 5)
 				{
-					text.Add("  - Current " + sTitle + " : " + sCurrent);
+					text.Add(T(client, "GMCommands.Player.InfoCurrentValues", sTitle, sCurrent));
 					sCurrent = string.Empty;
 					sTitle = string.Empty;
 				}
 			}
-			text.Add("  - Current " + sTitle + " : " + sCurrent);
+			text.Add(T(client, "GMCommands.Player.InfoCurrentValues", sTitle, sCurrent));
 
-			text.Add("  - Maximum Health : " + player.MaxHealth);
-			text.Add("  - Current AF and ABS : " + player.GetModified(eProperty.ArmorFactor) + " AF, " +
-					 player.GetModified(eProperty.ArmorAbsorption) + " ABS");
+			text.Add(T(client, "GMCommands.Player.InfoMaximumHealth", player.MaxHealth));
+			text.Add(T(client, "GMCommands.Player.InfoCurrentAfAbs", player.GetModified(eProperty.ArmorFactor), player.GetModified(eProperty.ArmorAbsorption)));
 			text.Add(" ");
-			text.Add("SPECCING INFORMATIONS ");
-			text.Add("  - Respecs availables : " + player.RespecAmountDOL + " dol, " + player.RespecAmountSingleSkill +
-					 " single, " + player.RespecAmountAllSkill + " full");
-			text.Add("  - Remaining spec. points : " + player.SkillSpecialtyPoints);
-			sTitle = "  - Player specialisations : ";
+			text.Add(T(client, "GMCommands.Player.InfoSpeccingHeader"));
+			text.Add(T(client, "GMCommands.Player.InfoRespecsAvailable", player.RespecAmountDOL, player.RespecAmountSingleSkill, player.RespecAmountAllSkill));
+			text.Add(T(client, "GMCommands.Player.InfoRemainingSpecPoints", player.SkillSpecialtyPoints));
+			sTitle = T(client, "GMCommands.Player.InfoPlayerSpecialisations");
 			sCurrent = string.Empty;
 			foreach (Specialization spec in player.GetSpecList())
 			{
@@ -2453,7 +2433,7 @@ namespace DOL.GS.Commands
 			}
 			text.Add(sTitle + sCurrent);
 
-			client.Out.SendCustomTextWindow("PLAYER & ACCOUNT INFORMATION", text);
+			client.Out.SendCustomTextWindow(T(client, "GMCommands.Player.InfoWindowTitle"), text);
         }
         public void SetClass(GamePlayer target, int classID)
         {

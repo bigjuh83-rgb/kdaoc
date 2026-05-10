@@ -12,7 +12,7 @@ namespace DOL.GS.PacketHandler.Client.v168
             if (player.ActiveWeaponSlot == eActiveWeaponSlot.Distance)
             {
                 if (userAction)
-                    player.Out.SendMessage("You can't enter melee combat mode with a ranged weapon!", eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client, "PlayerAttackRequestHandler.RangedWeaponNoMelee"), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
 
                 return;
             }

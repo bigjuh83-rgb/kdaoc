@@ -1,0 +1,7 @@
+?# /ArtifactQuest
+ArtifactQuest.GiveItem.BackpackFull:			가방이 가득 찼습니다. 공간을 비우고 다시 시도하세요.
+
+# /ArtifactTurnInQuest
+ArtifactTurnInQuest.Init.ArtifactScholarMale:		아티팩트 학자
+ArtifactTurnInQuest.Init.ArtifactScholarFemale:		아티팩트 학자
+ArtifactTurnInQuest.FinishQuest.Completed:		{0} 퀘스트를 완료했습니다!

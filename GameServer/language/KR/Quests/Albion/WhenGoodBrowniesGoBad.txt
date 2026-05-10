@@ -1,0 +1,13 @@
+﻿Alb.WhenGoodBrowniesGoBad.CheckPlayerAbortQuest.Text1:	좋아, 이제 나가서 맡은 일을 끝내게!
+Alb.WhenGoodBrowniesGoBad.CheckPlayerAbortQuest.Text2:	퀘스트 {0}을(를) 포기합니다. 원한다면 다시 시작할 수 있습니다.
+Alb.WhenGoodBrowniesGoBad.Conclusion.Text1:		아, 피를 가지고 돌아왔군! 본래 사악하지 않은 생명체가 다치는 꼴은 보기 싫지만, 이 문제의 뿌리를 알아내려면 이제 과감한 조치가 필요해지고 있네. 부디 내가 밝혀낼 수 있기를 바라네. 도와준 보답으로 이 보상을 받아 주게.
+Alb.WhenGoodBrowniesGoBad.Init.Text1:			연한 붉은색 천 염료
+Alb.WhenGoodBrowniesGoBad.Init.Text2:			연한 붉은색 가죽 염료
+Alb.WhenGoodBrowniesGoBad.Init.Text3:			연한 붉은색 에나멜
+Alb.WhenGoodBrowniesGoBad.Init.Text4:			브라우니의 피
+Alb.WhenGoodBrowniesGoBad.Init.Text5:			브라우니 3마리 처치
+Alb.WhenGoodBrowniesGoBad.Notify.Text1:			브라우니
+Alb.WhenGoodBrowniesGoBad.QuestTitle:			착한 브라우니가 사악해질 때
+Alb.WhenGoodBrowniesGoBad.ScriptLoaded.Text1:		마스터 클레스
+Alb.WhenGoodBrowniesGoBad.Story:			사람들이 빽빽하게 자리 잡은 이 지역에 아직 남아 있는 몇 안 되는 요정 생명체들에게 최근 변화가 생겨 걱정스럽네. 숨어 지내도록 내몰렸고, 그러지 않으면 교회의 눈길을 끌 위험까지 감수해야 했으니 그들이 우리 종족을 좋아하지 않으리라는 건 분명하네. 그래도 그들은 좀처럼 위협이 되지는 않았지. 성가시긴 했어도, 악의적인 경우는 드물었네.\n\n그런데 최근 몇몇 마을 사람들이 작은 요정들과 마주쳤는데, 평소와 달랐다고 말하더군. 거의 불길하기까지 했다네. 아이들이 납치되고, 농부들이 아무 이유 없이 공격받고, 식량이 독에 오염되고, 밤마다 우리 안의 가축이 도살되고 있네. 마치 그들이 어떤 마법에 걸린 것 같기도 하지. 이런 모습은 그들답지 않네. 내가 옛 방식을 따르는 사람은 아닐지라도, 종교적 광신도도 아니네. 아서 왕께서 마음속으로 옛 방식을 존중하셨다면, 나 역시 그리할 걸세.\n\n  이 일을 더 조사해야 하네. 자네가 도와줄 마음이 있다면 도움이 필요하네.
+Alb.WhenGoodBrowniesGoBad.Summary:			마스터 클레스는 브라우니들이 마법에 걸렸는지 확인하는 주문에 쓸 브라우니의 피가 필요합니다. 브라우니 세 마리를 처치하고 그 피를 가지고 그에게 돌아가십시오.

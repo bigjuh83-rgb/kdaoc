@@ -82,6 +82,8 @@ namespace DOL.AI.Brain
     public class BeranSupplyMasterBrain : StandardMobBrain
 	{
 		private static readonly Logging.Logger log = Logging.LoggerManager.Create(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+		private const string YellsForHelpKey = "NamedMobs.BeranSupplyMaster.YellsForHelp";
+		private const string IgnitesBarrelKey = "NamedMobs.BeranSupplyMaster.IgnitesBarrel";
 		public BeranSupplyMasterBrain() : base()
 		{
 			AggroLevel = 100;
@@ -154,16 +156,16 @@ namespace DOL.AI.Brain
 					brain.AggroLevel = 100;
 					add.AddToWorld();
 				}
-				BroadcastMessage(String.Format(Body.Name + " yells for help."));
+				BroadcastMessage(YellsForHelpKey, Body.Name);
 			}
 			BringAdds = false;
 			return 0;
         }
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(String key, params object[] args)
 		{
 			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
-				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
 			}
 		}
 		public int IgniteBarrel(ECSGameTimer timer)
@@ -203,7 +205,7 @@ namespace DOL.AI.Brain
 				npc.Heading = Body.Heading;
 				npc.CurrentRegion = Body.CurrentRegion;
 				npc.AddToWorld();
-				BroadcastMessage(String.Format(Body.Name + " ignites barrel."));
+				BroadcastMessage(IgnitesBarrelKey, Body.Name);
 				Ignite_Barrel = false;
 				Body.TurnTo(npc);
 				Body.Emote(eEmote.LetsGo);
@@ -267,12 +269,12 @@ namespace DOL.GS
 
 			return 0;
 		}
-		
+
 		protected int Explode(ECSGameTimer timer)
 		{
 			if (IsAlive)
 			{
-				SetGroundTarget(X, Y, Z);			
+				SetGroundTarget(X, Y, Z);
 				CastSpell(Barrel_aoe, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells),false);
 				new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(KillBomb), 500);
 			}

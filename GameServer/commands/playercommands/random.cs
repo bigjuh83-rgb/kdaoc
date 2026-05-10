@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -29,25 +29,20 @@ namespace DOL.GS.Commands
 		"/random [#] to get a random number between 1 and the number you specified.")]
 	public class RandomCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
-		// declaring some msg's
 		private const int RESULT_RANGE = 512; // emote range
-		private const string MESSAGE_HELP = "You must select a maximum number for your random selection!";
-		private const string MESSAGE_RESULT_SELF = "You pick a random number between 1 and {0}: {1}"; // thrownMax, thrown
-		private const string MESSAGE_RESULT_OTHER = "{0} picks a random number between 1 and {1}: {2}"; // client.Player.Name, thrownMax, thrown
-		private const string MESSAGE_LOW_NUMBER = "You must select a maximum number greater than 1!";
 
 		public void OnCommand(GameClient client, string[] args)
 		{
 			if (IsSpammingCommand(client.Player, "random", 500))
 			{
-				DisplayMessage(client, "Slow down!");
+				DisplayMessage(client, T(client, "PlayerCommands.Common.SlowDown"));
 				return;
 			}
 
 			// no args - display usage
 			if (args.Length < 2)
 			{
-				SystemMessage(client, MESSAGE_HELP);
+				SystemMessage(client, T(client, "PlayerCommands.Random.Help"));
 				return;
 			}
 
@@ -64,19 +59,19 @@ namespace DOL.GS.Commands
 			}
 			catch (Exception)
 			{
-				SystemMessage(client, MESSAGE_HELP);
+				SystemMessage(client, T(client, "PlayerCommands.Random.Help"));
 				return;
 			}
 
 			if (thrownMax < 2)
 			{
-				SystemMessage(client, MESSAGE_LOW_NUMBER);
+				SystemMessage(client, T(client, "PlayerCommands.Random.LowNumber"));
 				return;
 			}
 
 			// throw result
 			int thrown = Util.Random(1, thrownMax);
-			
+
 			BattleGroup mybattlegroup = client.Player.TempProperties.GetProperty<BattleGroup>(BattleGroup.BATTLEGROUP_PROPERTY);
 			if (mybattlegroup != null && mybattlegroup.IsRecordingRolls() && thrownMax <= mybattlegroup.GetRecordingThreshold())
 			{
@@ -84,17 +79,14 @@ namespace DOL.GS.Commands
 			}
 
 			// building result messages
-			string selfMessage = String.Format(MESSAGE_RESULT_SELF, thrownMax, thrown);
-			string otherMessage = String.Format(MESSAGE_RESULT_OTHER, client.Player.Name, thrownMax, thrown);
-
 			// sending msg to player
-			EmoteMessage(client, selfMessage);
+			EmoteMessage(client, T(client, "PlayerCommands.Random.ResultSelf", thrownMax, thrown));
 
 			// sending result & playername to all players in range
 			foreach (GamePlayer player in client.Player.GetPlayersInRadius(RESULT_RANGE))
 			{
 				if (client.Player != player) // client gets unique message
-					EmoteMessage(player, otherMessage); // sending msg to other players
+					EmoteMessage(player, T(player, "PlayerCommands.Random.ResultOther", client.Player.Name, thrownMax, thrown)); // sending msg to other players
 			}
 		}
 

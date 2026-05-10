@@ -6,6 +6,7 @@ using System.Text;
 using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Quests
 {
@@ -233,7 +234,7 @@ namespace DOL.GS.Quests
         /// </summary>
         public virtual string Name
         {
-            get { return "TASK NAME UNDEFINED!"; }
+            get { return DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "Tasks.AbstractTask.NameUndefined"); }
         }
 
         /// <summary>
@@ -241,7 +242,7 @@ namespace DOL.GS.Quests
         /// </summary>
         public virtual string Description
         {
-            get { return "TASK DESCRIPTION UNDEFINED!"; }
+            get { return DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "Tasks.AbstractTask.DescriptionUndefined"); }
         }
 
         /// <summary>
@@ -357,7 +358,7 @@ namespace DOL.GS.Quests
 
             if (RewardMoney > 0)
             {
-                m_taskPlayer.AddMoney(RewardMoney, "You receive {0} for completing your task.");
+                m_taskPlayer.AddMoney(RewardMoney, LanguageMgr.GetTranslation(m_taskPlayer.Client, "Task.RewardMoney"));
                 InventoryLogging.LogInventoryAction("(TASK;" + m_dbTask.TaskType + ")", m_taskPlayer,
                     eInventoryActionType.Quest, RewardMoney);
             }
@@ -375,7 +376,7 @@ namespace DOL.GS.Quests
                 m_taskPlayer.Inventory.CommitChanges();
             }
 
-            m_taskPlayer.Out.SendMessage("You finish the " + Name + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            m_taskPlayer.Out.SendMessage(LanguageMgr.GetTranslation(m_taskPlayer.Client, "Task.Finish", Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             m_dbTask.TaskType = typeof(AbstractTask).ToString();
             m_dbTask.CustomPropertiesString = null;
             lock (m_customProperties)
@@ -407,11 +408,11 @@ namespace DOL.GS.Quests
                     }
                 }
 
-                m_taskPlayer.Out.SendMessage("Your task related item has been removed from your inventory.",
+                m_taskPlayer.Out.SendMessage(LanguageMgr.GetTranslation(m_taskPlayer.Client, "Task.ItemRemoved"),
                     eChatType.CT_System, eChatLoc.CL_SystemWindow);
             }
 
-            m_taskPlayer.Out.SendMessage("Your " + Name + " has expired!", eChatType.CT_System,
+            m_taskPlayer.Out.SendMessage(LanguageMgr.GetTranslation(m_taskPlayer.Client, "Task.Expired", Name), eChatType.CT_System,
                 eChatLoc.CL_SystemWindow);
             m_dbTask.TaskType = typeof(AbstractTask).ToString();
             m_dbTask.CustomPropertiesString = null;
@@ -508,14 +509,14 @@ namespace DOL.GS.Quests
 
             if (player.Level > MAX_LEVEL)
             {
-                player.Out.SendMessage($"Tasks are only available to player up to level {MAX_LEVEL}!", eChatType.CT_System,
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Task.Availability.MaxLevel", MAX_LEVEL), eChatType.CT_System,
                     eChatLoc.CL_SystemWindow);
                 return false;
             }
 
             if (player.GameTask is {TaskActive: true})
             {
-                player.Out.SendMessage("You already have a Task. Select yourself and type /Task for more Information.",
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Task.Availability.AlreadyHaveTask"),
                     eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
@@ -523,7 +524,7 @@ namespace DOL.GS.Quests
             if (player.GameTask != null && player.GameTask.TasksDone >= MaxTasksDone(player.Level))
             {
                 player.Out.SendMessage(
-                    "You cannot do more than " + MaxTasksDone(player.Level) + " tasks at your level!",
+                    LanguageMgr.GetTranslation(player.Client.Account.Language, "Task.Availability.TooManyTasksAtLevel", MaxTasksDone(player.Level)),
                     eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
@@ -531,7 +532,7 @@ namespace DOL.GS.Quests
             if (player.TempProperties.GetProperty<int>(CHECK_TASK_TICK) > GameLoop.GameLoopTime)
             {
                 player.Out.SendMessage(
-                    "I have no tasks for you at the moment. Come back sometime later, perhaps then you can help me with something.",
+                    LanguageMgr.GetTranslation(player.Client.Account.Language, "Task.Availability.NoTasksNow"),
                     eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                 return false;
             }
@@ -540,7 +541,7 @@ namespace DOL.GS.Quests
             {
                 return true;
             }
-            
+
             player.Out.SendMessage(
                 "I have no tasks for you at the moment. Come back sometime later, perhaps then you can help me with something.",
                 eChatType.CT_Say, eChatLoc.CL_PopupWindow);

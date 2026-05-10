@@ -33,32 +33,40 @@ namespace DOL.GS.Quests.Albion
 		protected const int minimumLevel = 50;
 		protected const int maximumLevel = 50;
 
+		private static string L(GamePlayer player, string key, params object[] args)
+		{
+			string language = player != null && player.Client != null && player.Client.Account != null
+				? player.Client.Account.Language
+				: ServerProperties.Properties.SERV_LANGUAGE;
+			return DOL.Language.LanguageMgr.GetTranslation(language, key, args);
+		}
+
 		private static GameNPC Lidmann = null; // Start NPC
 		private static CailleachUragaig Uragaig = null; // Mob to kill
 
 		private static DbItemTemplate sealed_pouch = null; //sealed pouch
-		private static DbItemTemplate ScoutEpicBoots = null; //Brigandine of Vigilant Defense  Boots 
-		private static DbItemTemplate ScoutEpicHelm = null; //Brigandine of Vigilant Defense  Coif 
-		private static DbItemTemplate ScoutEpicGloves = null; //Brigandine of Vigilant Defense  Gloves 
-		private static DbItemTemplate ScoutEpicVest = null; //Brigandine of Vigilant Defense  Hauberk 
-		private static DbItemTemplate ScoutEpicLegs = null; //Brigandine of Vigilant Defense  Legs 
-		private static DbItemTemplate ScoutEpicArms = null; //Brigandine of Vigilant Defense  Sleeves 
-		private static DbItemTemplate ArmsmanEpicBoots = null; //Shadow Shrouded Boots 
-		private static DbItemTemplate ArmsmanEpicHelm = null; //Shadow Shrouded Coif 
-		private static DbItemTemplate ArmsmanEpicGloves = null; //Shadow Shrouded Gloves 
-		private static DbItemTemplate ArmsmanEpicVest = null; //Shadow Shrouded Hauberk 
-		private static DbItemTemplate ArmsmanEpicLegs = null; //Shadow Shrouded Legs 
-		private static DbItemTemplate ArmsmanEpicArms = null; //Shadow Shrouded Sleeves 
-		private static DbItemTemplate TheurgistEpicBoots = null; //Valhalla Touched Boots 
-		private static DbItemTemplate TheurgistEpicHelm = null; //Valhalla Touched Coif 
-		private static DbItemTemplate TheurgistEpicGloves = null; //Valhalla Touched Gloves 
-		private static DbItemTemplate TheurgistEpicVest = null; //Valhalla Touched Hauberk 
-		private static DbItemTemplate TheurgistEpicLegs = null; //Valhalla Touched Legs 
-		private static DbItemTemplate TheurgistEpicArms = null; //Valhalla Touched Sleeves 
-		private static DbItemTemplate FriarEpicBoots = null; //Subterranean Boots 
-		private static DbItemTemplate FriarEpicHelm = null; //Subterranean Coif 
-		private static DbItemTemplate FriarEpicGloves = null; //Subterranean Gloves 
-		private static DbItemTemplate FriarEpicVest = null; //Subterranean Hauberk 
+		private static DbItemTemplate ScoutEpicBoots = null; //Brigandine of Vigilant Defense  Boots
+		private static DbItemTemplate ScoutEpicHelm = null; //Brigandine of Vigilant Defense  Coif
+		private static DbItemTemplate ScoutEpicGloves = null; //Brigandine of Vigilant Defense  Gloves
+		private static DbItemTemplate ScoutEpicVest = null; //Brigandine of Vigilant Defense  Hauberk
+		private static DbItemTemplate ScoutEpicLegs = null; //Brigandine of Vigilant Defense  Legs
+		private static DbItemTemplate ScoutEpicArms = null; //Brigandine of Vigilant Defense  Sleeves
+		private static DbItemTemplate ArmsmanEpicBoots = null; //Shadow Shrouded Boots
+		private static DbItemTemplate ArmsmanEpicHelm = null; //Shadow Shrouded Coif
+		private static DbItemTemplate ArmsmanEpicGloves = null; //Shadow Shrouded Gloves
+		private static DbItemTemplate ArmsmanEpicVest = null; //Shadow Shrouded Hauberk
+		private static DbItemTemplate ArmsmanEpicLegs = null; //Shadow Shrouded Legs
+		private static DbItemTemplate ArmsmanEpicArms = null; //Shadow Shrouded Sleeves
+		private static DbItemTemplate TheurgistEpicBoots = null; //Valhalla Touched Boots
+		private static DbItemTemplate TheurgistEpicHelm = null; //Valhalla Touched Coif
+		private static DbItemTemplate TheurgistEpicGloves = null; //Valhalla Touched Gloves
+		private static DbItemTemplate TheurgistEpicVest = null; //Valhalla Touched Hauberk
+		private static DbItemTemplate TheurgistEpicLegs = null; //Valhalla Touched Legs
+		private static DbItemTemplate TheurgistEpicArms = null; //Valhalla Touched Sleeves
+		private static DbItemTemplate FriarEpicBoots = null; //Subterranean Boots
+		private static DbItemTemplate FriarEpicHelm = null; //Subterranean Coif
+		private static DbItemTemplate FriarEpicGloves = null; //Subterranean Gloves
+		private static DbItemTemplate FriarEpicVest = null; //Subterranean Hauberk
 		private static DbItemTemplate FriarEpicLegs = null; //Subterranean Legs
 		private static DbItemTemplate FriarEpicArms = null; //Subterranean Sleeves
 		private static DbItemTemplate MaulerAlbEpicBoots = null;
@@ -90,7 +98,7 @@ namespace DOL.GS.Quests.Albion
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -1254,7 +1262,7 @@ namespace DOL.GS.Quests.Albion
 
 		protected static void TalkToLidmann(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -1267,7 +1275,7 @@ namespace DOL.GS.Quests.Albion
 				(MaulerAlbEpicArms == null || MaulerAlbEpicBoots == null || MaulerAlbEpicGloves == null ||
 				MaulerAlbEpicHelm == null || MaulerAlbEpicLegs == null || MaulerAlbEpicVest == null))
 			{
-				Lidmann.SayTo(player, "This quest is not available to Maulers yet.");
+				Lidmann.SayTo(player, L(player, "Quest.Epic.Defenders50.MaulerUnavailable"));
 				return;
 			}
 
@@ -1282,20 +1290,18 @@ namespace DOL.GS.Quests.Albion
 					switch (quest.Step)
 					{
 						case 1:
-							Lidmann.SayTo(player, "Seek out Cailleach Uragaig in Lyonesse! Follow the road southwest into Lyonesse past the lesser telamon. " +
-							                      "Keep going until you pass the two houses with the pikemen and pygmy goblins. " +
-							                      "There is a clearing straight west where you see ruins of pillars. The cailleach sisterhood calls those ruins home.");
+							Lidmann.SayTo(player, L(player, "Quest.Epic.Defenders50.Step1Reminder"));
 							break;
 						case 2:
-							Lidmann.SayTo(player, $"Hey ${player.Name}, did you [slay] Cailleach Uragaig?");
+							Lidmann.SayTo(player, L(player, "Quest.Epic.Defenders50.Step2Reminder", player.Name));
 							break;
 					}
 				}
 				else
 				{
-					// Check if player is qualifed for quest                
-					Lidmann.SayTo(player, "Albion needs your [services].");
-					
+					// Check if player is qualifed for quest
+					Lidmann.SayTo(player, L(player, "Quest.Epic.Defenders50.Intro"));
+
 				}
 			}
 				// The player whispered to the NPC
@@ -1308,7 +1314,8 @@ namespace DOL.GS.Quests.Albion
 					switch (wArgs.Text)
 					{
 						case "services":
-							player.Out.SendQuestSubscribeCommand(Lidmann, QuestMgr.GetIDForQuestType(typeof(Defenders_50)), "Will you help Lidmann [Defenders of Albion Level 50 Epic]?");
+						case "도움":
+							player.Out.SendQuestSubscribeCommand(Lidmann, QuestMgr.GetIDForQuestType(typeof(Defenders_50)), L(player, "Quest.Epic.Defenders50.Subscribe"));
 							break;
 					}
 				}
@@ -1317,21 +1324,22 @@ namespace DOL.GS.Quests.Albion
 					switch (wArgs.Text)
 					{
 						case "slay":
+						case "처치":
 							if (quest.Step == 2)
 							{
 								RemoveItem(player, sealed_pouch);
 								if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 									    eInventorySlot.LastBackpack))
 								{
-									Lidmann.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+									Lidmann.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 									quest.FinishQuest();
 								}
 								else
-									player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+									player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
@@ -1345,11 +1353,11 @@ namespace DOL.GS.Quests.Albion
 						if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 							    eInventorySlot.LastBackpack))
 						{
-							Lidmann.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+							Lidmann.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 							quest.FinishQuest();
 						}
 						else
-							player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					}
 			}
 
@@ -1395,11 +1403,11 @@ namespace DOL.GS.Quests.Albion
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, no go out there and finish your work!");
+				SendSystemMessage(player, L(player, "Quest.Epic.Defenders50.AbortDecline"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -1429,7 +1437,7 @@ namespace DOL.GS.Quests.Albion
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Our God forgives your laziness, just look out for stray lightning bolts.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(L(player, "Quest.Epic.Defenders50.Decline"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -1437,14 +1445,14 @@ namespace DOL.GS.Quests.Albion
 				if (!Lidmann.GiveQuest(typeof (Defenders_50), player, 1))
 					return;
 
-				player.Out.SendMessage("Kill Cailleach Uragaig in Lyonesse!", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(L(player, "Quest.Epic.Defenders50.Accept"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 			}
 		}
 
 		//Set quest name
 		public override string Name
 		{
-			get { return "Feast of the Decadent (Level 50 Defenders of Albion Epic)"; }
+			get { return L(m_questPlayer, "Quest.Epic.Defenders50.Name"); }
 		}
 
 		// Define Steps
@@ -1455,11 +1463,9 @@ namespace DOL.GS.Quests.Albion
 				switch (Step)
 				{
 					case 1:
-						return "Seek out Cailleach Uragaig in Lyonesse and kill her!\n" +
-						       "There is a clearing straight west in Lyonesse where you see ruins of pillars. " +
-						       "The cailleach sisterhood calls those ruins home.";
+						return L(m_questPlayer, "Quest.Epic.Defenders50.Description1");
 					case 2:
-						return "Give the sealed pouch to Lidmann Halsey at Adribard's Retreat.";
+						return L(m_questPlayer, "Quest.Epic.Defenders50.Description2");
 				}
 				return base.Description;
 			}
@@ -1482,7 +1488,7 @@ namespace DOL.GS.Quests.Albion
 				{
 					if (gArgs.Target.Name == Uragaig.Name)
 					{
-						m_questPlayer.Out.SendMessage("Take the pouch to Lidmann Halsey", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						m_questPlayer.Out.SendMessage(L(m_questPlayer, "Quest.Epic.Defenders50.TakePouch"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						GiveItem(player, sealed_pouch);
 						Step = 2;
 					}
@@ -1496,11 +1502,11 @@ namespace DOL.GS.Quests.Albion
 					if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 						    eInventorySlot.LastBackpack))
 					{
-						Lidmann.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+						Lidmann.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 						FinishQuest();
 					}
 					else
-						player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 				}
 			}
 		}
@@ -1565,24 +1571,24 @@ namespace DOL.GS.Quests.Albion
 			}
 
 			m_questPlayer.GainExperience(eXPSource.Quest, 1937768448, true);
-			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");		
+			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");
 		}
 
 		#region Allakhazam Epic Source
 
 		/*
         *#25 talk to Lidmann
-        *#26 seek out Loken in Raumarik Loc 47k, 25k, 4k, and kill him purp and 2 blue adds 
-        *#27 return to Lidmann 
+        *#26 seek out Loken in Raumarik Loc 47k, 25k, 4k, and kill him purp and 2 blue adds
+        *#27 return to Lidmann
         *#28 give her the ball of flame
         *#29 talk with Lidmann about Loken�s demise
-        *#30 go to MorlinCaan in Jordheim 
+        *#30 go to MorlinCaan in Jordheim
         *#31 give her the sealed pouch
         *#32 you get your epic armor as a reward
         */
 
 		/*
-            *Brigandine of Vigilant Defense  Boots 
+            *Brigandine of Vigilant Defense  Boots
             *Brigandine of Vigilant Defense  Coif
             *Brigandine of Vigilant Defense  Gloves
             *Brigandine of Vigilant Defense  Hauberk

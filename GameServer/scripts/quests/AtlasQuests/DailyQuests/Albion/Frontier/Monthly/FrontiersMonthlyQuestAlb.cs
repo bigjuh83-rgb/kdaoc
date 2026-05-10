@@ -28,11 +28,11 @@ namespace DOL.GS.MonthlyQuest.Albion
 
 		private int PlayersKilled = 0;
 		private int CapturedKeeps = 0;
-		
+
 		// Kill Goal
 		private static int MAX_KILLING_GOAL = 500;
 		private static int MAX_CAPTURED_KEEPS_GOAL = 20;
-		
+
 		// prevent grey killing
 		private const int MIN_PLAYER_CON = -3;
 
@@ -61,7 +61,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 				return minimumLevel;
 			}
 		}
-		
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
@@ -156,7 +156,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 
 		private static void TalkToKelteen(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -178,15 +178,13 @@ namespace DOL.GS.MonthlyQuest.Albion
 							                      $"Come back when you have killed enough enemies and taken keeps for our safety.");
 							break;
 						case 2:
-							Kelteen.SayTo(player, "Hello " + player.Name + ", did you success [capturing keeps and killing enemies]?");
+							Kelteen.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyFrontierPrompt", player.Name));
 							break;
 					}
 				}
 				else
 				{
-					Kelteen.SayTo(player, "Oh Hey, "+ player.Name +". "+
-					                      "Can I steal a brief moment of your time and tell you something? " +
-					                      "Enemies have invaded our lands and we need everyone to help us defeat them and restore [order and security] to our realm.");
+					Kelteen.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyFrontierIntro", player.Name, "Albion"));
 				}
 			}
 				// The player whispered to the NPC
@@ -198,7 +196,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 					switch (wArgs.Text)
 					{
 						case "order and security":
-							player.Out.SendQuestSubscribeCommand(Kelteen, QuestMgr.GetIDForQuestType(typeof(FrontiersMonthlyQuestAlb)), "Will you help "+Kelteen.Name+" to slay enemies and capture keeps? " + questTitle + "?");
+							player.Out.SendQuestSubscribeCommand(Kelteen, QuestMgr.GetIDForQuestType(typeof(FrontiersMonthlyQuestAlb)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcWithQuest", Kelteen.Name, questTitle));
 							break;
 					}
 				}
@@ -207,20 +205,21 @@ namespace DOL.GS.MonthlyQuest.Albion
 					switch (wArgs.Text)
 					{
 						case "capturing keeps and killing enemies":
+						case "성채 점령과 적 처치":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your help! Albion will thank you for your contribution.", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyFrontierThanks", "Albion"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -242,11 +241,11 @@ namespace DOL.GS.MonthlyQuest.Albion
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and shed some blood!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueBloodshed"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -276,7 +275,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you that you decide to help.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DecidedToHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -284,7 +283,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 				if (!Kelteen.GiveQuest(typeof (FrontiersMonthlyQuestAlb), player, 1))
 					return;
 
-				Kelteen.SayTo(player, "You will find suitable players in the old frontiers.");
+				Kelteen.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.SuitablePlayersOldFrontiers"));
 
 			}
 		}
@@ -303,11 +302,9 @@ namespace DOL.GS.MonthlyQuest.Albion
 				switch (Step)
 				{
 					case 1:
-						return "Defend your realm!\nSlay enemies in the frontiers and capture Keeps for Albion." +
-						       "\nEnemies Killed: ("+ PlayersKilled +" | "+ MAX_KILLING_GOAL +")" +
-						       "\nCaptured Keeps: ("+ CapturedKeeps + " | "+ MAX_CAPTURED_KEEPS_GOAL +")";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.MonthlyFrontierDescription", "Albion", PlayersKilled, MAX_KILLING_GOAL, CapturedKeeps, MAX_CAPTURED_KEEPS_GOAL);
 					case 2:
-						return "Return to Kelteen in Castle Sauvage for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "Kelteen", "Castle Sauvage");
 				}
 				return base.Description;
 			}
@@ -322,8 +319,8 @@ namespace DOL.GS.MonthlyQuest.Albion
 
 			if (sender != m_questPlayer)
 				return;
-			
-			
+
+
 			if (e == GameLivingEvent.EnemyKilled && Step == 1 && PlayersKilled < MAX_KILLING_GOAL)
 			{
 				EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
@@ -332,17 +329,17 @@ namespace DOL.GS.MonthlyQuest.Albion
 				if (gArgs.Target.CurrentRegionID != 100 && gArgs.Target.CurrentRegionID != 200 &&
 				    gArgs.Target.CurrentRegionID != 1)
 				{
-					player.Out.SendMessage("[Monthly] You need to find enemies in the old frontiers.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyFindEnemiesOldFrontiers"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return;
 				}
 				PlayersKilled++;
-				player.Out.SendMessage("[Monthly] Enemies Killed: ("+PlayersKilled+" | "+MAX_KILLING_GOAL+")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyEnemiesKilled", PlayersKilled, MAX_KILLING_GOAL), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 				player.Out.SendQuestUpdate(this);
 			}
 			if (e == GamePlayerEvent.CapturedKeepsChanged && Step == 1 && CapturedKeeps < MAX_CAPTURED_KEEPS_GOAL)
 			{
 				CapturedKeeps++;
-				player.Out.SendMessage("[Monthly] Captured Keeps: ("+CapturedKeeps+" | "+MAX_CAPTURED_KEEPS_GOAL+")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyCapturedKeeps", CapturedKeeps, MAX_CAPTURED_KEEPS_GOAL), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 				player.Out.SendQuestUpdate(this);
 			}
 
@@ -351,13 +348,13 @@ namespace DOL.GS.MonthlyQuest.Albion
 				Step = 2;
 			}
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "FrontiersMonthlyQuestAlb";
 			set { ; }
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			PlayersKilled = GetCustomProperty("FrontiersMonthlyAlbKill") != null ? int.Parse(GetCustomProperty("FrontiersMonthlyAlbKill")) : 0;
@@ -373,7 +370,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 		public override void FinishQuest()
 		{
 			int reward = ServerProperties.Properties.MONTHLY_RVR_REWARD;
-			
+
 			if (m_questPlayer.Inventory.IsSlotsFree(3, eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack))
 			{
 				m_questPlayer.ForceGainExperience((m_questPlayer.ExperienceForNextLevel - m_questPlayer.ExperienceForCurrentLevel));
@@ -382,10 +379,10 @@ namespace DOL.GS.MonthlyQuest.Albion
 				AtlasROGManager.GenerateJewel(m_questPlayer, 50);
 				PlayersKilled = 0;
 				CapturedKeeps = 0;
-				
+
 				if (reward > 0)
 				{
-					m_questPlayer.Out.SendMessage($"You have been rewarded {reward} Realmpoints for finishing Monthly Quest.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+					m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.RealmPointReward", reward, "Monthly"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					m_questPlayer.GainRealmPoints(reward, false);
 					m_questPlayer.Out.SendUpdatePlayer();
 				}
@@ -393,7 +390,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 			}
 			else
 			{
-				m_questPlayer.Out.SendMessage("Clear three slots of your inventory for your reward", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ClearInventorySlots", 3), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 	}

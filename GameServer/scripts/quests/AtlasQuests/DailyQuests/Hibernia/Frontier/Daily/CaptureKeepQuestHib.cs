@@ -26,7 +26,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 		// Capture Goal
 		private const int MAX_CAPTURED = 1;
-		
+
 		private static GameNPC Cola = null; // Start NPC
 
 		private int _isCaptured = 0;
@@ -47,7 +47,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 		public CaptureKeepQuestHib(GamePlayer questingPlayer, DbQuest dbQuest) : base(questingPlayer, dbQuest)
 		{
 		}
-		
+
 		public override int Level
 		{
 			get
@@ -62,7 +62,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -140,7 +140,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 		private static void TalkToCola(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -158,17 +158,16 @@ namespace DOL.GS.DailyQuest.Hibernia
 					switch (quest.Step)
 					{
 						case 1:
-							Cola.SayTo(player, "Find an enemy occupied keep and capture it. If you succeed come back for your reward.");
+							Cola.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.CaptureKeepObjective"));
 							break;
 						case 2:
-							Cola.SayTo(player, "Hello " + player.Name + ", did you [capture] a keep?");
+							Cola.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.CaptureKeepPrompt", player.Name));
 							break;
 					}
 				}
 				else
 				{
-					Cola.SayTo(player, "Hello "+ player.Name +", I am Cola. I serve the realm and its interests. \n"+
-					                     "Our armies will be pushing the frontier border soon, and I need your assistance in [securing a foothold] for them.");
+					Cola.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.CaptureKeepIntro", player.Name, "Cola"));
 				}
 			}
 				// The player whispered to the NPC
@@ -180,7 +179,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 					switch (wArgs.Text)
 					{
 						case "securing a foothold":
-							player.Out.SendQuestSubscribeCommand(Cola, QuestMgr.GetIDForQuestType(typeof(CaptureKeepQuestHib)), "Will you help Cola "+questTitle+"");
+							player.Out.SendQuestSubscribeCommand(Cola, QuestMgr.GetIDForQuestType(typeof(CaptureKeepQuestHib)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "Cola", questTitle));
 							break;
 					}
 				}
@@ -189,20 +188,21 @@ namespace DOL.GS.DailyQuest.Hibernia
 					switch (wArgs.Text)
 					{
 						case "capture":
+						case "점령":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -231,11 +231,11 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and find us a keep.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -265,7 +265,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for helping Hibernia.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelpingRealm", "Hibernia"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -273,7 +273,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 				if (!Cola.GiveQuest(typeof (CaptureKeepQuestHib), player, 1))
 					return;
 
-				Cola.SayTo(player, "Thank you "+player.Name+", you are a true soldier of Hibernia!");
+				Cola.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.TrueSoldierRealm", player.Name, "Hibernia"));
 
 			}
 		}
@@ -292,9 +292,9 @@ namespace DOL.GS.DailyQuest.Hibernia
 				switch (Step)
 				{
 					case 1:
-						return "Go to the battlefield and conquer a keep. \nCaptured: Keep ("+ _isCaptured +" | 1)";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.KeepCaptureDescription", _isCaptured, 1);
 					case 2:
-						return "Return to Cola for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpc", "Cola");
 				}
 				return base.Description;
 			}
@@ -306,15 +306,15 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 			if (player?.IsDoingQuest(typeof(CaptureKeepQuestHib)) == null)
 				return;
-			
+
 			if (sender != m_questPlayer)
 				return;
 
 			if (Step != 1 || e != GamePlayerEvent.CapturedKeepsChanged) return;
 			_isCaptured = 1;
-			player.Out.SendMessage("[Daily] Captured Keep: ("+_isCaptured+" | "+MAX_CAPTURED+")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DailyCapturedKeep", _isCaptured, MAX_CAPTURED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (_isCaptured >= MAX_CAPTURED)
 			{
 				// FinishQuest or go back to Dean
@@ -322,7 +322,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "CaptureKeepQuestHib";
@@ -330,12 +330,12 @@ namespace DOL.GS.DailyQuest.Hibernia
 		}
 		public override void LoadQuestParameters()
 		{
-			
+
 		}
 
 		public override void SaveQuestParameters()
 		{
-			
+
 		}
 
 		public override void AbortQuest()
@@ -346,7 +346,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 		public override void FinishQuest()
 		{
 			int reward = ServerProperties.Properties.DAILY_RVR_REWARD;
-			
+
 			m_questPlayer.ForceGainExperience((m_questPlayer.ExperienceForNextLevel - m_questPlayer.ExperienceForCurrentLevel)/5);
 			m_questPlayer.AddMoney(Money.GetMoney(0,0,m_questPlayer.Level*2,0,Util.Random(50)), "You receive {0} as a reward.");
 			AtlasROGManager.GenerateReward(m_questPlayer, 250);
@@ -355,7 +355,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 			if (reward > 0)
 			{
-				m_questPlayer.Out.SendMessage($"You have been rewarded {reward} Realmpoints for finishing Daily Quest.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.RealmPointReward", reward, "Daily"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 				m_questPlayer.GainRealmPoints(reward, false);
 				m_questPlayer.Out.SendUpdatePlayer();
 			}

@@ -1,5 +1,6 @@
 ﻿using DOL.GS.Housing;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -15,7 +16,7 @@ namespace DOL.GS
             // Execute default behavior only for legacy single-type bankers.
             if (BankerType.HasValue)
             {
-                player.Out.SendMessage(BuildInteractionMessage(), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                player.Out.SendMessage(BuildInteractionMessage(player), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 
                 // House.GetPermissionLevel will currently return null, and only the guild leader will be able to interact with the banker.
                 if (TryGetConsignmentMerchant(player, BankerType.Value, out GameConsignmentMerchant consignmentMerchant))
@@ -25,9 +26,9 @@ namespace DOL.GS
             return true;
         }
 
-        private static string BuildInteractionMessage()
+        private static string BuildInteractionMessage(GamePlayer player)
         {
-            return $"You will be able to retrieve any items that your consignment merchant would have had if you had one and your house was repossessed.";
+            return LanguageMgr.GetTranslation(player.Client.Account.Language, "Banker.Consignment.LegacyGreeting");
         }
 
         protected static bool TryGetConsignmentMerchant(GamePlayer player, VaultType type, out GameConsignmentMerchant consignmentMerchant)

@@ -23,6 +23,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -33,7 +34,7 @@ namespace DOL.GS.Spells
 
 	  public override void OnEffectStart(GameSpellEffect effect)
 	  {
-			effect.Owner.TempProperties.SetProperty(Damage_Reduction, 100000);         
+			effect.Owner.TempProperties.SetProperty(Damage_Reduction, 100000);
 		 GameEventMgr.AddHandler(effect.Owner, GameLivingEvent.AttackedByEnemy, new DOLEventHandler(OnAttack));
 
 		 eChatType toLiving = (Spell.Pulse == 0) ? eChatType.CT_Spell : eChatType.CT_SpellPulse;
@@ -52,7 +53,7 @@ namespace DOL.GS.Spells
 	  public override int OnEffectExpires(GameSpellEffect effect, bool noMessages)
 	  {
 		 GameEventMgr.RemoveHandler(effect.Owner, GameLivingEvent.AttackedByEnemy, new DOLEventHandler(OnAttack));
-			effect.Owner.TempProperties.RemoveProperty(Damage_Reduction);         
+			effect.Owner.TempProperties.RemoveProperty(Damage_Reduction);
 		 if (!noMessages && Spell.Pulse == 0)
 		 {
 			MessageToLiving(effect.Owner, Spell.Message3, eChatType.CT_SpellExpires);
@@ -67,10 +68,10 @@ namespace DOL.GS.Spells
 	  }
 
 	  private void OnAttack(DOLEvent e, object sender, EventArgs arguments)
-	  {         
+	  {
 		 GameLiving living = sender as GameLiving;
 		 if (living == null) return;
-		 AttackedByEnemyEventArgs attackedByEnemy = arguments as AttackedByEnemyEventArgs;         
+		 AttackedByEnemyEventArgs attackedByEnemy = arguments as AttackedByEnemyEventArgs;
 		 AttackData ad = null;
 		 if (attackedByEnemy != null)
 			ad = attackedByEnemy.AttackData;
@@ -88,13 +89,13 @@ namespace DOL.GS.Spells
 
 		 //TODO correct messages
 			if (ad.Damage > 0)
-			MessageToLiving(ad.Target, string.Format("The damage reduction absorbs {0} damage!", damageAbsorbed), eChatType.CT_Spell);
-			MessageToLiving(ad.Attacker, string.Format("A damage reduction absorbs {0} damage of your attack!", damageAbsorbed), eChatType.CT_Spell);
+			MessageToLiving(ad.Target, LanguageMgr.GetTranslation((ad.Target as GamePlayer)?.Client.Account.Language, "DamageReductionPowerReturn.AbsorbsDamage", damageAbsorbed), eChatType.CT_Spell);
+			MessageToLiving(ad.Attacker, LanguageMgr.GetTranslation((ad.Attacker as GamePlayer)?.Client.Account.Language, "DamageReductionPowerReturn.AbsorbsYourAttack", damageAbsorbed), eChatType.CT_Spell);
 			if (damageAbsorbed > 0)
-			MessageToCaster("The barrier returns " + damageAbsorbed + " power back to you.", eChatType.CT_Spell);
+			MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.BarrierReturnsPower", damageAbsorbed), eChatType.CT_Spell);
 			Caster.Mana = Caster.Mana + damageAbsorbed;
 			if (Caster.Mana == Caster.MaxMana)
-				MessageToCaster("You cannot absorb any more power.", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.CannotAbsorbPower"), eChatType.CT_SpellResisted);
 
 			if (damagereduction <= 0)
 		 {
@@ -111,7 +112,7 @@ namespace DOL.GS.Spells
 	  protected virtual void OnDamageAbsorbed(AttackData ad, int DamageAmount)
 	  {
 	  }
-	  
+
 	  public override DbPlayerXEffect GetSavedEffect(GameSpellEffect e)
 	  {
 		 if ( //VaNaTiC-> this cannot work, cause PulsingSpellEffect is derived from object and only implements IConcEffect

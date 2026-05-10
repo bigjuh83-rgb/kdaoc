@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -35,7 +35,7 @@ namespace DOL.GS.Trainer
 		}
 
 		public const string PRACTICE_WEAPON_ID = "practice_dirk";
-		
+
 		public AlbionRogueTrainer() : base(eChampionTrainerType.AlbionRogue)
 		{
 		}
@@ -48,14 +48,14 @@ namespace DOL.GS.Trainer
 		public override bool Interact(GamePlayer player)
 		{
 			if (!base.Interact(player)) return false;
-			
+
 			// check if class matches
 			if (player.CharacterClass.ID == (int)TrainedClass)
 			{
 				// player can be promoted
 				if (player.Level>=5)
 				{
-					player.Out.SendMessage(this.Name + " says, \"You must now seek your training elsewhere. Which path would you like to follow? [Infiltrator], [Minstrel], or [Scout]?\"", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.RoguePaths", this.Name), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 				}
 				else
 				{
@@ -65,7 +65,7 @@ namespace DOL.GS.Trainer
 				// ask for basic equipment if player doesnt own it
 				if (player.Inventory.GetFirstItemByID(PRACTICE_WEAPON_ID, eInventorySlot.MinEquipable, eInventorySlot.LastBackpack) == null)
 				{
-					player.Out.SendMessage(this.Name + " says, \"Do you require a [practice weapon]?\"",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StarterTrainer.PracticeWeapon", this.Name),eChatType.CT_Say,eChatLoc.CL_PopupWindow);
 				}
 			}
 			else
@@ -88,30 +88,34 @@ namespace DOL.GS.Trainer
 
 			switch (text) {
 				case "Infiltrator":
+				case "인필트레이터":
 					if(player.Race == (int) eRace.Briton || player.Race == (int) eRace.Saracen || player.Race == (int) eRace.Inconnu){
-						player.Out.SendMessage(this.Name + " says, \"You seek a tough life if you go that path. The life of an Infiltrator involves daily use of his special skills. The Guild of Shadows has made its fortune by using them to sneak, hide, disguise, backstab, and spy on the enemy. Without question they are an invaluable asset to Albion.\"",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.Rogue.Info.Infiltrator", this.Name), eChatType.CT_Say,eChatLoc.CL_PopupWindow);
 					}
 					else{
-						player.Out.SendMessage(this.Name + " says, \"The path of an Infiltrator is not available to your race. Please choose another.\"",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StarterTrainer.ClassUnavailable", this.Name, "Infiltrator"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 					}
 					return true;
 				case "Minstrel":
+				case "민스트럴":
 					if(player.Race == (int) eRace.Briton || player.Race == (int) eRace.Saracen || player.Race == (int) eRace.Highlander){
-						player.Out.SendMessage(this.Name + " says, \"Ah! To sing the victories of Albion! To give praise to those who fight to keep the light of Camelot eternal. Many have studied their skill within the walls of The Academy and come forth to defend this realm. Without their magical songs, many would not be here today.\"",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.Rogue.Info.Minstrel", this.Name), eChatType.CT_Say,eChatLoc.CL_PopupWindow);
 					}
 					else{
-						player.Out.SendMessage(this.Name + " says, \"The path of a Minstrel is not available to your race. Please choose another.\"",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StarterTrainer.ClassUnavailable", this.Name, "Minstrel"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 					}
 					return true;
 				case "Scout":
+				case "스카우트":
 					if(player.Race == (int) eRace.Briton || player.Race == (int) eRace.Saracen || player.Race == (int) eRace.Highlander || player.Race == (int) eRace.Inconnu){
-						player.Out.SendMessage(this.Name + " says, \"Ah! You wish to join the Defenders of Albion eh? That is quite a good choice for a Rogue. A Scouts accuracy with a bow is feared by all our enemies and has won Albion quite a few battles.\"",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.Rogue.Info.Scout", this.Name), eChatType.CT_Say,eChatLoc.CL_PopupWindow);
 					}
 					else{
-						player.Out.SendMessage(this.Name + " says, \"The path of a Scout is not available to your race. Please choose another.\"",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StarterTrainer.ClassUnavailable", this.Name, "Scout"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 					}
 					return true;
 				case "practice weapon":
+				case "연습용 무기":
 					if (player.Inventory.GetFirstItemByID(PRACTICE_WEAPON_ID, eInventorySlot.Min_Inv, eInventorySlot.Max_Inv) == null)
 					{
 						player.ReceiveItem(this,PRACTICE_WEAPON_ID);

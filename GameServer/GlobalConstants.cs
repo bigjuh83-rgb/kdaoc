@@ -122,7 +122,7 @@ namespace DOL.GS
 			{eAttackResult.HitStyle, 11},
 			{eAttackResult.Any, 20},
 	    };
-		
+
 		public static byte GetAttackResultByte(eAttackResult attResult)
 		{
 			return AttackResultByte.TryGetValue(attResult, out byte value) ? value : (byte) 0;
@@ -171,6 +171,12 @@ namespace DOL.GS
 			}
 
 			return "Unknown";
+		}
+
+		public static string StatToName(eStat stat, string language)
+		{
+			string name = StatToName(stat);
+			return TranslateConstant(language, $"GlobalConstants.Stat.{stat}", name);
 		}
 
 		/// <summary>
@@ -229,6 +235,12 @@ namespace DOL.GS
 			return Enum.GetName(typeof(eInstrumentType), instrumentTypeID);
 		}
 
+		public static string InstrumentTypeToName(int instrumentTypeID, string language)
+		{
+			string name = InstrumentTypeToName(instrumentTypeID);
+			return TranslateConstant(language, $"GlobalConstants.InstrumentType.{name}", name);
+		}
+
 		public static string AmmunitionTypeToDamageName(int ammutype)
 		{
 			ammutype &= 0x3;
@@ -239,6 +251,12 @@ namespace DOL.GS
 					case 3: return "X-heavy";
 			}
 			return "light";
+		}
+
+		public static string AmmunitionTypeToDamageName(int ammutype, string language)
+		{
+			string name = AmmunitionTypeToDamageName(ammutype);
+			return TranslateConstant(language, $"GlobalConstants.AmmunitionDamage.{name}", name);
 		}
 
 		public static string AmmunitionTypeToRangeName(int ammutype)
@@ -253,6 +271,12 @@ namespace DOL.GS
 			return "short";
 		}
 
+		public static string AmmunitionTypeToRangeName(int ammutype, string language)
+		{
+			string name = AmmunitionTypeToRangeName(ammutype);
+			return TranslateConstant(language, $"GlobalConstants.AmmunitionRange.{name}", name);
+		}
+
 		public static string AmmunitionTypeToAccuracyName(int ammutype)
 		{
 			ammutype = (ammutype >> 4) & 0x3;
@@ -265,9 +289,21 @@ namespace DOL.GS
 			return "reduced";
 		}
 
+		public static string AmmunitionTypeToAccuracyName(int ammutype, string language)
+		{
+			string name = AmmunitionTypeToAccuracyName(ammutype);
+			return TranslateConstant(language, $"GlobalConstants.AmmunitionAccuracy.{name}", name);
+		}
+
 		public static string ShieldTypeToName(int shieldTypeID)
 		{
 			return Enum.GetName(typeof(ShieldLevel), shieldTypeID);
+		}
+
+		public static string ShieldTypeToName(int shieldTypeID, string language)
+		{
+			string name = ShieldTypeToName(shieldTypeID);
+			return TranslateConstant(language, $"GlobalConstants.ShieldType.{name}", name);
 		}
 
 		public static string ArmorLevelToName(int armorLevel, eRealm realm)
@@ -317,6 +353,12 @@ namespace DOL.GS
 			return Enum.GetName(typeof(eWeaponDamageType), weaponDamageTypeID);
 		}
 
+		public static string WeaponDamageTypeToName(int weaponDamageTypeID, string language)
+		{
+			string name = WeaponDamageTypeToName(weaponDamageTypeID);
+			return TranslateConstant(language, $"GlobalConstants.WeaponDamageType.{name}", name);
+		}
+
 		public static string NameToShortName(string name)
 		{
 			string[] values = name.Trim().ToLower().Split(' ');
@@ -334,6 +376,12 @@ namespace DOL.GS
 			if (handFlag == 1) return "twohanded";
 			if (handFlag == 2) return "lefthand";
 			return "both";
+		}
+
+		public static string ItemHandToName(int handFlag, string language)
+		{
+			string name = ItemHandToName(handFlag);
+			return TranslateConstant(language, $"GlobalConstants.ItemHand.{name}", name);
 		}
 
 		public static string ObjectTypeToName(int objectTypeID)
@@ -396,6 +444,12 @@ namespace DOL.GS
 			return "unknown (item)";
 		}
 
+		public static string ObjectTypeToName(int objectTypeID, string language)
+		{
+			string name = ObjectTypeToName(objectTypeID);
+			return TranslateConstant(language, $"GlobalConstants.ObjectType.{objectTypeID}", name);
+		}
+
 		//This method translates an InventoryTypeID to a string
 		public static string SlotToName(int slotID)
 		{
@@ -426,6 +480,12 @@ namespace DOL.GS
 				case 99: return "rightrear saddlebag";
 			}
 			return "generic inventory";
+		}
+
+		public static string SlotToName(int slotID, string language)
+		{
+			string name = SlotToName(slotID);
+			return TranslateConstant(language, $"GlobalConstants.Slot.{slotID}", name);
 		}
 
 		//This method translates a string to an InventorySlotID
@@ -598,6 +658,12 @@ namespace DOL.GS
 					default: return string.Empty;
 			}
 		}
+
+		public static string RealmToName(eRealm realm, string language)
+		{
+			string name = RealmToName(realm);
+			return TranslateConstant(language, $"GlobalConstants.Realm.{realm}", name);
+		}
 		public static int EmblemOfRealm(eRealm realm)
 		{
 			switch (realm)
@@ -636,6 +702,12 @@ namespace DOL.GS
 			}
 		}
 
+		public static string PropertyToName(eProperty property, string language)
+		{
+			string name = PropertyToName(property);
+			return TranslateConstant(language, $"GlobalConstants.Property.{property}", name);
+		}
+
 		public static string DamageTypeToName(eDamageType damage)
 		{
 			switch (damage)
@@ -653,6 +725,22 @@ namespace DOL.GS
 					case eDamageType.Thrust: return "Thrust";
 					default: return "unknown damagetype " + damage.ToString();
 			}
+		}
+
+		public static string DamageTypeToName(eDamageType damage, string language)
+		{
+			string name = DamageTypeToName(damage);
+			return TranslateConstant(language, $"GlobalConstants.DamageType.{damage}", name);
+		}
+
+		private static string TranslateConstant(string language, string key, string fallback)
+		{
+			if (string.IsNullOrEmpty(language) || string.IsNullOrEmpty(fallback))
+				return fallback;
+
+			return LanguageMgr.TryGetTranslation(out string translation, language, key) && !string.IsNullOrEmpty(translation)
+				? translation
+				: fallback;
 		}
 
 		public static string CraftLevelToCraftTitle(GameClient client, int craftLevel)
@@ -892,7 +980,7 @@ namespace DOL.GS
 					default: return 0;
 			}
 		}
-		
+
 		// webdisplay enums: they are processed via /webdisplay command
 		public enum eWebDisplay: byte
 		{
@@ -900,15 +988,15 @@ namespace DOL.GS
 			position 	= 0x01,
 			template	= 0x02,
 			equipment	= 0x04,
-			craft		= 0x08,			
+			craft		= 0x08,
 		}
-		
+
 		#region AllowedClassesRaces
 		/// <summary>
 		/// All possible player races
 		/// </summary>
 		public static readonly Dictionary<eRace, Dictionary<eStat, int>> STARTING_STATS_DICT = new Dictionary<eRace, Dictionary<eStat, int>>()
-		{ 
+		{
 			{ eRace.Unknown, new Dictionary<eStat, int>()			{{eStat.STR, 60}, {eStat.CON, 60}, {eStat.DEX, 60}, {eStat.QUI, 60}, {eStat.INT, 60}, {eStat.PIE, 60}, {eStat.EMP, 60}, {eStat.CHR, 60}, }},
 			{ eRace.Briton, new Dictionary<eStat, int>()			{{eStat.STR, 60}, {eStat.CON, 60}, {eStat.DEX, 60}, {eStat.QUI, 60}, {eStat.INT, 60}, {eStat.PIE, 60}, {eStat.EMP, 60}, {eStat.CHR, 60}, }},
 			{ eRace.Avalonian, new Dictionary<eStat, int>()			{{eStat.STR, 45}, {eStat.CON, 45}, {eStat.DEX, 60}, {eStat.QUI, 70}, {eStat.INT, 80}, {eStat.PIE, 60}, {eStat.EMP, 60}, {eStat.CHR, 60}, }},
@@ -1020,7 +1108,7 @@ namespace DOL.GS
 			{eRace.MidgardMinotaur, eGender.Male},
 			{eRace.HiberniaMinotaur, eGender.Male},
 		};
-		
+
 		/// <summary>
 		/// Class to Gender Constraints
 		/// </summary>
@@ -1029,7 +1117,7 @@ namespace DOL.GS
 			{eCharacterClass.Valkyrie, eGender.Female},
 			{eCharacterClass.Bainshee, eGender.Female},
 		};
-		
+
 		/// <summary>
 		/// Holds all realm rank names
 		/// sirru mod 20.11.06
@@ -1153,7 +1241,7 @@ namespace DOL.GS
 				}
 			}
 		};
-		
+
 		/// <summary>
 		/// Translate Given Race/Gender Combo in Client Language
 		/// </summary>
@@ -1178,10 +1266,10 @@ namespace DOL.GS
 						break;
 				}
 			}
-			
+
             return LanguageMgr.GetTranslation(client, translationID);
 		}
-		
+
 		/// <summary>
 		/// Translate Given Race/Gender Combo in Player Language
 		/// </summary>
@@ -1193,13 +1281,13 @@ namespace DOL.GS
 		{
 			if (player.Client != null)
 				return player.Client.RaceToTranslatedName(race, (int)gender);
-			
+
 			return string.Format("!{0} - {1}!", ((eRace)race).ToString("F"), gender.ToString("F"));
 		}
 		#endregion
-		
+
 	}
-	
+
 	public static class Constants
 	{
 		public static int USE_AUTOVALUES = -1;

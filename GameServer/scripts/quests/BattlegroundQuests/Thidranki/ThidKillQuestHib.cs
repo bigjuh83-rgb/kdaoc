@@ -27,7 +27,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 		private int PlayersKilled = 0;
 		private const int MAX_KILLED = 10;
-		
+
 		// prevent grey killing
 		private const int MIN_PLAYER_CON = -3;
 
@@ -56,7 +56,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 				return minimumLevel;
 			}
 		}
-		
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
@@ -142,7 +142,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 		private static void TalkToPazz(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -160,18 +160,16 @@ namespace DOL.GS.DailyQuest.Hibernia
 					switch (quest.Step)
 					{
 						case 1:
-							PazzHib.SayTo(player, "You will find suitable players in the battlegrounds.");
+							PazzHib.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.SuitablePlayersBattlegrounds"));
 							break;
 						case 2:
-							PazzHib.SayTo(player, "Hello " + player.Name + ", did you [hit your quota]?");
+							PazzHib.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HitQuotaPrompt", player.Name));
 							break;
 					}
 				}
 				else
 				{
-					PazzHib.SayTo(player, "Hello "+ player.Name +", I am Pazz. My master, Fen, has tasked me with collecting bones for a project he's working on. "+
-					                     "I'm way behind quota and could use some... subcontractors to [help me out]. \n\n"+
-					                     "\nCan you lend me a hand? A leg could probably work too.");
+					PazzHib.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.BGKillIntro", player.Name));
 				}
 			}
 				// The player whispered to the NPC
@@ -183,7 +181,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 					switch (wArgs.Text)
 					{
 						case "help me out":
-							player.Out.SendQuestSubscribeCommand(PazzHib, QuestMgr.GetIDForQuestType(typeof(ThidKillQuestHib)), "Will you undertake " + questTitle + "?");
+							player.Out.SendQuestSubscribeCommand(PazzHib, QuestMgr.GetIDForQuestType(typeof(ThidKillQuestHib)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.SubscribePrompt", questTitle));
 							break;
 					}
 				}
@@ -192,14 +190,15 @@ namespace DOL.GS.DailyQuest.Hibernia
 					switch (wArgs.Text)
 					{
 						case "hit your quota":
+						case "목표":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Ugh, some of these are still dripping. Well done, he'll be pleased.", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.BonesComplete"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
@@ -250,11 +249,11 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and shed some blood!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueBloodshed"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -284,7 +283,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for helping me.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -292,7 +291,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 				if (!PazzHib.GiveQuest(typeof (ThidKillQuestHib), player, 1))
 					return;
 
-				PazzHib.SayTo(player, "You will find suitable players in the frontiers or in battlegrounds.");
+				PazzHib.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.SuitablePlayersFrontiersOrBattlegrounds"));
 
 			}
 		}
@@ -311,9 +310,9 @@ namespace DOL.GS.DailyQuest.Hibernia
 				switch (Step)
 				{
 					case 1:
-						return "You will find suitable players in the battlegrounds. \nPlayers Killed: ("+ PlayersKilled +" | "+ MAX_KILLED +")";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.BattlegroundPlayersKilled", PlayersKilled, MAX_KILLED);
 					case 2:
-						return "Return to Pazz in the Thidranki Portal Keep for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToPazz", "Thidranki Portal Keep");
 				}
 				return base.Description;
 			}
@@ -335,9 +334,9 @@ namespace DOL.GS.DailyQuest.Hibernia
 			if (gArgs.Target.Realm == 0 || gArgs.Target.Realm == player.Realm || gArgs.Target is not GamePlayer ||
 			    !(player.GetConLevel(gArgs.Target) > MIN_PLAYER_CON)) return;
 			PlayersKilled++;
-			player.Out.SendMessage("[Daily] Enemy Killed: (" + PlayersKilled + " | " + MAX_KILLED + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DailyEnemyKilled", PlayersKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (PlayersKilled >= MAX_KILLED)
 			{
 				// FinishQuest or go back to Dean
@@ -358,7 +357,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 			}
 			else
 			{
-				m_questPlayer.Out.SendMessage("Clear one slot of your inventory for your reward", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ClearInventorySlots", 1), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 
 		}

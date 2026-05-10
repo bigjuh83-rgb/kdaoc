@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -51,25 +52,25 @@ namespace DOL.GS.RealmAbilities
                 m_player = living as GamePlayer;
                 if (m_player.TargetObject == null)
                 {
-                    m_player.Out.SendMessage("You need a target for this ability!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "RealmAbility.Message.NeedTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     m_player.DisableSkill(this, 3 * 1000);
                     return;
                 }
                 if (!(m_player.TargetObject is GamePlayer))
                 {
-                    m_player.Out.SendMessage("This work only on players!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "RealmAbility.SelectiveBlindness.PlayersOnly"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     m_player.DisableSkill(this, 3 * 1000);
                     return;
                 }
                 if (!GameServer.ServerRules.IsAllowedToAttack(m_player, (GamePlayer)m_player.TargetObject, true))
                 {
-                    m_player.Out.SendMessage("This work only on enemies!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                    m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "RealmAbility.SelectiveBlindness.EnemiesOnly"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
                     m_player.DisableSkill(this, 3 * 1000);
                     return;
                 }
                 if ( !m_player.IsWithinRadius( m_player.TargetObject, SpellRange ) )
                 {
-                    m_player.Out.SendMessage(m_player.TargetObject + " is too far away!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                    m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "RealmAbility.Message.TargetTooFarAway", m_player.TargetObject), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
                     m_player.DisableSkill(this, 3 * 1000);
                     return;
                 }
@@ -77,11 +78,11 @@ namespace DOL.GS.RealmAbilities
                 {
 					if (radiusPlayer == m_player)
 					{
-						radiusPlayer.MessageToSelf("You cast " + this.Name + "!", eChatType.CT_Spell);
+						radiusPlayer.MessageToSelf(LanguageMgr.GetTranslation(radiusPlayer.Client.Account.Language, "RealmAbility.Generic.CastSelf", Name), eChatType.CT_Spell);
 					}
 					else
 					{
-						radiusPlayer.MessageFromArea(m_player, m_player.Name + " casts a spell!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+						radiusPlayer.MessageFromArea(m_player, LanguageMgr.GetTranslation(radiusPlayer.Client.Account.Language, "RealmAbility.Message.CasterCastsSpell", m_player.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 					}
 
                     radiusPlayer.Out.SendSpellCastAnimation(m_player, 7059, 0);
@@ -91,7 +92,7 @@ namespace DOL.GS.RealmAbilities
                 {
                     m_player.RealmAbilityCastTimer.Stop();
                     m_player.RealmAbilityCastTimer = null;
-                    m_player.Out.SendMessage("You cancel your Spell!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                    m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "RealmAbility.Message.CancelSpell"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                 }
 
                 m_targetPlayer = m_player.TargetObject as GamePlayer;
@@ -109,13 +110,13 @@ namespace DOL.GS.RealmAbilities
 
             if (!GameServer.ServerRules.IsAllowedToAttack(m_player, m_targetPlayer, true))
             {
-                m_player.Out.SendMessage("This work only on enemies.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "RealmAbility.SelectiveBlindness.EnemiesOnlyPeriod"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
                 m_player.DisableSkill(this, 3 * 1000);
                 return;
             }
             if ( !m_player.IsWithinRadius( m_targetPlayer, SpellRange ) )
             {
-                m_player.Out.SendMessage(m_targetPlayer + " is too far away.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "RealmAbility.Message.TargetTooFarAwayPeriod", m_targetPlayer), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
                 m_player.DisableSkill(this, 3 * 1000);
                 return;
             }

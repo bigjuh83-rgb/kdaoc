@@ -3,6 +3,7 @@
 ## All
 SetGuardName.Commander:		Commander of {0}
 SetGuardName.Hastener:		Hastener
+SetGuardName.Gatekeeper:	Gatekeeper
 SetGuardName.Renegade:		Renegade {0}
 SetGuardName.TowerCaptain:	Tower Captain
 

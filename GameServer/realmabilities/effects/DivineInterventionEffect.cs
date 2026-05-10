@@ -6,11 +6,12 @@ using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
 using DOL.GS.PlayerClass;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public class DivineInterventionEffect : TimedEffect, IGameEffect
 	{
@@ -43,7 +44,7 @@ namespace DOL.GS.RealmAbilities
 
 			base.Start(living);
 
-			m_playerOwner.Out.SendMessage("You group is protected by a pool of healing!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+			m_playerOwner.Out.SendMessage(LanguageMgr.GetTranslation(m_playerOwner.Client.Account.Language, "RealmAbility.DivineInterventionEffect.GroupProtected"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 			GameEventMgr.AddHandler(m_group, GroupEvent.MemberJoined, new DOLEventHandler(PlayerJoinedGroup));
 			GameEventMgr.AddHandler(m_group, GroupEvent.MemberDisbanded, new DOLEventHandler(PlayerDisbandedGroup));
 
@@ -55,10 +56,10 @@ namespace DOL.GS.RealmAbilities
 					p.Out.SendSpellEffectAnimation(living, gp, 7036, 0, false, 1);
 				}
 
-				if (gp == m_playerOwner) 
+				if (gp == m_playerOwner)
 					continue;
 
-				gp.Out.SendMessage("You are protected by a pool of healing!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+				gp.Out.SendMessage(LanguageMgr.GetTranslation(gp.Client.Account.Language, "RealmAbility.DivineInterventionEffect.Protected"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 				m_affected.Add(gp);
 				GameEventMgr.AddHandler(gp, GamePlayerEvent.TakeDamage, new DOLEventHandler(TakeDamage));
                 if (gp.CharacterClass is ClassDisciple)
@@ -81,13 +82,14 @@ namespace DOL.GS.RealmAbilities
 
             if (pjargs.Member is GamePlayer)
             {
-                ((GamePlayer)pjargs.Member).Out.SendMessage("You are protected by a pool of healing!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
-                if (((GamePlayer)pjargs.Member).CharacterClass is ClassDisciple)
+                GamePlayer joinedPlayer = (GamePlayer)pjargs.Member;
+                joinedPlayer.Out.SendMessage(LanguageMgr.GetTranslation(joinedPlayer.Client.Account.Language, "RealmAbility.DivineInterventionEffect.Protected"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                if (joinedPlayer.CharacterClass is ClassDisciple)
                 {
-                    if (((GamePlayer)pjargs.Member).ControlledBrain != null)
+                    if (joinedPlayer.ControlledBrain != null)
                     {
-                        m_affected.Add(((GamePlayer)pjargs.Member).ControlledBrain.Body);
-                        GameEventMgr.AddHandler(((GamePlayer)pjargs.Member).ControlledBrain.Body, GameLivingEvent.TakeDamage, new DOLEventHandler(TakeDamageNPC));
+                        m_affected.Add(joinedPlayer.ControlledBrain.Body);
+                        GameEventMgr.AddHandler(joinedPlayer.ControlledBrain.Body, GameLivingEvent.TakeDamage, new DOLEventHandler(TakeDamageNPC));
                     }
                 }
             }
@@ -101,7 +103,7 @@ namespace DOL.GS.RealmAbilities
 			GameEventMgr.RemoveHandler(pdargs.Member, GamePlayerEvent.TakeDamage, new DOLEventHandler(TakeDamage));
             if (pdargs.Member is GamePlayer)
             {
-                ((GamePlayer)pdargs.Member).Out.SendMessage("You are no longer protected by a pool of healing!", eChatType.CT_SpellExpires, eChatLoc.CL_SystemWindow);
+                ((GamePlayer)pdargs.Member).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)pdargs.Member).Client.Account.Language, "RealmAbility.DivineInterventionEffect.NoLongerProtected"), eChatType.CT_SpellExpires, eChatLoc.CL_SystemWindow);
                 if (((GamePlayer)pdargs.Member).CharacterClass is ClassDisciple)
                 {
                     if (((GamePlayer)pdargs.Member).ControlledBrain != null)
@@ -152,9 +154,9 @@ namespace DOL.GS.RealmAbilities
             GamePlayer petOwner = null;
             petOwner = ((npc as GameNPC).Brain as IControlledBrain).Owner as GamePlayer;
             if (petOwner != null)
-                petOwner.Out.SendMessage("Your " + npc.Name + " was healed by the pool of healing for " + healamount + "!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                petOwner.Out.SendMessage(LanguageMgr.GetTranslation(petOwner.Client.Account.Language, "RealmAbility.DivineInterventionEffect.PetHealed", npc.Name, healamount), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 
-            m_playerOwner.Out.SendMessage("Your pool of healing heals the " + npc.Name + " of " + petOwner.Name + " for " + healamount + "!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+            m_playerOwner.Out.SendMessage(LanguageMgr.GetTranslation(m_playerOwner.Client.Account.Language, "RealmAbility.DivineInterventionEffect.OwnerHealsPet", npc.Name, petOwner.Name, healamount), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 
             npc.ChangeHealth(m_owner, eHealthChangeType.Spell, healamount);
             PoolValue -= dmgamount;
@@ -201,8 +203,8 @@ namespace DOL.GS.RealmAbilities
 				if(!t_player.IsAlive) continue;
 				t_player.Out.SendSpellEffectAnimation(m_owner, player, 8051, 0, false, 1);
 			}
-			player.Out.SendMessage("You are healed by the pool of healing for " + healamount + "!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
-            m_playerOwner.Out.SendMessage("Your pool of healing heals " + player.Name + " for " + healamount + "!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.DivineInterventionEffect.PlayerHealed", healamount), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+            m_playerOwner.Out.SendMessage(LanguageMgr.GetTranslation(m_playerOwner.Client.Account.Language, "RealmAbility.DivineInterventionEffect.OwnerHealsPlayer", player.Name, healamount), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 			player.ChangeHealth(m_owner, eHealthChangeType.Spell, healamount);
 			PoolValue -= dmgamount;
 
@@ -222,7 +224,8 @@ namespace DOL.GS.RealmAbilities
 			{
 				if (l is GamePlayer)
 				{
-					(l as GamePlayer).Out.SendMessage("You are no longer protected by a pool of healing!", eChatType.CT_SpellExpires, eChatLoc.CL_SystemWindow);
+					GamePlayer affectedPlayer = l as GamePlayer;
+					affectedPlayer.Out.SendMessage(LanguageMgr.GetTranslation(affectedPlayer.Client.Account.Language, "RealmAbility.DivineInterventionEffect.NoLongerProtected"), eChatType.CT_SpellExpires, eChatLoc.CL_SystemWindow);
 					GameEventMgr.RemoveHandler(l, GamePlayerEvent.TakeDamage, new DOLEventHandler(TakeDamage));
 				}
 				else
@@ -233,7 +236,7 @@ namespace DOL.GS.RealmAbilities
 			m_affected.Clear();
 			m_group = null;
 		}
-		
+
 		/// <summary>
 		/// Name of the effect
 		/// </summary>
@@ -243,7 +246,7 @@ namespace DOL.GS.RealmAbilities
 		/// Icon to show on players, can be id
 		/// </summary>
 		public override ushort Icon { get { return 3035; } }
-		
+
 		/// <summary>
 		/// Delve Info
 		/// </summary>

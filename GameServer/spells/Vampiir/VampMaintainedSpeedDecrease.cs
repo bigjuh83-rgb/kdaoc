@@ -2,6 +2,7 @@ using System;
 using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -40,7 +41,7 @@ namespace DOL.GS.Spells
 		{
 			if (m_originalTarget == null || Caster.ObjectState != GameObject.eObjectState.Active || m_originalTarget.ObjectState != GameObject.eObjectState.Active)
 			{
-				MessageToCaster("Your spell was cancelled.", eChatType.CT_SpellExpires);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "VampMaintainedSpeedDecrease.SpellCancelled"), eChatType.CT_SpellExpires);
 				effect.Cancel(false);
 				return;
 			}
@@ -50,21 +51,21 @@ namespace DOL.GS.Spells
 				Caster.IsSitting ||
 				(Caster.TargetObject is GameLiving ? m_originalTarget != Caster.TargetObject as GameLiving : true))
 			{
-				MessageToCaster("Your spell was cancelled.", eChatType.CT_SpellExpires);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "VampMaintainedSpeedDecrease.SpellCancelled"), eChatType.CT_SpellExpires);
 				effect.Cancel(false);
 				return;
 			}
 
 			if (!Caster.IsWithinRadius(m_originalTarget, Spell.CalculateEffectiveRange(Caster)))
 			{
-				MessageToCaster("Your target is no longer in range.", eChatType.CT_SpellExpires);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "VampMaintainedSpeedDecrease.TargetNoLongerInRange"), eChatType.CT_SpellExpires);
 				effect.Cancel(false);
 				return;
 			}
 
 			if (!Caster.TargetInView)
 			{
-				MessageToCaster("Your target is no longer in view.", eChatType.CT_SpellExpires);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "VampMaintainedSpeedDecrease.TargetNoLongerInView"), eChatType.CT_SpellExpires);
 				effect.Cancel(false);
 				return;
 			}

@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -48,19 +48,19 @@ namespace DOL.GS
 			if (playerSkills >= 1)
 			{
 				player.CraftingPrimarySkill = TheCraftingSkill;
-				SayTo(player, eChatLoc.CL_PopupWindow, "Hello, " + player.CraftTitle.GetDescription(player) + "! Because you are already a member of our order, you do not need to join. I have changed your primary crafting skill to " + player.CraftingPrimarySkill + ". Please speak to myself or another craft master if you wish to change your primary crafting skill again.");
+				SayTo(player, eChatLoc.CL_PopupWindow, LanguageMgr.GetTranslation(player.Client.Account.Language, "CraftNPC.Interact.AlreadyMemberChangedPrimarySkill", player.CraftTitle.GetDescription(player), player.CraftingPrimarySkill));
 				player.Out.SendUpdatePlayer();
 				player.Out.SendUpdateCraftingSkills();
 				return true;
 			}
-			
+
 			// Dunnerholl : Basic Crafting Master does not give the option to rejoin this craft
 			if (InitialEntersentence != null)
 			{
 				SayTo(player, eChatLoc.CL_PopupWindow, InitialEntersentence);
 			}
-            
-            		
+
+
 			return true;
 		}
 
@@ -73,7 +73,7 @@ namespace DOL.GS
 
 			GamePlayer player = (GamePlayer) source;
 			var playerSkills = player.GetCraftingSkillValue(TheCraftingSkill);
-			
+
 			if (playerSkills >= 1 && text == GUILD_ORDER)
 				return false;
             if(text == GUILD_ORDER)
@@ -91,14 +91,14 @@ namespace DOL.GS
 			player.CraftingPrimarySkill = TheCraftingSkill;
 
 			player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "CraftNPC.CraftNpcDialogResponse.Accepted", ACCEPTED_BY_ORDER_NAME), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-				
+
 			foreach (eCraftingSkill skill in TrainedSkills)
 			{
 				player.AddCraftingSkill(skill, 1);
 			}
 			player.Out.SendUpdatePlayer();
 			player.Out.SendUpdateCraftingSkills();
-			
+
 		}
 	}
 }

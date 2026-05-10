@@ -87,7 +87,7 @@ namespace DOL.GS.Commands
                         stringBuilder.Append($"{pair.Key}  ({pair.Value})\n");
 
                     ChatUtil.SendSystemMessage(client, stringBuilder.ToString());
-                    ChatUtil.SendSystemMessage(client, "This command expects a buff list.\nUse these shortcuts separated by a single comma to build one.");
+                    ChatUtil.SendSystemMessage(client, "PLCommands.Buff.Help", null);
                     return;
                 }
                 else

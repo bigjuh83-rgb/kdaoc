@@ -1,0 +1,7 @@
+﻿# Stablemaster NPC
+
+## Tickets
+GameStableMaster.ReceiveItem.HorseName:			말
+#----> Attention! this must ends with blank character:	"ticket to "
+GameStableMaster.ReceiveItem.TicketTo:			행 승차권
+GameStableMaster.ReceiveItem.UnknownWay:		죄송하지만, 그 승차권은 이 근처 행선지가 아닙니다.

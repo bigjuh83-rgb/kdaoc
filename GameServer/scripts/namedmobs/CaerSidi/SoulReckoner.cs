@@ -134,7 +134,7 @@ namespace DOL.GS
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
                     if (truc != null)
-                        truc.Out.SendMessage(Name + " brushes off your attack!", eChatType.CT_System,eChatLoc.CL_ChatWindow);
+                        truc.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.SoulReckoner.BrushesOffAttack", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
 
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
@@ -147,7 +147,7 @@ namespace DOL.GS
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
                     if (truc != null)
-                        truc.Out.SendMessage("The " + Name + " flickers briefly", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                        truc.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.SoulReckoner.FlickersBriefly", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
 
                     base.TakeDamage(source, damageType, damageAmount, criticalAmount);
                 }
@@ -371,7 +371,7 @@ namespace DOL.GS
             Size = 100;
             Level = 75;
             MaxSpeedBase = 230;
-            Flags = eFlags.GHOST;           
+            Flags = eFlags.GHOST;
 
             Faction = FactionMgr.GetFactionByID(64);
             BodyType = 6;

@@ -1,4 +1,5 @@
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 /*1,Ballista,1,ammo,0.46,1
 2,Catapult,2,ammo,0.39,1
@@ -104,7 +105,7 @@ namespace DOL.GS
 				target.OnAttackedByEnemy(ad);
 
 				Owner.OnAttackEnemy(ad);
-				Owner.Out.SendMessage("The " + this.Name + " hits " + target.Name + " for " + damageAmount + " damage!", eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Hit.Damage", this.Name, target.Name, damageAmount), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
 			}
 			else
 			{
@@ -150,7 +151,7 @@ namespace DOL.GS
 				if (response is LosCheckResponse.True)
 					_owner.FireAfterLosCheck(targetId);
 				else if (response is LosCheckResponse.False)
-					_owner.Owner?.Out.SendMessage("Target is not in view!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+					_owner.Owner?.Out.SendMessage(LanguageMgr.GetTranslation(_owner.Owner.Client.Account.Language, "Siege.Target.NotInView"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 			}
 		}
 	}

@@ -35,17 +35,13 @@ namespace DOL.GS.PacketHandler
 				}
 				else
 				{
-					ReadOnlySpan<char> nameSpan = $"{quest.Name} (Level {quest.Level})";
-					ReadOnlySpan<char> descSpan = $"[Step #{quest.Step}]: {quest.Description}";
+					string name = $"{quest.Name} (Level {quest.Level})";
+					string desc = $"[Step #{quest.Step}]: {quest.Description}";
+					ReadOnlySpan<char> nameSpan = TakeEncodedChunk(name.AsSpan(), byte.MaxValue);
+					ReadOnlySpan<char> descSpan = TakeEncodedChunk(desc.AsSpan(), byte.MaxValue);
 
-					if (nameSpan.Length > byte.MaxValue)
-						nameSpan = nameSpan[..byte.MaxValue];
-
-					if (descSpan.Length > byte.MaxValue)
-						descSpan = descSpan[..byte.MaxValue];
-					
-					pak.WriteByte((byte) nameSpan.Length);
-					pak.WriteShortLowEndian((ushort) descSpan.Length);
+					pak.WriteByte((byte) GetEncodedByteCount(nameSpan));
+					pak.WriteShortLowEndian((ushort) GetEncodedByteCount(descSpan));
 					pak.WriteByte(0); // Quest Zone ID ?
 					pak.WriteByte(0);
 					pak.WriteNonNullTerminatedString(nameSpan); //Write Quest Name without trailing 0
@@ -58,12 +54,13 @@ namespace DOL.GS.PacketHandler
 
 		protected override void SendTaskInfo()
 		{
-			string name = BuildTaskString();
+			string taskName = BuildTaskString();
+			ReadOnlySpan<char> name = TakeEncodedChunk(taskName.AsSpan(), ushort.MaxValue);
 
 			using (var pak = PooledObjectFactory.GetForTick<GSTCPPacketOut>().Init(GetPacketCode(eServerPackets.QuestEntry)))
 			{
 				pak.WriteByte(0); //index
-				pak.WriteShortLowEndian((ushort)name.Length);
+				pak.WriteShortLowEndian((ushort) GetEncodedByteCount(name));
 				pak.WriteByte((byte)0);
 				pak.WriteByte((byte)0);
 				pak.WriteByte((byte)0);

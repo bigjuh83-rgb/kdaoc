@@ -88,7 +88,7 @@ namespace DOL.AI.Brain
 						if (quest != null && quest.Step == 1)
 						{
 							SpawnDemons = true;
-							player.Out.SendMessage("Ha, is this all the forces of Albion have to offer? I expected a whole army leaded by my brother Arthur, but what do they send a little group of adventurers lead by a poor " + player.CharacterClass.Name + "?",eChatType.CT_Say,eChatLoc.CL_ChatWindow);
+							player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Morgana.AlbionForces", player.CharacterClass.Name), eChatType.CT_Say, eChatLoc.CL_ChatWindow);
 							PlayerAreaCheck = true;
 						}
 					}
@@ -101,11 +101,10 @@ namespace DOL.AI.Brain
                 {
 					if(!Morganacast)
                     {
-						BroadcastMessage2("You sense the tower is clear of necromantic ties!");
+						BroadcastMessage2(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Morgana.TowerClear"));
 						if (!Message)
 						{
-							BroadcastMessage("Morgana shouts, \"I cannot believe my creations have been undone so easily! Heed my words mortal! You may have won this battle but I shall return! On that day all who walk this realm will know what fear truly is!" +
-								" The walls of Camelot shall fall and a new order, MY order, shall reign eternal!\"");
+							BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Morgana.CreationsUndone"));
 							Message = true;
 						}
 						foreach (GamePlayer player in Body.GetPlayersInRadius(4000))
@@ -240,7 +239,7 @@ namespace DOL.GS
 						else
 							truc = ((source as GameSummonedPet).Owner as GamePlayer);
 						if (truc != null)
-							truc.Out.SendMessage(Name + " can't be attacked from this distance!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+							truc.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Common.CantAttackFromDistance", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
 						base.TakeDamage(source, damageType, 0, 0);
 						return;
 					}
@@ -359,7 +358,7 @@ namespace DOL.AI.Brain
 						if (brain != null && !brain.HasAggro && target != null && target.IsAlive)
 							brain.AddToAggroList(target, 100);
                     }
-                }					
+                }
             }
 			base.Think();
 		}
@@ -391,7 +390,7 @@ namespace DOL.GS
 						else
 							truc = ((source as GameSummonedPet).Owner as GamePlayer);
 						if (truc != null)
-							truc.Out.SendMessage(Name + " can't be attacked from this distance!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+							truc.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Common.CantAttackFromDistance", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
 						base.TakeDamage(source, damageType, 0, 0);
 						return;
 					}
@@ -464,7 +463,7 @@ namespace DOL.GS
 			{
 				DemonicMinion npc = new DemonicMinion();
 				npc.X = spawn.X + Util.Random(-150, 150);
-				npc.Y = spawn.Y + Util.Random(-150, 150); 
+				npc.Y = spawn.Y + Util.Random(-150, 150);
 				npc.Z = spawn.Z;
 				npc.Heading = 3148;
 				npc.CurrentRegion = CurrentRegion;

@@ -5,6 +5,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -49,7 +50,7 @@ namespace DOL.GS
                         else
                             truc = ((source as GameSummonedPet).Owner as GamePlayer);
                         if (truc != null)
-                            truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
+                            truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
                                 eChatLoc.CL_ChatWindow);
 
                         base.TakeDamage(source, damageType, 0, 0);
@@ -76,7 +77,7 @@ namespace DOL.GS
                         else
                             truc = ((source as GameSummonedPet).Owner as GamePlayer);
                         if (truc != null)
-                            truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
+                            truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
                                 eChatLoc.CL_ChatWindow);
 
                         base.TakeDamage(source, damageType, 0, 0);
@@ -103,7 +104,7 @@ namespace DOL.GS
                         else
                             truc = ((source as GameSummonedPet).Owner as GamePlayer);
                         if (truc != null)
-                            truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
+                            truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
                                 eChatLoc.CL_ChatWindow);
 
                         base.TakeDamage(source, damageType, 0, 0);
@@ -129,7 +130,7 @@ namespace DOL.GS
                         else
                             truc = ((source as GameSummonedPet).Owner as GamePlayer);
                         if (truc != null)
-                            truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
+                            truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
                                 eChatLoc.CL_ChatWindow);
 
                         base.TakeDamage(source, damageType, 0, 0);
@@ -155,7 +156,7 @@ namespace DOL.GS
                         else
                             truc = ((source as GameSummonedPet).Owner as GamePlayer);
                         if (truc != null)
-                            truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
+                            truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
                                 eChatLoc.CL_ChatWindow);
 
                         base.TakeDamage(source, damageType, 0, 0);
@@ -180,7 +181,7 @@ namespace DOL.GS
                         else
                             truc = ((source as GameSummonedPet).Owner as GamePlayer);
                         if (truc != null)
-                            truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
+                            truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
                                 eChatLoc.CL_ChatWindow);
 
                         base.TakeDamage(source, damageType, 0, 0);
@@ -205,7 +206,7 @@ namespace DOL.GS
                         else
                             truc = ((source as GameSummonedPet).Owner as GamePlayer);
                         if (truc != null)
-                            truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
+                            truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
                                 eChatLoc.CL_ChatWindow);
 
                         base.TakeDamage(source, damageType, 0, 0);
@@ -229,7 +230,7 @@ namespace DOL.GS
                         else
                             truc = ((source as GameSummonedPet).Owner as GamePlayer);
                         if (truc != null)
-                            truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
+                            truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
                                 eChatLoc.CL_ChatWindow);
 
                         base.TakeDamage(source, damageType, 0, 0);
@@ -253,7 +254,7 @@ namespace DOL.GS
                         else
                             truc = ((source as GameSummonedPet).Owner as GamePlayer);
                         if (truc != null)
-                            truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
+                            truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
                                 eChatLoc.CL_ChatWindow);
 
                         base.TakeDamage(source, damageType, 0, 0);
@@ -410,13 +411,14 @@ namespace DOL.AI.Brain
             AggroLevel = 100;
             AggroRange = 600;
         }
-        public void BroadcastMessage(String message)
-        {
-            foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
-            {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
-            }
-        }
+        public void BroadcastMessage(string key, params object[] args)
+		{
+			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
+			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+			}
+		}
         private bool RemoveAdds = false;
         public override void Think()
         {
@@ -467,7 +469,7 @@ namespace DOL.AI.Brain
                 RemoveAdds = false;
                 if (spawn_guardians == false)
                 {
-                    BroadcastMessage(String.Format(Body.Name + " summons the Scaths to do his bidding!"));
+                    BroadcastMessage("NamedMobs.Aroon.SummonsScaths", Body.Name);
                     SpawnGuardians();
                     spawn_guardians = true;
                 }
@@ -678,13 +680,14 @@ namespace DOL.AI.Brain
             AggroRange = 1500;
             ThinkInterval = 5000;
         }
-        public void BroadcastMessage(String message)
-        {
-            foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
-            {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
-            }
-        }
+        public void BroadcastMessage(string key, params object[] args)
+		{
+			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
+			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+			}
+		}
         public static bool switch_target = false;
         private GamePlayer randomtarget = null;
 
@@ -718,7 +721,7 @@ namespace DOL.AI.Brain
         {
             if(Message1==false)
             {
-                BroadcastMessage(String.Format(Body.Name + " eyes are glowing, indicating he's being controlled by Aroon."));
+                BroadcastMessage("NamedMobs.Aroon.ControlledEyes", Body.Name);
                 Message1 = true;
             }
             if (Body.InCombat)
@@ -822,8 +825,8 @@ namespace DOL.GS
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
                     if (truc != null)
-                        truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
-                            eChatLoc.CL_ChatWindow);
+                        truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
+                                eChatLoc.CL_ChatWindow);
 
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
@@ -868,13 +871,14 @@ namespace DOL.AI.Brain
             AggroRange = 1500;
             ThinkInterval = 5000;
         }
-        public void BroadcastMessage(String message)
-        {
-            foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
-            {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
-            }
-        }
+        public void BroadcastMessage(string key, params object[] args)
+		{
+			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
+			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+			}
+		}
         public static bool switch_target = false;
         private GamePlayer randomtarget = null;
         private GamePlayer RandomTarget
@@ -904,7 +908,7 @@ namespace DOL.AI.Brain
         {
             if(Aroon.Aroon_slash && Message2==false)
             {
-                BroadcastMessage(String.Format(Body.Name + " eyes are glowing, indicating he's being controlled by Aroon."));
+                BroadcastMessage("NamedMobs.Aroon.ControlledEyes", Body.Name);
                 Message2 = true;
             }
             if (Body.InCombat)
@@ -1005,8 +1009,8 @@ namespace DOL.GS
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
                     if (truc != null)
-                        truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
-                            eChatLoc.CL_ChatWindow);
+                        truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
+                                eChatLoc.CL_ChatWindow);
 
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
@@ -1051,13 +1055,14 @@ namespace DOL.AI.Brain
             AggroRange = 1500;
             ThinkInterval = 5000;
         }
-        public void BroadcastMessage(String message)
-        {
-            foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
-            {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
-            }
-        }
+        public void BroadcastMessage(string key, params object[] args)
+		{
+			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
+			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+			}
+		}
         public static bool switch_target = false;
         private GamePlayer randomtarget = null;
 
@@ -1091,7 +1096,7 @@ namespace DOL.AI.Brain
         {
             if (Aroon.Aroon_thrust && Message3 == false)
             {
-                BroadcastMessage(String.Format(Body.Name + " eyes are glowing, indicating he's being controlled by Aroon."));
+                BroadcastMessage("NamedMobs.Aroon.ControlledEyes", Body.Name);
                 Message3 = true;
             }
             if (Body.InCombat)
@@ -1194,8 +1199,8 @@ namespace DOL.GS
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
                     if (truc != null)
-                        truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
-                            eChatLoc.CL_ChatWindow);
+                        truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
+                                eChatLoc.CL_ChatWindow);
 
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
@@ -1240,13 +1245,14 @@ namespace DOL.AI.Brain
             AggroRange = 1500;
             ThinkInterval = 5000;
         }
-        public void BroadcastMessage(String message)
-        {
-            foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
-            {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
-            }
-        }
+        public void BroadcastMessage(string key, params object[] args)
+		{
+			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
+			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+			}
+		}
         public static bool switch_target = false;
         private GamePlayer randomtarget = null;
 
@@ -1280,7 +1286,7 @@ namespace DOL.AI.Brain
         {
             if (Aroon.Aroon_crush && Message4 == false)
             {
-                BroadcastMessage(String.Format(Body.Name + " eyes are glowing, indicating he's being controlled by Aroon."));
+                BroadcastMessage("NamedMobs.Aroon.ControlledEyes", Body.Name);
                 Message4 = true;
             }
             if (Body.InCombat)
@@ -1384,8 +1390,8 @@ namespace DOL.GS
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
                     if (truc != null)
-                        truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
-                            eChatLoc.CL_ChatWindow);
+                        truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
+                                eChatLoc.CL_ChatWindow);
 
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
@@ -1430,13 +1436,14 @@ namespace DOL.AI.Brain
             AggroRange = 1500;
             ThinkInterval = 5000;
         }
-        public void BroadcastMessage(String message)
-        {
-            foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
-            {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
-            }
-        }
+        public void BroadcastMessage(string key, params object[] args)
+		{
+			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
+			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+			}
+		}
         public static bool switch_target = false;
         private GamePlayer randomtarget = null;
 
@@ -1471,7 +1478,7 @@ namespace DOL.AI.Brain
         {
             if (Aroon.Aroon_body && Message5 == false)
             {
-                BroadcastMessage(String.Format(Body.Name + " eyes are glowing, indicating he's being controlled by Aroon."));
+                BroadcastMessage("NamedMobs.Aroon.ControlledEyes", Body.Name);
                 Message5 = true;
             }
             if (Body.InCombat)
@@ -1575,8 +1582,8 @@ namespace DOL.GS
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
                     if (truc != null)
-                        truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
-                            eChatLoc.CL_ChatWindow);
+                        truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
+                                eChatLoc.CL_ChatWindow);
 
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
@@ -1621,13 +1628,14 @@ namespace DOL.AI.Brain
             AggroRange = 1500;
             ThinkInterval = 5000;
         }
-        public void BroadcastMessage(String message)
-        {
-            foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
-            {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
-            }
-        }
+        public void BroadcastMessage(string key, params object[] args)
+		{
+			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
+			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+			}
+		}
         public static bool switch_target = false;
         private GamePlayer randomtarget = null;
 
@@ -1662,7 +1670,7 @@ namespace DOL.AI.Brain
         {
             if (Aroon.Aroon_cold && Message6 == false)
             {
-                BroadcastMessage(String.Format(Body.Name + " eyes are glowing, indicating he's being controlled by Aroon."));
+                BroadcastMessage("NamedMobs.Aroon.ControlledEyes", Body.Name);
                 Message6 = true;
             }
             if (Body.InCombat)
@@ -1766,8 +1774,8 @@ namespace DOL.GS
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
                     if (truc != null)
-                        truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
-                            eChatLoc.CL_ChatWindow);
+                        truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
+                                eChatLoc.CL_ChatWindow);
 
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
@@ -1812,13 +1820,14 @@ namespace DOL.AI.Brain
             AggroRange = 1500;
             ThinkInterval = 5000;
         }
-        public void BroadcastMessage(String message)
-        {
-            foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
-            {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
-            }
-        }
+        public void BroadcastMessage(string key, params object[] args)
+		{
+			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
+			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+			}
+		}
         public static bool switch_target = false;
         private GamePlayer randomtarget = null;
 
@@ -1853,7 +1862,7 @@ namespace DOL.AI.Brain
         {
             if (Aroon.Aroon_energy && Message7 == false)
             {
-                BroadcastMessage(String.Format(Body.Name + " eyes are glowing, indicating he's being controlled by Aroon."));
+                BroadcastMessage("NamedMobs.Aroon.ControlledEyes", Body.Name);
                 Message7 = true;
             }
             if (Body.InCombat)
@@ -1958,8 +1967,8 @@ namespace DOL.GS
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
                     if (truc != null)
-                        truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
-                            eChatLoc.CL_ChatWindow);
+                        truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
+                                eChatLoc.CL_ChatWindow);
 
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
@@ -2004,13 +2013,14 @@ namespace DOL.AI.Brain
             AggroRange = 1500;
             ThinkInterval = 5000;
         }
-        public void BroadcastMessage(String message)
-        {
-            foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
-            {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
-            }
-        }
+        public void BroadcastMessage(string key, params object[] args)
+		{
+			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
+			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+			}
+		}
         public static bool switch_target = false;
         private GamePlayer randomtarget = null;
 
@@ -2045,7 +2055,7 @@ namespace DOL.AI.Brain
         {
             if (Aroon.Aroon_heat && Message8 == false)
             {
-                BroadcastMessage(String.Format(Body.Name + " eyes are glowing, indicating he's being controlled by Aroon."));
+                BroadcastMessage("NamedMobs.Aroon.ControlledEyes", Body.Name);
                 Message8 = true;
             }
             if (Body.InCombat)
@@ -2150,8 +2160,8 @@ namespace DOL.GS
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
                     if (truc != null)
-                        truc.Out.SendMessage(Name + " is immune to this damage!", eChatType.CT_System,
-                            eChatLoc.CL_ChatWindow);
+                        truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Aroon.ImmuneToThisDamage", Name), eChatType.CT_System,
+                                eChatLoc.CL_ChatWindow);
 
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
@@ -2196,13 +2206,14 @@ namespace DOL.AI.Brain
             AggroRange = 1500;
             ThinkInterval = 5000;
         }
-        public void BroadcastMessage(String message)
-        {
-            foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
-            {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
-            }
-        }
+        public void BroadcastMessage(string key, params object[] args)
+		{
+			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
+			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+			}
+		}
         public static bool switch_target = false;
         private GamePlayer randomtarget = null;
 
@@ -2237,7 +2248,7 @@ namespace DOL.AI.Brain
         {
             if (Aroon.Aroon_heat && Message9 == false)
             {
-                BroadcastMessage(String.Format(Body.Name + " eyes are glowing, indicating he's being controlled by Aroon."));
+                BroadcastMessage("NamedMobs.Aroon.ControlledEyes", Body.Name);
                 Message9 = true;
             }
             if (Body.InCombat)

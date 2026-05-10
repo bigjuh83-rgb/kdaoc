@@ -7,20 +7,20 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&snoop",
         ePrivLevel.Admin,
-        "Snoops",
-        "/snoop <player>")]
+        "AdminCommands.Snoop.Description",
+        "AdminCommands.Snoop.Syntax")]
     public class SnoopCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         /*
          * This command allows for the interception of private messages (Whispers/PMs) and
          * system logs. The use of this tool may be subject to data privacy laws such as
          * GDPR (Europe), CCPA (California), and other regional telecommunications acts.
-         * 
+         *
          * By using this code, the Server Administrator assumes full responsibility for:
          * 1. Informing players that their private communications are not end-to-end encrypted
          *    and may be monitored for moderation or debugging purposes.
          * 2. Ensuring compliance with local wiretapping and data privacy regulations.
-         * 
+         *
          * The authors of this software provide this tool for administrative debugging
          * purposes only and accept no liability for its misuse.
          */
@@ -35,7 +35,7 @@ namespace DOL.GS.Commands
 
                 if (target == null)
                 {
-                    DisplayMessage(client, "Invalid target.");
+                    DisplayMessage(client, T(client, "AdminCommands.Snoop.InvalidTarget"));
                     return;
                 }
             }
@@ -48,19 +48,19 @@ namespace DOL.GS.Commands
 
                 if (target == null)
                 {
-                    DisplayMessage(client, $"No player found for '{targetArg}'.");
+                    DisplayMessage(client, T(client, "AdminCommands.Snoop.NoPlayerFound", targetArg));
                     return;
                 }
             }
 
             if (target.Client.Account.PrivLevel >= client.Account.PrivLevel)
             {
-                DisplayMessage(client, $"You lack sufficient privileges to snoop this player.");
+                DisplayMessage(client, T(client, "AdminCommands.Snoop.InsufficientPrivileges"));
                 return;
             }
 
             bool enabled = SnoopManager.ToggleSnoop(client.Player, target);
-            DisplayMessage(client, enabled ? $"Now snooping {target.Name}." : $"Stopped snooping {target.Name}.");
+            DisplayMessage(client, T(client, enabled ? "AdminCommands.Snoop.Enabled" : "AdminCommands.Snoop.Disabled", target.Name));
         }
     }
 

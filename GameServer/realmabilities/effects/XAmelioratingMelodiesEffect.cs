@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -95,8 +96,8 @@ namespace DOL.GS.RealmAbilities
 						int heal = m_heal;
 						if (p.Health + heal > p.MaxHealth) heal = p.MaxHealth - p.Health;
 						p.ChangeHealth(player, eHealthChangeType.Regenerate, heal);
-						player.Out.SendMessage($"You heal {p.Name} for {heal} hit points.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
-						p.Out.SendMessage($"{player.Name} heals you for {heal} hit points.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Heal.TargetForHitPoints", p.Name, heal), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+						p.Out.SendMessage(LanguageMgr.GetTranslation(p.Client.Account.Language, "RealmAbility.Heal.CasterHealsYouForHitPoints", player.Name, heal), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 					}
 				}
 

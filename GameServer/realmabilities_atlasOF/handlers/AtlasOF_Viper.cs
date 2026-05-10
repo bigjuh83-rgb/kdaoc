@@ -8,7 +8,7 @@ namespace DOL.GS.RealmAbilities
     public class AtlasOF_Viper : TimedRealmAbility
     {
         public AtlasOF_Viper(DbAbility dba, int level) : base(dba, level) { }
-        
+
         int m_duration = 30000; // 30s
 
         public override int MaxLevel { get { return 1; } }
@@ -24,7 +24,7 @@ namespace DOL.GS.RealmAbilities
 
             ECSGameEffectFactory.Create(new(player, m_duration, 1, CreateSpell(living)), static (in i) => new AtlasOF_ViperECSEffect(i));
         }
-        
+
         private SpellHandler CreateSpell(GameLiving owner)
         {
             DbSpell tmpSpell = new DbSpell();
@@ -44,7 +44,7 @@ namespace DOL.GS.RealmAbilities
             tmpSpell.CastTime = 0;
             tmpSpell.EffectGroup = 0; // stacks with other damage adds
             tmpSpell.Range = 0;
-            tmpSpell.Description = "Your damage-over-time poisons will deal double damage.";
+            tmpSpell.Description = DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "RealmAbility.AtlasOF.Viper.Description");
             SpellLine spellLine = GlobalSpellsLines.RealmSpellsSpellLine;
             return ScriptMgr.CreateSpellHandler(owner, new Spell(tmpSpell, 0) , spellLine) as SpellHandler;
         }
@@ -60,7 +60,7 @@ namespace DOL.GS.RealmAbilities
                 return delveInfoList;
             }
         }
-        
+
         public override void AddEffectsInfo(IList<string> list)
         {
             list.Add("Damage-Over-Time effects will deal double damage for 30 seconds");

@@ -49,6 +49,11 @@ public class LostStoneofArawn : BaseQuest
     {
     }
 
+    private static string L(GamePlayer player, string key, params object[] args)
+    {
+        return DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+    }
+
     public override int Level =>
         // Quest Level
         minimumLevel;
@@ -64,18 +69,17 @@ public class LostStoneofArawn : BaseQuest
             switch (Step)
             {
                 case 1:
-                    return "Speak to Honayt\'rt in Wearyall Village.";
+                    return L(m_questPlayer, "Quest.Albion.LostStoneOfArawn.Description1");
                 case 2:
-                    return "Speak to N\'chever in Wearyall Village.";
+                    return L(m_questPlayer, "Quest.Albion.LostStoneOfArawn.Description2");
                 case 3:
-                    return "Speak to O\'honat in Caer Diogel.";
+                    return L(m_questPlayer, "Quest.Albion.LostStoneOfArawn.Description3");
                 case 4:
-                    return "Leave Caer Diogel and head out of town to the West. As you reach the coast, turn North. " +
-                           "The demon that we need to kill usually roams the Plains of Gwyddneau.";
+                    return L(m_questPlayer, "Quest.Albion.LostStoneOfArawn.Description4");
                 case 5:
-                    return "Go back to Caer Diogel and give O'honat the Stone.";
+                    return L(m_questPlayer, "Quest.Albion.LostStoneOfArawn.Description5");
                 case 6:
-                    return "Read the speech to see who it is addressed to, and return it for your reward.";
+                    return L(m_questPlayer, "Quest.Albion.LostStoneOfArawn.Description6");
             }
 
             return base.Description;
@@ -254,6 +258,12 @@ public class LostStoneofArawn : BaseQuest
 
         const int radius = 1500;
         var region = WorldMgr.GetRegion(demonLocation.RegionID);
+        if (region == null)
+        {
+            log.Error("Could not find region " + demonLocation.RegionID + " when trying to create " + questTitle + " demon area.");
+            return;
+        }
+
         demonArea = new Area.Circle("demonic patch", demonLocation.X, demonLocation.Y, demonLocation.Z,
             radius);
         demonArea.CanBroadcast = false;
@@ -290,7 +300,7 @@ public class LostStoneofArawn : BaseQuest
         GameEventMgr.RemoveHandler(GamePlayerEvent.DeclineQuest, SubscribeQuest);
 
         demonArea.UnRegisterPlayerEnter(PlayerEnterDemonArea);
-        WorldMgr.GetRegion(demonLocation.RegionID).RemoveArea(demonArea);
+        WorldMgr.GetRegion(demonLocation.RegionID)?.RemoveArea(demonArea);
 
         GameEventMgr.RemoveHandler(Honaytrt, GameObjectEvent.Interact, TalkToHonaytrt);
         GameEventMgr.RemoveHandler(Honaytrt, GameLivingEvent.WhisperReceive, TalkToHonaytrt);
@@ -333,18 +343,18 @@ public class LostStoneofArawn : BaseQuest
         Nyaegha.AddToWorld();
 
         Nyaegha.StartAttack(player);
-        
+
         GameEventMgr.AddHandler(Nyaegha, GameLivingEvent.Dying, NyaeghaDying);
     }
     private void NyaeghaDying(DOLEvent e, object sender, EventArgs arguments)
     {
         var args = (DyingEventArgs) arguments;
-        
+
         var player = args.Killer as GamePlayer;
-        
+
         if (player == null)
             return;
-        
+
         if (player.Group != null)
         {
             foreach (var gpl in player.Group.GetPlayersInTheGroup())
@@ -356,7 +366,7 @@ public class LostStoneofArawn : BaseQuest
         {
             AdvanceAfterKill(player);
         }
-        
+
         GameEventMgr.RemoveHandler(Nyaegha, GameLivingEvent.Dying, NyaeghaDying);
         Nyaegha.Delete();
     }
@@ -366,7 +376,7 @@ public class LostStoneofArawn : BaseQuest
         if (quest is not {Step: 4}) return;
         if (!player.Inventory.IsSlotsFree(1, eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack))
             player.Out.SendMessage(
-                "You dont have enough room for " + lost_stone_of_arawn.Name + " and drops on the ground.",
+                L(player, "Quest.Albion.LostStoneOfArawn.NoRoomForStone", lost_stone_of_arawn.Name),
                 eChatType.CT_Important, eChatLoc.CL_SystemWindow);
         GiveItem(player, lost_stone_of_arawn);
         quest.Step = 5;
@@ -393,10 +403,10 @@ public class LostStoneofArawn : BaseQuest
         {
             try
             {
-                // player near demon           
+                // player near demon
                 SendSystemMessage(player,
-                    "This is Marw Gwlad. The ground beneath your feet is cracked and burned, and the air holds a faint scent of brimstone.");
-                player.Out.SendMessage("Nyaegha ambushes you!", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+                    L(player, "Quest.Albion.LostStoneOfArawn.EnterDemonArea"));
+                player.Out.SendMessage(L(player, "Quest.Albion.LostStoneOfArawn.NyaeghaAmbush"), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
                 quest.CreateNyaegha(player);
             }
             finally
@@ -414,7 +424,7 @@ public class LostStoneofArawn : BaseQuest
 
     private static void TalkToHonaytrt(DOLEvent e, object sender, EventArgs args)
     {
-        //We get the player from the event arguments and check if he qualifies		
+        //We get the player from the event arguments and check if he qualifies
         var player = ((SourceEventArgs) args).Source as GamePlayer;
         if (player == null)
             return;
@@ -432,35 +442,30 @@ public class LostStoneofArawn : BaseQuest
                 {
                     case 1:
                         Honaytrt.SayTo(player,
-                            "Thanks for your help! N\'chever, O\'honat and I have been looking for this stone a long time.\n" +
-                            "Speak with N\'chever in Wearyall Village, he will be able to tell you more about the [Stone of Arawn].");
+                            L(player, "Quest.Albion.LostStoneOfArawn.HonaytrtStep1"));
                         break;
                     case 2:
                         Honaytrt.SayTo(player,
-                            "Hey " + player.Name + ", have you visited N\'chever yet? You can find him near Wearyall.");
+                            L(player, "Quest.Albion.LostStoneOfArawn.HonaytrtStep2", player.Name));
                         break;
                     case 3:
                         Honaytrt.SayTo(player,
-                            "Greetings, I heard you are on your way to O\'honat, I'm sure she will help you find what we are searching for.");
+                            L(player, "Quest.Albion.LostStoneOfArawn.HonaytrtStep3"));
                         break;
                     case 4:
                         Honaytrt.SayTo(player,
-                            "Wow, O\'honat really found something eh?\nI knew she could be counted on!");
+                            L(player, "Quest.Albion.LostStoneOfArawn.HonaytrtStep4"));
                         break;
                     case 5:
                         Honaytrt.SayTo(player,
-                            "Oh dear, have you really found the stone?\nPlease bring it to O\'honat first, she has to see it!");
+                            L(player, "Quest.Albion.LostStoneOfArawn.HonaytrtStep5"));
                         break;
                     case 6:
-                        Honaytrt.SayTo(player, "I can't really explain how happy I am, thanks for your help " +
-                                               player.CharacterClass.Name + "!\n" +
-                                               "Here's your [reward].");
+                        Honaytrt.SayTo(player, L(player, "Quest.Albion.LostStoneOfArawn.HonaytrtStep6", player.CharacterClass.Name));
                         break;
                 }
             else
-                Honaytrt.SayTo(player, "Hello " + player.Name +
-                                       ", we live in dark times and only finding the lost Stone of Arawn can save us.\n" +
-                                       "I've been searching for it for several years with no luck, could you maybe [help me] retrieve the stone?");
+                Honaytrt.SayTo(player, L(player, "Quest.Albion.LostStoneOfArawn.HonaytrtGreeting", player.Name));
         }
         // The player whispered to the NPC
         else if (e == GameLivingEvent.WhisperReceive)
@@ -470,29 +475,32 @@ public class LostStoneofArawn : BaseQuest
                 switch (wArgs.Text)
                 {
                     case "help me":
+						case "도와주기":
                         player.Out.SendQuestSubscribeCommand(Honaytrt,
                             QuestMgr.GetIDForQuestType(typeof(LostStoneofArawn)),
-                            "Will you help Honayt\'rt retrieve the [Lost Stone of Arawn]?");
+                            L(player, "Quest.Albion.LostStoneOfArawn.SubscribePrompt"));
                         break;
                 }
             else
                 switch (wArgs.Text)
                 {
-                    case "Stone of Arawn":
+	                    case "Stone of Arawn":
+	                    case "아로운의 돌":
                         if (quest.Step == 1)
                         {
                             quest.Step = 2;
                             Honaytrt.SayTo(player,
-                                "You can find N\'chever North of Wearyall Village, go and speak to him.");
+                                L(player, "Quest.Albion.LostStoneOfArawn.HonaytrtStoneOfArawn"));
                         }
 
                         break;
                     case "reward":
+                    case "보상":
                         if (quest.Step == 6) quest.FinishQuest();
                         break;
                     case "abort":
                         player.Out.SendCustomDialog(
-                            "Do you really want to abort this quest, \nall items gained during quest will be lost?",
+                            DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"),
                             CheckPlayerAbortQuest);
                         break;
                 }
@@ -513,7 +521,7 @@ public class LostStoneofArawn : BaseQuest
 
     private static void TalkToNchever(DOLEvent e, object sender, EventArgs args)
     {
-        //We get the player from the event arguments and check if he qualifies		
+        //We get the player from the event arguments and check if he qualifies
         var player = ((SourceEventArgs) args).Source as GamePlayer;
         if (player == null)
             return;
@@ -527,33 +535,30 @@ public class LostStoneofArawn : BaseQuest
                 switch (quest.Step)
                 {
                     case 1:
-                        Nchever.SayTo(player, "Hey " + player.Name +
-                                              ", welcome to Wearyall Village, if you need some rest you can visit our stables.\n" +
-                                              "There, you'll also find my dear friend Honayt\'rt, I feel you will like each other!");
+                        Nchever.SayTo(player, L(player, "Quest.Albion.LostStoneOfArawn.NcheverStep1", player.Name));
                         break;
                     case 2:
                         Nchever.SayTo(player,
-                            "Greetings, I see you spoke with Honayt\'rt about our mission already. We are searching for a [stone], do you want to help us?");
+                            L(player, "Quest.Albion.LostStoneOfArawn.NcheverStep2"));
                         break;
                     case 3:
                         Nchever.SayTo(player,
-                            "Hey " + player.CharacterClass.Name +
-                            ", have you visited O\'honat yet? You can find her near Caer Diogel's ramparts.");
+                            L(player, "Quest.Albion.LostStoneOfArawn.NcheverStep3", player.CharacterClass.Name));
                         break;
                     case 4:
-                        Nchever.SayTo(player, "Unbelievable, O\'honat really found something?\nThat's great!");
+                        Nchever.SayTo(player, L(player, "Quest.Albion.LostStoneOfArawn.NcheverStep4"));
                         break;
                     case 5:
                         Nchever.SayTo(player,
-                            "Please bring this stone to O\'honat, she will know what we need to do next.");
+                            L(player, "Quest.Albion.LostStoneOfArawn.NcheverStep5"));
                         break;
                     case 6:
                         Nchever.SayTo(player,
-                            "Thanks for showing me the Stone, now bring it to Honayt\'rt at the stables, she will reward you.");
+                            L(player, "Quest.Albion.LostStoneOfArawn.NcheverStep6"));
                         break;
                 }
             else
-                Nchever.SayTo(player, "Greetings, isn\'t it a perfect day?");
+                Nchever.SayTo(player, L(player, "Quest.Albion.LostStoneOfArawn.NcheverGreeting"));
         }
         // The player whispered to the NPC
         else if (e == GameLivingEvent.WhisperReceive)
@@ -567,15 +572,17 @@ public class LostStoneofArawn : BaseQuest
                 switch (wArgs.Text)
                 {
                     case "stone":
+						case "돌":
                         if (quest.Step == 2)
                             Nchever.SayTo(player,
-                                "Visit O\'honat in Caer Diogel and ask her about the [Lost Stone of Arawn], I've been told she usually can be found near the ramparts.");
+                                L(player, "Quest.Albion.LostStoneOfArawn.NcheverStone"));
                         break;
-                    case "Lost Stone of Arawn":
+	                    case "Lost Stone of Arawn":
+	                    case "잃어버린 아로운의 돌":
                         if (quest.Step == 2)
                         {
                             quest.Step = 3;
-                            Nchever.SayTo(player, "Visit O\'honat in Caer Diogel!");
+                            Nchever.SayTo(player, L(player, "Quest.Albion.LostStoneOfArawn.NcheverLostStone"));
                         }
 
                         break;
@@ -585,7 +592,7 @@ public class LostStoneofArawn : BaseQuest
 
     private static void TalkToOhonat(DOLEvent e, object sender, EventArgs args)
     {
-        //We get the player from the event arguments and check if he qualifies		
+        //We get the player from the event arguments and check if he qualifies
         var player = ((SourceEventArgs) args).Source as GamePlayer;
         if (player == null)
             return;
@@ -599,38 +606,31 @@ public class LostStoneofArawn : BaseQuest
                 switch (quest.Step)
                 {
                     case 1:
-                        Ohonat.SayTo(player, "Hello Adventurer, I am " + Ohonat.Name +
-                                             "! Have visited Wearyall Village?\n" +
-                                             "I have some friends there, Honayt\'rt and N\'chever, feel free to speak with them.");
+                        Ohonat.SayTo(player, L(player, "Quest.Albion.LostStoneOfArawn.OhonatStep1", Ohonat.Name));
                         break;
                     case 2:
                         Ohonat.SayTo(player,
-                            "Hey, have you visited Honayt\'rt or N\'chever yet? They are really nice people.");
+                            L(player, "Quest.Albion.LostStoneOfArawn.OhonatStep2"));
                         break;
                     case 3:
                         Ohonat.SayTo(player,
-                            "Did N\'chever send you?\nYeah we are on a mission to find the lost Stone of Arawn. " +
-                            "I heard of a demon who likes to torture animals and other creatures growing stronger in [Gwyddneau], " +
-                            "we have to do something immediately or it will be too late for Albion!");
+                            L(player, "Quest.Albion.LostStoneOfArawn.OhonatStep3"));
                         break;
                     case 4:
                         Ohonat.SayTo(player,
-                            "Leave Caer Diogel and head out of town to the West. As you reach the coast, turn North. " +
-                            "The demon that we need to kill usually roams the Plains of Gwyddneau.\n" +
-                            "Kill the demon and bring me the stone!");
+                            L(player, "Quest.Albion.LostStoneOfArawn.OhonatStep4"));
                         break;
                     case 5:
                         Ohonat.SayTo(player,
-                            "Hey " + player.Name +
-                            ", you are the hero we needed. I really thought it would have been [impossible].");
+                            L(player, "Quest.Albion.LostStoneOfArawn.OhonatStep5", player.Name));
                         break;
                     case 6:
-                        Ohonat.SayTo(player, "I know Honayt\'rt will be very happy. Bring her the speech!");
+                        Ohonat.SayTo(player, L(player, "Quest.Albion.LostStoneOfArawn.OhonatStep6"));
                         break;
                 }
             else
                 Ohonat.SayTo(player,
-                    "Greetings Adventurer, feel free to buy something in our merchant house, if you need anything.");
+                    L(player, "Quest.Albion.LostStoneOfArawn.OhonatGreeting"));
         }
         // The player whispered to the NPC
         else if (e == GameLivingEvent.WhisperReceive)
@@ -648,22 +648,22 @@ public class LostStoneofArawn : BaseQuest
                         {
                             quest.Step = 4;
                             Ohonat.SayTo(player,
-                                "Leave Caer Diogel and head out of town to the West. As you reach the coast, turn North. " +
-                                "The demon that we need to kill usually roams the Plains of Gwyddneau.\n" +
-                                "Kill the demon and bring me the stone!");
+                                L(player, "Quest.Albion.LostStoneOfArawn.OhonatStep4"));
                         }
 
                         break;
                     case "impossible":
+						case "불가능":
                         if (quest.Step == 5)
                         {
                             Ohonat.SayTo(player,
-                                $"Thanks {player.Name}. Now take this scroll and bring it to Honayt\'rt, she needs to read it as soon as possible!\n[Farewell], hero of Albion!");
+                                L(player, "Quest.Albion.LostStoneOfArawn.OhonatImpossible", player.Name));
                             Ohonat.Emote(eEmote.Cheer);
                         }
 
                         break;
                     case "Farewell":
+							case "작별":
                         if (quest.Step == 5 && player.Inventory.IsSlotsFree(1, eInventorySlot.FirstBackpack,
                                 eInventorySlot.LastBackpack))
                         {
@@ -672,7 +672,7 @@ public class LostStoneofArawn : BaseQuest
                             player.Out.SendSpellEffectAnimation(Ohonat, player, 4310, 0, false, 1);
                             new ECSGameTimer(player, timer => TeleportToWearyall(timer, player), 3000);
                             quest.Step = 6;
-                            Ohonat.SayTo(player, "I know Honayt\'rt will be very happy. Bring her the speech!");
+                            Ohonat.SayTo(player, L(player, "Quest.Albion.LostStoneOfArawn.OhonatStep6"));
                         }
 
                         break;
@@ -685,7 +685,7 @@ public class LostStoneofArawn : BaseQuest
                 if (rArgs.Item.Id_nb == lost_stone_of_arawn.Id_nb)
                 {
                     Ohonat.SayTo(player,
-                        $"Thanks {player.Name}. Now take this scroll and bring it to Honayt\'rt, she needs to read it as soon as possible!\n[Farewell], hero of Albion!");
+                        L(player, "Quest.Albion.LostStoneOfArawn.OhonatImpossible", player.Name));
                     Ohonat.Emote(eEmote.Cheer);
                 }
         }
@@ -719,11 +719,11 @@ public class LostStoneofArawn : BaseQuest
 
         if (response == 0x00)
         {
-            SendSystemMessage(player, "Good, now go out there and finish your work!");
+            SendSystemMessage(player, L(player, "Quest.Albion.LostStoneOfArawn.AbortDeclined"));
         }
         else
         {
-            SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+            SendSystemMessage(player, L(player, "Quest.Albion.LostStoneOfArawn.AbortingQuest", questTitle));
             quest.AbortQuest();
         }
     }
@@ -753,7 +753,7 @@ public class LostStoneofArawn : BaseQuest
 
         if (response == 0x00)
         {
-            player.Out.SendMessage("Come back if you are ready to help us in our mission.", eChatType.CT_Say,
+            player.Out.SendMessage(L(player, "Quest.Albion.LostStoneOfArawn.DeclineQuest"), eChatType.CT_Say,
                 eChatLoc.CL_PopupWindow);
         }
         else
@@ -762,10 +762,9 @@ public class LostStoneofArawn : BaseQuest
             if (!Honaytrt.GiveQuest(typeof(LostStoneofArawn), player, 1))
                 return;
 
-            Honaytrt.SayTo(player, "Thank you, lets talk more about the stone!");
+            Honaytrt.SayTo(player, L(player, "Quest.Albion.LostStoneOfArawn.AcceptQuest"));
             Honaytrt.SayTo(player,
-                "N\'chever, O\'honat and I have been looking for this stone a long time.\n" +
-                "Speak with N\'chever in Wearyall Village, he will be able to tell you more about the [Stone of Arawn].");
+                L(player, "Quest.Albion.LostStoneOfArawn.HonaytrtStep1"));
         }
     }
     public override void AbortQuest()
@@ -787,13 +786,13 @@ public class LostStoneofArawn : BaseQuest
                     (m_questPlayer.ExperienceForNextLevel - m_questPlayer.ExperienceForCurrentLevel) / 2, false);
             RemoveItem(m_questPlayer, scroll_wearyall_loststone);
             GiveItem(m_questPlayer, ancient_copper_necklace);
-            m_questPlayer.AddMoney(Money.GetMoney(0, 0, 121, 41, Util.Random(50)), "You receive {0} as a reward.");
+            m_questPlayer.AddMoney(Money.GetMoney(0, 0, 121, 41, Util.Random(50)), L(m_questPlayer, "Quest.Albion.LostStoneOfArawn.MoneyReward"));
 
             base.FinishQuest(); //Defined in Quest, changes the state, stores in DB etc ...
         }
         else
         {
-            m_questPlayer.Out.SendMessage("You do not have enough free space in your inventory!",
+            m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"),
                 eChatType.CT_Important, eChatLoc.CL_SystemWindow);
         }
     }

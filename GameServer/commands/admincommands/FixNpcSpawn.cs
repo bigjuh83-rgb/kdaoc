@@ -10,10 +10,10 @@ namespace DOL.GS.Commands
     [Cmd(
         "&fixnpcspawn",
         ePrivLevel.Admin,
-        "Fix NPC positions and spawn points using navmesh.",
-        "/fixnpcspawn [target|zone|region|world] <SnapDown> <SnapUp> <DryRun(true(default)/false)>",
-        "/fixnpcspawn goto <index> - Teleport to a fixed NPC from the last run",
-        "/fixnpcspawn result <page|clear> - Print results (2k per page) or clear memory")]
+        "AdminCommands.FixNpcSpawn.Description",
+        "AdminCommands.FixNpcSpawn.Syntax.Run",
+        "AdminCommands.FixNpcSpawn.Syntax.Goto",
+        "AdminCommands.FixNpcSpawn.Syntax.Result")]
     public class FixNpcSpawnCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         private const int PAGE_SIZE = 2000;
@@ -62,13 +62,13 @@ namespace DOL.GS.Commands
             else
                 _results.Clear();
 
-            Log(client, $"==== FixNpcSpawn: {scope.ToUpper()} ({nameof(snapDown)}: {snapDown}, {nameof(snapUp)}: {snapUp}, {nameof(dryRun)}: {dryRun}) ====");
+            Log(client, T(client, "AdminCommands.FixNpcSpawn.Started", scope.ToUpper(), nameof(snapDown), snapDown, nameof(snapUp), snapUp, nameof(dryRun), dryRun));
 
             List<GameNPC> npcsToProcess = GetNpcsByScope(client, scope);
 
             if (npcsToProcess == null || npcsToProcess.Count == 0)
             {
-                DisplayMessage(client, "No NPCs found for the selected scope.");
+                DisplayMessage(client, T(client, "AdminCommands.FixNpcSpawn.NoNpcsForScope"));
                 return;
             }
 
@@ -79,19 +79,19 @@ namespace DOL.GS.Commands
         {
             if (_results == null || _results.Count == 0)
             {
-                DisplayMessage(client, "No fix results in memory.");
+                DisplayMessage(client, T(client, "AdminCommands.FixNpcSpawn.NoResultsInMemory"));
                 return;
             }
 
             if (args.Length < 3 || !int.TryParse(args[2], out int index))
             {
-                DisplayMessage(client, "Invalid index.");
+                DisplayMessage(client, T(client, "AdminCommands.FixNpcSpawn.InvalidIndex"));
                 return;
             }
 
             if (index < 0 || index >= _results.Count)
             {
-                DisplayMessage(client, $"Index out of range. Valid range: 0 - {_results.Count - 1}");
+                DisplayMessage(client, T(client, "AdminCommands.FixNpcSpawn.IndexOutOfRange", _results.Count - 1));
                 return;
             }
 
@@ -104,14 +104,14 @@ namespace DOL.GS.Commands
                 (int) Math.Round(result.NewPos.Z),
                 result.Npc.Heading);
 
-            DisplayMessage(client, $"Teleported to result #{index}: {result.Npc.Name} in {result.Zone.Description}.");
+            DisplayMessage(client, T(client, "AdminCommands.FixNpcSpawn.TeleportedToResult", index, result.Npc.Name, result.Zone.Description));
         }
 
         private void ProcessResultSubCommand(GameClient client, string[] args)
         {
             if (_results == null || _results.Count == 0)
             {
-                DisplayMessage(client, "No fix results in memory.");
+                DisplayMessage(client, T(client, "AdminCommands.FixNpcSpawn.NoResultsInMemory"));
                 return;
             }
 
@@ -120,7 +120,7 @@ namespace DOL.GS.Commands
             if (param is "clear")
             {
                 _results = null;
-                DisplayMessage(client, "Cleared results.");
+                DisplayMessage(client, T(client, "AdminCommands.FixNpcSpawn.ResultsCleared"));
                 return;
             }
 
@@ -133,7 +133,7 @@ namespace DOL.GS.Commands
             int startIndex = (page - 1) * PAGE_SIZE;
             int endIndex = Math.Min(startIndex + PAGE_SIZE, totalCount);
 
-            DisplayMessage(client, $"==== Results Page {page}/{totalPages} (Total: {totalCount}) ====");
+            DisplayMessage(client, T(client, "AdminCommands.FixNpcSpawn.ResultsPageHeader", page, totalPages, totalCount));
 
             for (int i = startIndex; i < endIndex; i++)
             {
@@ -142,7 +142,7 @@ namespace DOL.GS.Commands
             }
 
             if (page < totalPages)
-                DisplayMessage(client, $"Type '/fixnpcspawn result {page + 1}' for the next page.");
+                DisplayMessage(client, T(client, "AdminCommands.FixNpcSpawn.NextPageHint", page + 1));
         }
 
         private List<GameNPC> GetNpcsByScope(GameClient client, string scope)
@@ -156,7 +156,7 @@ namespace DOL.GS.Commands
                     if (client.Player.TargetObject is GameNPC targetNpc)
                         list.Add(targetNpc);
                     else
-                        DisplayMessage(client, "Your target is not an NPC.");
+                        DisplayMessage(client, T(client, "AdminCommands.FixNpcSpawn.TargetNotNpc"));
 
                     break;
                 }
@@ -189,7 +189,7 @@ namespace DOL.GS.Commands
                 }
                 default:
                 {
-                    DisplayMessage(client, $"Unknown scope '{scope}'. Use: target, zone, region, world.");
+                    DisplayMessage(client, T(client, "AdminCommands.FixNpcSpawn.UnknownScope", scope));
                     return null;
                 }
             }
@@ -231,10 +231,10 @@ namespace DOL.GS.Commands
                 }
             }
 
-            Log(client, $"Scanned {processed} NPCs. Issues found: {fixedCount}.");
+            Log(client, T(client, "AdminCommands.FixNpcSpawn.ScanComplete", processed, fixedCount));
 
             if (fixedCount > 0)
-                DisplayMessage(client, $"Total results: {_results.Count}. Type '/fixnpcspawn result <page>' to view details or '/fixnpcspawn goto <index>' to teleport.");
+                DisplayMessage(client, T(client, "AdminCommands.FixNpcSpawn.TotalResultsHint", _results.Count));
         }
 
         private static FixResult CheckAndFixNpc(
@@ -283,7 +283,7 @@ namespace DOL.GS.Commands
 
         private void DisplayResult(GameClient client, int index, FixResult result)
         {
-            DisplayMessage(client, $"[{index}]: {result.Npc.Name} (Dist: {result.Distance:F1}) in {result.Zone.Description}");
+            DisplayMessage(client, T(client, "AdminCommands.FixNpcSpawn.ResultLine", index, result.Npc.Name, result.Distance, result.Zone.Description));
         }
 
         private static Vector3? CalculateFixedPosition(

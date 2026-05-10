@@ -15,7 +15,7 @@ namespace DOL.GS
 		protected String[] m_deathAnnounce;
 		public HibCuuldurach() : base()
 		{
-			m_deathAnnounce = new String[] { "The hills seem to weep for the loss of their king." };
+			m_deathAnnounce = new String[] { "NamedMobs.Cuuldurach.DeathAnnounce" };
 		}
 
 		[ScriptLoadedEvent]
@@ -37,9 +37,15 @@ namespace DOL.GS
 		{
 			base.LoadFromDatabase(obj);
 			String[] dragonName = Name.Split(new char[] { ' ' });
-			WorldMgr.GetRegion(CurrentRegionID).AddArea(new Area.Circle(String.Format("{0}'s Lair",
-				dragonName[0]),
-				X, Y, 0, LairRadius + 200));
+			Region region = WorldMgr.GetRegion(CurrentRegionID);
+
+			if (region == null)
+			{
+				log.Error($"Could not create {Name}'s lair area because region {CurrentRegionID} was not found.");
+				return;
+			}
+
+			region.AddArea(new Area.Circle(String.Format("{0}'s Lair", dragonName[0]), X, Y, 0, LairRadius + 200));
 		}
 		public override void TakeDamage(GameObject source, eDamageType damageType, int damageAmount, int criticalAmount)
 		{
@@ -59,7 +65,7 @@ namespace DOL.GS
 						else
 							truc = ((source as GameSummonedPet).Owner as GamePlayer);
 						if (truc != null)
-							truc.Out.SendMessage(Name + " is immune to any damage!", eChatType.CT_System,
+							truc.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Cuuldurach.ImmuneToDamage", Name), eChatType.CT_System,
 								eChatLoc.CL_ChatWindow);
 						base.TakeDamage(source, damageType, 0, 0);
 						return;
@@ -71,11 +77,11 @@ namespace DOL.GS
 				}
 			}
 		}
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(String key, params object[] args)
 		{
 			foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
-				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 			}
 		}
 		/// <summary>
@@ -86,8 +92,8 @@ namespace DOL.GS
 		protected void ReportNews(GameObject killer)
 		{
 			int numPlayers = GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE).Count;
-			String message = String.Format("{0} has been slain by a force of {1} warriors!", Name, numPlayers);
-			NewsMgr.CreateNews(message, killer.Realm, eNewsType.PvE, true);
+			String message = DOL.Language.LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "NamedMobs.Cuuldurach.NewsSlain", Name, numPlayers);
+			NewsMgr.CreateNews(message, killer?.Realm ?? eRealm.None, eNewsType.PvE, true);
 
 			if (Properties.GUILD_MERIT_ON_DRAGON_KILL > 0)
 			{
@@ -146,13 +152,13 @@ namespace DOL.GS
 
 				foreach (String message in m_deathAnnounce)
 				{
-					BroadcastMessage(String.Format(message, Name));
+					BroadcastMessage(message, Name);
 				}
 				if (canReportNews)
 				{
 					ReportNews(killer);
 				}
-			
+
 		}
 		#endregion
 		public override int GetResist(eDamageType damageType)
@@ -248,7 +254,7 @@ namespace DOL.GS
 			if (enemy is GamePlayer player)
 			{
 				foreach (GamePlayer otherPlayer in ClientService.Instance.GetPlayersOfZone(CurrentZone))
-					otherPlayer.Out.SendMessage($"{Name} laughs at the {player.CharacterClass.Name} who has fallen beneath his crushing blow.", eChatType.CT_Say, eChatLoc.CL_ChatWindow);
+					otherPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(otherPlayer.Client.Account.Language, "NamedMobs.Cuuldurach.KillShout", Name, player.CharacterClass.Name), eChatType.CT_Say, eChatLoc.CL_ChatWindow);
 			}
 
 			base.EnemyKilled(enemy);
@@ -262,13 +268,15 @@ namespace DOL.AI.Brain
 	public class HibCuuldurachBrain : StandardMobBrain
 	{
 		private static readonly Logging.Logger log = Logging.LoggerManager.Create(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+		private const string PreparesMassiveAttackKey = "NamedMobs.Cuuldurach.PreparesMassiveAttack";
+		private const string RoarsHorrifyinglyKey = "NamedMobs.Cuuldurach.RoarsHorrifyingly";
 		public HibCuuldurachBrain()
 			: base()
 		{
 			AggroLevel = 100;
 			AggroRange = 800;
 			ThinkInterval = 5000;
-			
+
 			_roamingPathPoints.Add(new Point3D(408646, 706432, 2965));//spawn
 			_roamingPathPoints.Add(new Point3D(399021, 704912, 6212));
 			_roamingPathPoints.Add(new Point3D(391823, 706981, 6212));
@@ -371,7 +379,7 @@ namespace DOL.AI.Brain
 						spawnMessengers.Stop();
 						CanSpawnMessengers = false;
 						Body.TempProperties.RemoveProperty("cuuldurach_messengers");
-					}                   
+					}
                 }
 				#endregion
 				if (!checkForMessangers)
@@ -415,7 +423,7 @@ namespace DOL.AI.Brain
 				foreach (GamePlayer player in ClientService.Instance.GetPlayersOfZone(Body.CurrentZone))
 				{
 					player.Out.SendSoundEffect(2467, 0, 0, 0, 0, 0);//play sound effect for every player in boss currentregion
-					player.Out.SendMessage($"{Body.Name} bellows from the skies, 'Let all who intrude into my domain pay heed. I will seek you out and cast you into the arms of Death if you remain here!'", eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+					player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Cuuldurach.RestlessRoar", Body.Name), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 				}
 
 				Body.Flags = GameNPC.eFlags.FLYING;//make dragon fly mode
@@ -436,7 +444,7 @@ namespace DOL.AI.Brain
 			}
 			if (Body.CurrentRegion.IsNightTime == true && !LockEndRoute)//reset bools to dragon can roam again
 			{
-				LockIsRestless = false; //roam 2nd check		
+				LockIsRestless = false; //roam 2nd check
 				LockEndRoute = true;
 			}
 			if (IsRestless)//special glare phase, during dragon roam it will cast glare like a mad
@@ -488,7 +496,7 @@ namespace DOL.AI.Brain
 			{
 				Body.MaxSpeedBase = 400;
 				short speed = 350;
-				
+
 				if (Body.IsWithinRadius(_roamingPathPoints[_lastRoamIndex], 100))
 					_lastRoamIndex++;
 
@@ -503,11 +511,11 @@ namespace DOL.AI.Brain
 		#region Throw Players
 		List<GamePlayer> Port_Enemys = new List<GamePlayer>();
 		List<GamePlayer> randomlyPickedPlayers = new List<GamePlayer>();
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(String key, params object[] args)
 		{
 			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
-				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 			}
 		}
 		public static List<t> GetRandomElements<t>(IEnumerable<t> list, int elementsCount)//pick X elements from list
@@ -542,7 +550,7 @@ namespace DOL.AI.Brain
 						{
 							if (player != null && player.IsAlive && player.Client.Account.PrivLevel == 1 && HasAggro && player.IsWithinRadius(Body, 2000))
 							{
-								player.Out.SendMessage(Body.Name + " begins flapping his wings violently. You struggle to hold your footing on the ground!",eChatType.CT_Broadcast,eChatLoc.CL_ChatWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Cuuldurach.WingFlap", Body.Name),eChatType.CT_Broadcast,eChatLoc.CL_ChatWindow);
 								switch (Util.Random(1, 5))
 								{
 									case 1: player.MoveTo(Body.CurrentRegionID, 408807, 706640, 4315, 1588); break;//lair spawn point
@@ -565,10 +573,10 @@ namespace DOL.AI.Brain
 		#region Glare Standard
 		List<string> glare_text = new List<string>()
 		{
-			"{0} shouts, 'I will crush your bones {1}!'",
-			"{0} shouts, 'Your end is near little {1}. I will taste your flesh.'",
-			"{0} shouts, '{1} like you should not enter my domain. Your body corpse will rest at my lair.'",
-			"{0} shouts, 'Tasty poor {1}. I will drain your last life essence from your body.'",
+			"NamedMobs.Cuuldurach.GlareTaunt1",
+			"NamedMobs.Cuuldurach.GlareTaunt2",
+			"NamedMobs.Cuuldurach.GlareTaunt3",
+			"NamedMobs.Cuuldurach.GlareTaunt4",
 		};
 		List<GamePlayer> Glare_Enemys = new List<GamePlayer>();
 		public static GamePlayer randomtarget = null;
@@ -596,7 +604,7 @@ namespace DOL.AI.Brain
 					RandomTarget = Target;
 					if (RandomTarget != null && RandomTarget.IsAlive && RandomTarget.IsWithinRadius(Body, Dragon_DD.Range))
 					{
-						BroadcastMessage(String.Format("{0} stares at {1} and prepares a massive attack.", Body.Name, RandomTarget.Name));
+						BroadcastMessage(PreparesMassiveAttackKey, Body.Name, RandomTarget.Name);
 						new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(CastGlare), 6000);
 					}
 					else
@@ -615,7 +623,7 @@ namespace DOL.AI.Brain
 				Body.TurnTo(RandomTarget);
 				Body.CastSpell(Dragon_DD, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
 				string glaretext = glare_text[Util.Random(0, glare_text.Count - 1)];
-				RandomTarget.Out.SendMessage(String.Format(glaretext, Body.Name, RandomTarget.CharacterClass.Name), eChatType.CT_Say, eChatLoc.CL_ChatWindow);
+				RandomTarget.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(RandomTarget.Client.Account.Language, glaretext, Body.Name, RandomTarget.CharacterClass.Name), eChatType.CT_Say, eChatLoc.CL_ChatWindow);
 			}
 			new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(ResetGlare), 2000);
 			return 0;
@@ -634,10 +642,10 @@ namespace DOL.AI.Brain
 		#region Glare Roam
 		List<string> glareroam_text = new List<string>()
 		{
-			"{0} shouts, 'I will crush your bones {1}!'",
-			"{0} shouts, 'Your end is near little {1}. I will taste your flesh.'",
-			"{0} shouts, '{1} like you should not enter my domain. Your body corpse will rest at my lair.'",
-			"{0} shouts, 'Tasty poor {1}. I will drain your last life essence from your body.'",
+			"NamedMobs.Cuuldurach.GlareTaunt1",
+			"NamedMobs.Cuuldurach.GlareTaunt2",
+			"NamedMobs.Cuuldurach.GlareTaunt3",
+			"NamedMobs.Cuuldurach.GlareTaunt4",
 		};
 		List<GamePlayer> GlareRoam_Enemys = new List<GamePlayer>();
 		public static GamePlayer randomtarget2 = null;
@@ -670,7 +678,7 @@ namespace DOL.AI.Brain
 						foreach (GamePlayer player in Body.GetPlayersInRadius(5000))
 						{
 							if (player != null)
-								player.Out.SendMessage(String.Format("{0} stares at {1} and prepares a massive attack.", Body.Name, RandomTarget2.Name), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Cuuldurach.PreparesMassiveAttack", Body.Name, RandomTarget2.Name), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 						}
 						new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(CastGlareRoam), 3000);
 					}
@@ -690,7 +698,7 @@ namespace DOL.AI.Brain
 				Body.TurnTo(RandomTarget2);
 				Body.CastSpell(Dragon_DD2, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);//special roaming glare
 				string glaretextroam = glareroam_text[Util.Random(0, glareroam_text.Count - 1)];
-				RandomTarget2.Out.SendMessage(String.Format(glaretextroam, Body.Name, RandomTarget2.CharacterClass.Name), eChatType.CT_Say, eChatLoc.CL_ChatWindow);
+				RandomTarget2.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(RandomTarget2.Client.Account.Language, glaretextroam, Body.Name, RandomTarget2.CharacterClass.Name), eChatType.CT_Say, eChatLoc.CL_ChatWindow);
 			}
 			new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(ResetGlareRoam), 2000);
 			return 0;
@@ -715,7 +723,7 @@ namespace DOL.AI.Brain
 		{
 			if (!IsRestless && HasAggro && Body.IsAlive)
 			{
-				BroadcastMessage(String.Format("{0} roars horrifyingly!", Body.Name));
+				BroadcastMessage(RoarsHorrifyinglyKey, Body.Name);
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(CastStun), 6000);
 			}
 			return 0;
@@ -742,10 +750,10 @@ namespace DOL.AI.Brain
 
 		List<string> breath_text = new List<string>()
 		{
-				"You feel a rush of air flow past you as {0} inhales deeply!",
-				"{0} takes another powerful breath as he prepares to unleash a raging inferno upon you!",
-				"{0} bellows in rage and glares at all of the creatures attacking him.",
-				"{0} noticeably winces from his wounds as he attempts to prepare for yet another life-threatening attack!"
+				"NamedMobs.Cuuldurach.Breath1",
+				"NamedMobs.Cuuldurach.Breath2",
+				"NamedMobs.Cuuldurach.Breath3",
+				"NamedMobs.Cuuldurach.Breath4"
 		};
 
 		private void DragonBreath()
@@ -753,69 +761,69 @@ namespace DOL.AI.Brain
 			string message = breath_text[Util.Random(0, breath_text.Count - 1)];
 			if (Body.HealthPercent <= 90 && DragonKaboom1 == false && !Body.IsCasting && !IsRestless)
 			{
-				BroadcastMessage(String.Format(message, Body.Name));
+				BroadcastMessage(message, Body.Name);
 				Body.CastSpell(Dragon_PBAOE, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(DragonCastDebuff), 5000);
 				DragonKaboom1 = true;
 			}
 			if (Body.HealthPercent <= 80 && DragonKaboom2 == false && !Body.IsCasting && !IsRestless)
 			{
-				BroadcastMessage(String.Format(message, Body.Name));
+				BroadcastMessage(message, Body.Name);
 				Body.CastSpell(Dragon_PBAOE, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(DragonCastDebuff), 5000);
 				DragonKaboom2 = true;
 			}
 			if (Body.HealthPercent <= 70 && DragonKaboom3 == false && !Body.IsCasting && !IsRestless)
 			{
-				BroadcastMessage(String.Format(message, Body.Name));
+				BroadcastMessage(message, Body.Name);
 				Body.CastSpell(Dragon_PBAOE, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(DragonCastDebuff), 5000);
 				DragonKaboom3 = true;
 			}
 			if (Body.HealthPercent <= 60 && DragonKaboom4 == false && !Body.IsCasting && !IsRestless)
 			{
-				BroadcastMessage(String.Format(message, Body.Name));
+				BroadcastMessage(message, Body.Name);
 				Body.CastSpell(Dragon_PBAOE, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(DragonCastDebuff), 5000);
 				DragonKaboom4 = true;
 			}
 			if (Body.HealthPercent <= 50 && DragonKaboom5 == false && !Body.IsCasting && !IsRestless)
 			{
-				BroadcastMessage(String.Format(message, Body.Name));
+				BroadcastMessage(message, Body.Name);
 				Body.CastSpell(Dragon_PBAOE, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(DragonCastDebuff), 5000);
 				DragonKaboom5 = true;
 			}
 			if (Body.HealthPercent <= 40 && DragonKaboom6 == false && !Body.IsCasting && !IsRestless)
 			{
-				BroadcastMessage(String.Format(message, Body.Name));
+				BroadcastMessage(message, Body.Name);
 				Body.CastSpell(Dragon_PBAOE, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(DragonCastDebuff), 5000);
 				DragonKaboom6 = true;
 			}
 			if (Body.HealthPercent <= 30 && DragonKaboom7 == false && !Body.IsCasting && !IsRestless)
 			{
-				BroadcastMessage(String.Format(message, Body.Name));
+				BroadcastMessage(message, Body.Name);
 				Body.CastSpell(Dragon_PBAOE, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(DragonCastDebuff), 5000);
 				DragonKaboom7 = true;
 			}
 			if (Body.HealthPercent <= 20 && DragonKaboom8 == false && !Body.IsCasting && !IsRestless)
 			{
-				BroadcastMessage(String.Format(message, Body.Name));
+				BroadcastMessage(message, Body.Name);
 				Body.CastSpell(Dragon_PBAOE, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(DragonCastDebuff), 5000);
 				DragonKaboom8 = true;
 			}
 			if (Body.HealthPercent <= 10 && DragonKaboom9 == false && !Body.IsCasting && !IsRestless)
 			{
-				BroadcastMessage(String.Format(message, Body.Name));
+				BroadcastMessage(message, Body.Name);
 				Body.CastSpell(Dragon_PBAOE, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(DragonCastDebuff), 5000);
 				DragonKaboom9 = true;
 			}
 		}
-		private int DragonCastDebuff(ECSGameTimer timer) 
+		private int DragonCastDebuff(ECSGameTimer timer)
 		{
 			Body.CastSpell(Dragon_Debuff, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 			return 0;

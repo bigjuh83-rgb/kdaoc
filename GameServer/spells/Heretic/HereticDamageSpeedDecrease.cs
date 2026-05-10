@@ -2,6 +2,7 @@ using System;
 using DOL.AI.Brain;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -178,13 +179,13 @@ namespace DOL.GS.Spells
                     GamePlayer owner = brain.GetPlayerOwner();
                     if (owner != null)
                     {
-                        MessageToLiving(owner, "Your " + target.Name + " resists the effect!", eChatType.CT_SpellResisted);
+                        MessageToLiving(owner, LanguageMgr.GetTranslation(owner.Client, "HereticDamageSpeedDecrease.PetResistsEffect", target.Name), eChatType.CT_SpellResisted);
                     }
                 }
             }
             else
             {
-                MessageToLiving(target, "You resist the effect!", eChatType.CT_SpellResisted);
+                MessageToLiving(target, LanguageMgr.GetTranslation((target as GamePlayer)?.Client, "HereticDamageSpeedDecrease.YouResistEffect"), eChatType.CT_SpellResisted);
             }
             MessageToCaster(target.GetName(0, true) + " resists the effect!", eChatType.CT_SpellResisted);
 
@@ -216,7 +217,7 @@ namespace DOL.GS.Spells
                 player.Out.SendCombatAnimation(null, ad.Target, 0, 0, 0, 0, 0x0A, ad.Target.HealthPercent);
             }
         }
-	
+
 		public HereticDamageSpeedDecrease(GameLiving caster, Spell spell, SpellLine line) : base(caster, spell, line) {}
 	}
 }

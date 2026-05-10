@@ -22,20 +22,20 @@ namespace DOL.GS.WeeklyQuest.Midgard
 		private const string questTitle = "[Weekly] Frontier Cleanup";
 		private const int minimumLevel = 50;
 		private const int maximumLevel = 50;
-		
+
 		// Kill Goal
 		private const int MAX_KILLED = 1;
 		// Quest Counter
 		private int _evernKilled = 0;
 		private int _glacierGiantKilled = 0;
 		private int _greenKnightKilled = 0;
-		
+
 		private static GameNPC Herou = null; // Start NPC
 
 		private const string EVERN_NAME = "Evern";
 		private const string GREENKNIGHT_NAME = "Green Knight";
 		private const string GLACIERGIANT_NAME = "Glacier Giant";
-		
+
 		// Constructors
 		public EpicRvRMobsWeeklyQuestMid() : base()
 		{
@@ -61,13 +61,13 @@ namespace DOL.GS.WeeklyQuest.Midgard
 				return minimumLevel;
 			}
 		}
-		
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -145,7 +145,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
 
 		private static void TalkToHerou(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -166,15 +166,13 @@ namespace DOL.GS.WeeklyQuest.Midgard
 							Herou.SayTo(player, player.Name + ", please find allies and kill the epic creatures in frontiers for Midgard!");
 							break;
 						case 2:
-							Herou.SayTo(player, "Hello " + player.Name + ", did you [slay the creatures] and return for your reward?");
+							Herou.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[slay the creatures] and return for your reward"));
 							break;
 					}
 				}
 				else
 				{
-					Herou.SayTo(player, "Hello "+ player.Name +", I am Herou. Some large monsters have blocked the supply lines in our frontier, and I could use your help in getting rid of them.\n"+
-					                    "You'll probably need to gather some friends for this one. We've lost a lot of good soldiers already. \n\n"+
-					                    "Can you support Midgard and [kill the epic creatures] in frontiers?");
+					Herou.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicFrontierIntroFriends", player.Name, "Herou", "Midgard"));
 				}
 			}
 				// The player whispered to the NPC
@@ -186,7 +184,8 @@ namespace DOL.GS.WeeklyQuest.Midgard
 					switch (wArgs.Text)
 					{
 						case "kill the epic creatures":
-							player.Out.SendQuestSubscribeCommand(Herou, QuestMgr.GetIDForQuestType(typeof(EpicRvRMobsWeeklyQuestMid)), "Will you help Herou "+questTitle+"?");
+						case "에픽 생명체 처치":
+							player.Out.SendQuestSubscribeCommand(Herou, QuestMgr.GetIDForQuestType(typeof(EpicRvRMobsWeeklyQuestMid)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "Herou", questTitle));
 							break;
 					}
 				}
@@ -197,18 +196,18 @@ namespace DOL.GS.WeeklyQuest.Midgard
 						case "slay the creatures":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -237,11 +236,11 @@ namespace DOL.GS.WeeklyQuest.Midgard
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and slay those creatures!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueSlayCreatures"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -271,7 +270,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for your help.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -279,7 +278,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
 				if (!Herou.GiveQuest(typeof (EpicRvRMobsWeeklyQuestMid), player, 1))
 					return;
 
-				Herou.SayTo(player, "Please, find the epic monsters in frontiers and return for your reward.");
+				Herou.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicFrontierReminder"));
 
 			}
 		}
@@ -298,12 +297,9 @@ namespace DOL.GS.WeeklyQuest.Midgard
 				switch (Step)
 				{
 					case 1:
-						return "Find and slay the three dangerous epic monsters! \n" +
-						       "Killed: " + EVERN_NAME + " ("+ _evernKilled +" | " + MAX_KILLED + ")\n" +
-						       "Killed: " + GREENKNIGHT_NAME + " ("+ _greenKnightKilled +" | " + MAX_KILLED + ")\n" +
-						       "Killed: " + GLACIERGIANT_NAME + " ("+ _glacierGiantKilled +" | " + MAX_KILLED + ")\n";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.EpicFrontierDescription", EVERN_NAME, _evernKilled, MAX_KILLED, GREENKNIGHT_NAME, _greenKnightKilled, MAX_KILLED, GLACIERGIANT_NAME, _glacierGiantKilled, MAX_KILLED);
 					case 2:
-						return "Return to Herou for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpc", "Herou");
 				}
 				return base.Description;
 			}
@@ -325,35 +321,35 @@ namespace DOL.GS.WeeklyQuest.Midgard
 			if (gArgs.Target.Name.ToLower() == EVERN_NAME.ToLower() && gArgs.Target is GameNPC && _evernKilled < MAX_KILLED)
 			{
 				_evernKilled = 1;
-				player.Out.SendMessage("[Weekly] You killed " + EVERN_NAME + ": (" + _evernKilled + " | " + MAX_KILLED + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyNamedKilled", EVERN_NAME, _evernKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 				player.Out.SendQuestUpdate(this);
 			}
 			else if (gArgs.Target.Name.ToLower() == GREENKNIGHT_NAME.ToLower() && gArgs.Target is GameNPC && _greenKnightKilled < MAX_KILLED)
 			{
 				_greenKnightKilled = 1;
-				player.Out.SendMessage("[Weekly] You killed " + GREENKNIGHT_NAME + ": (" + _greenKnightKilled + " | " + MAX_KILLED + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyNamedKilled", GREENKNIGHT_NAME, _greenKnightKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 				player.Out.SendQuestUpdate(this);
 			}
 			else if (gArgs.Target.Name.ToLower() == GLACIERGIANT_NAME.ToLower() && gArgs.Target is GameNPC && _glacierGiantKilled < MAX_KILLED)
 			{
 				_glacierGiantKilled = 1;
-				player.Out.SendMessage("[Weekly] You killed " + GLACIERGIANT_NAME + ": (" + _glacierGiantKilled + " | " + MAX_KILLED + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyNamedKilled", GLACIERGIANT_NAME, _glacierGiantKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 				player.Out.SendQuestUpdate(this);
 			}
-				
+
 			if (_evernKilled >= MAX_KILLED && _greenKnightKilled >= MAX_KILLED && _glacierGiantKilled>= MAX_KILLED)
 			{
 				// FinishQuest or go back to Dean
 				Step = 2;
 			}
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "EpicRvRMobsWeeklyQuestMid";
 			set { ; }
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			_evernKilled = GetCustomProperty(EVERN_NAME) != null ? int.Parse(GetCustomProperty(EVERN_NAME)) : 0;

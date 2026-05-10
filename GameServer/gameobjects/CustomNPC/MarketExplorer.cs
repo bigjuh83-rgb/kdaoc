@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.Housing;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -29,7 +30,7 @@ namespace DOL.GS
                 player.Out.SendMarketExplorerWindow();
             }
             else
-                player.Out.SendMessage("Sorry, the market is not available at this time.", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "MarketExplorer.MarketUnavailable"), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
 
             return true;
         }
@@ -104,13 +105,13 @@ namespace DOL.GS
                 log.Debug($"Current list find size is '{list.Count}'.");
 
             if (searchData.page == 0)
-                player.Out.SendMessage($"Items returned: {items.Count}", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "MarketExplorer.ItemsReturned", items.Count), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
             if (items.Count == 0)
                 player.Out.SendMarketExplorerWindow(list, 0, 0);
             else if (searchData.page <= maxPages)
             {
-                player.Out.SendMessage($"Moving to page {searchData.page + 1}.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "MarketExplorer.MovingToPage", searchData.page + 1), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                 player.Out.SendMarketExplorerWindow(list, searchData.page, maxPages);
             }
 
@@ -182,7 +183,7 @@ namespace DOL.GS
 
             if (consignmentMerchant == null)
             {
-                player.Out.SendMessage("I can't find the consignment merchant for this item!", eChatType.CT_Merchant, eChatLoc.CL_ChatWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "MarketExplorer.ConsignmentMerchantNotFound"), eChatType.CT_Merchant, eChatLoc.CL_ChatWindow);
                 log.Error($"ME: Error finding consignment merchant for lot {item.OwnerLot}; {player.Name}:{player.Client.Account.Name} trying to buy {item.Name}");
                 return;
             }

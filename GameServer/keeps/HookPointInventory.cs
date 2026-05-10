@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -21,6 +21,7 @@ using System.Collections;
 using System.Reflection;
 using DOL.GS.PacketHandler;
 using DOL.Events;
+using DOL.Language;
 
 namespace DOL.GS.Keeps
 {
@@ -218,7 +219,7 @@ namespace DOL.GS.Keeps
 		{
 			if (!hookpoint.IsFree)
 			{
-				player.Out.SendMessage("The hookpoint is already used!", eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "HookPoint.AlreadyUsed"), eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			//1=or 2=BP 3=GuildBP 4=contract
@@ -227,18 +228,18 @@ namespace DOL.GS.Keeps
 			{
 				case 1:
 					{
-						if (!player.RemoveMoney(Gold * 100 * 100, "You buy " + this.GetName(1, false) + "."))
+						if (!player.RemoveMoney(Gold * 100 * 100, LanguageMgr.GetTranslation(player.Client.Account.Language, "HookPoint.BuyItem", GetName(1, false))))
 						{
                             InventoryLogging.LogInventoryAction(player, "(keep)", eInventoryActionType.Merchant, Gold * 10000);
-							player.Out.SendMessage("You dont have enough money!", eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "HookPoint.NotEnoughMoney"), eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
 							return;
 						}
 					} break;
 				case 2:
 					{
-						if (!player.RemoveBountyPoints(Gold, "You buy " + this.GetName(1, false) + "."))
+						if (!player.RemoveBountyPoints(Gold, LanguageMgr.GetTranslation(player.Client.Account.Language, "HookPoint.BuyItem", GetName(1, false))))
 						{
-							player.Out.SendMessage("You dont have enough bounty point!", eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "HookPoint.NotEnoughBountyPoints"), eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
 							return;
 						}
 					} break;
@@ -247,16 +248,16 @@ namespace DOL.GS.Keeps
 						if (player.Guild == null) return;
 						if (!player.Guild.RemoveBountyPoints(Gold))
 						{
-							player.Out.SendMessage("You dont have enough bounty point!", eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "HookPoint.NotEnoughBountyPoints"), eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
 							return;
 						}
 						else
-							player.Out.SendMessage("You buy " + this.GetName(1, false) + ".", eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "HookPoint.BuyItem", GetName(1, false)), eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
 
 					} break;
 				case 4:
 					{
-						player.Out.SendMessage("NOT IMPLEMENTED YET, SORRY", eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "HookPoint.NotImplemented"), eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
 						return;
 					}
 
@@ -411,7 +412,7 @@ namespace DOL.GS.Keeps
 			/*
 			 * http://www.camelotherald.com/more/888.shtml
 			 * - All monsters names whose names begin with a vowel should now use the article 'an' instead of 'a'.
-			 * 
+			 *
 			 * http://www.camelotherald.com/more/865.shtml
 			 * - Instances where objects that began with a vowel but were prefixed by the article "a" (a orb of animation) have been corrected.
 			 */

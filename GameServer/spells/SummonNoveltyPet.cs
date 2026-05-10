@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using DOL.AI.Brain;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -35,14 +36,14 @@ namespace DOL.GS.Spells
         {
             if (Caster.CurrentZone.IsRvR)
             {
-                MessageToCaster("You cannot summon your pet here!", PacketHandler.eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "SummonNoveltyPet.CannotSummonHere"), PacketHandler.eChatType.CT_SpellResisted);
                 return false;
             }
 
 			if (Caster.TempProperties.GetProperty<bool>(NoveltyPetBrain.HAS_PET))
 			{
 				// no message
-				MessageToCaster("You already have a pet by your side!", PacketHandler.eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "SummonNoveltyPet.AlreadyHavePet"), PacketHandler.eChatType.CT_SpellResisted);
 				return false;
 			}
 

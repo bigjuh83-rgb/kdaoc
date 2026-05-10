@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Quests
 {
@@ -22,10 +23,8 @@ namespace DOL.GS.Quests
         protected bool MobKilled = false;
 
         private static readonly int[] MoneyReward = [28, 57, 77, 105, 140, 190, 257, 347, 470, 632, 735, 852, 987, 1147, 1330, 1542, 1790, 2077, 2407, 2801];
-        private static readonly string[] TaskObjects = ["Skin", "Meat", "Bones", "Tooth", "Claw", "Skin", "Legs", "Collar", "Bone", "Ear", "Head", "Hair", "Carapace", "Skull", "Pile of dirt", "dust", "Slice", "Wings", "egg", "heart", "mandible"];
+        private static readonly string[] TaskObjects = ["Skin", "Meat", "Bones", "Tooth", "Claw", "Skin", "Legs", "Collar", "Bone", "Ear", "Head", "Hair", "Carapace", "Skull", "PileOfDirt", "Dust", "Slice", "Wings", "Egg", "Heart", "Mandible"];
         private static readonly int[] ObjectModels = [629, 102, 105, 106, 106, 629, 108, 109, 497, 501, 503, 506, 517, 540, 541, 541, 548, 551, 587, 595, 614];
-        // used to build generic mob item
-        private static readonly string[] StrFormat = ["{0}'s {1}","{1} of {0}"];
 
         /// <summary>
         /// Constructs a new task
@@ -34,7 +33,7 @@ namespace DOL.GS.Quests
         public KillTask(GamePlayer taskPlayer) : base(taskPlayer)
         {
         }
-        
+
         /// <summary>
         /// Constructs a new task from a database Object
         /// </summary>
@@ -49,7 +48,7 @@ namespace DOL.GS.Quests
             get
             {
                 const ushort Scarto = 3; // Add/Remove % to the Result
-                
+
                 int ValueScarto = ((MoneyReward[m_taskPlayer.Level-1]/100)*Scarto);
                 return Util.Random(MoneyReward[m_taskPlayer.Level-1]-ValueScarto, MoneyReward[m_taskPlayer.Level-1]+ValueScarto);
             }
@@ -60,7 +59,7 @@ namespace DOL.GS.Quests
             get
             {
                 ushort Scarto = 3; // Add/Remove % to the Result
-                
+
                 int ValueScarto = ((XPReward[m_taskPlayer.Level-1]/100)*Scarto);
                 return new Random().Next(XPReward[m_taskPlayer.Level-1]-ValueScarto,XPReward[m_taskPlayer.Level-1]+ValueScarto);
             }
@@ -79,7 +78,8 @@ namespace DOL.GS.Quests
         {
             get
             {
-                return string.Format(StrFormat[0], MobName, TaskObjects[ItemIndex]);
+                string itemName = LanguageMgr.GetTranslation(m_taskPlayer.Client, $"Task.Kill.Item.{TaskObjects[ItemIndex]}");
+                return LanguageMgr.GetTranslation(m_taskPlayer.Client, "Task.Kill.ItemFormat", MobName, itemName);
             }
             set { }
         }
@@ -87,13 +87,13 @@ namespace DOL.GS.Quests
         {
             get {return null;}
         }
-        
+
         /// <summary>
         /// Retrieves the name of the task
         /// </summary>
         public override string Name
         {
-            get { return "Kill Task"; }
+            get { return LanguageMgr.GetTranslation(m_taskPlayer.Client, "Task.Kill.Name"); }
         }
 
         /// <summary>
@@ -101,9 +101,9 @@ namespace DOL.GS.Quests
         /// </summary>
         public override string Description
         {
-            get { return ((KillTask)m_taskPlayer.GameTask).MobKilled == false ? "Find a " + MobName + " and kill it then return to me for your reward." : "Return to " + ReceiverName + " for your reward!"; }
+            get { return ((KillTask)m_taskPlayer.GameTask).MobKilled == false ? LanguageMgr.GetTranslation(m_taskPlayer.Client, "Task.Kill.Description.FindAndKill", MobName) : LanguageMgr.GetTranslation(m_taskPlayer.Client, "Task.Kill.Description.Return", ReceiverName); }
         }
-        
+
         /// <summary>
         /// Item related to task stored in dbTask
         /// </summary>
@@ -145,7 +145,7 @@ namespace DOL.GS.Quests
                     if (((KillTask)player.GameTask).MobName == target.Name)
                     {
                         ((KillTask)player.GameTask).MobKilled = true;
-                        player.Out.SendMessage("You must now return to " + player.GameTask.ReceiverName + " to receive your reward!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Task.Kill.ReturnForReward", player.GameTask.ReceiverName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     }
                 }
                 else
@@ -236,7 +236,7 @@ namespace DOL.GS.Quests
                     InteractWithEventArgs myargs = (InteractWithEventArgs)args;
                     if (myargs.Target.Name == ((KillTask)player.GameTask).ReceiverName)
                     {
-                        player.Out.SendMessage(myargs.Target.Name + " says, *Good work " + player.Name + ". Here is your reward as promised.*", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Task.Kill.RewardPromised", myargs.Target.Name, player.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         FinishTask();
                     }
                 }
@@ -251,13 +251,13 @@ namespace DOL.GS.Quests
                 {
                     player.Inventory.RemoveItem(item);
                     InventoryLogging.LogInventoryAction(player, target, eInventoryActionType.Quest, item.Template, item.Count);
-                    player.Out.SendMessage(target.Name + " says, *Good work " + player.Name + ". Here is your reward as promised.*", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Task.Kill.RewardPromised", target.Name, player.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     FinishTask();
                 }
             }
 
         }
-        
+
         /// <summary>
         /// Search for a Mob to Kill and Give the KillTask to the Player
         /// </summary>
@@ -273,13 +273,13 @@ namespace DOL.GS.Quests
 
             if (Mob == null)
             {
-                player.Out.SendMessage("Sorry, I couldn't find any mob kill order. Come back later!",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "KillTask.NoKillOrder"),eChatType.CT_Say,eChatLoc.CL_PopupWindow);
                 return false;
             }
 
             if (!GameServer.ServerRules.IsAllowedToAttack(player,Mob,true) || string.IsNullOrEmpty(Mob.Name))
             {
-                player.Out.SendMessage("I have no task for you, come back later",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "KillTask.NoTaskComeBackLater"),eChatType.CT_Say,eChatLoc.CL_PopupWindow);
                 return false;
             }
             else
@@ -290,31 +290,32 @@ namespace DOL.GS.Quests
                 ((KillTask)player.GameTask).ItemIndex = Util.Random(0, TaskObjects.Length - 1);
                 ((KillTask)player.GameTask).MobName = Mob.Name;
                 player.GameTask.ReceiverName = source.Name;
-                player.Out.SendMessage(source.Name + " says, *Very well " + player.Name + ", it's good to see adventurers willing to help out the realm in such times. Search to the " + GetDirectionFromHeading(Mob.Heading) + " and kill a " + Mob.Name + " and return to me for your reward. Good luck!*", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                player.Out.SendDialogBox(eDialogCode.SimpleWarning, 1, 1, 1, 1, eDialogType.Ok, false, "You have been given a task!");
+                string direction = GetDirectionFromHeading(player.Client.Account.Language, Mob.Heading);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Task.Kill.Assignment", source.Name, player.Name, direction, Mob.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendDialogBox(eDialogCode.SimpleWarning, 1, 1, 1, 1, eDialogType.Ok, false, LanguageMgr.GetTranslation(player.Client.Account.Language, "Task.Kill.Given"));
                 return true;
             }
         }
-        public static string GetDirectionFromHeading(ushort heading)
+        public static string GetDirectionFromHeading(string language, ushort heading)
         {
             if (heading < 0)
                 heading += 4096;
             if (heading >= 3840 || heading <= 256)
-                return "South";
+                return LanguageMgr.GetTranslation(language, "Task.Kill.Direction.South");
             else if (heading > 256 && heading < 768)
-                return "South West";
+                return LanguageMgr.GetTranslation(language, "Task.Kill.Direction.SouthWest");
             else if (heading >= 768 && heading <= 1280)
-                return "West";
+                return LanguageMgr.GetTranslation(language, "Task.Kill.Direction.West");
             else if (heading > 1280 && heading < 1792)
-                return "North West";
+                return LanguageMgr.GetTranslation(language, "Task.Kill.Direction.NorthWest");
             else if (heading >= 1792 && heading <= 2304)
-                return "North";
+                return LanguageMgr.GetTranslation(language, "Task.Kill.Direction.North");
             else if (heading > 2304 && heading < 2816)
-                return "North East";
+                return LanguageMgr.GetTranslation(language, "Task.Kill.Direction.NorthEast");
             else if (heading >= 2816 && heading <= 3328)
-                return "East";
+                return LanguageMgr.GetTranslation(language, "Task.Kill.Direction.East");
             else if (heading > 3328 && heading < 3840)
-                return "South East";
+                return LanguageMgr.GetTranslation(language, "Task.Kill.Direction.SouthEast");
             return string.Empty;
         }
 
@@ -332,7 +333,7 @@ namespace DOL.GS.Quests
         /// <summary>
         /// Idientifies Named Guards
         /// At the moment this is done by simple name comparison against some known name patterns:
-        /// 
+        ///
         /// +*Guard*
         ///		-Guardian
         ///		-Guardian Sergeant
@@ -372,7 +373,7 @@ namespace DOL.GS.Quests
 
             if (name?.IndexOf("Guard")>=0)
             {
-                
+
                 if (name =="Guardian") return false;
                 if (name =="Guardian Sergeant") return false;
                 if (name.EndsWith("Guardian")) return false;
@@ -439,13 +440,13 @@ namespace DOL.GS.Quests
             {
                 return true;
             }
-            
+
             if (name.Contains("Flayer"))
             {
                 if (name.EndsWith("Kegnar"))
                     return true;
             }
-            
+
             return false;
         }
 

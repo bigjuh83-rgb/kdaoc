@@ -19,25 +19,25 @@ namespace DOL.GS.Commands
 				return;
 
 			string bgName = client.Player.CurrentZone.Description;
-			
+
 			if (GameServer.KeepManager.GetBattleground(client.Player.CurrentRegionID) != null)
 			{
 				ICollection<AbstractGameKeep> keepList =
 					GameServer.KeepManager.GetKeepsOfRegion(client.Player.CurrentRegionID);
 				foreach (AbstractGameKeep keep in keepList)
 				{
-					ChatUtil.SendSystemMessage(client, KeepStringBuilder(keep));
+					ChatUtil.SendSystemMessage(client, KeepStringBuilder(keep, client.Account.Language));
 				}
 			}
 			else
 			{
-				client.Out.SendMessage("You need to be in a battleground to use this command.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client, "Scripts.Players.CK.NotInBattleground"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 			}
 		}
-		private string KeepStringBuilder(AbstractGameKeep keep)
+		private string KeepStringBuilder(AbstractGameKeep keep, string language = null)
 		{
 			string buffer = string.Empty;
-			buffer += keep.Name + ": " + GlobalConstants.RealmToName(keep.Realm);
+			buffer += keep.Name + ": " + GlobalConstants.RealmToName(keep.Realm, language);
 			if (keep.Guild != null)
 			{
 				buffer += " (" + keep.Guild.Name + ")";
@@ -45,6 +45,6 @@ namespace DOL.GS.Commands
 			buffer += "\n";
 			return buffer;
 		}
-		
+
 	}
 }

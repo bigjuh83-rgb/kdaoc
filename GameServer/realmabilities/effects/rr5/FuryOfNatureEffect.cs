@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using DOL.GS.PacketHandler;
 using DOL.Events;
 using DOL.GS.RealmAbilities;
+using DOL.Language;
 
 namespace DOL.GS.Effects
 {
@@ -55,7 +56,7 @@ namespace DOL.GS.Effects
 			if (player.Group == null)
 				return;
 			if (extra > 0)
-				player.Out.SendMessage("Your Fury enables you to strike " + args.AttackData.Target.Name + " for " + extra + " additional points of damage", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.FuryOfNatureEffect.AdditionalDamage", args.AttackData.Target.Name, extra), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 			Hashtable injuredTargets = new Hashtable();
 			GamePlayer mostInjuredLiving = null;
 
@@ -104,7 +105,7 @@ namespace DOL.GS.Effects
 
 			if (mostInjuredPercent >= 1)
 			{
-				player.Out.SendMessage("Your group is fully healed!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Heal.GroupFullyHealed"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -144,9 +145,9 @@ namespace DOL.GS.Effects
 				if (reducedHeal < baseheal)
 					baseheal = reducedHeal;
 				healTarget.ChangeHealth(player, eHealthChangeType.Spell, baseheal);
-				player.Out.SendMessage("You heal " + healTarget.Name + " for " + baseheal + "!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Heal.TargetForAmount", healTarget.Name, baseheal), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 				if (healTarget is GamePlayer)
-					((GamePlayer)healTarget).Out.SendMessage(player.Name + " heals you for " + baseheal + "!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+					((GamePlayer)healTarget).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)healTarget).Client.Account.Language, "RealmAbility.Heal.CasterHealsYouForAmount", player.Name, baseheal), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 			}
 
 			return;

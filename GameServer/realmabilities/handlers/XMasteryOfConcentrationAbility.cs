@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -23,6 +23,7 @@ using DOL.GS.PacketHandler;
 using DOL.GS.Effects;
 using DOL.Events;
 using DOL.Database;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -45,15 +46,15 @@ namespace DOL.GS.RealmAbilities
 				MoCEffect.Cancel(false);
 				return;
 			}
-			
+
 			// Check for the RA5L on the Sorceror: he cannot cast MoC when the other is up
 			ShieldOfImmunityEffect ra5l = caster.EffectList.GetOfType<ShieldOfImmunityEffect>();
 			if (ra5l != null)
 			{
-				caster.Out.SendMessage("You cannot currently use this ability", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+				caster.Out.SendMessage(LanguageMgr.GetTranslation(caster.Client.Account.Language, "RealmAbility.Message.CannotCurrentlyUseAbility"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 				return;
 			}
-			
+
 			SendCasterSpellEffectAndCastMessage(living, 7007, true);
 			foreach (GamePlayer player in caster.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
@@ -62,13 +63,13 @@ namespace DOL.GS.RealmAbilities
 				{
 					if (player == caster)
 					{
-						player.MessageToSelf("You cast " + this.Name + "!", eChatType.CT_Spell);
-						player.MessageToSelf("You become steadier in your casting abilities!", eChatType.CT_Spell);
+						player.MessageToSelf(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Generic.CastSelf", Name), eChatType.CT_Spell);
+						player.MessageToSelf(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.MasteryOfConcentration.Steadier"), eChatType.CT_Spell);
 					}
 					else
 					{
-						player.MessageFromArea(caster, caster.Name + " casts a spell!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
-						player.Out.SendMessage(caster.Name + "'s castings have perfect poise!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						player.MessageFromArea(caster, LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Message.CasterCastsSpell", caster.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.MasteryOfConcentration.PerfectPoise", caster.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					}
 				}
 			}
@@ -81,30 +82,30 @@ namespace DOL.GS.RealmAbilities
         {
             return 600;
         }
-        
+
         public virtual int GetAmountForLevel(int level)
 		{
-        	if(ServerProperties.Properties.USE_NEW_ACTIVES_RAS_SCALING)
-        	{
-        		switch(level)
-        		{
-        			case 1: return 25;
-        			case 2: return 35;
-        			case 3: return 50;
-        			case 4: return 60;
-        			case 5: return 75;
-        		}
-        	}
-        	else
-        	{
-         		switch(level)
-        		{
-        			case 1: return 25;
-        			case 2: return 50;
-        			case 3: return 75;
-        		}       		
-        	}
-        	return 25;
+	if(ServerProperties.Properties.USE_NEW_ACTIVES_RAS_SCALING)
+	{
+		switch(level)
+		{
+			case 1: return 25;
+			case 2: return 35;
+			case 3: return 50;
+			case 4: return 60;
+			case 5: return 75;
+		}
+	}
+	else
+	{
+		switch(level)
+		{
+			case 1: return 25;
+			case 2: return 50;
+			case 3: return 75;
+		}
+	}
+	return 25;
 		}
 	}
 }

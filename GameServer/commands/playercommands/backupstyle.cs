@@ -1,5 +1,6 @@
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerProperties;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -13,7 +14,7 @@ namespace DOL.GS.Commands
 
             if (!Properties.ALLOW_AUTO_BACKUP_STYLES)
             {
-                client.Out.SendMessage("This command is not enabled on this server.", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.BackupStyle.Disabled"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                 return;
             }
 
@@ -31,16 +32,16 @@ namespace DOL.GS.Commands
                     client.Player.styleComponent.AutomaticBackupStyle = null;
 
                     if (Properties.ALLOW_NON_ANYTIME_BACKUP_STYLES)
-                        client.Out.SendMessage($"The next style you use will be set as your automatic backup style.", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                        client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.BackupStyle.NextStyle"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                     else
-                        client.Out.SendMessage($"The next anytime style you use will be set as your automatic backup style.", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                        client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.BackupStyle.NextAnytimeStyle"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 
                     break;
                 }
                 case "clear":
                 {
                     client.Player.styleComponent.AutomaticBackupStyle = null;
-                    client.Out.SendMessage($"You will no longer use an automatic backup style.", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                    client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.BackupStyle.Cleared"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                     break;
                 }
                 default:

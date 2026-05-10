@@ -54,7 +54,7 @@ namespace DOL.GS
 
                     item.Color = (int)color;
                 }
-                
+
                 DbInventoryItem invitem = GameInventoryItem.Create<DbItemUnique>(item);
                 invitem.IsROG = true;
                 player.Inventory.AddItem(eInventorySlot.FirstEmptyBackpack, invitem);
@@ -92,12 +92,12 @@ namespace DOL.GS
                 eCharacterClass charclass = (eCharacterClass) player.CharacterClass.ID;
 
                 GeneratedUniqueItem item = null;
-                
+
                 if(minimumUtility > 0)
                     item = new GeneratedUniqueItem(realm, charclass, itemLevel, eObjectType.Magical, minimumUtility);
                 else
                     item = new GeneratedUniqueItem(realm, charclass, itemLevel, eObjectType.Magical);
-                
+
                 item.AllowAdd = true;
                 item.IsTradable = true;
 
@@ -128,7 +128,7 @@ namespace DOL.GS
                 player.GainBountyPoints(totBPs, false);
 
                 if (relicBonus > 0)
-                    player.Out.SendMessage($"You gained an additional {Convert.ToInt32(relicBonus)} BPs due to your realm's relic ownership!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AtlasROGManager.RelicBonusBountyPoints", Convert.ToInt32(relicBonus)), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
             }
         }
 
@@ -157,7 +157,7 @@ namespace DOL.GS
                     {
                         item.Count = amount;
                         player.CreateItemOnTheGround(item);
-                        player.Out.SendMessage($"Your inventory is full, your {item.Name}s have been placed on the ground.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AtlasROGManager.InventoryFullPlacedOnGround", item.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                     }
 
                 }
@@ -167,17 +167,17 @@ namespace DOL.GS
         public static GeneratedUniqueItem GenerateMonsterLootROG(eRealm realm, eCharacterClass charClass, byte level, bool isFrontierKill)
         {
             GeneratedUniqueItem item = null;
-            
+
             if(isFrontierKill)
                 item = new GeneratedUniqueItem(realm, charClass, level, level - Util.Random(-5,10));
             else
                 item = new GeneratedUniqueItem(realm, charClass, level, level - Util.Random(15,20));
-            
+
             item.AllowAdd = true;
             item.IsTradable = true;
             //item.CapUtility(level);
             return item;
-            
+
         }
     }
 }

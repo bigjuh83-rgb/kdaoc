@@ -5,6 +5,7 @@ using DOL.AI.Brain;
 using DOL.GS;
 using DOL.GS.PacketHandler;
 using DOL.GS.PlayerClass;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -55,7 +56,7 @@ namespace DOL.AI.Brain
 		public PilusFuryBrain() : base()
 		{
 			ThinkInterval = 1500;
-			
+
 			_points.Add(new Point3D(33374, 42009, 15007));//400 range
 			_points.Add(new Point3D(33376, 41368, 15007));//200
 			_points.Add(new Point3D(33374, 40973, 15007));//200
@@ -69,10 +70,10 @@ namespace DOL.AI.Brain
 			_points.Add(new Point3D(33364, 37859, 15007));//200
 			_points.Add(new Point3D(33365, 37667, 15007));//200
 		}
-		
+
 		List<GameLiving> DD_Enemys = new List<GameLiving>();
 		private bool CanDD = false;
-		
+
 		public override void Think()
 		{
 			if(Body.IsAlive)
@@ -85,7 +86,7 @@ namespace DOL.AI.Brain
 				{
 					HandleNpcCheck(npc);
 				}
-				
+
 				if (!CanDD && DD_Enemys.Count > 0)
 				{
 					new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(PrepareDD), 3000);
@@ -96,14 +97,14 @@ namespace DOL.AI.Brain
 
 		public override void KillFSM()
 		{
-			
+
 		}
 
 		private void HandlePlayerCheck(GamePlayer player)
 		{
 			if (player is {IsAlive: true} && player.Client.Account.PrivLevel == 1)
 			{
-				var nearbyPoint = _points.FirstOrDefault(point => ((point == _points[0] || point == _points[4]) && player.IsWithinRadius(point, 400)) 
+				var nearbyPoint = _points.FirstOrDefault(point => ((point == _points[0] || point == _points[4]) && player.IsWithinRadius(point, 400))
 				                                          || player.IsWithinRadius(point, 200));
 
 				if (nearbyPoint != null)
@@ -121,12 +122,12 @@ namespace DOL.AI.Brain
 						if (!DD_Enemys.Contains(player))
 						{
 							DD_Enemys.Add(player);
-							player.Out.SendMessage("Smoke seeps up through the cracks in the hall's floor.",
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Mobs.PilusFury.SmokeSeeps"),
 								eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 						}
 					}
 				}
-				else 
+				else
 				{
 					if (player.CharacterClass is ClassDisciple && player.ControlledBrain != null)
 					{
@@ -211,7 +212,7 @@ namespace DOL.AI.Brain
 			{
 				foreach (GameLiving targets in DD_Enemys)
 				{
-					if (targets.IsAlive && targets != null)
+					if (targets != null && targets.IsAlive)
 						DamageTarget(targets, Body);
 				}
 			}
@@ -242,7 +243,7 @@ namespace DOL.AI.Brain
 
 			if(target is NecromancerPet pet)
 			{
-				if (pet != null && pet.Owner.IsAlive && pet.Owner != null)
+				if (pet != null && pet.Owner != null && pet.Owner.IsAlive)
 				{
 					GamePlayer PetOwner = pet.Owner as GamePlayer;
 					PetOwner.OnAttackedByEnemy(ad);
@@ -257,7 +258,6 @@ namespace DOL.AI.Brain
 				target.LastAttackedByEnemyTickPvP = GameLoop.GameLoopTime;
 				target.StartInterruptTimer(GS.ServerProperties.Properties.SPELL_INTERRUPT_DURATION, ad.AttackType, ad.Attacker);
 			}
-		}		
+		}
 	}
 }
-

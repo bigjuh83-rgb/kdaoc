@@ -154,7 +154,8 @@ namespace DOL.GS
                 foreach (GamePlayer otherPlayer in ClientService.Instance.GetPlayers())
                 {
                     otherPlayer.Out.SendMessage(LanguageMgr.GetTranslation(otherPlayer.Client.Account.Language, "GameRelicPad.MountRelic.Captured", GlobalConstants.RealmToName(relic.CurrentCarrier.Realm), relic.Name), eChatType.CT_ScreenCenterSmaller, eChatLoc.CL_SystemWindow);
-                    otherPlayer.Out.SendMessage($"{message}\n{message}\n{message}", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                    string playerMessage = LanguageMgr.GetTranslation(otherPlayer.Client.Account.Language, "GameRelicPad.MountRelic.Stored", relic.CurrentCarrier.Name, GlobalConstants.RealmToName(relic.CurrentCarrier.Realm), relic.Name, Name);
+                    otherPlayer.Out.SendMessage($"{playerMessage}\n{playerMessage}\n{playerMessage}", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                 }
 
                 NewsMgr.CreateNews(message, relic.CurrentCarrier.Realm, eNewsType.RvRGlobal, false);
@@ -173,10 +174,11 @@ namespace DOL.GS
             }
             else
             {
-                string message = $"The {relic.Name} has been returned to {Name}.";
-
                 foreach (GamePlayer otherPlayer in ClientService.Instance.GetPlayers())
+                {
+                    string message = LanguageMgr.GetTranslation(otherPlayer.Client.Account.Language, "GameRelicPad.MountRelic.Returned", relic.Name, Name);
                     otherPlayer.Out.SendMessage($"{message}\n{message}\n{message}", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                }
             }
 
             relic.Realm = Realm;
@@ -200,7 +202,10 @@ namespace DOL.GS
                 string message = LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "GameRelicPad.RemoveRelic.Removed", relic.CurrentCarrier.Name, GlobalConstants.RealmToName((eRealm)relic.CurrentCarrier.Realm), relic.Name, Name);
 
                 foreach (GamePlayer otherPlayer in ClientService.Instance.GetPlayers())
-                    otherPlayer.Out.SendMessage($"{message}\n{message}\n{message}", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                {
+                    string playerMessage = LanguageMgr.GetTranslation(otherPlayer.Client.Account.Language, "GameRelicPad.RemoveRelic.Removed", relic.CurrentCarrier.Name, GlobalConstants.RealmToName((eRealm)relic.CurrentCarrier.Realm), relic.Name, Name);
+                    otherPlayer.Out.SendMessage($"{playerMessage}\n{playerMessage}\n{playerMessage}", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                }
 
                 NewsMgr.CreateNews(message, relic.CurrentCarrier.Realm, eNewsType.RvRGlobal, false);
 

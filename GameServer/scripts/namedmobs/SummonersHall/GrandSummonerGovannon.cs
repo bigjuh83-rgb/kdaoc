@@ -50,7 +50,7 @@ namespace DOL.GS
 						else
 							truc = ((source as GameSummonedPet).Owner as GamePlayer);
 						if (truc != null)
-							truc.Out.SendMessage(Name + " is immune to any damage!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+							truc.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.GrandSummonerGovannon.ImmuneToDamage", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
 						base.TakeDamage(source, damageType, 0, 0);
 						return;
 					}
@@ -211,6 +211,7 @@ namespace DOL.AI.Brain
 	public class GrandSummonerGovannonBrain : StandardMobBrain
 	{
 		private static readonly Logging.Logger log = Logging.LoggerManager.Create(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+		private const string GathersStrengthKey = "NamedMobs.GrandSummonerGovannon.GathersStrength";
 		public GrandSummonerGovannonBrain() : base()
 		{
 			AggroLevel = 100;
@@ -219,11 +220,11 @@ namespace DOL.AI.Brain
 		}
 		public static bool SpawnSacrifices1 = false;
 		public static bool Stage2 = false;
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(String key, params object[] args)
 		{
 			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
-				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
 			}
 		}
 		private bool RemoveAdds = false;
@@ -268,7 +269,7 @@ namespace DOL.AI.Brain
 				{
 					if (Stage2 == false)
 					{
-						BroadcastMessage(String.Format(Body.Name + " gathers more strength."));
+						BroadcastMessage(GathersStrengthKey, Body.Name);
 						Body.Strength = 650;
 						Body.Size = 80;
 					}

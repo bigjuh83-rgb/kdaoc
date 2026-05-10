@@ -49,7 +49,7 @@ namespace DOL.GS.Quests
 		/// Constructs a new RewardQuest.
 		/// </summary>
 		/// <param name="questingPlayer">The player doing this quest</param>
-		public RewardQuest(GamePlayer questingPlayer) 
+		public RewardQuest(GamePlayer questingPlayer)
 			: this(questingPlayer, 1) { }
 
 		/// <summary>
@@ -57,7 +57,7 @@ namespace DOL.GS.Quests
 		/// </summary>
 		/// <param name="questingPlayer">The player doing this quest</param>
 		/// <param name="step">The current step the player is on</param>
-		public RewardQuest(GamePlayer questingPlayer,int step) 
+		public RewardQuest(GamePlayer questingPlayer,int step)
 			: base(questingPlayer, step)
 		{
 			m_rewards = new QuestRewards(this);
@@ -69,7 +69,7 @@ namespace DOL.GS.Quests
 		/// </summary>
 		/// <param name="questingPlayer">The player doing the quest</param>
 		/// <param name="dbQuest">The database object</param>
-		public RewardQuest(GamePlayer questingPlayer, DbQuest dbQuest) 
+		public RewardQuest(GamePlayer questingPlayer, DbQuest dbQuest)
 			: base(questingPlayer, dbQuest)
 		{
 			m_rewards = new QuestRewards(this);
@@ -253,12 +253,12 @@ namespace DOL.GS.Quests
 				{
 					GiveItem(QuestPlayer, optionalReward);
 				}
-				
+
 				QuestPlayer.Out.SendNPCsQuestEffect(QuestGiver, QuestGiver.GetQuestIndicator(QuestPlayer));
 			}
 			else
 			{
-				QuestPlayer.Out.SendMessage(string.Format("Your inventory is full, you need {0} free slot(s) to complete this quest.", inventorySpaceRequired), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				QuestPlayer.Out.SendMessage(LanguageMgr.GetTranslation(QuestPlayer.Client.Account.Language, "RewardQuest.InventoryFull.CompleteQuest", inventorySpaceRequired), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				Rewards.ChosenItems.Clear();
 			}
 		}
@@ -315,7 +315,7 @@ namespace DOL.GS.Quests
 			/// </summary>
 			public string Description
 			{
-                get 
+                get
 				{
 					if (m_quest.QuestPlayer != null)
 					{
@@ -348,7 +348,7 @@ namespace DOL.GS.Quests
 			/// </summary>
 			protected int Current
 			{
-				get 
+				get
 				{
 					if (m_quest.QuestPlayer == null)
 						return m_current;
@@ -358,9 +358,9 @@ namespace DOL.GS.Quests
 						Current = 0;
 						return Current;
 					}
-					return Int16.Parse(propertyValue); 
+					return Int16.Parse(propertyValue);
 				}
-				set 
+				set
 				{
 					if (m_quest.QuestPlayer == null)
 						m_current = value;
@@ -377,7 +377,7 @@ namespace DOL.GS.Quests
 			/// </summary>
 			protected int Target
 			{
-				get 
+				get
 				{
 					if (m_quest.QuestPlayer == null)
 						return m_current;
@@ -387,9 +387,9 @@ namespace DOL.GS.Quests
 						Target = 0;
 						return Target;
 					}
-					return Int16.Parse(propertyValue); 
+					return Int16.Parse(propertyValue);
 				}
-				set 
+				set
 				{
 					if (m_quest.QuestPlayer == null)
 						m_target = value;
@@ -414,10 +414,10 @@ namespace DOL.GS.Quests
 				if (Current < Target)
 				{
 					Current++;
-					m_quest.QuestPlayer.Out.SendMessage(Description, eChatType.CT_ScreenCenter, 
+					m_quest.QuestPlayer.Out.SendMessage(Description, eChatType.CT_ScreenCenter,
 						eChatLoc.CL_SystemWindow);
 					m_quest.QuestPlayer.Out.SendQuestUpdate(m_quest);
-					
+
 					// Check for updates
 					if (IsAchieved)
 					{
@@ -425,11 +425,11 @@ namespace DOL.GS.Quests
 						bool done = true;
 						foreach (QuestGoal goal in m_quest.Goals)
 							done &= goal.IsAchieved;
-						
+
 						if (done && m_quest.QuestGiver.IsWithinRadius(m_quest.QuestPlayer, WorldMgr.VISIBILITY_DISTANCE))
 							m_quest.QuestPlayer.Out.SendNPCsQuestEffect(m_quest.QuestGiver, m_quest.QuestGiver.GetQuestIndicator(m_quest.QuestPlayer));
 					}
-					
+
 				}
 			}
 
@@ -483,7 +483,7 @@ namespace DOL.GS.Quests
 			private int m_bountypoints;
 			private int	m_realmpoints;
 			private int	m_gold;
-			
+
 			public QuestRewards(RewardQuest quest)
 			{
 				m_quest = quest;
@@ -496,27 +496,27 @@ namespace DOL.GS.Quests
 				m_bountypoints = 0;
 				m_realmpoints = 0;
 				m_gold = 0;
-				
+
 			}
-			
+
 			public int GiveGold
 			{
 				get { return m_gold; }
 				set { m_gold = value;}
 			}
-			
+
 			public int GiveRealmPoints
 			{
 				get { return m_realmpoints; }
 				set { m_realmpoints = value;}
 			}
-			
+
 			public int GiveBountyPoints
 			{
 				get { return m_bountypoints; }
 				set { m_bountypoints = value;}
 			}
-			
+
 			/// <summary>
 			/// The maximum amount of copper awarded for a quest with a
 			/// particular level.
@@ -574,7 +574,7 @@ namespace DOL.GS.Quests
 				11018817,
 				11018817	// level 50, this appears to be the overall cap
 			};
-			
+
 			/// <summary>
 			/// Add a basic reward (up to a maximum of 8).
 			/// </summary>
@@ -610,7 +610,7 @@ namespace DOL.GS.Quests
 			}
 
 			/// <summary>
-			/// Money awarded for completing this quest. This is a percentage 
+			/// Money awarded for completing this quest. This is a percentage
 			/// of the maximum amount of money awarded for a quest with this level.
 			/// This in turn means that there is a cap (100%) to earning money
 			/// from quests.
@@ -628,14 +628,14 @@ namespace DOL.GS.Quests
 			/// </summary>
 			public long Money
 			{
-				get 
+				get
 				{
 					return (long)((m_maxCopperForLevel[m_quest.Level] * MoneyPercent / 100) + (GiveGold * 10000));
 				}
 			}
 
 			/// <summary>
-			/// Experience awarded for completing this quest. This is a percentage 
+			/// Experience awarded for completing this quest. This is a percentage
 			/// of the amount of experience the questing player needs to get from
 			/// their current level to the next level, not taking into account any
 			/// experience the player already has gained towards the next level.
@@ -698,7 +698,7 @@ namespace DOL.GS.Quests
 			public int ChoiceOf
 			{
 				get { return m_choiceOf; }
-				set 
+				set
 				{
 					if (m_optionalItems.Count > 0)
 						m_choiceOf = Math.Min(Math.Max(1, value), m_optionalItems.Count);

@@ -7,6 +7,7 @@ using DOL.GS.Effects;
 using DOL.GS.Spells;
 using DOL.Events;
 using DOL.Database;
+using DOL.Language;
 namespace DOL.GS.RealmAbilities
 {
 	public class XVolcanicPillarAbility : TimedRealmAbility
@@ -24,14 +25,14 @@ namespace DOL.GS.RealmAbilities
 
 			if (m_caster.TargetObject == null)
 			{
-				m_caster.Out.SendMessage("You need a target for this ability!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				m_caster.Out.SendMessage(LanguageMgr.GetTranslation(m_caster.Client.Account.Language, "RealmAbility.Message.NeedTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				m_caster.DisableSkill(this, 3 * 1000);
 				return;
 			}
 
 			if ( !m_caster.IsWithinRadius( m_caster.TargetObject, (int)( 1500 * m_caster.GetModified(eProperty.SpellRange) * 0.01 ) ) )
 			{
-				m_caster.Out.SendMessage(m_caster.TargetObject + " is too far away.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+				m_caster.Out.SendMessage(LanguageMgr.GetTranslation(m_caster.Client.Account.Language, "RealmAbility.Message.TargetTooFarAwayPeriod", m_caster.TargetObject), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -62,11 +63,11 @@ namespace DOL.GS.RealmAbilities
 			{
 				if (i_player == m_caster)
 				{
-					i_player.MessageToSelf("You cast " + this.Name + "!", eChatType.CT_Spell);
+					i_player.MessageToSelf(LanguageMgr.GetTranslation(i_player.Client.Account.Language, "RealmAbility.Generic.CastSelf", Name), eChatType.CT_Spell);
 				}
 				else
 				{
-					i_player.MessageFromArea(m_caster, m_caster.Name + " casts a spell!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+					i_player.MessageFromArea(m_caster, LanguageMgr.GetTranslation(i_player.Client.Account.Language, "RealmAbility.Message.CasterCastsSpell", m_caster.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 				}
 
 				i_player.Out.SendSpellCastAnimation(m_caster, 7025, 20);
@@ -76,7 +77,7 @@ namespace DOL.GS.RealmAbilities
 			{
 				m_caster.RealmAbilityCastTimer.Stop();
 				m_caster.RealmAbilityCastTimer = null;
-				m_caster.Out.SendMessage("You cancel your Spell!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+				m_caster.Out.SendMessage(LanguageMgr.GetTranslation(m_caster.Client.Account.Language, "RealmAbility.Message.CancelSpell"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 			}
 
 			m_caster.RealmAbilityCastTimer = new ECSGameTimer(m_caster);
@@ -88,14 +89,14 @@ namespace DOL.GS.RealmAbilities
 		{
 			if (m_caster.TargetObject == null)
 			{
-				m_caster.Out.SendMessage("You need a target for this ability!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				m_caster.Out.SendMessage(LanguageMgr.GetTranslation(m_caster.Client.Account.Language, "RealmAbility.Message.NeedTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				m_caster.DisableSkill(this, 3 * 1000);
 				return 0;
 			}
 
             if ( !m_caster.IsWithinRadius( m_caster.TargetObject, (int)( 1500 * m_caster.GetModified( eProperty.SpellRange ) * 0.01 ) ) )
 			{
-				m_caster.Out.SendMessage(m_caster.TargetObject + " is too far away.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+				m_caster.Out.SendMessage(LanguageMgr.GetTranslation(m_caster.Client.Account.Language, "RealmAbility.Message.TargetTooFarAwayPeriod", m_caster.TargetObject), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 				return 0;
 			}
 
@@ -110,7 +111,7 @@ namespace DOL.GS.RealmAbilities
 					continue;
 
 				mob.TakeDamage(m_caster, eDamageType.Heat, m_dmgValue, 0);
-				m_caster.Out.SendMessage("You hit the " + mob.Name + " for " + m_dmgValue + " damage.", eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+				m_caster.Out.SendMessage(LanguageMgr.GetTranslation(m_caster.Client.Account.Language, "RealmAbility.Damage.YouHitTheForDamage", mob.Name, m_dmgValue), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
 				foreach (GamePlayer player2 in m_caster.TargetObject.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 				{
 					player2.Out.SendSpellEffectAnimation(m_caster, mob, 7025, 0, false, 1);
@@ -123,8 +124,8 @@ namespace DOL.GS.RealmAbilities
 					continue;
 
 				aeplayer.TakeDamage(m_caster, eDamageType.Heat, m_dmgValue, 0);
-				m_caster.Out.SendMessage("You hit " + aeplayer.Name + " for " + m_dmgValue + " damage.", eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
-				aeplayer.Out.SendMessage(m_caster.Name + " hits you for " + m_dmgValue + " damage.", eChatType.CT_System, eChatLoc.CL_SystemWindow); 
+				m_caster.Out.SendMessage(LanguageMgr.GetTranslation(m_caster.Client.Account.Language, "RealmAbility.Damage.YouHitForDamage", aeplayer.Name, m_dmgValue), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+				aeplayer.Out.SendMessage(LanguageMgr.GetTranslation(aeplayer.Client.Account.Language, "RealmAbility.Damage.CasterHitsYouForDamage", m_caster.Name, m_dmgValue), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				foreach (GamePlayer player3 in m_caster.TargetObject.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 				{
 					player3.Out.SendSpellEffectAnimation(m_caster, aeplayer, 7025, 0, false, 1);

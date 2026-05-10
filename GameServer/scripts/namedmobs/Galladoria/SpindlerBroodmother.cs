@@ -189,7 +189,7 @@ namespace DOL.AI.Brain
                 {
                     foreach (GameNPC npc in Body.GetNPCsInRadius(4000))
                     {
-                        if (npc.Brain is SBAddsBrain && npc != null && npc.IsAlive)
+                        if (npc != null && npc.IsAlive && npc.Brain is SBAddsBrain)
                         {
                             npc.RemoveFromWorld();
                         }
@@ -348,7 +348,7 @@ namespace DOL.AI.Brain
                     {
                         GamePlayer Target = Port_Enemys[Util.Random(0, Port_Enemys.Count - 1)];
                         TeleportTarget = Target;
-                        if (TeleportTarget.IsAlive && TeleportTarget != null)
+                        if (TeleportTarget != null && TeleportTarget.IsAlive)
                         {
                             new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(TeleportPlayer), 3000);
                         }
@@ -359,7 +359,7 @@ namespace DOL.AI.Brain
         }
         public int TeleportPlayer(ECSGameTimer timer)
         {
-            if (TeleportTarget.IsAlive && TeleportTarget != null && HasAggro)
+            if (TeleportTarget != null && TeleportTarget.IsAlive && HasAggro)
             {
                 TeleportTarget.MoveTo(Body.CurrentRegionID, 21115, 53483, 11286, 2100);
                 Port_Enemys.Remove(TeleportTarget);

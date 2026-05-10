@@ -21,7 +21,7 @@ namespace DOL.GS
         static List<List<byte>> w_fights = new List<List<byte>>();
         static List<List<byte>> w_groups = new List<List<byte>>();
 
-        public static long NFTime { get { return WorldMgr.GetRegion(163).Time; } }
+        public static long NFTime { get { return WorldMgr.GetRegion(163)?.Time ?? GameLoop.GameLoopTime; } }
 
         public class Fight
         {
@@ -43,7 +43,7 @@ namespace DOL.GS
             public byte Y; // 0..3
             public byte Realm;
         }
-        
+
         public static bool AddFight(byte zoneid, int x, int y, byte realm1, byte realm2)
         {
             if (!ServerProperties.Properties.ENABLE_WARMAPMGR)
@@ -94,7 +94,7 @@ namespace DOL.GS
             try
             {
                 long nftime = NFTime;
-                
+
                 #region CalculFights
                 lock (m_fights)
                 {
@@ -240,7 +240,7 @@ namespace DOL.GS
                 log.Error("WarMapMgr.Calcul: " + e);
             }
         }
-        
+
         public static void SendFightInfo(GameClient client)
         {
             if (!ServerProperties.Properties.ENABLE_WARMAPMGR)

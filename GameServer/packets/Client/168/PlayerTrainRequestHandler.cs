@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DOL.GS.Commands;
 using DOL.GS.RealmAbilities;
+using DOL.Language;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -38,7 +39,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
             if (tree == null)
             {
-                client.Out.SendMessage("Could not find Champion Spec!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Train.Champion.SpecNotFound"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
@@ -46,19 +47,19 @@ namespace DOL.GS.PacketHandler.Client.v168
 
             if (skillStatus.Item1 == 1)
             {
-                client.Out.SendMessage("You already have that ability!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Train.Champion.AlreadyHaveAbility"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
             if (skillStatus.Item1 != 2)
             {
-                client.Out.SendMessage("You do not meet the requirements for that ability!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Train.Champion.RequirementsNotMet"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
             if (client.Player.ChampionSpecialtyPoints < 1)
             {
-                client.Out.SendMessage("You do not have enough champion specialty points for that ability!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Train.Champion.NotEnoughPoints"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
@@ -168,14 +169,14 @@ namespace DOL.GS.PacketHandler.Client.v168
 
                         if (client.Player.RealmSpecialtyPoints < cost)
                         {
-                            client.Out.SendMessage($"{ra.Name} costs {cost} realm ability points!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                            client.Out.SendMessage("You don't have that many realm ability points left to get this.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Train.RealmAbility.Cost", ra.Name, cost), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Train.RealmAbility.NotEnoughPoints"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             continue;
                         }
 
                         if (!ra.CheckRequirement(client.Player))
                         {
-                            client.Out.SendMessage($"You are not experienced enough to get {ra.Name} now. Come back later.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Train.RealmAbility.NotExperiencedEnough", ra.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             continue;
                         }
 

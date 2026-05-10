@@ -46,7 +46,7 @@ namespace DOL.GS.Commands
 		 * Type '/relic' to display the relic status.
 		 */
 
-		
+
 
 		public void OnCommand(GameClient client, string[] args)
 		{
@@ -71,9 +71,9 @@ namespace DOL.GS.Commands
 				{
 					continue;
 				}
-				
+
 				if (keep is GameKeep)
-					albKeeps += KeepStringBuilder(keep);
+					albKeeps += KeepStringBuilder(client.Account.Language, keep);
 			}
 
 			foreach (AbstractGameKeep keep in midKeepList)
@@ -88,9 +88,9 @@ namespace DOL.GS.Commands
 				}
 
 				if (keep is GameKeep)
-					midKeeps += KeepStringBuilder(keep);
+					midKeeps += KeepStringBuilder(client.Account.Language, keep);
 			}
-			
+
 			foreach (AbstractGameKeep keep in hibKeepList)
 			{
 				if (keep.IsPortalKeep)
@@ -101,11 +101,11 @@ namespace DOL.GS.Commands
 				{
 					continue;
 				}
-				
+
 				if (keep is GameKeep)
-					hibKeeps += KeepStringBuilder(keep);
+					hibKeeps += KeepStringBuilder(client.Account.Language, keep);
 			}
-			
+
 			// foreach (AbstractGameKeep keep in keepList)
 			// {
 			// 	if (keep is GameKeep)
@@ -134,43 +134,57 @@ namespace DOL.GS.Commands
 
 			if (ServerProperties.Properties.ALLOW_ALL_REALMS_DF)
 			{
-				realmInfo.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Realm.DarknessFalls") + ": All Realms");
+				realmInfo.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Realm.DarknessFalls") + ": " + LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Common.Realm.All"));
 			}
 			else
 			{
-				realmInfo.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Realm.DarknessFalls") + ": " + GlobalConstants.RealmToName(DFEnterJumpPoint.DarknessFallOwner));
+				realmInfo.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Realm.DarknessFalls") + ": " + TranslateRealm(client.Account.Language, DFEnterJumpPoint.DarknessFallOwner));
 				if (DFEnterJumpPoint.LastRealmSwapTick + DFEnterJumpPoint.GracePeriod >= GameLoop.GameLoopTime)
 				{
 					var pve = DFEnterJumpPoint.LastRealmSwapTick + DFEnterJumpPoint.GracePeriod - GameLoop.GameLoopTime;
-					string realmName = string.Empty;
-					if (DFEnterJumpPoint.PreviousOwner == eRealm._LastPlayerRealm || 
+					eRealm realm = eRealm.None;
+					if (DFEnterJumpPoint.PreviousOwner == eRealm._LastPlayerRealm ||
 					    DFEnterJumpPoint.PreviousOwner == eRealm.Hibernia)
-						realmName = "Hibernia";
+						realm = eRealm.Hibernia;
 					if (DFEnterJumpPoint.PreviousOwner == eRealm._FirstPlayerRealm ||
 					    DFEnterJumpPoint.PreviousOwner == eRealm.Albion)
-						realmName = "Albion";
+						realm = eRealm.Albion;
 					if (DFEnterJumpPoint.PreviousOwner == eRealm.Midgard)
-						realmName = "Midgard";
-					if(realmName != string.Empty)
-						realmInfo.Add(realmName + " can enter Darkness Falls for another " + TimeSpan.FromMilliseconds(pve).Minutes + "m " + TimeSpan.FromMilliseconds(pve).Seconds + "s");
-				}	
+						realm = eRealm.Midgard;
+					if(realm != eRealm.None)
+						realmInfo.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Realm.DarknessFallsGrace",
+							TranslateRealm(client.Account.Language, realm),
+							TimeSpan.FromMilliseconds(pve).Minutes,
+							TimeSpan.FromMilliseconds(pve).Seconds));
+				}
 			}
-			
+
 			realmInfo.Add(" ");
 			realmInfo.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Realm.UseRelicCommand"));
 			client.Out.SendCustomTextWindow(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Realm.Title"), realmInfo);
 		}
 
-		private string KeepStringBuilder(AbstractGameKeep keep)
+		private string KeepStringBuilder(string language, AbstractGameKeep keep)
 		{
 			string buffer = string.Empty;
-			buffer += keep.Name + ": " + GlobalConstants.RealmToName(keep.Realm);
+			buffer += keep.Name + ": " + TranslateRealm(language, keep.Realm);
 			if (keep.Guild != null)
 			{
 				buffer += " (" + keep.Guild.Name + ")";
 			}
 			buffer += "\n";
 			return buffer;
+		}
+
+		private static string TranslateRealm(string language, eRealm realm)
+		{
+			return realm switch
+			{
+				eRealm.Albion => LanguageMgr.GetTranslation(language, "Scripts.Common.Realm.Albion"),
+				eRealm.Midgard => LanguageMgr.GetTranslation(language, "Scripts.Common.Realm.Midgard"),
+				eRealm.Hibernia => LanguageMgr.GetTranslation(language, "Scripts.Common.Realm.Hibernia"),
+				_ => LanguageMgr.GetTranslation(language, "Scripts.Common.Realm.None"),
+			};
 		}
 	}
 }

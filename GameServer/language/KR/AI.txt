@@ -1,0 +1,13 @@
+﻿# Brains
+
+## Necromancer Pet
+AI.Brain.Necromancer.CastSpellAfterAction:	{0}은(는) 현재 행동이 끝난 뒤 이 주문을 시전하기 시작합니다.
+AI.Brain.Necromancer.ServantFarAwayToCast:	하인이 대상과 너무 멀어 그 주문을 시전할 수 없습니다!
+AI.Brain.Necromancer.PetCantSeeTarget:		조종 중인 {0}이(가) 대상을 볼 수 없습니다!
+AI.Brain.Necromancer.PetCastingSpell:		{0}이(가) 주문을 시전하기 시작합니다!
+AI.Brain.Necromancer.PetTooFarBeLostSecIm:	하인이 당신과 너무 멀어 {0}초 후 사라집니다. 더 멀어지면 즉시 사라집니다.
+AI.Brain.Necromancer.PetTooFarBeLostSec:	하인이 당신과 너무 멀어 {0}초 후 사라집니다.
+AI.Brain.Necromancer.HaveLostBondToPet:		하인과의 결속을 잃었습니다.
+AI.Brain.Necromancer.SpellNoLongerInQueue:	{0} 주문은 더 이상 {1}의 대기열에 없습니다.
+AI.Brain.Necromancer.NoPower:				그것을 시전할 파워가 부족합니다!
+AI.Brain.StandardMobBrain.YouProtDist:		{0}을(를) 보호하며 {1}의 주의를 분산시킵니다.

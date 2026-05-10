@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -48,7 +49,7 @@ namespace DOL.GS.RealmAbilities
 					DisableSkill(living);
 			}
 		}
-		
+
 
 		private bool restoreMana(GameLiving target, GamePlayer owner)
 		{
@@ -59,12 +60,12 @@ namespace DOL.GS.RealmAbilities
 			if (modheal > mana)
 				modheal = mana;
 			if (target is GamePlayer && target != owner)
-				((GamePlayer)target).Out.SendMessage(owner.Name + " restores you " + modheal + " points of mana, and 50% of your endurance.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+				((GamePlayer)target).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)target).Client.Account.Language, "RealmAbility.Epiphany.RestoresYou", owner.Name, modheal), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 			if (target != owner)
-				owner.Out.SendMessage("You restore" + target.Name + " " + modheal + " points of mana, and 50% of their endurance.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+				owner.Out.SendMessage(LanguageMgr.GetTranslation(owner.Client.Account.Language, "RealmAbility.Epiphany.RestoreTarget", target.Name, modheal), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 			if (target == owner)
-				owner.Out.SendMessage("You restore yourself " + modheal + " points of mana, and 50% of your endurance.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
-			
+				owner.Out.SendMessage(LanguageMgr.GetTranslation(owner.Client.Account.Language, "RealmAbility.Epiphany.RestoreSelf", modheal), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+
             target.Mana += modheal;
 
             //[StephenxPimentel]

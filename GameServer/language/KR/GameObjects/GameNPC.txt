@@ -1,0 +1,28 @@
+﻿# Game NPC
+
+## Examine
+GameNPC.GetExamineMessages.YouExamine:              {0}을(를) 살펴봅니다. {1}은(는) {2}{3}입니다.
+
+## Faction
+GameNPC.GetAggroLevelString.Aggressive1:	공격적
+GameNPC.GetAggroLevelString.Aggressive2:	공격적
+GameNPC.GetAggroLevelString.Friendly1:		우호적
+GameNPC.GetAggroLevelString.Friendly2:		우호적
+GameNPC.GetAggroLevelString.Hostile1:		적대적
+GameNPC.GetAggroLevelString.Hostile2:		적대적
+GameNPC.GetAggroLevelString.Neutral1:		중립적
+GameNPC.GetAggroLevelString.Neutral2:		중립적
+GameNPC.GetAggroLevelString.TowardsYou:		당신에게 {0}
+
+## Interact
+GameNPC.Interact.TooFarAway:                        {0}와(과) 상호작용하기에는 너무 멀리 있습니다.
+GameNPC.Interact.DirtyLook:					{0}이(가) 못마땅한 눈빛으로 바라봅니다.
+GameNPC.SayTo.Says:							{0}: "{1}"
+GameNPC.SayTo.SpeaksTo:						{0}이(가) {1}에게 말합니다
+
+## Death
+GameNPC.Die.Area:							{0}이(가) 죽었습니다!
+
+## Receive
+GameLiving.ReceiveItem:					{0}은(는) 이 아이템을 원하지 않습니다!
+GameLiving.ReceiveMoney:				{0}은(는) 당신의 돈을 원하지 않습니다!

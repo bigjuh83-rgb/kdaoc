@@ -1,16 +1,16 @@
 ﻿/*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -21,6 +21,7 @@ using System;
 using System.Reflection;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -53,15 +54,15 @@ namespace DOL.GS.Commands
 			if (args.Length < 2)
             {
 				if (key != string.Empty)
-					SendMessage(client, "Current instance key is " + key);
-					
+					SendMessageKey(client, "GMCommands.Instance.CurrentKey", key);
+
 				DisplaySyntax(client);
                 return;
             }
 
             if (key == string.Empty && args[1] != "key")
             {
-                SendMessage(client, "You must first assign an instance to work with using /instance key <ID>.");
+                SendMessageKey(client, "GMCommands.Instance.MustAssignKey");
                 return;
             }
 
@@ -71,7 +72,7 @@ namespace DOL.GS.Commands
                 case "key":
 					string newKey = string.Join(" ", args, 2, args.Length - 2);
                     client.Player.TempProperties.SetProperty(INSTANCE_KEY, newKey);
-					SendMessage(client, "Instance key set to " + newKey);
+					SendMessageKey(client, "GMCommands.Instance.KeySet", newKey);
 					break;
                 #endregion
                 #region Create Entry
@@ -115,12 +116,12 @@ namespace DOL.GS.Commands
 							//Dinberg: place a marker at this spot!
 							string theType = args[2];
 
-							SendMessage(client, "Created an element here! Use your memory for now, I sure as hell dont have anything else to show you where it is ^^");
+							SendMessageKey(client, "GMCommands.Instance.ElementCreated");
 
 							//Only create ones that have namespaces (signified by '.')
 							if (theType.Contains("."))
 							{
-								SendMessage(client, "theType suspected to be a ClassType - attempting to invoke a marker of this class.");
+								SendMessageKey(client, "GMCommands.Instance.InvokingMarker");
 								GameObject obj = null;
 
 								//Now we have the classtype to create, create it thus!
@@ -168,14 +169,14 @@ namespace DOL.GS.Commands
 									obj.Model = 100; // bag
 
 								if (!obj.AddToWorld())
-									client.Out.SendMessage("Error: Object not added to world correctly!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+									client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Instance.ObjectNotAdded"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 								else
-									client.Out.SendMessage("Object added!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+									client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Instance.ObjectAdded"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 							}
 						}
 						catch (Exception ex)
 						{
-							client.Out.SendMessage("An Exception has occurred when trying to add object, review server error logs! Exception: " + ex.Message, eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Instance.AddObjectException", ex.Message), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 							log.Error("Instance Entry Error", ex);
 						}
                     }
@@ -192,12 +193,12 @@ namespace DOL.GS.Commands
 
                         if (o == null)
                         {
-                            client.Out.SendMessage("Could not find the entry in the database! <key=" + ObjectId + ">", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Instance.EntryNotFound", ObjectId), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
                         GameServer.Database.DeleteObject(o);
-                        client.Out.SendMessage("Object removed!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+                        client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Instance.ObjectRemoved"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 
                         //Remove object...
                         obj.RemoveFromWorld();
@@ -211,7 +212,7 @@ namespace DOL.GS.Commands
 					{
 						if (player.CurrentRegion.IsInstance)
 						{
-							SendMessage(client, "You are already in an instance, use /instance exit to get out.");
+							SendMessageKey(client, "GMCommands.Instance.AlreadyInInstance");
 							return;
 						}
 
@@ -219,14 +220,14 @@ namespace DOL.GS.Commands
 						{
 							if (args.Length < 3)
 							{
-								throw new Exception("You need to provide a skin id.  A skin is the ID of the region you want this instance to look like.");
+								throw new Exception(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Instance.NeedSkinId"));
 							}
 
 							Instance newInstance = player.TempProperties.GetProperty<Instance>(key);
 
 							if (newInstance != null)
 							{
-								throw new Exception("You already have an instance '" + key + "' created, please close it before creating another.");
+								throw new Exception(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Instance.AlreadyCreated", key));
 							}
 
 							ushort skinID = Convert.ToUInt16(args[2]);
@@ -235,11 +236,11 @@ namespace DOL.GS.Commands
 
 							if (newInstance == null)
 							{
-								SendMessage(client, "Instance creation failed.");
+								SendMessageKey(client, "GMCommands.Instance.CreationFailed");
 							}
 							else
 							{
-								SendMessage(client, "Instance created, now loading elements for instance '" + key + "' from the DB.");
+								SendMessageKey(client, "GMCommands.Instance.CreatedLoading", key);
 								newInstance.LoadFromDatabase(key);
 								player.TempProperties.SetProperty(key, newInstance);
 							}
@@ -259,7 +260,7 @@ namespace DOL.GS.Commands
 
 						if (newInstance == null)
 						{
-							SendMessage(client, "Can't find an instance to delete.");
+							SendMessageKey(client, "GMCommands.Instance.CantFindDelete");
 						}
 						else
 						{
@@ -267,11 +268,11 @@ namespace DOL.GS.Commands
 							newInstance.DestroyWhenEmpty = true;
 							if (newInstance.NumPlayers == 0)
 							{
-								SendMessage(client, "Instance closed.");
+								SendMessageKey(client, "GMCommands.Instance.Closed");
 							}
 							else
 							{
-								SendMessage(client, "Instance will close once all players leave.");
+								SendMessageKey(client, "GMCommands.Instance.CloseWhenEmpty");
 							}
 						}
 					}
@@ -282,7 +283,7 @@ namespace DOL.GS.Commands
 					{
 						if (player.CurrentRegion.IsInstance)
 						{
-							SendMessage(client, "You are already in an instance, use /instance exit to get out.");
+							SendMessageKey(client, "GMCommands.Instance.AlreadyInInstance");
 							return;
 						}
 
@@ -290,7 +291,7 @@ namespace DOL.GS.Commands
 
 						if (newInstance == null)
 						{
-							SendMessage(client, "Can't find an instance to test, you will need to create one first.");
+							SendMessageKey(client, "GMCommands.Instance.CantFindTest");
 						}
 						else
 						{
@@ -317,19 +318,19 @@ namespace DOL.GS.Commands
 
 							if (!player.MoveTo(newInstance.ID, x, y, z, heading))
 							{
-								SendMessage(client, "MoveTo to entrance failed, now trying to move to current location inside the instance.");
+								SendMessageKey(client, "GMCommands.Instance.EntranceMoveFailed");
 
 								if (!player.MoveTo(newInstance.ID, player.X, player.Y, player.Z, player.Heading))
 								{
-									SendMessage(client, "That failed as well.  Either add an entrance to this instance or move in the world to a corresponding instance location.");
+									SendMessageKey(client, "GMCommands.Instance.CurrentMoveFailed");
 									success = false;
 								}
 							}
 
 							if (success)
 							{
-								SendMessage(client, "Welcome to Instance ID " + newInstance.ID + ", Skin: " + newInstance.Skin + ", with " + newInstance.Zones.Count + " zones and " + newInstance.Objects.Length + " objects inside the region!");
-								SendMessage(client, "Use '/instance exit' to leave if you get stuck.");
+								SendMessageKey(client, "GMCommands.Instance.Welcome", newInstance.ID, newInstance.Skin, newInstance.Zones.Count, newInstance.Objects.Length);
+								SendMessageKey(client, "GMCommands.Instance.ExitInstructions");
 							}
 						}
 					}
@@ -340,7 +341,7 @@ namespace DOL.GS.Commands
 					{
 						if (!player.CurrentRegion.IsInstance)
 						{
-							SendMessage(client, "You need to be in an instance to use this command.");
+							SendMessageKey(client, "GMCommands.Instance.NeedToBeInInstance");
 							return;
 						}
 
@@ -379,6 +380,11 @@ namespace DOL.GS.Commands
         public void SendMessage(GameClient c, string str)
         {
 			c.Out.SendMessage(str, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+        }
+
+        public void SendMessageKey(GameClient c, string key, params object[] args)
+        {
+			c.Out.SendMessage(LanguageMgr.GetTranslation(c.Account.Language, key, args), eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
     }
 }

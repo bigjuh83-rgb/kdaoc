@@ -1,0 +1,212 @@
+﻿# (All)
+
+## Tradeskill Names
+Crafting.Name.Alchemy:					    연금술
+Crafting.Name.Armorcraft:				    방어구 제작
+Crafting.Name.BasicCrafting:			    기본 제작
+Crafting.Name.Clothworking:				    천 가공
+Crafting.Name.Evocation:				    주문 제작
+Crafting.Name.Fletching:				    활 제작
+Crafting.Name.Gemcutting:				    보석 세공
+Crafting.Name.Herbcrafting:				    약초 제작
+Crafting.Name.Leathercrafting:			    가죽 가공
+Crafting.Name.Metalworking:				    금속 가공
+Crafting.Name.Siegecraft:				    공성 제작
+Crafting.Name.Tailoring:				    재봉
+Crafting.Name.Weaponcraft:				    무기 제작
+Crafting.Name.Woodworking:				    목재 가공
+
+## Crafting Titles
+CraftersTitle.Helper:						{0} 조수
+CraftersTitle.JuniorApprentice:				초급 견습 {0}
+CraftersTitle.Apprentice:					견습 {0}
+CraftersTitle.Neophyte:						신입 {0}
+CraftersTitle.Assistant:					보조 {0}
+CraftersTitle.Junior:						하급 {0}
+CraftersTitle.Journeyman:					숙련 {0}
+CraftersTitle.Senior:						상급 {0}
+CraftersTitle.Master:						마스터 {0}
+CraftersTitle.Grandmaster:					그랜드마스터 {0}
+CraftersTitle.Legendary:					전설의 {0}
+CraftersTitle.LegendaryGrandmaster:			전설의 그랜드마스터 {0}
+
+## Crafting Professions
+CraftersProfession.Alchemist:				연금술사
+CraftersProfession.Armorer:					방어구 제작자
+CraftersProfession.Spellcrafter:			주문 제작자
+CraftersProfession.Fletcher:				활 제작자
+CraftersProfession.Tailor:					재봉사
+CraftersProfession.Weaponcrafter:			무기 제작자
+CraftersProfession.Siegecrafter:			공성 제작자
+CraftersProfession.BasicCrafter:			기본 제작자
+
+## Craft Master Dialogue
+TailorsMaster.AcceptedByOrderName:			재봉사 조합
+TailorsMaster.GuildOrder:				    재봉사
+TailorsMaster.InitialEntersentence:			[재봉사] 조합에 가입하시겠습니까? 재봉사는 천과 가죽 방어구를 만들 수 있습니다. 재봉에 뛰어나고 활 제작에도 능숙하지만, 무기 제작과 방어구 제작은 어려울 것입니다. 숙련된 재봉사는 필요할 때 간단한 공성 제작도 수행할 수 있습니다.
+SpellCraftingMaster.AcceptedByOrderName:	주문 제작자 조합
+SpellCraftingMaster.GuildOrder:				주문 제작자
+SpellCraftingMaster.InitialEntersentence:	[주문 제작자] 조합에 가입하시겠습니까? 주문 제작자는 제작 아이템에 주입해 새로운 마법 속성을 부여하는 보석을 만들 수 있습니다. 연금술에도 어느 정도 재능이 있으며, 보석 세공에도 뛰어납니다.
+SiegecraftingMaster.AcceptedByOrderName:	공성 제작자 조합
+SiegecraftingMaster.GuildOrder:				공성 제작자
+SiegecraftingMaster.InitialEntersentence:	[공성 제작자] 조합에 가입하시겠습니까? 공성 제작자는 렐름 방어를 돕는 정교한 전쟁 장비를 만들 수 있습니다!
+FletchingMaster.AcceptedByOrderName:			활 제작자 조합
+FletchingMaster.GuildOrder:				    활 제작자
+FletchingMaster.InitialEntersentence:		[활 제작자] 조합에 가입하시겠습니까? 활 제작자는 활, 화살, 지팡이를 만들 수 있습니다. 활 제작에 뛰어나고 무기 제작에도 능숙하지만, 방어구 제작과 재봉은 어려울 것입니다. 숙련된 활 제작자는 필요할 때 공성 제작도 상당히 잘 수행할 수 있습니다.
+BasicCraftingMaster.AcceptedByOrderName:	기본 제작
+BasicCraftingMaster.GuildOrder:				기본 제작자
+ArmorCraftingMaster.AcceptedByOrderName:	방어구 제작자 조합
+ArmorCraftingMaster.GuildOrder:				방어구 제작자
+ArmorCraftingMaster.InitialEntersentence:	[방어구 제작자] 조합에 가입하시겠습니까? 방어구 제작자는 징 박힌 가죽 갑옷부터 사슬 갑옷까지 다양한 방어구를 만들 수 있습니다. 방어구 제작에 뛰어나고 재봉과 무기 제작에도 능숙하지만, 활 제작은 어려울 것입니다. 숙련된 방어구 제작자는 필요할 때 간단한 공성 제작도 수행할 수 있습니다.
+AlchemistsMaster.AcceptedByOrderName:		연금술사 조합
+AlchemistsMaster.GuildOrder:				연금술사
+AlchemistsMaster.InitialEntersentence:		[연금술사] 조합에 가입하시겠습니까? 연금술사는 염료, 독, 다양한 마법 물약을 만들 수 있습니다. 제작 아이템에 공격 및 방어 마법 효과를 더하는 마법 팅크처도 만들 수 있습니다. 주문 제작에도 어느 정도 재능이 있으며, 보석 세공에도 뛰어납니다.
+WeaponCraftingMaster.AcceptedByOrderName:	무기 제작자 조합
+WeaponCraftingMaster.GuildOrder:			무기 제작자
+WeaponCraftingMaster.InitialEntersentence:	[무기 제작자] 조합에 가입하시겠습니까? 무기 제작자는 검, 도끼, 망치, 창을 단조할 수 있습니다. 무기 제작에 뛰어나고 방어구 제작에도 능숙하지만, 재봉과 활 제작은 어려울 것입니다. 숙련된 무기 제작자는 필요할 때 공성 제작도 상당히 잘 수행할 수 있습니다.
+
+## Material Requirements
+Crafting.CheckTool.AlchemyKit:				연금술 도구
+Crafting.CheckTool.FindAlchemyKit:			연금술 도구를 찾아야 합니다!
+Crafting.CheckTool.FindAlchemyTable:		연금술 작업대를 찾아야 합니다!
+Crafting.CheckTool.FindForge:				대장간을 찾아야 합니다!
+Crafting.CheckTool.FindLathe:				선반을 찾아야 합니다!
+Crafting.CheckTool.FindMortarPestle:		절구와 공이를 찾아야 합니다!
+Crafting.CheckTool.FindPlaningTool:			대패 도구를 찾아야 합니다!
+Crafting.CheckTool.FindSewingKit:			바느질 도구를 찾아야 합니다!
+Crafting.CheckTool.FindSmithTool:			대장장이 도구를 찾아야 합니다!
+Crafting.CheckTool.FindSpellcraftKit:		주문 제작 도구를 찾아야 합니다!
+Crafting.CheckTool.MortarAndPestle:			절구와 공이
+Crafting.CheckTool.NotHaveTools:			{0}을(를) 만들 도구가 없습니다.
+Crafting.CheckTool.PlaningTool:				대패 도구
+Crafting.CheckTool.SewingKit:				바느질 도구
+Crafting.CheckTool.SmithsHammer:			대장장이 망치
+Crafting.CheckTool.SpellcraftKit:			주문 제작 도구
+
+## Secondary Crafting
+AbstractCraftingSkill.CheckSecondCraftingSkillRequirement.NoClothworkingSkill:		{1}을(를) 만들기 위한 최소 천 가공 기술({0})이 부족합니다!
+AbstractCraftingSkill.CheckSecondCraftingSkillRequirement.NoLeathercraftingSkill:	{1}을(를) 만들기 위한 최소 가죽 가공 기술({0})이 부족합니다!
+AbstractCraftingSkill.CheckSecondCraftingSkillRequirement.NoMetalworkingSkill:		{1}을(를) 만들기 위한 최소 금속 가공 기술({0})이 부족합니다!
+AbstractCraftingSkill.CheckSecondCraftingSkillRequirement.NoWoodworkingSkill:		{1}을(를) 만들기 위한 최소 목재 가공 기술({0})이 부족합니다!
+AbstractCraftingSkill.CheckSecondCraftingSkillRequirement.Rawmaterial:			    ID가 {0}인 아이템을 찾을 수 없습니다. 제보해 주세요!
+
+## Crafting
+GamePlayer.Attack.InterruptedCrafting:			제작을 중단했습니다.
+AbstractCraftingSkill.CraftItem.CantCraftInCombat:      전투 중에는 제작할 수 없습니다!
+AbstractCraftingSkill.CraftItem.CantCraftCasting:       시전 중에는 제작할 수 없습니다!
+AbstractCraftingSkill.CraftItem.BeginWork:		        {0} 제작을 시작합니다. ({1}%)
+AbstractCraftingSkill.CraftItem.ChanceToGainPoint:	    주 제작 기술이 1점 오를 확률은 {0}%입니다.
+AbstractCraftingSkill.CraftItem.CurrentlyMaking:	    현재 제작 중: {0}
+AbstractCraftingSkill.CraftItem.MoveAndInterrupt:	    이동하여 제작 중이던 물품이 취소되었습니다.
+AbstractCraftingSkill.CraftItem.StopWork:		        더 이상 {0}을(를) 만들지 않습니다.
+AbstractCraftingSkill.LooseRawMaterial.Count:		    ({0}) {1}을(를) 잃었습니다.
+AbstractCraftingSkill.LooseRawMaterial.Materials:	    {0} 제작에 실패하여 일부 재료를 잃었습니다!
+AbstractCraftingSkill.MakeItem.LoseNoMaterials:		    {0} 제작에 실패했지만 재료는 잃지 않았습니다!
+AbstractCraftingSkill.MakeItem.NotAllMaterials:		    이 아이템을 만들 재료가 모두 갖춰져 있지 않습니다.
+AbstractCraftingSkill.MakeItem.CouldNotFindRecipeOrItem: 제작할 레시피나 아이템을 찾을 수 없습니다!
+AbstractCraftingSkill.BuildCraftedItem.BackpackFull:	가방이 가득 찼습니다. {0}이(가) 바닥에 생성되었습니다.
+AbstractCraftingSkill.BuildCraftedItem.Masterpiece:	    걸작입니다!
+AbstractCraftingSkill.BuildCraftedItem.Successfully:	{0} 제작에 성공했습니다! ({1})
+AbstractCraftingSkill.CheckRawMaterial.NoIngredients:	{0}을(를) 만들 재료가 없습니다.
+AbstractCraftingSkill.CheckRawMaterial.RawMaterial:	    ID가 {0}인 아이템을 찾을 수 없습니다. 제보해 주세요!
+AbstractCraftingSkill.CheckRawMaterial.YouAreMissing:	부족한 재료:
+AdvancedCraftingSkill.IsAllowedToCombine.NoGoodCombine:	이 아이템에는 이 팅크처를 주입할 수 없습니다!
+AdvancedCraftingSkill.IsAllowedToCombine.ProblemCombine:이 아이템은 설정이 필요합니다. 버그로 제보해 주세요!
+
+## Advanced Crafting
+AdvancedCraftingSkill.CombineItems.OnlyCombine:		    아이템은 하나의 아이템으로만 조합할 수 있습니다!
+AdvancedCraftingSkill.IsAllowedToCombine.CraftedItems:	제작된 아이템만 마법을 부여할 수 있습니다!
+AdvancedCraftingSkill.IsAllowedToCombine.Imbue:		    {0}에 주입할 무언가가 필요합니다!
+AdvancedCraftingSkill.IsAllowedToCombine.NoEnchanted:	이 아이템은 마법을 부여할 수 없습니다!
+
+## Tradeskill Cap
+Crafting.GainCraftingSkillPoints.RaiseAlchemy:		    연금술을 더 올리려면 트레이너를 만나야 합니다!
+Crafting.GainCraftingSkillPoints.RaiseArmorcraft:	    방어구 제작을 더 올리려면 트레이너를 만나야 합니다!
+Crafting.GainCraftingSkillPoints.RaiseFletching:	    활 제작을 더 올리려면 트레이너를 만나야 합니다!
+Crafting.GainCraftingSkillPoints.RaiseSpellcraft:	    주문 제작을 더 올리려면 트레이너를 만나야 합니다!
+Crafting.GainCraftingSkillPoints.RaiseTailoring:	    재봉을 더 올리려면 트레이너를 만나야 합니다!
+Crafting.GainCraftingSkillPoints.RaiseWeaponcraft:	    무기 제작을 더 올리려면 트레이너를 만나야 합니다!
+
+## Alchemy
+Alchemy.IsAllowedToCombine.AlchemyTinctures:		연금술 팅크처만 조합할 수 있습니다!
+Alchemy.IsAllowedToCombine.AlreadyImbued:		    {0}에는 이미 마법 효과가 주입되어 있습니다!
+Alchemy.IsAllowedToCombine.OneTincture:			    아이템 하나에는 팅크처 하나만 조합할 수 있습니다!
+
+## Repairing
+Repair.BeginWork.BeginRepair:				        {0} 수리를 시작합니다.
+Repair.BeginWork.BeginRepairing1:			        {0} 수리를 시작합니다. ({1}%)
+Repair.BeginWork.BeginRepairing2:			        {0}이(가) {1} 수리를 시작합니다.
+Repair.BeginWork.Repairing:				            수리 중: {0}
+Repair.BeginWork.StopRepair1:				        이동하여 {0} 수리를 중단했습니다.
+Repair.BeginWork.StopRepair2:				        {0}이(가) 이동하여 {1} 수리를 중단했습니다.
+Repair.IsAllowedToBeginWork.BackpackItems:		    가방 안의 아이템만 수리할 수 있습니다!
+Repair.IsAllowedToBeginWork.CantRepair:			    {0}은(는) 수리할 수 없습니다!
+Repair.IsAllowedToBeginWork.EndCurrentAction:		무언가를 수리하기 전에 현재 행동을 끝내야 합니다!
+Repair.IsAllowedToBeginWork.FullyRepaired:		    {0}은(는) 완전히 수리되어 있습니다!
+Repair.IsAllowedToBeginWork.NotEnoughSkill:		    {0}을(를) 수리할 기술이 부족합니다!
+Repair.IsAllowedToBeginWork.WeaponCrafter:		    공성 무기를 수리하려면 무기 제작자여야 합니다.
+Repair.Proceed.FailImprove1:				        {0}의 상태를 개선하지 못했습니다.
+Repair.Proceed.FailImprove2:				        {0}이(가) {1}의 상태를 개선하지 못했습니다.
+Repair.Proceed.FullyRepaired1:				        {0}을(를) 완전히 수리했습니다!
+Repair.Proceed.FullyRepaired2:				        {0}이(가) {1}을(를) 완전히 수리했습니다!
+Repair.ProceedSiegeWeapon.FailRepair:			    {0} 수리에 실패했습니다!
+
+## Salvaging
+Salvage.BeginWork.BeginSalvage:				        {0} 분해를 시작합니다.
+Salvage.BeginWork.InterruptSalvage:			        이동하여 분해가 중단되었습니다.
+Salvage.BeginWork.NoRoom:				            인벤토리 공간이 부족합니다!
+Salvage.BeginWork.NoSalvage:				        {0}은(는) 분해할 수 없습니다!
+Salvage.BeginWork.Salvaging:				        분해 중: {0}
+Salvage.Error.ItemToSalvageNotFound:         분해할 아이템을 찾을 수 없습니다!
+Salvage.Error.MaterialIdMissing:             {0}의 분해 레시피에 재료 ID가 없습니다!
+Salvage.Error.MaterialNotFound:              이 아이템을 분해하는 데 필요한 재료({0})를 찾을 수 없습니다!
+Salvage.Error.MissingRawMaterial:            원재료 {0}이(가) 누락되었습니다!
+Salvage.Error.NoMaterialSet:                 이 아이템에는 분해 재료가 설정되어 있지 않습니다.
+Salvage.Error.NoRawMaterialsSiege:           이 공성 무기에 제공된 원재료가 없습니다!
+Salvage.Error.RawMaterialNeededNotFound:     이 아이템을 분해하는 데 필요한 원재료를 찾을 수 없습니다!
+Salvage.Error.RecipeNotFound:                이 아이템의 분해 레시피를 찾을 수 없습니다.
+Salvage.Error.RecipeNotImplemented:          이 아이템의 분해 레시피({0})는 아직 구현되지 않았습니다.
+Salvage.Error.RetrieveData:                  분해 데이터를 가져오는 중 오류가 발생했습니다!
+Salvage.Error.RetrieveDataForItem:           이 아이템의 분해 데이터를 가져오는 중 오류가 발생했습니다!
+Salvage.IsAllowedToBeginWork.CannotSalvageItem:이 아이템은 분해할 수 없습니다.
+Salvage.IsAllowedToBeginWork.CantInCombat:   전투 중에는 분해할 수 없습니다.
+Salvage.IsAllowedToBeginWork.BackpackItems:		    가방 안의 아이템만 분해할 수 있습니다!
+Salvage.IsAllowedToBeginWork.EndCurrentAction:		무언가를 분해하기 전에 현재 행동을 끝내야 합니다!
+Salvage.IsAllowedToBeginWork.NotEnoughSkill:		{0}을(를) 분해할 기술이 부족합니다!
+Salvage.Proceed.GetBackMaterial:			        {2}을(를) 분해하여 {0} {1}을(를) 회수했습니다.
+
+## Spellcrafting
+SpellCrafting.ApplySpellcraftGems.ImbuedItem:		{0}이(가) 아이템 1개에 주입했습니다.
+SpellCrafting.ApplySpellcraftGems.Failed:		    주문 제작에 실패했습니다!
+SpellCrafting.ApplySpellcraftGems.PowerExplodes:	마법 부여의 힘이 눈앞에서 폭발했습니다!
+SpellCrafting.IsAllowedToCombine.AlreadyImbued:		{0}에는 이미 서로 다른 마법 속성 4종이 주입되어 있습니다!
+SpellCrafting.IsAllowedToCombine.DifferentTypes:	{0}에는 서로 다른 마법 속성 4종까지만 주입할 수 있습니다!
+SpellCrafting.IsAllowedToCombine.FalseItem:		    이 아이템은 주문 제작에 사용할 수 없습니다!
+SpellCrafting.IsAllowedToCombine.FalseMaterial:		{0}은(는) 아이템 마법 부여에 사용할 수 없습니다!
+SpellCrafting.IsAllowedToCombine.NoEnchanted:		이 아이템은 마법을 부여할 수 없습니다!
+SpellCrafting.IsAllowedToCombine.NoMoreLevels:		{0}은(는) 5레벨을 초과해 과충전할 수 없습니다!
+SpellCrafting.IsAllowedToCombine.NoSameBonus:		같은 보너스를 한 아이템에 여러 번 넣을 수 없습니다!
+SpellCrafting.IsAllowedToCombine.NotEnoughSkill:	그것을 주입할 기술이 부족합니다!
+SpellCrafting.ShowSpellCraftingInfo.CurrentBonus:	현재 {0}에 붙은 보너스:
+SpellCrafting.ShowSpellCraftingInfo.GemBonuses:	보석 보너스:
+SpellCrafting.ShowSpellCraftingInfo.ImbueCapacity:	주입 포인트 용량 {1} 중 {0} 사용.
+SpellCrafting.ShowSpellCraftingInfos.Losing:		조합 중 아이템을 잃을 확률 {0}%.
+SpellCrafting.ShowSpellCraftingInfos.Modified:		(이 페널티는 아이템 품질과 당신의 기술에 따라 추가로 보정됩니다!)
+SpellCrafting.ShowSpellCraftingInfo.Penalty:		과충전 페널티 {0}%.
+SpellCrafting.ShowSpellCraftingInfo.Success:		과충전 성공률 {0}%.
+SpellCrafting.ShowSpellCraftingInfo.TotalImbue:	{0} 주문 제작 중 (총 주입 포인트 {1}).
+
+## Misc
+### Crafting Titles (OLD)
+CraftLevelToCraftTitle.Helper:				조수
+CraftLevelToCraftTitle.JuniorApprentice:		초급 견습
+CraftLevelToCraftTitle.Apprentice:			견습
+CraftLevelToCraftTitle.Neophyte:			신입
+CraftLevelToCraftTitle.Assistant:			보조
+CraftLevelToCraftTitle.Junior:				하급
+CraftLevelToCraftTitle.Journeyman:			숙련공
+CraftLevelToCraftTitle.Senior:				상급
+CraftLevelToCraftTitle.Master:				마스터
+CraftLevelToCraftTitle.Grandmaster:			그랜드마스터
+CraftLevelToCraftTitle.Legendary:			전설
+CraftLevelToCraftTitle.LegendaryGrandmaster:		전설의 그랜드마스터

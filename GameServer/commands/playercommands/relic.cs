@@ -58,7 +58,7 @@ namespace DOL.GS.Commands
 
             string albStr = string.Empty, albPwr = string.Empty, midStr = string.Empty, midPwr = string.Empty, hibStr = string.Empty, hibPwr = string.Empty;
 			var relicInfo = new List<string>();
-            
+
 
 
             #region Reformat Relics  '[Type]: [OwnerRealm]'
@@ -75,27 +75,27 @@ namespace DOL.GS.Commands
                     case eRealm.Albion:
                         {
                             if (relic.RelicType == eRelicType.Strength)
-								albStr = LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Relic.Strength") + ": " + GlobalConstants.RealmToName(relic.Realm) + relicLoc + " | " + RelicMgr.GetDaysSinceCapture(relic) + "d ago";
+								albStr = BuildRelicLine(client.Account.Language, "Scripts.Players.Relic.Strength", relic, relicLoc);
                             if (relic.RelicType == eRelicType.Magic)
-								albPwr = LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Relic.Power") + ": " + GlobalConstants.RealmToName(relic.Realm) + relicLoc + " | " + RelicMgr.GetDaysSinceCapture(relic) + "d ago";
+								albPwr = BuildRelicLine(client.Account.Language, "Scripts.Players.Relic.Power", relic, relicLoc);
                             break;
                         }
 
                     case eRealm.Midgard:
                         {
                             if (relic.RelicType == eRelicType.Strength)
-								midStr = LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Relic.Strength") + ": " + GlobalConstants.RealmToName(relic.Realm) + relicLoc + " | " + RelicMgr.GetDaysSinceCapture(relic) + "d ago";
+								midStr = BuildRelicLine(client.Account.Language, "Scripts.Players.Relic.Strength", relic, relicLoc);
                             if (relic.RelicType == eRelicType.Magic)
-								midPwr = LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Relic.Power") + ": " + GlobalConstants.RealmToName(relic.Realm) + relicLoc + " | " + RelicMgr.GetDaysSinceCapture(relic) + "d ago";
+								midPwr = BuildRelicLine(client.Account.Language, "Scripts.Players.Relic.Power", relic, relicLoc);
                             break;
                         }
 
                     case eRealm.Hibernia:
                         {
                             if (relic.RelicType == eRelicType.Strength)
-								hibStr = LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Relic.Strength") + ": " + GlobalConstants.RealmToName(relic.Realm) + relicLoc + " | " + RelicMgr.GetDaysSinceCapture(relic) + "d ago";
+								hibStr = BuildRelicLine(client.Account.Language, "Scripts.Players.Relic.Strength", relic, relicLoc);
                             if (relic.RelicType == eRelicType.Magic)
-								hibPwr = LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Relic.Power") + ": " + GlobalConstants.RealmToName(relic.Realm) + relicLoc + " | " + RelicMgr.GetDaysSinceCapture(relic) + "d ago";
+								hibPwr = BuildRelicLine(client.Account.Language, "Scripts.Players.Relic.Power", relic, relicLoc);
                             break;
                         }
                 }
@@ -118,5 +118,25 @@ namespace DOL.GS.Commands
 
             client.Out.SendCustomTextWindow(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Relic.Title"), relicInfo);
         }
+
+		private static string BuildRelicLine(string language, string relicTypeKey, GameRelic relic, string relicLoc)
+		{
+			return LanguageMgr.GetTranslation(language, "Scripts.Players.Relic.StatusLine",
+				LanguageMgr.GetTranslation(language, relicTypeKey),
+				TranslateRealm(language, relic.Realm),
+				relicLoc,
+				RelicMgr.GetDaysSinceCapture(relic));
+		}
+
+		private static string TranslateRealm(string language, eRealm realm)
+		{
+			return realm switch
+			{
+				eRealm.Albion => LanguageMgr.GetTranslation(language, "Scripts.Common.Realm.Albion"),
+				eRealm.Midgard => LanguageMgr.GetTranslation(language, "Scripts.Common.Realm.Midgard"),
+				eRealm.Hibernia => LanguageMgr.GetTranslation(language, "Scripts.Common.Realm.Hibernia"),
+				_ => LanguageMgr.GetTranslation(language, "Scripts.Common.Realm.None"),
+			};
+		}
    }
 }

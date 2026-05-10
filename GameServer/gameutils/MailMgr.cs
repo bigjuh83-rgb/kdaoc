@@ -19,7 +19,7 @@ namespace DOL.Mail
 	public class GZipCompress
 	{
 		/// <summary>
-		/// Compresses files with the gzip algorithm. 
+		/// Compresses files with the gzip algorithm.
 		/// Compressed files will have a path equal to the source file path + ".gz".
 		/// </summary>
 		/// <param name="filesPathsList">An array containing paths of the files to compress.</param>
@@ -50,16 +50,11 @@ namespace DOL.Mail
 		{
 			try
 			{
-				// Stream to read the file
-				FileStream fstream = new FileStream(source, FileMode.Open, FileAccess.Read);
-
 				// We store the complete file into a buffer
-				byte[] buf = new byte[fstream.Length];
-				fstream.Read(buf, 0, buf.Length);
-				fstream.Close();
+				byte[] buf = File.ReadAllBytes(source);
 
 				// Stream to write the compressed file
-				fstream = new FileStream(dest, FileMode.Create);
+				FileStream fstream = new FileStream(dest, FileMode.Create);
 
 				// File compression (fstream is automatically closed)
 				GZipStream zipStream = new GZipStream(fstream, CompressionMode.Compress, false);
@@ -260,7 +255,7 @@ namespace DOL.Mail
 		{
 			if (m_enable == false)
 			{
-				// TODO: Maybe one or both can be removed depending on what you want to print 
+				// TODO: Maybe one or both can be removed depending on what you want to print
 				Logger.Error("SendLogs called but sending mail is not enabled.");
 				return false;
 			}

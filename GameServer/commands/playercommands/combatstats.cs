@@ -1,4 +1,5 @@
 ﻿using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands {
 	[CmdAttribute(
@@ -21,12 +22,12 @@ namespace DOL.GS.Commands {
 			if (args[1].ToLower().Equals("on"))
 			{
 				client.Player.UseDetailedCombatLog = true;
-				client.Out.SendMessage("You will now see detailed combat stats. Use '/combatstats off' to stop seeing these details.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.CombatStats.On"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 			}
 			else if (args[1].ToLower().Equals("off"))
 			{
 				client.Player.UseDetailedCombatLog = false;
-				client.Out.SendMessage("You will no longer see detailed combat stats. Use '/combatstats on' to see these details once more.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.CombatStats.Off"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 			}
 		}
 	}

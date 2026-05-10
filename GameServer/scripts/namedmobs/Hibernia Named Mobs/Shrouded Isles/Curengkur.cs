@@ -121,10 +121,10 @@ namespace DOL.AI.Brain
 				{
 					if (npc != null && npc.IsAlive && npc.Brain is CurengkurNestBrain brain)
 					{
-						if (!brain.HasAggro && target.IsAlive && target != null)
+						if (!brain.HasAggro && target != null && target.IsAlive)
 							brain.AddToAggroList(target, 10);
 					}
-				}				
+				}
 				if (Util.Chance(50) && !Body.IsCasting)
 					Body.CastSpell(CurengkurDD, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 				if (Util.Chance(50) && !Body.IsCasting && !target.effectListComponent.ContainsEffectForEffectType(eEffect.DamageOverTime))
@@ -160,7 +160,7 @@ namespace DOL.AI.Brain
 				}
 				return m_CurengkurDD;
 			}
-		}		
+		}
 		private Spell m_CurengkurPoison;
 		private Spell CurengkurPoison
 		{

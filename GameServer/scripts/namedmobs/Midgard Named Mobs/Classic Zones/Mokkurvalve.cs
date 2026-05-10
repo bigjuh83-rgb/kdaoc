@@ -71,7 +71,7 @@ namespace DOL.GS
 		}
         public override void Die(GameObject killer)
         {
-			BroadcastMessage("Part of " + Name + "'s body falls to the ground.");
+			BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Mokkurvalve.BodyFalls", Name));
 			SpawnShardsAfterDeath();
             base.Die(killer);
         }
@@ -143,7 +143,7 @@ namespace DOL.AI.Brain
         {
 			if (HasAggro && Body.TargetObject != null)
 			{
-				BroadcastMessage("Part of " + Body.Name + "'s body falls to the ground.");
+				BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Mokkurvalve.BodyFalls", Body.Name));
 				MokkurvalveAdds add = new MokkurvalveAdds();
 				add.X = Body.X + Util.Random(-200, 200);
 				add.Y = Body.Y + Util.Random(-200, 200);

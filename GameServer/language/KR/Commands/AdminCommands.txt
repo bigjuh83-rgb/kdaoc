@@ -1,0 +1,195 @@
+﻿# Admin (plvl 3) Commands
+AdminCommands.Command.SyntaxDesc:                           이 명령어는 다음 구문을 사용하세요:
+
+# Admin Command Headers/Dividers
+AdminCommands.Header.Syntax.Account:                    <----- '/account' 명령어 (plvl 3) ----->
+AdminCommands.Header.Syntax.Benchmark:                  <----- '/benchmark' 명령어 (plvl 3) ----->
+AdminCommands.Header.Syntax.Code:                       <----- '/code' 명령어 (plvl 3) ----->
+AdminCommands.Header.Syntax.Freeze:                     <----- '/freeze' 명령어 (plvl 3) ----->
+AdminCommands.Header.Syntax.Plvl:                       <----- '/plvl' 명령어 (plvl 3) ----->
+AdminCommands.Header.Syntax.Refresh:                    <----- '/refresh' 명령어 (plvl 3) ----->
+AdminCommands.Header.Syntax.Reload:                     <----- '/reload' 명령어 (plvl 3) ----->
+AdminCommands.Header.Syntax.Serverprop:                 <----- '/serverproperties' 명령어 (plvl 3) ----->
+AdminCommands.Header.Syntax.Shutdown:                   <----- '/shutdown' 명령어 (plvl 3) ----->
+
+# '/account' Commands
+AdminCommands.Account.Description:					    계정을 새로 만들고, 기존 계정을 관리하며, 계정의 캐릭터 배정을 제어합니다.
+AdminCommands.Account.Syntax.AccountName:               /account accountname <characterName>
+AdminCommands.Account.Usage.AccountName:			    해당 캐릭터와 연결된 계정을 확인합니다. 오프라인 캐릭터에도 사용할 수 있습니다.
+AdminCommands.Account.Syntax.ChangePassword:            /account changepassword <accountName> <newPassword>
+AdminCommands.Account.Usage.ChangePassword:			    기존 계정의 비밀번호를 변경합니다. 플레이어가 비밀번호 초기화를 요청한 경우 계정 소유권을 확인하세요.
+AdminCommands.Account.Syntax.Create:                    /account create <accountName> <password>
+AdminCommands.Account.Usage.Create:					    지정한 로그인 정보로 새 계정을 만듭니다.
+AdminCommands.Account.Syntax.Delete:                    /account delete <accountName>
+AdminCommands.Account.Usage.Delete:					    지정한 계정과 연결된 모든 캐릭터를 함께 삭제합니다.
+AdminCommands.Account.Syntax.DeleteChar:                /account deletecharacter <characterName>
+AdminCommands.Account.Usage.DeleteChar:				    일치하는 캐릭터를 연결된 계정에서 삭제합니다.
+AdminCommands.Account.Syntax.MoveChar:                  /account movecharacter <characterName> <destAccount>
+AdminCommands.Account.Usage.MoveChar:				    지정한 캐릭터를 대상 계정의 같은 렐름에서 비어 있는 첫 슬롯으로 이동합니다.
+AdminCommands.Account.Syntax.Status:                    /account status <accountName> <status>
+AdminCommands.Account.Usage.Status:					    사용자 지정 동작을 정의하는 계정 상태값('0'부터 '255'까지)을 설정합니다.
+AdminCommands.Account.Syntax.Unban:                     /account unban <accountName>
+AdminCommands.Account.Usage.Unban:					    활성화된 계정 차단 상태를 해제합니다. 이 명령어는 IP 전용 차단('/ban ip')은 해제할 수 없지만, '/ban both'와 '/ban account' 기록은 해제합니다.
+AdminCommands.Account.Msg.AccNameForChar:				{0} 캐릭터는 계정 '{1}'에 연결되어 있습니다.
+AdminCommands.Account.Err.AccountBanNotFound:			계정 '{0}'은 현재 차단되어 있지 않습니다!
+AdminCommands.Account.Msg.AccountCreated:				계정 '{0}'을 성공적으로 만들었습니다! 나중에 사용할 수 있도록 로그인 정보를 적어 두세요.
+AdminCommands.Account.Msg.AccountDeleted:				계정 '{0}'을 성공적으로 삭제했습니다!
+AdminCommands.Account.Err.AlreadyRegistered:            이름이 '{0}'인 계정이 이미 존재합니다! 다른 값으로 다시 시도하세요.
+AdminCommands.Account.Err.AccountNotFound:				이름이 '{0}'인 계정이 없습니다. 전체 계정 이름을 정확히 입력했는지 확인하세요.
+AdminCommands.Account.Msg.AccountUnbanned:              계정 '{0}'의 차단을 성공적으로 해제했습니다!
+AdminCommands.Account.Msg.CharacterDeleted:				캐릭터 {0}을 성공적으로 삭제했습니다!
+AdminCommands.Account.Msg.CharacterMovedToAccount:		{0}의 소유권을 계정 '{1}'로 성공적으로 이전했습니다!
+AdminCommands.Account.Err.CharacterNotFound:			이름이 '{0}'인 캐릭터가 없습니다. 캐릭터의 전체 이름을 정확히 입력했는지 확인하세요.
+AdminCommands.Account.Err.CharNotFromValidRealm:		{0}에는 현재 렐름 ID {1}이(가) 배정되어 있습니다. 허용되는 값이 아니므로 캐릭터 이동에 실패했습니다!
+AdminCommands.Account.Err.InvalidNamePass:              새 계정을 만들 수 없습니다! 계정 이름 또는 비밀번호가 너무 짧습니다. 둘 다 최소 4자 이상이어야 합니다.
+AdminCommands.Account.Err.NoFreeSlots:                  대상 계정 '{0}'에는 해당 렐름의 사용 가능한 캐릭터 슬롯이 없습니다! 캐릭터 이전에 실패했습니다.
+AdminCommands.Account.Msg.PasswordChanged:              계정 '{0}'의 비밀번호를 성공적으로 변경했습니다. 필요하면 계정 소유자에게 전달하세요.
+AdminCommands.Account.Err.PasswordChars:                새 비밀번호를 설정할 수 없습니다! 입력한 값이 너무 짧습니다. 보안을 위해 4자 이상의 비밀번호를 입력하세요.
+AdminCommands.Account.Msg.SetStatus:                    계정 '{0}'의 상태를 {1}에서 {2}(으)로 변경했습니다!
+AdminCommands.Account.Err.SpecialChars:                 새 계정을 만들 수 없습니다! 계정 이름에서 특수 문자(예: !@#.?)가 감지되었습니다. 숫자와 소문자만 사용할 수 있습니다.
+AdminCommands.Account.Err.StatusValueReq:               입력한 값이 올바르지 않습니다. '0'부터 '255' 사이의 숫자를 입력하세요.
+
+# '/benchmark' Commands
+AdminCommands.Benchmark.Description:                    지정한 유형의 시스템 벤치마크를 수행합니다. 전체 시스템 성능을 측정하는 데 사용됩니다.
+AdminCommands.Benchmark.Syntax.Listskills:              /benchmark listskills
+AdminCommands.Benchmark.Usage.Listskills:               시스템이 지정된 수의 캐시된 스킬 목록을 나열하는 데 걸리는 전체 시간(밀리초)을 테스트합니다. 주문 시전 특성은 포함되지 않습니다.
+AdminCommands.Benchmark.Syntax.Listspells:              /benchmark listspells
+AdminCommands.Benchmark.Usage.Listspells:               시스템이 지정된 수의 캐시된 주문 목록을 나열하는 데 걸리는 전체 시간(밀리초)을 테스트합니다.
+AdminCommands.Benchmark.Msg.SkillsIterations:           사용 가능한 스킬 {1}개를 나열하는 데 스킬 벤치마크가 {0}ms 걸렸습니다.
+AdminCommands.Benchmark.Msg.SpellsIterations:           사용 가능한 주문 {1}개를 나열하는 데 주문 벤치마크가 {0}ms 걸렸습니다.
+
+# '/code' Commands
+
+# Old /code Command
+AdminCommands.Code.Description:						사용자 지정 코드를 실행합니다!
+AdminCommands.Code.Usage:							/code <codesnippet>
+AdminCommands.Code.ErrorCompiling:					표현식 컴파일 오류:
+AdminCommands.Code.CodeExecuted:					코드가 실행되었습니다...
+
+# '/freeze' Commands
+
+# '/plvl' Commands
+AdminCommands.Plvl.Description:                         계정의 권한 레벨(plvl)을 변경하고 사용자의 plvl에 따라 명령어 유형 접근 권한을 부여하거나 회수합니다. 이 명령어로 게임 내에서 계정에 Admin, GM, Player 명령어 접근 권한을 부여할 수 있습니다.
+AdminCommands.Plvl.Syntax.Comm:                         /plvl command
+AdminCommands.Plvl.Usage.Comm:                          '/plvl' 명령어 유형에 대한 추가 정보를 표시합니다.
+AdminCommands.Plvl.Syntax.Plvl:                         /plvl <newPlvl> <playerName>
+AdminCommands.Plvl.Usage.Plvl:                          대상 플레이어 계정의 권한 레벨을 설정합니다. 이후 해당 역할에 연결된 모든 명령어에 접근할 수 있습니다. Player 상태에서 특정 명령어 유형 접근 권한을 유지하려면 '/plvl single' 또는 '/plvl singleaccount'를 사용하세요.
+AdminCommands.Plvl.Syntax.Remove:                       /plvl remove <commandType> <playerName>
+AdminCommands.Plvl.Usage.Remove:                        '/plvl single'로 플레이어에게 부여했던 특정 명령어 유형 권한을 제거합니다.
+AdminCommands.Plvl.Syntax.AcctRemove:                   /plvl removeaccount <commandType> <playerName>
+AdminCommands.Plvl.Usage.AcctRemove:                    '/plvl singleaccount'로 플레이어 계정에 부여했던 특정 명령어 유형 권한을 제거합니다.
+AdminCommands.Plvl.Syntax.Single:                       /plvl single <commandType> <playerName>
+AdminCommands.Plvl.Usage.Single:                        현재 권한 레벨과 관계없이 캐릭터가 특정 명령어 유형을 사용할 수 있도록 허용합니다. '<commandType>'에는 명령어 식별자만 입력하세요(예: '/player' 명령어는 'player', '/plvl' 명령어는 'plvl' 등).
+AdminCommands.Plvl.Syntax.AcctSingle:                      /plvl singleaccount <commandType> <playerName>
+AdminCommands.Plvl.Usage.AcctSingle:                       현재 권한 레벨과 관계없이 플레이어 계정의 모든 캐릭터가 특정 명령어 유형을 사용할 수 있도록 허용합니다. '<commandType>'에는 명령어 식별자만 입력하세요(예: '/player' 명령어는 'player', '/plvl' 명령어는 'plvl' 등).
+AdminCommands.Plvl.Comm.Intro:                          '/plvl' 명령어 유형으로 계정의 권한 레벨과 해당 계정의 캐릭터가 Player일 때 접근할 수 있는 명령어 유형을 제어할 수 있습니다. 각 plvl에 사용되는 값은 다음과 같습니다:
+AdminCommands.Plvl.Comm.1:                              1 = Player
+AdminCommands.Plvl.Comm.Usage1:                         몹이나 다른 플레이어에게 공격받을 수 있으며 낙하 피해를 받습니다. Player는 기본 슬래시 명령어('/bg', '/gc', '/cg' 등)만 사용할 수 있습니다.
+AdminCommands.Plvl.Comm.2:                              2 = Gamemaster (GM)
+AdminCommands.Plvl.Comm.Usage2:                         몹이나 다른 플레이어에게 공격받지 않고 낙하 피해도 받지 않습니다. GM은 대부분의 특수 슬래시 명령어를 사용할 수 있습니다('/plvl', '/account', '/shutdown' 등 ePrivLevel.Admin이 필요한 명령어 제외).
+AdminCommands.Plvl.Comm.3:                              3 = Admin
+AdminCommands.Plvl.Comm.Usage3:                         몹이나 다른 플레이어에게 공격받지 않고 낙하 피해도 받지 않습니다. Admin은 GM을 포함한 모든 특수 슬래시 명령어를 사용할 수 있습니다.
+AdminCommands.Plvl.Comm.UseSingleAcct:                  이 정수들은 게임 내 기능 또는 전투를 테스트하기 위해 권한 레벨('/plvl <newPlvl> <playerName>')을 변경할 때 사용됩니다.
+AdminCommands.Plvl.Msg.AddSinglePerm:                   {0}에게 '/{1}' 명령어 접근 권한을 부여했습니다!
+AdminCommands.Plvl.Msg.GaveSinglePerm:                  {0}님이 당신에게 '/{1}' 명령어 접근 권한을 부여했습니다! 명령어 목록을 보려면 '/{1}'을 입력하세요.
+AdminCommands.Plvl.Msg.RevokeSinglePerm:                {0}의 '/{1}' 명령어 접근 권한을 회수했습니다!
+AdminCommands.Plvl.Msg.DelSinglePerm:                   {0}님이 당신의 '/{1}' 명령어 접근 권한을 제거했습니다! Player 권한 레벨에서는 더 이상 이 명령어 유형을 사용할 수 없습니다.
+AdminCommands.Plvl.Msg.AddAcct:                         {0}의 계정에 '/{1}' 명령어 접근 권한을 부여했습니다!
+AdminCommands.Plvl.Msg.GaveAcct:                        {0}님이 당신의 계정에 '/{1}' 명령어 접근 권한을 부여했습니다! 명령어 목록을 보려면 '/{1}'을 입력하세요.
+AdminCommands.Plvl.Msg.RevokeAcctPerm:                  {0} 계정의 '/{1}' 명령어 접근 권한을 회수했습니다!
+AdminCommands.Plvl.Msg.DelAcctPerm:                     {0}님이 당신 계정의 '/{1}' 명령어 접근 권한을 제거했습니다! 당신의 캐릭터들은 Player 권한 레벨에서는 더 이상 이 명령어 유형을 사용할 수 없습니다.
+AdminCommands.Plvl.Msg.YourPlvlSet:                     {0}님이 당신 계정의 권한 레벨을 {1}(으)로 변경했습니다!
+AdminCommands.Plvl.Msg.PlvlSet:                         {0} 계정의 권한 레벨을 {1}(으)로 변경했습니다!
+AdminCommands.Plvl.Err.NoPlayerExists:                  이름이 '{0}'인 온라인 플레이어가 없습니다. 플레이어의 전체 이름을 입력했는지, 그리고 해당 플레이어가 온라인인지 확인하세요.
+AdminCommands.Plvl.Err.NoPlayerName:                    '/plvl' 명령어에는 플레이어 이름을 지정해야 합니다!
+AdminCommands.Plvl.Err.NoPermFound:                     {0}에게 '/{1}' 명령어 권한이 부여되어 있지 않습니다.
+AdminCommands.Plvl.Err.NoAcctPermFound:                 {0}의 계정과 '/{1}" 명령어에 대한 권한을 찾을 수 없습니다!
+AdminCommands.Plvl.Err.NoPlvlPerm:                      '/plvl' 권한이 배정되어 있지 않습니다! GM 또는 Player 상태에서는 다시 '/plvl' 명령어에 접근할 수 없습니다.
+AdminCommands.Plvl.Note.PlvlSingle:                     Player 상태에서 특정 명령어 유형 접근 권한을 유지하려면 자세한 내용은 '/plvl single' 또는 '/plvl singleaccount'를 입력하세요.
+
+# '/refresh' Commands
+AdminCommands.Refresh.Description:                      스크립트나 객체에 저장된 특정 정적 데이터 캐시를 새로 고칩니다.
+AdminCommands.Refresh.Syntax:                           /refresh list | ClassName.MethodName
+AdminCommands.Refresh.WrongModule:                      모듈 인수가 올바르지 않습니다. /refresh list를 시도하세요!
+AdminCommands.Refresh.Refreshing:                       --- 모듈 정적 캐시를 새로 고치는 중: {0}
+AdminCommands.Refresh.ReturnedValue:                    --- 모듈 반환값: {0}
+AdminCommands.Refresh.Error:                            -!- 모듈 정적 캐시를 새로 고치는 중 오류 발생: {0} - {1}
+AdminCommands.Refresh.Finished:                         -.- 모듈 정적 캐시 새로 고침 완료: {0}
+AdminCommands.Refresh.AvailableModules:                 새로 고칠 수 있는 모듈:
+
+AdminCommands.Snoop.Description:                        관리자 디버깅을 위해 플레이어의 개인/시스템 메시지를 모니터링합니다.
+AdminCommands.Snoop.Syntax:                             /snoop <player>
+AdminCommands.Snoop.InvalidTarget:                      대상이 올바르지 않습니다.
+AdminCommands.Snoop.NoPlayerFound:                      '{0}'에 해당하는 플레이어를 찾지 못했습니다.
+AdminCommands.Snoop.InsufficientPrivileges:             이 플레이어를 모니터링할 권한이 부족합니다.
+AdminCommands.Snoop.Enabled:                            이제 {0}의 메시지를 모니터링합니다.
+AdminCommands.Snoop.Disabled:                           {0}의 메시지 모니터링을 중지했습니다.
+
+AdminCommands.SpeedHack.Description:                    스피드핵 감지 매개변수를 변경합니다. 변경 내용은 영구 저장되지 않습니다.
+AdminCommands.SpeedHack.Syntax:                         /speedhack <parameter> <value>
+AdminCommands.SpeedHack.InvalidProperty:                "{0}"은(는) 올바른 속성이 아닙니다.
+AdminCommands.SpeedHack.InvalidValue:                   "{0}"은(는) "{1}"에 사용할 수 있는 값이 아닙니다.
+AdminCommands.SpeedHack.ValueSet:                       "{0}" 값을 "{1}"(으)로 설정했습니다.
+AdminCommands.SpeedHack.CurrentValues:                  사용 가능한 속성과 현재 값:
+
+# '/reload' Commands
+
+# '/serverproperties' Commands
+
+# Old /serverproperties Command
+AdminCommands.ServerProperties.Description:			데이터베이스에서 서버 속성을 다시 불러오거나 정리합니다
+AdminCommands.ServerProperties.Usage:				/serverproperties <refresh | cleanup>
+AdminCommands.ServerProperties.DataBaseXML:			XML은 캐시되어 있습니다. MySQL을 사용하지 않으면 서버 속성을 새로 고칠 수 없습니다!
+AdminCommands.ServerProperties.PropertiesRefreshed:	서버 속성을 새로 고쳤습니다!
+
+# '/fixnpcspawn' Commands
+AdminCommands.FixNpcSpawn.Description:          내비메시를 사용해 NPC 위치와 스폰 지점을 보정합니다.
+AdminCommands.FixNpcSpawn.Syntax.Run:          /fixnpcspawn [target|zone|region|world] <SnapDown> <SnapUp> <DryRun(true(기본)/false)>
+AdminCommands.FixNpcSpawn.Syntax.Goto:         /fixnpcspawn goto <index> - 마지막 실행에서 보정된 NPC 위치로 이동합니다
+AdminCommands.FixNpcSpawn.Syntax.Result:       /fixnpcspawn result <page|clear> - 결과를 페이지별로 출력하거나 메모리를 비웁니다
+AdminCommands.FixNpcSpawn.Started:             ==== FixNpcSpawn: {0} ({1}: {2}, {3}: {4}, {5}: {6}) ====
+AdminCommands.FixNpcSpawn.NoNpcsForScope:      선택한 범위에서 NPC를 찾지 못했습니다.
+AdminCommands.FixNpcSpawn.NoResultsInMemory:   메모리에 보정 결과가 없습니다.
+AdminCommands.FixNpcSpawn.InvalidIndex:        인덱스가 올바르지 않습니다.
+AdminCommands.FixNpcSpawn.IndexOutOfRange:     인덱스가 범위를 벗어났습니다. 유효 범위: 0 - {0}
+AdminCommands.FixNpcSpawn.TeleportedToResult:  결과 #{0} 위치로 이동했습니다: {2}의 {1}.
+AdminCommands.FixNpcSpawn.ResultsCleared:      결과를 비웠습니다.
+AdminCommands.FixNpcSpawn.ResultsPageHeader:   ==== 결과 페이지 {0}/{1} (총 {2}) ====
+AdminCommands.FixNpcSpawn.NextPageHint:        다음 페이지를 보려면 '/fixnpcspawn result {0}'을 입력하세요.
+AdminCommands.FixNpcSpawn.TargetNotNpc:        대상이 NPC가 아닙니다.
+AdminCommands.FixNpcSpawn.UnknownScope:        알 수 없는 범위 '{0}'입니다. 사용 가능: target, zone, region, world.
+AdminCommands.FixNpcSpawn.ScanComplete:        NPC {0}개를 검사했습니다. 발견된 문제: {1}개.
+AdminCommands.FixNpcSpawn.TotalResultsHint:    총 결과: {0}개. 자세히 보려면 '/fixnpcspawn result <page>', 해당 위치로 이동하려면 '/fixnpcspawn goto <index>'를 입력하세요.
+AdminCommands.FixNpcSpawn.ResultLine:          [{0}]: {1} ({2:F1} 거리) - {3}
+
+# '/shutdown' Commands
+Dialog.Header.Content.Shutdown:                 ----- 서버 종료의 영향 -----
+Dialog.Header.Content.MoreInfo:                 ----- 추가 정보 -----
+Dialog.Header.Content.Attention:                ----- 주의 -----
+Dialog.Header.Content.PrivLevels:               ----- 권한 레벨 -----
+AdminCommands.Shutdown.Msg.CountdownHours:          {0}시간 후 서버 재부팅이 예정되어 있습니다!
+AdminCommands.Shutdown.Msg.CountdownHrMn:           {0}시간 {1}분 후 서버 재부팅이 예정되어 있습니다!
+AdminCommands.Shutdown.Msg.CountdownMins:           {0}분 후 서버가 재부팅됩니다!
+AdminCommands.Shutdown.Msg.CountdownSecs:           {0}초 후 서버가 재부팅됩니다!
+AdminCommands.Shutdown.Msg.CountdownMnSc:           {0}분 {1}초 후 서버가 재부팅됩니다!
+AdminCommands.Shutdown.Msg.CountdownLogoutSecs:     {0}초 후 서버가 재부팅됩니다! 진행 상황 손실을 방지하려면 지금 로그아웃하세요!
+AdminCommands.Shutdown.Msg.ScheduledShutdown:       {0}에 서버 재부팅이 예약되었습니다. 그동안 서버를 일시적으로 이용할 수 없습니다.
+AdminCommands.Account.Msg.ServerClosed:             서버가 이제 모든 신규 접속을 받지 않습니다! {0}초 후 서버가 종료됩니다!
+AdminCommands.Shutdown.Msg.PlanLogout:              RvR 처치, ROG 드롭 및 기타 진행 상황이 손실되지 않도록 재부팅 전에 플레이어가 로그아웃하는 것을 권장합니다.
+AdminCommands.Shutdown.Comm.Desc1:                  '/shutdown' 명령어는 카운트다운 타이머를 시작하여 남은 시간이 2분 미만일 때 신규 접속을 차단하고 종료 코드를 전송해 모든 DOL 관련 활동을 중지합니다. 현재 작동하지 않는 '/serverreboot' 명령어와 혼동하지 마세요.
+AdminCommands.Shutdown.Msg.YouCancel:               서버 종료 절차를 중지했습니다!
+AdminCommands.Shutdown.Msg.StaffCancel:             {0}님이 서버 종료를 중지했습니다!
+AdminCommands.Shutdown.Msg.ShutdownEnd:             서버 재시작이 취소되었습니다! 추가 안내를 기다려 주세요.
+AdminCommands.Shutdown.Msg.ServerOpen:              서버가 이제 열렸으며 신규 접속을 받고 있습니다!
+AdminCommands.Shutdown.Err.NoShutdown:              현재 예약된 서버 종료가 없습니다!
+AdminCommands.Shutdown.Err.WrongNumber:             서버 종료를 시작할 수 없습니다! 종료 카운터를 시작하려면 '1'(즉, 1분)부터 '720'(즉, 12시간) 사이의 값을 입력하세요. 또는 '/shutdown on <HH>:<MM>'을 사용해 종료를 예약하세요.
+AdminCommands.Shutdown.Msg.AttentionShutdown:       주의: {0}분 후 서버 종료가 진행됩니다! 종료 예정 시각은 {1}입니다.
+AdminCommands.Shutdown.Description:                 서버 전체 종료를 시작합니다.
+AdminCommands.Shutdown.Syntax.Comm:                 /shutdown command
+AdminCommands.Shutdown.Usage.Comm:                  '/shutdown' 명령어 유형에 대한 추가 정보를 표시합니다.
+AdminCommands.Shutdown.Syntax.Secs:                 /shutdown <seconds>
+AdminCommands.Shutdown.Usage.Secs:                  지정한 초부터 카운트다운하여 서버 수동 종료를 예약합니다.
+AdminCommands.Shutdown.Syntax.HrMin:                /shutdown on <HH>:<MM>
+AdminCommands.Shutdown.Usage.HrMin:                 예약한 시각에 서버 수동 종료를 예약합니다(24:59 형식 기준).
+AdminCommands.Shutdown.Syntax.Stop:                 /shutdown stop
+AdminCommands.Shutdown.Usage.Stop:                  예약된 서버 종료를 취소합니다. 종료가 실수로 실행되었거나 더 이상 필요하지 않거나 서버를 다시 시작할 권한 있는 스태프가 없을 때 사용하세요.

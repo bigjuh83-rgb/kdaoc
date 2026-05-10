@@ -22,7 +22,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
 		private const string questTitle = "[Weekly] Darkness Falls Invasion";
 		private const int minimumLevel = 30;
 		private const int maximumLevel = 50;
-		
+
 		// Kill Goal
 		private const int MAX_KILLED = 200;
 
@@ -55,13 +55,13 @@ namespace DOL.GS.WeeklyQuest.Midgard
 				return minimumLevel;
 			}
 		}
-		
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -146,7 +146,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
 
 		private static void TalkToPatrick(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -164,18 +164,16 @@ namespace DOL.GS.WeeklyQuest.Midgard
 					switch (quest.Step)
 					{
 						case 1:
-							Patrick.SayTo(player, "Head into Darkness Falls and slay monsters so they don\'t spread in our realm!");
+							Patrick.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DFMonsterReminder"));
 							break;
 						case 2:
-							Patrick.SayTo(player, "Hello " + player.Name + ", did you [slay monsters] for your reward?");
+							Patrick.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[slay monsters] for your reward"));
 							break;
 					}
 				}
 				else
 				{
-					Patrick.SayTo(player, "Hello "+ player.Name +", I am Patrick. I have received word from a hunter that forces are building in Darkness Falls. "+
-					                    "Clear out as many demons as you can find, and come back to me only when the halls of the dungeon are purged of their influence. \n\n"+
-					                    "Can you [stop the invasion]?");
+					Patrick.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DFMonsterIntro", player.Name, "Patrick"));
 				}
 			}
 				// The player whispered to the NPC
@@ -187,7 +185,8 @@ namespace DOL.GS.WeeklyQuest.Midgard
 					switch (wArgs.Text)
 					{
 						case "stop the invasion":
-							player.Out.SendQuestSubscribeCommand(Patrick, QuestMgr.GetIDForQuestType(typeof(DFMobKillQuestMid)), "Will you help Patrick "+questTitle+"?");
+						case "침공 저지":
+							player.Out.SendQuestSubscribeCommand(Patrick, QuestMgr.GetIDForQuestType(typeof(DFMobKillQuestMid)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "Patrick", questTitle));
 							break;
 					}
 				}
@@ -198,18 +197,18 @@ namespace DOL.GS.WeeklyQuest.Midgard
 						case "slay monsters":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -248,11 +247,11 @@ namespace DOL.GS.WeeklyQuest.Midgard
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -282,7 +281,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for helping Midgard.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelpingRealm", "Midgard"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -290,7 +289,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
 				if (!Patrick.GiveQuest(typeof (DFMobKillQuestMid), player, 1))
 					return;
 
-				Patrick.SayTo(player, "Defend your realm, head into Darkness Falls and kill monsters for your reward.");
+				Patrick.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DFMonsterReminder"));
 
 			}
 		}
@@ -309,9 +308,9 @@ namespace DOL.GS.WeeklyQuest.Midgard
 				switch (Step)
 				{
 					case 1:
-						return "Head into Darkness Falls and kill monsters for Midgard. \nKilled: Monster ("+ _mobsKilled +" | "+ MAX_KILLED +")";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.DFMonsterDescription", "Midgard", _mobsKilled, MAX_KILLED);
 					case 2:
-						return "Return to Patrick in Darkness Falls for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "Patrick", "Darkness Falls");
 				}
 				return base.Description;
 			}
@@ -329,7 +328,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
 
 			if (Step != 1 || e != GameLivingEvent.EnemyKilled) return;
 			EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
-			
+
 			if (gArgs.Target is GameSummonedPet)
 				return;
 
@@ -343,30 +342,30 @@ namespace DOL.GS.WeeklyQuest.Midgard
 					_mobsKilled++;
 				else
 				{
-					player.Out.SendMessage("[Weekly] Monsters Killed in Darkness Falls - needs a higher level monster to count", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyDFMonsterTooLow"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return;
 				}
 			}
 			else
 			{
 				if(player.GetConLevel(gArgs.Target) > -1)
-					_mobsKilled++;	
+					_mobsKilled++;
 				else
 				{
-					player.Out.SendMessage("[Weekly] Monsters Killed in Darkness Falls - needs a higher level monster to count", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyDFMonsterTooLow"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return;
 				}
 			}
-			player.Out.SendMessage("[Weekly] Monsters Killed in Darkness Falls: ("+_mobsKilled+" | "+MAX_KILLED+")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyDFMonstersKilled", _mobsKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (_mobsKilled >= MAX_KILLED)
 			{
 				Step = 2;
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "DFMobKillQuestMid";

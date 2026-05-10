@@ -1,4 +1,5 @@
 using DOL.GS.Housing;
+using DOL.Language;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -20,7 +21,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
             if (!house.CanUseConsignmentMerchant(client.Player, ConsignmentPermissions.Withdraw))
             {
-                client.Player.Out.SendMessage("You don't have permission to withdraw money from this merchant!", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Merchant.Withdraw.NoPermission"), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
                 return;
             }
 

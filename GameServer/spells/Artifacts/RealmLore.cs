@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using DOL.GS.PacketHandler;
 using DOL.GS.RealmAbilities;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -10,23 +11,23 @@ namespace DOL.GS.Spells
 	{
 		public override bool CheckBeginCast(GameLiving selectedTarget)
         {
-			if(!base.CheckBeginCast(selectedTarget)) 
+			if(!base.CheckBeginCast(selectedTarget))
 				return false;
 
-			if(selectedTarget==null) 
+			if(selectedTarget==null)
 				return false;
 
 			if (selectedTarget is GameNPC)
 			{
-				MessageToCaster("This spell works only on players.", eChatType.CT_SpellResisted); return false;
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Artifacts.RealmLore.PlayersOnly"), eChatType.CT_SpellResisted); return false;
 			}
 
-			if(selectedTarget as GamePlayer==null) 
+			if(selectedTarget as GamePlayer==null)
 				return false;
 
 			if(!m_caster.IsWithinRadius(selectedTarget, Spell.Range))
 			{
-				MessageToCaster("Your target is too far away.", eChatType.CT_SpellResisted); return false;
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Artifacts.RealmLore.TargetTooFar"), eChatType.CT_SpellResisted); return false;
 			}
 
             return true;
@@ -34,16 +35,17 @@ namespace DOL.GS.Spells
 		public override void OnDirectEffect(GameLiving target)
 		{
 			GamePlayer player = target as GamePlayer;
-			if(player == null) 
+			if(player == null)
 				return;
 
 			var text = new List<string>();
-			text.Add("Class: "+player.CharacterClass.Name);
-			text.Add("Realmpoints: "+player.RealmPoints+" = "+string.Format("{0:#L#} {1}",player.RealmLevel+10,player.RealmRankTitle(player.Client.Account.Language)));
+			string language = (m_caster as GamePlayer)?.Client.Account.Language;
+			text.Add(LanguageMgr.GetTranslation(language, "Artifacts.RealmLore.Class", player.CharacterClass.Name));
+			text.Add(LanguageMgr.GetTranslation(language, "Artifacts.RealmLore.RealmPoints", player.RealmPoints, string.Format("{0:#L#} {1}",player.RealmLevel+10,player.RealmRankTitle(player.Client.Account.Language))));
 			text.Add("----------------------------------------------------");
-			text.Add("Str: "+player.Strength+" Dex: "+player.Dexterity+" Con: "+player.Constitution);
-			text.Add("Qui: "+player.Quickness+" Emp: "+player.Empathy+" Cha: "+player.Charisma);
-			text.Add("Pie: "+player.Piety+" Int: "+player.Intelligence+" HP: "+player.MaxHealth);
+			text.Add(LanguageMgr.GetTranslation(language, "Artifacts.RealmLore.StatsLine1", player.Strength, player.Dexterity, player.Constitution));
+			text.Add(LanguageMgr.GetTranslation(language, "Artifacts.RealmLore.StatsLine2", player.Quickness, player.Empathy, player.Charisma));
+			text.Add(LanguageMgr.GetTranslation(language, "Artifacts.RealmLore.StatsLine3", player.Piety, player.Intelligence, player.MaxHealth));
 			text.Add("----------------------------------------------------");
 			IList<Specialization> specs = player.GetSpecList();
 			foreach (object obj in specs)
@@ -55,8 +57,9 @@ namespace DOL.GS.Spells
 				if(ab is RealmAbility && ab is RR5RealmAbility == false)
 					text.Add(((RealmAbility)ab).Name);
 
-			(m_caster as GamePlayer).Out.SendCustomTextWindow("Realm Lore [ "+player.Name+" ]",text);
-			(m_caster as GamePlayer).Out.SendMessage("Realm Lore [ "+player.Name+" ]\n"+text,eChatType.CT_System,eChatLoc.CL_SystemWindow);
+			string title = LanguageMgr.GetTranslation(language, "Artifacts.RealmLore.Title", player.Name);
+			(m_caster as GamePlayer).Out.SendCustomTextWindow(title,text);
+			(m_caster as GamePlayer).Out.SendMessage(title + "\n" + string.Join("\n", text),eChatType.CT_System,eChatLoc.CL_SystemWindow);
 		}
 		public RealmLore(GameLiving caster, Spell spell, SpellLine line) : base(caster, spell, line) {}
     }

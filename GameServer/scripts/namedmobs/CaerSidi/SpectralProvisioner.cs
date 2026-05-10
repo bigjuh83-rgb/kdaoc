@@ -34,7 +34,7 @@ namespace DOL.GS.Scripts
 					else
 						truc = ((source as GameSummonedPet).Owner as GamePlayer);
 					if (truc != null)
-						truc.Out.SendMessage("The Spectral Provisioner is immune to this form of attack.", eChatType.CT_System,eChatLoc.CL_ChatWindow);
+							truc.Out.SendMessage(global::DOL.Language.LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.SpectralProvisioner.ImmuneAttack"), eChatType.CT_System, eChatLoc.CL_ChatWindow);
 
 					base.TakeDamage(source, damageType, 0, 0);
 					return;
@@ -49,7 +49,7 @@ namespace DOL.GS.Scripts
 	    {
 		    return 350;
 	    }
-		
+
 
 		public override bool HasAbility(string keyName)
 		{
@@ -94,7 +94,7 @@ namespace DOL.GS.Scripts
 			base.AddToWorld();
 			return true;
 		}
-	   
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
@@ -111,7 +111,7 @@ namespace DOL.GS.Scripts
         {
         }
 		public override bool IsVisibleToPlayers => true;
-	}  
+	}
 }
 
 namespace DOL.AI.Brain
@@ -140,8 +140,8 @@ namespace DOL.AI.Brain
 				//item.OwnerID = player.ObjectId;
 				//item.IsDropable = true;			//Make sure it's droppable
 				//item.IsIndestructible = false;	//make sure it's destructible
-				//player.Inventory.AddItem(eInventorySlot.FirstEmptyBackpack, item);				
-				//}				
+				//player.Inventory.AddItem(eInventorySlot.FirstEmptyBackpack, item);
+				//}
 				//new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(ResetDecayingJunk), Util.Random(25000,35000));
 				//CanAddJunk = true;
 				if(ad.Attacker is not GameSummonedPet)

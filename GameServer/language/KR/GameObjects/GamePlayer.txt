@@ -1,0 +1,341 @@
+﻿# GamePlayer
+
+## System
+GamePlayer.SaveIntoDatabase.CharacterSaved:		캐릭터가 저장되었습니다.
+GamePlayer.OnLinkdeath.Linkdead:			    {0}의 연결이 끊겼습니다!
+GamePlayer.CastAbility.NotImplemented:			{0}은(는) 아직 구현되지 않았습니다. ({1})
+GamePlayer.YellReceive.Yells:				{0}님이 외칩니다. "{1}"
+GamePlayer.YellReceive.UnknownLanguage:			{0}님이 이해할 수 없는 언어로 외칩니다.
+GamePlayer.WaterBreath.HoldingBreath:			숨 참는 중
+GamePlayer.WaterBreath.Drowning:			익사 중
+
+## Examine
+GamePlayer.GetExamineMessages.RealmMember:			{0}을(를) 살펴봅니다. {1}은(는) 당신의 렐름에 속한 {2} 직업입니다.
+GamePlayer.GetExamineMessages.YourGuildMember:		{0}을(를) 살펴봅니다. {1}은(는) 당신의 길드에 속한 {2} 직업입니다.
+GamePlayer.GetExamineMessages.OtherGuildMember:		{0}을(를) 살펴봅니다. {1}은(는) {2} 길드의 구성원입니다.
+GamePlayer.GetExamineMessages.NeutralMember:		{0}을(를) 살펴봅니다. {1}은(는) 길드 소속이 없는 중립 구성원입니다.
+GamePlayer.GetExamineMessages.YouExamine:			{0}을(를) 살펴봅니다.
+GamePlayer.GetExamineMessages.EnemyRealmMember:		{0}을(를) 살펴봅니다. {1}은(는) 적 렐름의 구성원입니다!
+
+## Appearance
+GamePlayer.IsCloakHoodUp.NoLongerWear:				이제 후드를 내립니다.
+GamePlayer.IsCloakHoodUp.NowWear:					이제 후드를 올립니다.
+GamePlayer.IsCloakInvisible.Invisible:				이제 망토가 보이지 않습니다.
+GamePlayer.IsCloakInvisible.Visible:				이제 망토가 보입니다.
+GamePlayer.IsHelmInvisible.Invisible:				이제 투구가 보이지 않습니다.
+GamePlayer.IsHelmInvisible.Visible:					이제 투구가 보입니다.
+
+## Attack Data
+GamePlayer.Attack.AlreadyDead:				{0}은(는) 이미 죽었습니다!
+GamePlayer.Release.NotDead:						당신은 죽지 않았습니다!
+GamePlayer.Attack.Miss:						공격이 빗나갔습니다!
+GamePlayer.Attack.StrafMiss:				전투 중 옆걸음 이동 때문에 공격이 빗나갔습니다!
+GamePlayer.Attack.Fumble:					공격이 헛나가 회복할 시간이 필요합니다!
+GamePlayer.Attack.Fumbled:					{0}의 공격이 헛나갔습니다!
+GameLiving.Attack.Block:					{0}이(가) 공격했지만 당신이 막아냈습니다!
+GamePlayer.Attack.Parry:					{0}이(가) 공격했지만 당신이 받아쳤습니다!
+GamePlayer.Attack.Evade:					{0}이(가) 공격했지만 당신이 회피했습니다!
+GamePlayer.Attack.Critical:					{0}에게 치명타를 입혀 추가로 {1} 피해를 줬습니다!
+GamePlayer.Attack.CounterAttack:				{0}이(가) 반격하여 당신에게 {1} 피해를 입혔습니다.
+GamePlayer.Attack.Detailed.AttackSpeed:			공격 속도: {0}초
+GamePlayer.Attack.Detailed.TargetMessage:		대상 {0}
+GamePlayer.Attack.Detailed.YourMessage:			내 {0}
+GamePlayer.Attack.Detailed.GuardChance:			가드 확률: {0:0.##} 판정: {1:0.##}
+GamePlayer.Attack.Detailed.GuardedChance:		가드받을 확률: {0:0.##} 판정: {1:0.##}
+GamePlayer.Attack.Detailed.TargetEvade:			대상 회피율: {0:0.##}% 판정: {1:0.##}
+GamePlayer.Attack.Detailed.YourEvade:			내 회피율: {0:0.##}% 판정: {1:0.##}
+GamePlayer.Attack.Detailed.TargetParry:			대상 받아치기율: {0:0.##}% 판정: {1:0.##}
+GamePlayer.Attack.Detailed.YourParry:			내 받아치기율: {0:0.##}% 판정: {1:0.##}
+GamePlayer.Attack.Detailed.MissRate:			빗나갈 확률: {0:0.##}% 판정: {1:0.##}
+GamePlayer.Attack.Detailed.FumbleChance:		헛손질 확률: {0:0.##}% 판정: {1:0.##}
+GamePlayer.Attack.Detailed.BeMissedChance:		상대 공격이 빗나갈 확률: {0:0.##}% 판정: {1:0.##}
+GamePlayer.Effect.Detailed.PropertyBonus:		보너스 분류: {0} | 속성: {1}\n값: {2:0.##} | 효과율: {3:0.##} | 실제값: {4}
+GamePlayer.StartAttack.CannotMelee:			악기를 든 상태로는 근접 전투 모드에 들어갈 수 없습니다!
+GamePlayer.StartAttack.CannotWithoutWeapon:		무기 없이는 전투 모드에 들어갈 수 없습니다!
+GamePlayer.StartAttack.CantAttackmesmerized:	메즈 상태에서는 공격할 수 없습니다!
+GamePlayer.StartAttack.CantAttackStunned:		기절 상태에서는 공격할 수 없습니다!
+GamePlayer.StartAttack.CantDisarmed:			무장 해제 상태라 공격할 수 없습니다!
+GamePlayer.StartAttack.CantAttackInSiegeRam:	공성추를 사용하는 동안에는 공격할 수 없습니다!
+GamePlayer.StartAttack.CantInShadeMode:			그림자 모드에서는 전투에 들어갈 수 없습니다!
+GamePlayer.StartAttack.YouMustWait:				공격을 시도하려면 {0}초 더 기다려야 합니다!
+GamePlayer.StartAttack.YouMustWaitAgain:		다시 공격하려면 {0}초 더 기다려야 합니다.
+StyleProcessor.ExecuteStyle.ExecuteFail:		        {0} 스타일을 완벽하게 실행하지 못했습니다!
+StyleProcessor.ExecuteStyle.PerformPerfectly:		    {0} 스타일을 완벽하게 실행했습니다! {1}
+StyleProcessor.ExecuteStyle.PerformsPerfectly:		    당신의 {0}이(가) {1}을(를) 완벽하게 실행합니다. {2}
+StyleProcessor.TryToUseStyle.AlreadyPreparing:		    이미 이 스타일을 준비 중입니다! 스타일 취소를 사용하려면 '/cancelstyle'을 입력하세요.
+StyleProcessor.TryToUseStyle.AlreadySelectedStyles:	    이번 라운드에 사용할 스타일을 이미 선택했습니다!
+StyleProcessor.TryToUseStyle.BackupStyle:		        이제 {1}의 백업으로 {0} 스타일을 준비합니다!
+StyleProcessor.TryToUseStyle.AutoBackupStyle:		    {1}의 백업으로 {0} 스타일을 자동 시도합니다!
+StyleProcessor.TryToUseStyle.CantCombatMode:		    누운 상태에서는 전투 모드에 들어갈 수 없습니다!
+StyleProcessor.TryToUseStyle.CantMeleeCombat:		    발사 무기로는 근접 전투 모드에 들어갈 수 없습니다!
+StyleProcessor.TryToUseStyle.Disarmed:			    무장 해제 상태라 공격할 수 없습니다!
+StyleProcessor.TryToUseStyle.DualWielding:		        이 스타일을 사용하려면 쌍수 무기를 들어야 합니다!
+StyleProcessor.TryToUseStyle.Fatigued:			        너무 지쳐서 이 스타일을 사용할 수 없습니다!
+StyleProcessor.TryToUseStyle.MustHaveTarget:		    다음 공격 스타일을 사용하려면 대상이 있어야 합니다!
+StyleProcessor.TryToUseStyle.NoLongerPreparing:		    더 이상 {0} 스타일을 준비하지 않습니다!
+StyleProcessor.TryToUseStyle.PerformStyleBefore:	    이 스타일을 사용하기 전에 {0} 스타일을 먼저 실행해야 합니다!
+StyleProcessor.TryToUseStyle.PreparePerform:		    {0}을(를) 실행할 준비를 합니다!
+StyleProcessor.TryToUseStyle.StyleRequires:		        이 스타일은 {0} 무기가 필요합니다!
+StyleProcessor.ExecuteStyle.BarrierAbsorbs:		    보호막이 {0} 피해를 흡수했습니다!
+
+## Attack Locations
+GamePlayer.Attack.Location.Arm:				팔
+GamePlayer.Attack.Location.Foot:			발
+GamePlayer.Attack.Location.Hand:			손
+GamePlayer.Attack.Location.Head:			머리
+GamePlayer.Attack.Location.Leg:				다리
+GamePlayer.Attack.Location.Torso:			몸통
+
+## Communication
+System.NoSense:								그건 말이 되지 않습니다!
+Social.SendMessage.Err.SlowDown:                        조금 천천히 입력하세요. 너무 빠르게 말하고 있습니다.
+Social.SendMessage.Err.OfflineOtherRealm:                {0}은(는) 게임에 없거나 다른 렐름의 구성원입니다.
+Social.SendMessage.Err.CantMsgYourself:                 자기 자신에게는 메시지를 보낼 수 없습니다!
+Social.SendAdvice.Msg.Channel:				                [조언 {0}] {1}: {2}
+Social.ReceiveMessage.Staff.Channel:                                [운영팀] {0}: {1}
+Scripts.Players.Broadcast.Message:			[방송] {0}: {1}
+Scripts.Players.Region.Message:				[지역] {0}: {1}
+Scripts.Players.LFG.Message:				[LFG] {0}: {1}
+Scripts.Players.Trade.Message:				[거래] {0}: {1}
+GamePlayer.Say.YouSay:							당신: "{0}"
+GamePlayer.SayReceive.Says:						{0}: "{1}"
+GamePlayer.SayReceive.FalseLanguage:			{0}이(가) 이해할 수 없는 언어로 말합니다.
+Social.ReceiveMessage.Private.Sends:					{0}의 귓속말: "{1}"
+Social.ReceiveMessage.Private.FalseLanguage:			{0}이(가) 이해할 수 없는 언어로 귓속말을 보냅니다.
+Social.ReceiveMessage.Advice.Sends:                     {0}의 [조언] 메시지: "{1}"
+Social.ReceiveMessage.Staff.SendsToYou:                    {0}의 [운영팀] 메시지: "{1}"
+Social.ReceiveMessage.AFK.PlayerAFK:						{0}은(는) 현재 자리비움 상태입니다.
+Social.ReceiveMessage.AFK.Sends:				{0}의 [자리비움] 메시지: "{1}"
+Social.SendMessage.Private.YouSendTo:					{1}에게 귓속말: "{0}"
+Social.SendMessage.Private.DontUnderstandYou:		{0}은(는) 당신의 말을 이해하지 못하는 것 같습니다!
+Social.SendMessage.Staff.YouSendAnon:                   {1} [익명]에게 "{0}" 메시지를 보냈습니다.
+Social.SendMessage.Advisor.YouSendTo:                   {1} [조언자]에게 "{0}" 메시지를 보냈습니다.
+Social.ReceiveMessage.Advisor.StaffAnon:                       {0}이(가) 당신에게 [조언] 메시지를 보내려 했습니다: "{1}"
+Social.ReceiveMessage.Staff.TriedToSend:                   {0}이(가) 당신에게 메시지를 보내려 했습니다: "{1}"
+GamePlayer.Whisper.SelectTarget:				귓속말할 대상을 선택하세요!
+Social.SendAdvice.Err.NotAdvisor:                       {0}은(는) 조언자가 아닙니다!
+Social.SendMessage.Err.NameNotUnique:                   {0}은(는) 고유한 캐릭터 이름이 아닙니다.
+
+## Crafting
+GamePlayer.CraftItem.DontHaveAbilityMake:		이 아이템을 만들 능력이 없습니다.
+GamePlayer.GainCraftingSkill.GainSkill:			{0} 기술이 올랐습니다! ({1})
+GamePlayer.OnPlayerMove.InterruptCrafting:		이동하여 제작이 중단되었습니다.
+GamePlayer.OnPlayerMove.InterruptRangedAttack:	이동하여 {0}이(가) 중단되었습니다!
+GamePlayer.OpenSelfCraft.AlreadySelfCrafting:	이미 직접 제작 중입니다.
+GamePlayer.OpenSelfCraft.CanOnlyCraftBackpack:	가방 안의 아이템만 직접 제작할 수 있습니다!
+GamePlayer.ReceiveTradeItem.StillSelfcrafting:	아직 직접 제작 중입니다.
+GamePlayer.ReceiveTradeItem.OtherStillSelfcrafting:	{0}은(는) 아직 직접 제작 중입니다.
+GamePlayer.ReceiveTradeItem.StillTrading:		아직 {0}와(과) 거래 중입니다.
+GamePlayer.ReceiveTradeItem.OtherStillTrading:	{0}은(는) 아직 {1}와(과) 거래 중입니다.
+
+## Death (PvE)
+GamePlayer.Die.LoseExperience:					경험치를 일부 잃었습니다!
+GamePlayer.Die.ReleaseToReturn:					사망했습니다. 마지막 바인드 지점으로 돌아가려면 /release를 입력하세요.
+GamePlayer.Die.DeadRVR:							렐름을 위해 싸우다 사망했으므로 경험치를 잃지 않습니다!
+GamePlayer.Die.DeathN1:							이번 레벨에서 첫 번째 사망입니다. 경험치와 체력 손실이 크게 줄어듭니다.
+GamePlayer.Die.DeathN2:							이번 레벨에서 두 번째 사망입니다. 경험치와 체력 손실이 줄어듭니다.
+GamePlayer.Release.GraveErected:				사망한 자리에 무덤이 세워졌습니다.
+
+GamePlayer.StartAttack.YouCantCombat:			누운 상태에서는 전투 모드에 들어갈 수 없습니다!
+GamePlayer.Die.CorpseLies:						{0}이(가) 사망했습니다. {1}의 시체가 땅에 놓여 있습니다.
+
+## Environmental
+GamePlayer.Falling.LoseEndurance:				지구력을 잃었습니다.
+GamePlayer.Hardcore.KillNotEnough:				이 처치는 하드코어 경험치를 얻기에 충분하지 않았습니다.
+GamePlayer.Hardcore.Completed:					레벨 50에 도달했습니다! 하드코어 플래그가 비활성화되었습니다.
+GamePlayer.Casting.Speed:						시전 속도: {0}초
+GamePlayer.Steed.SwitchSeat:					{0}번 좌석으로 이동했습니다.
+GamePlayer.DrowningTimerCallback.CannotBreath:	물속에서 숨을 쉴 수 없어 피해를 받습니다!
+GamePlayer.DrowningTimerCallback.Take5%Damage:	최대 생명력의 5%만큼 피해를 받습니다.
+GamePlayer.DrowningTimerCallback.Take20%Damage:	최대 생명력의 20%만큼 피해를 받습니다.
+GamePlayer.LavaBurnTimerCallback.YourInLava:	용암 속에 있어 피해를 받습니다!
+GamePlayer.LavaBurnTimerCallback.Take34%Damage:	최대 생명력의 34%만큼 피해를 받습니다.
+PlayerPositionUpdateHandler.Endurance:			        지구력을 잃었습니다!
+PlayerPositionUpdateHandler.FallingDamage:		        낙하 피해를 받았습니다!
+PlayerPositionUpdateHandler.FallPercent:		        최대 생명력의 {0}%만큼 피해를 받습니다.
+PlayerPositionUpdateHandler.SafeFall:			        안전 낙하 능력으로 피해가 감소했습니다!
+
+## Horse
+GameNPC.Interact.AlreadyRiding:				이미 이 {0}에 타고 있습니다.
+GamePlayer.IsOnHorse.MountSteed:			말에 올라탔습니다.
+GamePlayer.Sit.MustDismount:				먼저 탈것에서 내려야 합니다.
+GamePlayer.UseSlot.MustDismountBefore:			먼저 탈것에서 내려야 합니다.
+
+## Kill Spam
+GamePlayer.Die.Killed:							{0}이(가) 사망했습니다!
+GamePlayer.Die.KilledBy:						{0}이(가) {1}에게 사망했습니다.
+GamePlayer.Die.KilledByLocation:				{0}이(가) {2}에서 {1}에게 사망했습니다.
+GamePlayer.Die.KilledLocation:					{0}이(가) {1}에서 사망했습니다!
+GamePlayer.Die.YouKilled:						{0}을(를) 처치했습니다!
+
+## Level/RR Up
+### Level
+GamePlayer.GainExperience.CannotRaise:			상급 길드에 가입하기 전에는 6레벨이 될 수 없습니다!
+GamePlayer.OnLevelUp.HitsRaise:				생명력이 {0}포인트 증가했습니다.
+GamePlayer.OnLevelUp.PowerRaise:			파워가 {0}포인트 증가했습니다.
+GamePlayer.OnLevelUp.SecondStage:			레벨 {0} 2단계가 되었습니다!
+GamePlayer.OnLevelUp.StatRaise:				능력치가 상승했습니다!
+GamePlayer.OnLevelUp.YouAchieved:			레벨 {0}을(를) 달성했습니다!
+GamePlayer.OnLevelUp.YouGetSpec:			이번 레벨에서 사용할 전문화 포인트를 {0} 더 얻었습니다!
+GamePlayer.OnLevelUp.YouRaise:				{0}레벨이 되었습니다!
+GamePlayer.OnLevelUp.AttainedRank:			{0} 계급에 도달했습니다!
+GamePlayer.UpdateSpellLine.GainPower:			{0} 주문 계열이 강화되었습니다!
+
+### Realm Rank
+GamePlayer.GainRealmPoints.GainBonus:			모든 전문화에 +{0} 보너스를 얻었습니다!
+GamePlayer.GainRealmPoints.GainedLevel:			렐름 레벨이 올랐습니다!
+GamePlayer.GainRealmPoints.GainedRank:			새 계급과 새 렐름 칭호를 얻었습니다!
+GamePlayer.GainRealmPoints.NewRealmTitle:		새 렐름 칭호는 {0}입니다!
+GamePlayer.GainRealmPoints.ReachedRank:			렐름 랭크 {0}L0에 도달했습니다!
+GamePlayer.GainRealmPoints.ReachedRankNews:			{0}이(가) {2}에서 렐름 랭크 {1:#L#}에 도달했습니다!
+
+## Movement
+GamePlayer.UpdateEncumbrance.EncumberedMoveSlowly:	소지품이 무거워 더 느리게 이동합니다.
+GamePlayer.UpdateEncumbrance.EncumberedCannotMove:	소지품이 너무 무거워 움직일 수 없습니다.
+GamePlayer.Sit.AlreadySitting:				이미 앉아 있습니다!
+GamePlayer.Sit.CantSitDead:					사망 상태에서는 앉을 수 없습니다!
+GamePlayer.Sit.CantSitMezzed:				메즈 상태에서는 휴식할 수 없습니다!
+GamePlayer.Sit.CantSitStunned:				기절 상태에서는 휴식할 수 없습니다!
+GamePlayer.Sit.MustStandingStill:			앉으려면 가만히 서 있어야 합니다.
+GamePlayer.Sit.NotSitting:					앉아 있지 않습니다!
+GamePlayer.Sit.YouSitDown:					앉았습니다. 일어서려면 '/stand'를 입력하거나 이동하세요.
+GamePlayer.Sit.YouStandUp:					일어섰습니다.
+
+## Poisoning
+GamePlayer.ApplyPoison.CantApplyRecentCombat:	최근 전투를 했기 때문에 아직 독을 바를 수 없습니다!
+GamePlayer.ApplyPoison.CantPoisonWeapon:		이 무기에는 독을 바를 수 없습니다!
+GamePlayer.ApplyPoison.CantUsePoison:			이 독은 사용할 수 없습니다.
+GamePlayer.ApplyPoison.CantUsePoisons:			독을 사용할 수 없습니다.
+GamePlayer.ApplyPoison.PoisonsAppliedWeapons:	독은 무기에만 바를 수 있습니다.
+GamePlayer.ApplyPoison.CantReapplyPoison:	이 무기에는 독을 다시 바를 수 없습니다.
+GamePlayer.ApplyPoison.Apply:				{0}을(를) {1}에 발랐습니다.
+
+## Ranged Attack
+GamePlayer.Attack.YouAttack:				공격합니다
+GamePlayer.Attack.YouShot:					발사합니다
+GamePlayer.Attack.WithYour:					당신의
+GamePlayer.Attack.Type.Shot:				사격
+GamePlayer.Attack.Type.Throw:				투척
+Skill.Ability.CannotUse.CriticalShot.NoRangedWeapons:	손에 원거리 무기를 준비해야 합니다!
+GamePlayer.Attack.CantUseQuiver:			선택한 화살통 탄약은 이 무기와 함께 사용할 수 없습니다!
+GamePlayer.Attack.MustSelectQuiver:			꺼내 쓸 화살통 슬롯을 선택해야 합니다!
+Skill.Ability.CannotUse.CriticalShot.MustBeStanding:	원거리 공격을 시도하려면 서 있어야 합니다!
+Skill.Ability.CriticalShot.AlreadyFiring:	이미 이 무기를 발사 중입니다!
+GamePlayer.Attack.ReadyToFire:				발사 준비가 되었습니다!
+GamePlayer.Attack.Interrupted:				{0}이(가) 공격하여 당신의 {1}이(가) 방해받았습니다!
+GamePlayer.Attack.TooTired:					너무 지쳐서 더 이상 조준을 유지할 수 없습니다!
+GamePlayer.StartAttack.CantUseQuiver:			선택한 화살통 탄약은 이 무기와 함께 사용할 수 없습니다!
+GamePlayer.StartAttack.SelectQuiver:			꺼내 쓸 화살통 슬롯을 선택해야 합니다!
+GamePlayer.StartAttack.TargetInRange:			, 대상이 사거리 안에 있습니다
+GamePlayer.StartAttack.TargetOutOfRange:		, 대상이 사거리 밖에 있습니다
+GamePlayer.StartAttack.TiredShot:				너무 지쳐서 치명 사격을 수행할 수 없습니다!
+GamePlayer.StartAttack.TiredUse:				너무 지쳐서 {0}을(를) 사용할 수 없습니다!
+GamePlayer.StartAttack.YouPrepare.Volley:		{0}을(를) 준비합니다 (발사까지 {1}.{2}초)
+GamePlayer.SwitchQuiver.NoMoreAmmo:				화살통에 더 이상 탄약이 없습니다!
+GamePlayer.SwitchQuiver.NotUseQuiver:			화살통을 사용하지 않습니다.
+GamePlayer.SwitchQuiver.ShootWith:				다음 탄약으로 발사합니다: {0}.
+GamePlayer.UseSlot.AutoReleaseShot:				이제 자동으로 사격을 발사합니다.
+GamePlayer.UseSlot.AutoReleaseShotReload:		이제 자동으로 사격을 발사하고 재장전합니다.
+GamePlayer.UseSlot.CantFire:					발사하거나 이 아이템을 사용할 수 없습니다!
+GamePlayer.UseSlot.NoAutoReleaseShotReload:		이제 자동 발사 또는 재장전을 하지 않습니다.
+GamePlayer.StartAttack.YouPrepare:				{0}을(를) 준비합니다 (발사까지 {1}.{2}초{3})
+
+## Rewards (PvE/RvR)
+GamePlayer.GainExperience.CampBonus:			({0} 캠프 보너스)
+GamePlayer.GainExperience.GroupBonus:			({0} 그룹 보너스)
+GamePlayer.GainExperience.OutpostBonus:			({0} 전초기지 보너스)
+GamePlayer.GainBountyPoints.YouGet:				현상금 포인트 {0}점을 얻었습니다!
+GamePlayer.GainExperience.YouGet:				경험치 {0}점을 얻었습니다.
+GamePlayer.GainRealmPoints.YouGet:				렐름 포인트 {0}점을 얻었습니다!
+GameNPC.DropLoot.AdditionalMoney:			렐름이 전초기지를 소유한 덕분에 추가로 {0}을(를) 얻었습니다!
+GameNPC.DropLoot.ItemAdditionalMoney:		장비 덕분에 추가로 {0}을(를) 얻었습니다!
+GameNPC.DropLoot.Drops:						{0}이(가) {1}을(를) 떨어뜨립니다.
+GamePlayer.PickupObject.Autosplit:				(자동 분배) {0}이(가) {1}에게 갑니다.
+GamePlayer.PickupObject.BackpackFull:			가방이 가득 찼습니다. 먼저 무언가를 버려야 합니다.
+GamePlayer.PickupObject.GroupMemberPicksUp:		{0}이(가) {1}을(를) 주웠습니다.
+GamePlayer.PickupObject.ItemBelowBGThreshold:	이 아이템은 배틀그룹 루팅 레벨보다 낮습니다.
+GamePlayer.PickupObject.LootDoesntBelongYou:	이 전리품은 당신의 것이 아니므로 주울 수 없습니다.
+GamePlayer.PickupObject.NoOneGroupWantsMoney:	그룹에서 돈을 원하는 사람이 없습니다.
+GamePlayer.PickupObject.NoOneWantsThis:			그룹에서 {0}을(를) 원하는 사람이 없습니다.
+GamePlayer.PickupObject.YouGet:					{0}을(를) 얻어 가방에 넣었습니다.
+GamePlayer.PickupObject.YouGetAmount:			{0} {1}을(를) 얻어 가방에 넣었습니다.
+GamePlayer.PickupObject.YouPickUp:				{0}을(를) 주웠습니다.
+GamePlayer.PickupObject.YourLootShare:			당신의 전리품 몫은 {0}입니다.
+
+## Server Announcements
+GamePlayer.GainRealmPoints.Earned:				{0}이(가) {1}에서 렐름 포인트 1,000,000점을 획득했습니다
+GamePlayer.GainCraftingSkill.ReachedSkill:		{0}이(가) {1} 기술 1000에 도달했습니다
+GamePlayer.OnLevelUp.Reached:				{0}이(가) {2}에서 레벨 {1}에 도달했습니다!
+
+## Targeting/Line of Sight
+GamePlayer.Target.Fail.IsDead:                      {0}은(는) 죽었습니다!
+GamePlayer.Target.Spell.SelectATarget:              이 주문을 사용하려면 대상을 선택해야 합니다!
+GamePlayer.Attack.CantBeAttacked:			이것은 공격할 수 없습니다!
+GamePlayer.Attack.CantSeeTarget:			대상이 보이지 않습니다!
+System.MustSelectTarget:					대상을 선택해야 합니다!
+GamePlayer.Attack.NeedTarget:				공격할 대상을 선택해야 합니다!
+GamePlayer.Attack.NotInView:				{0}이(가) 시야에 없습니다!
+GamePlayer.Attack.TooFarAway:				{0}이(가) 너무 멀어 공격할 수 없습니다!
+CastingComponent.AlreadyCasting:			이미 주문을 시전 중입니다!
+CastingComponent.Cooldown.RecastSpell:		이 유형의 주문을 다시 시전하려면 {0} 기다려야 합니다!
+CastingComponent.Cooldown.UseAbility:		이 능력을 사용하려면 {0} 기다려야 합니다.
+CastingComponent.Queue.FollowUp:			{0} 다음 주문으로 준비합니다!
+GameObject.Interact.TooFarAway:				{0}이(가) 너무 멀리 있습니다!
+PlayerPickUpRequestHandler.HandlePacket.InvalidTarget:	잘못된 대상입니다!
+PlayerPickUpRequestHandler.HandlePacket.Target:		    무언가를 얻으려면 대상이 있어야 합니다!
+GamePlayer.PickupObject.CantGetThat:			그것은 얻을 수 없습니다!
+GamePlayer.PickupObject.MustHaveTarget:			무언가를 얻으려면 대상이 있어야 합니다!
+GamePlayer.PickupObject.ObjectTooFarAway:		{0}이(가) 너무 멀어 주울 수 없습니다!
+GamePlayer.PickupObject.MustWait:			{1}을(를) 줍기까지 {0}초 더 기다려야 합니다!
+GamePlayer.DropItem.CantDrop:				{0}은(는) 버릴 수 없습니다!
+GamePlayer.StartAttack.CombatNoTarget:			전투 모드에 들어갔지만 대상이 없습니다!
+GamePlayer.StartAttack.CombatTarget:			전투 모드에 들어가 [{0}]을(를) 대상으로 삼았습니다
+GamePlayer.UseSlot.CantSeeTarget:				대상이 보이지 않습니다!
+GamePlayer.UseSlot.QuiverSlotEmpty:			{0}번 화살통 슬롯이 비어 있습니다!
+GamePlayer.UseSlot.MustWaitDischargeSeconds:	이 아이템을 발동하려면 {0}초 더 기다려야 합니다!
+GamePlayer.UseSlot.MustWaitDischargeMinutes:	이 아이템을 발동하려면 {0}분 {1}초 더 기다려야 합니다!
+GamePlayer.UseSlot.CantUseAnythingState:		현재 상태에서는 아무것도 사용할 수 없습니다.
+GamePlayer.GroundTarget.CantChangeWhileVolley:	발리 효과 중에는 지면 대상을 바꿀 수 없습니다!
+GamePlayer.Stealth.CantWhileCrafting:		제작 중에는 은신할 수 없습니다!
+GamePlayer.Stealth.CantWithPulse:			활성화된 지속 주문 효과가 있어 숨을 수 없습니다!
+GamePlayer.Stealth.UncoveredBy:			{0}이(가) 당신을 찾아냈습니다!
+GamePlayer.CommandNpcGoTarget.TooFarForPet:	대상이 너무 멀어 소환수가 도달할 수 없습니다!
+GamePlayer.CurrentTitle.TitleSet:			칭호가 {0}(으)로 설정되었습니다.
+GamePlayer.ChampionExperience.Gain:		챔피언 경험치 {0}점을 얻었습니다.
+GamePlayer.ChampionLevel.Gain:			챔피언 레벨이 1 올랐습니다!
+
+### Trade
+Behaviour.GiveItemAction.YouReceiveItem:	{0}을(를) 받았습니다.
+Behaviour.TakeItemAction.YouGiveItemToNPC:	{1}에게 {0}을(를) 줬습니다.
+Behaviour.TakeItemAction.YouGiveItem:		{0}을(를) 줬습니다.
+Behaviour.GiveItemAction.GiveButInventFull:	누군가 {0}을(를) 주려 했지만 인벤토리가 가득 찼습니다!
+GamePlayer.ReceiveTradeItem.CantTrade:			이 아이템은 거래할 수 없습니다!
+GamePlayer.ReceiveItem.Receive:				{0}을(를) 받았습니다!
+GamePlayer.ReceiveItem.ReceiveFrom:			{1}에게서 {0}을(를) 받았습니다!
+LootGeneratorOneTimeDrop.InventoryFull:		인벤토리가 가득 차서 일회성 드롭을 받을 수 없습니다!
+PlayerMoveItemRequestHandler.TooFarAway:		        {0}에게 무언가를 주기에는 너무 멀리 있습니다.
+
+## Misc
+StyleProcessor.ExecuteStyle.ThroatStrike:		        대상의 목에 치명타를 입혔습니다
+StyleProcessor.ExecuteStyle.BackStrike:			        대상의 등에 치명타를 입혔습니다
+PlayerPositionUpdateHandler.MythSafeFall:		        장비 덕분에 피해가 감소했습니다!
+GamePlayer.Yell.YouYell:                         "{0}"라고 외쳤습니다.
+GamePlayer.Whisper.WhispersToYou:                {0} 님이 귓속말합니다: "{1}"
+GamePlayer.Whisper.UnknownLanguage:              {0} 님이 알아들을 수 없는 언어로 귓속말합니다.
+GamePlayer.Whisper.YouWhisper:                   {1}에게 귓속말했습니다: "{0}"
+PlayerTargetHandler.TargetNotInView:             대상이 시야 안에 없습니다.
+PlayerTargetHandler.PrayersFail:                 더 이상 자신의 묘비를 대상으로 삼고 있지 않아 기도가 실패했습니다.
+PlayerGroundTargetHandler.NotVisible:            지면 대상이 보이지 않습니다!
+PlayerGroundTargetHandler.UsherBoatForward:      배를 앞으로 이동시킵니다.
+PlayerGroundTargetHandler.NotEnoughPassengers:   {0}에 아직 이동에 필요한 승객이 충분하지 않습니다!
+PlayerAttackRequestHandler.RangedWeaponNoMelee:  원거리 무기를 든 상태에서는 근접 전투 모드에 들어갈 수 없습니다!
+UseSkillHandler.SkillNotImplemented:             아직 구현되지 않은 스킬입니다.
+WarmapShowRequestHandler.NearPortalStoneRequired: 유효한 포털 스톤 근처에 있어야 순간이동할 수 있습니다.
+ShipHookpointInteract.SeatNotEmpty:              그 좌석은 비어 있지 않습니다!
+RegionChangeRequestHandler.RegionDisabled:       이 지역은 현재 비활성화되어 있습니다!
+DoorRequestHandler.DoorNotInDatabase:            이 문은 데이터베이스에 없습니다. 문을 대상으로 삼을 때 추가 대화창을 열려면 '/door show'를 사용하세요.
+GameInventoryObject.UnsupportedAction:           현재 지원하지 않는 동작입니다. 다른 출발 슬롯이나 대상 슬롯을 사용해 보세요.
+GameInventoryObject.MoveError:                   '{0}' 처리 중 아이템 이동 오류가 발생했습니다:
+GameInventoryObject.ItemMayBeLostOrInvisible:    아이템이 사라졌거나 일시적으로 보이지 않을 수 있습니다.
+PacketLib.PlayerTitles.Caption:                  플레이어 통계
+PacketLib.PlayerTitles.Titles:                   칭호:

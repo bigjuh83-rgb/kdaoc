@@ -1,0 +1,42 @@
+Mid.Frontiers.CheckPlayerAbortQuest.Text1:	좋습니다. 이제 나가서 일을 마무리하세요!
+Mid.Frontiers.CheckPlayerAbortQuest.Text2:	퀘스트 {0}을(를) 포기합니다. 원한다면 다시 시작할 수 있습니다.
+Mid.Frontiers.CheckPlayerAcceptQuest.Text1:	알겠습니다. 마음이 바뀌면 다시 찾아오세요!
+Mid.Frontiers.CheckPlayerAcceptQuest.Text2:	훌륭합니다, {0}. 자, 이 계획서와 그리핀 조련사 니에디에게 전할 두루마리를 가져가세요. 그에게 두루마리를 주면 어디로 보내야 할지 알 것입니다. 그는 요르드하임 성문 근처에 있습니다. 빠르고 안전한 여정이 되길 바랍니다, {0}.
+Mid.Frontiers.CheckPlayerAcceptQuest.Text3:	스바수드 파스테로 이동할 {0}을(를) 받았습니다.
+Mid.Frontiers.Description.Text1:		[1단계] 달리코르가 준 아스케프루어 계획서를 프론티어의 예언자 이도라에게 전달해야 합니다. 먼저 요르드하임 성문 근처의 그리핀 조련사 니에디에게 두루마리를 가져가세요.
+Mid.Frontiers.Description.Text2:		[2단계] 그리핀을 타고 스바수드 파스테로 가세요. 도착하면 스토르 고디 안나크와 대화하세요. 그가 당신을 프론티어로 보내 줄 것입니다.
+Mid.Frontiers.Description.Text3:		[3단계] 아스케프루어 계획서를 이도라에게 전달하세요.
+Mid.Frontiers.Description.Text4:		[4단계] 예언자 이도라가 계획서 번역을 마칠 때까지 기다리세요. 그녀가 말을 멈추면 번역이 [끝났는지] 물어보세요.
+Mid.Frontiers.Description.Text5:		[5단계] 번역된 계획서를 물란 근처 탑에 있는 달리코르에게 가져가세요. 이도라가 준 표를 스바수드 파스테의 마구간지기 보르가르에게 주면 더 빨리 돌아갈 수 있습니다.
+Mid.Frontiers.Description.Text6:		[6단계] 달리코르가 번역문을 다 읽을 때까지 기다리세요.
+Mid.Frontiers.FinishQuest.Text1:		보상으로 {0}을(를) 받았습니다.
+Mid.Frontiers.Notify.Text1:			아, 오랜 친구 달리코르에게서 온 것이군요. 어디 보죠. 스바수드 파스테로 가는 이동편을 마련해 달라는군요. 문제없습니다. 제 상점에서 표만 구입하면 됩니다.
+Mid.Frontiers.Notify.Text2:			흠... 이건 뭐죠? 제게 온 편지인가요? 흥미롭군요. 아, 오랜 친구 달리코르가 보냈군요. 요정어로 쓰인 계획서에 대한 이야기입니다. 잠시만 기다려 주면 번역할 수 있습니다.
+Mid.Frontiers.Notify.Text3:			예언자 이도라는 양피지를 꺼내 당신이 가져온 두루마리를 번역하기 시작합니다. 몇 분 지나지 않아 번역을 마칩니다.
+Mid.Frontiers.Notify.Text4:			훌륭합니다. 이제 잠시만 기다려 주세요. 이것을 읽어 봐야겠습니다.
+Mid.Frontiers.Notify.Text5:			달리코르는 양피지를 들어 올리고 그 위에 적힌 내용을 천천히 읽습니다. 다 읽은 뒤 접어서 주머니에 넣습니다.
+Mid.Frontiers.NPCGriffinHandlerNjiedi:		그리핀 조련사 니에디
+Mid.Frontiers.NPCScryerIdora:			예언자 이도라
+Mid.Frontiers.QuestTitle:			프론티어 (미드가르드)
+Mid.Frontiers.TalkToAnnark.Talk1:		후긴과 무닌이 여러분을 인도하고, 여정의 소식을 가지고 돌아오길 바랍니다.
+Mid.Frontiers.TalkToDalikor.AbortQuest:		정말 이 퀘스트를 포기하시겠습니까?\n퀘스트 중 얻은 모든 아이템을 잃게 됩니다.
+Mid.Frontiers.TalkToDalikor.OfferQuest:		달리코르를 위해 이 꾸러미를 프론티어로 가져가겠습니까?
+Mid.Frontiers.TalkToDalikor.Talk1:		다시 만나 반갑습니다, 신병. 장로들과 이야기했는데, 이 계획서를 [예언자 이도라]에게 가져가는 일에 대해 당신과 이야기하라고 하셨습니다.
+Mid.Frontiers.TalkToDalikor.Talk2:		훌륭합니다, {0}. 자, 이 계획서와 그리핀 조련사 니에디에게 전할 두루마리를 가져가세요. 그에게 두루마리를 주면 어디로 보내야 할지 알 것입니다. 그는 요르드하임 성문 근처에 있습니다. 빠르고 안전한 여정이 되길 바랍니다, {0}.
+Mid.Frontiers.TalkToDalikor.Talk3:		시험장에서 무사히 돌아온 것을 보니 반갑군요, 신병 {0}. 번역된 계획서를 가져왔습니까?
+Mid.Frontiers.TalkToDalikor.Talk4:		우려했던 대로입니다. 타락한 아스케프루어들이 물란을 차지해 자신들의 새 왕국으로 삼으려 하고 있습니다! 어떻게 해내려는지는 짐작조차 어렵군요. 장로들과 더 논의해야겠습니다. 이제 다 읽었으니, 당신의 [노력]에 보답할 것이 있습니다.
+Mid.Frontiers.TalkToDalikor.Talk5:		그녀는 현재 시험장에서 새 신병들을 돕고 있습니다. 우리는 낯선 언어에 대한 그녀의 지식이 절실합니다. 이 일을 빠르게 번역할 수 있는 사람은 그녀 [뿐]이라고 생각합니다.
+Mid.Frontiers.TalkToDalikor.Talk6:		이 계획서를 그녀에게 [전달]하여 장로들과 물란을 도와주겠습니까?
+Mid.Frontiers.TalkToDalikor.Talk7:		장로들은 물란을 위해 이 일을 해 준 감사의 표시로 이 다리보호구를 주라고 지시했습니다. 당신이 가져온 내용은 의회에 전하겠습니다. 너무 멀리 가지 마세요, {0}. 아직 해야 할 일이 많을 겁니다.
+Mid.Frontiers.TalkToDalikor.Whisper1:		예언자 이도라
+Mid.Frontiers.TalkToDalikor.Whisper2:		뿐
+Mid.Frontiers.TalkToDalikor.Whisper3:		전달
+Mid.Frontiers.TalkToDalikor.Whisper4:		노력
+Mid.Frontiers.TalkToDalikor.Whisper5:		포기
+Mid.Frontiers.TalkToIdora.Talk1:		시험장에 온 것을 환영합니다, {0}. 저는 이도라입니다. 직업은 섀도우블레이드지만, 취미로 예언과 해독을 하고 있지요. 무엇을 도와드릴까요?
+Mid.Frontiers.TalkToIdora.Talk2:		아, 네. 이제 번역이 [끝났습니다].
+Mid.Frontiers.TalkToIdora.Talk3:		잠시만요... 거의 끝났습니다.
+Mid.Frontiers.TalkToIdora.Talk4:		자, 여기 있습니다, 용감한 젊은 여행자여. 모두 번역되었습니다. 달리코르에게 가져가세요. 오늘 도움이 되었기를 바랍니다. 곧 다시 찾아오세요!
+Mid.Frontiers.TalkToIdora.Talk5:		아, 그리고 이 말표를 받아 스바수드 파스테의 보르가르에게 주면 안전하게 집으로 데려다 줄 것입니다.
+Mid.Frontiers.TalkToIdora.Whisper1:		끝났습니다
+Mid.Frontiers.TalkToNjiedi.Talk1:		안녕하세요, 친구여. 무엇을 도와드릴까요?

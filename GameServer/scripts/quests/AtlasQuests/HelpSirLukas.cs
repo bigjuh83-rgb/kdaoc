@@ -8,7 +8,7 @@
 *Quest Version  : v1.0
 *
 *Changes:
-* 
+*
 */
 
 using System;
@@ -63,13 +63,26 @@ namespace DOL.GS.Quests.Albion
 		{
 		}
 
+		private static string L(GamePlayer player, string key, params object[] args)
+		{
+			return DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+		}
+
+		private string Q(string key, params object[] args)
+		{
+			string language = m_questPlayer != null && m_questPlayer.Client != null && m_questPlayer.Client.Account != null
+				? m_questPlayer.Client.Account.Language
+				: ServerProperties.Properties.SERV_LANGUAGE;
+			return DOL.Language.LanguageMgr.GetTranslation(language, key, args);
+		}
+
 
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -106,7 +119,7 @@ namespace DOL.GS.Quests.Albion
 					Lukas.SaveIntoDatabase();
 				}
 			}
-			
+
 			npcs = WorldMgr.GetNPCsByName("Sir Lukas", eRealm.Albion);
 
 			if (npcs.Length > 0)
@@ -279,7 +292,7 @@ namespace DOL.GS.Quests.Albion
 
 			GameEventMgr.AddHandler(SirLukas, GameObjectEvent.Interact, new DOLEventHandler(TalkToSirLukas));
 			GameEventMgr.AddHandler(SirLukas, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToSirLukas));
-			
+
 			GameEventMgr.AddHandler(EllynWeyland, GameObjectEvent.Interact, new DOLEventHandler(TalkToEllynWeyland));
 			GameEventMgr.AddHandler(EllynWeyland, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToEllynWeyland));
 
@@ -302,7 +315,7 @@ namespace DOL.GS.Quests.Albion
 
 			GameEventMgr.RemoveHandler(SirLukas, GameObjectEvent.Interact, new DOLEventHandler(TalkToSirLukas));
 			GameEventMgr.RemoveHandler(SirLukas, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToSirLukas));
-			
+
 			GameEventMgr.RemoveHandler(EllynWeyland, GameObjectEvent.Interact, new DOLEventHandler(TalkToEllynWeyland));
 			GameEventMgr.RemoveHandler(EllynWeyland, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToEllynWeyland));
 
@@ -312,7 +325,7 @@ namespace DOL.GS.Quests.Albion
 
 		protected static void TalkToSirLukas(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -330,30 +343,23 @@ namespace DOL.GS.Quests.Albion
 					switch (quest.Step)
 					{
 						case 1:
-							SirLukas.SayTo(player, "You will find Ellyn Weyland in the forge of Cotswold. She says she has something for me, could you please go and see what she's found?");
+							SirLukas.SayTo(player, L(player, "Quest.HelpSirLukas.SirLukas.Step1"));
 							break;
 						case 2:
-							SirLukas.SayTo(player, "Hey "+ player.Name +", good to see you. Do you have Ellyn Weylands [delivery]?");
+							SirLukas.SayTo(player, L(player, "Quest.HelpSirLukas.SirLukas.Step2", player.Name));
 							break;
 						case 3:
 							SirLukas.Emote(eEmote.No);
-							SirLukas.SayTo(player, "Thank you, " + player.Name + ". This bow... marks a terrible loss for our realm." +
-												   "\n\nFlitzitina is my mother. She was a strong and protective scout; her bow and arrows perfectly crafted. " +
-							                       "Her eyes were as sharp as a falcon's and she never missed her mark. I am proud to be the son of such an incredible woman." +
-							                       "\n\nThank you for returning her bow to me. I have one last request, if you don't mind. " +
-                                                   "\nPlease bring [this speech] to Vetusta Abbey so we may prepare a dignified funeral for her.");
+							SirLukas.SayTo(player, L(player, "Quest.HelpSirLukas.SirLukas.Step3", player.Name));
 							break;
 						case 4:
-							SirLukas.SayTo(player, player.Name +", \nI will meet you at the grave of my mother. Please bring the funeral speech to [the grave] in Vetusta Abbey.");
+							SirLukas.SayTo(player, L(player, "Quest.HelpSirLukas.SirLukas.Step4", player.Name));
 							break;
 					}
 				}
 				else
 				{
-					SirLukas.SayTo(player, "Hello "+ player.Name +", I am Sir Lukas, protector of Camelot and Albion. "+
-					                       "I heard from your "+ player.CharacterClass.Name +" Trainer that you are ready to take on tasks from Camelot. \n\n"+
-					                       "I am expecting a delivery from Ellyn Weyland in the Cotswold Forge, which has to be picked up. However I cannot leave my post for many hours.\n" +
-					                       "\nCan you [support Camelot] and get this for me?");
+					SirLukas.SayTo(player, L(player, "Quest.HelpSirLukas.SirLukas.Greeting", player.Name, player.CharacterClass.Name));
 				}
 			}
 				// The player whispered to the NPC
@@ -364,8 +370,9 @@ namespace DOL.GS.Quests.Albion
 				{
 					switch (wArgs.Text)
 					{
-						case "support Camelot":
-							player.Out.SendQuestSubscribeCommand(SirLukas, QuestMgr.GetIDForQuestType(typeof(HelpSirLukas)), "Will you help Sir Lukas [Memorial] All in the Gold]?");
+							case "support Camelot":
+							case "카멜롯 지원":
+							player.Out.SendQuestSubscribeCommand(SirLukas, QuestMgr.GetIDForQuestType(typeof(HelpSirLukas)), L(player, "Quest.HelpSirLukas.SubscribePrompt"));
 							break;
 					}
 				}
@@ -373,30 +380,34 @@ namespace DOL.GS.Quests.Albion
 				{
 					switch (wArgs.Text)
 					{
-						case "this speech":
-							SirLukas.SayTo(player, "Thank you "+ player.Name +", I need some time to collect my thoughts. Please go to [Vetusta Abbey] and I will meet you there.");
+							case "this speech":
+							case "장례 연설문":
+							SirLukas.SayTo(player, L(player, "Quest.HelpSirLukas.SirLukas.ThisSpeech", player.Name));
 							break;
-						case "the grave":
-							SirLukas.SayTo(player, "Please go to the North Gates of Camelot. You will find Vetusta Abbey near the gates!");
+							case "the grave":
+							case "무덤":
+							SirLukas.SayTo(player, L(player, "Quest.HelpSirLukas.SirLukas.TheGrave"));
 							break;
-						case "Vetusta Abbey":
-							
-							
+							case "Vetusta Abbey":
+							case "베투스타 수도원":
+
+
 							if (quest.Step == 3)
 							{
-								SirLukas.SayTo(player, "Here, is the speech. Go to the North Gates of Camelot. You will find Vetusta Abbey near the gates.");
+								SirLukas.SayTo(player, L(player, "Quest.HelpSirLukas.SirLukas.VetustaAbbey"));
 								GiveItem(player, funeral_speech_scroll);
 								quest.Step = 4;
 							}
 							break;
-						case "delivery":
-							SirLukas.SayTo(player, "Fantastic, please hand it to me!");
+							case "delivery":
+							case "전달품":
+							SirLukas.SayTo(player, L(player, "Quest.HelpSirLukas.SirLukas.Delivery"));
 							RemoveItem(player, FlitzitinaBow);
 							quest.Step = 3;
 							SirLukas.Interact(player);
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
@@ -408,16 +419,16 @@ namespace DOL.GS.Quests.Albion
 				{
 					if (rArgs.Item.Id_nb == FlitzitinaBow.Id_nb)
 					{
-						SirLukas.SayTo(player, "Thank you "+ player.Name +", this bow... marks a terrible loss for our realm.\n");
+						SirLukas.SayTo(player, L(player, "Quest.HelpSirLukas.SirLukas.ReceiveBow", player.Name));
 						//quest.Step = 3;
 					}
 				}
 			}
 		}
-		
+
 		protected static void TalkToEllynWeyland(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -432,27 +443,22 @@ namespace DOL.GS.Quests.Albion
 					switch (quest.Step)
 					{
 						case 1:
-							EllynWeyland.SayTo(player, "Hello "+ player.Name +", " +
-							                           "I have sad news for Sir Lukas." +
-													   " I found this bow in Pennine Mountains near the merchant routes. \n" +
-													   "It is from Flitzitina... his mother. \n" +							                           
-							                           "\nPlease, take [her bow] and return it to Sir Lukas. This delivery is very important, it belongs in his care.");
+							EllynWeyland.SayTo(player, L(player, "Quest.HelpSirLukas.Ellyn.Step1", player.Name));
 							break;
 						case 2:
-							EllynWeyland.SayTo(player, "Hey "+ player.Name +",\n did you hand the delivery to Sir Lukas? \nPlease do it, it is very important!");
+							EllynWeyland.SayTo(player, L(player, "Quest.HelpSirLukas.Ellyn.Step2", player.Name));
 							break;
 						case 3:
-							EllynWeyland.SayTo(player, "Hello Adventurer,\n" +
-							                           "I heard you gave Sir Lukas the delivery. I know he will honor his mother!");
+							EllynWeyland.SayTo(player, L(player, "Quest.HelpSirLukas.Ellyn.Step3"));
 							break;
 						case 4:
-							EllynWeyland.SayTo(player, "Vetusta Abbey? I know this place, when I was a child, I played there with some pigs and with my friends.");
+							EllynWeyland.SayTo(player, L(player, "Quest.HelpSirLukas.Ellyn.Step4"));
 							break;
 					}
 				}
 				else
 				{
-					EllynWeyland.SayTo(player, "Hello Adventurer,\nI sell many armor pieces, maybe you find something for your use.");
+					EllynWeyland.SayTo(player, L(player, "Quest.HelpSirLukas.Ellyn.Greeting"));
 				}
 			}
 				// The player whispered to the NPC
@@ -463,7 +469,7 @@ namespace DOL.GS.Quests.Albion
 				{
 					switch (wArgs.Text)
 					{
-						
+
 					}
 				}
 				else
@@ -471,9 +477,10 @@ namespace DOL.GS.Quests.Albion
 					switch (wArgs.Text)
 					{
 						case "her bow":
+						case "그녀의 활":
 							if (quest.Step == 1)
 							{
-								EllynWeyland.SayTo(player, "Here is the bow, thank you for doing this.");
+								EllynWeyland.SayTo(player, L(player, "Quest.HelpSirLukas.Ellyn.HerBow"));
 								quest.Step = 2;
 								GiveItem(player, FlitzitinaBow);
 							}
@@ -485,7 +492,7 @@ namespace DOL.GS.Quests.Albion
 
 		protected static void TalkToLukas(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -500,13 +507,13 @@ namespace DOL.GS.Quests.Albion
 					switch (quest.Step)
 					{
 						case 4:
-							Lukas.SayTo(player, "Vetusta Abbey is a special and perfect place for my mother\'s funeral, thanks again for your help "+ player.Name +"!");
+							Lukas.SayTo(player, L(player, "Quest.HelpSirLukas.Lukas.Step4", player.Name));
 							break;
 					}
 				}
 				else
 				{
-					Lukas.SayTo(player, "Hello "+ player.Name +", good to see you. I know that you get stronger and more inquisitive every day, stick with it, you are doing well! You can [visit me] at anytime in Camelot if you want. \nHave a wonderful day!");
+					Lukas.SayTo(player, L(player, "Quest.HelpSirLukas.Lukas.Greeting", player.Name));
 				}
 			}
 				// The player whispered to the NPC
@@ -518,17 +525,18 @@ namespace DOL.GS.Quests.Albion
 					switch (wArgs.Text)
 					{
 						case "visit me":
-							Lukas.SayTo(player, "You can find me at the archery ranges where scouts are trained for the realm.");
+						case "나를 찾아오기":
+							Lukas.SayTo(player, L(player, "Quest.HelpSirLukas.Lukas.VisitMe"));
 							break;
 					}
 				}
 				else
 				{
-					
+
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -557,11 +565,11 @@ namespace DOL.GS.Quests.Albion
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, L(player, "Quest.Common.AbortCancelled"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, L(player, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -591,7 +599,7 @@ namespace DOL.GS.Quests.Albion
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Each arrow leaves a memory in your heart and the sum of those memories will make you shoot better every time.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(L(player, "Quest.HelpSirLukas.Decline"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -599,7 +607,7 @@ namespace DOL.GS.Quests.Albion
 				if (!SirLukas.GiveQuest(typeof (HelpSirLukas), player, 1))
 					return;
 
-				SirLukas.SayTo(player, "You will find Ellyn Weyland in the forge of Cotswold. She says she has something for me, could you please go and see what she's found?");
+				SirLukas.SayTo(player, L(player, "Quest.HelpSirLukas.SirLukas.Step1"));
 
 			}
 		}
@@ -607,7 +615,7 @@ namespace DOL.GS.Quests.Albion
 		//Set quest name
 		public override string Name
 		{
-			get { return "[Memorial] All in the Gold"; }
+			get { return Q("Quest.HelpSirLukas.Name"); }
 		}
 
 		// Define Steps
@@ -618,15 +626,15 @@ namespace DOL.GS.Quests.Albion
 				switch (Step)
 				{
 					case 1:
-						return "Find Ellyn Weyland in Cotswold inside the forge and get the delivery.";
+						return Q("Quest.HelpSirLukas.Description.Step1");
 					case 2:
-						return "Return to Sir Lukas and give him the bow of Flitzitina!";
+						return Q("Quest.HelpSirLukas.Description.Step2");
 					case 3:
-						return "Speak with Sir Lukas and find out where the grave will be placed.";
+						return Q("Quest.HelpSirLukas.Description.Step3");
 					case 4:
-						return "Find Flitzitina\'s Grave in Vetusta Abbey near North Camelot Entrance.";
+						return Q("Quest.HelpSirLukas.Description.Step4");
 					case 5:
-						return "Rest in Peace Flitzitina! (quest completed)";
+						return Q("Quest.HelpSirLukas.Description.Step5");
 				}
 				return base.Description;
 			}
@@ -644,11 +652,7 @@ namespace DOL.GS.Quests.Albion
 				InteractEventArgs gArgs = (InteractEventArgs) args;
 				if (gArgs.Source.Name == EllynWeyland.Name)
 				{
-					EllynWeyland.SayTo(player, "Hello " + player.Name + ",\n" +
-													   "I have sad news for Sir Lukas." +
-													   " I found this bow in Pennine Mountains near the merchant routes. \n" +
-													   "It is from Flitzitina... his mother. \n" +
-													   "\nPlease, take [her bow] and return it to Sir Lukas. This delivery is very important, it belongs in his care.");
+					EllynWeyland.SayTo(player, L(player, "Quest.HelpSirLukas.Ellyn.Step1", player.Name));
 
 					GiveItem(m_questPlayer, FlitzitinaBow);
 					Step = 2;
@@ -662,8 +666,8 @@ namespace DOL.GS.Quests.Albion
 				InteractEventArgs gArgs = (InteractEventArgs) args;
 				if (gArgs.Source.Name == SirLukas.Name)
 				{*/
-				
-				SirLukas.SayTo(player, "We will prepare a dignified funeral for her, please bring this speech to Vetusta Abbey.");
+
+				SirLukas.SayTo(player, L(player, "Quest.HelpSirLukas.SirLukas.PrepareFuneral"));
 				Step = 4;
 				GiveItem(m_questPlayer, funeral_speech_scroll);
 				//}
@@ -681,7 +685,7 @@ namespace DOL.GS.Quests.Albion
 			}
 
 		}
-		public class HelpSirLukasTitle : EventPlayerTitle 
+		public class HelpSirLukasTitle : EventPlayerTitle
     {
         /// <summary>
         /// The title description, shown in "Titles" window.
@@ -690,7 +694,7 @@ namespace DOL.GS.Quests.Albion
         /// <returns>The title description.</returns>
         public override string GetDescription(GamePlayer player)
         {
-            return "Protected by Arrows";
+            return L(player, "Quest.HelpSirLukas.Title");
         }
 
         /// <summary>
@@ -701,9 +705,9 @@ namespace DOL.GS.Quests.Albion
         /// <returns>The title value.</returns>
         public override string GetValue(GamePlayer source, GamePlayer player)
         {
-            return "Protected by Arrows";
+            return L(source ?? player, "Quest.HelpSirLukas.Title");
         }
-		
+
         /// <summary>
         /// The event to hook.
         /// </summary>
@@ -711,7 +715,7 @@ namespace DOL.GS.Quests.Albion
         {
             get { return GamePlayerEvent.GameEntered; }
         }
-		
+
         /// <summary>
         /// Verify whether the player is suitable for this title.
         /// </summary>
@@ -721,7 +725,7 @@ namespace DOL.GS.Quests.Albion
         {
 	        return player.HasFinishedQuest(typeof(HelpSirLukas)) == 1;
         }
-		
+
         /// <summary>
         /// The event callback.
         /// </summary>
@@ -749,17 +753,16 @@ namespace DOL.GS.Quests.Albion
 
 		public override void FinishQuest()
 		{
-			Lukas.SayTo(m_questPlayer, "You helped me preserve the history of this heroine of Albion, and I will follow in her steps and make her proud. " +
-			                           "Thank you again, " + m_questPlayer.Name + ", it means more than you know.");
+			Lukas.SayTo(m_questPlayer, L(m_questPlayer, "Quest.HelpSirLukas.Finish", m_questPlayer.Name));
 			Lukas.TurnTo(m_questPlayer);
 			Lukas.Emote(eEmote.Curtsey);
 			Lukas.TurnTo(Lukas.SpawnHeading);
 
 			m_questPlayer.GainExperience(eXPSource.Quest, 20, false);
-			m_questPlayer.AddMoney(Money.GetMoney(0,0,1,32,Util.Random(50)), "You receive {0} as a reward.");
+			m_questPlayer.AddMoney(Money.GetMoney(0,0,1,32,Util.Random(50)), L(m_questPlayer, "Quest.Common.MoneyReward"));
 
 			base.FinishQuest(); //Defined in Quest, changes the state, stores in DB etc ...
-			
+
 		}
 	}
 }

@@ -5,12 +5,23 @@ System.LanguagesName.EN:				English
 System.LanguagesName.IT:				Italian
 System.LanguagesName.FR:				French
 System.LanguagesName.DE:				German
+System.LanguagesName.KR:				Korean
 
 ## Social
 ### Player Login
 PlayerInitRequestHandler.AllianceMessage:		        Alliance Message: {0}
+PlayerInitRequestHandler.DebugMode:			        Server is running in DEBUG mode!
 PlayerInitRequestHandler.GuildMessage:			        Guild Message:
+PlayerInitRequestHandler.GuildMessage.Error:	        There was an error sending motd for your guild. Guild ranks may be missing or corrupted.
 PlayerInitRequestHandler.OfficerMessage:		            Officer Message: {0}
+PlayerInitRequestHandler.StarterHelp.Commands:	        Useful commands:
+PlayerInitRequestHandler.StarterHelp.Intro:		        This window explains the basic server commands and options you may need while playing.
+PlayerInitRequestHandler.StarterHelp.Keyboard:	        /keyboard - Review or change your key bindings.
+PlayerInitRequestHandler.StarterHelp.Language:	        /language en or /language kr - Change your display language.
+PlayerInitRequestHandler.StarterHelp.Realm:		        /realm - Check realm, keep, and relic status.
+PlayerInitRequestHandler.StarterHelp.Title:		        Help
+PlayerInitRequestHandler.StarterHelp.Welcome:	        Welcome to the OpenDAoC freeshard.
+PlayerInitRequestHandler.UnsafeAreaMove:		        This area isn't currently secure and you are being transported to a safer location.
 
 ## Player Enter/Exit
 Scripts.Events.PlayerEnterExit.Entered:			        {0} just entered the game!

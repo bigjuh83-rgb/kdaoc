@@ -4,6 +4,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 // Boss Mechanics
 // Changes form every ~20 seconds
@@ -175,10 +176,11 @@ namespace DOL.AI.Brain
         public static bool GranidonFormCheck = false;
         public static bool SwitchForm = false;
 
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(string key, params object[] args)
         {
             foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
+                string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
                 player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
@@ -315,7 +317,7 @@ namespace DOL.AI.Brain
                     {
                         if (IsGranidonForm == false)
                         {
-                            BroadcastMessage(String.Format("Hurionthex casts a spell!"));
+                            BroadcastMessage("NamedMobs.Hurionthex.CastsSpell");
                             new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(Change_Granidon), 2000);
                             IsGranidonForm = true;
                         }
@@ -325,7 +327,7 @@ namespace DOL.AI.Brain
                     {
                         if (IsTreantForm == false)
                         {
-                            BroadcastMessage(String.Format("Hurionthex casts a spell!"));
+                            BroadcastMessage("NamedMobs.Hurionthex.CastsSpell");
                             new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(Change_Treant), 2000);
                             IsTreantForm = true;
                         }
@@ -335,7 +337,7 @@ namespace DOL.AI.Brain
                     {
                         if (IsSaiyanForm == false)
                         {
-                            BroadcastMessage(String.Format("Hurionthex casts a spell!"));
+                            BroadcastMessage("NamedMobs.Hurionthex.CastsSpell");
                             new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(Change_Saiyan), 2000);
                             IsSaiyanForm = true;
                         }
@@ -345,7 +347,7 @@ namespace DOL.AI.Brain
                     {
                         if (IsBaseForm == false)
                         {
-                            BroadcastMessage(String.Format("Hurionthex casts a spell!"));
+                            BroadcastMessage("NamedMobs.Hurionthex.CastsSpell");
                             new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(Change_Base), 2000);
                             IsBaseForm = true;
                         }
@@ -366,7 +368,7 @@ namespace DOL.AI.Brain
                     player.Out.SendSpellEffectAnimation(Body, Body, 208, 0, false, 0x01);
                 }
 
-                BroadcastMessage(String.Format("Hurionthex returns to his natural form."));
+                BroadcastMessage("NamedMobs.Hurionthex.ReturnsNaturalForm");
                 FormBase();
                 new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(FormDuration), 2000);
                 BaseFormCheck = true;
@@ -384,7 +386,7 @@ namespace DOL.AI.Brain
                     player.Out.SendSpellEffectAnimation(Body, Body, 208, 0, false, 0x01);
                 }
 
-                BroadcastMessage(String.Format("A ring of magical energy emanates from Hurionthex."));
+                BroadcastMessage("NamedMobs.Hurionthex.MagicalEnergyRing");
                 FormGranidon();
                 new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(FormDuration), 2000);
                 GranidonFormCheck = true;
@@ -402,7 +404,7 @@ namespace DOL.AI.Brain
                     player.Out.SendSpellEffectAnimation(Body, Body, 208, 0, false, 0x01);
                 }
 
-                BroadcastMessage(String.Format("A ring of magical energy emanates from Hurionthex."));
+                BroadcastMessage("NamedMobs.Hurionthex.MagicalEnergyRing");
                 FormTreant();
                 new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(FormDuration), 2000);
                 TreantFormCheck = true;
@@ -420,7 +422,7 @@ namespace DOL.AI.Brain
                     player.Out.SendSpellEffectAnimation(Body, Body, 208, 0, false, 0x01);
                 }
 
-                BroadcastMessage(String.Format("A ring of magical energy emanates from Hurionthex."));
+                BroadcastMessage("NamedMobs.Hurionthex.MagicalEnergyRing");
                 FormSaiyan();
                 new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(FormDuration), 2000);
                 SaiyanFormCheck = true;

@@ -129,7 +129,7 @@ namespace DOL.AI.Brain
 				{
 					if (npc != null && npc.IsAlive && npc.Brain is FuilslathachBrain brain)
 					{
-						if (!brain.HasAggro && target.IsAlive && target != null)
+						if (!brain.HasAggro && target != null && target.IsAlive)
 							brain.AddToAggroList(target, 10);
 					}
 				}
@@ -137,7 +137,7 @@ namespace DOL.AI.Brain
 				{
 					if (npc != null && npc.IsAlive && npc.Brain is BeomarbhanBrain brain)
 					{
-						if (!brain.HasAggro && target.IsAlive && target != null)
+						if (!brain.HasAggro && target != null && target.IsAlive)
 							brain.AddToAggroList(target, 10);
 					}
 				}

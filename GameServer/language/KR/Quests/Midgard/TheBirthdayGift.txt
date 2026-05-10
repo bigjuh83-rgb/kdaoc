@@ -1,0 +1,29 @@
+Mid.TheBirthdayGift.EnemyKilled:	덜그럭거리는 스켈레톤
+Mid.TheBirthdayGift.NPCBarkeepNognar:	주점 주인 노그나르
+Mid.TheBirthdayGift.NPCBarkeepPrugar:	주점 주인 프루가르
+Mid.TheBirthdayGift.OfferQuest:		프루가르의 생일 선물을 구하는 일을 도와주시겠습니까? (레벨 1-4)
+Mid.TheBirthdayGift.QuestTitle:		생일 선물
+Mid.TheBirthdayGift.Step1:		[1단계] 주점 주인 노그나르와 그의 형제에게 줄 선물에 대해 이야기하세요. 이야기가 끝나면 물란 주점 북서쪽 들판으로 가서 덜그럭거리는 스켈레톤을 처치하세요. 펜던트를 얻으면 주점 주인 노그나르에게 돌아가세요.
+Mid.TheBirthdayGift.Step2:		[2단계] 덜그럭거리는 펜던트를 얻었다면 물란의 주점 주인 노그나르에게 돌아가세요.
+Mid.TheBirthdayGift.Step3:		[3단계] 요르드하임에 들어가면 오른쪽으로 가세요. 다음 갈림길에서는 왼쪽으로 가세요. 주점은 오른쪽에 있으며, 말린 표지판이 걸린 끝쪽에 문이 있습니다. 주점 주인 프루가르와 이야기하고, 요청받으면 선물을 건네세요.
+Mid.TheBirthdayGift.Talk1:		아, 안녕하세요. 와서 한잔하며 이야기나 나누시죠. 작은 부탁이 하나 있습니다. 당신이 [관심]이 있다면 말입니다.
+Mid.TheBirthdayGift.Talk2:		이 주점과 요르드하임의 주점은 대대로 이어져 내려왔습니다. 제 증조부 때 시작되어 제 형제와 저에게까지 전해졌지요. 우리는 오랫동안 물란과 요르드하임 사람들을 섬길 수 있어 영광으로 생각합니다. 하지만 이 일은 몹시 고되고 손이 많이 가며, 쉬는 시간은 아주 귀한 경험입니다. 제 견습생은 모레가 되어서야 돌아올 텐데, 그때는 [너무 늦습니다].
+Mid.TheBirthdayGift.Talk3:		사실 내일이 제 동생의 생일입니다. 그에게 특별한 선물을 주고 싶습니다. 우리 어린 시절을 떠올리게 해 줄 선물을 말이지요. 그때는 일이나 주변의 [일들]에 이렇게 얽매이지 않았습니다.
+Mid.TheBirthdayGift.Talk4:		어릴 때 우리는 이 주점 옆 들판에서 놀며 덜그럭거리는 스켈레톤들을 끝없이 놀리곤 했습니다. 그 스켈레톤들은 펜던트를 차고 있었고, 어린 우리는 그것이 마법 물건이라고 생각했습니다. 목에서 하나를 낚아채 보려고 무척 애썼지만, 그럴 용기는 없었습니다. 그 펜던트에는 마법의 힘이 없고 그저 스켈레톤들이 달고 다니는 평범한 장식이라는 것을 조금 더 자란 뒤에 [알게] 되었지요.
+Mid.TheBirthdayGift.Talk5:		프루가르의 생일 선물로 그 펜던트 중 하나를 구하고 싶습니다. 우리가 얼마나 가까웠고, 어린 시절 얼마나 즐거웠는지 떠올리게 하는 재미있는 방법이 될 것 같습니다. 또 그에게 언제나 너무 진지하게만 굴 필요는 없다는 것도 알려 주고 싶습니다.
+Mid.TheBirthdayGift.Talk6:		괜찮습니다. 다음에 뵙죠.
+Mid.TheBirthdayGift.Talk7:		고맙습니다. 제게는 정말 큰 의미가 있습니다. 당신의 도움에 진심으로 [감사]드립니다.
+Mid.TheBirthdayGift.Talk8:		주점 북서쪽으로 가서 덜그럭거리는 스켈레톤을 처치하기만 하면 됩니다. 펜던트를 얻으면 그것을 가지고 제게 돌아오세요.
+Mid.TheBirthdayGift.Talk9:		무사히 돌아왔군요. 스켈레톤에게서 펜던트를 얻을 수 있었습니까?
+Mid.TheBirthdayGift.Talk10:		완벽합니다! 프루가르도 이 선물에서 제가 느끼는 만큼의 재미와 의미를 찾아 주었으면 좋겠습니다. 잠시만 기다려 주시면 이 [선물을 포장]하고 함께 보낼 편지를 쓰겠습니다.
+Mid.TheBirthdayGift.Talk11:		자, 여기 있습니다. 이것을 프루가르에게 전해 주시면 정말 고맙겠습니다. 그는 요르드하임의 주점에 있습니다. 요르드하임 성문으로 들어가면 오른쪽으로 가세요. 다음 갈림길에서는 왼쪽으로 가면 됩니다. 주점은 오른쪽에 있는 긴 건물입니다. 주점 문은 말린 표지판이 걸린 끝쪽에 있습니다. 다시 한 번 고맙습니다.
+Mid.TheBirthdayGift.Talk12:		안녕하세요, 낯선 분! 제게 줄 선물이 있다고요? 누가 보냈습니까?
+Mid.TheBirthdayGift.Talk13:		사랑하는 형이 제 생일을 기억했군요. 정말 고맙습니다. 이건 참 멋진 [놀라움]입니다.
+Mid.TheBirthdayGift.Talk14:		감사의 표시로 이 동전을 받아 주세요. 관심이 있다면, 부탁할 일이 하나 더 있습니다.
+Mid.TheBirthdayGift.Whisper1:		관심
+Mid.TheBirthdayGift.Whisper2:		너무 늦습니다
+Mid.TheBirthdayGift.Whisper3:		일들
+Mid.TheBirthdayGift.Whisper4:		알게
+Mid.TheBirthdayGift.Whisper5:		감사
+Mid.TheBirthdayGift.Whisper6:		선물을 포장
+Mid.TheBirthdayGift.Whisper7:		놀라움

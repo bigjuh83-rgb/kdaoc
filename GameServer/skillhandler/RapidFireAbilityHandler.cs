@@ -33,7 +33,7 @@ namespace DOL.GS.SkillHandler
 
             if (volley != null)
             {
-                player.Out.SendMessage("You can't use "+ab.Name+" while Volley is active!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Skill.Ability.CannotUseWhileVolleyActive", ab.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 

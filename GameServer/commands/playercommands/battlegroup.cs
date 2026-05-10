@@ -69,7 +69,7 @@ namespace DOL.GS.Commands
                 }
 
                 if (ply.IgnoreList.Contains(client.Player)) continue;
-                
+
                 ply.Out.SendMessage(message,type, eChatLoc.CL_ChatWindow);
             }
         }
@@ -192,7 +192,7 @@ namespace DOL.GS.Commands
                                 text.Length = 0;
                                 text.Append(i);
                                 text.Append(") ");
-                                i++; 
+                                i++;
                                 text.Append(grouped.Group.GroupMemberString(grouped));
                                 client.Out.SendMessage(text.ToString(), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                 firstrun = 1;
@@ -283,7 +283,7 @@ namespace DOL.GS.Commands
                         }
                     }
                     break;
-                
+
                 case "solo":
                     {
                         if (client.Player == null)
@@ -325,7 +325,7 @@ namespace DOL.GS.Commands
                                 continue;
 
                             var player = nongroupedplayer as GamePlayer;
-                            
+
                             if (mybattlegroup.IsBGLeader(player))
                             {
                                 text.Append(" <Leader> ");
@@ -334,7 +334,7 @@ namespace DOL.GS.Commands
                             {
                                 text.Append(" <Member> ");
                             }
-                            
+
                             text.Append($"{nongrouped.Name}, the level {nongrouped.Level} {nongrouped.CharacterClass.Name} \n");
                             client.Out.SendMessage(text.ToString(), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         }
@@ -382,7 +382,7 @@ namespace DOL.GS.Commands
                             text.Append(player.Name);
 
                             client.Out.SendMessage(text.ToString(), eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                            //TODO: make function formatstring                        
+                            //TODO: make function formatstring
                         }
                     }
                     break;
@@ -455,7 +455,7 @@ namespace DOL.GS.Commands
                             ply.Out.SendMessage(message, eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         }
                     }
-                    break; 
+                    break;
                 case "promote":
                     {
                         if (client.Player == null)
@@ -500,7 +500,7 @@ namespace DOL.GS.Commands
                             mybattlegroup.Moderators.Remove(inviteePlayer);
                             message = LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.RemoveModerator", inviteePlayer.Name);
                         }
-                        
+
                         foreach (GamePlayer ply in mybattlegroup.Members.Keys)
                         {
                             ply.Out.SendMessage(message, eChatType.CT_System, eChatLoc.CL_SystemWindow);
@@ -717,7 +717,7 @@ namespace DOL.GS.Commands
                         }
                         if (args.Length < 3)
                         {
-                            client.Out.SendMessage("You should use /bg loot normal or /bg loot treasurer.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.LootUsage"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
                         if (args[2] == "normal" || args[2] == "norm" || args[2] == "n" || args[2] == "N" || args[2] == "Norm" || args[2] == "Normal")
@@ -806,7 +806,7 @@ namespace DOL.GS.Commands
                         }
                         if (!mybattlegroup.IsInTheBattleGroup(treasurer))
                         {
-                            client.Out.SendMessage("This player is not in your battleground.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.PlayerNotInBattlegroup"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
                         mybattlegroup.SetBGTreasurer(treasurer);
@@ -841,27 +841,27 @@ namespace DOL.GS.Commands
                             client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.LeaderCommand"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
-                        
+
                         if (args.Length < 3)
                         {
-                            client.Out.SendMessage("You need to specify a valid max roll value (i.e. /bg recordstart 1000)", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.RecordStartUsage"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
                         int maxRoll;
-                        
+
                         try
                         {
                             maxRoll = Convert.ToInt32(args[2]);
                         }
                         catch (Exception)
                         {
-                            client.Out.SendMessage("You need to specify a valid max roll value (i.e. /bg recordstart 1000)", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.RecordStartUsage"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
-                        
+
                         mybattlegroup.StartRecordingRolls(maxRoll);
-                        
+
                     }
                     break;
                 case "recordstop":
@@ -880,11 +880,11 @@ namespace DOL.GS.Commands
                         client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.LeaderCommand"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return;
                     }
-                        
+
                     mybattlegroup.StopRecordingRolls();
                     mybattlegroup.ShowRollsWindow(client.Player);
-                        
-                } 
+
+                }
                     break;
                 case "showrolls":
                 {
@@ -897,10 +897,10 @@ namespace DOL.GS.Commands
                         client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.InBattleGroup"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return;
                     }
-                    
+
                     mybattlegroup.ShowRollsWindow(client.Player);
-                        
-                } 
+
+                }
                     break;
 
                 default:
@@ -946,7 +946,7 @@ namespace DOL.GS.Commands
         public static void JoinBattleGroup(GamePlayer player, byte response)
         {
             /*BattleGroup mybattlegroupinvite = player.TempProperties.GetProperty<BattleGroup>(JOIN_BATTLEGROUP_PROPERTY);
-            if (mybattlegroupinvite == null) 
+            if (mybattlegroupinvite == null)
                 return;*/
 
             GamePlayer leader = player.TempProperties.GetProperty<GamePlayer>(PLAYER_INVITE_SENDER);
@@ -996,7 +996,7 @@ namespace DOL.GS.Commands
                     }
                     else
                         player.Client.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Battlegroup.NoPlayer"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                    
+
                 }
             }
             player.TempProperties.RemoveProperty(JOIN_BATTLEGROUP_PROPERTY);

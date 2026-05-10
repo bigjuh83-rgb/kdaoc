@@ -5,6 +5,7 @@ using DOL.Database;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
 using DOL.GS.Spells;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -18,11 +19,11 @@ namespace DOL.GS.RealmAbilities
 
 		public override void Execute(GameLiving living)
 		{
-			if (CheckPreconditions(living, DEAD | SITTING | MEZZED | STUNNED)) 
+			if (CheckPreconditions(living, DEAD | SITTING | MEZZED | STUNNED))
 				return;
 			GamePlayer player = living as GamePlayer;
 
-			if (player == null) 
+			if (player == null)
 				return;
 
 			GamePlayer targetPlayer = null;
@@ -48,20 +49,20 @@ namespace DOL.GS.RealmAbilities
 
 			if (isGoodTarget == false)
 			{
-				player.Out.SendMessage("You have to target a dead member of your realm!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.PerfectRecovery.TargetDeadRealmMember"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 				return;
 			}
-			
+
 			GameLiving resurrectionCaster = targetPlayer.TempProperties.GetProperty<GameLiving>(RESURRECT_CASTER_PROPERTY);
 			if (resurrectionCaster != null)
 			{
-				player.Out.SendMessage("Your target is already considering a resurrection!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.PerfectRecovery.TargetConsideringResurrection"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 				return;
 			}
             if( !player.IsWithinRadius( targetPlayer, (int)( 1500 * player.GetModified(eProperty.SpellRange) * 0.01 ) ) )
 
 			{
-				player.Out.SendMessage("You are too far away from your target to use this ability!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.PerfectRecovery.TargetTooFar"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			if (targetPlayer != null)
@@ -84,7 +85,7 @@ namespace DOL.GS.RealmAbilities
 				}
 
 				//send resurrect dialog
-                targetPlayer.Out.SendCustomDialog("Do you allow " + living.GetName(0, true) + " to resurrect you\n with " + m_resurrectValue + " percent hits/power (PR)?", new CustomDialogResponse(ResurrectResponceHandler));
+                targetPlayer.Out.SendCustomDialog(LanguageMgr.GetTranslation(targetPlayer.Client.Account.Language, "RealmAbility.PerfectRecovery.ResurrectPrompt", living.GetName(0, true), m_resurrectValue), new CustomDialogResponse(ResurrectResponceHandler));
 
 			}
 		}
@@ -113,24 +114,24 @@ namespace DOL.GS.RealmAbilities
             {
                 if (rezzer == null)
                 {
-                    player.Out.SendMessage("No one is currently trying to resurrect you.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.PerfectRecovery.NoResurrectionPending"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 }
                 else
                 {
                     if (response == 1)
                     {
                         ResurrectLiving(player, rezzer); //accepted
-         
+
                     }
                     else
                     {
-                        player.Out.SendMessage("You decline to be resurrected.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.PerfectRecovery.DeclineResurrection"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         //Dont need to refund anything with PR
                         //m_caster.Mana += CalculateNeededPower(player);
                         //but we do need to give them PR back
                         //Lifeflight: Seems like the best way to do this is to send a 0 duration to DisableSkill, which will enable to ability
                         (rezzer as GameLiving).DisableSkill(this, 0);
-                        
+
                     }
                 }
             }
@@ -148,7 +149,7 @@ namespace DOL.GS.RealmAbilities
             GamePlayer player = callingTimer.Properties.GetProperty<GamePlayer>("targetPlayer");
             if (player == null) return 0;
             player.TempProperties.RemoveProperty(RESURRECT_CASTER_PROPERTY);
-            player.Out.SendMessage("Your resurrection spell has expired.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.PerfectRecovery.ResurrectionExpired"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             return 0;
         }
 
@@ -186,7 +187,7 @@ namespace DOL.GS.RealmAbilities
 			GameSpellEffect effecttwo = SpellHandler.FindEffectOnTarget(resurrectedPlayer, "RvrResurrectionIllness");
 			if (effecttwo != null)
 				effecttwo.Cancel(false);
-			resurrectedPlayer.Out.SendMessage("You have been resurrected by " + rezzer.GetName(0, false) + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			resurrectedPlayer.Out.SendMessage(LanguageMgr.GetTranslation(resurrectedPlayer.Client.Account.Language, "RealmAbility.PerfectRecovery.ResurrectedBy", rezzer.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             //Lifeflight: this should make it so players who have been ressurected don't take damage for 5 seconds
             RezDmgImmunityEffect rezImmune = new RezDmgImmunityEffect();
             rezImmune.Start(resurrectedPlayer);
@@ -202,8 +203,8 @@ namespace DOL.GS.RealmAbilities
                 }
                 else
                 {
-                    casterPlayer.Out.SendMessage("The player you resurrected was not worth realm points on death.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                    casterPlayer.Out.SendMessage("You thus get no realm points for the resurrect.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                    casterPlayer.Out.SendMessage(LanguageMgr.GetTranslation(casterPlayer.Client.Account.Language, "RealmAbility.PerfectRecovery.NotWorthRealmPoints"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                    casterPlayer.Out.SendMessage(LanguageMgr.GetTranslation(casterPlayer.Client.Account.Language, "RealmAbility.PerfectRecovery.NoRealmPoints"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                 }
             }
 

@@ -1,0 +1,461 @@
+﻿# Spells
+GamePlayer.Spell.NotImplemented:			{0} ({1})은(는) 아직 이 서버에 구현되지 않았습니다.
+
+## Spell Handler
+SpellHandler.CastSpell.Msg.YouBeginCasting:                     {0} 주문을 시전하기 시작합니다!
+SpellHandler.CastSpell.Msg.YouCastSpell:                        {0} 주문을 시전했습니다!
+SpellHandler.CastSpell.Msg.PetBeginsCasting:                    {0}이(가) {1} 주문을 시전하기 시작합니다!
+SpellHandler.CastSpell.Msg.PetCastSpell:                        {0}이(가) {1} 주문을 시전했습니다!
+SpellHandler.CastSpell.Msg.LivingCastsSpell:                    {0}이(가) 주문을 시전합니다!
+SpellHandler.CastSong.Msg.YouBeginPlaying:                      {0}을(를) 연주하기 시작합니다!
+SpellHandler.CancelPulsingSpell:	        노래 연주를 멈췄습니다.
+SpellHandler.CasterMove:	                        이동하여 주문 시전이 중단되었습니다!
+SpellHandler.Message.AreaTargetOutOfRange:	범위 대상이 너무 멉니다. 더 가까운 지점을 선택하세요.
+SpellHandler.Message.CancelEffect:		효과를 취소했습니다.
+SpellHandler.Message.CantAttackSelf:		자기 자신은 공격할 수 없습니다!
+SpellHandler.Message.CantCastDead:		죽은 상태에서는 시전할 수 없습니다!
+SpellHandler.Message.CantCastInSiegeRam:	공성추 안에서는 시전할 수 없습니다!
+SpellHandler.Message.CantCastSitting:		앉은 상태에서는 시전할 수 없습니다!
+SpellHandler.Message.InvalidTarget:		잘못된 대상입니다.
+SpellHandler.Message.MustCastOnControlledCreature:	이 주문은 자신이 조종하는 생물에게 시전해야 합니다.
+SpellHandler.Message.MustSelectTarget:		이 주문을 시전하려면 대상을 선택해야 합니다!
+SpellHandler.Message.MustWaitToCast:		주문을 시전하려면 {0}초 기다려야 합니다!
+SpellHandler.Message.NotEnoughPower:		시전하기에 파워가 부족합니다!
+SpellHandler.Message.NotEnoughPowerSpellCanceled:	파워가 부족하여 주문이 취소되었습니다.
+SpellHandler.Message.NoEffectOnTarget:		당신의 주문은 {0}에게 효과가 없습니다.
+SpellHandler.Message.OnlyDeadRealmMembers:	이 주문은 같은 렐름의 죽은 구성원에게만 사용할 수 있습니다!
+SpellHandler.Message.PetMustWaitToCast:		{0}이(가) 주문을 시전하려면 {1}초 기다려야 합니다!
+SpellHandler.Message.PetSpellInterruptedByAttack:	당신의 {0}이(가) {1}에게 공격받아 주문이 중단되었습니다!
+SpellHandler.Message.PowerExhausted:		파워를 모두 소진하여 주문을 시전할 수 없습니다!
+SpellHandler.Message.RequiresConcentration:	이 주문을 시전하려면 집중력 {0}점이 필요합니다!
+SpellHandler.Message.SpellCancelled:		주문이 취소되었습니다.
+SpellHandler.Message.SpellInterruptedByAttack:	{0}이(가) 당신을 공격해 주문이 중단되었습니다!
+SpellHandler.Message.StopPlayingSong:		노래 연주를 멈췄습니다.
+SpellHandler.Message.TargetImmuneToEffect:	대상이 이 효과에 면역입니다!
+SpellHandler.Message.TargetInvisibleToYou:	{0}이(가) 보이지 않습니다!
+SpellHandler.Message.TargetIsDead:		{0}은(는) 죽은 상태입니다!
+SpellHandler.Message.TargetNotInView:		여기서는 대상이 보이지 않습니다!
+SpellHandler.Message.TargetNotVisible:		대상이 보이지 않습니다!
+SpellHandler.Message.TargetResistsEffect:	{0}이(가) 효과에 저항했습니다! ({1}%)
+SpellHandler.Message.TargetTooFarAway:		대상이 너무 멀리 있습니다!
+SpellHandler.Message.TooManyConcentrationSpells:	집중 주문은 동시에 최대 {0}개까지만 유지할 수 있습니다!
+SpellHandler.Message.YouCriticallyHitAdditional:	치명타로 추가 {0} 피해를 입혔습니다! ({1}%)
+SpellHandler.Message.YouHitForDamage:		{0}에게 {1}{2} 피해를 입혔습니다!
+SpellHandler.Message.YouResistEffect:		효과에 저항했습니다!
+SpellHandler.Message.YourPetHitsForDamage:	당신의 {0}이(가) {1}에게 {2}{3} 피해를 입혔습니다!
+SpellHandler.Message.YourPetResistsEffect:	당신의 {0}이(가) 효과에 저항했습니다!
+SpellHandler.Message.WrongInstrument:		올바른 악기를 장착하고 있지 않습니다!
+SpellHandler.Detailed.Effectiveness:		효율(보너스 / 치명): {0:0.##}
+SpellHandler.Detailed.TargetResistChance:	대상의 저항 확률: {0:0.##} 난수: {1:0.##}
+SpellHandler.Detailed.YourResistChance:		당신의 저항 확률: {0:0.##} 난수: {1:0.##}
+SpellHandler.Detailed.BaseDamage:			기본 피해: {0:0.##} | 전문화 보정: {1:0.##} ({2:0.00}~{3:0.00})
+GamePlayer.CastSpell.MustWaitBeforeCast:	주문을 시전하려면 {0}초 더 기다려야 합니다!
+SpellHandler.DelveInfo.Sec:	                초
+GamePlayer.CastSpell.AlreadyCastFollow:			이미 주문을 시전 중입니다! 이 주문을 후속 주문으로 준비합니다!
+GamePlayer.CastSpell.AlreadyCastNoQueue:		이미 주문을 시전 중입니다. 주문 대기열을 사용하려면 '/noqueue'를 입력하세요!
+GamePlayer.CastSpell.AlreadyPlaySong:			이미 노래를 연주 중입니다!
+GamePlayer.CastSpell.CantCastMezzed:			메즈 상태에서는 시전할 수 없습니다!
+GamePlayer.CastSpell.CantCastStunned:			기절 상태에서는 시전할 수 없습니다!
+GamePlayer.CastSpell.CantCastFumblingWords:		말이 꼬여 주문을 시전할 수 없습니다!
+PlayerCastingComponent.CantCastWhileVolley:		발리가 활성화된 동안에는 주문을 시전할 수 없습니다!
+PlayerCastingComponent.LoseFocus:			주문에 대한 집중을 잃었습니다.
+PlayerCastingComponent.MoveInterruptFocus:		이동하여 집중이 중단되었습니다!
+GamePlayer.StartAttack.SpellCancelled:			주문이 취소되었습니다!
+GamePlayer.SwitchWeapon.SpellCancelled:			주문이 취소되었습니다!
+GamePlayer.Caster.Buff.EffectAlreadyActive:             {0}은(는) 이미 그 효과를 가지고 있습니다. 효과가 끝날 때까지 기다리세요. 주문이 실패했습니다.
+GamePlayer.StartCharm.Fail.Resist:              {0}이(가) 매혹에 저항했습니다! ({1}%)
+
+## Delve Information
+DelveInfo.CastingTime:				시전 시간: {0}
+DelveInfo.ConcentrationCost:		집중 비용: {0}
+DelveInfo.Damage:					피해: {0}
+DelveInfo.DamageType:				피해 유형: {0}
+DelveInfo.Duration:					지속 시간:
+DelveInfo.Focus:					집중 주문입니다. 다른 행동을 하면 취소됩니다.
+DelveInfo.Frequency:				주기: {0}
+DelveInfo.HealthReturned:			입힌 피해의 {0}%만큼 생명력 회복
+DelveInfo.InstrumentRequire:		필요 악기: {0}
+DelveInfo.PowerCost:				파워 비용: {0}
+DelveInfo.HealthCost:				생명력 비용: {0}
+DelveInfo.Radius:					반경: {0}
+DelveInfo.Range:					사거리: {0}
+DelveInfo.RecastTime:				재사용 시간:
+DelveInfo.Target:					대상: {0}
+DelveInfo.Value:					수치: {0}
+DelveInfo.ValueNegative:			수치: -{0}
+
+## Ablative Armor
+AblativeArmor.DelveInfo.Function:			기능: 근접 피해 생명력 보호막
+AblativeArmor.DelveInfo.Absorption1:			흡수: {0}%
+AblativeArmor.DelveInfo.Absorption2:			흡수: 100%
+AblativeArmor.DelveInfo.Absorption3:			흡수: 25%
+AblativeArmor.DelveInfo.CastingTime:			즉시
+AblativeArmor.Target:	보호막이 {0} 피해를 흡수했습니다!
+AblativeArmor.Attacker:	방벽이 당신의 공격 피해 {0}을(를) 흡수했습니다!
+
+## Amnesia
+Amnesia.MessageToTarget:	머릿속이 하얘져 하던 일을 잊어버렸습니다!
+
+## Attack Speed Debuff
+DamageSpeedDecrease.DelveInfo.Decrease:			속도 감소: {0}%
+DamageSpeedDecrease.DelveInfo.Function:			기능: 피해/속도 감소
+
+## Bladeturn
+GameLiving.CalculateEnemyAttackResult.BlowAbsorbed:		공격이 마법 방벽에 흡수되었습니다!
+GameLiving.CalculateEnemyAttackResult.BlowPenetrated:		공격이 마법 방벽을 뚫었습니다!
+GameLiving.CalculateEnemyAttackResult.StrikeAbsorbed:		당신의 공격이 마법 방벽에 흡수되었습니다!
+
+## Charm
+CharmSpellHandler.DelveInfo.Function:			기능: {0}
+CharmSpell.DelveInfo.Desc.HumanoidAnimalInsectMagicalUndead:     대상 몬스터를 시전자 지배하에 두려고 시도합니다. 동물, 정령, 인간형, 곤충, 마법 생물, 식물, 파충류, 언데드 몬스터에게만 작동합니다. 이름 있는 몬스터나 에픽 몬스터는 매혹할 수 없습니다.
+CharmSpell.DelveInfo.Desc.HumanoidAnimalInsectMagical:           대상 몬스터를 시전자 지배하에 두려고 시도합니다. 동물, 정령, 인간형, 곤충, 마법 생물, 식물, 파충류 몬스터에게만 작동합니다. 이름 있는 몬스터나 에픽 몬스터는 매혹할 수 없습니다.
+CharmSpell.DelveInfo.Desc.HumanoidAnimalInsect:                  대상 몬스터를 시전자 지배하에 두려고 시도합니다. 동물, 인간형, 곤충, 파충류에게만 작동합니다. 이름 있는 몬스터나 에픽 몬스터는 매혹할 수 없습니다.
+CharmSpell.DelveInfo.Desc.HumanoidAnimal:                        대상 몬스터를 시전자 지배하에 두려고 시도합니다. 동물과 인간형에게만 작동합니다. 이름 있는 몬스터나 에픽 몬스터는 매혹할 수 없습니다.
+CharmSpell.DelveInfo.Desc.Animal:                                대상 몬스터를 시전자 지배하에 두려고 시도합니다. 동물에게만 작동합니다. 이름 있는 몬스터나 에픽 몬스터는 매혹할 수 없습니다.
+CharmSpell.DelveInfo.Desc.Humanoid:                              대상 몬스터를 시전자 지배하에 두려고 시도합니다. 인간형에게만 작동합니다. 이름 있는 몬스터나 에픽 몬스터는 매혹할 수 없습니다.
+CharmSpell.DelveInfo.Desc.Insect:                                대상 몬스터를 시전자 지배하에 두려고 시도합니다. 곤충에게만 작동합니다. 이름 있는 몬스터나 에픽 몬스터는 매혹할 수 없습니다.
+CharmSpell.DelveInfo.Desc.AllMonsterTypes:                       대상 몬스터를 시전자 지배하에 두려고 시도합니다. 모든 몬스터 유형에 작동합니다. 이름 있는 몬스터나 에픽 몬스터는 매혹할 수 없습니다.
+CharmSpell.DelveInfo.Desc.NonNamedEpic:                          이름 있는 몬스터나 에픽 몬스터는 매혹할 수 없습니다.
+Summon.CheckBeginCast.AlreadyHaveaPet:	    이미 매혹한 생물이 있습니다. 먼저 해제하세요!
+CharmSpell.StartSpell.Fail.Resist:                               {0}이(가) 매혹에 저항했습니다! ({1}%)
+CharmSpell.EndCast.Fail.WrongTarget:                           그 대상은 매혹할 수 없습니다!
+CharmSpell.EndCast.Fail.WrongType:                               이 주문은 해당 유형의 몬스터를 매혹할 수 없습니다!
+CharmSpell.EffectExpire.Fail.WorthNoXP:                          이 몬스터는 최근 매혹되었으므로 경험치를 주지 않습니다.
+CharmSpell.EndCast.Fail.TooStrong:                               {0}은(는) 너무 강해 매혹할 수 없습니다!
+CharmSpell.EndCast.Fail.CurrentlyControlled:                     {0}은(는) 현재 조종되고 있습니다.
+CharmSpell.EndCast.Fail.AlreadyOwnCharmed:                       이미 매혹한 생물이 있습니다. 먼저 해제하세요!
+CharmSpell.EndCast.Fail.InCombat:                               {1}이(가) 전투 중인 동안에는 {0}을(를) 매혹할 수 없습니다!
+CharmSpell.EndCast.Fail.CantBeCharmed:                          {0}은(는) 매혹할 수 없습니다!
+
+## Damage Add & Damage Shield
+DamageAddAndShield.EventHandlerDA.DamageToYou:		{0}이(가) 당신에게 추가로 {1} 피해를 입혔습니다!
+DamageAddAndShield.EventHandlerDA.YouHitExtra:		{0}에게 추가로 {1} 피해를 입혔습니다!
+DamageAddAndShield.EventHandlerDA.YouHitFor:		{0}에게 {1} 피해를 입혔습니다!
+DamageAddAndShield.EventHandlerDA.YourHitFor:		당신의 {0}이(가) {1}에게 {2} 피해를 입혔습니다!
+DamageAddAndShield.EventHandlerDS.DamageToYou:		{0}이(가) 당신에게 추가로 {1} 피해를 입혔습니다!
+DamageAddAndShield.EventHandlerDS.YouHitFor:		{0}에게 {1} 피해를 입혔습니다!
+DamageAddAndShield.EventHandlerDS.YourHitFor:		당신의 {0}이(가) {1}에게 {2} 피해를 입혔습니다!
+
+## Damage Over Time
+DoTSpellHandler.SendDamageMessages.YouHitFor:		{0}에게 {1} 피해를 입혔습니다!
+DoTSpellHandler.SendDamageMessages.YourCriticallyHits:	당신의 {0}이(가) {1}에게 치명타를 입혀 추가로 {2} 피해를 줬습니다!
+DoTSpellHandler.SendDamageMessages.YourHitsFor:		당신의 {0}이(가) {1}에게 {2} 피해를 입혔습니다!
+
+## Direct Damage
+DirectDamageDebuffSpellHandler.DelveInfo.Decrease:	저항 감소 ({0}): {1}%
+DirectDamageDebuffSpellHandler.DelveInfo.Function:	기능: 피해 및 저항 감소
+
+## Buff Shear
+BuffShear.Message.CasterRemovedEnhancement:	대상의 강화 마법 일부를 제거했습니다.
+BuffShear.Message.EnhancementTooStrong:	대상의 강화 연결이 너무 강해 제거할 수 없습니다.
+BuffShear.Message.NoEnhancementFound:	대상에게 해당 유형의 강화 효과가 없습니다.
+BuffShear.Message.TargetEnhancementRemoved:	주문에 의해 강화 마법 일부가 제거되었습니다!
+
+## Heal Over Time
+HoTSpellHandler.Message.FullHealth:	생명력이 이미 가득 차 있습니다.
+HoTSpellHandler.Message.YouAreHealed:	{0}에게서 생명력 {1}점을 회복했습니다.
+HoTSpellHandler.Message.YourPetHealed:	당신의 {0}이(가) 생명력 {1}점을 회복했습니다!
+
+## Nearsight
+NearsightSpellHandler.DelveInfo.Function:		기능: {0}
+
+## Pet Handler
+PetSpellHandler.CheckBeginCast.NoControlledBrainForCast:	이 주문을 시전하려면 소환된 펫이 있어야 합니다!
+
+## Pet PBAoE
+PetPBAOE.CheckBeginCast.NoPet:		이 주문은 자신이 조종하는 생물에게 시전해야 합니다.
+
+## Proc
+ProcSpellHandler.DelveInfo.Function:			기능: {0}
+
+## Resist Debuff
+ResistDebuff.DelveInfo.Decrease:			저항 감소 {0}: {1}
+ResistDebuff.DelveInfo.Function:			기능: 저항 감소
+
+GamePlayer.Spell.ResurrectionIllness:		부활 후유증
+
+## Savage Endurance Heal
+SavageEnduranceHeal.CheckBeginCast.InsufficientHealth:	시전하기에 생명력이 부족합니다!
+
+## Shade
+Effects.ShadeEffect.Name:						그림자
+GamePlayer.Shade.AlreadyShade:				이미 그림자 상태입니다!
+GamePlayer.Shade.NoLongerShade:				더 이상 그림자 상태가 아닙니다!
+
+## Summon Pets
+GamePlayer.CastEnd.Fail.BadRegion:                  여기서는 그렇게 할 수 없습니다!
+
+## Summon Animist FnF Turret
+SummonAnimistFnF.CheckBeginCast.NoGroundTarget:		지면 대상 없이는 터렛을 소환할 수 없습니다!
+SummonAnimistFnF.CheckBeginCast.TurretAreaCap:	이 지역에는 더 이상 터렛을 소환할 수 없습니다!
+SummonAnimistFnF.CheckBeginCast.TurretPlayerCap:	더 이상 터렛을 조종할 수 없습니다!
+SummonAnimistFnF.CheckBeginCast.TooHighNearKeep:	킵 근처에서는 이렇게 높은 위치에 터렛을 소환할 수 없습니다!
+
+## Summon Animist Pet
+SummonAnimistPet.CheckBeginCast.AlreadyHaveaPet:	이미 매혹한 생물이 있습니다. 먼저 해제하세요!
+SummonAnimistPet.CheckBeginCast.GroundTargetNull:	이 주문을 사용하려면 지면 대상을 설정해야 합니다.
+SummonAnimistPet.CheckBeginCast.GroundTargetNotInView:	지면 대상이 시야에 없습니다.
+SummonAnimistPet.CheckBeginCast.GroundTargetNotInSpellRange:	더 가까운 지면 대상을 선택해야 합니다.
+
+## Summon Necromancer Pet
+SummonNecromancerPet.CheckBeginCast.ShadeEffectIsNotNull:	이미 그림자 상태입니다!
+SummonNecromancerPet.DelveInfo.Function:	기능: 그림자 소환
+SummonNecromancerPet.DelveInfo.Description:	시전자를 섬기는 언데드 펫을 소환합니다. 시전자는 그림자로 변신하여 펫을 통해 행동합니다.
+SummonNecromancerPet.DelveInfo.Target:	대상: {0}
+SummonNecromancerPet.DelveInfo.Power:	파워 비용: {0}%
+SummonNecromancerPet.DelveInfo.CastingTime:	시전 시간: {0}
+
+## Summon Commander Pet
+SummonCommanderPet.CheckBeginCast.Text:			이미 매혹한 생물이 있습니다. 먼저 해제하세요!
+SummonCommanderPet.DelveInfo.Text1:			기능: 소환
+SummonCommanderPet.DelveInfo.Text2:			시전자를 섬기는 펫을 소환합니다.
+SummonCommanderPet.DelveInfo.Text3:			대상: {0}
+SummonCommanderPet.DelveInfo.Text4:			파워 비용: {0}%
+SummonCommanderPet.DelveInfo.Text5:			시전 시간: {0}
+
+## Summon Minion
+SummonMinionHandler.CheckBeginCast.Text1:		그룹으로 소환하려면 조종 중인 리더 몬스터가 있어야 합니다!
+SummonMinionHandler.CheckBeginCast.Text2:		당신의 지휘관은 이미 지휘 가능한 최대 추종자를 거느리고 있습니다!
+SummonMinionHandler.CheckBeginCast.CommanderTooWeak:	지휘관의 힘이 부족해 이 레벨의 하수인을 조종할 수 없습니다.
+SummonMinionHandler.DelveInfo.Text1:			대상: {0}
+SummonMinionHandler.DelveInfo.Text2:			파워 비용: {0}%
+SummonMinionHandler.DelveInfo.Text3:			시전 시간: {0}
+
+## Turret Pet Release
+TurretsRelease.CheckBeginCast.NoSelectedTarget:	이 주문은 자신이 조종하는 생물에게 시전해야 합니다
+TurretsRelease.CheckBeginCast.TargetTooFarAway:	대상이 너무 멀리 있습니다
+
+## Water Breathing
+WaterBreathingSpellHandler.Message.Start:	물속에서도 공기처럼 숨 쉬며 자유롭게 움직일 수 있습니다!
+WaterBreathingSpellHandler.Message.Expires:	숨이 턱 막히며 더 이상 물속에서 숨 쉴 수 없다는 것을 깨닫습니다!
+
+## Warlock
+Warlock.Chamber.MustWait:	이 주문을 사용하려면 {0}초 더 기다려야 합니다!
+Warlock.Chamber.MustStandStill:	이 주문은 멈춰 선 상태에서만 시전할 수 있습니다!
+Warlock.Chamber.CantCastSitting:	앉은 상태에서는 이 주문을 시전할 수 없습니다!
+Warlock.Chamber.MustHaveTarget:	대상이 필요합니다!
+Warlock.Chamber.CantCastDead:	죽은 상태에서는 시전할 수 없습니다!
+Warlock.Chamber.TargetDead:	죽은 대상에게는 시전할 수 없습니다!
+Warlock.Chamber.CantUseInState:	현재 상태에서는 사용할 수 없습니다.
+Warlock.Chamber.TargetNotVisible:	대상이 보이지 않습니다!
+Warlock.Chamber.TargetNotInView:	대상이 시야 안에 없습니다!
+Warlock.Chamber.CasterInvulnerable:	현재 무적 상태라 그 주문을 사용할 수 없습니다!
+Warlock.Chamber.TargetInvulnerable:	대상이 현재 무적 상태라 공격할 수 없습니다!
+Warlock.Chamber.TargetTooFar:	대상이 너무 멀리 있습니다!
+Warlock.Chamber.TargetPhaseshifted:	{0}은(는) 페이즈시프트 상태라 공격할 수 없습니다!
+Warlock.Chamber.TargetInvisible:	{0}은(는) 당신에게 보이지 않습니다!
+Warlock.Chamber.TargetImmune:	대상이 이 효과에 면역입니다!
+Warlock.Chamber.FriendlyTargetsOnly:	이 주문은 아군 대상에게만 사용할 수 있습니다!
+Warlock.Chamber.TargetNotAttackable:	지금은 그 대상을 공격할 수 없습니다!
+Warlock.Chamber.SelectFirstSpell:	{0}에 넣을 첫 번째 주문을 선택하세요.
+Warlock.Chamber.NoSpellsLoaded:	{0}에 장전된 주문이 없습니다.
+Warlock.Chamber.Ready:	{0}을(를) 사용할 준비가 되었습니다.
+Warlock.Powerless.AlreadyPreparingRange:	이미 사거리 주문을 준비 중입니다.
+Warlock.Powerless.AlreadyPreparingUninterruptible:	이미 방해 불가 주문을 준비 중입니다.
+Warlock.Powerless.MustFinishPowerless:	파워리스 시전을 마쳐야 다시 사용할 수 있습니다.
+Warlock.Primer.EffectExpired:	변형 주문 효과가 만료되었습니다.
+Warlock.Primer.MoveBreaksEffect:	이동하여 변형 주문이 해제되었습니다.
+
+## Power and Speed
+DamageToPowerSpellHandler.StealPower:	파워 {0}점을 흡수했습니다.
+DamageToPowerSpellHandler.CannotAbsorbMorePower:	더 이상 파워를 흡수할 수 없습니다.
+SpeedEnhancementSpellHandler.NoEffectInCombat:	최근 전투 중이었으므로 주문이 효과를 발휘하지 못했습니다!
+SpreadhealSpellHandler.GroupFullyHealed:	그룹원의 생명력이 이미 모두 가득 차 있습니다!
+SpreadhealSpellHandler.HealingReducedByDisease:	질병 때문에 치유량이 감소했습니다!
+Conversion.ConvertDamageToHealth:	피해 {0}점을 생명력 {1}점으로 전환했습니다.
+Conversion.ConvertDamageToHealthSimple:	피해 {0}점을 생명력으로 전환했습니다.
+Conversion.ConvertDamageToEndurance:	피해 {0}점을 지구력으로 전환했습니다.
+Conversion.ConvertDamageToPower:	피해 {0}점을 파워로 전환했습니다.
+Conversion.CannotConvertHealth:	더 이상 생명력으로 전환할 수 없습니다!
+Conversion.CannotConvertEndurance:	더 이상 지구력으로 전환할 수 없습니다!
+Conversion.CannotConvertPower:	더 이상 파워로 전환할 수 없습니다!
+Conversion.MagicalSpellAbsorbsDamage:	마법 효과가 당신의 공격 피해 {0}점을 흡수했습니다!
+EnduranceHealSpellHandler.TargetIsDead:	{0}은(는) 죽어 있습니다!
+EnduranceHealSpellHandler.YourEnduranceFull:	지구력이 가득 차 있습니다.
+EnduranceHealSpellHandler.TargetEnduranceFull:	{0}의 지구력이 가득 차 있습니다.
+EnduranceHealSpellHandler.RestoreYourEndurance:	지구력 {0}점을 회복했습니다.
+EnduranceHealSpellHandler.RestoreTargetEndurance:	{0}의 지구력을 {1}점 회복했습니다!
+EnduranceHealSpellHandler.EnduranceRestoredBy:	{0}이(가) 당신의 지구력을 {1}점 회복했습니다.
+HealSpellHandler.TargetIsDead:	{0}은(는) 죽어 있습니다!
+HealSpellHandler.TargetDiseased:	대상이 질병 상태입니다!
+HealSpellHandler.YouFullyHealed:	생명력이 이미 가득 차 있습니다.
+HealSpellHandler.TargetFullyHealed:	{0}의 생명력이 이미 가득 차 있습니다.
+HealSpellHandler.HealSelf:	자신의 생명력을 {0:0}점 회복했습니다.
+HealSpellHandler.HealTarget:	{0}의 생명력을 {1:0}점 회복했습니다!
+HealSpellHandler.HealedBy:	{0}이(가) 당신의 생명력을 {1:0}점 회복했습니다.
+HealSpellHandler.CriticalHeal:	추가로 생명력 {0:0}점을 회복했습니다! ({1:0.##}%)
+PowerHealSpellHandler.TargetIsDead:	{0}은(는) 죽어 있습니다!
+PowerHealSpellHandler.YourPowerFull:	파워가 가득 차 있습니다.
+PowerHealSpellHandler.TargetPowerFull:	{0}의 파워가 가득 차 있습니다.
+PowerHealSpellHandler.RestoreYourPower:	파워 {0}점을 회복했습니다.
+PowerHealSpellHandler.RestoreTargetPower:	{0}의 파워를 {1}점 회복했습니다!
+PowerHealSpellHandler.PowerRestoredBy:	{0}이(가) 당신의 파워를 {1}점 회복했습니다.
+LifeTransferSpellHandler.TargetDiseased:	대상이 질병 상태입니다!
+LifeTransferSpellHandler.TargetIsDead:	{0}은(는) 죽어 있습니다!
+LifeTransferSpellHandler.CannotTransferToSelf:	자신에게는 생명력을 이전할 수 없습니다.
+LifeTransferSpellHandler.NotEnoughHealth:	이전할 생명력이 부족합니다.
+LifeTransferSpellHandler.TargetFullyHealed:	{0}의 생명력이 이미 가득 차 있습니다.
+LifeTransferSpellHandler.HealTarget:	{0}의 생명력을 {1}점 회복했습니다!
+LifeTransferSpellHandler.HealedBy:	{0}이(가) 당신의 생명력을 {1}점 회복했습니다.
+DamageReductionPowerReturn.AbsorbsDamage:	피해 감소 효과가 피해 {0}점을 흡수했습니다!
+DamageReductionPowerReturn.AbsorbsYourAttack:	피해 감소 효과가 당신의 공격 피해 {0}점을 흡수했습니다!
+VampMaintainedSpeedDecrease.SpellCancelled:	주문이 취소되었습니다.
+VampMaintainedSpeedDecrease.TargetNoLongerInRange:	대상이 더 이상 사거리 안에 없습니다.
+VampMaintainedSpeedDecrease.TargetNoLongerInView:	대상이 더 이상 시야 안에 없습니다.
+DrainSpell.YouAreDiseased:	질병 상태입니다!
+DrainSpell.StealLife:	생명력 {0}점을 흡수했습니다.
+DrainSpell.DrainLife:	생명력 {0}점을 흡수했습니다.
+DrainSpell.CannotAbsorbLife:	더 이상 생명력을 흡수할 수 없습니다.
+DrainSpell.StealPower:	파워 {0}점을 흡수했습니다.
+DrainSpell.DrainPower:	파워 {0}점을 흡수했습니다.
+DrainSpell.AbsorbPower:	파워 {0}점을 흡수했습니다.
+DrainSpell.CannotAbsorbPower:	더 이상 파워를 흡수할 수 없습니다.
+DrainSpell.PowerAlreadyFull:	파워가 이미 가득 차 있습니다.
+DrainSpell.StealEndurance:	지구력 {0}점을 흡수했습니다.
+DrainSpell.DrainEndurance:	지구력 {0}점을 흡수했습니다.
+DrainSpell.CannotAbsorbEndurance:	더 이상 지구력을 흡수할 수 없습니다.
+DrainSpell.StealEnduranceFromTarget:	{0}에게서 지구력 {1}점을 흡수했습니다!
+DrainSpell.StealPowerFromTarget:	{0}에게서 파워 {1}점을 흡수했습니다!
+DrainSpell.BarrierReturnsPower:	방벽이 파워 {0}점을 되돌려 줍니다.
+DrainSpell.SummonChannelsPower:	소환수가 당신에게 파워 {0}점을 전달했습니다!
+VampiirPowerBolt.TargetLosesPower:	{0}이(가) 파워 {1}점을 빼앗았습니다!
+VampiirPowerBolt.ReceivePower:	{1}에게서 파워 {0}점을 받았습니다!
+VampiirPowerBolt.ReceiveNoPower:	{0}에게서 아무 파워도 받지 못했습니다!
+VampiirPowerBolt.CannotCastInCombat:	전투 중에는 이 주문을 시전할 수 없습니다!
+Warlock.Range.AlreadyPreparingUninterruptible:	이미 방해 불가 주문을 준비 중입니다.
+Warlock.Range.AlreadyPreparingPowerless:	이미 파워리스 주문을 준비 중입니다.
+Warlock.Range.MustFinishRange:	사거리 시전을 마쳐야 다시 사용할 수 있습니다.
+Warlock.Uninterruptible.AlreadyPreparingRange:	이미 사거리 주문을 준비 중입니다.
+Warlock.Uninterruptible.AlreadyPreparingPowerless:	이미 파워리스 주문을 준비 중입니다.
+Warlock.Uninterruptible.MustFinishUninterruptible:	방해 불가 시전을 마쳐야 다시 사용할 수 있습니다.
+Masterlevel.Stormlord.HarderToHit:	공격을 더 잘 회피합니다!
+Masterlevel.Stormlord.YouLoseEndurance:	지구력 {0}점을 잃었습니다!
+Masterlevel.Stormlord.TargetLosesEndurance:	{0}이(가) 지구력 {1}점을 잃었습니다!
+Masterlevel.Stormlord.DexterityQuicknessDecreased:	민첩과 순발력이 감소했습니다!
+Masterlevel.Stormlord.PowerStolenByCaster:	{0}이(가) 당신에게서 파워 {1}점을 빼앗았습니다!
+Masterlevel.Stormlord.VortexLocked:	폭풍의 소용돌이가 그 자리에 고정되었습니다!
+Masterlevel.Stormlord.ConcentrationFades:	움직여서 집중이 흐트러졌습니다.
+Masterlevel.Stormlord.StrengthConstitutionDecreased:	힘과 체력이 감소했습니다!
+Masterlevel.Stormlord.AcuityDecreased:	정신력이 감소했습니다!
+Masterlevel.Sojourner.MustSelectTarget:	이 주문을 사용할 대상을 선택해야 합니다!
+Masterlevel.Sojourner.YouAreInZephyr:	제퍼 상태라 공격받지 않습니다!
+Masterlevel.Sojourner.TargetIsInZephyr:	대상이 제퍼 상태라 공격할 수 없습니다!
+Masterlevel.Sojourner.PickedUpByZephyr:	강력한 제퍼에 휩쓸렸습니다!
+Masterlevel.Sojourner.NeedHalfEndurance:	이 주문을 사용하려면 지구력이 50% 이상 필요합니다!
+Masterlevel.Sojourner.TargetIsPhaseshifted:	{0}은(는) 페이즈시프트 상태라 공격할 수 없습니다!
+Masterlevel.Sojourner.CannotUseAbilityHere:	이곳에서는 이 능력을 사용할 수 없습니다.
+Masterlevel.Sojourner.BindInAnotherRegion:	이 능력을 사용하려면 다른 지역에 바인드해야 합니다.
+Masterlevel.Sojourner.GroupInCombat:	전투 중인 그룹은 순간이동시킬 수 없습니다!
+Masterlevel.Sojourner.NotInGroup:	그룹에 속해 있지 않습니다!
+ResurrectSpellHandler.ResurrectDialog:	{0}이(가) 당신을 생명력과 파워 {1}% 상태로 부활시키려 합니다. 수락하시겠습니까?
+ResurrectSpellHandler.NoOneResurrecting:	현재 당신을 부활시키려는 사람이 없습니다.
+ResurrectSpellHandler.Declined:	부활을 거절했습니다.
+ResurrectSpellHandler.ResurrectedBy:	{0}에게 부활했습니다!
+ResurrectSpellHandler.NoRealmPointsWorth:	부활시킨 플레이어는 사망 시 렐름 포인트 가치가 없었습니다.
+ResurrectSpellHandler.NoRealmPointsReward:	이번 부활로는 렐름 포인트를 얻지 못합니다.
+ResurrectSpellHandler.Expired:	부활 주문이 만료되었습니다.
+ResurrectSpellHandler.NotEnoughPower:	이 주문을 시전할 파워가 부족합니다!
+ResurrectSpellHandler.TargetAlreadyConsidering:	대상이 이미 부활 요청을 확인 중입니다!
+Archery.DisarmedCannotCast:	무장 해제 상태라 주문을 시전할 수 없습니다.
+Archery.MustBeStealthedWithBow:	이 능력을 사용하려면 은신 상태에서 활을 들고 있어야 합니다!
+Archery.MustWieldBow:	이 능력을 사용하려면 활을 들고 있어야 합니다!
+Archery.PrepareShot:	{0}을(를) 준비합니다.
+Archery.ShotPenetratesBarrier:	화살이 마법 방벽을 관통했습니다!
+Archery.YourStrikeAbsorbed:	당신의 공격이 마법 방벽에 흡수되었습니다!
+Archery.BlowAbsorbed:	공격이 마법 방벽에 흡수되었습니다!
+Archery.YouMiss:	빗나갔습니다!
+Archery.CasterMissed:	{0}의 공격이 빗나갔습니다!
+Archery.EngageTargetRecentlyAttacked:	{0}은(는) 최근 공격받아 교전할 수 없습니다.
+Archery.ConcentrateOnBlocking:	공격을 막는 데 집중합니다!
+Archery.YouBlockArrow:	{0}의 화살을 막았습니다!
+Archery.TargetBlocksArrow:	{0}이(가) 당신의 화살을 막았습니다!
+Masterlevel.Battlemaster.YouLoseEndurance:	지구력 {0}점을 잃었습니다!
+Masterlevel.Battlemaster.TargetLosesEndurance:	{0}이(가) 지구력 {1}점을 잃었습니다!
+Masterlevel.Battlemaster.RealmEnemiesOnly:	이 주문은 적 렐름 대상에게만 사용할 수 있습니다.
+Masterlevel.Battlemaster.DisarmedCannotUse:	무장 해제 상태라 이 주문을 사용할 수 없습니다!
+Masterlevel.Battlemaster.EquipWeapon:	이 주문을 사용하려면 무기를 장착해야 합니다!
+Masterlevel.Spymaster.DecoyFallen:	미끼가 쓰러졌습니다!
+Masterlevel.Spymaster.WardSabotaged:	선택한 와드를 방해했습니다!
+Masterlevel.Spymaster.TargetMustBeSitting:	대상이 앉아 있어야 합니다!
+Masterlevel.Spymaster.ConcentrationFadesMoving:	움직여서 집중이 흐트러졌습니다!
+Masterlevel.Spymaster.CamouflageFadesAttacking:	공격하여 위장이 해제되었습니다!
+Masterlevel.Spymaster.CamouflageFadesCasting:	주문을 시전하여 위장이 해제되었습니다!
+Masterlevel.Spymaster.CamouflageFadesMoving:	움직여서 위장이 해제되었습니다!
+SiegeArrow.TargetMustBeKeepComponent:	대상은 킵 구조물이어야 합니다!
+SiegeArrow.PrepareShot:	{0}을(를) 준비합니다.
+CCSpellHandler.TargetImmune:	대상이 이 효과에 면역입니다!
+CCSpellHandler.TargetMovingTooFast:	대상이 너무 빠르게 움직여 이 주문이 효과를 발휘하지 못했습니다!
+CCSpellHandler.TargetEnraged:	대상이 격분하여 주문에 저항했습니다!
+CCSpellHandler.ItemInterceptsMesmerize:	아이템 효과가 메즈 주문을 막고 사라졌습니다!
+CCSpellHandler.CeremonialBracerInterceptsMez:	의식의 팔찌가 메즈 주문을 막았습니다!
+Masterlevel.Convoker.AreaTargetOutOfRange:	지역 대상이 사거리 밖입니다. 더 가까운 지면 위치를 지정하세요.
+Masterlevel.Convoker.ConcentrationFades:	집중이 흐트러졌습니다.
+Masterlevel.Convoker.BattleWarderFallen:	배틀 와더가 쓰러졌습니다!
+Masterlevel.Convoker.NpcTemplateNotFound:	NPC 템플릿 {0}을(를) 찾을 수 없습니다!
+Masterlevel.Convoker.PetAbilityAlreadyActive:	펫에게 이미 같은 유형의 능력이 활성화되어 있습니다.
+Masterlevel.Convoker.CannotUseOnOwnPet:	자신의 펫에게는 이 능력을 사용할 수 없습니다.
+Masterlevel.Convoker.MustSetGroundTarget:	지면 대상을 지정해야 합니다!
+Masterlevel.Convoker.AreaTargetNotInView:	지역 대상이 시야 안에 없습니다.
+Spell.TargetAlreadyHasEffectOfType:	대상에게 이미 같은 유형의 효과가 있습니다!
+Spell.TargetAlreadyHasEffect:	대상에게 이미 이 효과가 있습니다!
+Spell.TargetImmuneToEffect:	대상이 이 효과에 면역입니다!
+Spell.TargetMovingTooFast:	{0}이(가) 너무 빠르게 움직여 이 주문이 효과를 발휘하지 못했습니다!
+Spell.NoEffectOnClass:	이 주문은 해당 클래스에는 효과가 없습니다!
+PowerTransfer.CannotTransferToSelf:	자신에게는 파워를 이전할 수 없습니다!
+PowerTransfer.TargetPowerFull:	{0}의 파워가 이미 가득 차 있습니다!
+PowerTransfer.TransferToTarget:	{1}에게 파워 {0}점을 이전했습니다!
+PowerTransfer.TransferToYou:	{0}이(가) 당신에게 파워 {1}점을 이전했습니다!
+FocusShellHandler.CannotCastOnPets:	이 주문은 펫에게 시전할 수 없습니다!
+FocusShellHandler.RealmMembersOnly:	이 주문은 같은 렐름 구성원에게만 사용할 수 있습니다!
+NearsightSpellHandler.TargetCannotBeNearsighted:	대상에게는 근시 효과를 적용할 수 없습니다!
+HealthToEndurance.EnduranceFull:	지구력이 이미 가득 차 있습니다!
+HealthToEndurance.TransferLifeToEndurance:	생명력 {0}점을 지구력으로 전환했습니다!
+RampingDamageFocus.NotEnoughPowerCanceled:	파워가 부족하여 주문이 취소되었습니다.
+DoomHammer.DisarmedCannotUse:	무장 해제 상태라 이 주문을 사용할 수 없습니다!
+SummonNoveltyPet.CannotSummonHere:	이곳에서는 펫을 소환할 수 없습니다!
+SummonNoveltyPet.AlreadyHavePet:	이미 곁에 펫이 있습니다!
+GatewayPersonalBind.CannotUseHere:	이곳에서는 사용할 수 없습니다!
+GatewayPersonalBind.InCombat:	최근 전투 중이었으므로 이 아이템을 사용할 수 없습니다!
+GatewayPersonalBind.MustStandStill:	이 아이템을 사용하려면 가만히 서 있어야 합니다!
+Artifacts.ActiveMorph:	이미 변신 효과가 활성화되어 있습니다!
+Artifacts.Alvarus.MustBeUnderwater:	이 능력은 물속에서만 사용할 수 있습니다.
+Artifacts.BeltOfSun.RequiresSunlight:	태양의 허리띠의 힘은 햇빛 아래에서만 소환할 수 있습니다!
+Artifacts.BeltOfSun.PowerLeft:	태양의 허리띠의 힘이 사라졌습니다!
+Artifacts.BeltOfMoon.RequiresMoonlight:	달의 허리띠의 힘은 달빛 아래에서만 소환할 수 있습니다!
+Artifacts.BeltOfMoon.PowerLeft:	달의 허리띠의 힘이 사라졌습니다!
+Artifacts.RealmLore.PlayersOnly:	이 주문은 플레이어에게만 사용할 수 있습니다.
+Artifacts.RealmLore.TargetTooFar:	대상이 너무 멀리 있습니다.
+Artifacts.RealmLore.Title:	렐름 로어 [{0}]
+Artifacts.RealmLore.Class:	클래스: {0}
+Artifacts.RealmLore.RealmPoints:	렐름 포인트: {0} = {1}
+Artifacts.RealmLore.StatsLine1:	힘: {0} 민첩: {1} 체력: {2}
+Artifacts.RealmLore.StatsLine2:	순발력: {0} 공감: {1} 매력: {2}
+Artifacts.RealmLore.StatsLine3:	신앙: {0} 지능: {1} 생명력: {2}
+Artifacts.CrownOfZahur.ConvertPowerToHealth:	파워 {0}점을 생명력으로 전환했습니다!
+BainsheePulseDmgSpellHandler.CancelEffect:	효과를 취소했습니다.
+HereticPiercingMagic.Concentrated:	주문에 집중합니다!
+HereticPiercingMagic.LoseConcentration:	집중이 흐트러졌습니다!
+HereticDamageSpeedDecrease.PetResistsEffect:	당신의 {0}이(가) 효과에 저항했습니다!
+HereticDamageSpeedDecrease.YouResistEffect:	효과에 저항했습니다!
+SummonTheurgistPet.TooManyControlledCreatures:	조종 중인 생물이 너무 많습니다!
+Masterlevel.Warlord.HealsYou:	{0}이(가) 당신의 생명력을 {1}점 회복했습니다!
+Masterlevel.Warlord.YouLoseHitPoints:	생명력 {0}점을 잃었습니다.
+Masterlevel.SummonItem.ItemCreated:	아이템 생성: {0}
+VampiirArmorDebuff.DebuffArmor:	{0}의 {1} 방어구를 약화했습니다.
+Spell.NpcTemplateNotFound:	NPC 템플릿 {0}을(를) 찾을 수 없습니다!
+BomberSpellHandler.NotImplemented:	아직 구현되지 않은 주문입니다. GM에게 문의하세요.
+CharmSpellHandler.ResistDebug:	저항 확률={0}; 굴림={1}
+BoltSpellHandler.PartialBlock:	{0}의 주문을 일부 막아냈습니다!
+BoltSpellHandler.TargetBlocks:	{0}이(가) 막아냈습니다!
+BoltSpellHandler.TargetInCombatMiss:	{0}이(가) 전투 중이라 볼트가 빗나갔습니다!
+BoltSpellHandler.YouMiss:	빗나갔습니다!
+BoltSpellHandler.CasterMissed:	{0}이(가) 빗나갔습니다!
+Artifacts.StyleDmgAbs.AbsorbsTarget:	스타일 흡수 효과가 피해 {0}점을 흡수했습니다!
+Artifacts.AbsorbBarrier.Attacker:	장벽이 당신의 공격 피해 {0}점을 흡수했습니다!
+Artifacts.ShadesOfMist.AblativeAbsorbs:	어블레이티브가 피해 {0}점을 흡수했습니다!
+SummonSpellHandler.PetUnderControl:	{0}이(가) 이제 당신의 지배를 받습니다.
+SiegeDirectDamageSpellHandler.YouHitForDamage:	{0}에게 {1}{2} 피해를 입혔습니다!
+BeFriendSpellHandler.TooStrong:	{0}은(는) 너무 강해 매혹할 수 없습니다!
+BeFriendSpellHandler.AlreadyControlled:	{0}은(는) 이미 지배받고 있습니다.
+SpeedDecreaseSpellHandler.SnareDoublyEffective:	스네어 효과가 두 배로 강해졌습니다!
+Spell.CriticalDebuff:	{0} 주문이 치명적으로 적을 약화하여 효과가 {1:0}% 추가로 증가했습니다!

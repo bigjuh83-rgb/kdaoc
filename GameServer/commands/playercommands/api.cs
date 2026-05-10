@@ -1,5 +1,6 @@
 
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -17,14 +18,14 @@ namespace DOL.GS.Commands
 				DisplaySyntax(client);
 				return;
 			}
-			
+
 			if (IsSpammingCommand(client.Player, "api"))
 				return;
 
 			if (args[1].ToLower() == "specs")
 			{
 				client.Player.HideSpecializationAPI = !client.Player.HideSpecializationAPI;
-				client.Out.SendMessage("API specialization details: " + (client.Player.HideSpecializationAPI ? "hidden" : "shown"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.API.SpecializationDetails", LanguageMgr.GetTranslation(client.Account.Language, client.Player.HideSpecializationAPI ? "Scripts.Common.Hidden" : "Scripts.Common.Shown")), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				GameServer.Database.SaveObject(client.Player.DBCharacter); // using this instead of SaveIntoDatabase() because we don't want to display it to the player to avoid save abuse
 			}
 		}

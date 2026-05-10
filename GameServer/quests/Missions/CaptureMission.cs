@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using DOL.Events;
 using DOL.GS.Keeps;
+using DOL.Language;
 
 namespace DOL.GS.Quests
 {
@@ -12,7 +13,7 @@ namespace DOL.GS.Quests
 		private AbstractGameKeep m_keep = null;
 
 		public enum eCaptureType : int
-		{ 
+		{
 			Tower = 1,
 			Keep = 2,
 		}
@@ -136,8 +137,8 @@ namespace DOL.GS.Quests
 			get
 			{
 				if (m_keep == null)
-					return "Keep is null when trying to send the description";
-				else return "Capture " + m_keep.Name;
+					return LanguageMgr.GetTranslation(MissionLanguage, "Mission.Description.KeepNull");
+				else return LanguageMgr.GetTranslation(MissionLanguage, "Mission.Description.CaptureKeep", m_keep.Name);
 			}
 		}
 

@@ -4,6 +4,7 @@ using DOL.AI.Brain;
 using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -22,17 +23,17 @@ namespace DOL.GS.Spells
 		{
             if (target.HasAbility(Abilities.CCImmunity))
             {
-                MessageToCaster("Your target is immune to this effect!", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.TargetImmuneToEffect"), eChatType.CT_SpellResisted);
                 return;
             }
             if (target.TempProperties.GetProperty<bool>("Charging"))
             {
-                MessageToCaster("Your target is moving to fast for this spell to have any effect!", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.TargetMovingTooFast", target.Name), eChatType.CT_SpellResisted);
                 return;
             }
 			base.ApplyEffectOnTarget(target);
 
-			if (Spell.CastTime > 0) 
+			if (Spell.CastTime > 0)
 			{
 				target.StartInterruptTimer(target.SpellInterruptDuration, AttackData.eAttackType.Spell, Caster);
 			}

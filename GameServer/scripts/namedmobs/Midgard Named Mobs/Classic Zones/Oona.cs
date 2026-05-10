@@ -2,6 +2,7 @@
 using DOL.Database;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 using System;
 
 namespace DOL.GS
@@ -24,7 +25,7 @@ namespace DOL.GS
 			if (source is GamePlayer || source is GameSummonedPet)
 			{
 				Point3D spawn = new Point3D(SpawnPoint.X, SpawnPoint.Y, SpawnPoint.Z);
-				if (!source.IsWithinRadius(spawn, TetherRange))//dont take any dmg 
+				if (!source.IsWithinRadius(spawn, TetherRange))//dont take any dmg
 				{
 					if (damageType == eDamageType.Body || damageType == eDamageType.Cold || damageType == eDamageType.Energy || damageType == eDamageType.Heat
 						|| damageType == eDamageType.Matter || damageType == eDamageType.Spirit || damageType == eDamageType.Crush || damageType == eDamageType.Thrust
@@ -36,7 +37,7 @@ namespace DOL.GS
 						else
 							truc = ((source as GameSummonedPet).Owner as GamePlayer);
 						if (truc != null)
-							truc.Out.SendMessage(Name + " is immune to damage form this distance!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+							truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Oona.ImmuneDistance", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
 						base.TakeDamage(source, damageType, 0, 0);
 						return;
 					}
@@ -97,10 +98,11 @@ namespace DOL.GS
 			}
 			base.Die(killer);
 		}
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(string key, params object[] args)
 		{
 			foreach (GamePlayer player in GetPlayersInRadius(4500))
 			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
 				player.Out.SendMessage(message, eChatType.CT_Say, eChatLoc.CL_ChatWindow);
 			}
 		}
@@ -141,7 +143,7 @@ namespace DOL.GS
 					npc.Heading = player.Heading;
 					npc.CurrentRegion = CurrentRegion;
 					npc.AddToWorld();
-					BroadcastMessage(String.Format("Perhaps your pathetic gods will grant you another life, {0}. In the meantime, Hibernia shall defeat Midgard, and your spirit shall help!",player.Name));
+					BroadcastMessage("NamedMobs.Oona.SpiritShallHelp", player.Name);
 				}
 			}
 			base.EnemyKilled(enemy);
@@ -241,13 +243,13 @@ namespace DOL.AI.Brain
 					spell.Target = eSpellTarget.ENEMY.ToString();
 					spell.Uninterruptible = true;
 					spell.MoveCast = true;
-					spell.Type = eSpellType.DirectDamageNoVariance.ToString();					
+					spell.Type = eSpellType.DirectDamageNoVariance.ToString();
 					m_OonaDD = new Spell(spell, 60);
 				}
 				return m_OonaDD;
 			}
 		}
-		
+
 		private Spell m_OonaBolt;
 		private Spell OonaBolt
 		{

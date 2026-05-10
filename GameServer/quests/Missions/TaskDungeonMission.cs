@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Quests
 {
@@ -65,7 +66,7 @@ namespace DOL.GS.Quests
 		{
 			get { return m_targetName; }
 		}
-		
+
 		private bool[] m_mobIsAlive;
 
 		public TaskDungeonMission(object owner, eDungeonType dungeonType = eDungeonType.Ranged)
@@ -92,13 +93,13 @@ namespace DOL.GS.Quests
             instance.Mission = this;
 
 			//Dinberg: I've removed instance level, and have commented this out so it compiles.
-            //I dont have time to implement the rest right now, 
+            //I dont have time to implement the rest right now,
             //m_taskRegion.InstanceLevel = GetLevelFromPlayer(player);
 
             //Infact, this clearly isnt in use. I'll fix it to use the new instance system, and then itll work.
             //Do that later this week ^^.
 
-            
+
             //Lets load the region from the InstanceXElementDB!
 
 
@@ -125,7 +126,7 @@ namespace DOL.GS.Quests
             }
 
 			int specificCount = 0;
-            
+
             //Draw the mission type before we do anymore counting...
             if (Util.Chance(40) && m_bossName != string.Empty)
                 m_missionType = eTDMissionType.Boss;
@@ -133,7 +134,7 @@ namespace DOL.GS.Quests
                 m_missionType = eTDMissionType.Specific;
             else
                 m_missionType = eTDMissionType.Clear;
-                
+
             //Now, count if we need to.
             if (m_missionType != eTDMissionType.Boss)
             {
@@ -145,7 +146,7 @@ namespace DOL.GS.Quests
                     //Now, if we want all mobs, get all mobs...
                     if (m_missionType == eTDMissionType.Clear)
                         specificCount++;
-                    else if (entry.Name == m_targetName) 
+                    else if (entry.Name == m_targetName)
                         //only count target mobs for specific dungeons.
                         specificCount++;
                 }
@@ -153,15 +154,15 @@ namespace DOL.GS.Quests
 
             //append the count to the total!
             m_total = specificCount;
-            
+
             //Set the mission description again if owner is group, otherwise
             //mission description is always "Clear" before entering the dungeon.
             if (owner is Group)
-            	UpdateMission();
-            
+	UpdateMission();
+
             m_mobIsAlive = new bool[m_total];
             for(int i = 0; i < m_total; i++)
-            	m_mobIsAlive[i] = true;
+	m_mobIsAlive[i] = true;
 		}
 
         //Dinberg: removed this void. Handled in TaskDungeonInstance
@@ -231,20 +232,20 @@ namespace DOL.GS.Quests
                 switch (realm)
                 {
                     case eRealm.Albion:
-                		if(dungeonType == eDungeonType.Ranged)
-                        	return GetRandomRegion(burial_tomb_long);
-                		else
-                			return GetRandomRegion(burial_tomb_laby);
+		if(dungeonType == eDungeonType.Ranged)
+	return GetRandomRegion(burial_tomb_long);
+		else
+			return GetRandomRegion(burial_tomb_laby);
                     case eRealm.Midgard:
-                		if(dungeonType == eDungeonType.Ranged)
-                        	return GetRandomRegion(damp_cavern_long);
-                		else
-                			return GetRandomRegion(damp_cavern_laby);
+		if(dungeonType == eDungeonType.Ranged)
+	return GetRandomRegion(damp_cavern_long);
+		else
+			return GetRandomRegion(damp_cavern_laby);
                     case eRealm.Hibernia:
-                		if(dungeonType == eDungeonType.Ranged)
-                        	return GetRandomRegion(the_cursed_barrow_long);
-                		else
-                			return GetRandomRegion(the_cursed_barrow_laby);
+		if(dungeonType == eDungeonType.Ranged)
+	return GetRandomRegion(the_cursed_barrow_long);
+		else
+			return GetRandomRegion(the_cursed_barrow_laby);
                 }
             }
             else if (level > 10 && level <= 20)
@@ -252,20 +253,20 @@ namespace DOL.GS.Quests
                 switch (realm)
                 {
                     case eRealm.Albion:
-                		if(dungeonType == eDungeonType.Ranged)
-                        	return GetRandomRegion(forgotten_mines_long);
-                		else
-                			return GetRandomRegion(forgotten_mines_laby);
+		if(dungeonType == eDungeonType.Ranged)
+	return GetRandomRegion(forgotten_mines_long);
+		else
+			return GetRandomRegion(forgotten_mines_laby);
                     case eRealm.Midgard:
-                		if(dungeonType == eDungeonType.Ranged)
-                        	return GetRandomRegion(forgotten_sepulchre_long);
-                		else
-                			return GetRandomRegion(forgotten_sepulchre_laby);
+		if(dungeonType == eDungeonType.Ranged)
+	return GetRandomRegion(forgotten_sepulchre_long);
+		else
+			return GetRandomRegion(forgotten_sepulchre_laby);
                     case eRealm.Hibernia:
-                		if(dungeonType == eDungeonType.Ranged)
-                        	return GetRandomRegion(dismal_grotto_long);
-                		else
-                			return GetRandomRegion(dismal_grotto_laby);
+		if(dungeonType == eDungeonType.Ranged)
+	return GetRandomRegion(dismal_grotto_long);
+		else
+			return GetRandomRegion(dismal_grotto_laby);
                 }
             }
             else if (level > 20 && level <= 30)
@@ -273,20 +274,20 @@ namespace DOL.GS.Quests
                 switch (realm)
                 {
                     case eRealm.Albion:
-                		if(dungeonType == eDungeonType.Ranged)
-                        	return GetRandomRegion(desecrated_grounds_long);
-                		else
-                			return GetRandomRegion(desecrated_grounds_laby);
+		if(dungeonType == eDungeonType.Ranged)
+	return GetRandomRegion(desecrated_grounds_long);
+		else
+			return GetRandomRegion(desecrated_grounds_laby);
                     case eRealm.Midgard:
-                		if(dungeonType == eDungeonType.Ranged)
-                        	return GetRandomRegion(the_concealed_guardhouse_long);
-                		else
-                			return GetRandomRegion(the_concealed_guardhouse_laby);
+		if(dungeonType == eDungeonType.Ranged)
+	return GetRandomRegion(the_concealed_guardhouse_long);
+		else
+			return GetRandomRegion(the_concealed_guardhouse_laby);
                     case eRealm.Hibernia:
-                		if(dungeonType == eDungeonType.Ranged)
-                        	return GetRandomRegion(the_accursed_caves_long);
-                		else
-                			return GetRandomRegion(the_accursed_caves_laby);
+		if(dungeonType == eDungeonType.Ranged)
+	return GetRandomRegion(the_accursed_caves_long);
+		else
+			return GetRandomRegion(the_accursed_caves_laby);
                 }
             }
             else if (level > 30 && level <= 40)
@@ -294,20 +295,20 @@ namespace DOL.GS.Quests
                 switch (realm)
                 {
                     case eRealm.Albion:
-                		if(dungeonType == eDungeonType.Ranged)
-                        	return GetRandomRegion(funerary_hall_long);
-                		else
-                			return GetRandomRegion(funerary_hall_laby);
+		if(dungeonType == eDungeonType.Ranged)
+	return GetRandomRegion(funerary_hall_long);
+		else
+			return GetRandomRegion(funerary_hall_laby);
                     case eRealm.Midgard:
-                		if(dungeonType == eDungeonType.Ranged)
-                        	return GetRandomRegion(the_gossamer_grotto_long);
-                		else
-                			return GetRandomRegion(the_gossamer_grotto_laby);
+		if(dungeonType == eDungeonType.Ranged)
+	return GetRandomRegion(the_gossamer_grotto_long);
+		else
+			return GetRandomRegion(the_gossamer_grotto_laby);
                     case eRealm.Hibernia:
-                		if(dungeonType == eDungeonType.Ranged)
-                        	return GetRandomRegion(dark_cavern_long);
-                		else
-                			return GetRandomRegion(dark_cavern_laby);
+		if(dungeonType == eDungeonType.Ranged)
+	return GetRandomRegion(dark_cavern_long);
+		else
+			return GetRandomRegion(dark_cavern_laby);
                 }
             }
             else if (level > 40)
@@ -315,20 +316,20 @@ namespace DOL.GS.Quests
                 switch (realm)
                 {
                     case eRealm.Albion:
-                		if(dungeonType == eDungeonType.Ranged)
-                        	return GetRandomRegion(sundered_tombs_long);
-                		else
-                			return GetRandomRegion(sundered_tombs_laby);
+		if(dungeonType == eDungeonType.Ranged)
+	return GetRandomRegion(sundered_tombs_long);
+		else
+			return GetRandomRegion(sundered_tombs_laby);
                     case eRealm.Midgard:
-                		if(dungeonType == eDungeonType.Ranged)
-                        	return GetRandomRegion(underground_tunnel_long);
-                		else
-                			return GetRandomRegion(underground_tunnel_laby);
+		if(dungeonType == eDungeonType.Ranged)
+	return GetRandomRegion(underground_tunnel_long);
+		else
+			return GetRandomRegion(underground_tunnel_laby);
                     case eRealm.Hibernia:
-                		if(dungeonType == eDungeonType.Ranged)
-                        	return GetRandomRegion(unused_mine_long);
-                		else
-                			return GetRandomRegion(unused_mine_laby);
+		if(dungeonType == eDungeonType.Ranged)
+	return GetRandomRegion(unused_mine_long);
+		else
+			return GetRandomRegion(unused_mine_laby);
                 }
             }
             return 0;
@@ -363,7 +364,7 @@ namespace DOL.GS.Quests
 							if(m_mobIsAlive[eargs.Target.ObjectID - 1])
 							{
 								m_mobIsAlive[eargs.Target.ObjectID - 1] = false;
-							   	m_current++;
+								m_current++;
 								UpdateMission();
 								if (m_current == m_total)
 									FinishMission();
@@ -392,7 +393,7 @@ namespace DOL.GS.Quests
 						if(m_mobIsAlive[eargs.Target.ObjectID - 1])
 						{
 							m_mobIsAlive[eargs.Target.ObjectID - 1] = false;
-						   	m_current++;
+							m_current++;
 							UpdateMission();
 							if (m_current == m_total)
 								FinishMission();
@@ -411,7 +412,7 @@ namespace DOL.GS.Quests
 									}
 								}
 	                             */
-							}						   	
+							}
 						}
 						break;
 					}
@@ -431,24 +432,24 @@ namespace DOL.GS.Quests
 			{
 				switch (m_missionType)
 				{
-					case eTDMissionType.Boss: return "You have been asked to kill " + m_bossName + " in the nearby caves.";
-					case eTDMissionType.Specific: return "You have been asked to kill " + m_total + " " + m_targetName + " in the nearby caves.";
+					case eTDMissionType.Boss: return LanguageMgr.GetTranslation(MissionLanguage, "TaskDungeonMission.Description.Boss", m_bossName);
+					case eTDMissionType.Specific: return LanguageMgr.GetTranslation(MissionLanguage, "TaskDungeonMission.Description.Specific", m_total, m_targetName);
 					case eTDMissionType.Clear:
 						{
 							//Additional check if region is null in case of group mission.
 							//Otherwise else condition is used with m_total = 0.
 							if ((m_owner is GamePlayer && (m_owner as GamePlayer).CurrentRegion != m_taskRegion) ||
-						    	(m_owner is Group && m_taskRegion == null))
+							(m_owner is Group && m_taskRegion == null))
                             {
-                                return "You have been asked to clear the nearby caves.";
+                                return LanguageMgr.GetTranslation(MissionLanguage, "TaskDungeonMission.Description.Clear");
                             }
                             else
                             {
                                 bool test = m_total - m_current == 1;
-                                return "You have been asked to clear the nearby caves. " + (m_total - m_current) + " creature" + (test == true ? "" : "s") + " left!";
+                                return LanguageMgr.GetTranslation(MissionLanguage, test ? "TaskDungeonMission.Description.ClearOneLeft" : "TaskDungeonMission.Description.ClearManyLeft", m_total - m_current);
                             }
                         }
-					default: return "No description for mission type " + m_missionType.ToString();
+					default: return LanguageMgr.GetTranslation(MissionLanguage, "TaskDungeonMission.Description.UnknownType", m_missionType.ToString());
 				}
 			}
 		}
@@ -504,13 +505,14 @@ namespace DOL.GS.Quests
 		{
 			if (m_owner is GamePlayer)
 			{
-				(m_owner as GamePlayer).Out.SendMessage("Mission Complete", eChatType.CT_ScreenCenter, eChatLoc.CL_ChatWindow);
+				GamePlayer player = m_owner as GamePlayer;
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "TaskDungeonMission.MissionComplete"), eChatType.CT_ScreenCenter, eChatLoc.CL_ChatWindow);
 			}
 			else if (m_owner is Group)
 			{
 				foreach (GamePlayer player in (m_owner as Group).GetPlayersInTheGroup())
 				{
-					player.Out.SendMessage("Mission Complete", eChatType.CT_ScreenCenter, eChatLoc.CL_ChatWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "TaskDungeonMission.MissionComplete"), eChatType.CT_ScreenCenter, eChatLoc.CL_ChatWindow);
 				}
 			}
 			base.FinishMission();
@@ -518,7 +520,7 @@ namespace DOL.GS.Quests
 	}
 
     //This part is done by Dinberg, but the original source im not sure of. I'm trying to tweak it the the instance
-    //system I've developed, and this script was partly finished so I adopted it ^^. 
+    //system I've developed, and this script was partly finished so I adopted it ^^.
     public class TaskDungeonInstance : Instance
     {
         public TaskDungeonInstance(ushort ID, RegionData dat) : base(ID, dat) { }
@@ -543,8 +545,8 @@ namespace DOL.GS.Quests
             UpdateInstanceLevel();
 
             //The player will not yet be in the instance, so wont receive the relevant text.
-            player.Out.SendMessage("You have entered " + Description + ".", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-            player.Out.SendMessage("This instance is currently level " + m_level + ".", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "TaskDungeonInstance.Entered", Description), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "TaskDungeonInstance.Level", m_level), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
         }
 
         public override void OnPlayerLeaveInstance(GamePlayer player)
@@ -576,10 +578,10 @@ namespace DOL.GS.Quests
                     npc.Level = (byte) m_level;
                 }
 
-                foreach (GamePlayer player in ClientService.Instance.GetPlayersOfRegion(this))
-                    player.Out.SendMessage($"This instance is now level {m_level}.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-            }
-        }
+				foreach (GamePlayer player in ClientService.Instance.GetPlayersOfRegion(this))
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Mission.TaskDungeon.InstanceLevel", m_level), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+			}
+		}
 
         /// <summary>
         /// Expire the missions - the instance has exploded.

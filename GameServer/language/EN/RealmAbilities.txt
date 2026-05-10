@@ -1,4 +1,4 @@
-﻿# Realm Abilities
+# Realm Abilities
 
 ## Event Handler
 RealmAbility.AddReUseDelayInfo.Every:			Level {0}: Can use every: {1}
@@ -16,10 +16,10 @@ RealmAbility.SendCastMessage.PlayerCasts:		{0} casts a spell!
 RealmAbility.SendCastMessage.YouCast:			You cast a {0} Spell!
 
 ## Adrenaline Rush
-AdrenalineRushAbility.AddEffectsInfo.Info1:		
-AdrenalineRushAbility.AddEffectsInfo.Info2:		
-AdrenalineRushAbility.AddEffectsInfo.Info3:		
-AdrenalineRushAbility.AddEffectsInfo.Info4:		
+AdrenalineRushAbility.AddEffectsInfo.Info1:
+AdrenalineRushAbility.AddEffectsInfo.Info2:
+AdrenalineRushAbility.AddEffectsInfo.Info3:
+AdrenalineRushAbility.AddEffectsInfo.Info4:
 AdrenalineRushAbility.AddEffectsInfo.Info5:
 GameLiving.CheckWeaponMagicalEffect.Protected:		Your target is protected against your poison by a magical effect.
 
@@ -38,7 +38,7 @@ ConcentrationAbility.AddEffectsInfo.Info4:	Target: Self
 ConcentrationAbility.AddEffectsInfo.Info5:	Casting time: instant
 
 ## Dashing Defense
-DashingDefenseAbility.AddEffectsInfo.Info1:		
+DashingDefenseAbility.AddEffectsInfo.Info1:
 DashingDefenseAbility.AddEffectsInfo.Info2:		Target: Self
 DashingDefenseAbility.AddEffectsInfo.Info3:		Casting time: instant
 DashingDefenseAbility.Execute.AlreadyEffect:		You already have an effect of that type!
@@ -50,7 +50,7 @@ FirstAidAbility.AddEffectsInfo.Info2:			Level 2: Value: 600HP
 FirstAidAbility.AddEffectsInfo.Info3:			Level 3: Value: 900HP
 FirstAidAbility.AddEffectsInfo.Info4:			Target: Self
 FirstAidAbility.AddEffectsInfo.Info5:			Casting time: instant
-FirstAidAbility.AddEffectsInfo.Info6:			 
+FirstAidAbility.AddEffectsInfo.Info6:
 FirstAidAbility.Execute.FullyHealed:			You are fully healed.
 FirstAidAbility.Execute.AlreadyFullyHealed:		You are already fully healed.
 FirstAidAbility.Execute.HealYourself:			You heal yourself for {0} hit points.
@@ -89,7 +89,7 @@ NegativeMaelstromAbility.AddEffectsInfo.Info8:
 NegativeMaelstromAbility.AddEffectsInfo.Info9:
 
 ## Purge
-PurgeAbility.AddEffectsInfo.Info1:			
+PurgeAbility.AddEffectsInfo.Info1:
 PurgeAbility.AddEffectsInfo.Info2:			Target: Self
 PurgeAbility.AddEffectsInfo.Info3:			Casting time: instant
 PurgeAbility.OnTick.PurgeActivate:			Purge activates in {0} seconds!
@@ -102,9 +102,150 @@ RAPropertyEnhancer.DelveInfo.Info1:		Level {0}: Amount: {1}{2}
 RAStatEnhancer.DelveInfo.Info1:			Level {0}: Amount: {1}
 
 ## Second Wind
-SecondWindAbility.AddEffectsInfo.Info1:			
-SecondWindAbility.AddEffectsInfo.Info4:			
-SecondWindAbility.AddEffectsInfo.Info5:			
+SecondWindAbility.AddEffectsInfo.Info1:
+SecondWindAbility.AddEffectsInfo.Info4:
+SecondWindAbility.AddEffectsInfo.Info5:
 
 ## Selective Blindness
 GameLiving.AttackData.InvisibleToYou:		{0} is invisible to you!
+
+## Atlas Old Frontiers - Volley
+AtlasOF.Volley.AlreadyUsing:                 You are already using Volley!
+AtlasOF.Volley.ArrowsRemaining:              You have {0} arrows to be drawn!
+AtlasOF.Volley.CantUseInDungeons:            You can't use Volley in dungeons!
+AtlasOF.Volley.CantUseInEnemyBorderKeep:     You can't use Volley inside an enemy Border Keep!
+AtlasOF.Volley.CantUseInEnemyPortalKeep:     You can't use Volley inside an enemy Portal Keep!
+AtlasOF.Volley.CantUseWithCriticalShot:      You can't use Volley while Critical-Shot is active!
+AtlasOF.Volley.CantUseWithLongshot:          You can't use Volley while Longshot is active!
+AtlasOF.Volley.Finished:                     Your volley is finished!
+AtlasOF.Volley.GroundTargetTooClose:         Your ground target is too close to use Volley!
+AtlasOF.Volley.GroundTargetTooFar:           Your ground target is too far away to use Volley!
+AtlasOF.Volley.InterruptedAttacked:          You have been attacked and your volley is interrupted!
+AtlasOF.Volley.InterruptedMove:              You move and interrupt your volley!
+AtlasOF.Volley.InterruptedWeapon:            You put away your bow and interrupt your volley!
+AtlasOF.Volley.NeedArrows:                   You need arrows to use Volley!
+AtlasOF.Volley.NeedBow:                      You need to be equipped with a bow to use Volley!
+AtlasOF.Volley.NeedGroundTarget:             You must have a ground target to use Volley!
+AtlasOF.Volley.PrepareShot:                  You prepare to shoot. ({0}s)
+AtlasOF.Volley.PrepareVolley:                You prepare to unleash a volley of arrows!
+AtlasOF.Volley.ReadyToShoot:                 You are ready to shoot!
+AtlasOF.Volley.ShotArcs:                     Your shot arcs into the sky!
+AtlasOF.Volley.ShotMissesAll:                Your shot sails clear of all targets!
+AtlasOF.Volley.TooTired:                     You are too tired to hold your volley any longer!
+RealmAbility.Charge.EnemyPlayersOnly:        You can only charge enemy players.
+RealmAbility.DivineIntervention.AlreadyProtected: You are already protected by a pool of healing.
+AtlasOF.SiegeBolt.KeepDoorsAndSiegeOnly:     You can only cast this spell on keep doors and siege weapons.
+AtlasOF.SiegeBolt.TargetOutOfRange:          Target out of range.
+
+## Realm Ability Messages
+RealmAbility.Message.AlreadyEffect:		You already have an effect of that type!
+RealmAbility.Message.NeedTarget:		You need a target for this ability!
+RealmAbility.Message.TargetTooFarAwayPeriod:		{0} is too far away.
+RealmAbility.Message.TargetTooFarAway:		{0} is too far away!
+RealmAbility.Message.CancelSpell:		You cancel your Spell!
+RealmAbility.Message.MustStandStill:		You must be standing still to use this ability!
+RealmAbility.Message.MustSetGroundTarget:		You must set a ground target to use this ability!
+RealmAbility.Message.GroundTargetTooFar:		Your ground target is too far away to use this ability!
+RealmAbility.Message.AlreadyCastingAbility:		You are already casting an ability.
+RealmAbility.Message.NotInGroup:		You are not in a group.
+RealmAbility.Message.MustHaveControlledPet:		You must have a controlled pet to use this ability!
+RealmAbility.Message.MustSelectTarget:		You must select a target for this ability!
+RealmAbility.Message.InvalidTarget:		You have an invalid target!
+RealmAbility.Message.CannotAttackSelf:		You can't attack yourself!
+RealmAbility.Message.TargetNotInView:		{0} is not in view!
+RealmAbility.Message.TargetDead:		{0} is dead!
+RealmAbility.Message.CannotAttackRealmMember:		You can't attack a member of your realm!
+RealmAbility.Message.MustWaitRecast:		You must wait {0} seconds to recast this type of ability!
+RealmAbility.Message.CasterCastsSpell:		{0} casts a spell!
+RealmAbility.Generic.CastSelf:			You cast {0}!
+RealmAbility.Message.CannotCurrentlyUseAbility:		You cannot currently use this ability
+RealmAbility.Message.NeedGroup:		You need a group for this Ability!
+RealmAbility.Message.MustSelectEnemyTarget:		You must select an enemy target!
+RealmAbility.Damage.YouHitTheForDamage:		You hit the {0} for {1} damage.
+RealmAbility.Damage.YouHitForDamage:		You hit {0} for {1} damage.
+RealmAbility.Damage.CasterHitsYouForDamage:		{0} hits you for {1} damage.
+RealmAbility.Damage.YouHitForDamageExclamation:		You hit {0} for {1} damage!
+RealmAbility.Damage.CasterHitsYouForDamageExclamation:		{0} hits you for {1} damage!
+RealmAbility.Damage.YouHitForDamageResist:		You hit {0} for {1}({2}) points of damage!
+RealmAbility.Damage.YouHitForPointsDamage:		You hit {0} for {1} points of damage!
+RealmAbility.Heal.TargetForHitPoints:		You heal {0} for {1} hit points.
+RealmAbility.Heal.CasterHealsYouForHitPoints:		{0} heals you for {1} hit points.
+RealmAbility.Heal.FullyHealed:		You are fully healed.
+RealmAbility.Heal.GroupFullyHealed:		Your group is fully healed!
+RealmAbility.Heal.YouFullyHealed:		You are fully healed!
+RealmAbility.Heal.TargetForAmount:		You heal {0} for {1}!
+RealmAbility.Heal.CasterHealsYouForAmount:		{0} heals you for {1}!
+RealmAbility.Heal.SelfForHitPoints:		You heal yourself for {0} hit points.
+RealmAbility.Ichor.ConstrictingBondsSelf:		Constricting bonds surround your body!
+RealmAbility.Ichor.ConstrictingBondsOther:		{0} is surrounded by constricting bonds!
+AtlasOF.Viper.Begins:		The blood of the viper surges in your veins.
+AtlasOF.Viper.Ends:		The blood of the viper fades from within.
+AtlasOF.ReflexAttack.Begins:		You begin automatically counter-attacking melee attacks!
+AtlasOF.ReflexAttack.OtherBegins:		{0} starts automatically counter-attacking melee attacks!
+AtlasOF.ReflexAttack.Ends:		You stop automatically counter-attacking melee attacks!
+AtlasOF.ReflexAttack.OtherEnds:		{0} stops automatically counter-attacking melee attacks!
+RealmAbility.Power.Gain:		You gain {0} power.
+RealmAbility.Power.Full:		You have full power.
+RealmAbility.TheEmptyMindEffect.ClearheadedLeaves:		Your clearheaded state leaves you.
+RealmAbility.ChargeEffect.BeginCharge:		You begin to charge wildly!
+RealmAbility.ChargeEffect.PetCharges:		The {0} charges its prey!
+RealmAbility.ChargeEffect.NoLongerCrazy:		You no longer seem so crazy!
+RealmAbility.ChargeEffect.PetCeases:		The {0} ceases its charge!
+RealmAbility.DivineInterventionEffect.GroupProtected:		Your group is protected by a pool of healing!
+RealmAbility.DivineInterventionEffect.Protected:		You are protected by a pool of healing!
+RealmAbility.DivineInterventionEffect.NoLongerProtected:		You are no longer protected by a pool of healing!
+RealmAbility.DivineInterventionEffect.PetHealed:		Your {0} was healed by the pool of healing for {1}!
+RealmAbility.DivineInterventionEffect.OwnerHealsPet:		Your pool of healing heals the {0} of {1} for {2}!
+RealmAbility.DivineInterventionEffect.PlayerHealed:		You are healed by the pool of healing for {0}!
+RealmAbility.DivineInterventionEffect.OwnerHealsPlayer:		Your pool of healing heals {0} for {1}!
+RealmAbility.DashingDefenseEffect.GuardingCloser:		You are now guarding {0}, but you must stand closer.
+RealmAbility.DashingDefenseEffect.GuardedCloser:		{0} is now guarding you, but you must stand closer.
+RealmAbility.DashingDefenseEffect.Guarding:		You are now guarding {0}.
+RealmAbility.DashingDefenseEffect.Guarded:		{0} is now guarding you.
+RealmAbility.DashingDefenseEffect.NoLongerGuarding:		You are no longer guarding {0}.
+RealmAbility.DashingDefenseEffect.NoLongerGuarded:		{0} is no longer guarding you.
+RealmAbility.VanishEffect.HiddenSeconds:		You are hidden for {0} more seconds!
+RealmAbility.TrueshotEffect.Prepare:		You prepare a Trueshot!
+RealmAbility.PerfectRecovery.TargetDeadRealmMember:		You have to target a dead member of your realm!
+RealmAbility.PerfectRecovery.TargetConsideringResurrection:		Your target is already considering a resurrection!
+RealmAbility.PerfectRecovery.TargetTooFar:		You are too far away from your target to use this ability!
+RealmAbility.PerfectRecovery.NoResurrectionPending:		No one is currently trying to resurrect you.
+RealmAbility.PerfectRecovery.DeclineResurrection:		You decline to be resurrected.
+RealmAbility.PerfectRecovery.ResurrectionExpired:		Your resurrection spell has expired.
+RealmAbility.PerfectRecovery.ResurrectedBy:		You have been resurrected by {0}!
+RealmAbility.PerfectRecovery.NotWorthRealmPoints:		The player you resurrected was not worth realm points on death.
+RealmAbility.PerfectRecovery.NoRealmPoints:		You thus get no realm points for the resurrect.
+RealmAbility.MarkOfPreyEffect.Begin:		Your weapon begins channeling the strength of the vampiir!
+RealmAbility.MarkOfPreyEffect.End:		Your weapon returns to normal.
+RealmAbility.MarkOfPreyEffect.ExtraDamage:		You hit {0} for {1} extra damage!
+RealmAbility.Juggernaut.CannotUseDead:		You cannot use this ability while dead!
+RealmAbility.Juggernaut.CannotUseMesmerized:		You cannot use this ability while mesmerized!
+RealmAbility.Juggernaut.CannotUseStunned:		You cannot use this ability while stunned!
+RealmAbility.Juggernaut.CannotUseSitting:		You cannot use this ability while sitting!
+RealmAbility.Juggernaut.PetTooFar:		Your pet is too far away!
+RealmAbility.Juggernaut.PetAlreadyActive:		Your Pet already has an ability of this type active
+RealmAbility.ArrowSummoning.NotEnoughInventorySpace:		You do not have enough inventory space to place this item!
+RealmAbility.TestudoEffect.ReduceDamage:		Your Testudo Stance reduces the damage by {0} points
+RealmAbility.TestudoEffect.ReduceAttackerDamage:		{0}'s Testudo Stance reduces your damage by {1} points
+RealmAbility.MasteryOfConcentration.PerfectPoise:		{0}'s castings have perfect poise!
+RealmAbility.MasteryOfConcentration.CastSelf:		You cast {0}!
+RealmAbility.MasteryOfConcentration.Steadier:		You become steadier in your casting abilities!
+RealmAbility.MasteryOfConcentration.CastsSpell:		{0} casts a spell!
+RealmAbility.ShadowShroud.AbsorbsSelf:		Shadow Shroud Ability absorbs {0} damage!
+RealmAbility.ShadowShroud.AbsorbsAttacker:	A barrier absorbs {0} damage of your attack!
+RealmAbility.FuryOfNatureEffect.AdditionalDamage:		Your Fury enables you to strike {0} for {1} additional points of damage
+RealmAbility.TheEmptyMind.ClearMind:		You clear your mind and become more resistant to magic damage!
+RealmAbility.Epiphany.RestoresYou:		{0} restores you {1} points of mana, and 50% of your endurance.
+RealmAbility.Epiphany.RestoreTarget:		You restore {0} {1} points of mana, and 50% of their endurance.
+RealmAbility.Epiphany.RestoreSelf:		You restore yourself {0} points of mana, and 50% of your endurance.
+RealmAbility.SoulQuench.ReturnsHitPoints:		Your Soul Quench returns {0} hit points to you
+RealmAbility.NaturesWomb.AbsorbAttack:		{0}'s druidic powers absorb your attack!
+RealmAbility.NaturesWomb.ConvertAttack:		Your druidic powers convert your enemy's attack and heal you for {0}!
+RealmAbility.ShieldOfImmunity.AbsorbsDamage:		Your Shield of Immunity absorbs {0} points of damage
+RealmAbility.ShieldOfImmunity.AbsorbsAttackerDamage:		{0}'s Shield of Immunity absorbs {1} points of damage
+RealmAbility.SelectiveBlindness.PlayersOnly:		This works only on players!
+RealmAbility.SelectiveBlindness.EnemiesOnly:		This works only on enemies!
+RealmAbility.SelectiveBlindness.EnemiesOnlyPeriod:		This works only on enemies.
+RealmAbility.ChainLightning.MustTargetPlayer:		You must target a player to launch this spell!
+RealmAbility.SpeedOfSound.SpeedWarped:		You cannot use this ability while speed warped!
+RealmAbility.WrathOfChampions.Phaseshifted:		{0} is Phaseshifted and can't be affected by this Spell!

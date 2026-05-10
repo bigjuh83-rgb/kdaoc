@@ -1,3 +1,5 @@
+using DOL.Language;
+
 namespace DOL.GS.PacketHandler.Client.v168
 {
     [PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.CommandHandler, "Handles the players commands", eClientStatus.PlayerInGame)]
@@ -20,7 +22,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                 if (command.Length > 0 && command[0] == '&')
                     command = "/" + command[1..];
 
-                client.Out.SendMessage($"No such command ({command})", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "PlayerCommand.NoSuchCommand", command), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             }
         }
 

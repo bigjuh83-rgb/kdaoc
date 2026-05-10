@@ -46,49 +46,29 @@ namespace DOL.GS.PacketHandler
 				pak.WriteByte(0x00); // unknown
 				pak.WriteByte((offer) ? (byte)0x02 : (byte)0x01); // Accept/Decline or Finish/Not Yet
 				pak.WriteByte(0x01); // Wrap
-				pak.WritePascalString(quest.Name);
-
-				if (quest.Summary.Length > 255)
-				{
-					pak.WritePascalString(quest.Summary.AsSpan(0, 255));
-				}
-				else
-				{
-					pak.WritePascalString(quest.Summary);
-				}
+				pak.WritePascalString(TakeEncodedChunk(quest.Name, byte.MaxValue));
+				pak.WritePascalString(TakeEncodedChunk(quest.Summary, byte.MaxValue));
 
 				if (offer)
 				{
-					if (quest.Story.Length > (ushort)ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH)
-					{
-						pak.WriteShort((ushort)ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH);
-						pak.WriteNonNullTerminatedString(quest.Story.AsSpan(0, (ushort)ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH));
-					}
-					else
-					{
-						pak.WriteShort((ushort)quest.Story.Length);
-						pak.WriteNonNullTerminatedString(quest.Story);
-					}
+					int maxStoryBytes = Math.Min(ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH, ushort.MaxValue);
+					ReadOnlySpan<char> storySpan = TakeEncodedChunk(quest.Story, maxStoryBytes);
+					pak.WriteShort((ushort) GetEncodedByteCount(storySpan));
+					pak.WriteNonNullTerminatedString(storySpan);
 				}
 				else
 				{
-					if (quest.Conclusion.Length > (ushort)ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH)
-					{
-						pak.WriteShort((ushort)ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH);
-						pak.WriteNonNullTerminatedString(quest.Conclusion.AsSpan(0, (ushort)ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH));
-					}
-					else
-					{
-						pak.WriteShort((ushort)quest.Conclusion.Length);
-						pak.WriteNonNullTerminatedString(quest.Conclusion);
-					}
+					int maxConclusionBytes = Math.Min(ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH, ushort.MaxValue);
+					ReadOnlySpan<char> conclusionSpan = TakeEncodedChunk(quest.Conclusion, maxConclusionBytes);
+					pak.WriteShort((ushort) GetEncodedByteCount(conclusionSpan));
+					pak.WriteNonNullTerminatedString(conclusionSpan);
 				}
 
 				pak.WriteShort(QuestID);
 				pak.WriteByte((byte)quest.Goals.Count); // #goals count
 				foreach (RewardQuest.QuestGoal goal in quest.Goals)
 				{
-					pak.WritePascalString(String.Format("{0}\r", goal.Description));
+					pak.WritePascalString(TakeEncodedChunk(String.Format("{0}\r", goal.Description), byte.MaxValue));
 				}
 				pak.WriteByte((byte)quest.Level);
 				pak.WriteByte((byte)quest.Rewards.MoneyPercent);
@@ -203,19 +183,21 @@ namespace DOL.GS.PacketHandler
 			using (var pak = PooledObjectFactory.GetForTick<GSTCPPacketOut>().Init(GetPacketCode(eServerPackets.QuestEntry)))
 			{
 				pak.WriteByte(index);
-				pak.WriteByte((byte)rewardQuest.Name.Length);
+				ReadOnlySpan<char> nameSpan = TakeEncodedChunk(rewardQuest.Name, byte.MaxValue);
+				pak.WriteByte((byte) GetEncodedByteCount(nameSpan));
 				pak.WriteShort(0x00); // unknown
 				pak.WriteByte((byte)rewardQuest.Goals.Count);
 				pak.WriteByte((byte)rewardQuest.Level);
-				pak.WriteNonNullTerminatedString(rewardQuest.Name);
-				pak.WritePascalString(rewardQuest.Description);
+				pak.WriteNonNullTerminatedString(nameSpan);
+				pak.WritePascalString(TakeEncodedChunk(rewardQuest.Description, byte.MaxValue));
 				int goalindex = 0;
 				foreach (RewardQuest.QuestGoal goal in rewardQuest.Goals)
 				{
 					goalindex++;
 					String goalDesc = String.Format("{0}\r", goal.Description);
-					pak.WriteShortLowEndian((ushort)goalDesc.Length);
-					pak.WriteNonNullTerminatedString(goalDesc);
+					ReadOnlySpan<char> goalDescSpan = TakeEncodedChunk(goalDesc, ushort.MaxValue);
+					pak.WriteShortLowEndian((ushort) GetEncodedByteCount(goalDescSpan));
+					pak.WriteNonNullTerminatedString(goalDescSpan);
 					pak.WriteShortLowEndian((ushort)goal.ZoneID2);
 					pak.WriteShortLowEndian((ushort)goal.XOffset2);
 					pak.WriteShortLowEndian((ushort)goal.YOffset2);

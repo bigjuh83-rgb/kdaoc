@@ -5,6 +5,7 @@
 using System;
 using System.Text.RegularExpressions;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -24,7 +25,7 @@ namespace DOL.GS.Commands
 
 			if (args.Length == 1)
 			{
-				client.Out.SendMessage("Usage: /email <address>",
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Email.Usage"),
 				                       eChatType.CT_System,
 				                       eChatLoc.CL_SystemWindow);
 				return;
@@ -34,7 +35,7 @@ namespace DOL.GS.Commands
 			emailsyntaxvalidator = new EmailSyntaxValidator(EmailAddy, true);
 			if (!emailsyntaxvalidator.IsValid)
 			{
-				client.Out.SendMessage("Please enter a valid e-mail address.",
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Email.Invalid"),
 				                       eChatType.CT_System,
 				                       eChatLoc.CL_SystemWindow);
 				return;
@@ -55,14 +56,13 @@ namespace DOL.GS.Commands
 					// Log change
 					AuditMgr.AddAuditEntry(client, AuditType.Account, AuditSubtype.AccountEmailChange, oldEmail, EmailAddy);
 
-					client.Out.SendMessage("Contact e-mail address set to " +
-					                       obj.Client.Account.Mail + ". Thanks!",
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Email.Updated", obj.Client.Account.Mail),
 					                       eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 			}
 			catch (Exception)
 			{
-				client.Out.SendMessage("Error - Usage: /email <address>",
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Email.ErrorUsage"),
 				                       eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
@@ -79,7 +79,7 @@ namespace DOL.GS.Commands
 		/// Initializes a new instance of the EmailSyntaxValidator
 		/// </summary>
 		/// <param name="email">the email to test</param>
-		/// <param name="TLDrequired">indicates whether or not the 
+		/// <param name="TLDrequired">indicates whether or not the
 		/// email must end with a known TLD to be considered valid</param>
 		/// <remarks>
 		/// The initializer creates an instance of the EmailSyntaxValidator
@@ -123,7 +123,7 @@ namespace DOL.GS.Commands
 		}
 
 		/// <summary>
-		/// Gets a value indicating whether or not the email address 
+		/// Gets a value indicating whether or not the email address
 		/// has valid syntax
 		/// </summary>
 		/// <remarks>
@@ -182,7 +182,7 @@ namespace DOL.GS.Commands
 		/// Determines if an email has valid syntax
 		/// </summary>
 		/// <param name="email">the email to test</param>
-		/// <param name="TLDrequired">indicates whether or not the 
+		/// <param name="TLDrequired">indicates whether or not the
 		/// email must end with a known TLD to be considered valid</param>
 		/// <returns>boolean indicating if the email has valid syntax</returns>
 		/// <remarks>

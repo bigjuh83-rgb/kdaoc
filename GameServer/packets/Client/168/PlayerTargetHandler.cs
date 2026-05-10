@@ -50,7 +50,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
                 // No LOS message. Not sure which bit to use so use both.
                 if (!targetInView)
-                    actionSource.Out.SendMessage("Target is not in view.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    actionSource.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(actionSource.Client, "PlayerTargetHandler.TargetNotInView"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
                 if (target is not GamePlayer)
                     ClientService.UpdateObjectForPlayer(actionSource, target);
@@ -64,7 +64,7 @@ namespace DOL.GS.PacketHandler.Client.v168
             {
                 if (target is not GameGravestone gravestone || !gravestone.InternalID.Equals(actionSource.InternalID))
                 {
-                    actionSource.Out.SendMessage("You are no longer targeting your grave. Your prayers fail.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    actionSource.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(actionSource.Client, "PlayerTargetHandler.PrayersFail"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     actionSource.PrayTimerStop();
                 }
             }

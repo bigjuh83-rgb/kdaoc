@@ -1,0 +1,64 @@
+# Bonedancer Commander Pet
+
+# in mobxambientbehaviournow: GameObjects.CommanderPet.HailMaster:
+
+## Commander Names
+GameObjects.CommanderPet.BoneCommander:			뼈 지휘관
+GameObjects.CommanderPet.DecayedCommander:		부패한 지휘관
+GameObjects.CommanderPet.DreadArcher:			공포의 궁수
+GameObjects.CommanderPet.DreadCommander:		공포의 지휘관
+GameObjects.CommanderPet.DreadGuardian:			공포의 수호자
+GameObjects.CommanderPet.DreadLich:             공포의 리치
+GameObjects.CommanderPet.DreadLord:		        공포의 군주
+GameObjects.CommanderPet.ReturnedCommander:		되살아난 지휘관
+GameObjects.CommanderPet.SkeletalCommander:		해골 지휘관
+
+## Commands
+GameObjects.CommanderPet.WR.Assist.Off:         지휘관이 더 이상 하수인의 지원을 받지 않습니다.
+GameObjects.CommanderPet.WR.Assist.On:          이제 지휘관이 하수인의 지원을 받습니다.
+GameObjects.CommanderPet.WR.CommNoTaunt:		지휘관이 더 이상 적을 도발하지 않습니다!
+GameObjects.CommanderPet.WR.CommStartTaunt:		지휘관이 적을 도발하기 시작합니다!
+
+## Keywords
+GameObjects.CommanderPet.WR.Const.Spell.NotAvailable:	이 주문은 아직 사용할 수 없습니다.
+GameObjects.CommanderPet.WR.Const.1HandedAxe:	한손 도끼
+GameObjects.CommanderPet.WR.Const.1HandedHammer:	한손 망치
+GameObjects.CommanderPet.WR.Const.1HandedSword:	한손 검
+GameObjects.CommanderPet.WR.Const.2HandedAxe:	양손 도끼
+GameObjects.CommanderPet.WR.Const.2HandedHammer:	양손 망치
+GameObjects.CommanderPet.WR.Const.2HandedSword:	양손 검
+GameObjects.CommanderPet.WR.Const.Assist:		지원
+GameObjects.CommanderPet.WR.Const.Combat:		전투
+GameObjects.CommanderPet.WR.Const.Commander:	지휘관
+GameObjects.CommanderPet.WR.Const.Damage:		피해
+GameObjects.CommanderPet.WR.Const.Debilitating: 약화
+GameObjects.CommanderPet.WR.Const.Drain:		흡수
+GameObjects.CommanderPet.WR.Const.Empower:		강화
+GameObjects.CommanderPet.WR.Const.Harm:			공격
+GameObjects.CommanderPet.WR.Const.One:			한손
+GameObjects.CommanderPet.WR.Const.Snares:		속박
+GameObjects.CommanderPet.WR.Const.Spells:		주문
+GameObjects.CommanderPet.WR.Const.Suppress:		억압
+GameObjects.CommanderPet.WR.Const.Taunt:		도발
+GameObjects.CommanderPet.WR.Const.Two:			양손
+GameObjects.CommanderPet.WR.Const.Weapons:		무기
+
+## Commander & Minion Dialogue
+GameObjects.CommanderPet.WR.Combat:			    {0}이(가) 말합니다. "처음부터 내가 죽일 대상으로 당신이 고른 적을, 내 지휘 아래 있는 하수인들이 나와 함께 [{1}]하도록 명령합니다. 이 명령을 다시 내리면 하수인들이 지원을 멈춥니다. 또한 적들이 당신 대신 나를 노리도록 [{2}]할 수도 있습니다."
+GameObjects.CommanderPet.WR.CombatNoMinions:    {0}이(가) 말합니다. "적들이 당신 대신 나를 노리도록 [{1}]할 수 있습니다."
+GameObjects.CommanderPet.WR.DreadArcher:		{0}이(가) 말합니다. "보그다르가 아끼는 궁수인 나에게 [{1}]를 명령하면 활을 더 효과적으로 다룰 수 있습니다. 또한 여러 [{2}] 전술도 사용할 수 있습니다."
+GameObjects.CommanderPet.WR.DreadGuardian.Drain:		{0}이(가) 말합니다. "이제 적의 생명력을 흡수하는 주문을 시전하겠습니다."
+GameObjects.CommanderPet.WR.DreadGuardian.Suppress:		{0}이(가) 말합니다. "이제 적의 영혼을 억누르는 주문을 시전하겠습니다."
+GameObjects.CommanderPet.WR.DreadGuardian:		{0}이(가) 말합니다. "보그다르가 선택한 수호자인 나는 그의 적을 [{1}]하고 추가 방어력으로 나 자신을 [{2}]하는 능력을 익혔습니다. 또한 여러 [{3}] 전술도 사용할 수 있습니다."
+GameObjects.CommanderPet.WR.DreadGuardian2:		{0}이(가) 말합니다. "보그다르는 내게 적의 생명력을 [{1}]하거나, 그 영혼을 [{2}]해 해치는 능력을 주었습니다. 처음 소환되면 영혼 피해 주문을 시전하지만, 원한다면 특정 종류의 주문을 쓰도록 명령할 수 있습니다."
+GameObjects.CommanderPet.WR.DreadLich.Damage:   {0}이(가) 말합니다. "이제 피해 주문만 시전하겠습니다."
+GameObjects.CommanderPet.WR.DreadLich.Debilitating: {0}이(가) 말합니다. "이제 피해 주문을 시전하기 전에 약화 주문을 먼저 시전하겠습니다."
+GameObjects.CommanderPet.WR.DreadLich.Snare:    {0}이(가) 말합니다. "이제 속박 주문만 시전하겠습니다."
+GameObjects.CommanderPet.WR.DreadLich:			{0}이(가) 말합니다. "보그다르의 신비술사인 나는 수많은 어둠의 [{1}]을 익혔습니다. 내 [{2}] 주문을 더 효과적으로 만드는 수단도 있습니다. 또한 여러 [{3}] 전술도 사용할 수 있습니다."
+GameObjects.CommanderPet.WR.DreadLich2:			{0}이(가) 말합니다. "내 무기는 [{1}], [{2}], 순수 [{3}] 주문으로 이루어져 있습니다. 처음 소환되면 약화 주문을 시전하지만, 원한다면 특정 종류의 주문을 쓰도록 명령할 수 있습니다."
+GameObjects.CommanderPet.WR.Spell.Empower:		강화
+GameObjects.CommanderPet.WR.Weapons.All:		{0}이(가) 말합니다. "나는 [{1}], [{2}], [{3}], [{4}], [{5}], [{6}]을 모두 익혔습니다."
+GameObjects.CommanderPet.WR.Weapons.Limited:	{0}이(가) 말합니다. "나는 [{1}], [{2}], [{3}]을 익혔습니다."
+GameObjects.CommanderPet.WR.XCommander:			{0}이(가) 말합니다. "보그다르의 지휘관인 나는 그의 뼈 군대가 쓰는 오래된 [{1}]들을 다룰 줄 압니다. 어떤 무기를 들어드릴까요? 또한 여러 [{2}] 전술도 사용할 수 있습니다."
+GameObjects.Master:					            주인님
+GameObjects.Mistress:					        주인님

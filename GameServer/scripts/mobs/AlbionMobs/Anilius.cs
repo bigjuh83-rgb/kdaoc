@@ -23,7 +23,7 @@ namespace DOL.GS
 		{
 			foreach (GameNPC npc in GetNPCsInRadius(5000))
 			{
-				if (npc.IsAlive && npc != null && npc.Brain is AniliusAddBrain)
+				if (npc != null && npc.IsAlive && npc.Brain is AniliusAddBrain)
 					npc.RemoveFromWorld();
 			}
 			base.Die(killer);
@@ -52,7 +52,7 @@ namespace DOL.AI.Brain
 				{
 					foreach (GameNPC npc in Body.GetNPCsInRadius(5000))
 					{
-						if (npc.IsAlive && npc != null && npc.Brain is AniliusAddBrain)
+						if (npc != null && npc.IsAlive && npc.Brain is AniliusAddBrain)
 							npc.RemoveFromWorld();
 					}
 					RemoveAdds = true;
@@ -72,7 +72,7 @@ namespace DOL.AI.Brain
 					if (npc != null && npc.IsAlive && npc.Brain is AniliusAddBrain brain)
 					{
 						GameLiving target = Body.TargetObject as GameLiving;
-						if (!brain.HasAggro && target.IsAlive && target != null)
+						if (!brain.HasAggro && target != null && target.IsAlive)
 							brain.AddToAggroList(target, 10);
 					}
 				}

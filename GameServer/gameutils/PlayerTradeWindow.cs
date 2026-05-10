@@ -4,11 +4,12 @@ using System.Reflection;
 using System.Threading;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
 	/// <summary>
-	/// TradeWindow is the object for tradewindow from the side of one trader 
+	/// TradeWindow is the object for tradewindow from the side of one trader
 	/// with all his money and items but nothing of other trader
 	/// </summary>
 	public class PlayerTradeWindow : ITradeWindow
@@ -22,7 +23,7 @@ namespace DOL.GS
 		{
 			if (owner == null)
 				throw new ArgumentNullException("owner");
-			
+
 			m_owner = owner;
 			m_tradeAccept = false;
 			m_tradeItems = new ArrayList(10);
@@ -159,8 +160,8 @@ namespace DOL.GS
 		public bool Repairing
 		{
 			get { return m_repair; }
-			set 
-			{ 		
+			set
+			{
 				if(value == false)
 				{
 					m_partnerWindow.m_repair = false;
@@ -170,7 +171,7 @@ namespace DOL.GS
 
 				if(!m_recipiant)
 				{
-					m_owner.Out.SendMessage("Only a recipient of a trade can initiate a repair.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+					m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Client.Account.Language, "Trade.Repair.RecipientOnly"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					m_partnerWindow.m_repair = false;
 					m_repair = false;
 					return;
@@ -178,7 +179,7 @@ namespace DOL.GS
 
 				if(m_partnerWindow.ItemsCount != 1)
 				{
-					m_owner.Out.SendMessage("You can only repair one item at a time!",eChatType.CT_System,eChatLoc.CL_SystemWindow);
+					m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Client.Account.Language, "Trade.Repair.OneItemOnly"),eChatType.CT_System,eChatLoc.CL_SystemWindow);
 					m_partnerWindow.m_repair = false;
 					m_repair = false;
 					return;
@@ -186,10 +187,10 @@ namespace DOL.GS
 
 				if(ItemsCount > 0)
 				{
-					m_owner.Out.SendMessage("Your trade windows side must be empty to repair!",eChatType.CT_System,eChatLoc.CL_SystemWindow);
+					m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Client.Account.Language, "Trade.Repair.OwnerSideMustBeEmpty"),eChatType.CT_System,eChatLoc.CL_SystemWindow);
 					m_partnerWindow.m_repair = false;
 					m_repair = false;
-					return;	
+					return;
 				}
 
 				DbInventoryItem itemToRepair = (DbInventoryItem) m_partnerWindow.TradeItems[0];
@@ -221,8 +222,8 @@ namespace DOL.GS
 		public bool Combine
 		{
 			get { return m_combine; }
-			set 
-			{ 
+			set
+			{
 				if(value == false)
 				{
 					m_partnerWindow.m_combine = false;
@@ -232,7 +233,7 @@ namespace DOL.GS
 
 				if(!m_recipiant)
 				{
-					m_owner.Out.SendMessage("Only a recipient of a trade can initiate a combine.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+					m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Client.Account.Language, "Trade.Combine.RecipientOnly"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					m_partnerWindow.m_combine = false;
 					m_combine = false;
 					return;
@@ -240,7 +241,7 @@ namespace DOL.GS
 
 				if(m_partnerWindow.ItemsCount != 1)
 				{
-					m_owner.Out.SendMessage("You can only combine your items into one item!",eChatType.CT_System,eChatLoc.CL_SystemWindow);
+					m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Client.Account.Language, "Trade.Combine.OneItemOnly"),eChatType.CT_System,eChatLoc.CL_SystemWindow);
 					m_partnerWindow.m_combine = false;
 					m_combine = false;
 					return;
@@ -394,10 +395,10 @@ namespace DOL.GS
 			m_partnerWindow.Owner.Out.SendTradeWindow();
 		}
 
-		#endregion	
+		#endregion
 
 		#region AcceptTrade/CloseTraide
-		
+
 		/// <summary>
 		/// Called each time a player push the accept button to accept the trade
 		/// </summary>
@@ -408,7 +409,7 @@ namespace DOL.GS
 				m_tradeAccept = true;
 				GamePlayer partner = m_partnerWindow.Owner;
 
-				partner.Out.SendMessage(m_owner.Name + " has accepted the trade.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				partner.Out.SendMessage(LanguageMgr.GetTranslation(partner.Client.Account.Language, "Trade.Accepted", m_owner.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
 				// Check if the tradepartner has also agreed to the trade
 				if (!m_partnerWindow.m_tradeAccept) return false;
@@ -434,8 +435,8 @@ namespace DOL.GS
                             InventoryLogging.LogInventoryAction(partner, m_owner, eInventoryActionType.Trade, m_partnerWindow.TradeMoney);
                         }
 
-					    m_owner.Out.SendMessage("You don't have enough money.", eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
-						partner.Out.SendMessage(m_owner.Name + " doesn't have enough money.", eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+					    m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Client.Account.Language, "Trade.NotEnoughMoney.Self"), eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+						partner.Out.SendMessage(LanguageMgr.GetTranslation(partner.Client.Account.Language, "Trade.NotEnoughMoney.Other", m_owner.Name), eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
 					}
 					if (!partnerEnoughMoney)
 					{
@@ -447,8 +448,8 @@ namespace DOL.GS
                             InventoryLogging.LogInventoryAction(m_owner, partner, eInventoryActionType.Trade, TradeMoney);
                         }
 
-					    partner.Out.SendMessage("You don't have enough money.", eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
-						m_owner.Out.SendMessage(partner.Name + " doesn't have enough money.", eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+					    partner.Out.SendMessage(LanguageMgr.GetTranslation(partner.Client.Account.Language, "Trade.NotEnoughMoney.Self"), eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+						m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Client.Account.Language, "Trade.NotEnoughMoney.Other", partner.Name), eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
 					}
 
 					//Update our tradewindow and return
@@ -458,7 +459,7 @@ namespace DOL.GS
 
 				if(m_combine == true)
 				{
-					GamePlayer crafter = (m_recipiant == true ? m_owner : partner);					
+					GamePlayer crafter = (m_recipiant == true ? m_owner : partner);
                     // --------------------------------------------------------------
                     // Luhz Crafting Update:
                     // Players may now have any, and all, "primary" crafting skills.
@@ -503,7 +504,7 @@ namespace DOL.GS
 				}
 				else
 				{
-					//Calculate the count of items 
+					//Calculate the count of items
 					int myTradeItemsCount = m_tradeItems.Count;
 					int partnerTradeItemsCount = m_partnerWindow.TradeItems.Count;
 
@@ -518,13 +519,13 @@ namespace DOL.GS
 					{
 						if (!enoughSpace)
 						{
-							m_owner.Out.SendMessage("You don't have enough space in your inventory.", eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
-							partner.Out.SendMessage(m_owner.Name + " doesn't have enough space in his inventory.", eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+							m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Client.Account.Language, "Trade.NotEnoughSpace.Self"), eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+							partner.Out.SendMessage(LanguageMgr.GetTranslation(partner.Client.Account.Language, "Trade.NotEnoughSpace.Other", m_owner.Name), eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
 						}
 						if (!partnerEnoughSpace)
 						{
-							partner.Out.SendMessage("You don't have enough space in your inventory.", eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
-							m_owner.Out.SendMessage(partner.Name + " doesn't have enough space in his inventory.", eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+							partner.Out.SendMessage(LanguageMgr.GetTranslation(partner.Client.Account.Language, "Trade.NotEnoughSpace.Self"), eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+							m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Client.Account.Language, "Trade.NotEnoughSpace.Other", partner.Name), eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
 						}
 
 						//Update our tradewindow and return
@@ -673,8 +674,8 @@ namespace DOL.GS
 					m_changesCount--;
 					m_partnerWindow.m_changesCount--;
 
-					m_owner.Out.SendMessage("Trade Completed. " + myTradeItemsCount + " items for " + partnerTradeItemsCount + " items.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-					partner.Out.SendMessage("Trade Completed. " + partnerTradeItemsCount + " items for " + myTradeItemsCount + " items.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Client.Account.Language, "Trade.Completed", myTradeItemsCount, partnerTradeItemsCount), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					partner.Out.SendMessage(LanguageMgr.GetTranslation(partner.Client.Account.Language, "Trade.Completed", partnerTradeItemsCount, myTradeItemsCount), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
 					m_owner.Inventory.SaveIntoDatabase(m_owner.InternalID);
 					partner.Inventory.SaveIntoDatabase(partner.InternalID);
@@ -691,8 +692,8 @@ namespace DOL.GS
 				if (TradeMoney > 0 || m_partnerWindow.TradeMoney > 0)
 				{
 					//Now add the money
-					m_owner.AddMoney(m_partnerWindow.TradeMoney, "You get {0}.");
-					partner.AddMoney(TradeMoney, "You get {0}.");
+					m_owner.AddMoney(m_partnerWindow.TradeMoney, LanguageMgr.GetTranslation(m_owner.Client.Account.Language, "Trade.Money.ReceiveFormat"));
+					partner.AddMoney(TradeMoney, LanguageMgr.GetTranslation(partner.Client.Account.Language, "Trade.Money.ReceiveFormat"));
                     InventoryLogging.LogInventoryAction(m_owner, partner, eInventoryActionType.Trade, TradeMoney);
                     InventoryLogging.LogInventoryAction(partner, m_owner, eInventoryActionType.Trade, m_partnerWindow.TradeMoney);
 					m_owner.SaveIntoDatabase();

@@ -24,13 +24,13 @@ namespace DOL.GS.Commands
                 client.Player.Emote(eEmote.Knock);
 
                 foreach (GamePlayer player in house.GetAllPlayersInHouse())
-                    DisplayMessage(player, $"{client.Player.Name} is knocking on the door.");
+                    DisplayMessage(player, T(player, "PlayerCommands.Knock.Other", client.Player.Name));
 
                 done = true;
             }
 
             if (done)
-                DisplayMessage(client.Player, "You knock on the door.");
+                DisplayMessage(client.Player, T(client.Player, "PlayerCommands.Knock.Self"));
         }
     }
 }

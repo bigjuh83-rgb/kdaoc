@@ -7,6 +7,7 @@ using DOL.GS;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerProperties;
 using DOL.GS.Styles;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -21,7 +22,7 @@ namespace DOL.GS
         {
             int numPlayers = AwardEpicEncounterKillPoint();
             String message = String.Format("{0} has been slain by a force of {1} warriors!", Name, numPlayers);
-            NewsMgr.CreateNews(message, killer.Realm, eNewsType.PvE, true);
+            NewsMgr.CreateNews(message, killer?.Realm ?? eRealm.None, eNewsType.PvE, true);
 
             if (Properties.GUILD_MERIT_ON_DRAGON_KILL > 0)
             {
@@ -72,7 +73,7 @@ namespace DOL.GS
                         else
                             truc = ((source as GameSummonedPet).Owner as GamePlayer);
                         if (truc != null)
-                            truc.Out.SendMessage(Name + " is immune to any damage!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                            truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.QueenKula.ImmuneToDamage", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
                         base.TakeDamage(source, damageType, 0, 0);
                         return;
                     }
@@ -96,7 +97,7 @@ namespace DOL.GS
                                 {
                                     npc.Health += damageAmount + criticalAmount;
                                     if (truc != null)
-                                        truc.Out.SendMessage("Your damage is healing King Tuscar!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                                        truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.KingTuscar.DamageHeals"), eChatType.CT_System, eChatLoc.CL_ChatWindow);
                                 }
                             }
                         }
@@ -129,18 +130,18 @@ namespace DOL.GS
             get { return 300000; }
         }
         #region BroadcastMessage & Die()
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(String key, params object[] args)
         {
             foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
         public static int QueenKulaCount = 0;
         public override void Die(GameObject killer)//on kill generate orbs
         {
             if(KingTuscar.KingTuscarCount > 0)
-                BroadcastMessage(String.Format("As the Queen Kula dies, King Tuscar scream in rage and gather more strength!"));
+                BroadcastMessage("NamedMobs.QueenKula.KingRage");
 
             --QueenKulaCount;
             bool canReportNews = true;
@@ -165,7 +166,7 @@ namespace DOL.GS
         #region AddToWorld
         public override bool AddToWorld()
         {
-            INpcTemplate npcTemplate = NpcTemplateMgr.GetTemplate(60165083); 
+            INpcTemplate npcTemplate = NpcTemplateMgr.GetTemplate(60165083);
             LoadTemplate(npcTemplate);
             Faction = FactionMgr.GetFactionByID(140);
             RespawnInterval = Properties.SET_SI_EPIC_ENCOUNTER_RESPAWNINTERVAL * 60000;//1min is 60000 miliseconds
@@ -252,11 +253,11 @@ namespace DOL.AI.Brain
             AggroRange = 600;
             ThinkInterval = 1500;
         }
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(String key, params object[] args)
         {
             foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
         #region Teleport Player & PlayerInCenter()
@@ -301,7 +302,7 @@ namespace DOL.AI.Brain
                     {
                         GamePlayer Target = (GamePlayer)Port_Enemys[Util.Random(0, Port_Enemys.Count - 1)];
                         RandomTarget = Target;
-                        if (RandomTarget.IsAlive && RandomTarget != null)
+                        if (RandomTarget != null && RandomTarget.IsAlive)
                         {
                             RandomTarget.MoveTo(160, 34128, 56095, 11898, 2124);
                             Port_Enemys.Remove(RandomTarget);
@@ -339,7 +340,7 @@ namespace DOL.AI.Brain
                                 break;
                             case 2:
                                 {//check here if target is not mezzed already or rooted or got snare immunity
-                                    if (!player.effectListComponent.ContainsEffectForEffectType(eEffect.Mez) && !player.effectListComponent.ContainsEffectForEffectType(eEffect.MovementSpeedDebuff) 
+                                    if (!player.effectListComponent.ContainsEffectForEffectType(eEffect.Mez) && !player.effectListComponent.ContainsEffectForEffectType(eEffect.MovementSpeedDebuff)
                                     && !player.effectListComponent.ContainsEffectForEffectType(eEffect.SnareImmunity))
                                     {
                                         Body.CastSpell(Root, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));//cast root
@@ -403,9 +404,7 @@ namespace DOL.AI.Brain
                 PlayerInCenter();//method that check if player enter to frozen circle
                 if (message1 == false)
                 {
-                    BroadcastMessage(String.Format("Queen Kula grins maliciously, 'So you got past all my Hrimthursa Guardians!" +
-                        " These Hrimthursa are useless and arrogant! I'm going to show you what I've been wanting to teach you for a long time." +
-                        " The merciless who are not afraid of death will survive in this brutal world! I am merciless I'm not afraid of death!'"));
+                    BroadcastMessage("NamedMobs.QueenKula.GuardianTaunt");
                     message1 = true;
                 }
                 if (IsTargetPicked == false)
@@ -561,7 +560,7 @@ namespace DOL.GS
                         else
                             truc = ((source as GameSummonedPet).Owner as GamePlayer);
                         if (truc != null)
-                            truc.Out.SendMessage(Name + " is immune to any damage!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                            truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.KingTuscar.ImmuneToDamage", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
                         base.TakeDamage(source, damageType, 0, 0);
                         return;
                     }
@@ -573,7 +572,7 @@ namespace DOL.GS
                         truc = (source as GamePlayer);
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
-                    
+
                     foreach (GameNPC npc in GetNPCsInRadius(5000))
                     {
                         if (npc != null)
@@ -584,7 +583,7 @@ namespace DOL.GS
                                 {
                                     npc.Health += damageAmount + criticalAmount;
                                     if (truc != null)
-                                        truc.Out.SendMessage("Your damage is healing Queen Kula!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                                        truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.QueenKula.DamageHeals"), eChatType.CT_System, eChatLoc.CL_ChatWindow);
                                 }
                             }
                         }
@@ -706,7 +705,7 @@ namespace DOL.GS
             SaveIntoDatabase();
             base.AddToWorld();
             return true;
-        }       
+        }
         #endregion
         #region Spells
         private Spell m_Hammers_aoe;
@@ -874,11 +873,11 @@ namespace DOL.AI.Brain
             ThinkInterval = 1500;
         }
         #region BroadcastMessage & OnAttackedByEnemy()
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(String key, params object[] args)
         {
             foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
         public static bool message2 = false;
@@ -930,13 +929,12 @@ namespace DOL.AI.Brain
             {
                 if (message2 == false)
                 {
-                    BroadcastMessage(String.Format("King Tuscar raises his weapon and yells, 'Kula wields the finest weapon I have ever made!" +
-                        " And the weapon I forged for myself is almost as good in combat! Death comes swiftly with these two weapons!'"));
+                    BroadcastMessage("NamedMobs.KingTuscar.WeaponTaunt");
                     message2 = true;
                 }
                 if(Body.HealthPercent<=50 && TuscarRage==false)
                 {
-                    BroadcastMessage(String.Format("King Tuscar rages and gains strength from Odin!"));
+                    BroadcastMessage("NamedMobs.KingTuscar.OdinRage");
                     TuscarRage = true;
                 }
                 if (Body.TargetObject != null)

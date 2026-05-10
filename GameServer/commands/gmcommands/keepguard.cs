@@ -48,7 +48,7 @@ namespace DOL.GS.Commands
 							DisplaySyntax(client);
 							return;
 						}
-						
+
 						switch (args[2].ToLower())
 						{
 							#region Lord
@@ -132,7 +132,7 @@ namespace DOL.GS.Commands
 								{
 									if (args.Length < 4)
 									{
-										DisplayMessage(client, "You need to provide a name for this patrol.");
+										DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.KeepGuard.Create.PatrolNameRequired"));
 										return;
 									}
 
@@ -140,7 +140,7 @@ namespace DOL.GS.Commands
 
 									if (args.Length < 5)
 									{
-										DisplayMessage(client, "You need to provide the type of keep this patrol works with.");
+										DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.KeepGuard.Create.KeepTypeRequired"));
 										int i = 0;
 										foreach (string str in Enum.GetNames(typeof(Keeps.AbstractGameKeep.eKeepType)))
 										{
@@ -156,7 +156,7 @@ namespace DOL.GS.Commands
 									}
 									catch
 									{
-										DisplayMessage(client, "Type of keep specified was not valid.");
+										DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.KeepGuard.Create.InvalidKeepType"));
 										return;
 									}
 
@@ -173,7 +173,7 @@ namespace DOL.GS.Commands
 									p.SpawnPosition = PositionMgr.CreatePatrolPosition(p.PatrolID, c, client.Player, keepType);
 									p.PatrolID = p.SpawnPosition.TemplateID;
 									p.InitialiseGuards();
-									DisplayMessage(client, "Patrol created for Keep Type " + Enum.GetName(typeof(AbstractGameKeep.eKeepType), keepType));
+									DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.KeepGuard.Create.PatrolCreatedForKeepType", Enum.GetName(typeof(AbstractGameKeep.eKeepType), keepType)));
 									return;
 								}
 							#endregion Patrol
@@ -220,7 +220,7 @@ namespace DOL.GS.Commands
 								list = new DbKeepPosition[4];
 								component.Positions[pos.TemplateID] = list;
 							}
-								
+
 							list[pos.Height] = pos;
 							component.LoadPositions();
 							component.FillPositions();
@@ -235,7 +235,7 @@ namespace DOL.GS.Commands
 							guard.Realm = guard.CurrentZone.Realm;
                             guard.LoadedFromScript = false;
                             guard.SaveIntoDatabase();
-							
+
 							foreach (AbstractArea area in guard.CurrentAreas)
 							{
 								if (area is KeepArea)
@@ -283,7 +283,7 @@ namespace DOL.GS.Commands
 									byte height = byte.Parse(args[3]);
 									//height = KeepMgr.GetHeightFromLevel(height);
 									GameKeepGuard guard = client.Player.TargetObject as GameKeepGuard;
-									
+
 									if (PositionMgr.GetPosition(guard) != null)
 									{
 										DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.KeepGuard.Position.PAlreadyAss", height));
@@ -431,7 +431,7 @@ namespace DOL.GS.Commands
 
 									PositionMgr.FillPositions();
 
-									DisplayMessage(client, "Patrol groups initialized!");
+									DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.KeepGuard.Path.PatrolGroupsInitialized"));
 
 									break;
 								}

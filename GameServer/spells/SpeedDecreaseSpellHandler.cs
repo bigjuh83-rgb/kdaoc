@@ -1,6 +1,7 @@
 using System;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -27,14 +28,14 @@ namespace DOL.GS.Spells
                 target.effectListComponent.ContainsEffectForEffectType(eEffect.SnareImmunity) ||
                 target.effectListComponent.ContainsEffectForEffectType(eEffect.SpeedOfSound))
             {
-                MessageToCaster("Your target is immune to this effect!", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.TargetImmuneToEffect"), eChatType.CT_SpellResisted);
                 OnSpellNegated(target, SpellNegatedReason.Immune);
                 return;
             }
 
             if (target.EffectList.GetOfType<ChargeEffect>() != null)
             {
-                MessageToCaster($"{target.Name} is moving to fast for this spell to have any effect!", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.TargetMovingTooFast", target.Name), eChatType.CT_SpellResisted);
                 return;
             }
 
@@ -75,7 +76,9 @@ namespace DOL.GS.Spells
             if (!Caster.Chance(RandomDeckEvent.CriticalChance, Math.Min(50, criticalChance)))
                 return 1.0;
 
-            (Caster as GamePlayer)?.Out.SendMessage($"Your snare is doubly effective!", eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+            if (Caster is GamePlayer playerCaster)
+                playerCaster.Out.SendMessage(LanguageMgr.GetTranslation(playerCaster.Client.Account.Language, "SpeedDecreaseSpellHandler.SnareDoublyEffective"), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+
             return 2.0;
         }
     }

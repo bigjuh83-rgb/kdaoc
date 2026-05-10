@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -96,7 +97,7 @@ namespace DOL.GS
 
 				GameInventoryItem trophy = new GameInventoryItem(template);
                 player.Inventory.AddItem(eInventorySlot.FirstEmptyBackpack, trophy);
-				OwnerGuild.SendMessageToGuildMembers(player.Name + " of " + GlobalConstants.RealmToName(player.Realm) + " has captured your guild banner!", eChatType.CT_Guild, eChatLoc.CL_SystemWindow);
+					OwnerGuild.SendTranslatedMessageToGuildMembers("GuildBanner.Captured", eChatType.CT_Guild, eChatLoc.CL_SystemWindow, player.Name, GlobalConstants.RealmToName(player.Realm));
 				OwnerGuild.GuildBannerLostTime = DateTime.Now;
 			}
 			else
@@ -106,7 +107,7 @@ namespace DOL.GS
 				// A friendly player has picked up the banner.
 				if (OwnerGuild != null)
 				{
-					OwnerGuild.SendMessageToGuildMembers(player.Name + " has recovered your guild banner!", eChatType.CT_Guild, eChatLoc.CL_SystemWindow);
+						OwnerGuild.SendTranslatedMessageToGuildMembers("GuildBanner.Recovered", eChatType.CT_Guild, eChatLoc.CL_SystemWindow, player.Name);
 				}
 
 				if (SummonPlayer != null)
@@ -156,7 +157,7 @@ namespace DOL.GS
 				{
 					// banner was dropped and not picked up, must be re-purchased
 					OwnerGuild.GuildBanner = false;
-					OwnerGuild.SendMessageToGuildMembers("Your guild banner has been lost!", eChatType.CT_Guild, eChatLoc.CL_SystemWindow);
+					OwnerGuild.SendTranslatedMessageToGuildMembers("GuildBanner.Lost", eChatType.CT_Guild, eChatLoc.CL_SystemWindow);
 					OwnerGuild = null;
 				}
 			}

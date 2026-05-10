@@ -29,7 +29,7 @@ namespace DOL.GS
                 if (damageType == eDamageType.Cold) //take no damage
                 {
                     this.Health += this.MaxHealth / 5; //heal himself if damage is cold
-                    BroadcastMessage(String.Format("Icelord Kvasir says, 'aahhhh thank you " + source.Name +" for healing me !'"));
+                    BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Kvasir.HealedByCold", source.Name));
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
                 }
@@ -98,7 +98,7 @@ namespace DOL.GS
             {
                 GamePlayer player = killer as GamePlayer;
                 if(player != null)
-                    BroadcastMessage(String.Format("my kind will avenge me! You won't make out of here alive " + player.CharacterClass.Name+ "!"));
+                    BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Kvasir.DeathThreat", player.CharacterClass.Name));
             }
             var prepareMezz = TempProperties.GetProperty<ECSGameTimer>("kvasir_prepareMezz");//cancel message
             if (prepareMezz != null)
@@ -159,7 +159,7 @@ namespace DOL.AI.Brain
                     GamePlayer player = Body.TargetObject as GamePlayer;
                     if (player != null && player.IsAlive)
                     {
-                        BroadcastMessage(String.Format("To come this far... only to die a horrible death! Huh! Do you not wish that you were taking on a safer endavour at this moment? You realize of course that all of your efforts will come to naught as you are about to die " + player.CharacterClass.Name + "?"));
+                        BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Kvasir.HorribleDeath", player.CharacterClass.Name));
                         AggroText = true;
                     }
                 }
@@ -222,7 +222,7 @@ namespace DOL.AI.Brain
         }
         private int PrepareMezz(ECSGameTimer timer)
         {
-            BroadcastMessage(String.Format("{0} lets loose a primal scream so intense that it resonates in the surrounding ice for several seconds. Many in the immediate vicinite are stunned by the sound!", Body.Name));
+            BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Kvasir.PrimalScream", Body.Name));
             new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(CastMezz), 2000);
             return 0;
         }
@@ -371,8 +371,7 @@ namespace DOL.AI.Brain
         }
         private int Announce(ECSGameTimer timer)
         {
-            BroadcastMessage("A low rumble echoes throughout the Tuscarian Glacier! Icicles resonating with the sound break off from the ceiling and shatter on the floors!" +
-                            "The rumble grows louder causing small cracks to form in the walls! It sounds as though there is a swarm of giants on the move somewhere in the glacier!");
+            BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Kvasir.TunnelRumble"));
             new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(RemoveMob), 300);
             return 0;
         }

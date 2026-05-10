@@ -1,0 +1,20 @@
+﻿# Recharger NPC
+
+## Examine
+Scripts.Recharger.GetExamineMessages:			{0}을(를) 살펴봅니다. {1}은(는) {2}이며 장비를 재충전할 수 있습니다.
+
+## Interact
+Scripts.Recharger.Interact:				무기나 방어구를 재충전해 드릴 수 있습니다. 재충전할 아이템을 건네주시면 약간의 비용으로 손봐 드리죠.
+
+## Receiving
+Scripts.Recharger.ReceiveItem.CantThat:			그건 재충전할 수 없습니다.
+Scripts.Recharger.RechargerDialogResponse.InvalidItem:	잘못된 아이템입니다.
+Scripts.Recharger.ReceiveItem.StackedObjects:		{0}은(는) 중첩된 오브젝트를 재충전할 수 없습니다.
+Scripts.Recharger.ReceiveItem.Cost:			재충전하려면 {0}이(가) 듭니다. 수락하시겠습니까?
+Scripts.Recharger.RechargerDialogResponse.Decline:	{0} 재충전을 거절했습니다.
+Scripts.Recharger.RechargerDialogResponse.NotMoney:	돈이 부족합니다.
+Scripts.Recharger.RechargerDialogResponse.GiveMoney:	{0}에게 {1}을(를) 건넸습니다.
+
+## Recharging
+Scripts.Recharger.RechargerDialogResponse.FullyCharged:	됐습니다. 이제 완전히 충전되었습니다!
+Scripts.Recharger.ReceiveItem.FullyCharged:		아이템이 완전히 충전되어 있습니다!

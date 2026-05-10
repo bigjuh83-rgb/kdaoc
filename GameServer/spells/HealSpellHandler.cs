@@ -2,6 +2,7 @@ using System;
 using DOL.AI.Brain;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -75,13 +76,13 @@ namespace DOL.GS.Spells
 
             if (!target.IsAlive)
             {
-                MessageToCaster($"{target.GetName(0, true)} is dead!", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "HealSpellHandler.TargetIsDead", target.GetName(0, true)), eChatType.CT_SpellResisted);
                 return false;
             }
 
             if (affectedByDisease && target.IsDiseased)
             {
-                MessageToCaster("Your target is diseased!", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "HealSpellHandler.TargetDiseased"), eChatType.CT_SpellResisted);
                 amount *= 0.5;
             }
 
@@ -168,9 +169,9 @@ namespace DOL.GS.Spells
                 if (Spell.Pulse == 0)
                 {
                     if (ShouldSendMessageAsSelfHeal(Caster, target))
-                        MessageToCaster("You are fully healed.", eChatType.CT_SpellResisted);
+                        MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "HealSpellHandler.YouFullyHealed"), eChatType.CT_SpellResisted);
                     else
-                        MessageToCaster($"{target.GetName(0, true)} is fully healed.", eChatType.CT_SpellResisted);
+                        MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "HealSpellHandler.TargetFullyHealed", target.GetName(0, true)), eChatType.CT_SpellResisted);
                 }
 
                 return false;
@@ -178,22 +179,22 @@ namespace DOL.GS.Spells
 
             if (ShouldSendMessageAsSelfHeal(Caster, target))
             {
-                MessageToCaster($"You heal yourself for {preCriticalAmount:0} hit points.", eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "HealSpellHandler.HealSelf", preCriticalAmount), eChatType.CT_Spell);
 
                 if (effectiveAmount < amount)
-                    MessageToCaster("You are fully healed.", eChatType.CT_Spell);
+                    MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "HealSpellHandler.YouFullyHealed"), eChatType.CT_Spell);
             }
             else
             {
-                MessageToCaster($"You heal {target.GetName(0, false)} for {preCriticalAmount:0} hit points!", eChatType.CT_Spell);
-                MessageToLiving(target, $"You are healed by {m_caster.GetName(0, false)} for {effectiveAmount:0} hit points.", eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "HealSpellHandler.HealTarget", target.GetName(0, false), preCriticalAmount), eChatType.CT_Spell);
+                MessageToLiving(target, LanguageMgr.GetTranslation((target as GamePlayer)?.Client.Account.Language, "HealSpellHandler.HealedBy", m_caster.GetName(0, false), effectiveAmount), eChatType.CT_Spell);
 
                 if (effectiveAmount < amount)
-                    MessageToCaster($"{target.GetName(0, true)} is fully healed.", eChatType.CT_Spell);
+                    MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "HealSpellHandler.TargetFullyHealed", target.GetName(0, true)), eChatType.CT_Spell);
             }
 
             if (effectiveAmount > 0 && criticalAmount > 0)
-                MessageToCaster($"You heal for an extra {criticalAmount:0} hit points! ({criticalChance:0.##}%)", eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "HealSpellHandler.CriticalHeal", criticalAmount, criticalChance), eChatType.CT_Spell);
 
             foreach (GameLiving attacker in target.attackComponent.AttackerTracker.Attackers)
             {

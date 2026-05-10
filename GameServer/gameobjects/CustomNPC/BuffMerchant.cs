@@ -48,13 +48,13 @@ namespace DOL.GS
 		public void BuffPlayer(GamePlayer player, Spell spell, SpellLine spellLine)
 		{
 			if (m_buffs == null) m_buffs = new Queue();
-			
+
 			m_buffs.Enqueue(new Container(spell, spellLine, player));
 
 			//don't forget his pet !
-			if(BUFFS_PLAYER_PET && player.ControlledBrain != null) 
+			if(BUFFS_PLAYER_PET && player.ControlledBrain != null)
 			{
-				if(player.ControlledBrain.Body != null) 
+				if(player.ControlledBrain.Body != null)
 				{
 					m_buffs.Enqueue(new Container(spell, spellLine, player.ControlledBrain.Body));
 				}
@@ -114,7 +114,7 @@ namespace DOL.GS
 			{
 				if (m_MerchOtherSpellLine == null)
 					m_MerchOtherSpellLine = new SpellLine("MerchOtherSpellLine", "BuffMerch Spells", "unknown", true);
-				
+
 				return m_MerchOtherSpellLine;
 			}
 		}
@@ -649,7 +649,7 @@ namespace DOL.GS
 					spell.Target = eSpellTarget.REALM.ToString();
 					spell.Type = eSpellType.CombatSpeedBuff.ToString();
 					spell.EffectGroup = 100;
-					
+
 					m_haste = new Spell(spell, 50);
 				}
 				return m_haste;
@@ -685,7 +685,7 @@ namespace DOL.GS
 				return m_powereg;
 			}
 		}
-	   
+
 		/// <summary>
 		/// Merch Damage Add buff
 		/// </summary>
@@ -715,7 +715,7 @@ namespace DOL.GS
 				return m_dmgadd;
 			}
 		}
-		
+
 		/// <summary>
 		/// Merch HP Regen buff
 		/// </summary>
@@ -744,7 +744,7 @@ namespace DOL.GS
 				return m_hpRegen;
 			}
 		}
-		
+
 		/// <summary>
 		/// Merch Heal buff
 		/// </summary>
@@ -818,13 +818,13 @@ namespace DOL.GS
 		#endregion
 
 		private bool isBounty;
-		
+
 		public override bool Interact(GamePlayer player)
 		{
 			TradeItems = new MerchantTradeItems("BuffTokens");
 			if (!base.Interact(player)) return false;
 			TurnTo(player, 10000);
-			player.Out.SendMessage("Greetings, " + player.Name + ". The King has instructed me to strengthen you so that you may defend the lands with valor. Simply hand me the token for the enhancement you desire, and I will empower you accordingly. Do you wish to purchase tokens with [Gold] or [Bounty Points]?", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+			player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "BuffMerchant.Greeting", player.Name), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			isBounty = false;
 			SendMerchantWindow(player);
 			return true;
@@ -840,6 +840,7 @@ namespace DOL.GS
 			switch (str)
 			{
 				case "Gold":
+				case "골드":
 					{
 						TurnTo(player, 10000);
 						isBounty = false;
@@ -848,6 +849,7 @@ namespace DOL.GS
 					}
 					break;
 				case "Bounty Points":
+				case "바운티 포인트":
 					{
 						TurnTo(player, 10000);
 						isBounty = true;
@@ -950,13 +952,21 @@ namespace DOL.GS
 		}
 
 		#region GiveTokens
+		private void SendFightWell(GamePlayer player)
+		{
+			player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "BuffMerchant.FightWell", player.RaceName), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+		}
+
 		public override bool ReceiveItem(GameLiving source, DbInventoryItem item)
 		{
 			GamePlayer t = source as GamePlayer;
-			
+
+			if (t == null)
+				return false;
+
 			if (GetDistanceTo(t) > WorldMgr.INTERACT_DISTANCE)
 			{
-				((GamePlayer)source).Out.SendMessage("You are too far away to give anything to " + GetName(0, false) + ".", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				t.Out.SendMessage(LanguageMgr.GetTranslation(t.Client.Account.Language, "BuffMerchant.TooFarAway", GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return false;
 			}
 			if (t != null && item != null)
@@ -994,7 +1004,7 @@ namespace DOL.GS
 					//BuffPlayer(t, MerchEndRegenBuff, MerchSpecSpellLine);
 					//BuffPlayer(t, MerchHealBuff, MerchSpecSpellLine);
 					#endregion Non-live (commented out)
-					t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					SendFightWell(t);
 					t.Inventory.RemoveItem(item);
 					return true;
 				}
@@ -1014,7 +1024,7 @@ namespace DOL.GS
 						BuffPlayer(t, MerchDexQuiBuff, MerchSpecSpellLine);
 						BuffPlayer(t, MerchAcuityBuff, MerchSpecSpellLine);
 					}
-					t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					SendFightWell(t);
 					t.Inventory.RemoveItem(item);
 					return true;
 
@@ -1035,7 +1045,7 @@ namespace DOL.GS
 						BuffPlayer(t, MerchDexBuff, MerchBaseSpellLine);
 						BuffPlayer(t, MerchConBuff, MerchBaseSpellLine);
 					}
-					t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					SendFightWell(t);
 					t.Inventory.RemoveItem(item);
 					return true;
 				}
@@ -1049,7 +1059,7 @@ namespace DOL.GS
 					{
 						BuffPlayer(t, MerchStrBuff, MerchBaseSpellLine);
 					}
-					t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					SendFightWell(t);
 					t.Inventory.RemoveItem(item);
 					return true;
 				}
@@ -1063,7 +1073,7 @@ namespace DOL.GS
 					{
 						BuffPlayer(t, MerchConBuff, MerchBaseSpellLine);
 					}
-					t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					SendFightWell(t);
 					t.Inventory.RemoveItem(item);
 					return true;
 				}
@@ -1077,7 +1087,7 @@ namespace DOL.GS
 					{
 						BuffPlayer(t, MerchDexBuff, MerchBaseSpellLine);
 					}
-					t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					SendFightWell(t);
 					t.Inventory.RemoveItem(item);
 					return true;
 				}
@@ -1091,7 +1101,7 @@ namespace DOL.GS
 					{
 						BuffPlayer(t, MerchBaseAFBuff, MerchBaseSpellLine);
 					}
-					t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					SendFightWell(t);
 					t.Inventory.RemoveItem(item);
 					return true;
 				}
@@ -1105,7 +1115,7 @@ namespace DOL.GS
 					{
 						BuffPlayer(t, MerchStrConBuff, MerchSpecSpellLine);
 					}
-					t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					SendFightWell(t);
 					t.Inventory.RemoveItem(item);
 					return true;
 				}
@@ -1119,7 +1129,7 @@ namespace DOL.GS
 					{
 						BuffPlayer(t, MerchDexQuiBuff, MerchSpecSpellLine);
 					}
-					t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					SendFightWell(t);
 					t.Inventory.RemoveItem(item);
 					return true;
 				}
@@ -1133,7 +1143,7 @@ namespace DOL.GS
 					{
 						BuffPlayer(t, MerchAcuityBuff, MerchSpecSpellLine);
 					}
-					t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					SendFightWell(t);
 					t.Inventory.RemoveItem(item);
 					return true;
 				}
@@ -1147,14 +1157,14 @@ namespace DOL.GS
 					{
 						BuffPlayer(t, MerchSpecAFBuff, MerchSpecSpellLine);
 					}
-					t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					SendFightWell(t);
 					t.Inventory.RemoveItem(item);
 					return true;
 				}
 				if (item.Id_nb == "Haste_Buff_Token" || item.Id_nb == "BPHaste_Buff_Token")
 				{
 					BuffPlayer(t, MerchHasteBuff, MerchSpecSpellLine);
-					t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					SendFightWell(t);
 					t.Inventory.RemoveItem(item);
 					return true;
 				}
@@ -1163,21 +1173,21 @@ namespace DOL.GS
 				if (item.Id_nb == "PowerReg_Buff_Token")
 				{
 					BuffPlayer(t, MerchPoweregBuff, MerchSpecSpellLine);
-					t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					SendFightWell(t);
 					t.Inventory.RemoveItem(item);
 					return true;
 				}
 				if (item.Id_nb == "DmgAdd_Buff_Token")
 				{
 					BuffPlayer(t, MerchDmgaddBuff, MerchSpecSpellLine);
-					t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					SendFightWell(t);
 					t.Inventory.RemoveItem(item);
 					return true;
 				}
 				if (item.Id_nb == "HPReg_Buff_Token")
 				{
 					BuffPlayer(t, MerchHPRegenBuff, MerchSpecSpellLine);
-					t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					SendFightWell(t);
 					t.Inventory.RemoveItem(item);
 					return true;
 				}
@@ -1188,14 +1198,14 @@ namespace DOL.GS
 			/*if (item.Id_nb == "EnduReg_Buff_Token")
 			{
 				BuffPlayer(t, MerchEndRegenBuff, MerchSpecSpellLine);
-				t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				SendFightWell(t);
 				t.Inventory.RemoveItem(item);
 				return true;
 			}
 			if (item.Id_nb == "Heal_Buff_Token")
 			{
 				BuffPlayer(t, MerchHealBuff, MerchSpecSpellLine);
-				t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				SendFightWell(t);
 				t.Inventory.RemoveItem(item);
 				return true;
 			}
@@ -1207,7 +1217,7 @@ namespace DOL.GS
 				BuffPlayer(t, MerchHPRegenBuff, MerchSpecSpellLine);
 				//BuffPlayer(t, MerchEndRegenBuff, MerchSpecSpellLine);
 				BuffPlayer(t, MerchHealBuff, MerchSpecSpellLine);
-				t.Out.SendMessage("Fight well, " + t.RaceName + ".", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				SendFightWell(t);
 				t.Inventory.RemoveItem(item);
 				return true;
 			}
@@ -1231,9 +1241,9 @@ namespace DOL.GS.Items
 		{
 			if (!ServerProperties.Properties.LOAD_BUFF_TOKENS)
 				return;
-			
+
 			DbItemTemplate item;
-			
+
 			item = (DbItemTemplate)GameServer.Database.FindObjectByKey<DbItemTemplate>("Full_Buffs_Token");
 			if (item == null)
 			{
@@ -1252,7 +1262,7 @@ namespace DOL.GS.Items
 				if (log.IsDebugEnabled)
 					log.Debug("Added " + item.Id_nb);
 			}
-			
+
 			item = (DbItemTemplate)GameServer.Database.FindObjectByKey<DbItemTemplate>("Specialization_Buffs_Token");
 			if (item == null)
 			{
@@ -1271,7 +1281,7 @@ namespace DOL.GS.Items
 				if (log.IsDebugEnabled)
 					log.Debug("Added " + item.Id_nb);
 			}
-			
+
 			item = (DbItemTemplate)GameServer.Database.FindObjectByKey<DbItemTemplate>("Baseline_Buffs_Token");
 			if (item == null)
 			{
@@ -1290,7 +1300,7 @@ namespace DOL.GS.Items
 				if (log.IsDebugEnabled)
 					log.Debug("Added " + item.Id_nb);
 			}
-			
+
 			item = (DbItemTemplate)GameServer.Database.FindObjectByKey<DbItemTemplate>("Strength_Buff_Token");
 			if (item == null)
 			{
@@ -1328,7 +1338,7 @@ namespace DOL.GS.Items
 				if (log.IsDebugEnabled)
 					log.Debug("Added " + item.Id_nb);
 			}
-			
+
 			item = (DbItemTemplate)GameServer.Database.FindObjectByKey<DbItemTemplate>("Dexterity_Buff_Token");
 			if (item == null)
 			{
@@ -1385,7 +1395,7 @@ namespace DOL.GS.Items
 				if (log.IsDebugEnabled)
 					log.Debug("Added " + item.Id_nb);
 			}
-			
+
 			item = (DbItemTemplate)GameServer.Database.FindObjectByKey<DbItemTemplate>("DexQui_Buff_Token");
 			if (item == null)
 			{
@@ -1404,7 +1414,7 @@ namespace DOL.GS.Items
 				if (log.IsDebugEnabled)
 					log.Debug("Added " + item.Id_nb);
 			}
-			
+
 			item = (DbItemTemplate)GameServer.Database.FindObjectByKey<DbItemTemplate>("Acu_Buff_Token");
 			if (item == null)
 			{
@@ -1423,7 +1433,7 @@ namespace DOL.GS.Items
 				if (log.IsDebugEnabled)
 					log.Debug("Added " + item.Id_nb);
 			}
-			
+
 			item = (DbItemTemplate)GameServer.Database.FindObjectByKey<DbItemTemplate>("SpecAF_Buff_Token");
 			if (item == null)
 			{
@@ -1481,7 +1491,7 @@ namespace DOL.GS.Items
 				if (log.IsDebugEnabled)
 					log.Debug("Added " + item.Id_nb);
 			}
-			
+
 			item = (ItemTemplate)GameServer.Database.FindObjectByKey<ItemTemplate>("DmgAdd_Buff_Token");
 			if (item == null)
 			{
@@ -1500,7 +1510,7 @@ namespace DOL.GS.Items
 				if (log.IsDebugEnabled)
 					log.Debug("Added " + item.Id_nb);
 			}
-			
+
 			item = (ItemTemplate)GameServer.Database.FindObjectByKey<ItemTemplate>("PowerReg_Buff_Token");
 			if (item == null)
 			{
@@ -1519,7 +1529,7 @@ namespace DOL.GS.Items
 				if (log.IsDebugEnabled)
 					log.Debug("Added " + item.Id_nb);
 			}
-			
+
 			item = (ItemTemplate)GameServer.Database.FindObjectByKey<ItemTemplate>("HPReg_Buff_Token");
 			if (item == null)
 			{
@@ -1538,7 +1548,7 @@ namespace DOL.GS.Items
 				if (log.IsDebugEnabled)
 					log.Debug("Added " + item.Id_nb);
 			}
- 
+
 			item = (ItemTemplate)GameServer.Database.FindObjectByKey<ItemTemplate>("EnduReg_Buff_Token");
 			if (item == null)
 			{
@@ -1589,7 +1599,7 @@ namespace DOL.GS.Items
 		{
 			if (!ServerProperties.Properties.LOAD_BUFF_TOKENS)
 				return;
-			
+
 			DbItemTemplate item;
 
 			item = (DbItemTemplate)GameServer.Database.FindObjectByKey<DbItemTemplate>("BPFull_Buffs_Token");
@@ -1839,7 +1849,7 @@ namespace DOL.GS.Items
 				if (log.IsDebugEnabled)
 					log.Debug("Added " + item.Id_nb);
 			}
-			
+
 			item = (ItemTemplate)GameServer.Database.FindObjectByKey<ItemTemplate>("DmgAdd_Buff_Token");
 			if (item == null)
 			{
@@ -1858,7 +1868,7 @@ namespace DOL.GS.Items
 				if (log.IsDebugEnabled)
 					log.Debug("Added " + item.Id_nb);
 			}
-			
+
 			item = (ItemTemplate)GameServer.Database.FindObjectByKey<ItemTemplate>("PowerReg_Buff_Token");
 			if (item == null)
 			{
@@ -1877,7 +1887,7 @@ namespace DOL.GS.Items
 				if (log.IsDebugEnabled)
 					log.Debug("Added " + item.Id_nb);
 			}
-			
+
 			item = (ItemTemplate)GameServer.Database.FindObjectByKey<ItemTemplate>("HPReg_Buff_Token");
 			if (item == null)
 			{
@@ -1896,7 +1906,7 @@ namespace DOL.GS.Items
 				if (log.IsDebugEnabled)
 					log.Debug("Added " + item.Id_nb);
 			}
- 
+
 			item = (ItemTemplate)GameServer.Database.FindObjectByKey<ItemTemplate>("EnduReg_Buff_Token");
 			if (item == null)
 			{

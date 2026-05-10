@@ -51,10 +51,10 @@ namespace DOL.GS.Commands
 				}
 
 				var groupMembersCount = client.Player.Group.MemberCount;
-				
+
 				switch (command)
 				{
-					
+
 					// case "manual":
 					// 	{
 					// 		if (args.Length >= 4)
@@ -78,7 +78,7 @@ namespace DOL.GS.Commands
 					// 		playerlist.Add(switchPlayerSix);
 					// 		playerlist.Add(switchPlayerSeven);
 					// 		playerlist.Add(switchPlayerEight);
-					// 		
+					//
 					// 		int switchOneIndex = Convert.ToInt32(switchPlayerOne);
 					// 		int switchTwoIndex = Convert.ToInt32(switchPlayerTwo);
 					// 		int switchThreeIndex = Convert.ToInt32(switchPlayerThree);
@@ -87,9 +87,9 @@ namespace DOL.GS.Commands
 					// 		int switchSixIndex = Convert.ToInt32(switchPlayerSix);
 					// 		int switchSevenIndex = Convert.ToInt32(switchPlayerSeven);
 					// 		int switchEightIndex = Convert.ToInt32(switchPlayerEight);
-					// 		
-					// 		if (switchPlayerOne == string.Empty || switchPlayerTwo == string.Empty || switchPlayerThree == string.Empty 
-					// 		    || switchPlayerFour == string.Empty || switchPlayerFive == string.Empty || switchPlayerSix == string.Empty 
+					//
+					// 		if (switchPlayerOne == string.Empty || switchPlayerTwo == string.Empty || switchPlayerThree == string.Empty
+					// 		    || switchPlayerFour == string.Empty || switchPlayerFive == string.Empty || switchPlayerSix == string.Empty
 					// 		    || switchPlayerSeven == string.Empty || switchPlayerEight == string.Empty)
 					// 		{
 					// 			DisplayMessage(client, "Use '/groupsort manual <classname> <classname> - sorts the group in the order of classes entered.");
@@ -97,16 +97,16 @@ namespace DOL.GS.Commands
 					// 		}
 					//
 					// 		//var groupList = client.Player.Group.GetMembersInTheGroup();
-					// 		
+					//
 					// 		List<String> classlist = new List<String>();
 					// 		foreach (GamePlayer player in client.Player.Group.GetMembersInTheGroup())
 					// 			classlist.Add(player.CharacterClass.Name);
-					// 		
+					//
 					// 		playerlist.Clear();
 					// 		classlist.Clear();
 					// 		break;
 					// 	}
-					
+
 					case "switch":
 						if (args.Length >= 4)
 						{
@@ -115,28 +115,28 @@ namespace DOL.GS.Commands
 						}
 						if (switchX == string.Empty || switchY == string.Empty)
 						{
-							DisplayMessage(client, "Use '/groupsort switch <#> <#>' - switches two group members.");
+							DisplayMessage(client, T(client, "Scripts.Players.Groupsort.SwitchUsage"));
 							return;
 						}
-						
+
 						int switchXIndex = Convert.ToInt32(switchX);
 						int switchYIndex = Convert.ToInt32(switchY);
-						
+
 						if (switchXIndex == 1 || switchYIndex == 1)
 						{
-							DisplayMessage(client, "You can't switch the group leader, use /makeleader instead.");
+							DisplayMessage(client, T(client, "Scripts.Players.Groupsort.CannotSwitchLeader"));
 							return;
 						}
-						
+
 						var switchSource = Convert.ToByte(switchXIndex - 1);
 						var switchTarget = Convert.ToByte(switchYIndex - 1);
-						
+
 						if (groupMembersCount < switchSource || groupMembersCount < switchTarget)
 						{
-							DisplayMessage(client, "Use '/groupsort switch <#> <#>' - switches two group members.");
+							DisplayMessage(client, T(client, "Scripts.Players.Groupsort.SwitchUsage"));
 							return;
 						}
-						
+
 						var player1 = client.Player.Group.GetMemberByIndex(switchSource);
 						var player2 = client.Player.Group.GetMemberByIndex(switchTarget);
 

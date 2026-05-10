@@ -1,0 +1,15 @@
+﻿# Keeps
+
+## RvR Activity
+PlayerManager.BroadcastCapture.Captured:		{0}의 병력이 {1}을(를) 점령했습니다!
+PlayerManager.BroadcastCapture.CapturedR0:		{0}이(가) 점령되었습니다!
+PlayerManager.BroadcastClaim.Claimed:			{0}이(가) {1}을(를) 차지했습니다!
+PlayerManager.BroadcastRaize.Razed:			    {0}이(가) {1}의 병력에 의해 파괴되었습니다!
+PlayerManager.BroadcastRelease.LostControl:		{0}이(가) {1}의 통제권을 잃었습니다!
+
+## Relic Activity
+GameRelicPad.MountRelic.Captured:			    {0}이(가) {1}을(를) 획득했습니다.
+GameRelicPad.MountRelic.Stored:				    {1}의 {0}이(가) {2}을(를) {3}에 보관했습니다.
+GameRelicPad.MountRelic.Returned:			    {0}이(가) {1}(으)로 반환되었습니다.
+GameRelicPad.OnPlayerEnter.EmptyRelicPad:		이 렐릭을 놓으려면 비어 있는 {0} 렐릭 받침대를 찾아야 합니다.
+GameRelicPad.RemoveRelic.Removed:			    {1}의 {0}이(가) {3}에서 {2}을(를) 제거했습니다.

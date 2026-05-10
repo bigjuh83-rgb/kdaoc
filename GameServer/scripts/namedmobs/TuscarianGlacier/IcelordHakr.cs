@@ -6,6 +6,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -209,7 +210,7 @@ namespace DOL.AI.Brain
                         {
                             PortTarget.MoveTo(Body.CurrentRegionID, Body.X + Util.Random(-50, 50),
                             Body.Y + Util.Random(-50, 50), Body.Z + 220, Body.Heading);
-                            BroadcastMessage(String.Format("Icelord Hakr says, '" + PortTarget.Name +" Touchdown! That's a really cool way of putting it!'"));
+                            BroadcastMessage("NamedMobs.Hakr.Touchdown", PortTarget.Name);
                             PortTarget = null;
                         }
                     }
@@ -227,11 +228,11 @@ namespace DOL.AI.Brain
             spam_teleport = false;
             return 0;
         }
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(String key, params object[] args)
         {
             foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
         public static bool spam_teleport = false;
@@ -240,7 +241,7 @@ namespace DOL.AI.Brain
         {
             if (HakrAdd.IceweaverCount == 0 && spam_message1 == false && Body.IsAlive)
             {
-                BroadcastMessage(String.Format("Magic barrier fades away from Icelord Hakr!"));
+                BroadcastMessage("NamedMobs.Hakr.MagicBarrierFades");
                 spam_message1 = true;
             }
             if (!CheckProximityAggro())

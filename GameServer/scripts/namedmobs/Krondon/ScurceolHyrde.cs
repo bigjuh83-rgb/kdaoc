@@ -43,7 +43,7 @@ namespace DOL.GS
 						else
 							truc = ((source as GameSummonedPet).Owner as GamePlayer);
 						if (truc != null)
-							truc.Out.SendMessage(Name + " is overpowered and can't take any damage.", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+							truc.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.ScurceolHyrde.Overpowered", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
 						base.TakeDamage(source, damageType, 0, 0);
 						return;
 					}
@@ -284,7 +284,7 @@ namespace DOL.AI.Brain
 		}
 		private protected int TeleportPlayer(ECSGameTimer timer)
 		{
-			if (RandomTarget.IsAlive && RandomTarget != null)
+			if (RandomTarget != null && RandomTarget.IsAlive)
 			{
 				switch (Util.Random(1, 4))
 				{
@@ -294,14 +294,14 @@ namespace DOL.AI.Brain
 					case 4: RandomTarget.MoveTo(61, 51940, 18968, 16964, 26); break;
 				}
 				RandomTarget.TakeDamage(RandomTarget, eDamageType.Falling, RandomTarget.MaxHealth / 5, 0);
-				RandomTarget.Out.SendMessage("You take falling damage!", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+				RandomTarget.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(RandomTarget.Client.Account.Language, "NamedMobs.Common.FallingDamage"), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
 			}
 			new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(ResetPort), 1500);
 			return 0;
 		}
 		public override void OnAttackedByEnemy(AttackData ad)
 		{
-			if (ad != null && Util.Chance(25) && IsTargetPicked == false && ad.Attacker.IsAlive && ad.Attacker != null && ad.Attacker is GamePlayer)
+			if (ad != null && Util.Chance(25) && IsTargetPicked == false && ad.Attacker != null && ad.Attacker.IsAlive && ad.Attacker is GamePlayer)
 			{
 				RandomTarget = ad.Attacker as GamePlayer;
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(TeleportPlayer), Util.Random(8000, 15000));
@@ -415,7 +415,7 @@ namespace DOL.AI.Brain
 		}
 		private protected int TeleportPlayer(ECSGameTimer timer)
 		{
-			if (RandomTarget.IsAlive && RandomTarget != null)
+			if (RandomTarget != null && RandomTarget.IsAlive)
 			{
 				switch (Util.Random(1, 4))
 				{
@@ -425,14 +425,14 @@ namespace DOL.AI.Brain
 					case 4: RandomTarget.MoveTo(61, 51940, 18968, 16964, 26); break;
 				}
 				RandomTarget.TakeDamage(RandomTarget, eDamageType.Falling, RandomTarget.MaxHealth / 5, 0);
-				RandomTarget.Out.SendMessage("You take falling damage!", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+				RandomTarget.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(RandomTarget.Client.Account.Language, "NamedMobs.Common.FallingDamage"), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
 			}
 			new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(ResetPort), 1500);
 			return 0;
 		}
 		public override void OnAttackedByEnemy(AttackData ad)
 		{
-			if (ad != null && Util.Chance(25) && IsTargetPicked == false && ad.Attacker.IsAlive && ad.Attacker != null && ad.Attacker is GamePlayer)
+			if (ad != null && Util.Chance(25) && IsTargetPicked == false && ad.Attacker != null && ad.Attacker.IsAlive && ad.Attacker is GamePlayer)
 			{
 				RandomTarget = ad.Attacker as GamePlayer;
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(TeleportPlayer), Util.Random(8000, 15000));
@@ -546,7 +546,7 @@ namespace DOL.AI.Brain
 		}
 		private protected int TeleportPlayer(ECSGameTimer timer)
 		{
-			if (RandomTarget.IsAlive && RandomTarget != null)
+			if (RandomTarget != null && RandomTarget.IsAlive)
 			{
 				switch (Util.Random(1, 4))
 				{
@@ -556,14 +556,14 @@ namespace DOL.AI.Brain
 					case 4: RandomTarget.MoveTo(61, 51940, 18968, 16964, 26); break;
 				}
 				RandomTarget.TakeDamage(RandomTarget, eDamageType.Falling, RandomTarget.MaxHealth / 5, 0);
-				RandomTarget.Out.SendMessage("You take falling damage!", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+				RandomTarget.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(RandomTarget.Client.Account.Language, "NamedMobs.Common.FallingDamage"), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
 			}
 			new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(ResetPort), 1500);
 			return 0;
 		}
 		public override void OnAttackedByEnemy(AttackData ad)
 		{
-			if (ad != null && Util.Chance(25) && IsTargetPicked == false && ad.Attacker.IsAlive && ad.Attacker != null && ad.Attacker is GamePlayer)
+			if (ad != null && Util.Chance(25) && IsTargetPicked == false && ad.Attacker != null && ad.Attacker.IsAlive && ad.Attacker is GamePlayer)
 			{
 				RandomTarget = ad.Attacker as GamePlayer;
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(TeleportPlayer), Util.Random(8000, 15000));
@@ -677,7 +677,7 @@ namespace DOL.AI.Brain
 		}
 		private protected int TeleportPlayer(ECSGameTimer timer)
 		{
-			if (RandomTarget.IsAlive && RandomTarget != null)
+			if (RandomTarget != null && RandomTarget.IsAlive)
 			{
 				switch (Util.Random(1, 4))
 				{
@@ -687,14 +687,14 @@ namespace DOL.AI.Brain
 					case 4: RandomTarget.MoveTo(61, 51940, 18968, 16964, 26); break;
 				}
 				RandomTarget.TakeDamage(RandomTarget, eDamageType.Falling, RandomTarget.MaxHealth / 5, 0);
-				RandomTarget.Out.SendMessage("You take falling damage!", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+				RandomTarget.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(RandomTarget.Client.Account.Language, "NamedMobs.Common.FallingDamage"), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
 			}
 			new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(ResetPort), 1500);
 			return 0;
 		}
 		public override void OnAttackedByEnemy(AttackData ad)
 		{
-			if (ad != null && Util.Chance(25) && IsTargetPicked == false && ad.Attacker.IsAlive && ad.Attacker != null && ad.Attacker is GamePlayer)
+			if (ad != null && Util.Chance(25) && IsTargetPicked == false && ad.Attacker != null && ad.Attacker.IsAlive && ad.Attacker is GamePlayer)
 			{
 				RandomTarget = ad.Attacker as GamePlayer;
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(TeleportPlayer), Util.Random(8000, 15000));

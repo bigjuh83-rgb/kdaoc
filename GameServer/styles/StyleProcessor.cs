@@ -144,7 +144,7 @@ namespace DOL.GS.Styles
 
 			if (player.IsDisarmed)
 			{
-				player.Out.SendMessage("You are disarmed and cannot attack!", eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.Disarmed"), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -274,12 +274,12 @@ namespace DOL.GS.Styles
 							}
 						}
 
-						// If no, set the secondary backup style.
-						player.styleComponent.NextCombatBackupStyle = style;
-						if(automaticStyleUsed || style == player.styleComponent.AutomaticBackupStyle)
-							player.Out.SendMessage($"You automatically attempt {style.Name} style as a backup for {player.styleComponent.NextCombatStyle.Name}!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-						else
-							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.BackupStyle", style.Name, player.styleComponent.NextCombatStyle.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							// If no, set the secondary backup style.
+							player.styleComponent.NextCombatBackupStyle = style;
+							if(automaticStyleUsed || style == player.styleComponent.AutomaticBackupStyle)
+								player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.AutoBackupStyle", style.Name, player.styleComponent.NextCombatStyle.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							else
+								player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.BackupStyle", style.Name, player.styleComponent.NextCombatStyle.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					}
 				}
 			}
@@ -372,12 +372,12 @@ namespace DOL.GS.Styles
 					if (absorb > 0)
 					{
 						absorb = (int) Math.Floor(styleDamage * absorb / 100.0);
-						styleDamage -= absorb;
+							styleDamage -= absorb;
 
-						if (player != null)
-							player.Out.SendMessage($"A barrier absorbs {absorb} damage!", eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+							if (player != null)
+								player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.ExecuteStyle.BarrierAbsorbs", absorb), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+						}
 					}
-				}
 
 				// Handle style procs.
 				if (style.Procs.Count > 0)

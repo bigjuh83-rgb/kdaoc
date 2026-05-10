@@ -4,6 +4,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerProperties;
+using DOL.Language;
 using DOL.Logging;
 
 namespace DOL.GS
@@ -55,19 +56,19 @@ namespace DOL.GS
 
             if (player.TempProperties.GetProperty<GameRelic>(PLAYER_CARRY_RELIC_WEAK) != null)
             {
-                player.Out.SendMessage("You are already carrying a relic.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Relic.AlreadyCarrying"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
 
             if (!player.IsAlive)
             {
-                player.Out.SendMessage($"You cannot pickup {GetName(0, false)}. You are dead!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Relic.CantPickupDead", GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
 
             if (player.IsStealthed)
             {
-                player.Out.SendMessage("You cannot carry a relic while stealthed.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Relic.CantCarryStealthed"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
 
@@ -75,13 +76,13 @@ namespace DOL.GS
             {
                 if (player.Realm == Realm)
                 {
-                    player.Out.SendMessage($"You cannot pickup {GetName(0, false)}. It is owned by your realm.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Relic.CantPickupOwned", GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return false;
                 }
 
                 if (!RelicMgr.CanPickupRelicFromShrine(player, this))
                 {
-                    player.Out.SendMessage($"You cannot pickup {GetName(0, false)}. You need to capture your realm's {Enum.GetName(RelicType)} relic first.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Relic.CantPickupNeedOwn", GetName(0, false), Enum.GetName(RelicType)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return false;
                 }
             }
@@ -90,14 +91,14 @@ namespace DOL.GS
             {
                 if (IsMounted && CurrentRelicPad.GetEnemiesOnPad() < Properties.RELIC_PLAYERS_REQUIRED_ON_PAD)
                 {
-                    player.Out.SendMessage($"You must have {Properties.RELIC_PLAYERS_REQUIRED_ON_PAD} players nearby the pad before taking a relic.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Relic.NeedPlayersOnPad", Properties.RELIC_PLAYERS_REQUIRED_ON_PAD), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return false;
                 }
             }
 
             if (!player.Inventory.AddItem(eInventorySlot.FirstEmptyBackpack, _item))
             {
-                player.Out.SendMessage("You don't have enough space in your backpack to carry this.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Relic.NotEnoughBackpackSpace"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
 
@@ -317,7 +318,7 @@ namespace DOL.GS
                     _currentCarrierTimer.Stop();
                     _currentCarrierTimer = null;
                 }
-                
+
                 _currentCarrierTimer = new(player, CarrierTimerTick);
                 _currentCarrierTimer.Start(RELIC_EFFECT_INTERVAL);
             }

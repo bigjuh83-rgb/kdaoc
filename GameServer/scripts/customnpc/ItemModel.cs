@@ -2,6 +2,7 @@
 using System.Text;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -31,6 +32,16 @@ namespace DOL.GS
         private int cloakmedium = 18000;
         private int cloakexpensive = 35000;
 
+        private static string T(GamePlayer player, string key, params object[] args)
+            => LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+
+        private static bool IsValidHealerChampionHammer(DbInventoryItem item)
+        {
+            return item != null
+                && item.Object_Type == (int)eObjectType.Hammer
+                && item.Item_Type is Slot.RIGHTHAND or Slot.TWOHAND;
+        }
+
         public override bool AddToWorld()
         {
             base.AddToWorld();
@@ -44,18 +55,16 @@ namespace DOL.GS
                 TurnTo(player, 500);
                 DbInventoryItem item = player.TempProperties.GetProperty<DbInventoryItem>(TempProperty);
                 DbInventoryItem displayItem = player.TempProperties.GetProperty<DbInventoryItem>(DisplayedItem);
-                
+
                 if (item == null)
                 {
-                    SendReply(player, "Hello there!\n" +
-                    "I can offer a variety of aesthetics... for those willing to pay for it.\n" +
-                    "Hand me the item and then we can talk prices.");
+                    SendReply(player, T(player, "CustomNPC.ItemModel.Greeting"));
                 }
                 else
                 {
                     ReceiveItem(player, item);
                 }
-                
+
                 if(displayItem != null)
                     DisplayReskinPreviewTo(player, (DbInventoryItem)displayItem.Clone());
 
@@ -67,26 +76,6 @@ namespace DOL.GS
 
         public override bool WhisperReceive(GameLiving source, string str)
         {
-            /*
-            if (!base.WhisperReceive(source, str)) return false;
-            if (!(source is GamePlayer)) return false;
-            GamePlayer player = (GamePlayer)source;
-            TurnTo(player.X, player.Y);
-
-            InventoryItem item = player.TempProperties.getProperty<InventoryItem>(TempProperty);
-
-            if (item == null)
-            {
-                SendReply(player, "I need an item to work on!");
-                return false;
-            }
-            int model = item.Model;
-            int tmpmodel = int.Parse(str);
-            if (tmpmodel != 0) model = tmpmodel;
-            SetModel(player, model);
-            SendReply(player, "I have changed your item's model, you can now use it.");
-            */
-
             if (!base.WhisperReceive(source, str)) return false;
             if (!(source is GamePlayer)) return false;
 
@@ -102,29 +91,37 @@ namespace DOL.GS
 
             if (item == null)
             {
-                SendReply(player, "I need an item to work on!");
+                SendReply(player, T(player, "CustomNPC.ItemModel.NeedItem"));
                 return false;
             }
+
+            str = str switch
+            {
+                "날개 잠수" => "wing's dive",
+                "Wings Dive" => "wing's dive",
+                _ => str
+            };
 
             switch (str.ToLower())
             {
                 case "confirm model":
+                case "모델 확정":
                     if (cachedModelID > 0 && cachedModelPrice > 0)
                     {
                         if(cachedModelPrice == armorpads)
                             SetExtension(player, (byte)cachedModelID, cachedModelPrice);
                         else
                             SetModel(player, cachedModelID, cachedModelPrice);
-                        
+
                         return true;
                     }
                     else
                     {
-                        SendReply(player, "I'm sorry, I seem to have lost track of the model you wanted. Please start over.");
+                        SendReply(player, T(player, "CustomNPC.ItemModel.LostModel"));
                     }
-                    
+
                     break;
-                
+
                 #region helms
                 case "dragonslayer helm":
                     if (item.Item_Type != Slot.HELM)
@@ -3779,7 +3776,7 @@ namespace DOL.GS
                     break;
                 #endregion
 
-                #region cloaks 
+                #region cloaks
 
                 case "realm cloak":
                     if (item.Item_Type != Slot.CLOAK)
@@ -4090,6 +4087,7 @@ namespace DOL.GS
                     modelIDToAssign = 1672;
                     break;
                 case "hilt 1h":
+                case "손잡이 1손":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) ||
                         item.Type_Damage == (int)eDamageType.Crush)
@@ -4530,6 +4528,7 @@ namespace DOL.GS
                     modelIDToAssign = 2196;
                     break;
                 case "hilt 2h":
+                case "손잡이 2손":
                     if (item.Item_Type != Slot.TWOHAND ||
                         item.Object_Type == (int)eObjectType.PolearmWeapon ||
                         item.Object_Type == (int)eObjectType.Spear ||
@@ -4744,6 +4743,7 @@ namespace DOL.GS
                 #region class weapons
 
                 case "class epic 1h":
+                case "직업 에픽 1손":
                     price = champion;
                     switch ((eCharacterClass)player.CharacterClass.ID)
                     {
@@ -4985,7 +4985,7 @@ namespace DOL.GS
                             modelIDToAssign = 3311;
                             break;
                         case eCharacterClass.Healer:
-                            if (item.Item_Type != Slot.RIGHTHAND || item.Item_Type != Slot.TWOHAND || item.Object_Type != (int)eObjectType.Hammer)
+                            if (!IsValidHealerChampionHammer(item))
                             {
                                 SendNotValidMessage(player);
                                 price = 0;
@@ -5362,6 +5362,7 @@ namespace DOL.GS
                     break;
 
                 case "class epic 2h":
+                case "직업 에픽 2손":
                     price = champion;
                     switch ((eCharacterClass)player.CharacterClass.ID)
                     {
@@ -5982,32 +5983,32 @@ namespace DOL.GS
 
                 #region Armor Pads
                 case "armor pad":
-                    SendReply(player, "I can offer the following pad types:\n\n" +
-                        "[Type 1]\n" +
-                        "[Type 2]\n" +
-                        "[Type 3]\n" +
-                        "[Type 4]\n" +
-                        "[Type 5]"
-                        );
+                case "장식 패드":
+                    SendReply(player, T(player, "CustomNPC.ItemModel.PadTypes"));
                     return true;
 
                 case "type 1":
+                case "종류 1":
                     price = armorpads;
                     modelIDToAssign = 1;
                     break;
                 case "type 2":
+                case "종류 2":
                     price = armorpads;
                     modelIDToAssign = 2;
                     break;
                 case "type 3":
+                case "종류 3":
                     price = armorpads;
                     modelIDToAssign = 3;
                     break;
                 case "type 4":
+                case "종류 4":
                     price = armorpads;
                     modelIDToAssign = 4;
                     break;
                 case "type 5":
+                case "종류 5":
                     price = armorpads;
                     modelIDToAssign = 5;
                     break;
@@ -6030,7 +6031,7 @@ namespace DOL.GS
                 DisplayReskinPreviewTo(player, tmpItem);
                 tmpItem.Model = tmp;
             }
-            
+
             player.TempProperties.SetProperty(TempModelID, modelIDToAssign);
             player.TempProperties.SetProperty(TempModelPrice, price);
 
@@ -6039,7 +6040,7 @@ namespace DOL.GS
 
         private void SendNotValidMessage(GamePlayer player)
         {
-            SendReply(player, "This skin is not valid for this item type. Please try a different combo.");
+            SendReply(player, T(player, "CustomNPC.ItemModel.InvalidSkin"));
         }
 
 
@@ -6052,309 +6053,100 @@ namespace DOL.GS
 
             if (GetDistanceTo(t) > WorldMgr.INTERACT_DISTANCE)
             {
-                t.Out.SendMessage("You are too far away to give anything to " + GetName(0, false) + ".", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                t.Out.SendMessage(LanguageMgr.GetTranslation(t.Client.Account.Language, "CustomNPC.TooFarToGive", GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
-            
+
             DisplayReskinPreviewTo(t, item);
 
             switch (item.Item_Type)
             {
                 case Slot.HELM:
                     StringBuilder sb = new StringBuilder();
-                    sb.Append("A fine piece of headwear.\n" +
-                              "I can apply the following skins:\n\n" +
-                              "***** Catacombs Models Only *****\n" +
-                              "[Dragonslayer Helm]\n" +
-                              "[Dragonsworn Helm]\n" +
-                              "***** End Cata Only *****\n\n" +
-
-                              "[Crown of Zahur]\n" +
-                              "[Crown of Zahur variant]\n" +
-                              "[Winged Helm]\n" +
-                              "[Oceanus Helm]\n" +
-                              "[Stygia Helm]\n" +
-                              "[Volcanus Helm]\n" +
-                              "[Aerus Helm]\n");
+                    sb.Append(T(t, "CustomNPC.ItemModel.HelmMenu"));
                     if (item.Object_Type == (int)eObjectType.Cloth)
-                        sb.Append("[Wizard Hat]\n");
-                    sb.Append("\nAdditionally, I have some realm specific headgear available: ");
+                        sb.Append(T(t, "CustomNPC.ItemModel.HelmWizardOption"));
+                    sb.Append(T(t, "CustomNPC.ItemModel.HelmRealmPrompt"));
                     SendReply(t, sb.ToString());
-                    /*
-                    SendReply(t, "A fine piece of headwear.\n" +
-                        "I can apply the following skins:\n\n" +
-                        "***** Catacombs Models Only *****\n" +
-                          "[Dragonslayer Helm]\n" +
-                          "[Dragonsworn Helm]\n" +
-                          "***** End Cata Only *****\n\n" +
-
-                        "[Crown of Zahur]\n" +
-                        "[Crown of Zahur variant]\n" +
-                        "[Winged Helm]\n" +
-                        "[Oceanus Helm]\n" +
-                        "[Stygia Helm]\n" +
-                        "[Volcanus Helm]\n" +
-                        "[Aerus Helm]\n" +
-                        
-                        "Additionally, I have some realm specific headgear available:" +
-                        "");
-                        */
                     switch (source.Realm)
                     {
                         case eRealm.Albion:
-                            SendReply(t, "[Robin Hood Hat]\n" +
-                                "[Tarboosh]\n" +
-                                "[Jester Hat]\n" +
-                                "");
+                            SendReply(t, T(t, "CustomNPC.ItemModel.HelmAlbionOptions"));
                             break;
                         case eRealm.Hibernia:
-                            SendReply(t, "[Robin Hood Hat]\n" +
-                               "[Leaf Hat]\n" +
-                               "[Stag Helm]\n" +
-                               "");
+                            SendReply(t, T(t, "CustomNPC.ItemModel.HelmHiberniaOptions"));
                             break;
                         case eRealm.Midgard:
-                            SendReply(t, "[Fur Cap]\n" +
-                               "[Wing Hat]\n" +
-                               "[Wolf Helm]\n" +
-                               "");
+                            SendReply(t, T(t, "CustomNPC.ItemModel.HelmMidgardOptions"));
                             break;
                     }
                     break;
 
                 case Slot.TORSO:
-                    SendReply(t, "This looks like it has protected you nicely.\n" +
-                        "I can apply the following skins:\n\n" +
-                        "***** Catacombs Models Only *****\n" +
-                          "[Dragonslayer Breastplate]\n" +
-                          "[Dragonsworn Breastplate]\n" +
-                          "[Good Shar Breastplate]\n" +
-                          "[Possessed Shar Breastplate]\n" +
-                          "[Good Inconnu Breastplate]\n" +
-                          "[Possessed Inconnu Breastplate]\n" +
-                          "[Good Realm Breastplate]\n" +
-                          "[Possessed Realm Breastplate]\n" +
-                          "[Mino Breastplate]\n" +
-                          "***** End Cata Only *****\n\n" +
-
-                        "[Class Epic Chestpiece]\n" +
-                        "[Eirene's Chest]\n" +
-                        "[Naliah's Robe]\n" +
-                        "[Guard of Valor]\n" +
-                        "[Golden Scarab Vest]\n" +
-                        "[Oceanus Breastplate]\n" +
-                        "[Stygia Breastplate]\n" +
-                        "[Volcanus Breastplate]\n" +
-                        "[Aerus Breastplate]\n" +
-
-                        "");
-                    SendReply(t, "I can also offer you some [armor pad] options."
-                         );
+                    SendReply(t, T(t, "CustomNPC.ItemModel.TorsoMenu"));
+                    SendReply(t, T(t, "CustomNPC.ItemModel.ArmorPadPrompt"));
                     break;
 
                 case Slot.ARMS:
-                    SendReply(t, "This looks like it has protected you nicely.\n" +
-                        "I can apply the following skins:\n\n" +
-                        "***** Catacombs Models Only *****\n" +
-                          "[Dragonslayer Sleeves]\n" +
-                          "[Dragonsworn Sleeves]\n" +
-                          "[Good Shar Sleeves]\n" +
-                          "[Possessed Shar Sleeves]\n" +
-                          "[Good Inconnu Sleeves]\n" +
-                          "[Possessed Inconnu Sleeves]\n" +
-                          "[Good Realm Sleeves]\n" +
-                          "[Possessed Realm Sleeves]\n" +
-                          "[Mino Sleeves]\n" +
-                          "***** End Cata Only *****\n\n" +
-                        "[Foppish Sleeves]\n" +
-                        "[Arms of the Wind]\n" +
-                        "[Oceanus Sleeves]\n" +
-                        "[Stygia Sleeves]\n" +
-                        "[Volcanus Sleeves]\n" +
-                        "[Aerus Sleeves]\n" +
-
-                        "");
+                    SendReply(t, T(t, "CustomNPC.ItemModel.ArmsMenu"));
                     break;
 
                 case Slot.LEGS:
-                    SendReply(t, "This looks like it has protected you nicely.\n" +
-                        "I can apply the following skins:\n\n" +
-                        "***** Catacombs Models Only *****\n" +
-                          "[Dragonslayer Pants]\n" +
-                          "[Dragonsworn Pants]\n" +
-                          "[Good Shar Pants]\n" +
-                          "[Possessed Shar Pants]\n" +
-                          "[Good Inconnu Pants]\n" +
-                          "[Possessed Inconnu Pants]\n" +
-                          "[Good Realm Pants]\n" +
-                          "[Possessed Realm Pants]\n" +
-                          "[Mino Pants]\n" +
-                          "***** End Cata Only *****\n\n" +
-                        "[Wings Dive]\n" +
-                        "[Alvarus' Leggings]\n" +
-                        "[Oceanus Pants]\n" +
-                        "[Stygia Pants]\n" +
-                        "[Volcanus Pants]\n" +
-                        "[Aerus Pants]\n" +
-
-                        "");
+                    SendReply(t, T(t, "CustomNPC.ItemModel.LegsMenu"));
                     break;
 
                 case Slot.HANDS:
-                    SendReply(t, "This looks like it has protected you nicely.\n" +
-                        "I can apply the following skins:\n\n" +
-                        "***** Catacombs Models Only *****\n" +
-                          "[Dragonslayer Gloves]\n" +
-                          "[Dragonsworn Gloves]\n" +
-                          "[Good Shar Gloves]\n" +
-                          "[Possessed Shar Gloves]\n" +
-                          "[Good Inconnu Gloves]\n" +
-                          "[Possessed Inconnu Gloves]\n" +
-                          "[Good Realm Gloves]\n" +
-                          "[Possessed Realm Gloves]\n" +
-                          "[Mino Gloves]\n" +
-                          "***** End Cata Only *****\n\n" +
-                        "[Maddening Scalars]\n" +
-                        "[Sharkskin Gloves]\n" +
-                        "[Oceanus Gloves]\n" +
-                        "[Stygia Gloves]\n" +
-                        "[Volcanus Gloves]\n" +
-                        "[Aerus Gloves]\n" +
-
-                        "");
-                    SendReply(t, "I can also offer you some [armor pad]  options."
-                         );
+                    SendReply(t, T(t, "CustomNPC.ItemModel.HandsMenu"));
+                    SendReply(t, T(t, "CustomNPC.ItemModel.ArmorPadPrompt"));
                     break;
 
                 case Slot.FEET:
-                    SendReply(t, "This looks like it has protected you nicely.\n" +
-                        "I can apply the following skins:\n\n" +
-                        "***** Catacombs Models Only *****\n" +
-                          "[Dragonslayer Boots]\n" +
-                          "[Dragonsworn Boots]\n" +
-                          "[Good Shar Boots]\n" +
-                          "[Possessed Shar Boots]\n" +
-                          "[Good Inconnu Boots]\n" +
-                          "[Possessed Inconnu Boots]\n" +
-                          "[Good Realm Boots]\n" +
-                          "[Possessed Realm Boots]\n" +
-                          "[Mino Boots]\n" +
-                          "***** End Cata Only *****\n\n" +
-                        "[Enyalio's Boots]\n" +
-                        "[Flamedancer's Boots]\n" +
-                        "[Oceanus Boots]\n" +
-                        "[Stygia Boots]\n" +
-                        "[Volcanus Boots]\n" +
-                        "[Aerus Boots]\n" +
-
-                        "");
-                    SendReply(t, "I can also offer you some [armor pad]  options."
-                         );
+                    SendReply(t, T(t, "CustomNPC.ItemModel.FeetMenu"));
+                    SendReply(t, T(t, "CustomNPC.ItemModel.ArmorPadPrompt"));
                     break;
 
                 case Slot.CLOAK:
-                    SendReply(t, "This looks like it has protected you nicely.\n" +
-                        "I can apply the following skins:\n\n" +
-                        "***** Catacombs Models Only *****\n" +
-                          "[Realm Cloak]\n" +
-                          "[Dragonslayer Cloak]\n" +
-                          "[Dragonsworn Cloak]\n" +
-                          "[Valentines Cloak]\n" +
-                          "[Winter Cloak]\n" +
-                          "[Clean Leather Cloak]\n" +
-                          "[Corrupt Leather Cloak]\n" +
-                          "***** End Cata Only *****\n\n" +
-                        "[Cloudsong]\n" +
-                        "[Shades of Mist]\n" +
-                        "[Harpy Feather Cloak]\n" +
-                        "[Healer's Embrace]\n" +
-                        "[Oceanus Cloak]\n" +
-                        "[Magma Cloak]\n" +
-                        "[Stygian Cloak]\n" +
-                        "[Aerus Cloak]\n" +
-                        "[Collared Cloak]\n" +
-                        "");
+                    SendReply(t, T(t, "CustomNPC.ItemModel.CloakMenu"));
                     break;
 
                 case Slot.RIGHTHAND:
-                    SendReply(t, "Ah, I know a highly lethal weapon when I see it.\n" +
-                        "I can apply the following skins:\n\n");
+                    SendReply(t, T(t, "CustomNPC.ItemModel.WeaponMenuHeader"));
                     if ((eObjectType)item.Object_Type == eObjectType.HandToHand)
                     {
-                        SendReply(t,
-                                    "[Snakecharmer's Fist]\n" +
-                                    "[Scorched Fist]\n" +
-                                    "[Dragonsworn Fist]\n" +
-                                    "");
+                        SendReply(t, T(t, "CustomNPC.ItemModel.FistMenu"));
                     }
                     if ((eObjectType)item.Object_Type == eObjectType.Flexible)
                     {
-                        SendReply(t,
-                                    "[Snakecharmer's Whip]\n" +
-                                    "[Scorched Whip]\n" +
-                                    "[Dragonsworn Whip]\n" +
-                                    "");
+                        SendReply(t, T(t, "CustomNPC.ItemModel.WhipMenu"));
                     }
                     else
                     {
                         switch ((eDamageType)item.Type_Damage)
                         {
                             case eDamageType.Thrust:
-                                SendReply(t,
-                                    "[Traitor's Dagger 1h]\n" +
-                                    "[Croc Tooth Dagger 1h]\n" +
-                                    "[Golden Spear 1h]\n" +
-                                    "[Wakazashi]\n" +
-                                    "");
-                                SendReply(t, "Or, perhaps you'd just prefer a [hilt 1h] \n" +
-                                     "");
+                                SendReply(t, T(t, "CustomNPC.ItemModel.Thrust1HMenu"));
+                                SendReply(t, T(t, "CustomNPC.ItemModel.Hilt1HPrompt"));
                                 break;
 
                             case eDamageType.Crush:
-                                SendReply(t,
-                                    "[Battler Hammer 1h]\n" +
-                                    "[Malice Hammer 1h]\n" +
-                                    "[Bruiser Hammer 1h]\n" +
-                                    "[Scepter of the Meritorious]\n" +
-                                    "[Rolling Pin]\n" +
-                                    "[Stein]\n" +
-                                    "[Turkey Leg]\n" +
-                                    "");
+                                SendReply(t, T(t, "CustomNPC.ItemModel.Crush1HMenu"));
                                 break;
 
                             case eDamageType.Slash:
-                                SendReply(t,
-                                    "[Croc Tooth Axe 1h]\n" +
-                                    "[Traitor's Axe 1h]\n" +
-                                    "[Malice Axe 1h]\n" +
-                                    "[Battler Sword 1h]\n" +
-                                    "[Khopesh]\n" +
-                                    "[Cleaver]\n" +
-                                    "[Wakazashi]\n" +
-                                    "");
-                                SendReply(t, "Or, perhaps you'd just prefer a [hilt 1h] \n" +
-                                     "");
+                                SendReply(t, T(t, "CustomNPC.ItemModel.Slash1HMenu"));
+                                SendReply(t, T(t, "CustomNPC.ItemModel.Hilt1HPrompt"));
                                 break;
                         }
-                        
+
                     }
-                    SendReply(t, "Additionally, I can apply an [class epic 1h] " + champion + " skin.\n");
+                    SendReply(t, T(t, "CustomNPC.ItemModel.ClassEpic1HPrompt", champion));
                     break;
 
 
                 case Slot.LEFTHAND:
                     if ((eObjectType)item.Object_Type == eObjectType.Shield)
                     {
-                        SendReply(t, "A sturdy barricade to ward the blows of your enemies.\n" +
-                        "I can apply the following skins:\n\n" +
-                        "[Aten's Shield]\n" +
-                        "[Cyclop's Eye]\n" +
-                        "[Shield of Khaos]\n" +
-                        "[Oceanus Shield]\n" +
-                        "[Aerus Shield]\n" +
-                        "[Magma Shield]\n" +
-                        "[Minotaur Shield]\n" +
-                        "");
+                        SendReply(t, T(t, "CustomNPC.ItemModel.ShieldMenu"));
                     }
                     else
                     {
@@ -6364,118 +6156,63 @@ namespace DOL.GS
                     break;
 
                 case Slot.TWOHAND:
-                    SendReply(t, "Ah, I know a highly lethal weapon when I see it.\n" +
-                        "I can apply the following skins:\n\n");
+                    SendReply(t, T(t, "CustomNPC.ItemModel.WeaponMenuHeader"));
                     if ((eObjectType)item.Object_Type == eObjectType.Staff)
                     {
-                        SendReply(t,
-                                    "[Dragonsworn Staff]\n" +
-                                    "[Traldor's Oracle]\n" +
-                                    "[Trident of the Gods]\n" +
-                                    "[Tartaros Gift]\n" +
-                                    "[Scorched Staff]\n" +
-                                    "");
+                        SendReply(t, T(t, "CustomNPC.ItemModel.StaffMenu"));
                     }
                     else if ((eObjectType)item.Object_Type == eObjectType.Scythe)
                     {
-                        SendReply(t,
-                                    "[Dragonsworn Scythe]\n" +
-                                    "[Scythe of Kings]\n" +
-                                    "[Snakechamer's Scythe]\n" +
-                                    "[Magma Scythe]\n" +
-                                    "[Scorched Scythe]\n" +
-                                    "");
+                        SendReply(t, T(t, "CustomNPC.ItemModel.ScytheMenu"));
                     }
                     else if ((eObjectType)item.Object_Type == eObjectType.PolearmWeapon)
                     {
-                        SendReply(t,
-                                    "[Dragonsworn Pole]\n" +
-                                    "[Pole of Kings]\n" +
-                                    "[Golden Pole]\n" +
-                                    "[Scorched Pole]\n" +
-                                    "");
+                        SendReply(t, T(t, "CustomNPC.ItemModel.PoleMenu"));
                     }
                     else if ((eObjectType)item.Object_Type == eObjectType.Spear || (eObjectType)item.Object_Type == eObjectType.CelticSpear)
                     {
-                        SendReply(t,
-                                    "[Golden Spear 2h]\n" +
-                                    "[Dragon Spear 2h]\n" +
-                                    "[Scorched Spear 2h]\n" +
-                                    "[Trident Spear 2h]\n" +
-                                    "");
+                        SendReply(t, T(t, "CustomNPC.ItemModel.Spear2HMenu"));
                     }
                     else
                     {
                         switch ((eDamageType)item.Type_Damage)
                         {
                             case eDamageType.Thrust:
-                                SendReply(t,
-                                    "[Scorched Thrust 2h]\n" +
-                                    "[Dragon Thrust 2h]\n" +
-                                    "[Katana 2h]\n" +
-                                    "[Pickaxe]\n" +
-                                    "");
-                                SendReply(t, "Or, perhaps you'd just prefer a [hilt 2h] \n");
+                                SendReply(t, T(t, "CustomNPC.ItemModel.Thrust2HMenu"));
+                                SendReply(t, T(t, "CustomNPC.ItemModel.Hilt2HPrompt"));
                                 break;
 
                             case eDamageType.Crush:
-                                SendReply(t,
-                                    "[Battler Hammer 2h]\n" +
-                                    "[Malice Hammer 2h]\n" +
-                                    "[Bruiser Hammer 2h]\n" +
-                                    "[Scorched Hammer 2h]\n" +
-                                    "[Magma Hammer 2h]\n" +
-                                    "[Pickaxe]\n" +
-                                    "");
+                                SendReply(t, T(t, "CustomNPC.ItemModel.Crush2HMenu"));
                                 break;
 
                             case eDamageType.Slash:
-                                SendReply(t,
-                                    "[Malice Axe 2h]\n" +
-                                    "[Scorched Axe 2h]\n" +
-                                    "[Magma Axe 2h]\n" +
-                                    "[Battler Sword 2h]\n" +
-                                    "[Scorched Sword 2h]\n" +
-                                    "[Katana 2h]\n" +
-                                    "");
-                                SendReply(t, "Or, perhaps you'd just prefer a [hilt 2h] \n");
+                                SendReply(t, T(t, "CustomNPC.ItemModel.Slash2HMenu"));
+                                SendReply(t, T(t, "CustomNPC.ItemModel.Hilt2HPrompt"));
                                 break;
                         }
                     }
-                    SendReply(t, "Additionally, I can apply an [class epic 2h] skin.\n");
+                    SendReply(t, T(t, "CustomNPC.ItemModel.ClassEpic2HPrompt"));
                     break;
 
                 case Slot.RANGED:
                     if ((eObjectType)item.Object_Type == eObjectType.Instrument)
                     {
-                        SendReply(t, "This looks like it plays beautiful music.\n" +
-                        "I can apply the following skins:\n\n" +
-                        //"[Dragonslayer Harp]\n" + //these too
-                        "[Class Epic Harp]\n" +
-                        "[Labyrinth Harp]\n" +
-                        "");
+                        SendReply(t, T(t, "CustomNPC.ItemModel.InstrumentMenu"));
                     }
                     else
                     {
-                        SendReply(t, "Nothing like bringing death from afar.\n" +
-                        "I can apply the following skins:\n\n" +
-                        //"[Dragonslayer Bow]\n" +
-                        "[Class Epic Bow]\n" +
-                        "[Braggart's Bow]\n" +
-                        "[Fool's Bow]\n" +
-                        "[Labyrinth Bow]\n" +
-                        "");
+                        SendReply(t, T(t, "CustomNPC.ItemModel.BowMenu"));
                     }
 
                     break;
             }
 
-            SendReply(t, "When you are finished browsing, let me know and I will [confirm model]."
-                         );
+            SendReply(t, T(t, "CustomNPC.ItemModel.ConfirmModelPrompt"));
             var tmp = (DbInventoryItem) item.Clone();
             t.TempProperties.SetProperty(TempProperty, item);
             t.TempProperties.SetProperty(DisplayedItem, tmp);
-            
+
             return false;
         }
 
@@ -6712,7 +6449,7 @@ namespace DOL.GS
         {
             if (price > 0)
             {
-                SendReply(player, "I have changed your item's model.");
+                SendReply(player, T(player, "CustomNPC.ItemModel.ModelChanged"));
 
                 DbInventoryItem item = player.TempProperties.GetProperty<DbInventoryItem>(TempProperty);
                 DbInventoryItem displayItem = player.TempProperties.GetProperty<DbInventoryItem>(DisplayedItem);
@@ -6741,8 +6478,7 @@ namespace DOL.GS
                 return true;
             }
 
-            SendReply(player, "I'm sorry, I seem to have gotten confused. Please start over.\n" +
-                              "If you repeatedly get this message, please file a bug ticket on how you recreate it.");
+            SendReply(player, T(player, "CustomNPC.ItemModel.Confused"));
             return false;
         }
 
@@ -6752,17 +6488,17 @@ namespace DOL.GS
             {
                 DbInventoryItem item = player.TempProperties.GetProperty<DbInventoryItem>(TempProperty);
                 DbInventoryItem displayItem = player.TempProperties.GetProperty<DbInventoryItem>(DisplayedItem);
-                
+
                 if (item == null || item.OwnerID != player.InternalID || item.OwnerID == null)
                     return;
-                
+
                 player.TempProperties.RemoveProperty(TempProperty);
                 player.TempProperties.RemoveProperty(DisplayedItem);
 
                 //only allow pads on valid slots: torso/hand/feet
                 if (item.Item_Type != (int)eEquipmentItems.TORSO && item.Item_Type != (int)eEquipmentItems.HAND && item.Item_Type != (int)eEquipmentItems.FEET)
                 {
-                    SendReply(player, "I'm sorry, but I can only modify the pads on Torso, Hand, and Feet armors.");
+                    SendReply(player, T(player, "CustomNPC.ItemModel.PadsLimitedSlots"));
                     return;
                 }
 
@@ -6780,21 +6516,18 @@ namespace DOL.GS
 
                 player.SaveIntoDatabase();
 
-                SendReply(player, "Thanks for your donation. " +
-                                  "I have changed your item's extension, you can now use it.\n\n" +
-                                  "I look forward to doing business with you in the future.");
+                SendReply(player, T(player, "CustomNPC.ItemModel.ExtensionChanged"));
 
                 return;
             }
 
-            SendReply(player, "I'm sorry, I seem to have gotten confused. Please start over.\n" +
-                              "If you repeatedly get this message, please file a bug ticket on how you recreate it.");
+            SendReply(player, T(player, "CustomNPC.ItemModel.Confused"));
         }
-        
+
         private GameNPC CreateDisplayNPC(GamePlayer player, DbInventoryItem item)
         {
-            var mob = new DisplayModel(player, item); 
-                
+            var mob = new DisplayModel(player, item);
+
             //player model contains 5 bits of extra data that causes issues if used
             //for an NPC model. we do this to drop the first 5 bits and fill w/ 0s
             ushort tmpModel =  (ushort) (player.Model << 5);
@@ -6841,7 +6574,7 @@ namespace DOL.GS
                 {
                     _lastAnimation = GameLoop.GameLoopTime;
                 }
-      
+
             }
 
         }

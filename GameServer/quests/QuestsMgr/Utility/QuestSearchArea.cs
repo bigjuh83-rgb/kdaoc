@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -99,9 +99,10 @@ namespace DOL.GS.Quests
 			m_popupText = text;
 			DisplayMessage = false;
 
-            if (WorldMgr.GetRegion(regionId) != null)
+            var region = WorldMgr.GetRegion(regionId);
+            if (region != null)
             {
-                WorldMgr.GetRegion(regionId).AddArea(this);
+                region.AddArea(this);
             }
             else
             {
@@ -119,9 +120,10 @@ namespace DOL.GS.Quests
             m_popupText = text;
             DisplayMessage = false;
 
-            if (WorldMgr.GetRegion(regionId) != null)
+            var region = WorldMgr.GetRegion(regionId);
+            if (region != null)
             {
-                WorldMgr.GetRegion(regionId).AddArea(this);
+                region.AddArea(this);
             }
             else
             {
@@ -133,9 +135,10 @@ namespace DOL.GS.Quests
 
         public virtual void RemoveArea()
         {
-            if (WorldMgr.GetRegion(m_regionId) != null)
+            var region = WorldMgr.GetRegion(m_regionId);
+            if (region != null)
             {
-                WorldMgr.GetRegion(m_regionId).RemoveArea(this);
+                region.RemoveArea(this);
             }
         }
 
@@ -148,7 +151,7 @@ namespace DOL.GS.Quests
                 ChatUtil.SendDebugMessage(player, "Entered QuestSearchArea for DataQuest ID:" + m_dataQuest.ID + ", Step " + Step);
 
                 // first check active data quests
-   			    foreach (AbstractQuest quest in player.QuestList.Keys)
+			    foreach (AbstractQuest quest in player.QuestList.Keys)
 			    {
 				    if (quest is DataQuest)
 				    {

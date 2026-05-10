@@ -26,15 +26,15 @@ namespace DOL.GS.Commands
 
 					if (client.Account.PrivLevel >= (int)ePrivLevel.GM)
 					{
-						DisplayMessage(client, "GM: info - Display house info for a nearby house");
+						DisplayMessage(client, T(client, "PlayerCommands.House.HelpGmInfo"));
 					}
 
 					if (client.Account.PrivLevel == (int)ePrivLevel.Admin)
 					{
-						DisplayMessage(client, "Admin: model <1 - 12> - change house model");
-						DisplayMessage(client, "Admin: restart - restart the housing manager");
-						DisplayMessage(client, "Admin: addhookpoints - allow adding of missing hookpoints");
-						DisplayMessage(client, "Admin: remove <YES> - remove this house!");
+						DisplayMessage(client, T(client, "PlayerCommands.House.HelpAdminModel"));
+						DisplayMessage(client, T(client, "PlayerCommands.House.HelpAdminRestart"));
+						DisplayMessage(client, T(client, "PlayerCommands.House.HelpAdminAddHookpoints"));
+						DisplayMessage(client, T(client, "PlayerCommands.House.HelpAdminRemove"));
 					}
 				}
 
@@ -43,7 +43,7 @@ namespace DOL.GS.Commands
 				if (house != null)
 					house.SendHouseInfo(client.Player);
 				else
-					DisplayMessage(client, "You do not own a house.");
+					DisplayMessage(client, T(client, "PlayerCommands.House.NoHouseOwned"));
 			}
 			catch
 			{
@@ -66,12 +66,12 @@ namespace DOL.GS.Commands
 					if (player.TempProperties.GetProperty<bool>(HousingConstants.AllowAddHouseHookpoint))
 					{
 						player.TempProperties.RemoveProperty(HousingConstants.AllowAddHouseHookpoint);
-						DisplayMessage(player.Client, "Add hookpoints turned off!");
+						DisplayMessage(player.Client, T(player, "PlayerCommands.House.AddHookpointsOff"));
 					}
 					else
 					{
 						player.TempProperties.SetProperty(HousingConstants.AllowAddHouseHookpoint, true);
-						DisplayMessage(player.Client, "Add hookpoints turned on!");
+						DisplayMessage(player.Client, T(player, "PlayerCommands.House.AddHookpointsOn"));
 					}
 
 					return;
@@ -81,7 +81,7 @@ namespace DOL.GS.Commands
 			var houses = HouseMgr.GetHousesCloseToSpot(player.CurrentRegionID, player.X, player.Y, 700);
 			if (houses.Count != 1)
 			{
-				DisplayMessage(player.Client, "You need to stand closer to a house!");
+				DisplayMessage(player.Client, T(player, "PlayerCommands.House.StandCloser"));
 				return;
 			}
 
@@ -102,7 +102,7 @@ namespace DOL.GS.Commands
 
 				if (newModel < 1 || newModel > 12)
 				{
-					DisplayMessage(player.Client, "Valid house models are 1 - 12!");
+					DisplayMessage(player.Client, T(player, "PlayerCommands.House.ValidModels"));
 					return;
 				}
 
@@ -113,7 +113,7 @@ namespace DOL.GS.Commands
 					(houses[0] as House).SaveIntoDatabase();
 					(houses[0] as House).SendUpdate();
 
-					DisplayMessage(player.Client, "House model changed to " + newModel + "!");
+					DisplayMessage(player.Client, T(player, "PlayerCommands.House.ModelChanged", newModel));
 					GameServer.Instance.LogGMAction(player.Name + " changed house #" + (houses[0] as House).HouseNumber + " model to " + newModel);
 				}
 
@@ -129,14 +129,14 @@ namespace DOL.GS.Commands
 
 				if (confirm != "YES")
 				{
-					DisplayMessage(player.Client, "You must confirm this removal with 'YES'");
+					DisplayMessage(player.Client, T(player, "PlayerCommands.House.ConfirmRemove"));
 					return;
 				}
 
 				if (houses.Count == 1)
 				{
 					HouseMgr.RemoveHouse(houses[0] as House);
-					DisplayMessage(player.Client, "House removed!");
+					DisplayMessage(player.Client, T(player, "PlayerCommands.House.Removed"));
 					GameServer.Instance.LogGMAction(player.Name + " removed house #" + (houses[0] as House).HouseNumber);
 				}
 

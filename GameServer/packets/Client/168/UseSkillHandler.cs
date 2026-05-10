@@ -1,6 +1,7 @@
 using System;
 using DOL.GS.ServerProperties;
 using DOL.GS.Styles;
+using DOL.Language;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -70,7 +71,7 @@ namespace DOL.GS.PacketHandler.Client.v168
             // we really got a skill !
             if (sk == null)
             {
-                player.Out.SendMessage("Skill is not implemented.", eChatType.CT_Advise, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "UseSkillHandler.SkillNotImplemented"), eChatType.CT_Advise, eChatLoc.CL_SystemWindow);
                 return;
             }
 
@@ -95,11 +96,11 @@ namespace DOL.GS.PacketHandler.Client.v168
 
                     if (!Properties.ALLOW_NON_ANYTIME_BACKUP_STYLES && (style.AttackResultRequirement != Style.eAttackResultRequirement.Any || style.OpeningRequirementType == Style.eOpening.Positional))
                     {
-                        player.Out.SendMessage($"You must use an anytime style as your backup.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "UseSkillHandler.BackupStyle.MustUseAnytime"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return;
                     }
 
-                    player.Out.SendMessage($"You will now use {style.Name} as your backup.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "UseSkillHandler.BackupStyle.NowUsing", style.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     player.styleComponent.AutomaticBackupStyle = style;
                     return;
                 }

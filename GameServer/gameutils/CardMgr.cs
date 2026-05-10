@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -13,7 +14,7 @@ namespace DOL.GS
             private uint m_id;
             private bool m_faceup;
             private string m_name;
-            private GameClient m_dealer;       
+            private GameClient m_dealer;
 
             public bool Init(uint num, bool up, GameClient dealer)
             {
@@ -39,6 +40,13 @@ namespace DOL.GS
             public string Name
             {
                 get { return m_name; }
+            }
+
+            public string GetName(string language)
+            {
+                string rank = LanguageMgr.GetTranslation(language, "Card.Rank." + (m_id % 13));
+                string suit = LanguageMgr.GetTranslation(language, "Card.Suit." + (m_id / 13));
+                return LanguageMgr.GetTranslation(language, "Card.Name", rank, suit);
             }
 
             public GameClient Dealer
@@ -72,7 +80,7 @@ namespace DOL.GS
                     case 2: res += "Clubs"; return res;
                     case 3: res += "Spades"; return res;
                 }
-                return "CARD ERROR OMG!";
+                return LanguageMgr.GetTranslation(LanguageMgr.DefaultLanguage, "Card.Error");
             }
         };
 
@@ -128,8 +136,8 @@ namespace DOL.GS
 
             public bool HasCard()
             {
-                return m_Cards.Count > 0; 
-            }    
+                return m_Cards.Count > 0;
+            }
 
             public Card GetCard()
             {
@@ -153,7 +161,7 @@ namespace DOL.GS
 
         /* Maintains the hand of cards for a player */
         private class PlayerHand
-        {    
+        {
             private GameClient m_owner;
             private ArrayList m_hand;
 
@@ -181,14 +189,14 @@ namespace DOL.GS
             {
                 if (m_hand.Count == 0)
                 {
-                    source.Out.SendMessage((source == m_owner ? "You have " : m_owner.Player.Name + " has ") + "no cards.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    source.Out.SendMessage(source == m_owner ? LanguageMgr.GetTranslation(source.Account.Language, "Card.YouHaveNoCards") : LanguageMgr.GetTranslation(source.Account.Language, "Card.PlayerHasNoCards", m_owner.Player.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return;
                 }
                 string cards = string.Empty;
                 foreach (Card c in m_hand)
-                    if(source == m_owner || c.Up) 
-                        cards += c.Id + " - " + c.Name + "\n";
-                source.Out.SendMessage((source == m_owner ? "You are holding " : m_owner.Player.Name + " is holding ") + m_hand.Count + (m_hand.Count > 1 ? " cards." : " card."), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    if(source == m_owner || c.Up)
+                        cards += c.Id + " - " + c.GetName(source.Account.Language) + "\n";
+                source.Out.SendMessage(source == m_owner ? LanguageMgr.GetTranslation(source.Account.Language, "Card.YouAreHolding", m_hand.Count, m_hand.Count > 1 ? LanguageMgr.GetTranslation(source.Account.Language, "Card.Cards") : LanguageMgr.GetTranslation(source.Account.Language, "Card.Card")) : LanguageMgr.GetTranslation(source.Account.Language, "Card.PlayerIsHolding", m_owner.Player.Name, m_hand.Count, m_hand.Count > 1 ? LanguageMgr.GetTranslation(source.Account.Language, "Card.Cards") : LanguageMgr.GetTranslation(source.Account.Language, "Card.Card")), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 source.Out.SendMessage(cards, eChatType.CT_System, eChatLoc.CL_SystemWindow);
             }
 
@@ -203,20 +211,20 @@ namespace DOL.GS
                         {
                             foreach (GamePlayer Groupee in m_owner.Player.Group.GetPlayersInTheGroup())
                             {
-                                if(Groupee == m_owner.Player) m_owner.Out.SendMessage("You discard the " + c.Name + " from your hand.", eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
-                                else Groupee.Client.Out.SendMessage(m_owner.Player.Name + " discards " + (c.Up ? "the " + c.Name : "a card") + " from their hand.", eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
+                                if(Groupee == m_owner.Player) m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Account.Language, "Card.YouDiscardCard", c.GetName(m_owner.Account.Language)), eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
+                                else Groupee.Client.Out.SendMessage(LanguageMgr.GetTranslation(Groupee.Client.Account.Language, "Card.PlayerDiscardsCard", m_owner.Player.Name, c.Up ? c.GetName(Groupee.Client.Account.Language) : LanguageMgr.GetTranslation(Groupee.Client.Account.Language, "Card.ACard")), eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
                             }
                         }
                         else
                         {
-                            m_owner.Out.SendMessage("You cannot play cards without a group!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Account.Language, "Card.CannotPlayWithoutGroup"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             DiscardAll();
                             return null;
                         }
                         return c;
                     }
                 }
-                m_owner.Out.SendMessage("No card with ID " + selection + " exists in your hand!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Account.Language, "Card.NoCardWithId", selection), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return null;
             }
 
@@ -225,10 +233,10 @@ namespace DOL.GS
                 ArrayList cards = (ArrayList)m_hand.Clone();
                 m_hand.Clear();
                 if(m_owner.Player.Group == null)
-                    m_owner.Out.SendMessage("You discard all your cards.", eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
+                    m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Account.Language, "Card.YouDiscardAll"), eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
                 else
                     foreach(GamePlayer Groupee in m_owner.Player.Group.GetPlayersInTheGroup())
-                        Groupee.Client.Out.SendMessage((Groupee.Client == m_owner ? "You discard all your cards." : m_owner.Player + " discards all their cards."), eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
+                        Groupee.Client.Out.SendMessage(Groupee.Client == m_owner ? LanguageMgr.GetTranslation(Groupee.Client.Account.Language, "Card.YouDiscardAll") : LanguageMgr.GetTranslation(Groupee.Client.Account.Language, "Card.PlayerDiscardsAll", m_owner.Player.Name), eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
                 return cards;
             }
         };
@@ -279,7 +287,7 @@ namespace DOL.GS
         {
             if (player.Player.Group == null)
             {
-                player.Out.SendMessage("You must have a group to play cards!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Account.Language, "Card.MustHaveGroup"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
@@ -301,8 +309,8 @@ namespace DOL.GS
                 foreach (GamePlayer Groupee in player.Player.Group.GetPlayersInTheGroup())
                 {
                     DiscardAll(Groupee.Client);
-                    if (Groupee == player.Player) player.Out.SendMessage("You shuffle " + numDecks + (numDecks > 1 ? " decks " : " deck ") + "of cards.", eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
-                    else Groupee.Client.Out.SendMessage(player.Player.Name + " shuffles " + numDecks + (numDecks > 1 ? " decks " : " deck ") + "of cards.", eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
+                    if (Groupee == player.Player) player.Out.SendMessage(LanguageMgr.GetTranslation(player.Account.Language, "Card.YouShuffle", numDecks, numDecks > 1 ? LanguageMgr.GetTranslation(player.Account.Language, "Card.Decks") : LanguageMgr.GetTranslation(player.Account.Language, "Card.Deck")), eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
+                    else Groupee.Client.Out.SendMessage(LanguageMgr.GetTranslation(Groupee.Client.Account.Language, "Card.PlayerShuffles", player.Player.Name, numDecks, numDecks > 1 ? LanguageMgr.GetTranslation(Groupee.Client.Account.Language, "Card.Decks") : LanguageMgr.GetTranslation(Groupee.Client.Account.Language, "Card.Deck")), eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
                 }
             }
             catch(Exception)
@@ -319,9 +327,9 @@ namespace DOL.GS
             Card c;
 
             if (!dealer.Player.Group.IsInTheGroup(player.Player))
-            { dealer.Out.SendMessage(player.Player.Name + " must be in your group to play cards!", eChatType.CT_System, eChatLoc.CL_SystemWindow); return; }
+            { dealer.Out.SendMessage(LanguageMgr.GetTranslation(dealer.Account.Language, "Card.PlayerMustBeInGroup", player.Player.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow); return; }
             if(!IsDealer(dealer))
-            { dealer.Out.SendMessage("You must use /shuffle to prepare cards before dealing!", eChatType.CT_System, eChatLoc.CL_SystemWindow); return; }
+            { dealer.Out.SendMessage(LanguageMgr.GetTranslation(dealer.Account.Language, "Card.MustShuffleBeforeDealing"), eChatType.CT_System, eChatLoc.CL_SystemWindow); return; }
             if(!IsPlayer(player))
             {
                 hand = new PlayerHand(player);
@@ -336,28 +344,28 @@ namespace DOL.GS
             c = deck.GetCard();
             if (c == null)
             {
-                dealer.Out.SendMessage("There are no cards left in the deck. Use /shuffle to prepare a new deck.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                dealer.Out.SendMessage(LanguageMgr.GetTranslation(dealer.Account.Language, "Card.NoCardsLeft"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
             hand.AddCard(c, up);
             foreach (GamePlayer Groupee in dealer.Player.Group.GetPlayersInTheGroup())
             {
                 if (Groupee == dealer.Player)
-                    dealer.Out.SendMessage("You deal " + (player == dealer ? "yourself" : player.Player.Name) + (up ? " the " + c.Name : " a card face down") + ".", eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
+                    dealer.Out.SendMessage(LanguageMgr.GetTranslation(dealer.Account.Language, "Card.YouDeal", player == dealer ? LanguageMgr.GetTranslation(dealer.Account.Language, "Card.Yourself") : player.Player.Name, up ? c.GetName(dealer.Account.Language) : LanguageMgr.GetTranslation(dealer.Account.Language, "Card.FaceDown")), eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
                 else if (Groupee == player.Player)
-                    player.Out.SendMessage(dealer.Player.Name + " deals you the " + c.Name + ".", eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Account.Language, "Card.PlayerDealsYou", dealer.Player.Name, c.GetName(player.Account.Language)), eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
                 else
-                    Groupee.Client.Out.SendMessage(dealer.Player.Name + " deals " + (player == dealer ? "themself" : player.Player.Name) + (up ? " the " + c.Name : " a card face down") + ".", eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
+                    Groupee.Client.Out.SendMessage(LanguageMgr.GetTranslation(Groupee.Client.Account.Language, "Card.PlayerDeals", dealer.Player.Name, player == dealer ? LanguageMgr.GetTranslation(Groupee.Client.Account.Language, "Card.Themself") : player.Player.Name, up ? c.GetName(Groupee.Client.Account.Language) : LanguageMgr.GetTranslation(Groupee.Client.Account.Language, "Card.FaceDown")), eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
             }
             return;
         }
 
         /* Returns a string of the cards held by Target as requested by Source */
         public static void Held(GameClient source, GameClient target)
-        { 
-            if(!IsPlayer(target)) 
+        {
+            if(!IsPlayer(target))
             {
-                source.Player.Out.SendMessage((source == target ? "You have" : target.Player.Name + " has") + " no cards.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                source.Player.Out.SendMessage(source == target ? LanguageMgr.GetTranslation(source.Account.Language, "Card.YouHaveNoCards") : LanguageMgr.GetTranslation(source.Account.Language, "Card.PlayerHasNoCards", target.Player.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
             (m_playerHands[target.Player.ObjectId] as PlayerHand).Held(source);
@@ -368,15 +376,15 @@ namespace DOL.GS
         public static void Show(GameClient player)
         {
             if (player.Player.Group == null) return;
-            if (!IsPlayer(player)) { player.Out.SendMessage("You have no cards.", eChatType.CT_System, eChatLoc.CL_SystemWindow); return; }
+            if (!IsPlayer(player)) { player.Out.SendMessage(LanguageMgr.GetTranslation(player.Account.Language, "Card.YouHaveNoCards"), eChatType.CT_System, eChatLoc.CL_SystemWindow); return; }
 
             foreach (GamePlayer Groupee in player.Player.Group.GetPlayersInTheGroup())
             {
                 if (Groupee == player.Player)
-                    player.Out.SendMessage("You show your hand.", eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Account.Language, "Card.YouShowHand"), eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
                 else
-                    Groupee.Client.Out.SendMessage(player.Player.Name + " shows their hand.", eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
-            } 
+                    Groupee.Client.Out.SendMessage(LanguageMgr.GetTranslation(Groupee.Client.Account.Language, "Card.PlayerShowsHand", player.Player.Name), eChatType.CT_Emote, eChatLoc.CL_SystemWindow);
+            }
         }
 
         /* Player discards selection, returning it back to the bottom of group's deck */
@@ -384,7 +392,7 @@ namespace DOL.GS
         {
             Card c = null;
             if (!IsPlayer(player))
-            { player.Out.SendMessage("You have no cards to discard.", eChatType.CT_System, eChatLoc.CL_SystemWindow); return; }
+            { player.Out.SendMessage(LanguageMgr.GetTranslation(player.Account.Language, "Card.YouHaveNoCardsToDiscard"), eChatType.CT_System, eChatLoc.CL_SystemWindow); return; }
             c = (m_playerHands[player.Player.ObjectId] as PlayerHand).Discard(selection);
             if (c != null)
             {

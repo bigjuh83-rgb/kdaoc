@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using DOL.GS.Keeps;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -13,7 +14,7 @@ namespace DOL.GS.Spells
         {
             if (!Caster.CurrentZone.IsOF || Caster.CurrentRegion.IsDungeon)
             {
-                MessageToCaster("You cannot use siege weapons here!", eChatType.CT_SpellResisted);
+                MessageToCaster(T("Siege.Summon.CannotUseHere"), eChatType.CT_SpellResisted);
                 return false;
             }
 
@@ -22,7 +23,7 @@ namespace DOL.GS.Spells
 
             if (!player.CurrentZone.IsOF || player.CurrentRegion.IsDungeon)
             {
-                MessageToCaster("You cannot use siege weapons here!", eChatType.CT_SpellResisted);
+                MessageToCaster(T("Siege.Summon.CannotUseHere"), eChatType.CT_SpellResisted);
                 return false;
             }
 
@@ -31,25 +32,25 @@ namespace DOL.GS.Spells
 
             if (target is not (GameKeepDoor or GameRelicDoor))
             {
-                MessageToCaster("You need to target a door!", eChatType.CT_SpellResisted);
+                MessageToCaster(T("Siege.Summon.NeedDoorTarget"), eChatType.CT_SpellResisted);
                 return false;
             }
 
             if (!target.IsAttackable)
             {
-                MessageToCaster("You cannot attack your target.", eChatType.CT_SpellResisted);
+                MessageToCaster(T("Siege.Summon.TargetNotAttackable"), eChatType.CT_SpellResisted);
                 return false;
             }
 
             if (!Caster.IsWithinRadius(target, 500))
             {
-                player.Out.SendMessage($"You are too far away to attack {Caster.TargetObject.Name}", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(T("Siege.Summon.TooFar", Caster.TargetObject.Name), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                 return false;
             }
 
             if (Caster.GetDistanceTo(target) < 200)
             {
-                player.Out.SendMessage($"You are too close to attack {Caster.TargetObject.Name}", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(T("Siege.Summon.TooClose", Caster.TargetObject.Name), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                 return false;
             }
 
@@ -65,7 +66,7 @@ namespace DOL.GS.Spells
 
             if (ramsInRadius >= 2)
             {
-                MessageToCaster("Too many rams in this area and you cannot summon another ram here!", eChatType.CT_SpellResisted);
+                MessageToCaster(T("Siege.Summon.TooManyRams"), eChatType.CT_SpellResisted);
                 return false;
             }
 
@@ -131,11 +132,16 @@ namespace DOL.GS.Spells
         {
             if (selectedTarget is not (GameKeepDoor or GameRelicDoor))
             {
-                MessageToCaster("You need to target a door!", eChatType.CT_SpellResisted);
+                MessageToCaster(T("Siege.Summon.NeedDoorTarget"), eChatType.CT_SpellResisted);
                 return false;
             }
 
             return base.CheckBeginCast(selectedTarget);
+        }
+
+        private string T(string key, params object[] args)
+        {
+            return LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, key, args);
         }
 
         public override IList<string> DelveInfo

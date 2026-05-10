@@ -1,5 +1,6 @@
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -10,7 +11,7 @@ namespace DOL.GS.Spells
 		{
 			if(Caster.IsDisarmed)
 			{
-				MessageToCaster("You are disarmed and can't use this spell!",eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "DoomHammer.DisarmedCannotUse"),eChatType.CT_SpellResisted);
 				return false;
 			}
 			return base.CheckBeginCast(selectedTarget);

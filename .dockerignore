@@ -1,0 +1,8 @@
+OldClient/
+KoreanFont/
+Debug/
+.git/
+bin/
+obj/
+**/bin/
+**/obj/

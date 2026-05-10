@@ -1,0 +1,10 @@
+﻿Hib.SearchForKnowledge.CheckPlayerAbortQuest.Text1:	좋습니다. 이제 나가서 일을 마무리하세요!
+Hib.SearchForKnowledge.CheckPlayerAbortQuest.Text2:	퀘스트 {0}을(를) 포기합니다. 원한다면 다시 시작할 수 있습니다.
+Hib.SearchForKnowledge.Conclusion.Text1:		고맙습니다, {0}. 로흐 구르에 있는 제 견습생들에게 소환장을 보내겠습니다. 전쟁 때문에 우리의 자원이 줄어들고 있고, 모든 전선에서 해야 할 일이 많습니다. 저 역시 감당하기 벅찰 만큼 일이 많군요. 돕고 싶다면 언제든 말해 주세요.
+Hib.SearchForKnowledge.Init.Text1:			신병의 망토
+Hib.SearchForKnowledge.Init.Text2:			에포나에게 보내는 편지
+Hib.SearchForKnowledge.Init.Text3:			에포나에게 전갈을 전하세요.
+Hib.SearchForKnowledge.QuestTitle:			지식의 탐색
+Hib.SearchForKnowledge.Story:				축복이 함께하기를. 마그 멜에 온 것을 환영합니다. 시대가 변하고 있고, 우리가 알던 장엄한 하이버니아 역시 변하고 있습니다. 알비온과 미드가르드를 상대로 한 렐름 전쟁이 격렬해지면서 우리의 지도자들도 깊이 우려하고 있습니다. 루그 왕은 장막에서 돌아와 다시 티르 나 노그의 왕좌에 올랐습니다. 이곳 마그 멜의 주민을 지키는 문제 때문에 페이건마저 불안해하고 있지요.\n\n렐름 전쟁은 우리 작은 마을을 지키던 주둔병 대부분을 앗아갔습니다. 감시자들이 제 인원으로 순찰하던 때에도 시아브라와 여러 생명체를 상대하느라 손이 모자랐습니다. 이제는 앙상하게 줄어든 병력으로 마을 둘레를 순찰하는 것조차 버거운 형편입니다. 우리 지역 치유사 에포나에게 전할 전갈이 있습니다. 렐름 전쟁은 최전선에서 싸우는 용감한 남녀들에게 큰 부담을 주고 있으며, 장로의 길에서는 국경지대로 보낼 치유사를 가능한 한 많이 모집하고 있다고 알려 왔습니다. 이 소식을 에포나에게 전해 주십시오. 그녀가 당신에게 맡길 일이 몇 가지 있을지도 모릅니다.
+Hib.SearchForKnowledge.Summary:				블러신이 마그 멜과 하이버니아의 현재 상황에 대해 하는 말을 들으세요. 훈련관의 말이 끝나면 에포나를 찾아가 편지를 전달하세요.
+Hib.SearchForKnowledge.TalkToEpona:			조금 지쳐 보이는군요, 모험가여. 제가 다시 온전하게 회복시켜 드릴까요?

@@ -25,7 +25,7 @@ namespace DOL.GS.Commands
 			if (ServerProperties.Properties.DISABLE_APPEALSYSTEM)
 			{
 				//AppealMgr.MessageToClient(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Appeal.SystemDisabled"));
-				client.Out.SendMessage("The /appeal system has moved to Discord. Use the #appeal channel on our Discord to be assisted on urgent matters.",eChatType.CT_Staff,eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.CheckAppeal.MovedToDiscord"),eChatType.CT_Staff,eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -83,12 +83,12 @@ namespace DOL.GS.Commands
 							//Let's view it.
 							List<string> msg = new List<string>();
 							//note: we do not show the player his Appeals priority.
-							msg.Add("[Player]: " + appeal.Name + ", [Status]: " + appeal.Status + ", [Issue]: " + appeal.Text + ", [Time]: " + appeal.Timestamp + ".\n");
+							msg.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.CheckAppeal.SummaryLine", appeal.Name, appeal.Status, appeal.Text, appeal.Timestamp) + "\n");
 							msg.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Appeal.CurrentStaffAvailable", AppealMgr.GetAvailableStaffMembers().Count + "\n"));
 							msg.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Appeal.PleaseBePatient") + "\n");
 							msg.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Appeal.IfYouLogOut") + "\n");
 							msg.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Appeal.ToCancelYourAppeal"));
-							client.Out.SendCustomTextWindow("Your Appeal", msg);
+							client.Out.SendCustomTextWindow(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.CheckAppeal.WindowTitle"), msg);
 							return;
 						}
 						AppealMgr.MessageToClient(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Appeal.NoAppealToView"));

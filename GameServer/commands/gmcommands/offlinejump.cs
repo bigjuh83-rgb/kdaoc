@@ -1,6 +1,7 @@
 ﻿using System;
 using DOL.GS.PacketHandler;
 using DOL.Database;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -22,7 +23,7 @@ namespace DOL.GS.Commands
 					character = DOLDB<DbCoreCharacter>.SelectObject(DB.Column("Name").IsEqualTo(args[1]));
 					if (character == null)
 					{
-						client.Out.SendMessage("Character " + args[1] + " not found", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Offlinejump.CharacterNotFound", args[1]), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
 						return;
 					}
 					character.Xpos = 33278;
@@ -32,18 +33,18 @@ namespace DOL.GS.Commands
 					character.Direction = 2056;
 					BindCharacter(character);
 					GameServer.Database.SaveObject(character);
-					client.Out.SendMessage("Character " + args[1].ToUpperInvariant() + " has been moved to Jail", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
-				} 
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Offlinejump.MovedToJail", args[1].ToUpperInvariant()), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+				}
 				else if (args.Length == 4 && args[2] == "to" && args[3] == "capital")
 				{
 					DbCoreCharacter character;
 					character = DOLDB<DbCoreCharacter>.SelectObject(DB.Column("Name").IsEqualTo(args[1]));
 					if (character == null)
 					{
-						client.Out.SendMessage("Character " + args[1] + " not found", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Offlinejump.CharacterNotFound", args[1]), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
 						return;
 					}
-					
+
 					switch (character.Realm)
 					{
 						case 1:
@@ -77,8 +78,8 @@ namespace DOL.GS.Commands
 					}
 					BindCharacter(character);
 					GameServer.Database.SaveObject(character);
-					client.Out.SendMessage("Character " + args[1].ToUpperInvariant() + " has been moved to their Realm's Capital City", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
-				} 
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Offlinejump.MovedToCapital", args[1].ToUpperInvariant()), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+				}
 				else
 				{
 					DisplaySyntax(client);
@@ -89,7 +90,7 @@ namespace DOL.GS.Commands
 				DisplayMessage(client, ex.Message);
 			}
 		}
-		
+
 		public static void BindCharacter(DbCoreCharacter ch)
 		{
 			ch.BindRegion = ch.Region;

@@ -103,6 +103,7 @@ AbstractCraftingSkill.LooseRawMaterial.Count:		    You lose ({0}) {1}.
 AbstractCraftingSkill.LooseRawMaterial.Materials:	    You fail to make the {0}, and lose some materials!
 AbstractCraftingSkill.MakeItem.LoseNoMaterials:		    You fail to make the {0}, but lose no materials!
 AbstractCraftingSkill.MakeItem.NotAllMaterials:		    You do not have all the ingredients to make this item.
+AbstractCraftingSkill.MakeItem.CouldNotFindRecipeOrItem: Could not find recipe or item to craft!
 AbstractCraftingSkill.BuildCraftedItem.BackpackFull:	Your backpack is full. {0} is created on the ground.
 AbstractCraftingSkill.BuildCraftedItem.Masterpiece:	    It's a masterpiece!
 AbstractCraftingSkill.BuildCraftedItem.Successfully:	You successfully make the {0}! ({1})
@@ -156,6 +157,19 @@ Salvage.BeginWork.InterruptSalvage:			        You move and interrupt your salvag
 Salvage.BeginWork.NoRoom:				            You don't have enough room in your inventory!
 Salvage.BeginWork.NoSalvage:				        You can't salvage {0}!
 Salvage.BeginWork.Salvaging:				        Salvaging: {0}
+Salvage.Error.ItemToSalvageNotFound:         Error finding the item to salvage!
+Salvage.Error.MaterialIdMissing:             MaterialId_nb is missing for {0}'s salvage recipe!
+Salvage.Error.MaterialNotFound:              Can't find material ({0}) needed to salvage this item!
+Salvage.Error.MissingRawMaterial:            Missing raw material {0}!
+Salvage.Error.NoMaterialSet:                 No material set for this item.
+Salvage.Error.NoRawMaterialsSiege:           No raw materials provided for this siege weapon!
+Salvage.Error.RawMaterialNeededNotFound:     Error finding the raw material needed to salvage this item!
+Salvage.Error.RecipeNotFound:                Salvage recipe not found for this item.
+Salvage.Error.RecipeNotImplemented:          This item's salvage recipe ({0}) is not implemented yet.
+Salvage.Error.RetrieveData:                  Error retrieving salvage data!
+Salvage.Error.RetrieveDataForItem:           Error retrieving salvage data for this item!
+Salvage.IsAllowedToBeginWork.CannotSalvageItem:This item cannot be salvaged.
+Salvage.IsAllowedToBeginWork.CantInCombat:   You can't salvage while in combat.
 Salvage.IsAllowedToBeginWork.BackpackItems:		    You can only salvage items in your backpack!
 Salvage.IsAllowedToBeginWork.EndCurrentAction:		You must end your current action before you salvage anything!
 Salvage.IsAllowedToBeginWork.NotEnoughSkill:		You don't have enough skill to salvage the {0}!

@@ -50,7 +50,7 @@ namespace DOL.GS
 						else
 							truc = ((source as GameSummonedPet).Owner as GamePlayer);
 						if (truc != null)
-							truc.Out.SendMessage(Name + " is immune to any damage!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+							truc.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.SummonerLossren.ImmuneToDamage", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
 						base.TakeDamage(source, damageType, 0, 0);
 						return;
 					}
@@ -404,7 +404,7 @@ namespace DOL.GS
 			Level = (byte)Util.Random(48, 53);
 			Faction = FactionMgr.GetFactionByID(187);
 			TorturedSoulsBrain souls = new TorturedSoulsBrain();
-			SetOwnBrain(souls);			
+			SetOwnBrain(souls);
 			base.AddToWorld();
 			return true;
 		}
@@ -496,15 +496,17 @@ namespace DOL.GS
 {
 	public class ExplodeUndead : GameNPC
 	{
+		private const string GhoulCrawlsKey = "NamedMobs.SummonerLossren.GhoulCrawls";
+
 		public override int MaxHealth
 		{
 			get { return 4000; }
 		}
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(String key, params object[] args)
 		{
 			foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
-				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
 			}
 		}
 		public override double GetArmorAF(eArmorSlot slot)
@@ -578,8 +580,8 @@ namespace DOL.GS
 				if(Zombie_Targets.Count>0)
                 {
 					GamePlayer Target = (GamePlayer)Zombie_Targets[Util.Random(0, Zombie_Targets.Count - 1)];
-					RandomTarget = Target;						
-					BroadcastMessage(String.Format(this.Name+" crawls toward "+RandomTarget.Name+"!"));
+					RandomTarget = Target;
+					BroadcastMessage(GhoulCrawlsKey, this.Name, RandomTarget.Name);
 				}
 			}
 			return success;

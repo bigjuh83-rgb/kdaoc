@@ -24,12 +24,12 @@ namespace DOL.GS.WeeklyQuest.Albion
 		private const string questTitle = "[Weekly] Extinction of " + DRAGON_NAME;
 		private const int minimumLevel = 45;
 		private const int maximumLevel = 50;
-		
+
 		// Kill Goal
 		private const int MAX_KILLED = 1;
 		// Quest Counter
 		private int DragonKilled = 0;
-		
+
 		private static GameNPC Hector = null; // Start NPC
 
 		// Constructors
@@ -57,13 +57,13 @@ namespace DOL.GS.WeeklyQuest.Albion
 				return minimumLevel;
 			}
 		}
-		
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -141,7 +141,7 @@ namespace DOL.GS.WeeklyQuest.Albion
 
 		private static void TalkToHector(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -162,15 +162,13 @@ namespace DOL.GS.WeeklyQuest.Albion
 							Hector.SayTo(player, player.Name + ", please travel to Dartmoor and kill the dragon for Albion!");
 							break;
 						case 2:
-							Hector.SayTo(player, "Hello " + player.Name + ", did you [slay the dragon] and return for your reward?");
+							Hector.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[slay the dragon] and return for your reward"));
 							break;
 					}
 				}
 				else
 				{
-					Hector.SayTo(player, "Hello "+ player.Name +", I am Hector. I bring sad news today. " + DRAGON_NAME + " razed a small settlement in Dartmoor last night. \n" +
-					                   "Please, help the king avenge their deaths and keep Albion safe from " + DRAGON_NAME +  "\'s influence. \n\n"+
-					                   "Can you support Albion and [kill the dragon]?");
+					Hector.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DragonIntro", player.Name, "Hector", DRAGON_NAME, "Dartmoor", "Albion"));
 				}
 			}
 				// The player whispered to the NPC
@@ -182,7 +180,8 @@ namespace DOL.GS.WeeklyQuest.Albion
 					switch (wArgs.Text)
 					{
 						case "kill the dragon":
-							player.Out.SendQuestSubscribeCommand(Hector, QuestMgr.GetIDForQuestType(typeof(DragonWeeklyQuestAlb)), "Will you help Hector with "+questTitle+"?");
+						case "드래곤 처치":
+							player.Out.SendQuestSubscribeCommand(Hector, QuestMgr.GetIDForQuestType(typeof(DragonWeeklyQuestAlb)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcWithQuest", "Hector", questTitle));
 							break;
 					}
 				}
@@ -193,18 +192,18 @@ namespace DOL.GS.WeeklyQuest.Albion
 						case "slay the dragon":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -233,11 +232,11 @@ namespace DOL.GS.WeeklyQuest.Albion
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and scout the dragon!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueScoutDragon"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -267,7 +266,7 @@ namespace DOL.GS.WeeklyQuest.Albion
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for helping Albion.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelpingRealm", "Albion"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -275,7 +274,7 @@ namespace DOL.GS.WeeklyQuest.Albion
 				if (!Hector.GiveQuest(typeof (DragonWeeklyQuestAlb), player, 1))
 					return;
 
-				Hector.SayTo(player, "Please, find the dragon in Dartmoor and defend our realm.");
+				Hector.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DragonReminder", "Dartmoor"));
 
 			}
 		}
@@ -294,9 +293,9 @@ namespace DOL.GS.WeeklyQuest.Albion
 				switch (Step)
 				{
 					case 1:
-						return "Travel to Dartmoor and slay " + DRAGON_NAME + " for Albion. \nKilled: " + DRAGON_NAME + " ("+ DragonKilled +" | " + MAX_KILLED + ")";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.DragonDescription", "Dartmoor", DRAGON_NAME, "Albion", DragonKilled, MAX_KILLED);
 					case 2:
-						return "Return to Hector for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpc", "Hector");
 				}
 				return base.Description;
 			}
@@ -317,9 +316,9 @@ namespace DOL.GS.WeeklyQuest.Albion
 
 			if (gArgs.Target.Name.ToLower() != DRAGON_NAME.ToLower()) return;
 			DragonKilled = 1;
-			player.Out.SendMessage("[Weekly] You killed " + DRAGON_NAME + ": (" + DragonKilled + " | " + MAX_KILLED + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyNamedKilled", DRAGON_NAME, DragonKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (DragonKilled >= MAX_KILLED)
 			{
 				// FinishQuest or go back to Haszan
@@ -327,21 +326,21 @@ namespace DOL.GS.WeeklyQuest.Albion
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "DragonWeeklyQuestAlb";
 			set { ; }
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
-			
+
 		}
 
 		public override void SaveQuestParameters()
 		{
-			
+
 		}
 
 		public override void FinishQuest()

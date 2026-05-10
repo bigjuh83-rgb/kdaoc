@@ -2,6 +2,7 @@ using System;
 using DOL.Database;
 using DOL.GS.Housing;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -14,13 +15,11 @@ namespace DOL.GS
 
             if (player.HCFlag)
             {
-                SayTo(player,$"I'm sorry {player.Name}, my vault is not Hardcore enough for you.");
+                SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AccountVaultKeeper.HardcoreDenied", player.Name));
                 return false;
             }
 
-            string message = $"Greetings {player.Name}, nice meeting you.\n";
-            message += "I am happy to offer you my services.\n\n";
-            message += "You can browse the [first] or [second] page of your Account Vault.";
+            string message = LanguageMgr.GetTranslation(player.Client.Account.Language, "AccountVaultKeeper.Interact.Greeting", player.Name);
             player.Out.SendMessage(message, eChatType.CT_Say, eChatLoc.CL_PopupWindow);
             player.ActiveInventoryObject = player.AccountVault;
             player.Out.SendInventoryItemsUpdate(player.ActiveInventoryObject.GetClientInventory(), eInventoryWindowType.HouseVault);
@@ -35,14 +34,14 @@ namespace DOL.GS
             if (source is not GamePlayer player)
                 return false;
 
-            if (text.Equals("first", StringComparison.OrdinalIgnoreCase))
+            if (text.Equals("first", StringComparison.OrdinalIgnoreCase) || text.Equals("첫 번째", StringComparison.OrdinalIgnoreCase))
             {
                 AccountVault vault = new(player, 0, GetDummyVaultItem(player));
                 player.ActiveInventoryObject = vault;
                 player.Out.SendInventoryItemsUpdate(vault.GetClientInventory(), eInventoryWindowType.HouseVault);
             }
 
-            if (text.Equals("second", StringComparison.OrdinalIgnoreCase))
+            if (text.Equals("second", StringComparison.OrdinalIgnoreCase) || text.Equals("두 번째", StringComparison.OrdinalIgnoreCase))
             {
                 AccountVault vault = new(player, 1, GetDummyVaultItem(player));
                 player.ActiveInventoryObject = vault;

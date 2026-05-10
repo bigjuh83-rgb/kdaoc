@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using DOL.AI.Brain;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Effects
 {
@@ -19,7 +20,7 @@ namespace DOL.GS.Effects
 			//Send messages
 			if (m_living is GamePlayer)
 			{
-				((GamePlayer)m_living).Out.SendMessage("You begin to charge wildly!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+				((GamePlayer)m_living).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)m_living).Client.Account.Language, "RealmAbility.ChargeEffect.BeginCharge"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 			}
 			else if (m_living is GameNPC)
 			{
@@ -30,13 +31,13 @@ namespace DOL.GS.Effects
 
 					if (playerowner != null)
 					{
-						playerowner.Out.SendMessage("The " + icb.Body.Name + " charges its prey!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+						playerowner.Out.SendMessage(LanguageMgr.GetTranslation(playerowner.Client.Account.Language, "RealmAbility.ChargeEffect.PetCharges", icb.Body.Name), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 					}
 				}
 			}
 			else
 				return;
-			
+
 			m_startTick = living.CurrentRegion.Time;
 			foreach (GamePlayer t_player in living.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
@@ -75,7 +76,7 @@ namespace DOL.GS.Effects
 			{
 				GamePlayer player = m_living as GamePlayer;
 				player.Out.SendUpdateMaxSpeed();
-				player.Out.SendMessage("You no longer seem so crazy!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.ChargeEffect.NoLongerCrazy"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			else if (m_living is GameNPC)
 			{
@@ -86,7 +87,7 @@ namespace DOL.GS.Effects
 
 					if (playerowner != null)
 					{
-						playerowner.Out.SendMessage("The " + icb.Body.Name + " ceases its charge!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+						playerowner.Out.SendMessage(LanguageMgr.GetTranslation(playerowner.Client.Account.Language, "RealmAbility.ChargeEffect.PetCeases", icb.Body.Name), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 					}
 				}
 			}

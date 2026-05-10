@@ -1,5 +1,4 @@
 using DOL.GS.Housing;
-using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -18,14 +17,14 @@ namespace DOL.GS.Commands
             House house = client.Player.CurrentHouse;
 			if (house == null)
 			{
-                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Boot.InHouseError"));
+                DisplayMessage(client, T(client, "Scripts.Players.Boot.InHouseError"));
 				return;
 			}
 
 			// no permission to banish, return
 			if (!house.CanBanish(client.Player))
 			{
-				DisplayMessage(client, "You do not have permissions to do that.");
+				DisplayMessage(client, T(client, "PlayerCommands.Common.NoPermission"));
 				return;
 			}
 

@@ -2,6 +2,7 @@ using System.Collections;
 using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS.Keeps;
+using DOL.Language;
 
 namespace DOL.GS.ServerRules
 {
@@ -13,7 +14,7 @@ namespace DOL.GS.ServerRules
 	{
 		public override string RulesDescription()
 		{
-			return "standard Normal server rules";
+			return LanguageMgr.GetTranslation(LanguageMgr.DefaultLanguage, "ServerRules.Normal.Description");
 		}
 
 		public override bool IsAllowedToAttack(GameLiving attacker, GameLiving defender, bool quiet)
@@ -39,7 +40,7 @@ namespace DOL.GS.ServerRules
 			if (attacker == defender)
 			{
 				if (!quiet)
-					MessageToLiving(attacker, "You can't attack yourself!");
+					MessageToLivingTranslated(attacker, "ServerRules.Attack.Self");
 
 				return false;
 			}
@@ -64,7 +65,7 @@ namespace DOL.GS.ServerRules
 				}
 
 				if (!quiet)
-					MessageToLiving(attacker, "You can't attack a member of your realm!");
+					MessageToLivingTranslated(attacker, "ServerRules.Attack.RealmMember");
 
 				return false;
 			}
@@ -74,7 +75,7 @@ namespace DOL.GS.ServerRules
 
 		public override bool IsSameRealm(GameLiving source, GameLiving target, bool quiet)
 		{
-			if(source == null || target == null) 
+			if(source == null || target == null)
 				return false;
 
 			// if controlled NPC - do checks for owner instead
@@ -113,7 +114,7 @@ namespace DOL.GS.ServerRules
 
 			if(source.Realm != target.Realm)
 			{
-				if(quiet == false) MessageToLiving(source, target.GetName(0, true) + " is not a member of your realm!");
+				if(quiet == false) MessageToLivingTranslated(source, "ServerRules.Realm.NotMember", target.GetName(0, true));
 				return false;
 			}
 			return true;
@@ -131,10 +132,10 @@ namespace DOL.GS.ServerRules
 		public override bool IsAllowedToGroup(GamePlayer source, GamePlayer target, bool quiet)
 		{
 			if(source == null || target == null) return false;
-			
+
 			if (source.Realm != target.Realm)
 			{
-				if(quiet == false) MessageToLiving(source, "You can't group with a player from another realm!");
+				if(quiet == false) MessageToLivingTranslated(source, "ServerRules.Group.OtherRealm");
 				return false;
 			}
 
@@ -144,7 +145,7 @@ namespace DOL.GS.ServerRules
 
 		public override bool IsAllowedToJoinGuild(GamePlayer source, Guild guild)
 		{
-			if (source == null) 
+			if (source == null)
 				return false;
 
 			if (ServerProperties.Properties.ALLOW_CROSS_REALM_GUILDS == false && guild.Realm != eRealm.None && source.Realm != guild.Realm)
@@ -159,7 +160,7 @@ namespace DOL.GS.ServerRules
 		{
 
 			if(source == null || target == null) return false;
-			
+
 			// clients with priv level > 1 are allowed to trade with anyone
 			if(source is GamePlayer && target is GamePlayer)
 			{
@@ -178,7 +179,7 @@ namespace DOL.GS.ServerRules
 
 			if(source.Realm != target.Realm)
 			{
-				if(quiet == false) MessageToLiving(source, "You can't trade with enemy realm!");
+				if(quiet == false) MessageToLivingTranslated(source, "ServerRules.Trade.EnemyRealm");
 				return false;
 			}
 			return true;
@@ -251,7 +252,7 @@ namespace DOL.GS.ServerRules
 				m_compatibleObjectTypes[(int)eObjectType.Flexible]        = new eObjectType[] { eObjectType.Flexible };
 				m_compatibleObjectTypes[(int)eObjectType.Longbow]         = new eObjectType[] { eObjectType.Longbow };
 				m_compatibleObjectTypes[(int)eObjectType.Crossbow]        = new eObjectType[] { eObjectType.Crossbow };
-				//TODO: case 5: abilityCheck = Abilities.Weapon_Thrown; break;                                         
+				//TODO: case 5: abilityCheck = Abilities.Weapon_Thrown; break;
 
 				//mid
 				m_compatibleObjectTypes[(int)eObjectType.Hammer]       = new eObjectType[] { eObjectType.Hammer };
@@ -324,7 +325,7 @@ namespace DOL.GS.ServerRules
 
 			return string.Empty;
 		}
-	
+
 		/// <summary>
 		/// Gets the player's custom title based on server type
 		/// </summary>
@@ -335,7 +336,7 @@ namespace DOL.GS.ServerRules
 		{
 			if (IsSameRealm(source, target, true))
 				return target.CurrentTitle.GetValue(source, target);
-			
+
 			return string.Empty;
 		}
 
@@ -347,7 +348,7 @@ namespace DOL.GS.ServerRules
 		public override void ResetKeep(GuardLord lord, GameObject killer)
 		{
 			base.ResetKeep(lord, killer);
-			lord.Component.Keep.Reset((eRealm)killer.Realm);
+			lord.Component.Keep.Reset(killer != null ? (eRealm)killer.Realm : eRealm.None);
 		}
 	}
 }

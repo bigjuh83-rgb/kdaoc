@@ -47,7 +47,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 				}
 
 				// Money.
-				if (slot is >= 244 and <= 248) 
+				if (slot is >= 244 and <= 248)
 				{
 					if (!house.CanPayRent(client.Player))
 					{
@@ -92,7 +92,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 					client.Player.TempProperties.SetProperty(HousingConstants.MoneyForHouseRent, moneyToAdd);
 					client.Player.TempProperties.SetProperty(HousingConstants.HouseForHouseRent, house);
 					client.Player.Out.SendInventorySlotsUpdate(null);
-					client.Player.Out.SendHousePayRentDialog($"Pay rent with {_position} {moneyType}?");
+					client.Player.Out.SendHousePayRentDialog(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Player.Housing.PayRentDialog", _position, moneyType));
 					return;
 				}
 
@@ -111,13 +111,13 @@ namespace DOL.GS.PacketHandler.Client.v168
 					// make sure player has owner permissions
 					if (!house.HasOwnerPermissions(client.Player))
 					{
-						ChatUtil.SendSystemMessage(client.Player, "You don't own this house!");
+						ChatUtil.SendSystemMessage(client.Player, "Scripts.Player.Housing.HouseNotYours", null);
 						return;
 					}
 
 					client.Player.TempProperties.SetProperty(DeedWeak, new WeakRef(orgitem));
 					client.Player.TempProperties.SetProperty(TargetHouse, house);
-					client.Player.Out.SendCustomDialog(LanguageMgr.GetTranslation(client.Account.Language, "WARNING: You are about to delete this house and all indoor and outdoor items attached to it!"), HouseRemovalDialog);
+					client.Player.Out.SendCustomDialog(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Player.Housing.HouseRemovalWarning"), HouseRemovalDialog);
 
 					return;
 				}
@@ -130,15 +130,15 @@ namespace DOL.GS.PacketHandler.Client.v168
 					// make sure player has owner permissions
 					if (!house.HasOwnerPermissions(client.Player))
 					{
-						ChatUtil.SendSystemMessage(client, "You may not change other peoples houses");
+						ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.MayNotChangeOtherHouses", null);
 
 						return;
 					}
 
 					client.Player.TempProperties.SetProperty(DeedWeak, new WeakRef(orgitem));
 					client.Player.TempProperties.SetProperty(TargetHouse, house);
-					client.Player.Out.SendMessage("Warning:\n This will remove *all* items from your current house!", eChatType.CT_System, eChatLoc.CL_PopupWindow);
-					client.Player.Out.SendCustomDialog("Are you sure you want to upgrade your House?", HouseUpgradeDialog);
+					client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Player.Housing.HouseUpgradeWarning"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
+					client.Player.Out.SendCustomDialog(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Player.Housing.HouseUpgradeConfirm"), HouseUpgradeDialog);
 
 					return;
 				}
@@ -149,7 +149,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 					if (client.Player.Guild == null)
 					{
 						client.Out.SendInventorySlotsUpdate([(eInventorySlot) slot]);
-						ChatUtil.SendSystemMessage(client, "You must be a member of a guild to do that");
+						ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.MustBeInGuild", null);
 						return;
 					}
 
@@ -157,7 +157,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 					if (!house.HasOwnerPermissions(client.Player))
 					{
 						client.Out.SendInventorySlotsUpdate([(eInventorySlot) slot]);
-						ChatUtil.SendSystemMessage(client, "You do not own this house.");
+						ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.HouseNotYours", null);
 						return;
 					}
 
@@ -165,7 +165,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 					if (client.Player.Guild.GuildOwnsHouse)
 					{
 						client.Out.SendInventorySlotsUpdate([(eInventorySlot) slot]);
-						ChatUtil.SendSystemMessage(client, "Your Guild already owns a house.");
+						ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.GuildAlreadyOwnsHouse", null);
 						return;
 					}
 
@@ -173,14 +173,14 @@ namespace DOL.GS.PacketHandler.Client.v168
 					if (!client.Player.Guild.HasRank(client.Player, Guild.eRank.Leader))
 					{
 						client.Out.SendInventorySlotsUpdate([(eInventorySlot) slot]);
-						ChatUtil.SendSystemMessage(client, "You are not the leader of a guild.");
+						ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.NotGuildLeader", null);
 						return;
 					}
 
 					if (HouseMgr.HouseTransferToGuild(client.Player, house))
 					{
 						// This will still take the item even if player answers NO to confirmation.
- 						// I'm fixing consignment, not housing, and frankly I'm sick of fixing stuff!  :)  - tolakram
+						// I'm fixing consignment, not housing, and frankly I'm sick of fixing stuff!  :)  - tolakram
 						client.Player.Inventory.RemoveItem(orgitem);
 						InventoryLogging.LogInventoryAction(client.Player, "(HOUSE;" + housenumber + ")", eInventoryActionType.Other, orgitem.Template, orgitem.Count);
 					}
@@ -232,7 +232,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 				}
 
 				int objType = orgitem.Object_Type;
-				if (objType == 49) // Garden items 
+				if (objType == 49) // Garden items
 				{
 					method = 1;
 				}
@@ -482,7 +482,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 							{
 								if (house.ConsignmentMerchant != null)
 								{
-									ChatUtil.SendSystemMessage(client, "You must first remove the consignment merchant.");
+									ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.RemoveConsignmentFirst", null);
 									client.Out.SendInventorySlotsUpdate([(eInventorySlot) slot]);
 									return;
 								}
@@ -507,7 +507,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 								// make sure there is a porch for this consignment merchant!
 								if (!house.Porch)
 								{
-									ChatUtil.SendSystemMessage(client, "Your house needs a porch first.");
+									ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.NeedsPorchFirst", null);
 									client.Out.SendInventorySlotsUpdate([(eInventorySlot) slot]);
 									return;
 								}
@@ -521,7 +521,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 								}
 								else
 								{
-									ChatUtil.SendSystemMessage(client, "You cannot add a consignment merchant here.");
+									ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.CannotAddConsignmentHere", null);
 									client.Out.SendInventorySlotsUpdate([(eInventorySlot) slot]);
 								}
 								return;
@@ -696,7 +696,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 						// make sure the hookpoint position is valid
 						if (_position > HousingConstants.MaxHookpointLocations)
 						{
-							ChatUtil.SendSystemMessage(client, "This hookpoint position is unknown, error logged.");
+							ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.HookPointUnknown", null);
 							log.Error("HOUSING: " + client.Player.Name + " working with invalid position " + _position + " in house " +
 										house.HouseNumber + " model " + house.Model);
 
@@ -734,7 +734,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 						int vaultIndex = house.GetAvailableVaultSlot();
 						if (vaultIndex < 0)
 						{
-							client.Player.Out.SendMessage("You can't add any more vaults to this house!", eChatType.CT_System,
+							client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Player.Housing.NoMoreVaults"), eChatType.CT_System,
 															eChatLoc.CL_SystemWindow);
 							client.Out.SendInventorySlotsUpdate([(eInventorySlot) slot]);
 
@@ -782,7 +782,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 			catch (Exception ex)
 			{
 				log.Error("HousingPlaceItemHandler", ex);
-				client.Out.SendMessage("Error processing housing action; the error has been logged!", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Player.Housing.ActionErrorLogged"), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
 				client.Out.SendInventorySlotsUpdate(null);
 			}
 		}
@@ -913,7 +913,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 				string action = string.Format("HOUSING: {0} logged new HouseHookpointOffset for model {1}, position {2}, offset {3}, {4}, {5}",
 								  player.Name, a.HouseModel, a.HookpointID, a.X, a.Y, a.Z);
-				
+
 				log.Debug(action);
 				GameServer.Instance.LogGMAction(action);
 			}
@@ -924,7 +924,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 						"HOUSING: Player {0} error adding HouseHookpointOffset for model {1}, position {2}, offset {3}, {4}, {5}",
 						player.Name, a.HouseModel, a.HookpointID, a.X, a.Y, a.Z));
 
-				ChatUtil.SendSystemMessage(player, "Error adding position " + _position + ", error recorded in server error Log.");
+				ChatUtil.SendSystemMessage(player, "Scripts.Player.Housing.HookPointAddError", _position);
 			}
 		}
 
@@ -942,24 +942,24 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 			if (house == null)
 			{
-				ChatUtil.SendSystemMessage(player, "No house selected!");
+				ChatUtil.SendSystemMessage(player, "Scripts.Player.Housing.NoHouseSelected", null);
 				return;
 			}
 
 			if (item == null || item.SlotPosition == (int)eInventorySlot.Ground
 				|| item.OwnerID == null || item.OwnerID != player.InternalID)
 			{
-				ChatUtil.SendSystemMessage(player, "You need a House Removal Deed for this.");
+				ChatUtil.SendSystemMessage(player, "Scripts.Player.Housing.NeedHouseRemovalDeed", null);
 				return;
 			}
 
 			// Demand any consignment merchant inventory is removed before allowing a removal
-			// Again, note that sometimes checks are done here, sometimes in housemgr. In this case, at least, 
+			// Again, note that sometimes checks are done here, sometimes in housemgr. In this case, at least,
 			// player will get remove item back if they answer no! - tolakram
 			var consignmentMerchant = house.ConsignmentMerchant;
 			if (consignmentMerchant != null && (consignmentMerchant.GetDbItems().Any() || consignmentMerchant.TotalMoney > 0))
 			{
-				ChatUtil.SendSystemMessage(player, "All items and money must be removed from your consignment merchant in order to remove this house!");
+				ChatUtil.SendSystemMessage(player, "Scripts.Player.Housing.EmptyConsignmentBeforeRemoval", null);
 				return;
 			}
 
@@ -968,7 +968,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 			InventoryLogging.LogInventoryAction(player, "(HOUSE;" + house.HouseNumber + ")", eInventoryActionType.Other, item.Template, item.Count);
 			HouseMgr.RemoveHouse(house);
 
-			ChatUtil.SendSystemMessage(player, "Your house has been removed!");
+			ChatUtil.SendSystemMessage(player, "Scripts.Player.Housing.HouseRemoved", null);
 		}
 
 		private static void HouseUpgradeDialog(GamePlayer player, byte response)
@@ -985,14 +985,14 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 			if (house == null)
 			{
-				ChatUtil.SendSystemMessage(player, "No House selected!");
+				ChatUtil.SendSystemMessage(player, "Scripts.Player.Housing.NoHouseSelected", null);
 				return;
 			}
 
 			if (item == null || item.SlotPosition == (int)eInventorySlot.Ground
 				|| item.OwnerID == null || item.OwnerID != player.InternalID)
 			{
-				ChatUtil.SendSystemMessage(player, "This does not work without a House Deed.");
+				ChatUtil.SendSystemMessage(player, "Scripts.Player.Housing.NeedHouseDeed", null);
 				return;
 			}
 

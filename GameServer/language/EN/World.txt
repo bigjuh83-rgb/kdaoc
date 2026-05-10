@@ -15,3 +15,21 @@ ZoneBonus.AdditionalXP:                         You gain an additional {0} exper
 ZoneBonus.AdditionalRP:                         You gain an additional {0} realm points for adventuring in this zone!
 ZoneBonus.AdditionalBP:                         You gain an additional {0} bounty points for adventuring in this zone!
 ZoneBonus.AdditionalCoin:                       You gain additional coins for adventuring in this zone!
+ZoneBonusRotator.Updated:                       Bonus zones updated.
+ZoneBonusRotator.WindowTitle:                   Task Bonuses
+ZoneBonusRotator.OFBonusRegion:                 OF Bonus Region: {0}
+ZoneBonusRotator.CurrentOFBonusRegion:          Current OF Bonus Region: {0}
+ZoneBonusRotator.BonusRP:                       Bonus RP: {0}%
+ZoneBonusRotator.BonusBP:                       Bonus BP: {0}%
+ZoneBonusRotator.BonusXP:                       Bonus XP: {0}%
+ZoneBonusRotator.CurrentRealmZones:             Current {0} Zones:
+ZoneBonusRotator.ClassicZone:                   Classic Zone: {0} {1} (XP +{2}%)
+ZoneBonusRotator.SIZone:                        SI Zone: {0} {1} (XP +{2}%)
+ZoneBonusRotator.RealmClassic:                  {0} Classic: {1} (XP +{2}%)
+ZoneBonusRotator.RealmSI:                       {0} SI: {1} (XP +{2}%)
+ZoneBonusRotator.RvRTimeRemaining:              RvR Time Remaining: {0}h {1}m {2}s
+ZoneBonusRotator.PvETimeRemaining:              PvE Time Remaining: {0}h {1}m {2}s
+ZoneBonusRotator.PermanentBonuses:              Permanent Bonuses:
+ZoneBonusRotator.AllDungeons:                   All Dungeons: {0}%
+ZoneBonusRotator.RvRDungeons:                   RvR Dungeons: {0}%
+ZoneBonusRotator.DarknessFalls:                 Darkness Falls: {0}%

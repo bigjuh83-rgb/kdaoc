@@ -2,6 +2,8 @@
 
 ## Examine
 GameGuard.GetExamineMessages.Examine:			You examine {0}. {1} is {2} and is a guard.
+GameGuard.GateKeeperIn.Interact:				Where would you like to travel?
+GameGuard.GateKeeperOut.Interact:				Where would you like to travel?
 
 ## Attack Dialogue
 GameGuard.Albion.StartAttackSay:					Have at thee, fiend!

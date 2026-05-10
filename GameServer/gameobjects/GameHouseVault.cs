@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.Housing;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -104,7 +105,7 @@ namespace DOL.GS
 
         public override IList GetExamineMessages(GamePlayer player)
         {
-            List<string> list = [$"[Right click to display the contents of house vault {Index + 1}]"];
+            List<string> list = [LanguageMgr.GetTranslation(player.Client.Account.Language, "HouseVault.Examine", Index + 1)];
             return list;
         }
 
@@ -121,7 +122,7 @@ namespace DOL.GS
         {
             if (!CanView(player))
             {
-                player.Out.SendMessage("You don't have permission to view this vault!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "HouseVault.NoViewPermission"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
 

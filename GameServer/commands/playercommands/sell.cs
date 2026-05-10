@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -24,11 +25,11 @@ namespace DOL.GS.Commands
 					lastItem = 40;
 				}
 				else if (args[1].Contains('-'))
-				{ 
+				{
 					string [] bags = args[1].Split("-".ToCharArray(), 2);
 					firstBag = int.TryParse(bags[0], out firstBag) ? firstBag : 0;
 					lastBag = int.TryParse(bags[1], out lastBag) ? lastBag : 0;
-					
+
 					// if (firstBag > lastBag)
 					// {
 					// 	(firstBag, lastBag) = (lastBag, firstBag);
@@ -71,8 +72,8 @@ namespace DOL.GS.Commands
 							lastItem = 40;
 							break;
 					}
-					
-				} 
+
+				}
 				else if (int.TryParse(args[1], out int bag))
 				{
 					switch (bag)
@@ -142,11 +143,11 @@ namespace DOL.GS.Commands
 		            }
 	            }
 				else
-					client.Out.SendMessage("You must target a merchant.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Sell.TargetMerchantRequired"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			else
 			{
-				client.Out.SendMessage("Use: /sell <bag>, /sell <bag1-bag2>, /sell all", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Sell.Usage"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 	}

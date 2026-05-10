@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -50,7 +50,7 @@ namespace DOL.GS.Trainer
 		public override bool Interact(GamePlayer player)
 		{
 			if (!base.Interact(player)) return false;
-			
+
 			// check if class matches.
 			if (player.CharacterClass.ID == (int)TrainedClass)
 			{
@@ -61,7 +61,7 @@ namespace DOL.GS.Trainer
 				// perhaps player can be promoted
 				if (CanPromotePlayer(player))
 				{
-					player.Out.SendMessage(this.Name + " says, \"The church has called out to you young warrior! Will you hear its calling and [join the Church of Albion]? Thus, walking the path of a Paladin forever?\"",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.PaladinPrompt", this.Name), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 					if (!player.IsLevelRespecUsed)
 					{
 						OfferRespecialize(player);
@@ -85,31 +85,36 @@ namespace DOL.GS.Trainer
 		{
 			if (!base.WhisperReceive(source, text)) return false;
 			GamePlayer player = source as GamePlayer;
-			
-			
+
+
 			if (CanPromotePlayer(player))
 			{
 				switch (text)
 				{
-					case "join the Church of Albion":
-						player.Out.SendMessage(this.Name + " says, \"Very well then! Choose your weapon, and your initiation into the Church of Albion will be complete. You may wield [slashing], [crushing], [thrusting] or [two handed] weapons.\"",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
-						break;
-					case "slashing":
-						PromotePlayer(player, (int)eCharacterClass.Paladin, "Here is your Sword of the Initiate. Welcome to the Church of Albion.", null);
-						player.ReceiveItem(this,WEAPON_ID1);
-						break;
-					case "crushing":
-						PromotePlayer(player, (int)eCharacterClass.Paladin, "Here is your Mace of the Initiate. Welcome to the Church of Albion.", null);
-						player.ReceiveItem(this,WEAPON_ID2);
-						break;
-					case "thrusting":
-						PromotePlayer(player, (int)eCharacterClass.Paladin, "Here is your Rapier of the Initiate. Welcome to the Church of Albion.", null);
-						player.ReceiveItem(this,WEAPON_ID3);
-						break;
-					case "two handed":
-						PromotePlayer(player, (int)eCharacterClass.Paladin, "Here is your Great Sword of the Initiate. Welcome to the Church of Albion.", null);
-						player.ReceiveItem(this,WEAPON_ID4);
-						break;
+						case "join the Church of Albion":
+						case "알비온 교회에 입문":
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.PaladinChooseWeapon", this.Name), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+							break;
+						case "slashing":
+						case "베기":
+							PromotePlayer(player, (int)eCharacterClass.Paladin, LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.PaladinWelcome.Sword"), null);
+							player.ReceiveItem(this,WEAPON_ID1);
+							break;
+						case "crushing":
+						case "타격":
+							PromotePlayer(player, (int)eCharacterClass.Paladin, LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.PaladinWelcome.Mace"), null);
+							player.ReceiveItem(this,WEAPON_ID2);
+							break;
+						case "thrusting":
+						case "찌르기":
+							PromotePlayer(player, (int)eCharacterClass.Paladin, LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.PaladinWelcome.Rapier"), null);
+							player.ReceiveItem(this,WEAPON_ID3);
+							break;
+						case "two handed":
+						case "양손":
+							PromotePlayer(player, (int)eCharacterClass.Paladin, LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.PaladinWelcome.GreatSword"), null);
+							player.ReceiveItem(this,WEAPON_ID4);
+							break;
 				}
 			}
 			return true;

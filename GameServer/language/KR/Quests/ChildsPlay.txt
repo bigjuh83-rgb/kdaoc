@@ -1,0 +1,29 @@
+ChildsPlay.CheckPlayerAbortQuest.Text1:		좋아요, 이제 나가서 일을 끝내세요!
+ChildsPlay.CheckPlayerAbortQuest.Text2:		퀘스트 {0}을(를) 포기합니다. 원하면 다시 시작할 수 있습니다.
+ChildsPlay.CheckPlayerAcceptQuest.Text1:	아쉽네요. 마음이 바뀌면 다시 와 주세요!
+ChildsPlay.CheckPlayerAcceptQuest.Text2:	좋아요. 우린, 음, 당신이 다녀오는 동안 바로 여기서 기다릴게요. 봤지, Raymond? 모두가 너처럼 겁쟁이는 아니라니까. 겁쟁이!
+ChildsPlay.FinishQuest.Text1:			{0} 코퍼를 받았습니다!
+ChildsPlay.PlayerEnterStatueArea.Text1:		Charles가 말한 조각상에 도착했습니다. 그에게 돌아가 도전을 완료했다고 알려 주세요.
+ChildsPlay.QuestTitle:				아이들의 놀이
+ChildsPlay.TalkToCharles.Text1:			안녕하세요, {0}. 같은 놀이를 계속 반복하다 지겨워진 적 있나요? 여기가 딱 그래요. 어른들은 우리가 여기 앉아서 '진실 혹은 도전'이나 하라고만 해요. 처음엔 재미있었지만, 이제 대부분 지겨워졌고 Raymond는 내가 생각해 낸 [도전]은 하나도 못 할 만큼 겁쟁이예요.
+ChildsPlay.TalkToCharles.Text2:			살아서 돌아왔네요! 아니, 어, 다시 온 걸 환영해요! 조각상은 어땠어요? 무서웠나요? 그럼 다시 우리랑 같이 놀겠다는 뜻인가요? 그렇다면 이걸 가져가도 돼요. 이제 나한테는 필요 없거든요.
+ChildsPlay.TalkToCharles.Text3:			{0} 퀘스트를 완료했습니다.
+ChildsPlay.TalkToCharles.Text4:			선술집 지하에서 여자애들이랑 '엘릭서 돌리기'를 할 수 있었을 때가 훨씬 재미있었는데, Tiff의 부모님한테 들킨 뒤로 우리는 계속 애 취급을 받고 있어요. 당신이 우리와 [함께]할 수 있다면 이 놀이가 훨씬 더 재미있어질 거예요. Raymond를 빼버리고, 당신만을 위한 최고의 도전을 생각해 낼 수도 있어요.
+ChildsPlay.TalkToCharles.Text5:			흠. 잠깐만요. 딱 좋은 게 생각났어요. 경비병들이 마을 경계 너머 악마 던전에 있는 크고 무서운 조각상 이야기를 계속하더라고요. 그 안에 들어가서 조각상을 만지고, 몬스터에게 잡아먹히지 않고 돌아오는 걸 도전으로 낼게요! 어때요?
+ChildsPlay.TalkToCharles.Text6:			Charles의 '진실 혹은 도전' 놀이에 참여하시겠습니까? \n[레벨 1]
+ChildsPlay.TalkToCharles.Text7:			정말 이 퀘스트를 포기하시겠습니까? \n퀘스트 중 얻은 모든 아이템을 잃게 됩니다.
+ChildsPlay.TalkToCharles.CaseText1:		도전
+ChildsPlay.TalkToCharles.CaseText2:		함께
+ChildsPlay.TalkToCharles.CaseText3:		포기
+
+# Albion
+Alb.ChildsPlay.Description.Text1:		Charles가 악마의 균열 던전의 Nergal 구역 중앙에 있는 조각상을 만져 보라고 도전했습니다. Cotswold의 바인드스톤에서 남동쪽으로 조금 이동하면 던전 입구를 찾을 수 있습니다.
+Alb.ChildsPlay.Description.Text2:		Cotswold에 있는 Charles에게 돌아가 그의 도전을 완료했다고 알려 주세요.
+
+# Hibernia
+Hib.ChildsPlay.Description.Text1:		Charles가 악마의 균열 던전의 Nergal 구역 중앙에 있는 조각상을 만져 보라고 도전했습니다. Mag Mell의 바인드스톤에서 북동쪽으로 조금 이동하면 작은 계곡 안의 던전 입구를 찾을 수 있습니다.
+Hib.ChildsPlay.Description.Text2:		Mag Mell에 있는 Charles에게 돌아가 그의 도전을 완료했다고 알려 주세요.
+
+# Midgard
+Mid.ChildsPlay.Description.Text1:		Charles가 악마의 균열 던전의 Nergal 구역 중앙에 있는 조각상을 만져 보라고 도전했습니다. Mularn의 바인드스톤에서 북동쪽으로 조금 이동하면 던전 입구를 찾을 수 있습니다.
+Mid.ChildsPlay.Description.Text2:		Mularn에 있는 Charles에게 돌아가 그의 도전을 완료했다고 알려 주세요.

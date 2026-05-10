@@ -46,8 +46,7 @@ namespace DOL.GS.RealmAbilities
             m_dbspell.EffectGroup = 0;
             m_dbspell.RecastDelay = GetReUseDelay(0); // Spell code is responsible for disabling this ability and will use this value.
             m_dbspell.Range = m_range;
-            m_dbspell.Description = "Taunt all enemies in a " 
-                                               + m_radius + " unit radius.";
+            m_dbspell.Description = DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "RealmAbility.AtlasOF.BattleYell.Description", m_radius);
             m_spell = new Spell(m_dbspell, caster.Level);
             m_spellline = GlobalSpellsLines.RealmSpellsSpellLine;
         }
@@ -78,7 +77,7 @@ namespace DOL.GS.RealmAbilities
                 default: return 100;
             }
         }
-        
+
         public void CastSpellOn(GameLiving target, GamePlayer caster)
         {
             if (target.IsAlive && m_spell != null)

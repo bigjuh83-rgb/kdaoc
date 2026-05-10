@@ -2,6 +2,7 @@ using System;
 using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -12,7 +13,7 @@ namespace DOL.GS.Spells
 
 		private DbItemTemplate m_MoonMace;
         private DbItemTemplate m_MoonStaff;
-    
+
         public BeltOfMoon(GameLiving caster, Spell spell, SpellLine line)
 			: base(caster, spell, line)
         {
@@ -51,7 +52,7 @@ namespace DOL.GS.Spells
 
             else
             {
-                MessageToCaster("The powers of the Belt of Moon, can only be Summon under the Moon light!", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((caster as GamePlayer)?.Client, "Artifacts.BeltOfMoon.RequiresMoonlight"), eChatType.CT_SpellResisted);
                 return;
             }
         }
@@ -289,13 +290,13 @@ namespace DOL.GS.Spells
 
                     if (invItem.Id_nb.Equals("Moon_Staff"))
                         player.Inventory.RemoveItem(invItem);
-                    
-                    player.Out.SendMessage("The Power of Belt of Moon, has left you!",eChatType.CT_System, eChatLoc.CL_SystemWindow);
+
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "Artifacts.BeltOfMoon.PowerLeft"),eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 }
 			}
             GameEventMgr.RemoveHandler(sender, GamePlayerEvent.Released, OnPlayerReleased);
 		}
-        
+
 
 		private static void OnPlayerLeft(DOLEvent e, object sender, EventArgs arguments)
 		{
@@ -323,6 +324,6 @@ namespace DOL.GS.Spells
 				}
 			}
 			GameEventMgr.RemoveHandler(sender, GamePlayerEvent.Quit, OnPlayerLeft);
-   		}
+		}
     }
 }

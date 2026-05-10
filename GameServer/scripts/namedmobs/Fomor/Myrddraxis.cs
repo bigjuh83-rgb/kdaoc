@@ -12,17 +12,17 @@ namespace DOL.GS
 	public class Myrddraxis : GameEpicBoss
 	{
 		protected String[] m_deathAnnounce;
-		public Myrddraxis() : base() 
+		public Myrddraxis() : base()
 		{
-			m_deathAnnounce = new String[] { "The earth lurches beneath your feet as {0} staggers and topples to the ground.",
-				"A glowing light begins to form on the mound that served as {0}'s lair." };
+			m_deathAnnounce = new String[] { "NamedMobs.Myrddraxis.DeathAnnounce1",
+				"NamedMobs.Myrddraxis.DeathAnnounce2" };
 		}
         #region Custom methods
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(String key, params object[] args)
 		{
 			foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
-				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 			}
 		}
 		/// <summary>
@@ -33,8 +33,8 @@ namespace DOL.GS
 		protected void ReportNews(GameObject killer)
 		{
 			int numPlayers = GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE).Count;
-			String message = String.Format("{0} has been slain by a force of {1} warriors!", Name, numPlayers);
-			NewsMgr.CreateNews(message, killer.Realm, eNewsType.PvE, true);
+			String message = DOL.Language.LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "NamedMobs.Myrddraxis.NewsSlain", Name, numPlayers);
+			NewsMgr.CreateNews(message, killer?.Realm ?? eRealm.None, eNewsType.PvE, true);
 
 			if (Properties.GUILD_MERIT_ON_DRAGON_KILL > 0)
 			{
@@ -93,7 +93,7 @@ namespace DOL.GS
 			base.Die(killer);
 			foreach (String message in m_deathAnnounce)
 			{
-				BroadcastMessage(String.Format(message, Name));
+				BroadcastMessage(message, Name);
 			}
 			if (canReportNews)
 			{
@@ -148,7 +148,7 @@ namespace DOL.GS
                     {
 						case 1: CastSpell(HydraDisease, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells)); break;
 						case 2: CastSpell(Hydra_Haste_Debuff, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells)); break;
-					}					
+					}
 				}
             }
             base.OnAttackEnemy(ad);
@@ -301,6 +301,9 @@ namespace DOL.AI.Brain
 	public class MyrddraxisBrain : StandardMobBrain
 	{
 		private static readonly Logging.Logger log = Logging.LoggerManager.Create(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+		private const string FlameBreathTargetKey = "NamedMobs.Myrddraxis.FlameBreathTarget";
+		private const string StunningBreathKey = "NamedMobs.Myrddraxis.StunningBreath";
+		private const string AnnihilationBreathKey = "NamedMobs.Myrddraxis.AnnihilationBreath";
 		public MyrddraxisBrain() : base()
 		{
 			AggroLevel = 100;
@@ -317,11 +320,11 @@ namespace DOL.AI.Brain
 		public static bool CanCastPBAOE1 = false;
 		public static bool CanCastPBAOE2 = false;
 		public static bool CanCastPBAOE3 = false;
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(String key, params object[] args)
 		{
 			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
-				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
 			}
 		}
 		#region Hydra DOT
@@ -414,7 +417,7 @@ namespace DOL.AI.Brain
 						GamePlayer Target = (GamePlayer)Enemys_To_DD[Util.Random(0, Enemys_To_DD.Count - 1)];//pick random target from list
 						RandomTarget = Target;//set random target to static RandomTarget
 						new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(CastDD), 5000);
-						BroadcastMessage(String.Format(Body.Name + " taking a big flame breath at " + RandomTarget.Name + "."));
+						BroadcastMessage(FlameBreathTargetKey, Body.Name, RandomTarget.Name);
 						CanCast = true;
 					}
 				}
@@ -610,25 +613,25 @@ namespace DOL.AI.Brain
 				if (Body.HealthPercent <= 80 && CanCastStun1==false)
                 {
 					new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(HydraStun), 5000);
-					BroadcastMessage(String.Format(Body.Name + " prepares stunning breath."));
+					BroadcastMessage(StunningBreathKey, Body.Name);
 					CanCastStun1 = true;
                 }
 				else if (Body.HealthPercent <= 60 && CanCastStun2 == false)
 				{
 					new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(HydraStun), 5000);
-					BroadcastMessage(String.Format(Body.Name + " prepares stunning breath."));
+					BroadcastMessage(StunningBreathKey, Body.Name);
 					CanCastStun2 = true;
 				}
 				else if (Body.HealthPercent <= 40 && CanCastStun3 == false)
 				{
 					new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(HydraStun), 5000);
-					BroadcastMessage(String.Format(Body.Name + " prepares stunning breath."));
+					BroadcastMessage(StunningBreathKey, Body.Name);
 					CanCastStun3 = true;
 				}
 				else if (Body.HealthPercent <= 20 && CanCastStun4 == false)
 				{
 					new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(HydraStun), 5000);
-					BroadcastMessage(String.Format(Body.Name + " prepares stunning breath."));
+					BroadcastMessage(StunningBreathKey, Body.Name);
 					CanCastStun4 = true;
 				}
 				#endregion
@@ -636,19 +639,19 @@ namespace DOL.AI.Brain
 				if (Body.HealthPercent <= 75 && CanCastPBAOE1 == false)
 				{
 					new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(HydraPBAOE), 6000);
-					BroadcastMessage(String.Format(Body.Name + " taking a massive breath of flames to annihilate enemys."));
+					BroadcastMessage(AnnihilationBreathKey, Body.Name);
 					CanCastPBAOE1 = true;
 				}
 				else if (Body.HealthPercent <= 50 && CanCastPBAOE2 == false)
 				{
 					new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(HydraPBAOE), 6000);
-					BroadcastMessage(String.Format(Body.Name + " taking a massive breath of flames to annihilate enemys."));
+					BroadcastMessage(AnnihilationBreathKey, Body.Name);
 					CanCastPBAOE2 = true;
 				}
 				else if (Body.HealthPercent <= 25 && CanCastPBAOE3 == false)
 				{
 					new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(HydraPBAOE), 6000);
-					BroadcastMessage(String.Format(Body.Name + " taking a massive breath of flames to annihilate enemys."));
+					BroadcastMessage(AnnihilationBreathKey, Body.Name);
 					CanCastPBAOE3 = true;
 				}
 				#endregion

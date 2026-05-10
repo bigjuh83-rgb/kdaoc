@@ -6,6 +6,7 @@ using DOL.Events;
 using DOL.GS;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerProperties;
+using DOL.Language;
 
 #region Olcasgean Initializator
 /// <summary>
@@ -14,6 +15,21 @@ using DOL.GS.ServerProperties;
 
 namespace DOL.GS
 {
+    internal static class OlcasgeanNews
+    {
+        internal static bool ShouldReportNews(GameObject killer)
+        {
+            return ShouldReportNewsType(killer?.GetType());
+        }
+
+        internal static bool ShouldReportNewsType(Type killerType)
+        {
+            return killerType != null
+                && !typeof(Olcasgean).IsAssignableFrom(killerType)
+                && !typeof(Olcasgean2).IsAssignableFrom(killerType);
+        }
+    }
+
     public class OlcasgeanInitializator : GameNPC
     {
         public OlcasgeanInitializator() : base() { }
@@ -66,10 +82,11 @@ namespace DOL.AI.Brain
         public static bool startevent = false;
         public static int DeadPrimalsCount = 0;
 
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(string key, params object[] args)
         {
             foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
+                string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
                 player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
@@ -96,25 +113,25 @@ namespace DOL.AI.Brain
         }
         public int Message1(ECSGameTimer timer)
         {
-            BroadcastMessage(String.Format("A voice that seems to come from all around you says: 'Intruders have entered inner sanctum.'"));
+            BroadcastMessage("NamedMobs.Olcasgean.IntrudersEntered");
             new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(Message2), 5000);
             return 0;
         }
         public int Message2(ECSGameTimer timer)
         {
-            BroadcastMessage(String.Format("A deep booming voice responds; 'P...R...O...T...E...C...T..'"));
+            BroadcastMessage("NamedMobs.Olcasgean.Protect");
             new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(Message3), 5000);
             return 0;
         }
         public int Message3(ECSGameTimer timer)
         {
-            BroadcastMessage(String.Format("'I am tired, and yet, there is much left for me to take care of this day'"));
+            BroadcastMessage("NamedMobs.Olcasgean.TiredDuty");
             new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(Message4), 5000);
             return 0;
         }
         public int Message4(ECSGameTimer timer)
         {
-            BroadcastMessage(String.Format("The first voice says: 'We shall protect.'"));
+            BroadcastMessage("NamedMobs.Olcasgean.WeShallProtect");
             new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(SpawnPrimals), 5000);
             return 0;
         }
@@ -366,10 +383,11 @@ namespace DOL.GS
             }
         }
         #region Custom Methods
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(string key, params object[] args)
         {
             foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
+                string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
                 player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
             }
         }
@@ -377,7 +395,7 @@ namespace DOL.GS
         {
             int numPlayers = AwardEpicEncounterKillPoint();
             String message = String.Format("{0} has been slain by a force of {1} warriors!", Name, numPlayers);
-            NewsMgr.CreateNews(message, killer.Realm, eNewsType.PvE, true);
+            NewsMgr.CreateNews(message, killer?.Realm ?? eRealm.None, eNewsType.PvE, true);
 
             if (Properties.GUILD_MERIT_ON_DRAGON_KILL > 0)
             {
@@ -438,7 +456,7 @@ namespace DOL.GS
             }
             if (canReportNews)
             {
-                if (killer is not Olcasgean or Olcasgean2)
+                if (OlcasgeanNews.ShouldReportNews(killer))
                     ReportNews(killer);
             }
             base.Die(killer);
@@ -453,7 +471,7 @@ namespace DOL.GS
             Y = 62644;
             Z = 11685;
             Heading = 102;
-            CurrentRegionID = 191;         
+            CurrentRegionID = 191;
 
             Flags = (GameNPC.eFlags)156;
             RespawnInterval = Properties.SET_SI_EPIC_ENCOUNTER_RESPAWNINTERVAL * 60000;//1min is 60000 miliseconds
@@ -538,9 +556,9 @@ namespace DOL.AI.Brain
             AggroRange = 1500;
             ThinkInterval = 1000;
         }
-        public static bool cast1 = true;         
+        public static bool cast1 = true;
         private GamePlayer teleporttarget = null;
-        private GamePlayer TeleportTarget//teleport target 
+        private GamePlayer TeleportTarget//teleport target
         {
             get { return teleporttarget; }
             set { teleporttarget = value; }
@@ -592,16 +610,17 @@ namespace DOL.AI.Brain
             spawn_effect = false;
             return 0;
         }
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(string key, params object[] args)
         {
             foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
+                string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
                 player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
         public int WakeUpBoss(ECSGameTimer timer)
         {
-            BroadcastMessage(String.Format("A deep booming voice echoes: 'I am eternal. You and your kind will die.'"));
+            BroadcastMessage("NamedMobs.Olcasgean.EternalThreat");
             Body.Flags = 0;
             return 0;
         }
@@ -670,7 +689,7 @@ namespace DOL.AI.Brain
                     if (ported_player == null)
                         ported_player = new List<GamePlayer>();
 
-                    if (spawn_antipass == false)//spawn anti pass near waterfall so players cant leave boss area until killed 
+                    if (spawn_antipass == false)//spawn anti pass near waterfall so players cant leave boss area until killed
                     {
                         SpawnAntiPass();
                         spawn_antipass = true;
@@ -763,10 +782,10 @@ namespace DOL.AI.Brain
                     {
                         case 1:
                             {
-                                if (TeleportTarget.IsAlive && TeleportTarget != null && !ported_player.Contains(TeleportTarget))
+                                if (TeleportTarget != null && TeleportTarget.IsAlive && !ported_player.Contains(TeleportTarget))
                                 {
                                     TeleportTarget.MoveTo(Body.CurrentRegionID, 38399, 60893, 12242, 3548);
-                                    TeleportTarget.Client.Out.SendMessage(Body.Name + " throws you away...", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    TeleportTarget.Client.Out.SendMessage(LanguageMgr.GetTranslation(TeleportTarget.Client.Account.Language, "NamedMobs.Olcasgean.ThrowsYouAway", Body.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     if (!ported_player.Contains(TeleportTarget))
                                         ported_player.Add(TeleportTarget);
                                 }
@@ -774,10 +793,10 @@ namespace DOL.AI.Brain
                             break;
                         case 2:
                             {
-                                if (TeleportTarget.IsAlive && TeleportTarget != null && !ported_player.Contains(TeleportTarget))
+                                if (TeleportTarget != null && TeleportTarget.IsAlive && !ported_player.Contains(TeleportTarget))
                                 {
                                     TeleportTarget.MoveTo(Body.CurrentRegionID, 38564, 64161, 12242, 2382);
-                                    TeleportTarget.Client.Out.SendMessage(Body.Name + " throws you away...", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    TeleportTarget.Client.Out.SendMessage(LanguageMgr.GetTranslation(TeleportTarget.Client.Account.Language, "NamedMobs.Olcasgean.ThrowsYouAway", Body.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     if (!ported_player.Contains(TeleportTarget))
                                         ported_player.Add(TeleportTarget);
                                 }
@@ -786,10 +805,10 @@ namespace DOL.AI.Brain
                             break;
                         case 3:
                             {
-                                if (TeleportTarget.IsAlive && TeleportTarget != null && !ported_player.Contains(TeleportTarget))
+                                if (TeleportTarget != null && TeleportTarget.IsAlive && !ported_player.Contains(TeleportTarget))
                                 {
                                     TeleportTarget.MoveTo(Body.CurrentRegionID, 41580, 62325, 12242, 890);
-                                    TeleportTarget.Client.Out.SendMessage(Body.Name + " throws you away...", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                    TeleportTarget.Client.Out.SendMessage(LanguageMgr.GetTranslation(TeleportTarget.Client.Account.Language, "NamedMobs.Olcasgean.ThrowsYouAway", Body.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                                     if (!ported_player.Contains(TeleportTarget))
                                         ported_player.Add(TeleportTarget);
                                 }
@@ -892,10 +911,11 @@ namespace DOL.GS
             }
         }
         #region Custom Methods
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(string key, params object[] args)
         {
             foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
+                string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
                 player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
             }
         }
@@ -903,7 +923,7 @@ namespace DOL.GS
         {
             int numPlayers = AwardEpicEncounterKillPoint();
             String message = String.Format("{0} has been slain by a force of {1} warriors!", Name, numPlayers);
-            NewsMgr.CreateNews(message, killer.Realm, eNewsType.PvE, true);
+            NewsMgr.CreateNews(message, killer?.Realm ?? eRealm.None, eNewsType.PvE, true);
 
             if (Properties.GUILD_MERIT_ON_DRAGON_KILL > 0)
             {
@@ -963,7 +983,7 @@ namespace DOL.GS
             }
             if (canReportNews)
             {
-                if(killer is not Olcasgean or Olcasgean2)
+                if (OlcasgeanNews.ShouldReportNews(killer))
                     ReportNews(killer);
             }
             base.Die(killer);
@@ -1071,7 +1091,7 @@ namespace DOL.AI.Brain
         {
             Body.Flags = 0;
             return 0;
-        } 
+        }
     }
 }
 #endregion Olcasgean Brain
@@ -1150,7 +1170,7 @@ namespace DOL.GS
         }
         public override void StopFollowing()
         {
-        }      
+        }
         public override void Die(GameObject killer)
         {
             ++OIBrain.DeadPrimalsCount;
@@ -1533,7 +1553,7 @@ namespace DOL.GS
         {
             if (source is GamePlayer || source is GameSummonedPet)
             {
-                if (WaterPrimalBrain.dontattack)//dont take any dmg 
+                if (WaterPrimalBrain.dontattack)//dont take any dmg
                 {
                     if (damageType == eDamageType.Body || damageType == eDamageType.Cold || damageType == eDamageType.Energy || damageType == eDamageType.Heat
                         || damageType == eDamageType.Matter || damageType == eDamageType.Spirit || damageType == eDamageType.Crush || damageType == eDamageType.Thrust
@@ -1545,7 +1565,7 @@ namespace DOL.GS
                         else
                             truc = ((source as GameSummonedPet).Owner as GamePlayer);
                         if (truc != null)
-                            truc.Out.SendMessage(this.Name + " is under waterfall effect!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                            truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Olcasgean.UnderWaterfallEffect", this.Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
                         base.TakeDamage(source, damageType, 0, 0);
                         return;
                     }
@@ -1726,7 +1746,7 @@ namespace DOL.AI.Brain
                     {
                         GamePlayer Target = Port_Enemys[Util.Random(0, Port_Enemys.Count - 1)];
                         TeleportTarget = Target;
-                        if (TeleportTarget.IsAlive && TeleportTarget != null)
+                        if (TeleportTarget != null && TeleportTarget.IsAlive)
                         {
                             new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(TeleportPlayer), 3000);
                         }
@@ -1737,7 +1757,7 @@ namespace DOL.AI.Brain
         }
         public int TeleportPlayer(ECSGameTimer timer)
         {
-            if (TeleportTarget.IsAlive && TeleportTarget != null && HasAggro)
+            if (TeleportTarget != null && TeleportTarget.IsAlive && HasAggro)
             {
                 switch (Util.Random(1, 2))
                 {
@@ -2261,7 +2281,7 @@ namespace DOL.AI.Brain
                 {
                     Point3D spawn = new Point3D(Body.SpawnPoint.X, Body.SpawnPoint.Y, Body.SpawnPoint.Z);
                     GameLiving target = Body.TargetObject as GameLiving;
-                    if (!target.IsWithinRadius(spawn, 900) && target != null && target.IsAlive)
+                    if (target != null && !target.IsWithinRadius(spawn, 900) && target.IsAlive)
                     {
                         if (AggroList.TryRemove(target, out _))
                         {
@@ -2389,7 +2409,7 @@ namespace DOL.GS
                 }
                 else
                 {
-                    truc.Out.SendMessage(Name + " is immune to your damage!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                    truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Olcasgean.ImmuneToDamage", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
                 }
@@ -2518,7 +2538,7 @@ namespace DOL.AI.Brain
                                      new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(CastHeal), 2000);
                                  }*/
                                 Body.TargetObject = npc;
-                                if (!Body.IsCasting)                               
+                                if (!Body.IsCasting)
                                     Body.CastSpell(EarthmenderHeal, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
                             }
                         }
@@ -2598,7 +2618,7 @@ namespace DOL.GS
                 }
                 else
                 {
-                    truc.Out.SendMessage(Name + " is immune to your damage!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                    truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Olcasgean.ImmuneToDamage", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
                 }
@@ -2804,7 +2824,7 @@ namespace DOL.GS
                 }
                 else
                 {
-                    truc.Out.SendMessage(Name + " is immune to your damage!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                    truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Olcasgean.ImmuneToDamage", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
                 }
@@ -3010,7 +3030,7 @@ namespace DOL.GS
                 }
                 else
                 {
-                    truc.Out.SendMessage(Name + " is immune to your damage!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                    truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Olcasgean.ImmuneToDamage", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
                 }
@@ -3199,7 +3219,7 @@ namespace DOL.GS
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
                     if (truc != null)
-                        truc.Out.SendMessage(Name + " is immune to any damage!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                        truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Olcasgean.ImmuneToAnyDamage", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
 
                     base.TakeDamage(source, damageType, 0, 0);
                     return;

@@ -68,7 +68,7 @@ namespace DOL.GS.Commands
 					}
 					else
 					{
-						client.Out.SendMessage("This house number is not owned by anyone!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Jump.HouseNotOwned"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					}
 					return;
 				}
@@ -155,7 +155,7 @@ namespace DOL.GS.Commands
 						return;
 					}
 
-					client.Out.SendMessage("You don't have an expansion needed to jump to this location.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Jump.ExpansionNeeded"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
 					return;
 				}
@@ -226,12 +226,12 @@ namespace DOL.GS.Commands
 					{
 						client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Jump.JumpToX", targetPlayer.CurrentRegion.Description), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						if (targetPlayer.CurrentRegion.IsDungeon)
-							client.Out.SendMessage("Player is currently in a dungeon and it's not safe to port above them.", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Jump.TargetInDungeon"), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
 						else
 							client.Player.MoveTo(targetPlayer.CurrentRegionID, targetPlayer.X, targetPlayer.Y, targetPlayer.Z + 10000, client.Player.Heading);
 						return;
 					}
-					client.Out.SendMessage("You don't have an expansion needed to jump to this location.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Jump.ExpansionNeeded"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return;
 				}
 				#endregion

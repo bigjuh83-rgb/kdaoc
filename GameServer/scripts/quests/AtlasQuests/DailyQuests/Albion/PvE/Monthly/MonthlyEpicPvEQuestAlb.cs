@@ -22,7 +22,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 		private const string questTitle = "[Monthly] Annihilation of Malevolence";
 		private const int minimumLevel = 45;
 		private const int maximumLevel = 50;
-		
+
 		// Kill Goal
 		private const int MAX_KILLED = 1;
 		// Quest Counter
@@ -33,8 +33,8 @@ namespace DOL.GS.MonthlyQuest.Albion
 
 		private const string Orylle_NAME = "Orylle";
 		private const string Xanxicar_NAME = "Xanxicar";
-		
-		
+
+
 		// Constructors
 		public MonthlyEpicPvEQuestAlb() : base()
 		{
@@ -60,13 +60,13 @@ namespace DOL.GS.MonthlyQuest.Albion
 				return minimumLevel;
 			}
 		}
-		
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -122,7 +122,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 
 			GameEventMgr.AddHandler(James, GameObjectEvent.Interact, new DOLEventHandler(TalkToJames));
 			GameEventMgr.AddHandler(James, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToJames));
-			
+
 			James.AddQuestToGive(typeof (MonthlyEpicPvEQuestAlb));
 
 			if (log.IsInfoEnabled)
@@ -147,7 +147,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 
 		private static void TalkToJames(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -168,15 +168,13 @@ namespace DOL.GS.MonthlyQuest.Albion
 							James.SayTo(player, player.Name + ", please find allies and kill the epic creatures in Krondon and in the Crystal Cave of Avalon City!");
 							break;
 						case 2:
-							James.SayTo(player, "Hello " + player.Name + ", did you [slay the creatures] and return for your reward?");
+							James.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[slay the creatures] and return for your reward"));
 							break;
 					}
 				}
 				else
 				{
-					James.SayTo(player, "Hello "+ player.Name +", I am James. For several months the situation in Krondon and in the Crystal Cave of Avalon City has changed. " +
-					                    "A place of mineral wealth and natural resources is now a place of violence and poisoning. \n\n"+
-					                    "Can you support Albion and [kill Orylle and Xanxicar] in Krondon and in the Crystal Cave of Avalon City?");
+					James.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyEpicIntro", player.Name, "James", "Krondon and the Crystal Cave of Avalon City"));
 				}
 			}
 				// The player whispered to the NPC
@@ -188,7 +186,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 					switch (wArgs.Text)
 					{
 						case "kill Orylle and Xanxicar":
-							player.Out.SendQuestSubscribeCommand(James, QuestMgr.GetIDForQuestType(typeof(MonthlyEpicPvEQuestAlb)), "Will you help James "+questTitle+"?");
+							player.Out.SendQuestSubscribeCommand(James, QuestMgr.GetIDForQuestType(typeof(MonthlyEpicPvEQuestAlb)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "James", questTitle));
 							break;
 					}
 				}
@@ -199,18 +197,18 @@ namespace DOL.GS.MonthlyQuest.Albion
 						case "slay the creatures":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -239,11 +237,11 @@ namespace DOL.GS.MonthlyQuest.Albion
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and slay those creatures!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueSlayCreatures"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -273,7 +271,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for your help.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -281,7 +279,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 				if (!James.GiveQuest(typeof (MonthlyEpicPvEQuestAlb), player, 1))
 					return;
 
-				James.SayTo(player, "Please, find the epic monsters in Krondon and in the Crystal Cave of Avalon City and return for your reward.");
+				James.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyEpicReminder", "Krondon and in the Crystal Cave of Avalon City"));
 
 			}
 		}
@@ -300,11 +298,9 @@ namespace DOL.GS.MonthlyQuest.Albion
 				switch (Step)
 				{
 					case 1:
-						return "Make your way and defeat the epic creatures in Krondon as well as in the Crystal Cave of Avalon City! \n" +
-						       "Killed: " + Orylle_NAME + " ("+ _orylleKilled +" | " + MAX_KILLED + ") in Krondon\n" +
-						       "Killed: " + Xanxicar_NAME + " ("+ _xanxicarKilled +" | " + MAX_KILLED + ") in Crystal Cave\n";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.MonthlyEpicDescription", "Krondon and the Crystal Cave of Avalon City", Orylle_NAME, _orylleKilled, MAX_KILLED, Xanxicar_NAME, _xanxicarKilled, MAX_KILLED);
 					case 2:
-						return "Return to James for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpc", "James");
 				}
 				return base.Description;
 			}
@@ -326,13 +322,13 @@ namespace DOL.GS.MonthlyQuest.Albion
 			if (gArgs.Target.Name.ToLower() == Orylle_NAME.ToLower() && gArgs.Target is GameNPC && _orylleKilled < MAX_KILLED)
 			{
 				_orylleKilled = 1;
-				player.Out.SendMessage("[Monthly] You killed " + Orylle_NAME + ": (" + _orylleKilled + " | " + MAX_KILLED + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyNamedKilled", Orylle_NAME, _orylleKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 				player.Out.SendQuestUpdate(this);
 			}
 			else if (gArgs.Target.Name.ToLower() == Xanxicar_NAME.ToLower() && gArgs.Target is GameNPC && _xanxicarKilled < MAX_KILLED)
 			{
 				_xanxicarKilled = 1;
-				player.Out.SendMessage("[Monthly] You killed " + Xanxicar_NAME + ": (" + _xanxicarKilled + " | " + MAX_KILLED + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyNamedKilled", Xanxicar_NAME, _xanxicarKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 				player.Out.SendQuestUpdate(this);
 			}
 
@@ -341,13 +337,13 @@ namespace DOL.GS.MonthlyQuest.Albion
 				Step = 2;
 			}
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "MonthlyEpicPvEQuestAlb";
 			set { ; }
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			_orylleKilled = GetCustomProperty(Orylle_NAME) != null ? int.Parse(GetCustomProperty(Orylle_NAME)) : 0;
@@ -374,7 +370,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 			}
 			else
 			{
-				m_questPlayer.Out.SendMessage("Clear three slots of your inventory for your reward", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ClearInventorySlots", 3), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 	}

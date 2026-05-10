@@ -5,6 +5,7 @@ using DOL.GS.PacketHandler;
 using DOL.GS.Effects;
 using DOL.Events;
 using DOL.Database;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -21,28 +22,28 @@ namespace DOL.GS.RealmAbilities
 			GamePlayer caster = living as GamePlayer;
             if (caster.TargetObject == null)
             {
-                caster.Out.SendMessage("You need a target for this ability!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                caster.Out.SendMessage(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Skill.Ability.CannotUseNoTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
             if (!(caster.TargetObject is GameLiving)
                 || !GameServer.ServerRules.IsAllowedToAttack(caster, (GameLiving)caster.TargetObject, true))
             {
-                caster.Out.SendMessage("You cannot attack " + caster.TargetObject.Name + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                caster.Out.SendMessage(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Skill.Ability.CannotAttackTarget", caster.TargetObject.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
             if (!caster.TargetInView)
             {
-                caster.Out.SendMessage("You cannot see " + caster.TargetObject.Name + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                caster.Out.SendMessage(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Skill.Ability.CannotSeeTarget", caster.TargetObject.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
             if (!caster.IsWithinRadius( caster.TargetObject, 1500 ))
             {
-                caster.Out.SendMessage("You target is too far away to use this ability!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                caster.Out.SendMessage(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Skill.Ability.TargetIsWithinRadius"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
             this.m_player = caster;
-            
+
             /*
             if(ServerProperties.Properties.USE_NEW_ACTIVES_RAS_SCALING)
             {
@@ -67,18 +68,18 @@ namespace DOL.GS.RealmAbilities
 	            }
             }
             */
-            
+
             m_duration = 30;
             m_stunDuration = 3;
             foreach (GamePlayer i_player in caster.GetPlayersInRadius(WorldMgr.INFO_DISTANCE))
             {
 				if (i_player == caster)
 				{
-					i_player.MessageToSelf("You cast " + this.Name + "!", eChatType.CT_Spell);
+					i_player.MessageToSelf(LanguageMgr.GetTranslation(i_player.Client.Account.Language, "RealmAbility.Generic.CastSelf", Name), eChatType.CT_Spell);
 				}
 				else
 				{
-					i_player.MessageFromArea(caster, caster.Name + " casts a spell!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+					i_player.MessageFromArea(caster, LanguageMgr.GetTranslation(i_player.Client.Account.Language, "RealmAbility.Message.CasterCastsSpell", caster.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 				}
 			}
             Statics.StaticTempestBase st = new Statics.StaticTempestBase(m_stunDuration);

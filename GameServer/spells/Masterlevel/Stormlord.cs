@@ -4,6 +4,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -66,7 +67,7 @@ namespace DOL.GS.Spells
             neweffect.Start(target);
 
             if (target is GamePlayer)
-                ((GamePlayer)target).Out.SendMessage("You're harder to hit!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                ((GamePlayer)target).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)target).Client.Account.Language, "Masterlevel.Stormlord.HarderToHit"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
         }
 
@@ -104,7 +105,7 @@ namespace DOL.GS.Spells
 
         public override List<GameLiving> SelectTargets(GameObject CasterTarget)
         {
-            
+
             var list = GameLoop.GetListForTick<GameLiving>();
             foreach (GameNPC storms in Caster.GetNPCsInRadius(350))
             {
@@ -206,8 +207,8 @@ namespace DOL.GS.Spells
             target.ChangeEndurance(target, eEnduranceChangeType.Spell, (-end));
 
             if (target is GamePlayer)
-                ((GamePlayer)target).Out.SendMessage(" You lose " + end + " endurance!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-            (m_caster as GamePlayer).Out.SendMessage("" + target.Name + " loses " + end + " endurance!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                ((GamePlayer)target).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)target).Client.Account.Language, "Masterlevel.Stormlord.YouLoseEndurance", end), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            (m_caster as GamePlayer).Out.SendMessage(LanguageMgr.GetTranslation((m_caster as GamePlayer)?.Client.Account.Language, "Masterlevel.Stormlord.TargetLosesEndurance", target.Name, end), eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
 
         public override int OnEffectExpires(GameSpellEffect effect, bool noMessages)
@@ -286,7 +287,7 @@ namespace DOL.GS.Spells
             neweffect.Start(target);
 
             if (target is GamePlayer)
-                ((GamePlayer)target).Out.SendMessage("Your dexterity and quickness decreased!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                ((GamePlayer)target).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)target).Client.Account.Language, "Masterlevel.Stormlord.DexterityQuicknessDecreased"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
         }
 
@@ -374,7 +375,7 @@ namespace DOL.GS.Spells
 
             if (target is GamePlayer)
             {
-                ((GamePlayer)target).Out.SendMessage(m_caster.Name + " steals you " + mana + " points of power!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                ((GamePlayer)target).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)target).Client.Account.Language, "Masterlevel.Stormlord.PowerStolenByCaster", m_caster.Name, mana), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             }
 
             StealMana(target, mana);
@@ -393,10 +394,10 @@ namespace DOL.GS.Spells
 
         public virtual void SendCasterMessage(GameLiving target, int mana)
         {
-            MessageToCaster(string.Format("You steal {0} for {1} power!", target.Name, mana), eChatType.CT_YouHit);
+            MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.StealPowerFromTarget", target.Name, mana), eChatType.CT_YouHit);
             if (mana > 0)
             {
-                MessageToCaster("You steal " + mana + " power points" + (mana == 1 ? "." : "s."), eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.StealPower", mana), eChatType.CT_Spell);
             }
             //else
             //{
@@ -430,7 +431,7 @@ namespace DOL.GS.Spells
             {
                 GameStorm targetStorm = effect.Owner as GameStorm;
                 targetStorm.Movable = false;
-                MessageToCaster("Now the vortex of this storm is locked!", eChatType.CT_System);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Masterlevel.Stormlord.VortexLocked"), eChatType.CT_System);
                 GameEventMgr.AddHandler(m_caster, GameLivingEvent.Moving, new DOLEventHandler(LivingMoves));
             }
         }
@@ -452,7 +453,7 @@ namespace DOL.GS.Spells
             if (player == null) return;
             if (e == GameLivingEvent.Moving)
             {
-                MessageToCaster("You are moving. Your concentration fades", eChatType.CT_SpellExpires);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Masterlevel.Stormlord.ConcentrationFades"), eChatType.CT_SpellExpires);
                 OnEffectExpires(m_effect, true);
                 return;
             }
@@ -523,7 +524,7 @@ namespace DOL.GS.Spells
             neweffect.Start(target);
 
             if (target is GamePlayer)
-                ((GamePlayer)target).Out.SendMessage("Your strenght and constitution decreased!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                ((GamePlayer)target).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)target).Client.Account.Language, "Masterlevel.Stormlord.StrengthConstitutionDecreased"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
         }
 
@@ -617,7 +618,7 @@ namespace DOL.GS.Spells
             neweffect.Start(target);
 
             if (target is GamePlayer)
-                ((GamePlayer)target).Out.SendMessage("Your acuity decreased!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                ((GamePlayer)target).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)target).Client.Account.Language, "Masterlevel.Stormlord.AcuityDecreased"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
         }
 
@@ -734,7 +735,7 @@ namespace DOL.GS.Spells
             // calc damage
             AttackData ad = CalculateDamageToTarget(target);
             SendDamageMessages(ad);
-            DamageTarget(ad, true);            
+            DamageTarget(ad, true);
             target.StartInterruptTimer(target.SpellInterruptDuration, ad.AttackType, Caster);
         }
 

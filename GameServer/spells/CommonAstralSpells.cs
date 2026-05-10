@@ -5,6 +5,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -88,7 +89,7 @@ namespace DOL.GS.Spells
             {
                 if (log.IsWarnEnabled)
                     log.WarnFormat("NPC template {0} not found! Spell: {1}", Spell.LifeDrainReturn, Spell.ToString());
-                MessageToCaster("NPC template " + Spell.LifeDrainReturn + " not found!", eChatType.CT_System);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.NpcTemplateNotFound", Spell.LifeDrainReturn), eChatType.CT_System);
                 return;
             }
 
@@ -199,7 +200,7 @@ namespace DOL.GS.Spells
 
         public SummonElemental(GameLiving caster, Spell spell, SpellLine line)
             : base(caster, spell, line) { }
-    } 
+    }
 }
 
 namespace DOL.GS

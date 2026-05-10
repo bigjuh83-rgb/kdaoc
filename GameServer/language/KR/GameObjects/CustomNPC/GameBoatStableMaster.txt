@@ -1,0 +1,5 @@
+﻿GameBoatStableMaster.ReceiveItem.Departed:		새 배를 주문하려면 먼저 배가 출발할 때까지 기다려 주세요
+GameBoatStableMaster.ReceiveItem.SummonedBoat:		{0}이(가) 말합니다. "{1}(으)로 이동할 배를 소환했습니다. 출발 전 30초 안에 탑승하세요."
+#----> Attention! this must ends with blank character:	"행 승선권 "
+GameBoatStableMaster.ReceiveItem.TicketTo:		행 승선권
+GameBoatStableMaster.ReceiveItem.UnknownWay:		아직 {1}(으)로 가는 길을 모릅니다.

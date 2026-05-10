@@ -3,6 +3,7 @@ using System.Collections.Specialized;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
 using DOL.GS.PropertyCalc;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -34,7 +35,7 @@ namespace DOL.GS.Spells
                 eCharacterClass.MaulerMid or
                 eCharacterClass.MaulerHib))
             {
-                MessageToCaster("This spell has no effect on this class!", eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.NoEffectOnClass"), eChatType.CT_Spell);
                 return;
             }
 

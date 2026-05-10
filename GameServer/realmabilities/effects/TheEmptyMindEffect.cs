@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -23,6 +23,7 @@ using DOL.GS.PacketHandler;
 using DOL.GS.SkillHandler;
 using DOL.Events;
 using DOL.GS.Spells;
+using DOL.Language;
 
 namespace DOL.GS.Effects
 {
@@ -64,7 +65,7 @@ namespace DOL.GS.Effects
 			m_owner.AbilityBonus[eProperty.Resist_Matter] += m_value;
 			m_owner.AbilityBonus[eProperty.Resist_Spirit] += m_value;
 			if (m_owner is GamePlayer)
-				(m_owner as GamePlayer).Out.SendCharResistsUpdate(); 
+				(m_owner as GamePlayer).Out.SendCharResistsUpdate();
 
 			foreach (GamePlayer visiblePlayer in living.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
@@ -83,7 +84,7 @@ namespace DOL.GS.Effects
 			if (m_owner is GamePlayer)
 			{
 				(m_owner as GamePlayer).Out.SendCharResistsUpdate();
-				(m_owner as GamePlayer).Out.SendMessage("Your clearheaded state leaves you.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				(m_owner as GamePlayer).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)m_owner).Client.Account.Language, "RealmAbility.TheEmptyMindEffect.ClearheadedLeaves"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 
 			base.Stop();

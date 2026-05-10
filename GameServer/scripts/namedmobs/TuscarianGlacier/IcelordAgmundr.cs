@@ -3,6 +3,7 @@ using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -68,16 +69,16 @@ namespace DOL.GS
             base.AddToWorld();
             return true;
         }
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(String key, params object[] args)
         {
             foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
         public override void Die(GameObject killer)
         {
-            BroadcastMessage(String.Format("To come this far... only to face a terrible death!"));
+            BroadcastMessage("NamedMobs.Agmundr.TerribleDeath");
             base.Die(killer);
         }
     }
@@ -100,18 +101,18 @@ namespace DOL.AI.Brain
         public static bool IsPulled = false;
         public static bool IsChanged = false;
         private bool PulledText = false;
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(String key, params object[] args)
         {
             foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
         public override void OnAttackedByEnemy(AttackData ad)
         {
             if(!PulledText && Body.TargetObject != null)
             {
-                BroadcastMessage(String.Format("My seer's told me that you were coming {0}! Since you posed no threat I haven't asked for reinforcements!", Body.TargetObject.Name));
+                BroadcastMessage("NamedMobs.Agmundr.SeerWarning", Body.TargetObject.Name);
                 PulledText = true;
             }
             base.OnAttackedByEnemy(ad);
@@ -136,7 +137,7 @@ namespace DOL.AI.Brain
             {
                 IsChanged = false;//reset IsChanged flag here
                 if(IsPulled==false)
-                { 
+                {
                     foreach (GameNPC npc in WorldMgr.GetNPCsFromRegion(Body.CurrentRegionID))
                     {
                         if (npc == null) continue;

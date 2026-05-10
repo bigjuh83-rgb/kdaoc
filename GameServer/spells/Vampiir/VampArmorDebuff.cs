@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -22,6 +22,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -49,13 +50,14 @@ namespace DOL.GS.Spells
 			if (player == null) return;
 			int slot=Util.Random(0, 2);
 			m_slot = slots[slot];
-			string msg = GlobalConstants.SlotToName((int)m_slot);
-			MessageToCaster("You debuff " + effect.Owner.Name + "'s " + msg+"", eChatType.CT_Spell);
+			string language = (Caster as GamePlayer)?.Client.Account.Language;
+			string msg = GlobalConstants.SlotToName((int)m_slot, language);
+			MessageToCaster(LanguageMgr.GetTranslation(language, "VampiirArmorDebuff.DebuffArmor", effect.Owner.Name, msg), eChatType.CT_Spell);
 			foreach (GamePlayer visPlayer in player.GetPlayersInRadius((ushort)WorldMgr.VISIBILITY_DISTANCE))
 				visPlayer.Out.SendSpellEffectAnimation(player, player, (ushort)(13180+slot), 0, false, 0x01);
 
 			item = player.Inventory.GetItem((eInventorySlot)m_slot);
-			
+
 			if(item!=null)
 			{
 				old_item_af=item.DPS_AF;
@@ -64,14 +66,14 @@ namespace DOL.GS.Spells
 				item.SPD_ABS -= (int)Spell.ResurrectMana;
 				if(item.DPS_AF<0) item.DPS_AF=0;
 				if(item.SPD_ABS<0) item.SPD_ABS=0;
-			
+
 				player.Client.Out.SendInventoryItemsUpdate(new DbInventoryItem[] { item });
 				player.Out.SendCharStatsUpdate();
 				player.UpdatePlayerStatus();
 				player.Out.SendUpdatePlayer();
 				player.Out.SendUpdateWeaponAndArmorStats();
 				player.Out.SendCharResistsUpdate();
-				
+
 				GameEventMgr.AddHandler(player,GamePlayerEvent.Linkdeath, new DOLEventHandler(EventAction));
 				GameEventMgr.AddHandler(player,GamePlayerEvent.Quit, new DOLEventHandler(EventAction));
 				GameEventMgr.AddHandler(player,GamePlayerEvent.RegionChanged, new DOLEventHandler(EventAction));
@@ -80,46 +82,46 @@ namespace DOL.GS.Spells
 
 			base.OnEffectStart(effect);
 		}
-		
+
 		public void EventAction(DOLEvent e, object sender, EventArgs arguments)
 		{
             if(player== null) return;
 			RemoveEffect();
 		}
-		
+
 		public override int OnEffectExpires(GameSpellEffect effect, bool noMessages)
 		{
 			RemoveEffect();
 			return base.OnEffectExpires(effect,noMessages);
 		}
-		
+
 		public void RemoveEffect()
 		{
 			if(player==null) return;
             GameSpellEffect effect=FindEffectOnTarget(player,this);
             if (effect!=null) effect.Cancel(false);
 			if(item==null) return;
-			
+
 			item.DPS_AF=old_item_af;
 			item.SPD_ABS=old_item_abs;
-			
+
 			player.Client.Out.SendInventoryItemsUpdate(new DbInventoryItem[] { item });
 			player.Out.SendCharStatsUpdate();
 			player.UpdatePlayerStatus();
 			player.Out.SendUpdatePlayer();
 			player.Out.SendUpdateWeaponAndArmorStats();
 			player.Out.SendCharResistsUpdate();
-			
+
 			GameEventMgr.RemoveHandler(player,GamePlayerEvent.Linkdeath, new DOLEventHandler(EventAction));
 			GameEventMgr.RemoveHandler(player,GamePlayerEvent.Quit, new DOLEventHandler(EventAction));
 			GameEventMgr.RemoveHandler(player,GamePlayerEvent.RegionChanged, new DOLEventHandler(EventAction));
 			GameEventMgr.RemoveHandler(player,GameLivingEvent.Dying, new DOLEventHandler(EventAction));
 
 		}
-		
-		public override IList<string> DelveInfo 
+
+		public override IList<string> DelveInfo
 		{
-			get 
+			get
 			{
 				var list = new List<string>(16);
 				list.Add("Name: " + Spell.Name+"\n");
@@ -143,7 +145,7 @@ namespace DOL.GS.Spells
 				return list;
 			}
 		}
-		
+
 		public VampiirArmorDebuff(GameLiving caster, Spell spell, SpellLine line) : base(caster, spell, line) { }
 	}
 }

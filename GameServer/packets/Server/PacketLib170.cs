@@ -282,17 +282,11 @@ namespace DOL.GS.PacketHandler
 				}
 				else
 				{
-					ReadOnlySpan<char> nameSpan = quest.Name;
-					ReadOnlySpan<char> descSpan = quest.Description;
+					ReadOnlySpan<char> nameSpan = TakeEncodedChunk(quest.Name == null ? [] : quest.Name.AsSpan(), byte.MaxValue);
+					ReadOnlySpan<char> descSpan = TakeEncodedChunk(quest.Description == null ? [] : quest.Description.AsSpan(), byte.MaxValue);
 
-					if (nameSpan.Length > byte.MaxValue)
-						nameSpan = nameSpan[..byte.MaxValue];
-
-					if (descSpan.Length > byte.MaxValue)
-						descSpan = descSpan[..byte.MaxValue];
-
-					pak.WriteByte((byte) nameSpan.Length);
-					pak.WriteShort((ushort) descSpan.Length);
+					pak.WriteByte((byte) GetEncodedByteCount(nameSpan));
+					pak.WriteShort((ushort) GetEncodedByteCount(descSpan));
 					pak.WriteNonNullTerminatedString(nameSpan); //Write Quest Name without trailing 0
 					pak.WriteNonNullTerminatedString(descSpan); //Write Quest Description without trailing 0
 				}

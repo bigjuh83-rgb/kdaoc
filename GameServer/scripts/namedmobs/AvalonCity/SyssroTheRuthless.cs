@@ -256,7 +256,7 @@ namespace DOL.AI.Brain
 				{
 					GamePlayer Target = (GamePlayer)Port_Enemys[Util.Random(0, Port_Enemys.Count - 1)];
 					RandomTarget = Target;
-					if (RandomTarget.IsAlive && RandomTarget != null)
+					if (RandomTarget != null && RandomTarget.IsAlive)
 					{
 						RandomTarget.MoveTo(50, 41489, 40699, 8145, 2096);
 						Port_Enemys.Remove(RandomTarget);

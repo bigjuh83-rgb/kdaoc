@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -29,15 +29,15 @@ namespace DOL.GS.Spells
 	{
         public static string WARLOCK_UNINTERRUPTABLE_SPELL = "WARLOCK_UNINTERRUPTABLE_SPELL";
 
-       	public override bool CheckBeginCast(GameLiving selectedTarget)
+	public override bool CheckBeginCast(GameLiving selectedTarget)
 		{
 			if (!base.CheckBeginCast(selectedTarget)) return false;
             GameSpellEffect RangeSpell = SpellHandler.FindEffectOnTarget(Caster, "Range");
-  			if(RangeSpell != null) { MessageToCaster("You already preparing a Range spell", eChatType.CT_System); return false; }
+			if(RangeSpell != null) { MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Warlock.Uninterruptible.AlreadyPreparingRange"), eChatType.CT_System); return false; }
             GameSpellEffect PowerlessSpell = SpellHandler.FindEffectOnTarget(Caster, "Powerless");
-  			if(PowerlessSpell != null) { MessageToCaster("You already preparing a Powerless spell", eChatType.CT_System); return false; }
+			if(PowerlessSpell != null) { MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Warlock.Uninterruptible.AlreadyPreparingPowerless"), eChatType.CT_System); return false; }
             GameSpellEffect UninterruptableSpell = SpellHandler.FindEffectOnTarget(Caster, "Uninterruptable");
-            if (UninterruptableSpell != null) { MessageToCaster("You must finish casting Uninterruptable before you can cast it again", eChatType.CT_System); return false; }
+            if (UninterruptableSpell != null) { MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Warlock.Uninterruptible.MustFinishUninterruptible"), eChatType.CT_System); return false; }
             return true;
 		}
         public override void FinishSpellCast(GameLiving target)
@@ -56,7 +56,7 @@ namespace DOL.GS.Spells
         {
             get
             {
-            	var list = new List<string>(16);
+	var list = new List<string>(16);
 
                 //Name
                 list.Add("Name: " + Spell.Name);

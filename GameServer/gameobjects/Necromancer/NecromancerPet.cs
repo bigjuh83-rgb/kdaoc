@@ -6,6 +6,7 @@ using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerProperties;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -197,11 +198,11 @@ namespace DOL.GS
             if (tauntEffect != null)
             {
                 tauntEffect.Stop();
-                owner.Out.SendMessage(string.Format("{0} seems to be less aggressive than before.", GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                owner.Out.SendMessage(LanguageMgr.GetTranslation(owner.Client.Account.Language, "NecromancerPet.Taunt.LessAggressive", GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             }
             else
             {
-                owner.Out.SendMessage(string.Format("{0} enters an aggressive stance.", GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                owner.Out.SendMessage(LanguageMgr.GetTranslation(owner.Client.Account.Language, "NecromancerPet.Taunt.AggressiveStance", GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 new TauntEffect().Start(this);
             }
         }
@@ -325,15 +326,26 @@ namespace DOL.GS
             return false;
             GamePlayer owner = (Brain as IControlledBrain).Owner as GamePlayer;
 
-            if (source == null || source != owner)
-                return false;
+			if (source == null || source != owner)
+				return false;
 
-            switch (text.ToLower())
+			text = text switch
+			{
+				"불타는 검" => "fiery sword",
+				"얼음 검" => "icy sword",
+				"독 검" => "poisonous sword",
+				"화염 메이스" => "flaming mace",
+				"냉기 메이스" => "frozen mace",
+				"독 메이스" => "venomous mace",
+				_ => text
+			};
+
+			switch (text.ToLower())
             {
                 case "arawn":
                 {
-                    string taunt = "As one of the many cadaverous servants of Arawn, I am able to [taunt] your enemies so that they will focus on me instead of you.";
-                    string empower = "You may also [empower] me with just a word.";
+                    string taunt = LanguageMgr.GetTranslation(owner.Client.Account.Language, "NecromancerPet.Arawn.TauntPrompt");
+                    string empower = LanguageMgr.GetTranslation(owner.Client.Account.Language, "NecromancerPet.Arawn.EmpowerPrompt");
 
                     switch (Name.ToLower())
                     {
@@ -348,12 +360,12 @@ namespace DOL.GS
                         }
                         case "greater necroservant":
                         {
-                            SayTo(owner, $"{taunt} I can also inflict [poison] or [disease] on your enemies. {empower}");
+                            SayTo(owner, LanguageMgr.GetTranslation(owner.Client.Account.Language, "NecromancerPet.Arawn.GreaterPrompt", taunt, empower));
                             return true;
                         }
                         case "abomination":
                         {
-                            SayTo(owner, $"As one of the chosen warriors of Arawn, I have a mighty arsenal of weapons at your disposal. If you wish it, I am able to [taunt] your enemies so that they will focus on me instead of you. {empower}");
+                            SayTo(owner, LanguageMgr.GetTranslation(owner.Client.Account.Language, "NecromancerPet.Arawn.AbominationPrompt", empower));
                             return true;
                         }
                         default:
@@ -361,36 +373,40 @@ namespace DOL.GS
                     }
                 }
                 case "disease":
+                case "질병":
                 {
                     DbInventoryItem item = Inventory?.GetItem(eInventorySlot.RightHandWeapon);
 
                     if (item != null)
                     {
                         item.ProcSpellID = (int)Procs.Disease;
-                        SayTo(owner, eChatLoc.CL_SystemWindow, "As you command.");
+                        SayTo(owner, eChatLoc.CL_SystemWindow, LanguageMgr.GetTranslation(owner.Client.Account.Language, "NecromancerPet.AsYouCommand"));
                     }
 
                     return true;
                 }
                 case "empower":
+                case "강화":
                 {
-                    SayTo(owner, eChatLoc.CL_SystemWindow, "As you command.");
+                    SayTo(owner, eChatLoc.CL_SystemWindow, LanguageMgr.GetTranslation(owner.Client.Account.Language, "NecromancerPet.AsYouCommand"));
                     Empower();
                     return true;
                 }
                 case "poison":
+                case "독":
                 {
                     DbInventoryItem item = Inventory?.GetItem(eInventorySlot.RightHandWeapon);
 
                     if (item != null)
                     {
                         item.ProcSpellID = (int)Procs.Poison;
-                        SayTo(owner, eChatLoc.CL_SystemWindow, "As you command.");
+                        SayTo(owner, eChatLoc.CL_SystemWindow, LanguageMgr.GetTranslation(owner.Client.Account.Language, "NecromancerPet.AsYouCommand"));
                     }
 
                     return true;
                 }
                 case "taunt":
+                case "도발":
                 {
                     ToggleTauntMode();
                     return true;
@@ -400,7 +416,7 @@ namespace DOL.GS
                     if (Name != "abomination")
                         return false;
 
-                    SayTo(owner, "What weapon do you command me to wield? A [fiery sword], [icy sword], [poisonous sword] or a [flaming mace], [frozen mace], [venomous mace]?");
+                    SayTo(owner, LanguageMgr.GetTranslation(owner.Client.Account.Language, "NecromancerPet.WeaponPrompt"));
                     return true;
                 }
                 case "fiery sword":
@@ -416,7 +432,7 @@ namespace DOL.GS
                     string templateID = string.Format("{0}_{1}", Name, text.Replace(" ", "_"));
 
                     if (LoadEquipmentTemplate(templateID))
-                        SayTo(owner, eChatLoc.CL_SystemWindow, "As you command.");
+                        SayTo(owner, eChatLoc.CL_SystemWindow, LanguageMgr.GetTranslation(owner.Client.Account.Language, "NecromancerPet.AsYouCommand"));
 
                     return true;
                 }

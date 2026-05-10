@@ -33,8 +33,8 @@ namespace DOL.GS.Spells
             target.ChangeEndurance(target, eEnduranceChangeType.Spell, (-end));
 
             if (target is GamePlayer)
-                ((GamePlayer)target).Out.SendMessage(" You lose " + end + " endurance!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-            (m_caster as GamePlayer).Out.SendMessage("" + target.Name + " loses " + end + " endurance!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                ((GamePlayer)target).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)target).Client.Account.Language, "Masterlevel.Battlemaster.YouLoseEndurance", end), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            (m_caster as GamePlayer).Out.SendMessage(LanguageMgr.GetTranslation((m_caster as GamePlayer)?.Client.Account.Language, "Masterlevel.Battlemaster.TargetLosesEndurance", target.Name, end), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
             target.StartInterruptTimer(target.SpellInterruptDuration, AttackData.eAttackType.Spell, Caster);
         }
@@ -89,7 +89,7 @@ namespace DOL.GS.Spells
         {
             if (selectedTarget is GameNPC == true)
             {
-                MessageToCaster("This spell works only on realm enemys.", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Masterlevel.Battlemaster.RealmEnemiesOnly"), eChatType.CT_SpellResisted);
                 return false;
             }
             return base.CheckBeginCast(selectedTarget);
@@ -100,7 +100,7 @@ namespace DOL.GS.Spells
             if (effect.Owner is GamePlayer)
             {
                 GamePlayer player = effect.Owner as GamePlayer;
-				if (player.EffectList.GetOfType<ChargeEffect>() == null && player != null)
+				if (player != null && player.EffectList.GetOfType<ChargeEffect>() == null)
                 {
                     effect.Owner.BuffBonusMultCategory1.Set((int)eProperty.MaxSpeed, effect, 0);
                     player.Client.Out.SendUpdateMaxSpeed();
@@ -159,7 +159,7 @@ namespace DOL.GS.Spells
             //effect.Owner.IsDisarmed = false;
             return 0;
         }
-		
+
 		/// <summary>
 		/// Do not trigger SubSpells
 		/// </summary>
@@ -272,7 +272,7 @@ namespace DOL.GS.Spells
 	// LifeFlight
     [SpellHandler(eSpellType.ThrowWeapon)]
     public class ThrowWeaponSpellHandler : DirectDamageSpellHandler
- 	{
+	{
         #region Disarm Weapon
         protected static Spell Disarm_Weapon;
         public static Spell Disarmed
@@ -287,7 +287,7 @@ namespace DOL.GS.Spells
                     spell.Uninterruptible = true;
                     spell.Icon = 7293;
                     spell.ClientEffect = 7293;
-                    spell.Description = "Disarms the caster.";
+                    spell.Description = DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "Spell.MasterLevel.Battlemaster.DisarmDescription");
                     spell.Name = "Throw Weapon(Disarm)";
                     spell.Range = 0;
                     spell.Value = 0;
@@ -305,28 +305,28 @@ namespace DOL.GS.Spells
 		public override bool CheckBeginCast(GameLiving selectedTarget)
 		{
 			GamePlayer player = Caster as GamePlayer;
-			if(player == null) 
+			if(player == null)
                 return false;
 
             if (player.IsDisarmed)
             {
-                MessageToCaster("You are disarmed and can't use this spell!", eChatType.CT_YouHit);
+                MessageToCaster(LanguageMgr.GetTranslation(player.Client.Account.Language, "Masterlevel.Battlemaster.DisarmedCannotUse"), eChatType.CT_YouHit);
                 return false;
             }
 
 			DbInventoryItem weapon = null;
 
             //assign the weapon the player is using, it can be a twohanded or a standard slot weapon
-			if (player.ActiveWeaponSlot.ToString() == "TwoHanded") 
+			if (player.ActiveWeaponSlot.ToString() == "TwoHanded")
                 weapon = player.Inventory.GetItem((eInventorySlot)12);
 			if (player.ActiveWeaponSlot.ToString() == "Standard")
                 weapon = player.Inventory.GetItem((eInventorySlot)10);
-            
+
             //if the weapon is null, ie. they don't have an appropriate weapon active
-			if(weapon == null) 
-            { 
-                MessageToCaster("Equip a weapon before using this spell!",eChatType.CT_SpellResisted); 
-                return false; 
+			if(weapon == null)
+            {
+                MessageToCaster(LanguageMgr.GetTranslation(player.Client.Account.Language, "Masterlevel.Battlemaster.EquipWeapon"),eChatType.CT_SpellResisted);
+                return false;
             }
 
             return base.CheckBeginCast(selectedTarget);
@@ -343,7 +343,7 @@ namespace DOL.GS.Spells
             return base.OnEffectExpires(effect, noMessages);
         }
 
-        
+
         public override void OnDirectEffect(GameLiving target)
         {
             if (target == null) return;
@@ -353,11 +353,11 @@ namespace DOL.GS.Spells
             // calc damage
             AttackData ad = CalculateDamageToTarget(target);
             SendDamageMessages(ad);
-            DamageTarget(ad, true);            
+            DamageTarget(ad, true);
             target.StartInterruptTimer(target.SpellInterruptDuration, ad.AttackType, Caster);
         }
-        
-        
+
+
         public override void DamageTarget(AttackData ad, bool showEffectAnimation)
         {
             DbInventoryItem weapon = null;
@@ -416,7 +416,7 @@ namespace DOL.GS.Spells
 
                     //this is for the defender, which should show the appropriate animation
                     player.Out.SendCombatAnimation(null, ad.Target, (ushort)attackersWeapon, (ushort)defendersWeapon, animationId, 0, resultByte, ad.Target.HealthPercent);
-                
+
                 }
             }
 
@@ -471,7 +471,7 @@ namespace DOL.GS.Spells
 						hitWeapon = " " + LanguageMgr.GetTranslation(player.Client.Account.Language, "GamePlayer.Attack.WithYour") + " " + hitWeapon;
 
 					string attackTypeMsg = LanguageMgr.GetTranslation(player.Client.Account.Language, "GamePlayer.Attack.YouAttack");
- 
+
 					// intercept messages
 					if (target != null && target != ad.Target)
 					{
@@ -494,13 +494,13 @@ namespace DOL.GS.Spells
 
             //we need to make sure the spell is only disabled if the attack was a success
             int isDisabled = Caster.TempProperties.GetProperty<int>(DISABLE);
-            
+
             //if this value is greater than 0 then we know that their weapon did not damage the target
-            //the skill's disable timer should be set to their attackspeed 
+            //the skill's disable timer should be set to their attackspeed
             if (isDisabled > 0)
             {
                 Caster.DisableSkill(Spell, isDisabled);
-                
+
                 //remove the temp property
                 Caster.TempProperties.RemoveProperty(DISABLE);
             }
@@ -514,12 +514,12 @@ namespace DOL.GS.Spells
         public override void ApplyEffectOnTarget(GameLiving target)
         {
             GamePlayer player = target as GamePlayer;
-          
+
             foreach (GamePlayer visPlayer in Caster.GetPlayersInRadius((ushort)WorldMgr.VISIBILITY_DISTANCE))
             {
                 visPlayer.Out.SendCombatAnimation(Caster, target, 0x0000, 0x0000, (ushort)408, 0, 0x00, target.HealthPercent);
             }
-            
+
             OnDirectEffect(target);
 
         }
@@ -728,7 +728,7 @@ namespace DOL.GS.Spells
         //        return false;
         //    }
               return base.CheckBeginCast(selectedTarget);
-        
+
         }
         public override IList<string> DelveInfo
         {
@@ -743,7 +743,7 @@ namespace DOL.GS.Spells
     }
     #endregion
 
-    //for ML9 in the database u have to add  EssenceDampenHandler  in type (its a new method customly made) 
+    //for ML9 in the database u have to add  EssenceDampenHandler  in type (its a new method customly made)
     #region Battlemaster-9
     [SpellHandler(eSpellType.EssenceDampenHandler)]
     public class EssenceDampenHandler : SpellHandler
@@ -755,7 +755,7 @@ namespace DOL.GS.Spells
         public override void OnEffectStart(GameSpellEffect effect)
         {
             base.OnEffectStart(effect);
-            double percentValue = (m_spell.Value) / 100;//15 / 100 = 0.15 a.k (15%) 100dex * 0.15 = 15dex debuff 
+            double percentValue = (m_spell.Value) / 100;//15 / 100 = 0.15 a.k (15%) 100dex * 0.15 = 15dex debuff
             DexDebuff = (int)((double)effect.Owner.GetModified(eProperty.Dexterity) * percentValue);
             QuiDebuff = (int)((double)effect.Owner.GetModified(eProperty.Quickness) * percentValue);
             GameLiving living = effect.Owner as GameLiving;

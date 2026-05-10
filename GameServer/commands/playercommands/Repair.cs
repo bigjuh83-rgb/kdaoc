@@ -108,7 +108,7 @@ namespace DOL.GS.Commands
 
 			if (obj.HealthPercent == 100)
 			{
-				DisplayMessage(player, "The component is already at full health!");
+				DisplayMessage(player, T(player, "PlayerCommands.Repair.FullHealth"));
 				return false;
 			}
 
@@ -117,7 +117,7 @@ namespace DOL.GS.Commands
 				GameKeepComponent component = obj as GameKeepComponent;
 				if (component.IsRaized)
 				{
-					DisplayMessage(player, "You cannot repair a raized tower!");
+					DisplayMessage(player, T(player, "PlayerCommands.Repair.RazedTower"));
 					return false;
 				}
 			}
@@ -127,50 +127,50 @@ namespace DOL.GS.Commands
 				GameSiegeWeapon siegeweapon = obj as GameSiegeWeapon;
 				if(siegeweapon.TimesRepaired > 3)
 				{
-					DisplayMessage(player,"The siegeweapon has decayed beyond repairs!");
+					DisplayMessage(player, T(player, "PlayerCommands.Repair.SiegeDecayed"));
 					return false;
 				}
 			}
 
 			if (player.IsCrafting || player.IsSalvagingOrRepairing)
 			{
-				DisplayMessage(player, "You must end your current action before you repair anything!");
+				DisplayMessage(player, T(player, "PlayerCommands.Repair.EndCurrentAction"));
 				return false;
 			}
 
 			if (player.IsMoving)
 			{
-				DisplayMessage(player, "You can't repair while moving");
+				DisplayMessage(player, T(player, "PlayerCommands.Repair.WhileMoving"));
 				return false;
 			}
 
 			if (!player.IsAlive)
 			{
-				DisplayMessage(player, "You can't repair while dead.");
+				DisplayMessage(player, T(player, "PlayerCommands.Repair.WhileDead"));
 				return false;
 			}
 
 			if (player.IsSitting)
 			{
-				DisplayMessage(player, "You can't repair while sitting.");
+				DisplayMessage(player, T(player, "PlayerCommands.Repair.WhileSitting"));
 				return false;
 			}
 
 			if (player.InCombat)
 			{
-				DisplayMessage(player, "You can't repair while in combat.");
+				DisplayMessage(player, T(player, "PlayerCommands.Repair.WhileInCombat"));
 				return false;
 			}
 
 			if (obj.InCombat)
 			{
-				DisplayMessage(player, "You can't repair an object under attack.");
+				DisplayMessage(player, T(player, "PlayerCommands.Repair.ObjectUnderAttack"));
 				return false;
 			}
 
 			if (!player.IsWithinRadius(obj, WorldMgr.INTERACT_DISTANCE))
 			{
-				DisplayMessage(player, "You are too far away to repair this component.");
+				DisplayMessage(player, T(player, "PlayerCommands.Repair.TooFar"));
 				return false;
 			}
 
@@ -180,13 +180,13 @@ namespace DOL.GS.Commands
 
 			if (woodDifference > 0)
 			{
-				DisplayMessage(player, "You need another " + woodDifference + " unit" + (woodDifference > 1 ? "s" : "") + " of wood!");
+				DisplayMessage(player, T(player, "PlayerCommands.Repair.NeedWood", woodDifference));
 				return false;
 			}
 
 			if (player.GetCraftingSkillValue(eCraftingSkill.WoodWorking) < 1)
 			{
-				DisplayMessage(player, "You need woodworking skill to repair.");
+				DisplayMessage(player, T(player, "PlayerCommands.Repair.NeedWoodworking"));
 				return false;
 			}
 
@@ -196,7 +196,7 @@ namespace DOL.GS.Commands
 
 		public void StartRepair(GamePlayer player, GameLiving obj)
 		{
-			player.Out.SendTimerWindow("Repairing: " + obj.Name, repairDuration);
+			player.Out.SendTimerWindow(T(player, "PlayerCommands.Repair.Timer", obj.Name), repairDuration);
 			player.CraftTimer = new ECSGameTimer(player);
 			player.CraftTimer.Callback = new ECSGameTimer.ECSTimerCallback(Proceed);
 			player.CraftTimer.Properties.SetProperty("repair_player", player);
@@ -241,13 +241,13 @@ namespace DOL.GS.Commands
 					if (weapon.Repair((int)(weapon.MaxHealth * 0.15)))
 					{
 						RemoveWU(player, GetNeededWoodForOneTick(obj.Level));
-						DisplayMessage(player, "You successfully repair the siege weapon by 15%!");
+						DisplayMessage(player, T(player, "PlayerCommands.Repair.SiegeSuccess"));
 					}
 					return 0;
 				}
 
 				RemoveWU(player, GetNeededWoodForOneTick(obj.Level));
-				DisplayMessage(player, "You successfully repair the component by 5%!");
+				DisplayMessage(player, T(player, "PlayerCommands.Repair.ComponentSuccess"));
 
 				/*
 				 * - Realm points will now be awarded for successfully repairing a door or outpost piece.
@@ -260,7 +260,7 @@ namespace DOL.GS.Commands
 			}
 			else
 			{
-				DisplayMessage(player, "You fail to repair the component!");
+				DisplayMessage(player, T(player, "PlayerCommands.Repair.Failed"));
 			}
 
 			return 0;
@@ -295,7 +295,7 @@ namespace DOL.GS.Commands
 				default: return 0;
 			}
 		}
-		
+
 		private static int CalculatePlayersWood(GamePlayer player)
 		{
 			int amount = 0;
@@ -341,13 +341,13 @@ namespace DOL.GS.Commands
 					woodUnits = 0;
 				}
 			}
-			
+
 			// if (item.Count * woodvalue < removeamount)
 			// {
 			// 	int removecount = removeamount / woodvalue;
 			// 	removeamount -= removecount * woodvalue;
 			// 	player.Inventory.RemoveCountFromStack(item, removecount);
-			// 	
+			//
 			// }
 			// else
 			// {
@@ -356,7 +356,7 @@ namespace DOL.GS.Commands
 			// 	InventoryLogging.LogInventoryAction(player, "(craft)", eInventoryActionType.Craft, item.Template, item.Count);
 			// }
 		}
-		
+
 		public static int GetWoodValue(string name)
 		{
 			switch (name.Replace(" wooden boards", ""))

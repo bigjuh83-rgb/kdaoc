@@ -6,7 +6,12 @@ AbstractQuest.FinishQuest.Completed:		You have completed the {0} quest!
 AbstractQuest.AbortQuest:			Quest cleared!
 AbstractQuest.OnQuestAssigned.GetQuest:		You have been given the {0} quest.
 
-## Rewards  
+## Rewards
 RewardQuest.Notify:				You must choose a reward!
 RewardQuest.OnQuestAssigned:			You have acquired the {0} quest.
 RewardQuest.Description:			Quest Goal : {0} ({1}/{2})
+RewardQuest.InventoryFull.CompleteQuest:	Your inventory is full. You need {0} free slot(s) to complete this quest.
+DataQuest.AdvanceQuestStep.XPTurnedOff:		Your XP is turned off. Turn it on to complete this quest step!
+DataQuest.AdvanceQuestStep.RPTurnedOff:		Your RP is turned off. Turn it on to complete this quest step!
+DataQuest.AdvanceQuestStep.InventoryFull:	You don't have enough inventory space to advance this quest. You need {0} free slot(s)!
+DataQuest.StartQuest.BackpackFull:		Your backpack is full, so you can't start this quest!

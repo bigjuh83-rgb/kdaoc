@@ -43,7 +43,7 @@ namespace DOL.GS.Commands
 
 			if (targetObject == null && args[1] != "create" && args[1] != "fastcreate" && args[1] != "target" && args[1] != "quests")
 			{
-				client.Out.SendMessage("Type /object for command overview", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Object.CommandOverview"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -52,35 +52,35 @@ namespace DOL.GS.Commands
 				case "info":
 					{
 						List<string> info = new List<string>();
-						
-						string name = "(blank name)";
+
+						string name = T(client, "GMCommands.Object.Info.BlankName");
 						if (!string.IsNullOrEmpty(targetObject.Name))
 							name = targetObject.Name;
-						
-						info.Add(" OID: " + targetObject.ObjectID);
-						info.Add (" Type: " + targetObject.GetType());
+
+						info.Add(T(client, "GMCommands.Object.Info.OID", targetObject.ObjectID));
+						info.Add(T(client, "GMCommands.Object.Info.Type", targetObject.GetType()));
 						info.Add(" ");
-						info.Add(" Name: " + name);
-						info.Add(" Model: " + targetObject.Model);
-						info.Add(" Emblem: " + targetObject.Emblem);
-						info.Add(" Realm: " + targetObject.Realm);
+						info.Add(T(client, "GMCommands.Object.Info.Name", name));
+						info.Add(T(client, "GMCommands.Object.Info.Model", targetObject.Model));
+						info.Add(T(client, "GMCommands.Object.Info.Emblem", targetObject.Emblem));
+						info.Add(T(client, "GMCommands.Object.Info.Realm", targetObject.Realm));
 
 						if (targetObject is GameStaticItemTimed staticItem && staticItem.Owners.Count > 0)
 						{
 							info.Add(" ");
 
 							foreach (IGameStaticItemOwner owner in staticItem.Owners)
-								info.Add($" Owner: {owner.Name}");
+								info.Add(T(client, "GMCommands.Object.Info.Owner", owner.Name));
 						}
 
 						if (string.IsNullOrEmpty(targetObject.OwnerID) == false)
 						{
 							info.Add(" ");
-							info.Add(" OwnerID: " + targetObject.OwnerID);
+							info.Add(T(client, "GMCommands.Object.Info.OwnerID", targetObject.OwnerID));
 						}
 						if (targetObject.RespawnInterval > 0)
 						{
-							info.Add("RespawnInterval (seconds): " + targetObject.RespawnInterval);
+							info.Add(T(client, "GMCommands.Object.Info.RespawnInterval", targetObject.RespawnInterval));
 						}
 
 						info.Add(" ");
@@ -88,12 +88,12 @@ namespace DOL.GS.Commands
 						WorldInventoryItem invItem = targetObject as WorldInventoryItem;
 						if( invItem != null )
 						{
-							info.Add (" Count: " + invItem.Item.Count);
+							info.Add(T(client, "GMCommands.Object.Info.Count", invItem.Item.Count));
 						}
 
 						info.Add(" ");
-						info.Add(" Location: X= " + targetObject.X + " ,Y= " + targetObject.Y + " ,Z= " + targetObject.Z);
-						
+						info.Add(T(client, "GMCommands.Object.Info.Location", targetObject.X, targetObject.Y, targetObject.Z));
+
 						client.Out.SendCustomTextWindow( "[ " + name + " ]", info );
 						break;
 					}
@@ -115,7 +115,7 @@ namespace DOL.GS.Commands
 						GameStaticItem obj = CreateItem( client, theType );
 
 						if( obj != null )
-							DisplayMessage(client, "Obj created: OID=" + obj.ObjectID);
+							DisplayMessage(client, T(client, "GMCommands.Object.Created", obj.ObjectID));
 
 						break;
 					}
@@ -136,7 +136,7 @@ namespace DOL.GS.Commands
 						{
 							obj.Name = objName;
 							obj.Model = modelID;
-							DisplayMessage( client, "Object created: OID = " + obj.ObjectID );
+							DisplayMessage(client, T(client, "GMCommands.Object.CreatedWithSpaces", obj.ObjectID));
 						}
 
 						break;
@@ -149,11 +149,11 @@ namespace DOL.GS.Commands
 							model = Convert.ToUInt16(args[2]);
 							targetObject.Model = model;
 							targetObject.SaveIntoDatabase();
-							DisplayMessage(client, "Object model changed to: " + targetObject.Model);
+							DisplayMessage(client, T(client, "GMCommands.Object.ModelChanged", targetObject.Model));
 						}
 						catch (Exception)
 						{
-							DisplayMessage(client, "Type /object for command overview");
+							DisplayMessage(client, T(client, "GMCommands.Object.CommandOverview"));
 							return;
 						}
 						break;
@@ -168,16 +168,16 @@ namespace DOL.GS.Commands
 							model++;
 							targetObject.Model = model;
 							targetObject.SaveIntoDatabase();
-							DisplayMessage(client, "Object model changed to: " + targetObject.Model);
+							DisplayMessage(client, T(client, "GMCommands.Object.ModelChanged", targetObject.Model));
 							}
 							else
 							{
-								DisplayMessage(client, "Highest object model reached!");
+								DisplayMessage(client, T(client, "GMCommands.Object.HighestModelReached"));
 							}
 						}
 						catch (Exception)
 						{
-							DisplayMessage(client, "Type /object for command overview");
+							DisplayMessage(client, T(client, "GMCommands.Object.CommandOverview"));
 							return;
 						}
 						break;
@@ -192,16 +192,16 @@ namespace DOL.GS.Commands
 								model--;
 								targetObject.Model = model;
 								targetObject.SaveIntoDatabase();
-								DisplayMessage(client, "Object model changed to: " + targetObject.Model);
+								DisplayMessage(client, T(client, "GMCommands.Object.ModelChanged", targetObject.Model));
 							}
 							else
 							{
-								DisplayMessage(client, "Object model cannot be 0!");
+								DisplayMessage(client, T(client, "GMCommands.Object.ModelCannotBeZero"));
 							}
 						}
 						catch (Exception)
 						{
-							DisplayMessage(client, "Type /object for command overview");
+							DisplayMessage(client, T(client, "GMCommands.Object.CommandOverview"));
 							return;
 						}
 						break;
@@ -214,11 +214,11 @@ namespace DOL.GS.Commands
 							emblem = Convert.ToInt32(args[2]);
 							targetObject.Emblem = emblem;
 							targetObject.SaveIntoDatabase();
-							DisplayMessage(client, "Object emblem changed to: " + targetObject.Emblem);
+							DisplayMessage(client, T(client, "GMCommands.Object.EmblemChanged", targetObject.Emblem));
 						}
 						catch (Exception)
 						{
-							DisplayMessage(client, "Type /object for command overview");
+							DisplayMessage(client, T(client, "GMCommands.Object.CommandOverview"));
 							return;
 						}
 						break;
@@ -232,8 +232,8 @@ namespace DOL.GS.Commands
 						if (args[2] == "3") realm = eRealm.Hibernia;
 						targetObject.Realm = realm;
 						targetObject.SaveIntoDatabase();
-						DisplayMessage(client, "Object realm changed to: " + targetObject.Realm);
-						
+						DisplayMessage(client, T(client, "GMCommands.Object.RealmChanged", targetObject.Realm));
+
 						break;
 					}
 				case "name":
@@ -242,7 +242,7 @@ namespace DOL.GS.Commands
 						{
 							targetObject.Name = param;
 							targetObject.SaveIntoDatabase();
-							DisplayMessage(client, "Object name changed to: " + targetObject.Name);
+							DisplayMessage(client, T(client, "GMCommands.Object.NameChanged", targetObject.Name));
 						}
 						break;
 					}
@@ -250,7 +250,7 @@ namespace DOL.GS.Commands
 					{
 						targetObject.Name = string.Empty;
 						targetObject.SaveIntoDatabase();
-						DisplayMessage(client, "Object name removed");
+						DisplayMessage(client, T(client, "GMCommands.Object.NameRemoved"));
 						break;
 					}
 				case "copy":
@@ -258,7 +258,7 @@ namespace DOL.GS.Commands
 						GameStaticItem item = CreateItemInstance(client, targetObject.GetType().FullName);
 						if (item == null)
 						{
-							ChatUtil.SendSystemMessage(client, "There was an error creating an instance of " + targetObject.GetType().FullName + "!");
+							ChatUtil.SendSystemMessage(client, T(client, "GMCommands.Object.CreateInstanceError", targetObject.GetType().FullName));
 							return;
 						}
 						item.X = client.Player.X;
@@ -274,21 +274,21 @@ namespace DOL.GS.Commands
 						item.LoadedFromScript = targetObject.LoadedFromScript;
 						item.AddToWorld();
 						item.SaveIntoDatabase();
-						DisplayMessage(client, "Obj created: OID=" + item.ObjectID);
+						DisplayMessage(client, T(client, "GMCommands.Object.Created", item.ObjectID));
 						break;
 					}
 				case "save":
 					{
 						targetObject.LoadedFromScript = false;
 						targetObject.SaveIntoDatabase();
-						DisplayMessage(client, "Object saved to Database");
+						DisplayMessage(client, T(client, "GMCommands.Object.SavedToDatabase"));
 						break;
 					}
 				case "remove":
 					{
 						targetObject.DeleteFromDatabase();
 						targetObject.Delete();
-						DisplayMessage( client, "Object removed from Clients and Database" );
+						DisplayMessage(client, T(client, "GMCommands.Object.RemovedFromClientsAndDatabase"));
 						break;
 					}
 				case "target":
@@ -296,11 +296,11 @@ namespace DOL.GS.Commands
 						foreach ( GameStaticItem item in client.Player.GetItemsInRadius( 1000 ) )
 						{
 							client.Player.TargetObject = item;
-							DisplayMessage( client, "Target set to nearest object!" );
+							DisplayMessage(client, T(client, "GMCommands.Object.TargetSetToNearest"));
 							return;
 						}
 
-						DisplayMessage( client, "No objects in 1000 unit range!" );
+						DisplayMessage(client, T(client, "GMCommands.Object.NoObjectsInRange", 1000));
 						break;
 					}
 				case "respawn":
@@ -310,7 +310,7 @@ namespace DOL.GS.Commands
 						{
 							targetObject.RespawnInterval = respawn;
 							targetObject.SaveIntoDatabase();
-							DisplayMessage(client, "Object RespawnInterval set to " + targetObject.RespawnInterval + " seconds.");
+							DisplayMessage(client, T(client, "GMCommands.Object.RespawnIntervalSet", targetObject.RespawnInterval));
 						}
 
 						break;
@@ -330,11 +330,11 @@ namespace DOL.GS.Commands
 								}
 							}
 
-							client.Out.SendMessage(targetObject.DataQuestList.Count + " Data Quests loaded for this object.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.Object.DataQuestsLoaded", targetObject.DataQuestList.Count), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						}
 						catch (Exception)
 						{
-							DisplayMessage(client, "Error refreshing quests.");
+							DisplayMessage(client, T(client, "GMCommands.Object.RefreshQuestsError"));
 						}
 
 						break;
@@ -376,7 +376,7 @@ namespace DOL.GS.Commands
 
 			if (obj == null)
 			{
-				client.Out.SendMessage( "There was an error creating an instance of " + itemClassName + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow );
+				client.Out.SendMessage(T(client, "GMCommands.Object.CreateInstanceError", itemClassName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return null;
 			}
 

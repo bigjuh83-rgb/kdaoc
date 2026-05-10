@@ -69,3 +69,5 @@ GamePlayer.GamePet.Target.CantSeeTarget:                Your controlled {0} can'
 GamePlayer.GamePet.Movement.TooFarAway:                 Your controlled creature is too far away!
 GamePlayer.GamePet.SpellEnd.YouLoseControl:             You lose control of {0}!
 GamePlayer.GamePet.SpellEnd.YouReleaseControl:          You release control of your controlled target.
+GameLiving.Engage.TargetAttackedRecently:	{0} has been attacked recently and you are unable to engage.
+GameLiving.Engage.ConcentrateBlocking:		You concentrate on blocking the blow!

@@ -8,7 +8,7 @@
 *Quest Version  : v1.0
 *
 *Changes:
-* 
+*
 */
 
 using System;
@@ -35,7 +35,7 @@ namespace DOL.GS.Quests.Midgard
 		private static bool IsSinging;
 		private static GameNPC VikingDextz = null; // Start NPC
 		private static GameNPC Freeya = null; // Finish NPC
-		
+
 		private static DbWorldObject FreeyasGrave = null; // Object
 
 		private static IList<DbWorldObject> GetItems()
@@ -60,13 +60,26 @@ namespace DOL.GS.Quests.Midgard
 		{
 		}
 
+		private static string L(GamePlayer player, string key, params object[] args)
+		{
+			return DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+		}
+
+		private string Q(string key, params object[] args)
+		{
+			string language = m_questPlayer != null && m_questPlayer.Client != null && m_questPlayer.Client.Account != null
+				? m_questPlayer.Client.Account.Language
+				: ServerProperties.Properties.SERV_LANGUAGE;
+			return DOL.Language.LanguageMgr.GetTranslation(language, key, args);
+		}
+
 
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 			//Freeya
@@ -79,7 +92,7 @@ namespace DOL.GS.Quests.Midgard
 						Freeya = npc;
 						break;
 					}
-			
+
 			// Freeya is near Svasud Faste, North West on the Hill between trees
 			if (Freeya == null)
 			{
@@ -100,7 +113,7 @@ namespace DOL.GS.Quests.Midgard
 				Freeya.Y = 646142;
 				Freeya.Z = 8687;
 				Freeya.Heading = 60;
-								
+
 				GameNpcInventoryTemplate template = new GameNpcInventoryTemplate();
 				template.AddNPCEquipment(eInventorySlot.RightHandWeapon, 3341);
 				template.AddNPCEquipment(eInventorySlot.TwoHandWeapon, 3342);
@@ -118,7 +131,7 @@ namespace DOL.GS.Quests.Midgard
 					Freeya.SaveIntoDatabase();
 				}
 			}
-			
+
 			//Viking Dextz
 			npcs = WorldMgr.GetNPCsByName("Viking Dextz", eRealm.Midgard);
 
@@ -129,7 +142,7 @@ namespace DOL.GS.Quests.Midgard
 						VikingDextz = npc;
 						break;
 					}
-			
+
 			// Viking Dextz is near Healer Trainers in Jordheim
 			if (VikingDextz == null)
 			{
@@ -148,7 +161,7 @@ namespace DOL.GS.Quests.Midgard
 				VikingDextz.Y = 32310;
 				VikingDextz.Z = 8305;
 				VikingDextz.Heading = 3346;
-				
+
 				GameNpcInventoryTemplate template = new GameNpcInventoryTemplate();
 				template.AddNPCEquipment(eInventorySlot.RightHandWeapon, 3335);
 				template.AddNPCEquipment(eInventorySlot.LeftHandWeapon, 2218);
@@ -196,7 +209,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			
+
 			#endregion
 
 			GameEventMgr.AddHandler(GamePlayerEvent.AcceptQuest, new DOLEventHandler(SubscribeQuest));
@@ -204,10 +217,10 @@ namespace DOL.GS.Quests.Midgard
 
 			GameEventMgr.AddHandler(VikingDextz, GameObjectEvent.Interact, new DOLEventHandler(TalkToVikingDextz));
 			GameEventMgr.AddHandler(VikingDextz, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToVikingDextz));
-			
+
 			GameEventMgr.AddHandler(Freeya, GameObjectEvent.Interact, new DOLEventHandler(TalkToFreeya));
 			GameEventMgr.AddHandler(Freeya, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToFreeya));
-			
+
 			/* Now we bring to NPC_Name the possibility to give this quest to players */
 			VikingDextz.AddQuestToGive(typeof (PlayTheLastSong));
 
@@ -221,14 +234,14 @@ namespace DOL.GS.Quests.Midgard
 			//if not loaded, don't worry
 			if (VikingDextz == null)
 				return;
-			
+
 			// remove handlers
 			GameEventMgr.RemoveHandler(GamePlayerEvent.AcceptQuest, new DOLEventHandler(SubscribeQuest));
 			GameEventMgr.RemoveHandler(GamePlayerEvent.DeclineQuest, new DOLEventHandler(SubscribeQuest));
-			
+
 			GameEventMgr.RemoveHandler(VikingDextz, GameObjectEvent.Interact, new DOLEventHandler(TalkToVikingDextz));
 			GameEventMgr.RemoveHandler(VikingDextz, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToVikingDextz));
-			
+
 			GameEventMgr.RemoveHandler(Freeya, GameObjectEvent.Interact, new DOLEventHandler(TalkToFreeya));
 			GameEventMgr.RemoveHandler(Freeya, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToFreeya));
 
@@ -238,7 +251,7 @@ namespace DOL.GS.Quests.Midgard
 
 		protected static void TalkToVikingDextz(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -256,24 +269,19 @@ namespace DOL.GS.Quests.Midgard
 					switch (quest.Step)
 					{
 						case 1:
-							VikingDextz.SayTo(player, "God dag " +player.Name+ ", my mission is a difficult one! Last year we lost a wonderful and helpful Skald. " +
-							                          "She defended Midgard from hordes of monsters, and was a valiant soldier in our frontiers. Through her efforts, Midgard prospered. " +
-							                          "[Freeya] even helped protect the Horn of Valhalla on multiple occasions... she had a good soul.");
+							VikingDextz.SayTo(player, L(player, "Quest.PlayTheLastSong.Viking.Step1", player.Name));
 							break;
 						case 2:
-							VikingDextz.SayTo(player, player.Name +", you will find Freeya's grave on the hill northwest from Svasud Faste. Please check if everything is fine there.");
+							VikingDextz.SayTo(player, L(player, "Quest.PlayTheLastSong.Viking.Step2", player.Name));
 							break;
 						case 3:
-							VikingDextz.SayTo(player, "You are probably forsaken by all good spirits! You saw Freeya? " +
-							                          "Please tell her, Thor Boyaux and Exiled Vaettir pay great respect for a legend of Midgard!\nRest in Peace my friend.");
+							VikingDextz.SayTo(player, L(player, "Quest.PlayTheLastSong.Viking.Step3"));
 							break;
 					}
 				}
 				else
 				{
-					VikingDextz.SayTo(player, "Hello "+ player.Name +", I am Dextz. "+ 
-					                          "I am expecting you could help me, which is a very dangerous task. However I cannot leave Jordheim, because I need to help new budding healers.\n" +
-					                       "\nCan you [support Thor Boyaux] and check Freeya\'s Grave in Uppland?");
+					VikingDextz.SayTo(player, L(player, "Quest.PlayTheLastSong.Viking.Greeting", player.Name));
 				}
 			}
 				// The player whispered to the NPC
@@ -284,8 +292,9 @@ namespace DOL.GS.Quests.Midgard
 				{
 					switch (wArgs.Text)
 					{
-						case "support Thor Boyaux":
-							player.Out.SendQuestSubscribeCommand(VikingDextz, QuestMgr.GetIDForQuestType(typeof(PlayTheLastSong)), "Will you help Viking Dextz ([Memorial] Play the last Song)?");
+							case "support Thor Boyaux":
+							case "토르 보요 지원":
+							player.Out.SendQuestSubscribeCommand(VikingDextz, QuestMgr.GetIDForQuestType(typeof(PlayTheLastSong)), L(player, "Quest.PlayTheLastSong.SubscribePrompt"));
 							break;
 					}
 				}
@@ -294,27 +303,24 @@ namespace DOL.GS.Quests.Midgard
 					switch (wArgs.Text)
 					{
 						case "Freeya":
-							VikingDextz.SayTo(player, "Freeya - a Master Enforcer and a good friend. I miss her every day. We could use her help now. " +
-							                          "Our borders need constant reinforcements, and we have heard of a growing threat in the north. ");
+							VikingDextz.SayTo(player, L(player, "Quest.PlayTheLastSong.Viking.Freeya"));
 							if (quest.Step == 1)
 							{
 								VikingDextz.Emote(eEmote.Cry);
-								VikingDextz.SayTo(player, "We buried her in Uppland on the hill, north west of Svasud Faste. " +
-								                          "It has been a month or two since I visited her resting place. Could you please [help me] and check on Freeya\'s grave? " +
-								                          "\n\nIt would bring me peace of mind to know it is fine and not broken. " +
-								                          "Sadly, I currently can not leave my post as I need to train new healers for the ongoing battles.");
+								VikingDextz.SayTo(player, L(player, "Quest.PlayTheLastSong.Viking.FreeyaStep1"));
 							}
 							break;
 						case "help me":
+						case "도와주기":
 							if (quest.Step == 1)
 							{
-								VikingDextz.SayTo(player, "Thank you " + player.Name + ", that's very kind of you! You do me a great service.");
+								VikingDextz.SayTo(player, L(player, "Quest.PlayTheLastSong.Viking.HelpMe", player.Name));
 								quest.Step = 2;
 								VikingDextz.Interact((player));
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
@@ -324,18 +330,18 @@ namespace DOL.GS.Quests.Midgard
 				ReceiveItemEventArgs rArgs = (ReceiveItemEventArgs) args;
 				if (quest != null)
 				{
-					
+
 				}
 			}
 		}
-		
+
 		private static void TalkToFreeya(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null || IsSinging)
 				return;
-			
+
 			//We also check if the player is already doing the quest
 			PlayTheLastSong quest = player.IsDoingQuest(typeof (PlayTheLastSong)) as PlayTheLastSong;
 
@@ -346,7 +352,7 @@ namespace DOL.GS.Quests.Midgard
 					switch (quest.Step)
 					{
 						case 1:
-							Freeya.SayTo(player, "Hello Adventurer, do you know Dextz? He is a good friend, please visit him!");
+							Freeya.SayTo(player, L(player, "Quest.PlayTheLastSong.Freeya.Step1"));
 							break;
 						case 2:
 							player.Emote(eEmote.Shiver);
@@ -354,20 +360,16 @@ namespace DOL.GS.Quests.Midgard
 							if (player.Name.Contains("Dextz") || (player.Guild != null && player.Guild.Name.Contains("Thor Boyaux")))
 							{
 								Freeya.Emote(eEmote.Hug);
-								Freeya.SayTo(player, player.CharacterClass.Name + "... It is good to see you here again, my friend. " +
-								                     "I know you are protecting the realm in my stead. Fight with confidence knowing that I am watching from Odin's halls and lending you my strength! " +
-								                     "Would you join me in singing my [last songs for Midgard]?");
+								Freeya.SayTo(player, L(player, "Quest.PlayTheLastSong.Freeya.Step2Friend", player.CharacterClass.Name));
 							}
 							else
 							{
 								Freeya.Emote(eEmote.Hug);
-								Freeya.SayTo(player, "God dag " + player.CharacterClass.Name + ". I could sense you were coming. Please don't be scared, I promise I am friendly! " +
-								                     "My friend Dextz use to visit me very often, it must be something special that he has chosen you to check on me! " +
-								                     "I really wished to see him once again, but maybe you can help me to play my [last songs for Midgard]?");	
+								Freeya.SayTo(player, L(player, "Quest.PlayTheLastSong.Freeya.Step2", player.CharacterClass.Name));
 							}
 							break;
 						case 3:
-							Freeya.SayTo(player, "Alright " + player.Name + ", all you have to do is say \"song\" to me and I will begin the ceremony!");
+							Freeya.SayTo(player, L(player, "Quest.PlayTheLastSong.Freeya.Step3", player.Name));
 							break;
 					}
 				}
@@ -375,15 +377,13 @@ namespace DOL.GS.Quests.Midgard
 				{
 					if (player.Realm != eRealm.Midgard)
 					{
-						Freeya.SayTo(player, "Hello Adventurer, do you know Dextz? I had a wonderful time with him, once! " +
-						                     "He was the most amazing Healer, I hope you meet him one day.\n" +
-						                     "Do not forget, nobody is useless in this world who makes someone else\'s burden easier.");
+						Freeya.SayTo(player, L(player, "Quest.PlayTheLastSong.Freeya.OtherRealmGreeting"));
 					}
 					else
 					{
-						Freeya.SayTo(player, "Hello " + player.CharacterClass.Name + ". Do not forget, nobody is useless in this world who makes someone else\'s burden easier.");
+						Freeya.SayTo(player, L(player, "Quest.PlayTheLastSong.Freeya.MidgardGreeting", player.CharacterClass.Name));
 					}
-					
+
 				}
 			}
 				// The player whispered to the NPC
@@ -394,18 +394,19 @@ namespace DOL.GS.Quests.Midgard
 				{
 					switch (wArgs.Text)
 					{
-						
+
 					}
 				}
 				else
 				{
 					switch (wArgs.Text)
 					{
-						case "last songs for Midgard":
+							case "last songs for Midgard":
+							case "미드가드의 마지막 노래":
 							if (quest.Step == 2)
 							{
 								Freeya.Emote(eEmote.Induct);
-								Freeya.SayTo(player, player.Name + ", I will begin the ceremony at your word.");
+								Freeya.SayTo(player, L(player, "Quest.PlayTheLastSong.Freeya.LastSongs", player.Name));
 								quest.Step = 3;
 							}
 							break;
@@ -421,18 +422,18 @@ namespace DOL.GS.Quests.Midgard
 
 								//cast Speed Song
 								new ECSGameTimer(Freeya, new ECSGameTimer.ECSTimerCallback(CastSpeed), 8000);
-								
+
 								//cast Damage Add Song
 								new ECSGameTimer(Freeya, new ECSGameTimer.ECSTimerCallback(CastDamageAdd), 13000);
-								
-								
+
+
 								new ECSGameTimer(Freeya, new ECSGameTimer.ECSTimerCallback(timer => FinishSinging(timer, player)), 18000);
-								
+
 								if (quest.Step == 4 && !IsSinging)
 								{
 									quest.Step = 5;
 								}
-								
+
 								new ECSGameTimer(Freeya, new ECSGameTimer.ECSTimerCallback(DelayedDeath), 23000);
 							}
 
@@ -445,20 +446,19 @@ namespace DOL.GS.Quests.Midgard
 				ReceiveItemEventArgs rArgs = (ReceiveItemEventArgs) args;
 				if (quest != null)
 				{
-					
+
 				}
 			}
 		}
-		
+
 		private static int FinishSinging(ECSGameTimer timer, GamePlayer player)
 		{
 			PlayTheLastSong quest = player.IsDoingQuest(typeof(PlayTheLastSong)) as PlayTheLastSong;
 			if (quest == null)
 				return 0;
-			
+
 			//cast Resistance Song
-			Freeya.Say("And this song is for you, " + player.Name + ". You are very brave to come here in service of Midgard. " +
-			           "I'll play a resistance song for you, and all of Midgard, so the realm can continue to prosper.");
+			Freeya.Say(L(player, "Quest.PlayTheLastSong.Freeya.ResistanceSong", player.Name));
 			Freeya.TurnTo(player, 500);
 			Freeya.Emote(eEmote.Military);
 			CastResistance();
@@ -468,7 +468,7 @@ namespace DOL.GS.Quests.Midgard
 
 			return 0;
 		}
-		
+
 		#region HealthRegen
 		/// <summary>
 		/// Cast Health Regen Song.
@@ -477,19 +477,18 @@ namespace DOL.GS.Quests.Midgard
 		/// <returns></returns>
 		private static int CastHealthRegen(ECSGameTimer timer)
 		{
-			Freeya.Say("Dextz, my friend, I will use the last of my power and play my final songs for you!\n" +
-			           " I will protect you wherever you are!");
+			Freeya.Say(DOL.Language.LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "Quest.PlayTheLastSong.Freeya.HealthSong"));
 			Freeya.Emote(eEmote.Military);
 			foreach (GamePlayer player in Freeya.GetPlayersInRadius(500))
 			{
 				Freeya.TargetObject = player;
-				Freeya.CastSpell(HealthRegen, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));				
+				Freeya.CastSpell(HealthRegen, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
 			}
-			
+
 			return 0;
 		}
-		
-		
+
+
 		private static Spell m_HealthRegen;
 		/// <summary>
 		/// The Health Regen Song.
@@ -507,7 +506,7 @@ namespace DOL.GS.Quests.Midgard
 					spell.ClientEffect = 3618;
 					spell.Damage = 0;
 					spell.Duration = 5;
-					spell.Name = "Freeya's Heavenly Song of Rest";
+					spell.Name = DOL.Language.LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "Quest.PlayTheLastSong.Spell.Health.Name");
 					spell.Range = 500;
 					spell.Radius = 500;
 					spell.SpellID = 3618;
@@ -516,7 +515,7 @@ namespace DOL.GS.Quests.Midgard
 					spell.Uninterruptible = true;
 					spell.MoveCast = true;
 					spell.DamageType = 0;
-					spell.Message1 = "Dextz looks calmer.";
+					spell.Message1 = DOL.Language.LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "Quest.PlayTheLastSong.Spell.Health.Message1");
 					m_HealthRegen = new Spell(spell, 50);
 				}
 				return m_HealthRegen;
@@ -532,19 +531,18 @@ namespace DOL.GS.Quests.Midgard
 		/// <returns></returns>
 		private static int CastSpeed(ECSGameTimer timer)
 		{
-			Freeya.Say("Thor Boyaux, you were my family and forever shall be! \n" +
-			           "I will protect you wherever you are!");
+			Freeya.Say(DOL.Language.LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "Quest.PlayTheLastSong.Freeya.SpeedSong"));
 			Freeya.Emote(eEmote.Military);
 			foreach (GamePlayer player in Freeya.GetPlayersInRadius(500))
 			{
 				Freeya.TargetObject = player;
-				Freeya.CastSpell(SpeedSong, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));			
+				Freeya.CastSpell(SpeedSong, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
 			}
-			
+
 			return 0;
 		}
-		
-		
+
+
 		private static Spell m_SpeedSong;
 		/// <summary>
 		/// The Speed Song.
@@ -562,7 +560,7 @@ namespace DOL.GS.Quests.Midgard
 					spell.ClientEffect = 3612;
 					spell.Damage = 0;
 					spell.Duration = 5;
-					spell.Name = "Freeya's Heavenly Song of Travel";
+					spell.Name = DOL.Language.LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "Quest.PlayTheLastSong.Spell.Speed.Name");
 					spell.Range = 500;
 					spell.Radius = 500;
 					spell.SpellID = 3612;
@@ -571,7 +569,7 @@ namespace DOL.GS.Quests.Midgard
 					spell.Uninterruptible = true;
 					spell.MoveCast = true;
 					spell.DamageType = 0;
-					spell.Message1 = "Thor Boyaux will be protected with Enhancement.";
+					spell.Message1 = DOL.Language.LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "Quest.PlayTheLastSong.Spell.Speed.Message1");
 					m_SpeedSong = new Spell(spell, 50);
 				}
 				return m_SpeedSong;
@@ -587,19 +585,18 @@ namespace DOL.GS.Quests.Midgard
 		/// <returns></returns>
 		private static int CastDamageAdd(ECSGameTimer timer)
 		{
-			Freeya.Say("Exiled Vaettir, you accepted and supported me. For that, I am very grateful to you! \n" +
-			           "I will protect you wherever you are!");
+			Freeya.Say(DOL.Language.LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "Quest.PlayTheLastSong.Freeya.DamageSong"));
 			Freeya.Emote(eEmote.Military);
 			foreach (GamePlayer player in Freeya.GetPlayersInRadius(500))
 			{
 				Freeya.TargetObject = player;
 				Freeya.CastSpell(DamageAdd, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
 			}
-			
+
 			return 0;
 		}
-		
-		
+
+
 		private static Spell m_DamageAdd;
 		/// <summary>
 		/// The Damage Add Song.
@@ -617,7 +614,7 @@ namespace DOL.GS.Quests.Midgard
 					spell.ClientEffect = 3607;
 					spell.Damage = 0;
 					spell.Duration = 5;
-					spell.Name = "Freeya's Chant of Blood";
+					spell.Name = DOL.Language.LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "Quest.PlayTheLastSong.Spell.Damage.Name");
 					spell.Range = 500;
 					spell.Radius = 500;
 					spell.SpellID = 3607;
@@ -626,7 +623,7 @@ namespace DOL.GS.Quests.Midgard
 					spell.Uninterruptible = true;
 					spell.MoveCast = true;
 					spell.DamageType = 0;
-					spell.Message1 = "Exiled Vaettir will swing their weapons with zeal.";
+					spell.Message1 = DOL.Language.LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "Quest.PlayTheLastSong.Spell.Damage.Message1");
 					m_DamageAdd = new Spell(spell, 50);
 				}
 				return m_DamageAdd;
@@ -647,11 +644,11 @@ namespace DOL.GS.Quests.Midgard
 				Freeya.TargetObject = player;
 				Freeya.CastSpell(Resistance, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
 			}
-			
+
 			return 0;
 		}
-		
-		
+
+
 		private static Spell m_Resistance;
 		/// <summary>
 		/// The Resistance Song.
@@ -669,7 +666,7 @@ namespace DOL.GS.Quests.Midgard
 					spell.ClientEffect = 3656;
 					spell.Damage = 0;
 					spell.Duration = 5;
-					spell.Name = "Freeya's Energy Diminishing Song";
+					spell.Name = DOL.Language.LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "Quest.PlayTheLastSong.Spell.Resistance.Name");
 					spell.Range = 500;
 					spell.Radius = 500;
 					spell.SpellID = 3656;
@@ -678,7 +675,7 @@ namespace DOL.GS.Quests.Midgard
 					spell.Uninterruptible = true;
 					spell.MoveCast = true;
 					spell.DamageType = 0;
-					spell.Message1 = "You are protected from energy!";
+					spell.Message1 = DOL.Language.LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "Quest.PlayTheLastSong.Spell.Resistance.Message1");
 					m_Resistance = new Spell(spell, 50);
 				}
 				return m_Resistance;
@@ -707,11 +704,11 @@ namespace DOL.GS.Quests.Midgard
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, L(player, "Quest.Common.AbortCancelled"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, L(player, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -741,7 +738,7 @@ namespace DOL.GS.Quests.Midgard
 
 			if (response == 0x00)
 			{
-				
+
 			}
 			else
 			{
@@ -755,7 +752,7 @@ namespace DOL.GS.Quests.Midgard
 		//Set quest name
 		public override string Name
 		{
-			get { return "[Memorial] Play the Last Song"; }
+			get { return Q("Quest.PlayTheLastSong.Name"); }
 		}
 
 		// Define Steps
@@ -766,16 +763,15 @@ namespace DOL.GS.Quests.Midgard
 				switch (Step)
 				{
 					case 1:
-						return "Speak with Viking Dextz to get more information.";
+						return Q("Quest.PlayTheLastSong.Description.Step1");
 					case 2:
-						return "Find Freeya's Grave in Uppland North West from Svasud Faste on the hill.\n" +
-						       "(Loc: X:42850 Y:39926 Z:8691)";
+						return Q("Quest.PlayTheLastSong.Description.Step2");
 					case 3:
-						return "Help Freeya to play the last Songs. (/whisper \"song\")";
+						return Q("Quest.PlayTheLastSong.Description.Step3");
 					case 4:
-						return "Listen to Freeya\'s ceremony!";
+						return Q("Quest.PlayTheLastSong.Description.Step4");
 					case 5:
-						return "Rest in Peace Freeya! (quest completed)";
+						return Q("Quest.PlayTheLastSong.Description.Step5");
 				}
 				return base.Description;
 			}
@@ -794,12 +790,12 @@ namespace DOL.GS.Quests.Midgard
 				if (gArgs.Source.Name == Freeya.Name)
 				{
 					new ECSGameTimer(Freeya, new ECSGameTimer.ECSTimerCallback(timer => FinishSinging(timer, player)), 3000);
-								
+
 					if (Step == 4 && !IsSinging)
 					{
 						Step = 5;
 					}
-								
+
 					new ECSGameTimer(Freeya, new ECSGameTimer.ECSTimerCallback(DelayedDeath), 8000);
 					FinishQuest();
 				}
@@ -815,18 +811,18 @@ namespace DOL.GS.Quests.Midgard
 				GameEventMgr.RemoveHandler(Freeya, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToFreeya));
 			}
 		}
-		
+
 		private static int DelayedDeath(ECSGameTimer timer)
 		{
 			Freeya.Say(
-				"And with that... the horn has sounded. Valhalla is calling me and it's time I must go. Walk in Strength.\nHa det, my friend.");
+				DOL.Language.LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "Quest.PlayTheLastSong.Freeya.DelayedDeath"));
 			GameEventMgr.RemoveHandler(Freeya, GameObjectEvent.Interact, new DOLEventHandler(TalkToFreeya));
 			GameEventMgr.RemoveHandler(Freeya, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToFreeya));
 			Freeya.Die(Freeya);
 			return 0;
 		}
-		
-		public class PlayTheLastSongTitle : EventPlayerTitle 
+
+		public class PlayTheLastSongTitle : EventPlayerTitle
 		{
 	        /// <summary>
 	        /// The title description, shown in "Titles" window.
@@ -835,7 +831,7 @@ namespace DOL.GS.Quests.Midgard
 	        /// <returns>The title description.</returns>
 	        public override string GetDescription(GamePlayer player)
 	        {
-	            return "Protected by Songs";
+	            return L(player, "Quest.PlayTheLastSong.Title");
 	        }
 
 	        /// <summary>
@@ -846,9 +842,9 @@ namespace DOL.GS.Quests.Midgard
 	        /// <returns>The title value.</returns>
 	        public override string GetValue(GamePlayer source, GamePlayer player)
 	        {
-	            return "Protected by Songs";
+	            return L(source ?? player, "Quest.PlayTheLastSong.Title");
 	        }
-			
+
 	        /// <summary>
 	        /// The event to hook.
 	        /// </summary>
@@ -856,7 +852,7 @@ namespace DOL.GS.Quests.Midgard
 	        {
 	            get { return GamePlayerEvent.GameEntered; }
 	        }
-			
+
 	        /// <summary>
 	        /// Verify whether the player is suitable for this title.
 	        /// </summary>
@@ -866,7 +862,7 @@ namespace DOL.GS.Quests.Midgard
 	        {
 		        return player.HasFinishedQuest(typeof(PlayTheLastSong)) == 1;
 	        }
-			
+
 	        /// <summary>
 	        /// The event callback.
 	        /// </summary>
@@ -893,10 +889,10 @@ namespace DOL.GS.Quests.Midgard
 		public override void FinishQuest()
 		{
 			m_questPlayer.GainExperience(eXPSource.Quest, 20, false);
-			m_questPlayer.AddMoney(Money.GetMoney(0,0,1,32,Util.Random(50)), "You receive {0} as a reward.");
+			m_questPlayer.AddMoney(Money.GetMoney(0,0,1,32,Util.Random(50)), L(m_questPlayer, "Quest.Common.MoneyReward"));
 
 			base.FinishQuest(); //Defined in Quest, changes the state, stores in DB etc ...
-			
+
 		}
 	}
 }

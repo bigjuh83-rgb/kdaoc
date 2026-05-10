@@ -46,10 +46,9 @@ namespace DOL.GS.RealmAbilities
             m_dbspell.EffectGroup = 0;
             m_dbspell.RecastDelay = GetReUseDelay(0); // Spell code is responsible for disabling this ability and will use this value.
             m_dbspell.Range = m_range;
-            m_dbspell.Message1 = "You are tripped and cannot move as quickly.";
-            m_dbspell.Message2 = "{0}'s is tripped and cannot move as quickly!";
-            m_dbspell.Description = "Reduce the movement speed of all enemies in a " 
-                                               + m_range + " unit radius by 35%.";
+            m_dbspell.Message1 = DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "RealmAbility.AtlasOF.Trip.Message1");
+            m_dbspell.Message2 = DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "RealmAbility.AtlasOF.Trip.Message2");
+            m_dbspell.Description = DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "RealmAbility.AtlasOF.Trip.Description", m_range);
 			m_spell = new Spell(m_dbspell, caster.Level);
             m_spellline = GlobalSpellsLines.RealmSpellsSpellLine;
         }

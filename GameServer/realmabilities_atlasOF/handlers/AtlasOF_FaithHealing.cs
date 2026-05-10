@@ -26,8 +26,8 @@ namespace DOL.GS.RealmAbilities
 			return 14;
 		}
 
-		
-		
+
+
         /// <summary>
         /// Action
         /// </summary>
@@ -53,13 +53,13 @@ namespace DOL.GS.RealmAbilities
 						if (didHeal && living is GamePlayer pl)
 						{
 							if(player == pl)
-								pl.Out.SendMessage("You heal yourself for " + healed + " hit points", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);	
+								pl.Out.SendMessage(LanguageMgr.GetTranslation(pl.Client.Account.Language, "RealmAbility.Heal.SelfForHitPoints", healed), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 							else
-								pl.Out.SendMessage("You heal " + player.Name + " for " + healed + " hit points", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+								pl.Out.SendMessage(LanguageMgr.GetTranslation(pl.Client.Account.Language, "RealmAbility.Heal.TargetForHitPoints", player.Name, healed), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 						}
-							
+
 					}
-						
+
 				}
 			}
 			else
@@ -68,13 +68,13 @@ namespace DOL.GS.RealmAbilities
 				int healed = living.ChangeHealth(living, eHealthChangeType.Spell, healAmount);
 				if (healed > 0) didHeal = true;
 				SendSpellEffectsToLiving(living, didHeal);
-				if(didHeal && living is GamePlayer pla) pla.Out.SendMessage("You heal yourself for " + healed + " hit points", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
-				
-				
+				if(didHeal && living is GamePlayer pla) pla.Out.SendMessage(LanguageMgr.GetTranslation(pla.Client.Account.Language, "RealmAbility.Heal.SelfForHitPoints", healed), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+
+
 			}
-			
+
 			if(didHeal) DisableSkill(living);
-			
+
 		}
 
         private async void SendSpellEffectsToLiving(GameLiving living, bool didHeal)

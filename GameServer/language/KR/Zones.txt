@@ -1,0 +1,696 @@
+# Zones
+
+## General
+PlayerInitRequestHandler.LevelCap:			            이 전장의 레벨 제한을 초과했습니다!
+PlayerPositionUpdateHandler.UnknownZone:		        알 수 없는 지역입니다. 바인드 지점으로 이동합니다.
+
+## Battlegrounds
+Zone.Description.Braemar:							브레이마
+Zone.ScreenDescription.Braemar:						브레이마
+Zone.Description.CathalValley:						카탈 계곡
+Zone.ScreenDescription.CathalValley:				카탈 계곡
+Zone.Description.Killaloe:							킬랄루
+Zone.ScreenDescription.Killaloe:					킬랄루
+Zone.Description.Leirvik:							레이르비크
+Zone.ScreenDescription.Leirvik:						레이르비크
+Zone.Description.Molvik:							몰비크
+Zone.ScreenDescription.Molvik:						몰비크
+Zone.Description.TheHillsofClaret:					클라렛 힐스
+Zone.ScreenDescription.TheHillsofClaret:			클라렛 힐스
+Zone.Description.TheLionsDen:						사자의 소굴
+Zone.ScreenDescription.TheLionsDen:					사자의 소굴
+Zone.Description.TheProvingGrounds:					시험장
+Zone.ScreenDescription.TheProvingGrounds:			시험장
+Zone.Description.TestBG:							테스트 전장
+Zone.ScreenDescription.TestBG:						테스트 전장
+Zone.Description.Thidranki:							시드란키
+Zone.ScreenDescription.Thidranki:					시드란키
+Zone.Description.Wilton:							윌튼
+Zone.ScreenDescription.Wilton:						윌튼
+
+## RvR
+Zone.Description.DarknessFalls:						다크니스 폴스
+Zone.ScreenDescription.DarknessFalls:				다크니스 폴스
+Zone.Description.Demonsbreach:						데몬스 브리치
+Zone.ScreenDescription.Demonsbreach:				데몬스 브리치
+Zone.Description.Summoner'sHall:					소환사의 전당
+Zone.ScreenDescription.Summoner'sHall:				소환사의 전당
+
+
+## Albion
+### Capital
+Zone.Description.CityofCamelot:						카멜롯
+Zone.ScreenDescription.CityofCamelot:				카멜롯
+
+### Classic
+Zone.Description.AvalonMarsh:						아발론 습지
+Zone.ScreenDescription.AvalonMarsh:					아발론 습지
+Zone.Description.BlackMtns.North:					블랙 산맥 북부
+Zone.ScreenDescription.BlackMtns.North:				블랙 산맥 북부
+Zone.Description.BlackMtns.South:					블랙 산맥 남부
+Zone.ScreenDescription.BlackMtns.South:			    블랙 산맥 남부
+Zone.Description.CamelotHills:						카멜롯 힐스
+Zone.ScreenDescription.CamelotHills:				카멜롯 힐스
+Zone.Description.CampacorentinForest:				캄파코렌틴 숲
+Zone.ScreenDescription.CampacorentinForest:			캄파코렌틴 숲
+Zone.Description.Cornwall:							콘월
+Zone.ScreenDescription.Cornwall:					콘월
+Zone.Description.Dartmoor:							다트무어
+Zone.ScreenDescription.Dartmoor:					다트무어
+Zone.Description.LlynBarfog:						흘린 바르포그
+Zone.ScreenDescription.Llyn Barfog:					흘린 바르포그
+Zone.Description.Lyonesse:							리오네스
+Zone.ScreenDescription.Lyonesse:					리오네스
+Zone.Description.SalisburyPlains:					솔즈베리 평원
+Zone.ScreenDescription.SalisburyPlains:				솔즈베리 평원
+
+### Dungeons
+Zone.Description.AvalonCity:						아발론 도시
+Zone.ScreenDescription.AvalonCity:					아발론 도시
+Zone.Description.CaerSidi:							카에르 시디
+Zone.ScreenDescription.CaerSidi:					카에르 시디
+Zone.Description.CatacombsofCardova:				카르도바 지하묘지
+Zone.ScreenDescription.CatacombsofCardova:			카르도바 지하묘지
+Zone.Description.CrystalCave:						수정 동굴
+Zone.ScreenDescription.CrystalCave:					수정 동굴
+Zone.Description.KeltoiFogou:						켈토이 포구
+Zone.ScreenDescription.KeltoiFogou:					켈토이 포구
+Zone.Description.Krondon:							크론돈
+Zone.ScreenDescription.Krondon:						크론돈
+Zone.Description.StonehengeBarrows:					스톤헨지 고분
+Zone.ScreenDescription.StonehengeBarrows:			스톤헨지 고분
+Zone.Description.Tepok'sMine:						테포크의 광산
+Zone.ScreenDescription.Tepok'sMine:					테포크의 광산
+Zone.Description.TombofMithra:						미트라의 무덤
+Zone.ScreenDescription.TombofMithra:				미트라의 무덤
+
+### Frontier
+Zone.Description.ForestSauvage:						소바주 숲
+Zone.ScreenDescription.ForestSauvage:				소바주 숲
+Zone.Description.Hadrian'sWall:						하드리안의 벽
+Zone.ScreenDescription.Hadrian'sWall:				하드리안의 벽
+Zone.Description.PennineMountains:					페나인 산맥
+Zone.ScreenDescription.PennineMountains:			페나인 산맥
+Zone.Description.Snowdonia:							스노도니아
+Zone.ScreenDescription.Snowdonia:					스노도니아
+
+### Housing
+Zone.Description.Aylesbury:							에일즈버리
+Zone.ScreenDescription.Aylesbury:					에일즈버리
+Zone.Description.Brisworthy:						브리스워디
+Zone.ScreenDescription.Brisworthy:					브리스워디
+Zone.Description.Caerwent:							카에르웬트
+Zone.ScreenDescription.Caerwent:					카에르웬트
+Zone.Description.Chiltern:							칠턴
+Zone.ScreenDescription.Chiltern:					칠턴
+Zone.Description.Dalton:							달턴
+Zone.ScreenDescription.Dalton:						달턴
+Zone.Description.OldSarum:							올드 세럼
+Zone.ScreenDescription.OldSarum:					올드 세럼
+Zone.Description.Rilan:								릴란
+Zone.ScreenDescription.Rilan:						릴란
+Zone.Description.Sherborne:							셔번
+Zone.ScreenDescription.Sherborne:					셔번
+Zone.Description.Stoneleigh:						스톤리
+Zone.ScreenDescription.Stoneleigh:					스톤리
+
+## Shrouded Isles
+Zone.Description.Aldland:							알드랜드
+Zone.ScreenDescription.Aldland:						알드랜드
+Zone.Description.AvalonIsle:						아발론 섬
+Zone.ScreenDescription.AvalonIsle:					아발론 섬
+Zone.Description.Caldey:							칼데이
+Zone.ScreenDescription.Caldey:						칼데이
+Zone.Description.DalesofDevwy:						데브위 골짜기
+Zone.ScreenDescription.DalesofDevwy:				데브위 골짜기
+Zone.Description.Gwyddneau:							그위드노
+Zone.ScreenDescription.Gwyddneau:					그위드노
+Zone.Description.InishailIsland:					이니셰일 섬
+Zone.ScreenDescription.InishailIsland:				이니셰일 섬
+Zone.Description.IsleofGlass:						유리의 섬
+Zone.ScreenDescription.IsleofGlass:					유리의 섬
+
+## Hibernia
+### Capital
+Zone.Description.TirnaNog:							티르 나 노그
+Zone.ScreenDescription.TirnaNog:					티르 나 노그
+
+### Classic
+Zone.Description.BogofCullen:						컬렌 늪지
+Zone.ScreenDescription.BogofCullen:					컬렌 늪지
+Zone.Description.CliffsofMoher:						모허 절벽
+Zone.ScreenDescription.CliffsofMoher:				모허 절벽
+Zone.Description.Connacht:							코나흐트
+Zone.ScreenDescription.Connacht:					코나흐트
+Zone.Description.CursedForest:						저주받은 숲
+Zone.ScreenDescription.CursedForest:				저주받은 숲
+Zone.Description.LoughDerg:							로크 데르그
+Zone.ScreenDescription.LoughDerg:					로크 데르그
+Zone.Description.LoughGur:							로크 구르
+Zone.ScreenDescription.LoughGur:					로크 구르
+Zone.Description.ShannonEstuary:					섀넌 하구
+Zone.ScreenDescription.ShannonEstuary:				섀넌 하구
+Zone.Description.SheeroeHills:						시어로 힐스
+Zone.ScreenDescription.SheeroeHills:				시어로 힐스
+Zone.Description.SilvermineMts.:					실버마인 산맥
+Zone.ScreenDescription.SilvermineMts.:				실버마인 산맥
+Zone.Description.ValleyofBriLeith:					브리 레이스 계곡
+Zone.ScreenDescription.ValleyofBriLeith:			브리 레이스 계곡
+
+### Dungeons
+Zone.Description.CoruscatingMine:					코러스케이팅 광산
+Zone.ScreenDescription.CoruscatingMine:				코러스케이팅 광산
+Zone.Description.Fomor:								포모르
+Zone.ScreenDescription.Fomor:						포모르
+Zone.Description.Galladoria:						갈라도리아
+Zone.ScreenDescription.Galladoria:					갈라도리아
+Zone.Description.KoalinthCaverns:					코알린스 동굴
+Zone.ScreenDescription.KoalinthCaverns:				코알린스 동굴
+Zone.Description.MuireTomb:							무이레 무덤
+Zone.ScreenDescription.MuireTomb:					무이레 무덤
+Zone.Description.SpraggonDen:						스프래건 소굴
+Zone.ScreenDescription.SpraggonDen:					스프래건 소굴
+Zone.Description.TreibhCaillte:						트레이브 카일테
+Zone.ScreenDescription.TreibhCaillte:				트레이브 카일테
+Zone.Description.TurSuil:							투르 수일
+Zone.ScreenDescription.TurSuil:						투르 수일
+
+### Frontier
+Zone.Description.Breifine:							브레이피네
+Zone.ScreenDescription.Breifine:					    브레이피네
+Zone.Description.CruachanGorge:						크루아찬 협곡
+Zone.ScreenDescription.CruachanGorge:				크루아찬 협곡
+Zone.Description.EmainMacha:						에마인 마하
+Zone.ScreenDescription.EmainMacha:					에마인 마하
+Zone.Description.MountCollory:						콜로리 산
+Zone.ScreenDescription.MountCollory:				콜로리 산
+
+### Housing
+Zone.Description.Aberillan:							애버릴런
+Zone.ScreenDescription.Aberillan:					애버릴런
+Zone.Description.Broughshane:						브러셰인
+Zone.ScreenDescription.Broughshane:					브러셰인
+Zone.Description.Dunshire:							던셔
+Zone.ScreenDescription.Dunshire:					던셔
+Zone.Description.Kilcullen:							킬컬렌
+Zone.ScreenDescription.Kilcullen:					킬컬렌
+Zone.Description.Meath:								미스
+Zone.ScreenDescription.Meath:						미스
+Zone.Description.Moycullen:							모이컬렌
+Zone.ScreenDescription.Moycullen:					모이컬렌
+Zone.Description.Saeranthal:						세란탈
+Zone.ScreenDescription.Saeranthal:					세란탈
+Zone.Description.Torrylin:							토릴린
+Zone.ScreenDescription.Torrylin:					토릴린
+Zone.Description.Tullamore:							툴라모어
+Zone.ScreenDescription.Tullamore:					툴라모어
+
+### Shrouded Isles
+Zone.Description.AlltaFearann:						알타 피어란
+Zone.ScreenDescription.AlltaFearann:				알타 피어란
+Zone.Description.CaillteGarran:						카일테 가란
+Zone.ScreenDescription.CaillteGarran:				카일테 가란
+Zone.Description.CothromGorge:						코스롬 협곡
+Zone.ScreenDescription.CothromGorge:				코스롬 협곡
+Zone.Description.Domnann:							돔난
+Zone.ScreenDescription.Domnann:						돔난
+Zone.Description.ValeofBalor:						발로르 골짜기
+Zone.ScreenDescription.ValeofBalor:					발로르 골짜기
+Zone.Description.VigilantRock:						비질런트 바위
+Zone.ScreenDescription.VigilantRock:				비질런트 바위
+Zone.Description.World'sEnd:						세상의 끝
+Zone.ScreenDescription.World'sEnd:					세상의 끝
+
+## Midgard
+### Capital
+Zone.Description.Jordheim:							요르드헤임
+Zone.ScreenDescription.Jordheim:					요르드헤임
+
+### Classic
+Zone.Description.EastSvealand:						동부 스베알란드
+Zone.ScreenDescription.EastSvealand:				동부 스베알란드
+Zone.Description.Gotar:								고타르
+Zone.ScreenDescription.Gotar:						고타르
+Zone.Description.Malmohus:							말뫼후스
+Zone.ScreenDescription.Malmohus:					말뫼후스
+Zone.Description.Muspelheim:						무스펠헤임
+Zone.ScreenDescription.Muspelheim:					무스펠헤임
+Zone.Description.MyrkwoodForest:					미르크우드 숲
+Zone.ScreenDescription.MyrkwoodForest:				미르크우드 숲
+Zone.Description.Raumarik:							라우마리크
+Zone.ScreenDescription.Raumarik:					라우마리크
+Zone.Description.SkonaRavine:						스코나 협곡
+Zone.ScreenDescription.SkonaRavine:					스코나 협곡
+Zone.Description.ValeofMularn:						물란 골짜기
+Zone.ScreenDescription.ValeofMularn:				물란 골짜기
+Zone.Description.VanernSwamp:						베네른 늪
+Zone.ScreenDescription.VanernSwamp:					베네른 늪
+Zone.Description.WestSvealand:						서부 스베알란드
+Zone.ScreenDescription.WestSvealand:				서부 스베알란드
+
+### Dungeons
+Zone.Description.CursedTomb:						저주받은 무덤
+Zone.ScreenDescription.CursedTomb					저주받은 무덤
+Zone.Description.Iarnvidiur'sLair:					이아른비디우르의 소굴
+Zone.ScreenDescription.Iarnvidiur'sLair:			이아른비디우르의 소굴
+Zone.Description.Nisse'sLair:						니세의 소굴
+Zone.ScreenDescription.Nisse'sLair:					니세의 소굴
+Zone.Description.Trollheim:							트롤헤임
+Zone.ScreenDescription.Trollheim:					트롤헤임
+Zone.Description.Spindelhalla:						스핀델할라
+Zone.ScreenDescription.Spindelhalla:				스핀델할라
+Zone.Description.TuscaranGlacier:					투스카란 빙하
+Zone.ScreenDescription.TuscaranGlacier:				투스카란 빙하
+Zone.Description.Varulvhamn:						바룰브함
+Zone.ScreenDescription.Varulvhamn:					바룰브함
+Zone.Description.VendoCaverns:						벤도 동굴
+Zone.ScreenDescription.VendoCaverns:				벤도 동굴
+
+### Frontier
+Zone.Description.JamtlandMountains:					얌틀란드 산맥
+Zone.ScreenDescription.JamtlandMountains:			얌틀란드 산맥
+Zone.Description.Odin'sGate:						오딘의 관문
+Zone.ScreenDescription.Odin'sGate:					오딘의 관문
+Zone.Description.Uppland:							우플란드
+Zone.ScreenDescription.Uppland:						우플란드
+Zone.Description.YggdraForest:						위그드라 숲
+Zone.ScreenDescription.YggdraForest:				위그드라 숲
+
+### Housing
+Zone.Description.Arothi:							아로시
+Zone.ScreenDescription.Arothi:						아로시
+Zone.Description.Carlingford:						칼링포드
+Zone.ScreenDescription.Carlingford:					칼링포드
+Zone.Description.Erikstaad:							에릭스타드
+Zone.ScreenDescription.Erikstaad:					에릭스타드
+Zone.Description.Frisia:							프리시아
+Zone.ScreenDescription.Frisia:						프리시아
+Zone.Description.Holmestrand:						홀메스트란드
+Zone.ScreenDescription.Holmestrand:					홀메스트란드
+Zone.Description.Kaupang:							카우팡
+Zone.ScreenDescription.Kaupang:						카우팡
+Zone.Description.Nittedal:							니테달
+Zone.ScreenDescription.Nittedal:					니테달
+Zone.Description.Stavgaard:							스타브가드
+Zone.ScreenDescription.Stavgaard:					스타브가드
+Zone.Description.Wyndham:							윈덤
+Zone.ScreenDescription.Wyndham:						윈덤
+
+### Shrouded Isles
+Zone.Description.Aegir'sLanding:					에기르의 상륙지
+Zone.ScreenDescription.Aegir'sLanding:				에기르의 상륙지
+Zone.Description.DellingCrater:						델링 분화구
+Zone.ScreenDescription.DellingCrater:				델링 분화구
+Zone.Description.Faraheim:							파라헤임
+Zone.ScreenDescription.Faraheim:					파라헤임
+Zone.Description.GripklosaMountains:				그립클로사 산맥
+Zone.ScreenDescription.GripklosaMountains:			그립클로사 산맥
+Zone.Description.Iarnwood:							이아른우드
+Zone.ScreenDescription.Iarnwood:					이아른우드
+Zone.Description.Modernagrav:						모데르나그라브
+Zone.ScreenDescription.Modernagrav:					모데르나그라브
+Zone.Description.MuninSound:						무닌 해협
+Zone.ScreenDescription.MuninSound:					무닌 해협
+
+## Other Zones
+### Catacombs
+Zone.Description.Albion'sAbandonedMines:			버려진 광산
+Zone.ScreenDescription.Albion'sAbandonedMines:		버려진 광산
+Zone.Description.Hibernia'sAbandonedMines:			버려진 광산
+Zone.ScreenDescription.Hibernia'sAbandonedMines:	버려진 광산
+Zone.Description.Midgard'sAbandonedMines:			버려진 광산
+Zone.ScreenDescription.Midgard'sAbandonedMines:		버려진 광산
+Zone.Description.Arachnid'sLabyrinth:				아라크니드의 미궁
+Zone.ScreenDescription.Arachnid'sLabyrinth:			아라크니드의 미궁
+Zone.Description.Blathnait'sRefuge:					블라스나이트의 피난처
+Zone.ScreenDescription.Blathnait'sRefuge:			블라스나이트의 피난처
+Zone.Description.BrokenMirrors:						깨진 거울
+Zone.ScreenDescription.BrokenMirrors:				깨진 거울
+Zone.Description.BurialGrounds:						매장지
+Zone.ScreenDescription.BurialGrounds:				매장지
+Zone.Description.BurialTomb:						매장 무덤
+Zone.ScreenDescription.BurialTomb:					매장 무덤
+Zone.Description.CavernsofMadness:					광기의 동굴
+Zone.ScreenDescription.CavernsofMadness:			광기의 동굴
+Zone.Description.ConcealedGuardhouse:				숨겨진 경비소
+Zone.ScreenDescription.ConcealedGuardhouse:			숨겨진 경비소
+Zone.Description.DampCavern:						축축한 동굴
+Zone.ScreenDescription.DampCavern:					축축한 동굴
+Zone.Description.DarkCavern:						어둠의 동굴
+Zone.ScreenDescription.DarkCavern:					어둠의 동굴
+Zone.Description.Albion'sDarkspire:					다크스파이어
+Zone.ScreenDescription.Albion'sDarkspire:			다크스파이어
+Zone.Description.Hibernia'sDarkspire:				다크스파이어
+Zone.ScreenDescription.Hibernia'sDarkspire:			다크스파이어
+Zone.Description.Midgard'sDarkspire:				다크스파이어
+Zone.ScreenDescription.Midgard'sDarkspire:			다크스파이어
+Zone.Description.Deliah'sSanctuary:					델리아의 성역
+Zone.ScreenDescription.Deliah'sSanctuary:			델리아의 성역
+Zone.Description.DenofBones:						뼈의 소굴
+Zone.ScreenDescription.DenofBones:					뼈의 소굴
+Zone.Description.DepthsofDespair:					절망의 심연
+Zone.ScreenDescription.DepthsofDespair:				절망의 심연
+Zone.Description.DesecratedGrounds:					더럽혀진 땅
+Zone.ScreenDescription.DesecratedGrounds:			더럽혀진 땅
+Zone.Description.DismalGrotto:						음울한 동굴
+Zone.ScreenDescription.DismalGrotto:				음울한 동굴
+Zone.Description.Felena'sSorrow:					펠레나의 슬픔
+Zone.ScreenDescription.Felena'sSorrow:				펠레나의 슬픔
+Zone.Description.ForgesofFlame:						화염의 대장간
+Zone.ScreenDescription.ForgesofFlame:				화염의 대장간
+Zone.Description.ForgottenMines:					잊힌 광산
+Zone.ScreenDescription.ForgottenMines:				잊힌 광산
+Zone.Description.ForgottenSepulchre:				잊힌 무덤
+Zone.ScreenDescription.ForgottenSepulchre:			잊힌 무덤
+Zone.Description.Albion'sFrontlines:				전선
+Zone.ScreenDescription.Albion'sFrontlines:			전선
+Zone.Description.Hibernia'sFrontlines:				전선
+Zone.ScreenDescription.Hibernia'sFrontlines:		전선
+Zone.Description.TheFrontlines:						전선
+Zone.ScreenDescription.TheFrontlines:				전선
+Zone.Description.Albion'sGlashtinForges:			글라슈틴 대장간
+Zone.ScreenDescription.Albion'sGlashtinForges:		글라슈틴 대장간
+Zone.Description.Hibernia'sGlashtinForge:			글라슈틴 대장간
+Zone.ScreenDescription.Hibernia'sGlashtinForge:		글라슈틴 대장간
+Zone.Description.Midgard'sGlashtinForges:			글라슈틴 대장간
+Zone.ScreenDescription.Midgard'sGlashtinForges:		글라슈틴 대장간
+Zone.Description.Goblin'sCookery:					고블린 조리장
+Zone.ScreenDescription.Goblin'sCookery:				고블린 조리장
+Zone.Description.HalfOrcCommandPost:				하프오크 지휘소
+Zone.ScreenDescription.HalfOrcCommandPost:			하프오크 지휘소
+Zone.Description.HammerHugak'sSmithy:				해머 후각의 대장간
+Zone.ScreenDescription.HammerHugak'sSmithy:			해머 후각의 대장간
+Zone.Description.InconnuCrypt:						인코누 납골당
+Zone.ScreenDescription.InconnuCrypt:				인코누 납골당
+Zone.Description.InnerSanctum:						내부 성소
+Zone.ScreenDescription.InnerSanctum:				내부 성소
+Zone.Description.Jarlsberg'sHideout:				야를스베르그의 은신처
+Zone.ScreenDescription.Jarlsberg'sHideout:			야를스베르그의 은신처
+Zone.Description.KoboldUndercity:					코볼드 지하도시
+Zone.ScreenDescription.KoboldUndercity:				코볼드 지하도시
+Zone.Description.LairofDoom:						파멸의 소굴
+Zone.ScreenDescription.LairofDoom:					파멸의 소굴
+Zone.Description.LairoftheExiled:					추방자의 소굴
+Zone.ScreenDescription.LairoftheExiled:				추방자의 소굴
+Zone.Description.Lich'esUnrest:						리치의 불안
+Zone.ScreenDescription.Liche'sUnrest:				리치의 불안
+Zone.Description.Lios'sEternalRest:					리오스의 영원한 안식처
+Zone.ScreenDescription.Lios'sEternalRest:			리오스의 영원한 안식처
+Zone.Description.LostPassages:						잃어버린 통로
+Zone.ScreenDescription.LostPassages:				잃어버린 통로
+Zone.Description.LowerCrypt:						하층 납골당
+Zone.ScreenDescription.LowerCrypt:					하층 납골당
+Zone.Description.Marik'sWorkroom:					마리크의 작업실
+Zone.ScreenDescription.Marik'sWorkroom:				마리크의 작업실
+Zone.Description.MazeofMadness:						광기의 미로
+Zone.ScreenDescription.MazeofMadness:				광기의 미로
+Zone.Description.MazeofTribulation:					시련의 미로
+Zone.ScreenDescription.MazeofTribulation:			시련의 미로
+Zone.Description.Nisse'sRetreat:					니세의 은거처
+Zone.ScreenDescription.Nisse'sRetreat:				니세의 은거처
+Zone.Description.Nyttheim:							니트헤임
+Zone.ScreenDescription.Nyttheim:					니트헤임
+Zone.Description.Albion'sOtherworld:				이계
+Zone.ScreenDescription.Albion'sOtherworld:			이계
+Zone.Description.TheOtherworld:						이계
+Zone.ScreenDescription.TheOtherworld:				이계
+Zone.Description.Midgard'sOtherworld:				이계
+Zone.ScreenDescription.Midgard'sOtherworld:			이계
+Zone.Description.theRealmoftheDamned:				저주받은 자들의 왕국
+Zone.ScreenDescription.theRealmoftheDamned:			저주받은 자들의 왕국
+Zone.Description.RebelHalfOrcLair:					반란군 하프오크 소굴
+Zone.ScreenDescription.RebelHalfOrcLair:			반란군 하프오크 소굴
+Zone.Description.RiseoftheSpraggons:				스프래건의 봉기
+Zone.ScreenDescription.RiseoftheSpraggons:			스프래건의 봉기
+Zone.Description.RomanAqueducts:					로마 수도교
+Zone.ScreenDescription.RomanAqueducts:				로마 수도교
+Zone.Description.Rugnog'sHaven:						루그노그의 안식처
+Zone.ScreenDescription.Rugnog'sHaven:				루그노그의 안식처
+Zone.Description.Serf'sFolly:						농노의 우행
+Zone.ScreenDescription.Serf'sFolly:					농노의 우행
+Zone.Description.ShaftsoftheTenebrae:				테네브레아 갱도
+Zone.ScreenDescription.ShaftsoftheTenebrae:			테네브레아 갱도
+Zone.Description.SharLabyrinth:						샤르 미궁
+Zone.ScreenDescription.SharLabyrinth:				샤르 미궁
+Zone.Description.Snarg'sGrotto:						스나그의 동굴
+Zone.ScreenDescription.Snarg'sGrotto:				스나그의 동굴
+Zone.Description.Snyblem'sLair:						스니블렘의 소굴
+Zone.ScreenDescription.Snyblem'sLair:				스니블렘의 소굴
+Zone.Description.TheAccursedCaves:					저주받은 동굴
+Zone.ScreenDescription.TheAccursedCaves:			저주받은 동굴
+Zone.Description.TheAncient'sRetreat:				고대인의 은거처
+Zone.ScreenDescription.TheAncient'sRetreat:			고대인의 은거처
+Zone.Description.TheArena:							투기장
+Zone.ScreenDescription.TheArena:					투기장
+Zone.Description.TheBeastmaster'sDen:				야수조련사의 소굴
+Zone.ScreenDescription.TheBeastmaster'sDen:			야수조련사의 소굴
+Zone.Description.TheBetrayer'sDen:					배신자의 소굴
+Zone.ScreenDescription.TheBetrayer'sDen:			배신자의 소굴
+Zone.Description.TheBrawler'sDen:					싸움꾼의 소굴
+Zone.ScreenDescription.TheBrawler'sDen:				싸움꾼의 소굴
+Zone.Description.TheBurrow:							굴
+Zone.ScreenDescription.TheBurrow:					굴
+Zone.Description.TheCursedBarrow:					저주받은 고분
+Zone.ScreenDescription.TheCursedBarrow:				저주받은 고분
+Zone.Description.TheCursedLair:						저주받은 소굴
+Zone.ScreenDescription.TheCursedLair:				저주받은 소굴
+Zone.Description.TheDeadlandsofAnnwn:				안눈의 죽은 땅
+Zone.ScreenDescription.TheDeadlandsofAnnwn:			안눈의 죽은 땅
+Zone.Description.Hibernia'sDeadlands:				안눈의 죽은 땅
+Zone.ScreenDescription.Hibernia'sDeadlands:			안눈의 죽은 땅
+Zone.Description.Midgard'sDeadlands:				안눈의 죽은 땅
+Zone.ScreenDescription.Midgard'sDeadlands:			안눈의 죽은 땅
+Zone.Description.theDeep:							심연
+Zone.ScreenDescription.theDeep:						심연
+Zone.Description.TheForgottenVein:					잊힌 광맥
+Zone.ScreenDescription.TheForgottenVein:			잊힌 광맥
+Zone.Description.TheFuneraryHall:					장례의 전당
+Zone.ScreenDescription.TheFuneraryHall:				장례의 전당
+Zone.Description.TheFuneraryHall:					장례의 전당
+Zone.ScreenDescription.TheFuneraryHall:				장례의 전당
+Zone.Description.theGnollsDen:						놀의 소굴
+Zone.ScreenDescription.theGnollsDen:				놀의 소굴
+Zone.Description.theGoblinWorkshop:					고블린 작업장
+Zone.ScreenDescription.theGoblinWorkshop:			고블린 작업장
+Zone.Description.TheGossamerGrotto:					고사머 동굴
+Zone.ScreenDescription.TheGossamerGrotto:			고사머 동굴
+Zone.Description.TheHallofReawakening:				재각성의 전당
+Zone.ScreenDescription.TheHallofReawakening:		재각성의 전당
+Zone.Description.TheHauntedHalls:					유령의 전당
+Zone.ScreenDescription.TheHauntedHalls:				유령의 전당
+Zone.Description.TheHiddenCrypt:					숨겨진 납골당
+Zone.ScreenDescription.TheHiddenCrypt:				숨겨진 납골당
+Zone.Description.TheLostBurrow:						잃어버린 굴
+Zone.ScreenDescription.TheLostBurrow:				잃어버린 굴
+Zone.Description.TheLostWing:						잃어버린 별관
+Zone.ScreenDescription.TheLostWing:					잃어버린 별관
+Zone.Description.TheMaster'sLair:					주인의 소굴
+Zone.ScreenDescription.TheMaster'sLair:				주인의 소굴
+Zone.Description.ThePitofDespair:					절망의 구덩이
+Zone.ScreenDescription.ThePitofDespair:				절망의 구덩이
+Zone.Description.thePlutonianShore:					플루토니안 해안
+Zone.ScreenDescription.thePlutonianShore:			플루토니안 해안
+Zone.Description.TheQueen'sLabyrinth:				여왕의 미궁
+Zone.ScreenDescription.TheQueen'sLabyrinth:			여왕의 미궁
+Zone.Description.TheRitualHall:						의식의 전당
+Zone.ScreenDescription.TheRitualHall:				의식의 전당
+Zone.Description.TheShaman'sInnerSanctum:			주술사의 내부 성소
+Zone.ScreenDescription.TheShaman'sInnerSanctum:		주술사의 내부 성소
+Zone.Description.theShatteredLands:					부서진 땅
+Zone.ScreenDescription.theShatteredLands:			부서진 땅
+Zone.Description.TheSmeltingPot:					용해로
+Zone.ScreenDescription.TheSmeltingPot:				용해로
+Zone.Description.TheSteward'sCrypt:					집사의 납골당
+Zone.ScreenDescription.TheSteward'sCrypt:			집사의 납골당
+Zone.Description.theSunderedTombs:					갈라진 무덤
+Zone.ScreenDescription.theSunderedTombs:			갈라진 무덤
+Zone.Description.TheWarrens:						워렌스
+Zone.ScreenDescription.TheWarrens:					워렌스
+Zone.Description.ThievesDen:						도둑 소굴
+Zone.ScreenDescription.ThievesDen:					도둑 소굴
+Zone.Description.TomtePrison:						톰테 감옥
+Zone.ScreenDescription.TomtePrison:					톰테 감옥
+Zone.Description.Albion'sUndergroundForest:			지하 숲
+Zone.ScreenDescription.Albion'sUndergroundForest:	지하 숲
+Zone.Description.Hibernia'sUndergroundForest:		지하 숲
+Zone.ScreenDescription.Hibernia'sUndergroundForest:	지하 숲
+Zone.Description.Midgard'sUndergroundForest:		지하 숲
+Zone.ScreenDescription.Midgard'sUndergroundForest:	지하 숲
+Zone.Description.UndergroundTunnel:					지하 터널
+Zone.ScreenDescription.UndergroundTunnel:			지하 터널
+Zone.Description.UnrestfulTomb:						불안한 무덤
+Zone.ScreenDescription.UnrestfulTomb:				불안한 무덤
+Zone.Description.UnusedMine:						미사용 광산
+Zone.ScreenDescription.UnusedMine:					미사용 광산
+Zone.Description.VeilRift:							장막 균열
+Zone.ScreenDescription.VeilRift:					장막 균열
+Zone.Description.Wolak'sCrucible:					월락의 도가니
+Zone.ScreenDescription.Wolak'sCrucible:				월락의 도가니
+
+### Darkness Rising
+Zone.Description.Anataeus'Sanctuary:				아나타이우스의 성역
+Zone.ScreenDescription.Anataeus'Sanctuary:			아나타이우스의 성역
+Zone.Description.BrimstoneCaverns:					브림스톤 동굴
+Zone.ScreenDescription.BrimstoneCaverns:			브림스톤 동굴
+Zone.Description.CaveofCruachan:					크루아찬 동굴
+Zone.ScreenDescription.CaveofCruachan:				크루아찬 동굴
+Zone.Description.DemonicPrison:						악마의 감옥
+Zone.ScreenDescription.DemonicPrison:				악마의 감옥
+Zone.Description.HallsofHelgardh:					헬가르드의 전당
+Zone.ScreenDescription.HallsofHelgardh:				헬가르드의 전당
+Zone.Description.KeeperGarran'sSanctuary:			수호자 가란의 성역
+Zone.ScreenDescription.KeeperGarran'sSanctuary:		수호자 가란의 성역
+Zone.Description.KeeperIraeda'sSanctuary:			수호자 이라에다의 성역
+Zone.ScreenDescription.KeeperIraeda'sSanctuary:		수호자 이라에다의 성역
+Zone.Description.KingConstantine'sThroneRoom:		콘스탄틴 왕의 알현실
+Zone.ScreenDescription.KingConstantine'sThroneRoom:	콘스탄틴 왕의 알현실
+Zone.Description.KingEirik'sThroneRoom:				에이리크 왕의 알현실
+Zone.ScreenDescription.KingEirik'sThroneRoom:		에이리크 왕의 알현실
+Zone.Description.KingLamfhotas'ThroneRoom:			람포타스 왕의 알현실
+Zone.ScreenDescription.KingLamfhotas'ThroneRoom:	람포타스 왕의 알현실
+Zone.Description.LairoftheDemonLord:				악마 군주의 소굴
+Zone.ScreenDescription.LairoftheDemonLord:			악마 군주의 소굴
+Zone.Description.Morfesa'sGaol:						모르페사의 감옥
+Zone.ScreenDescription.Morfesa'sGaol:				모르페사의 감옥
+Zone.Description.Nephraal'sGaol:					네프라알의 감옥
+Zone.ScreenDescription.Nephraal'sGaol:				네프라알의 감옥
+Zone.Description.TheBaron'sGaol:					남작의 감옥
+Zone.ScreenDescription.TheBaron'sGaol:				남작의 감옥
+Zone.Description.TheFoothillsofAlbion:				알비온 구릉지
+Zone.ScreenDescription.TheFoothillsofAlbion:		알비온 구릉지
+Zone.Description.TheFoothillsofHibernia:			하이버니아 구릉지
+Zone.ScreenDescription.TheFoothillsofHibernia:		하이버니아 구릉지
+Zone.Description.TheFoothillsofMidgard:				미드가르드 구릉지
+Zone.ScreenDescription.TheFoothillsofMidgard:		미드가르드 구릉지
+Zone.Description.LeSanctuaireDuHautConsule:			고위 집정관의 성소
+Zone.ScreenDescription.LeSanctuaireDuHautConsule:	고위 집정관의 성소
+
+### Labyrinth of the Minotaur
+Zone.Description.LaTourdesArcanesALB:				알비온 비전의 탑
+Zone.ScreenDescription.LaTourdesArcanesALB:			알비온 비전의 탑
+Zone.Description.LaTourdesArcanesHIB:				하이버니아 비전의 탑
+Zone.ScreenDescription.LaTourdesArcanesHIB:			하이버니아 비전의 탑
+Zone.Description.LaTourdesArcanesMID:				미드가르드 비전의 탑
+Zone.ScreenDescription.LaTourdesArcanesMID:			미드가르드 비전의 탑
+Zone.Description.Labyrinth:							미궁
+Zone.ScreenDescription.Labyrinth:					미궁
+
+### Miscellaneous
+Zone.Description.Alb30Dungeon:						알비온 30 던전
+Zone.ScreenDescription.Alb30Dungeon:				알비온 30 던전
+Zone.Description.Alb45Dungeon:						알비온 45 던전
+Zone.ScreenDescription.Alb45Dungeon:				알비온 45 던전
+Zone.Description.ArtInside:							아트 내부
+Zone.ScreenDescription.ArtInside:					아트 내부
+Zone.Description.ArtOutside:						아트 외부
+Zone.ScreenDescription.ArtOutside:					아트 외부
+Zone.Description.BanditLair:						도적 소굴
+Zone.ScreenDescription.BanditLair:					도적 소굴
+Zone.Description.BrutalRealization:					잔혹한 깨달음
+Zone.ScreenDescription.BrutalRealization:			잔혹한 깨달음
+Zone.Description.DummyZone:							더미 지역
+Zone.ScreenDescription.DummyZone:					더미 지역
+Zone.Description.GnollLair:							놀 소굴
+Zone.ScreenDescription.GnollLair:					놀 소굴
+Zone.Description.Half-OrcCamp:						하프오크 야영지
+Zone.ScreenDescription.Half-OrcCamp:				하프오크 야영지
+Zone.Description.Hib30Dungeon:						하이버니아 30 던전
+Zone.ScreenDescription.Hib30Dungeon:				하이버니아 30 던전
+Zone.Description.Hib45Dungeon:						하이버니아 45 던전
+Zone.ScreenDescription.Hib45Dungeon:				하이버니아 45 던전
+Zone.Description.HistoryRepeatsItself:				역사는 반복된다
+Zone.ScreenDescription.HistoryRepeatsItself:		역사는 반복된다
+Zone.Description.HoundsofArawn:						아로운의 사냥개들
+Zone.ScreenDescription.HoundsofArawn:				아로운의 사냥개들
+Zone.Description.Mid30Dungeon:						미드가르드 30 던전
+Zone.ScreenDescription.Mid30Dungeon:				미드가르드 30 던전
+Zone.Description.Mid45Dungeon:						미드가르드 45 던전
+Zone.ScreenDescription.Mid45Dungeon:				미드가르드 45 던전
+Zone.Description.PassageofEchoes:					메아리의 통로
+Zone.ScreenDescription.PassageofEchoes:				메아리의 통로
+Zone.Description.PastandPresent:					과거와 현재
+Zone.ScreenDescription.PastandPresent:				과거와 현재
+Zone.Description.Vandr'sBane:						반드르의 파멸
+Zone.ScreenDescription.Vandr'sBane:					반드르의 파멸
+
+### New Frontier
+Zone.Description.Agramon:							아그라몬
+Zone.ScreenDescription.Agramon:						아그라몬
+Zone.Description.IrishSea:							아일랜드 해
+Zone.ScreenDescription.IrishSea:					아일랜드 해
+Zone.Description.PassageofConflict:					분쟁의 통로
+Zone.ScreenDescription.PassageofConflict:			분쟁의 통로
+Zone.Description.UnamedSea2:						이름 없는 바다 2
+Zone.ScreenDescription.UnamedSea2:					이름 없는 바다 2
+
+### Starter/Tutorial
+Zone.Description.AlbLaunch:							알비온 출발지
+Zone.ScreenDescription.AlbLaunch:					알비온 출발지
+Zone.Description.AlbLaunch2:						알비온 출발지 2
+Zone.ScreenDescription.AlbLaunch2:					알비온 출발지 2
+Zone.Description.Constantine'sSound:				콘스탄틴 해협
+Zone.ScreenDescription.Constantine'sSound:			콘스탄틴 해협
+Zone.Description.Grenlock'sSound:					그렌록 해협
+Zone.ScreenDescription.Grenlock'sSound:				그렌록 해협
+Zone.Description.HibLaunch:							하이버니아 출발지
+Zone.ScreenDescription.HibLaunch:					하이버니아 출발지
+Zone.Description.HibLaunch2:						하이버니아 출발지 2
+Zone.ScreenDescription.HibLaunch2:					하이버니아 출발지 2
+Zone.Description.Lamfhota'sSound:					람포타 해협
+Zone.ScreenDescription.Lamfhota'sSound:				람포타 해협
+Zone.Description.MidLaunch:							미드가르드 출발지
+Zone.ScreenDescription.MidLaunch:					미드가르드 출발지
+Zone.Description.MidLaunch2:						미드가르드 출발지 2
+Zone.ScreenDescription.MidLaunch2:					미드가르드 출발지 2
+
+### Trials of Atlantis
+Zone.Description.Aphophian:							아포피안
+Zone.ScreenDescription.Aphophian:					아포피안
+Zone.Description.ArborGlen:							아버 글렌
+Zone.ScreenDescription.ArborGlen:					아버 글렌
+Zone.Description.AshenIsles:						잿빛 섬들
+Zone.ScreenDescription.AshenIsles:					잿빛 섬들
+Zone.Description.Cetus'Pit:							케투스의 구덩이
+Zone.ScreenDescription.Cetus'Pit:					케투스의 구덩이
+Zone.Description.CityofAerus:						에어러스 도시
+Zone.ScreenDescription.CityofAerus:					에어러스 도시
+Zone.Description.DeepVolcanus:						딥 볼카누스
+Zone.ScreenDescription.DeepVolcanus:				딥 볼카누스
+Zone.Description.GreenGlades:						초록 숲터
+Zone.ScreenDescription.GreenGlades:					초록 숲터
+Zone.Description.HallsofMa'ati:						마아티의 전당
+Zone.ScreenDescription.HallsofMa'ati:				마아티의 전당
+Zone.Description.Hephaestian:						헤파이스티안
+Zone.ScreenDescription.Hephaestian:					헤파이스티안
+Zone.Description.LandofAtum:						아툼의 땅
+Zone.ScreenDescription.LandofAtum:					아툼의 땅
+Zone.Description.Mesothalassa:						메소탈라사
+Zone.ScreenDescription.Mesothalassa:				메소탈라사
+Zone.Description.OceanusBoreal:						오케아누스 보레알
+Zone.ScreenDescription.OceanusBoreal:				오케아누스 보레알
+Zone.Description.OceanusHesperos:					오케아누스 헤스페로스
+Zone.ScreenDescription.OceanusHesperos:				오케아누스 헤스페로스
+Zone.Description.OceanusNotos:						오케아누스 노토스
+Zone.ScreenDescription.OceanusNotos:				오케아누스 노토스
+Zone.Description.OceanusAnatole:					오케아누스 아나톨레
+Zone.ScreenDescription.OceanusAnatole:				오케아누스 아나톨레
+Zone.Description.RuinsofAtlantis:					아틀란티스 폐허
+Zone.ScreenDescription.RuinsofAtlantis:				아틀란티스 폐허
+Zone.Description.RuineraravAtlantis:				아틀란티스 폐허
+Zone.ScreenDescription.RuineraravAtlantis:			아틀란티스 폐허
+Zone.Description.ScriosdeAtlantis:					아틀란티스 폐허
+Zone.ScreenDescription.ScriosdeAtlantis:			아틀란티스 폐허
+Zone.Description.Shaitan:							샤이탄
+Zone.ScreenDescription.Shaitan:						샤이탄
+Zone.Description.SobekiteEternal:					영원의 소베카이트
+Zone.ScreenDescription.SobekiteEternal:				영원의 소베카이트
+Zone.Description.StygianDelta:						스티지아 삼각주
+Zone.ScreenDescription.StygianDelta:				스티지아 삼각주
+Zone.Description.TempleofTwilight:					황혼의 사원
+Zone.ScreenDescription.TempleofTwilight:			황혼의 사원
+Zone.Description.theGreatPyramidofStygia:			스티지아의 대피라미드
+Zone.ScreenDescription.theGreatPyramidofStygia:		스티지아의 대피라미드
+Zone.Description.Typhon'sReach:						티폰의 손길
+Zone.ScreenDescription.Typhon'sReach:				티폰의 손길
+Zone.Description.Volurgon:							볼루르곤
+Zone.ScreenDescription.Volurgon:					볼루르곤

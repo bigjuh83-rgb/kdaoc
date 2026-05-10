@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -41,7 +41,7 @@ namespace DOL.GS.Trainer
 		public override bool Interact(GamePlayer player)
 		{
 			if (!base.Interact(player)) return false;
-			
+
 			// check if class matches.
 			if (player.CharacterClass.ID == (int)TrainedClass)
 			{
@@ -52,7 +52,7 @@ namespace DOL.GS.Trainer
 				// perhaps player can be promoted
 				if (CanPromotePlayer(player))
 				{
-					player.Out.SendMessage(this.Name + " says, \"You have come far to find us! Is it your wish to [join the Guild of Shadows] and become our dagger of the night? An Infiltrator!\"",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.InfiltratorPrompt", this.Name), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 					if (!player.IsLevelRespecUsed)
 					{
 						OfferRespecialize(player);
@@ -76,13 +76,14 @@ namespace DOL.GS.Trainer
 		{
 			if (!base.WhisperReceive(source, text)) return false;
 			GamePlayer player = source as GamePlayer;
-			
+
 			switch (text) {
-				case "join the Guild of Shadows":
-					// promote player to other class
-					if (CanPromotePlayer(player)) {
-						PromotePlayer(player, (int)eCharacterClass.Infiltrator, "TODO: (correct text) You joined the Guild of Shadows as an Infiltrator.", null);	// TODO: gifts
-					}
+					case "join the Guild of Shadows":
+					case "그림자 길드 입단":
+						// promote player to other class
+						if (CanPromotePlayer(player)) {
+							PromotePlayer(player, (int)eCharacterClass.Infiltrator, LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.InfiltratorWelcome"), null);	// TODO: gifts
+						}
 					break;
 			}
 			return true;

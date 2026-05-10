@@ -29,7 +29,7 @@ namespace DOL.GS.SkillHandler
 			ECSGameEffect volley = EffectListService.GetEffectOnTarget(player, eEffect.Volley);
 			if (volley != null)
 			{
-				player.Out.SendMessage("You can't stealth while you have active Volley!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Skill.Ability.Stealth.CannotUseActiveVolley"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			long stealthChangeTick = player.TempProperties.GetProperty<long>(GamePlayer.STEALTH_CHANGE_TICK);
@@ -77,7 +77,7 @@ namespace DOL.GS.SkillHandler
 
 				if (player.IsStunned)
 				{
-                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Skill.Ability.Stealth.CannotUseStunned"), eChatType.CT_System, eChatLoc.CL_SystemWindow); 
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Skill.Ability.Stealth.CannotUseStunned"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return;
 				}
 
@@ -172,20 +172,20 @@ namespace DOL.GS.SkillHandler
 			if(obj is GamePlayer && ((GamePlayer)obj).HasAbility(Abilities.DetectHidden))
 			{
 				//1792.0 = 2048.0 - 256.0 <- Detect Hidden doubles the range
-				radius = 2048f - (1792f * stealthLevel / enemyLevel); 
+				radius = 2048f - (1792f * stealthLevel / enemyLevel);
 			}
 			else
 			{
 				//1024.0 = 1024.0 - 128.0 <- normal Range
-				radius = 1024f - (896f * stealthLevel / enemyLevel); 
+				radius = 1024f - (896f * stealthLevel / enemyLevel);
 			}
 
 			//If we are so skilled we can hide right under the nose of
-			//this enemy player, we continue the checks for the next 
+			//this enemy player, we continue the checks for the next
 			//player without any redundant distance calculations
 			if(radius <= 0) return false;
 
-			//Test if the stealthing player is in range of this 
+			//Test if the stealthing player is in range of this
 			//player's "impossible to hide" circle
 			return obj.IsWithinRadius(player,(int)radius);
 		}

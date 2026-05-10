@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using DOL.GS.Housing;
 using DOL.GS.PlayerTitles;
+using DOL.Language;
 
 namespace DOL.GS.PacketHandler
 {
@@ -29,12 +30,9 @@ namespace DOL.GS.PacketHandler
 
 			using (var pak = PooledObjectFactory.GetForTick<GSTCPPacketOut>().Init(GetPacketCode(eServerPackets.DetailWindow)))
 			{
-				ReadOnlySpan<char> captionSpan = caption == null ? [] : caption;
+				ReadOnlySpan<char> captionSpan = TakeEncodedChunk(caption == null ? [] : caption.AsSpan(), byte.MaxValue);
 
-				if (captionSpan.Length > byte.MaxValue)
-					captionSpan = captionSpan[..byte.MaxValue];
-
-				pak.WritePascalString(captionSpan);
+				WriteCustomTextWindowString(pak, captionSpan);
 				WriteCustomTextWindowData(pak, text);
 
 				//Trailing Zero!
@@ -49,7 +47,7 @@ namespace DOL.GS.PacketHandler
 			using (var pak = PooledObjectFactory.GetForTick<GSTCPPacketOut>().Init(GetPacketCode(eServerPackets.DetailWindow)))
 			{
 				pak.WriteByte(1); // new in 1.75
-				pak.WritePascalString("Player Statistics"); //window caption
+				pak.WritePascalString(TakeEncodedChunk(LanguageMgr.GetTranslation(m_gameClient, "PacketLib.PlayerTitles.Caption"), byte.MaxValue)); //window caption
 
 				byte line = 1;
 				foreach (string str in m_gameClient.Player.FormatStatistics())
@@ -96,9 +94,10 @@ namespace DOL.GS.PacketHandler
 				{
 					pak.WriteByte(1); // flag
 					string val = GameServer.ServerRules.GetPlayerTitle(m_gameClient.Player, player);
-					pak.WriteShort((ushort) val.Length);
+					ReadOnlySpan<char> valSpan = TakeEncodedChunk(val == null ? [] : val.AsSpan(), ushort.MaxValue);
+					pak.WriteShort((ushort) GetEncodedByteCount(valSpan));
 					pak.WriteShort(0); // unk1
-					pak.WriteNonNullTerminatedString(val);
+					pak.WriteNonNullTerminatedString(valSpan);
 				}
 				SendTCP(pak);
 			}

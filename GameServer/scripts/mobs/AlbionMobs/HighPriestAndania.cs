@@ -1,6 +1,7 @@
 ﻿using DOL.AI.Brain;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 using System;
 
 namespace DOL.GS
@@ -21,16 +22,17 @@ namespace DOL.GS
 			base.AddToWorld();
 			return true;
 		}
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(string key, params object[] args)
 		{
 			foreach (GamePlayer player in GetPlayersInRadius(2500))
 			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
 				player.Out.SendMessage(message, eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 			}
 		}
 		public override void Die(GameObject killer)
         {
-			BroadcastMessage(String.Format("The {0} says, \"The {1} vanishes and his final words linger in the air, 'You may have defeated us here, but we shall meet again someday!'\"",Name,Name));
+			BroadcastMessage("Mobs.HighPriestAndania.DeathFinalWords", Name, Name);
 			base.Die(killer);
         }
     }
@@ -52,10 +54,11 @@ namespace DOL.AI.Brain
 		bool playerInRoom = false;
 		bool Message = false;
 
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(string key, params object[] args)
 		{
 			foreach (GamePlayer player in Body.GetPlayersInRadius(1500))
 			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
 				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
 			}
 		}
@@ -98,8 +101,7 @@ namespace DOL.AI.Brain
             {
 				if (!Message)
 				{
-					BroadcastMessage(String.Format("The {0} shouts, 'The power of Mithra cleanses this holy place. Out! Out! I command you!\n" +
-					"The {1} shouts, 'Come to me, my servants! Come and serve in the glory of Mithra!", Body.Name,Body.Name));
+					BroadcastMessage("Mobs.HighPriestAndania.MithraCleanses", Body.Name, Body.Name);
 					Message = true;
 				}
 				foreach (GameNPC npc in Body.GetNPCsInRadius(1500))
@@ -112,4 +114,3 @@ namespace DOL.AI.Brain
 		}
 	}
 }
-

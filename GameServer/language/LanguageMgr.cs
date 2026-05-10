@@ -281,7 +281,7 @@ namespace DOL.Language
                         continue;
 
                     string id = line[..line.IndexOf(':')];
-                    string text = line[(line.IndexOf(':') + 1)..].Replace("\t", " ").Trim();
+                    string text = NormalizeTranslationText(line[(line.IndexOf(':') + 1)..]);
                     TranslationEntry entry = new(id, text, language);
 
                     if (uniqueKeys.Add((id, language)))
@@ -290,6 +290,19 @@ namespace DOL.Language
             }
 
             return sentences;
+        }
+
+        private static string NormalizeTranslationText(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return text;
+
+            return text
+                .Replace("\t", " ")
+                .Trim()
+                .Replace("\\r\\n", "\n")
+                .Replace("\\n", "\n")
+                .Replace("\\r", "\n");
         }
 
         public static LanguageDataObject GetLanguageDataObject(string language, string translationId, LanguageDataObject.eTranslationIdentifier translationIdentifier)

@@ -1,0 +1,15 @@
+{
+  "hardcoded_allow": [
+    {
+      "path": "GameServer/Managers/playermanager/FriendsManager.cs",
+      "contains": "TF",
+      "reason": "CT_SocialInterface protocol marker, not player-facing text"
+    },
+    {
+      "path": "GameServer/commands/gmcommands/mob.cs",
+      "regex": "^(PEACE|GHOST|STEALTH|TORCH|STATUE|FLYING|SWIMMING|DONTSHOWNAME|CANTTARGET|IsCloakHoodUp|IsCloakInvisible)$",
+      "reason": "GameNPC flag/property identifiers displayed as values, not translatable prose"
+    }
+  ],
+  "dynamic_translation_allow": []
+}

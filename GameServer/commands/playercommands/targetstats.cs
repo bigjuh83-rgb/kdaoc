@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 using static DOL.GS.NpcTemplateMgr;
 
 namespace DOL.GS.Commands
@@ -37,13 +38,13 @@ namespace DOL.GS.Commands
 
                 if (target == null)
                 {
-                    client.Out.SendMessage("No target or invalid target selected.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Target.Invalid"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return false;
                 }
 
                 if ((ePrivLevel) client.Account.PrivLevel <= ePrivLevel.Player && client.Player != target && target is GamePlayer)
                 {
-                    client.Out.SendMessage("This command cannot be used on another player.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Target.CannotUseOnPlayer"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return false;
                 }
 

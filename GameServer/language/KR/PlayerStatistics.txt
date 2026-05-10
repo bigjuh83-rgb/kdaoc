@@ -1,0 +1,32 @@
+﻿# Player Statistics
+
+## RvR Kills
+PlayerStatistic.Kill.Title:				처치 기록
+PlayerStatistic.Kill.AlbionPlayer:			처치한 알비온 플레이어
+PlayerStatistic.Kill.HiberniaPlayer:			처치한 하이버니아 플레이어
+PlayerStatistic.Kill.MidgardPlayer:			처치한 미드가드 플레이어
+PlayerStatistic.Kill.TotalPlayers:			처치한 플레이어 합계
+
+## RvR Deathblows
+PlayerStatistic.Deathblows.AlbionPlayer:		알비온 결정타
+PlayerStatistic.Deathblows.HiberniaPlayer:		하이버니아 결정타
+PlayerStatistic.Deathblows.MidgardPlayer:		미드가드 결정타
+PlayerStatistic.Deathblows.TotalPlayers:		결정타 합계
+
+## Solo Kills
+PlayerStatistic.Solo.AlbionPlayer:			알비온 솔로 처치
+PlayerStatistic.Solo.HiberniaPlayer:			하이버니아 솔로 처치
+PlayerStatistic.Solo.MidgardPlayer:			미드가드 솔로 처치
+PlayerStatistic.Solo.TotalPlayers:			솔로 처치 합계
+
+## Keep Captures
+PlayerStatistic.Capture.Title:				점령 기록
+PlayerStatistic.Capture.Keeps:				점령한 성채
+PlayerStatistic.Capture.Towers:				점령한 탑
+PlayerStatistic.Capture.Relics:				점령한 렐릭
+
+## PvE Kills
+PlayerStatistic.PvE.Title:				PvE 기록
+PlayerStatistic.PvE.KillsDragon:			드래곤 처치
+PlayerStatistic.PvE.KillsEpic:				에픽 보스 처치
+PlayerStatistic.PvE.KillsLegion:			리전 처치

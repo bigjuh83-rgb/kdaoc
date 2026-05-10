@@ -1,0 +1,12 @@
+﻿Alb.AfterTheAccident.CheckPlayerAbortQuest.Text1:	좋습니다. 이제 나가서 맡은 일을 마무리하십시오!
+Alb.AfterTheAccident.CheckPlayerAbortQuest.Text2:	퀘스트 {0}을(를) 중단합니다. 원한다면 다시 시작할 수 있습니다.
+Alb.AfterTheAccident.Conclusion.Text1:			잘해 주었습니다. 보상을 받으십시오. 카멜롯을 위해 봉사해 준 것에도 감사를 전합니다!
+Alb.AfterTheAccident.Init.Text1:			신병의 힘 목걸이
+Alb.AfterTheAccident.Init.Text2:			신병의 통찰 목걸이
+Alb.AfterTheAccident.Init.Text3:			신병의 신앙 목걸이
+Alb.AfterTheAccident.Init.Text4:			약한 해골의 두개골
+Alb.AfterTheAccident.Init.Text5:			약한 해골의 두개골들
+Alb.AfterTheAccident.Notify.Text1:			약한 해골
+Alb.AfterTheAccident.QuestTitle:			사고 이후
+Alb.AfterTheAccident.Story:				코츠월드를 순찰하는 동안 심각하게 우려되는 일을 많이 보았습니다, 친구여. 죽은 자들이 안식을 얻어 지하에 머물러야 할 때에도 불안히 지상을 떠돌고 있습니다. 아주 새로운 현상은 아니지만, 그 저주받은 사고 이후로 해골, 좀비, 그와 비슷한 것들의 목격담이 점점 늘고 있습니다.\n아카데미의 마법사들이 슈라우디드 아일스로 향하는 포털을 아발론 습지에서 이곳 코츠월드로 옮기다가 실수로 현실의 직물에 균열을 냈다는 이야기는 이미 들었을 겁니다. 그들은 지옥으로 통하는 문을 열었고, 그것이 무엇을 뜻하는지 아직 아무도 모르는 것 같습니다. 그들은 그 문을 막았다고 생각하지만, 저는 확신할 수 없습니다.\n어떤 사악한 마법이 이 '것들'을 마지막 안식처에서 끌어내는지는 확실히 알 수 없습니다. 하지만 이런 흉물들이 시골을 마음대로 돌아다니게 둘 수 없다는 것만은 압니다. 저는 그것들을 쓰러뜨리고 증거를 가져오는 이에게 현상금을 지급할 권한을 받았습니다.
+Alb.AfterTheAccident.Summary:				약한 해골 두 마리를 처치하십시오. 임무를 완료했다는 증거로 약한 해골의 두개골 두 개를 가지고 Sir Prescott에게 돌아가십시오.

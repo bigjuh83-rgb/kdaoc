@@ -1,0 +1,47 @@
+﻿# Guard Templates
+
+## All
+SetGuardName.Commander:		{0} 지휘관
+SetGuardName.Hastener:		가속사
+SetGuardName.Gatekeeper:	문지기
+SetGuardName.Renegade:		변절자 {0}
+SetGuardName.TowerCaptain:	탑 대장
+
+## Albion
+SetGuardName.Armsman:		암즈맨
+SetGuardName.Armswoman:		암즈우먼
+SetGuardName.BowmanCommander:	궁병 지휘관
+SetGuardName.CaptainCommander:	대장 지휘관
+SetGuardName.Cleric:		클레릭
+SetGuardName.Infiltrator:	인필트레이터
+SetGuardName.KnightCommander:	기사 지휘관
+SetGuardName.Lady:		레이디 {0}
+SetGuardName.Lord:		로드 {0}
+SetGuardName.MasterWizard:	마스터 위저드
+SetGuardName.Scout:		스카우트
+SetGuardName.Wizard:		위저드
+
+## Hibernia
+SetGuardName.Champion:		챔피언
+SetGuardName.ChampionCommander:	챔피언 지휘관
+SetGuardName.Chieftain:		족장 {0}
+SetGuardName.Chieftess:		여족장 {0}
+SetGuardName.Druid:		드루이드
+SetGuardName.Eldritch:		엘드리치
+SetGuardName.Guardian:		가디언
+SetGuardName.MasterEldritch:	마스터 엘드리치
+SetGuardName.MasterRanger:	마스터 레인저
+SetGuardName.Nightshade:	나이트셰이드
+SetGuardName.Ranger:		레인저
+
+## Midgard
+SetGuardName.Healer:		힐러
+SetGuardName.HersirCommander:	헤르시르 지휘관
+SetGuardName.Hunter:		헌터
+SetGuardName.Huscarl:		후스카를
+SetGuardName.Jarl:		야를 {0}
+SetGuardName.MasterRunes:	룬의 달인
+SetGuardName.NordicHunter:	노르드 헌터
+SetGuardName.NordicJarl:	노르드 야를
+SetGuardName.Runemaster:	룬마스터
+SetGuardName.Shadowblade:	섀도우블레이드

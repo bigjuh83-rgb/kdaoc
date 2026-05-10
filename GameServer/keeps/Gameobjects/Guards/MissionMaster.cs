@@ -37,8 +37,8 @@ namespace DOL.GS.Keeps
 				return false;
 
 			if (Component == null)
-				SayTo(player, "Greetings, " + player.Name + ". We have put out the call far and wide for heroes such as yourself to aid us in our ongoing struggle. It warms my heart good to to see a great " + player.CharacterClass.Name + " such as yourself willing to lay their life on the line in defence of the [realm].");
-			else SayTo(player, "Hail and well met, " + player.Name + "! As the leader of our forces, I am calling upon our finest warriors to aid in the vanquishing of our enemies. Do you wish to do your duty in defence of our [realm]?");
+				SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.Intro.General", player.Name, player.CharacterClass.Name));
+			else SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.Intro.Component", player.Name));
 			return true;
 		}
 
@@ -56,40 +56,40 @@ namespace DOL.GS.Keeps
 				return false;
 			}
 
-			if (str.ToLower().StartsWith("tower capture"))
+			if (str.ToLower().StartsWith("tower capture") || str.StartsWith("타워 점령"))
 			{
 				if (player.Group == null)
 				{
-					SayTo(player, "You are not in a group!");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotInGroup"));
 				}
 				else if (player.Group.Leader != player)
 				{
-					SayTo(player, "You are not the leader of your group!");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotGroupLeader"));
 				}
 				else
 				{
 					if (player.Group.Mission != null)
 						player.Group.Mission.ExpireMission();
 
-					player.Group.Mission = new CaptureMission(CaptureMission.eCaptureType.Tower, player.Group, str.ToLower().Replace("tower capture", "").Trim());
+					player.Group.Mission = new CaptureMission(CaptureMission.eCaptureType.Tower, player.Group, str.ToLower().Replace("tower capture", "").Replace("타워 점령", "").Trim());
 				}
 			}
-			else if (str.ToLower().StartsWith("keep capture"))
+			else if (str.ToLower().StartsWith("keep capture") || str.StartsWith("킵 점령"))
 			{
 				if (player.Group == null)
 				{
-					SayTo(player, "You are not in a group!");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotInGroup"));
 				}
 				else if (player.Group.Leader != player)
 				{
-					SayTo(player, "You are not the leader of your group!");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotGroupLeader"));
 				}
 				else
 				{
 					if (player.Group.Mission != null)
 						player.Group.Mission.ExpireMission();
 
-					player.Group.Mission = new CaptureMission(CaptureMission.eCaptureType.Keep, player.Group, str.ToLower().Replace("keep capture", "").Trim());
+					player.Group.Mission = new CaptureMission(CaptureMission.eCaptureType.Keep, player.Group, str.ToLower().Replace("keep capture", "").Replace("킵 점령", "").Trim());
 				}
 			}
 			else
@@ -97,18 +97,21 @@ namespace DOL.GS.Keeps
 				switch (str.ToLower())
 				{
 					case "realm":
+					case "렐름":
 						{
 							if (Component == null)
-								SayTo(player, "We all must do our part. How would you like to assist the cause? I have [personal missions], [group missions], and [guild missions] available.");
-							else SayTo(player, "Excellent! We all must do our part. How would you like to assist the cause? I have [personal missions] and [group missions] available.");
+								SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.Realm.General"));
+							else SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.Realm.Component"));
 							break;
 						}
 					case "personal missions":
+					case "개인 임무":
 						{
-							SayTo(player, "We have several personal missions from which to choose. Would you like to claim the bounty on some [realm guards], or claim the bounties on some [enemies of the realm]? Perhaps a frontal assault isn't your style? If so, we also have missions that require you to [reconnoiter] an enemy realm, or elimate the thread of an impending [assassination]?");
+							SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.PersonalMissions"));
 							break;
 						}
 					case "realm guards":
+					case "렐름 경비병":
 						{
 							if (player.Mission != null)
 								player.Mission.ExpireMission();
@@ -116,6 +119,7 @@ namespace DOL.GS.Keeps
 							break;
 						}
 					case "enemies of the realm":
+					case "렐름의 적":
 						{
 							if (player.Mission != null)
 								player.Mission.ExpireMission();
@@ -123,6 +127,7 @@ namespace DOL.GS.Keeps
 							break;
 						}
 					case "reconnoiter":
+					case "정찰":
 						{
 							if (player.Mission != null)
 								player.Mission.ExpireMission();
@@ -130,78 +135,84 @@ namespace DOL.GS.Keeps
 							break;
 						}
 					case "assassination":
+					case "암살":
 						{
-							SayTo(player, "This type of mission is not yet implemented");
+							SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotImplemented"));
 							break;
 						}
 					case "group missions":
+					case "그룹 임무":
 						{
 							if (player.Group == null)
 							{
-								SayTo(player, "You are not in a group!");
+								SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotInGroup"));
 								break;
 							}
 
 							if (player.Group.Leader != player)
 							{
-								SayTo(player, "You are not the leader of your group!");
+								SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotGroupLeader"));
 								break;
 							}
 
-							SayTo(player, "Would your group like to help with a [tower capture], a [keep capture], or a [caravan] raid? Should those choices fail to appeal to you, I also have bounty missions on [enemy guards] and [realm enemies] if that is your preference.");
+							SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.GroupMissions"));
 							break;
 						}
 					case "tower raize":
 						{
 							if (player.Group == null)
 							{
-								SayTo(player, "You are not in a group!");
+								SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotInGroup"));
 								break;
 							}
 
 							if (player.Group.Leader != player)
 							{
-								SayTo(player, "You are not the leader of your group!");
+								SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotGroupLeader"));
 								break;
 							}
 							player.Group.Mission = new RaizeMission(player.Group);
 							break;
 						}
 					case "tower capture":
+					case "타워 점령":
 						{
 							break;
 						}
 					case "keep capture":
+					case "킵 점령":
 						{
 							break;
 						}
 					case "caravan":
+					case "대상단":
 						{
 							if (player.Group == null)
 							{
-								SayTo(player, "You are not in a group!");
+								SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotInGroup"));
 								break;
 							}
 
 							if (player.Group.Leader != player)
 							{
-								SayTo(player, "You are not the leader of your group!");
+								SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotGroupLeader"));
 								break;
 							}
-							SayTo(player, "This type of mission is not yet implemented");
+							SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotImplemented"));
 							break;
 						}
 					case "enemy guards":
+					case "적 경비병":
 						{
 							if (player.Group == null)
 							{
-								SayTo(player, "You are not in a group!");
+								SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotInGroup"));
 								break;
 							}
 
 							if (player.Group.Leader != player)
 							{
-								SayTo(player, "You are not the leader of your group!");
+								SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotGroupLeader"));
 								break;
 							}
 							if (player.Group.Mission != null)
@@ -210,16 +221,17 @@ namespace DOL.GS.Keeps
 							break;
 						}
 					case "realm enemies":
+					case "렐름의 적들":
 						{
 							if (player.Group == null)
 							{
-								SayTo(player, "You are not in a group!");
+								SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotInGroup"));
 								break;
 							}
 
 							if (player.Group.Leader != player)
 							{
-								SayTo(player, "You are not the leader of your group!");
+								SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotGroupLeader"));
 								break;
 							}
 							if (player.Group.Mission != null)
@@ -228,23 +240,24 @@ namespace DOL.GS.Keeps
 							break;
 						}
 					case "guild missions":
+					case "길드 임무":
 						{
 							if (Component != null)
 								break;
 							if (player.Guild == null)
 							{
-								SayTo(player, "You have no guild!");
+								SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NoGuild"));
 								return false;
 							}
 
 							if (!player.Guild.HasRank(player, Guild.eRank.OcSpeak))
 							{
-								SayTo(player, "You are not high enough rank in your guild!");
+								SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.GuildRankTooLow"));
 								return false;
 							}
 							//TODO: implement guild missions
-							SayTo(player, "This type of mission is not yet implemented");
-							SayTo(player, "Outstanding, we can always use help from organized guilds. Would you like to press the attack on the realm of [Albion] or the realm of [Hibernia].");
+							SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.NotImplemented"));
+							SayTo(player, LanguageMgr.GetTranslation(player.Client, "MissionMaster.GuildMissions"));
 							break;
 						}
 				}
@@ -329,12 +342,12 @@ namespace DOL.GS.Keeps
 	 * Champion Commander
 	 * Captain Commander
 	 * Hersir Commander
-	 * 
+	 *
 	 * Hail and well met, PLAYERNAME! As the leader of our forces, I am calling upon our finest warriors to aid in the vanquishing of our enemies. Do you wish to do your duty in defence of our [realm]?
 	 * Excellent! We all must do our part. How would you like to assist the cause? I have [personal missions] and [group missions] available.
-	 * 
+	 *
 	 * General
-	 * 
+	 *
 	 * Greetings, PLAYERNAME. We have put out the call far and wide for heroes such as yourself to aid us in our ongoing struggle. It warms my heart good to to see a great CLASSNAME such as yourself willing to lay their life on the line in defence of the [realm].
 	 * We all must do our part. How would you like to assist the cause? I have [personal missions], [group missions], and [guild missions] available.
 	 * We have several personal missions from which to choose. Would you like to claim the bounty on some [realm guards], or claim the bounties on some [enemies of the realm]? Perhaps a frontal assault isn't your style? If so, we also have missions that require you to [reconnoiter] an enemy realm, or elimate the thread of an impending [assassination]?

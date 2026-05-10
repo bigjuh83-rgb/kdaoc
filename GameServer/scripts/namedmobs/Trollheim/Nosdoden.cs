@@ -8,30 +8,31 @@ using DOL.GS;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerProperties;
 using DOL.GS.Styles;
+using DOL.Language;
 
 namespace DOL.GS
 {
 	public class Nosdoden : GameEpicBoss
 	{
 		protected String[] m_deathAnnounce;
-		public Nosdoden() : base() 
+		public Nosdoden() : base()
 		{
-			m_deathAnnounce = new String[] { "The earth lurches beneath your feet as {0} staggers and topples to the ground.",
-				"A glowing light begins to form on the mound that served as {0}'s lair." };
+			m_deathAnnounce = new String[] { "NamedMobs.Nosdoden.DeathAnnounce1",
+				"NamedMobs.Nosdoden.DeathAnnounce2" };
 		}
 		#region Custom methods
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(String key, params object[] args)
 		{
 			foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
-				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 			}
 		}
 		protected void ReportNews(GameObject killer)
 		{
 			int numPlayers = GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE).Count;
 			String message = String.Format("{0} has been slain by a force of {1} warriors!", Name, numPlayers);
-			NewsMgr.CreateNews(message, killer.Realm, eNewsType.PvE, true);
+			NewsMgr.CreateNews(message, killer?.Realm ?? eRealm.None, eNewsType.PvE, true);
 
 			if (Properties.GUILD_MERIT_ON_DRAGON_KILL > 0)
 			{
@@ -85,7 +86,7 @@ namespace DOL.GS
 			base.Die(killer);
 			foreach (String message in m_deathAnnounce)
 			{
-				BroadcastMessage(String.Format(message, Name));
+				BroadcastMessage(message, Name);
 			}
 			if (canReportNews)
 			{
@@ -188,7 +189,7 @@ namespace DOL.GS
 					add.CurrentRegionID = CurrentRegionID;
 					add.RespawnInterval = -1;
                     #region equiptemplate for mob and styles
-                    GameNpcInventoryTemplate template = new GameNpcInventoryTemplate();					
+                    GameNpcInventoryTemplate template = new GameNpcInventoryTemplate();
 					if (player.Inventory.GetItem(eInventorySlot.TorsoArmor) != null)
 					{
 						DbInventoryItem torso = player.Inventory.GetItem(eInventorySlot.TorsoArmor);
@@ -308,7 +309,7 @@ namespace DOL.GS
 						DbInventoryItem distance = player.Inventory.GetItem(eInventorySlot.DistanceWeapon);
 						if(distance != null)
 							template.AddNPCEquipment(eInventorySlot.DistanceWeapon, distance.Model, distance.Color, distance.Effect);
-					}						
+					}
 					add.Inventory = template.CloseTemplate();
                     #endregion
                     #region Set mob visible slot
@@ -348,9 +349,9 @@ namespace DOL.GS
 					#endregion
 					add.PackageID = "NosdodenGhost" + player.CharacterClass.Name;
 					add.AddToWorld();
-					BroadcastMessage(String.Format("Life essense of " + enemy.Name + " has turned into spirit."));
+					BroadcastMessage("NamedMobs.Nosdoden.LifeEssenceToSpirit", enemy.Name);
 				}
-			}		
+			}
             base.EnemyKilled(enemy);
         }
     }
@@ -376,11 +377,11 @@ namespace DOL.AI.Brain
 		private bool SpawnAdds7 = false;
 		private bool SpawnAdds8 = false;
 		private bool SpawnAdds9 = false;
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(String key, params object[] args)
 		{
 			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
-				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
 			}
 		}
 		#region Worm Dot
@@ -482,7 +483,7 @@ namespace DOL.AI.Brain
 						GamePlayer Target = (GamePlayer)Enemys_To_DD[Util.Random(0, Enemys_To_DD.Count - 1)];//pick random target from list
 						RandomTarget = Target;//set random target to static RandomTarget
 						new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(CastDD), 5000);
-						BroadcastMessage(String.Format(Body.Name + " starts casting void magic at " + RandomTarget.Name + "."));
+						BroadcastMessage("NamedMobs.Nosdoden.StartsVoidMagic", Body.Name, RandomTarget.Name);
 						CanCast = true;
 					}
 				}
@@ -661,7 +662,7 @@ namespace DOL.AI.Brain
 		{
 			if (Body.IsAlive && SpiritMob != null && SpiritMob.IsAlive && PlayerRezzed != null && PlayerRezzed.IsAlive)
 			{
-				BroadcastMessage(String.Format("Life essense returned back to " + PlayerRezzed.Name + "."));
+				BroadcastMessage("NamedMobs.Nosdoden.LifeEssenceReturned", PlayerRezzed.Name);
 				SpiritMob.Die(Body);
 			}
 			CanKillSpirit = false;
@@ -765,7 +766,7 @@ namespace DOL.AI.Brain
 		private protected bool CanWalkBerserker = false;
 
 		public static int TauntBerserkerID = 202;
-		public static int TauntBerserkerClassID = 31; 
+		public static int TauntBerserkerClassID = 31;
 		public static Style tauntBerserker = SkillBase.GetStyleByID(TauntBerserkerID, TauntBerserkerClassID);
 
 		public static int BackBerserkerID = 195;
@@ -1080,7 +1081,7 @@ namespace DOL.AI.Brain
 							Body.CastSpell(InstantThaneDD, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
 						if (Util.Chance(15) && Body.IsWithinRadius(Body.TargetObject, Body.attackComponent.AttackRange))
 							Body.CastSpell(InstantThaneDD_pbaoe, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
-						
+
 						GameLiving target = Body.TargetObject as GameLiving;
 						float angle = Body.TargetObject.GetAngle(Body);
 						if (angle >= 160 && angle <= 200)
@@ -1406,7 +1407,7 @@ namespace DOL.AI.Brain
 					if (Body.TargetObject != null)
 					{
 						if (!Body.IsCasting && !Body.IsMoving)
-						{						
+						{
 							foreach(Spell spells in Body.Spells)
                             {
 								if(spells != null)
@@ -1594,7 +1595,7 @@ namespace DOL.AI.Brain
 						{
 							Body.TargetObject = RandomHealerTarget;
 							Body.TurnTo(RandomHealerTarget);
-							Body.CastSpell(Healer_Mezz, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);						
+							Body.CastSpell(Healer_Mezz, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 						}
 					}
 				}
@@ -1632,7 +1633,7 @@ namespace DOL.AI.Brain
 									Body.TurnTo(npc);
 								Body.CastSpell(Healer_Heal, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 							}
-                        }							
+                        }
                     }
                 }
 				if (HasAggro)
@@ -1692,7 +1693,7 @@ namespace DOL.AI.Brain
 			}
 		}
 		#endregion
-		#region Mob Class Shaman 
+		#region Mob Class Shaman
 		public void IsShaman()
 		{
 			if (Body.PackageID == "NosdodenGhostShaman")
@@ -1734,7 +1735,7 @@ namespace DOL.AI.Brain
 											Body.CastSpell(Shamy_AoeDot, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 										else if (spells.HasRecastDelay && Body.GetSkillDisabledDuration(Shamy_InstaAoeDisease) == 0)
 											Body.CastSpell(Shamy_InstaAoeDisease, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
-										else 
+										else
 											Body.CastSpell(Shamy_DD, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 									}
 								}
@@ -2123,7 +2124,7 @@ namespace DOL.AI.Brain
 				}
 				return m_Spirit_Mezz;
 			}
-		}	
+		}
 		public void SummonSpiritChampion()
         {
 			foreach (GameNPC npc in Body.GetNPCsInRadius(5000))
@@ -2301,7 +2302,7 @@ namespace DOL.AI.Brain
 				if (m_Healer_Amnesia == null)
 				{
 					DbSpell spell = new DbSpell();
-					spell.AllowAdd = false;					
+					spell.AllowAdd = false;
 					spell.CastTime = 2;
 					spell.RecastDelay = 0;
 					spell.ClientEffect = 3315;
@@ -2474,7 +2475,7 @@ namespace DOL.GS
             base.DealDamage(ad);
         }
         public override void OnAttackedByEnemy(AttackData ad)
-        {       
+        {
             if (ad != null && ad.AttackResult == eAttackResult.Evaded)
             {
 				#region Berserker
@@ -2675,7 +2676,7 @@ namespace DOL.GS
             {
 				if(Util.Chance(25) && (!ad.Target.effectListComponent.ContainsEffectForEffectType(eEffect.StunImmunity) || !ad.Target.effectListComponent.ContainsEffectForEffectType(eEffect.Stun)) && ad.Target.IsAlive)
 					CastSpell(SpiritChampion_stun, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
-			}				
+			}
             base.OnAttackEnemy(ad);
         }
         public override double GetArmorAF(eArmorSlot slot)
@@ -2968,7 +2969,7 @@ namespace DOL.GS
 			if (IsAlive)
 				return;
 			base.StartAttack(target);
-		}	
+		}
 		public override double GetArmorAbsorb(eArmorSlot slot)
 		{
 			// 85% ABS is cap.
@@ -3160,7 +3161,7 @@ namespace DOL.AI.Brain
 		public override void Think()
 		{
 			if (Body.IsAlive)
-			{				
+			{
 			}
 			base.Think();
 		}

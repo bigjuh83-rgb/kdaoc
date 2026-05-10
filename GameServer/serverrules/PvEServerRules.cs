@@ -1,5 +1,6 @@
 using DOL.AI.Brain;
 using DOL.Database;
+using DOL.Language;
 
 namespace DOL.GS.ServerRules
 {
@@ -11,7 +12,7 @@ namespace DOL.GS.ServerRules
 	{
 		public override string RulesDescription()
 		{
-			return "standard PvE server rules";
+			return LanguageMgr.GetTranslation(LanguageMgr.DefaultLanguage, "ServerRules.PvE.Description");
 		}
 
 		public override bool IsAllowedToAttack(GameLiving attacker, GameLiving defender, bool quiet)
@@ -39,7 +40,7 @@ namespace DOL.GS.ServerRules
 			//"You can't attack yourself!"
 			if(attacker == defender)
 			{
-				if (quiet == false) MessageToLiving(attacker, "You can't attack yourself!");
+				if (quiet == false) MessageToLivingTranslated(attacker, "ServerRules.Attack.Self");
 				return false;
 			}
 
@@ -51,7 +52,7 @@ namespace DOL.GS.ServerRules
 			{
 				if (attacker is GamePlayer && ((GamePlayer) attacker).IsDuelPartner(defender))
 					return true;
-				if (quiet == false) MessageToLiving(attacker, "You can not attack other players on this server!");
+				if (quiet == false) MessageToLivingTranslated(attacker, "ServerRules.Attack.NoPlayerAttack");
 				return false;
 			}
 
@@ -68,7 +69,7 @@ namespace DOL.GS.ServerRules
 					return FactionMgr.CanLivingAttack(attacker, defender);
 				}
 
-				if (quiet == false) MessageToLiving(attacker, "You can't attack a member of your realm!");
+				if (quiet == false) MessageToLivingTranslated(attacker, "ServerRules.Attack.RealmMember");
 				return false;
 			}
 
@@ -77,7 +78,7 @@ namespace DOL.GS.ServerRules
 
 		public override bool IsSameRealm(GameLiving source, GameLiving target, bool quiet)
 		{
-			if(source == null || target == null) 
+			if(source == null || target == null)
 				return false;
 
 			// if controlled NPC - do checks for owner instead
@@ -116,7 +117,7 @@ namespace DOL.GS.ServerRules
 				if ((((GameNPC)source).Flags & GameNPC.eFlags.PEACE) != 0)
 					return true;
 
-			if(quiet == false) MessageToLiving(source, target.GetName(0, true) + " is not a member of your realm!");
+			if(quiet == false) MessageToLivingTranslated(source, "ServerRules.Realm.NotMember", target.GetName(0, true));
 			return false;
 		}
 
@@ -137,7 +138,7 @@ namespace DOL.GS.ServerRules
 		}
 
 		public override bool IsAllowedToGroup(GamePlayer source, GamePlayer target, bool quiet)
-		{			
+		{
 			return true;
 		}
 
@@ -158,12 +159,12 @@ namespace DOL.GS.ServerRules
 
 		/// <summary>
 		/// Gets the server type color handling scheme
-		/// 
-		/// ColorHandling: this byte tells the client how to handle color for PC and NPC names (over the head) 
-		/// 0: standard way, other realm PC appear red, our realm NPC appear light green 
-		/// 1: standard PvP way, all PC appear red, all NPC appear with their level color 
+		///
+		/// ColorHandling: this byte tells the client how to handle color for PC and NPC names (over the head)
+		/// 0: standard way, other realm PC appear red, our realm NPC appear light green
+		/// 1: standard PvP way, all PC appear red, all NPC appear with their level color
 		/// 2: Same realm livings are friendly, other realm livings are enemy; nearest friend/enemy buttons work
-		/// 3: standard PvE way, all PC friendly, realm 0 NPC enemy rest NPC appear light green 
+		/// 3: standard PvE way, all PC friendly, realm 0 NPC enemy rest NPC appear light green
 		/// 4: All NPC are enemy, all players are friendly; nearest friend button selects self, nearest enemy don't work at all
 		/// </summary>
 		/// <param name="client">The client asking for color handling</param>
@@ -182,7 +183,7 @@ namespace DOL.GS.ServerRules
 		public override void OnPlayerLevelUp(GamePlayer player, int previousLevel)
 		{
 		}
-		
+
 		/// <summary>
 		/// Gets the player's Total Amount of Realm Points Based on Level, Realm Level of other constraints.
 		/// </summary>

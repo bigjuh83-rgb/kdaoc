@@ -301,7 +301,7 @@ namespace DOL.GS.Quests
                         commandName = Enum.GetName(typeof(eQuestCommand), eQuestCommand.SEARCH).ToLower();
                     }
 
-                    player.Out.SendMessage("Your " + commandName + " is interrupted!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "AbstractQuest.CommandInterrupted", commandName), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                 }
 
                 RemoveActionHandlers(player);
@@ -316,7 +316,7 @@ namespace DOL.GS.Quests
         {
             // Override this to do whatever needs to be done when the command is completed.
             // Typically this would be when giving the player an item and advancing the step.
-            QuestPlayer.Out.SendMessage("Error, command completed handler not overridden for quest!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+            QuestPlayer.Out.SendMessage(LanguageMgr.GetTranslation(QuestPlayer.Client, "AbstractQuest.CommandCompletedHandlerMissing"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
         }
 
         #endregion Quest Commands
@@ -364,10 +364,10 @@ namespace DOL.GS.Quests
                     InventoryLogging.LogInventoryAction(player, target, eInventoryActionType.Quest, item.Template, item.Count);
 
                     if (target != null)
-                        player.Out.SendMessage($"You give the {itemTemplate.Name} to {target.GetName(0, false)}.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Quests.AbstractQuest.GiveItem", itemTemplate.Name, target.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 }
                 else if (notify)
-                    player.Out.SendMessage($"You cannot remove the {itemTemplate.Name} because you don't have it.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Quests.AbstractQuest.CannotRemoveMissingItem", itemTemplate.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             }
         }
 
@@ -387,10 +387,10 @@ namespace DOL.GS.Quests
                     InventoryLogging.LogInventoryAction(player, target, eInventoryActionType.Quest, item.Template, item.Count);
 
                     if (target != null)
-                        player.Out.SendMessage($"You give the {item.Name} to {target.GetName(0, false)}.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Quests.AbstractQuest.GiveItem", item.Name, target.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 }
                 else if (notify)
-                    player.Out.SendMessage($"You cannot remove the {item.Name} because you don't have it.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Quests.AbstractQuest.CannotRemoveMissingItem", item.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             }
         }
 
@@ -419,13 +419,13 @@ namespace DOL.GS.Quests
                 if (notify)
                 {
                     if (itemsRemoved == 0)
-                        player.Out.SendMessage($"You cannot remove the {itemTemplate.Name} because you don't have it.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Quests.AbstractQuest.CannotRemoveMissingItem", itemTemplate.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     else if (target != null)
                     {
                         if (itemTemplate.Name.EndsWith("s"))
-                            player.Out.SendMessage($"You give the {itemTemplate.Name} to {target.Name}.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Quests.AbstractQuest.GiveItem", itemTemplate.Name, target.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         else
-                            player.Out.SendMessage($"You give the {itemTemplate.Name}'s to {target.Name}.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Quests.AbstractQuest.GivePossessiveItem", itemTemplate.Name, target.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     }
                 }
             }
@@ -542,11 +542,11 @@ namespace DOL.GS.Quests
                 if (canDrop)
                 {
                     player.CreateItemOnTheGround(item);
-                    player.Out.SendMessage(string.Format("Your backpack is full, {0} is dropped on the ground.", itemTemplate.Name), eChatType.CT_Important, eChatLoc.CL_PopupWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "AbstractQuest.BackpackFullItemDropped", itemTemplate.Name), eChatType.CT_Important, eChatLoc.CL_PopupWindow);
                 }
                 else
                 {
-                    player.Out.SendMessage("Your backpack is full!", eChatType.CT_Important, eChatLoc.CL_PopupWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "AbstractQuest.BackpackFull"), eChatType.CT_Important, eChatLoc.CL_PopupWindow);
                     return false;
                 }
             }

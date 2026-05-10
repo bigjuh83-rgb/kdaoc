@@ -8,7 +8,7 @@ namespace DOL.GS.RealmAbilities
     public class AtlasOF_TrueSight : TimedRealmAbility
     {
         public AtlasOF_TrueSight(DbAbility dba, int level) : base(dba, level) { }
-        
+
         int m_duration = 60000; // 60s
 
         public override int MaxLevel { get { return 1; } }
@@ -24,7 +24,7 @@ namespace DOL.GS.RealmAbilities
 
             ECSGameEffectFactory.Create(new(player, m_duration, 1, CreateSpell(living)), static (in i) => new AtlasOF_TrueSightECSEffect(i));
         }
-        
+
         private SpellHandler CreateSpell(GameLiving owner)
         {
             DbSpell tmpSpell = new DbSpell();
@@ -44,7 +44,7 @@ namespace DOL.GS.RealmAbilities
             tmpSpell.CastTime = 0;
             tmpSpell.EffectGroup = 0; // stacks with other damage adds
             tmpSpell.Range = 0;
-            tmpSpell.Description = "Detect all hidden characters for 60 seconds.";
+            tmpSpell.Description = DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "RealmAbility.AtlasOF.TrueSight.Description");
             SpellLine spellLine = GlobalSpellsLines.RealmSpellsSpellLine;
             return ScriptMgr.CreateSpellHandler(owner, new Spell(tmpSpell, 0) , spellLine) as SpellHandler;
         }
@@ -60,7 +60,7 @@ namespace DOL.GS.RealmAbilities
                 return delveInfoList;
             }
         }
-        
+
         public override void AddEffectsInfo(IList<string> list)
         {
             list.Add("Detect all hidden characters for 60 seconds.");

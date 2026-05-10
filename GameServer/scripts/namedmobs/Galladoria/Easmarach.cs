@@ -29,7 +29,7 @@ namespace DOL.GS
             if (source is GamePlayer || source is GameSummonedPet)
             {
                 Point3D spawn = new Point3D(SpawnPoint.X, SpawnPoint.Y, SpawnPoint.Z);
-                if (!source.IsWithinRadius(spawn, TetherRange))//dont take any dmg 
+                if (!source.IsWithinRadius(spawn, TetherRange))//dont take any dmg
                 {
                     if (damageType == eDamageType.Body || damageType == eDamageType.Cold || damageType == eDamageType.Energy || damageType == eDamageType.Heat
                         || damageType == eDamageType.Matter || damageType == eDamageType.Spirit || damageType == eDamageType.Crush || damageType == eDamageType.Thrust
@@ -41,7 +41,7 @@ namespace DOL.GS
                         else
                             truc = ((source as GameSummonedPet).Owner as GamePlayer);
                         if (truc != null)
-                            truc.Out.SendMessage(this.Name + " is too far away from waterfall and is immune to your damage!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                            truc.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Easmarach.TooFarFromWaterfall", this.Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
                         base.TakeDamage(source, damageType, 0, 0);
                         return;
                     }
@@ -89,7 +89,7 @@ namespace DOL.GS
             {
                 if(player != null)
                 {
-                    player.Out.SendMessage("With the death of the Easmarach, the current of the falls reduces significantly.", eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+                    player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Easmarach.CurrentReduces"), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
                 }
             }
             base.Die(killer);
@@ -110,7 +110,7 @@ namespace DOL.GS
             SaveIntoDatabase();
             base.AddToWorld();
             return true;
-        }     
+        }
     }
 }
 
@@ -171,7 +171,7 @@ namespace DOL.AI.Brain
             {
                 ClearAggroList();
                 new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(StartWalk), 100);
-                BroadcastMessage(String.Format("{0} is retreating to waterfall!",Body.Name));
+                BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Easmarach.Retreating", Body.Name));
                 restphase = true;
             }
             if (dontattack && !Body.IsWithinRadius(point1, 50) && restphase)
@@ -202,9 +202,9 @@ namespace DOL.AI.Brain
                         if(player.IsAlive && player.Client.Account.PrivLevel == 1)
                         {
                             if (player.IsWithinRadius(nopass, 1000))
-                            { 
+                            {
                                 player.MoveTo(Body.CurrentRegionID, 40067, 50494, 11708, 1066);
-                                player.Out.SendMessage("The strong current of the waterfall pushes you behind", eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+                                player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Easmarach.WaterfallPushes"), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
                             }
                         }
                     }

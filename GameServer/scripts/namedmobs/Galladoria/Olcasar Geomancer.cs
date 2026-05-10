@@ -5,6 +5,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -185,10 +186,11 @@ namespace DOL.AI.Brain
             AggroLevel = 100;
             AggroRange = 500;
         }
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(string key, params object[] args)
         {
             foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
+                string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
                 player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
@@ -317,7 +319,7 @@ namespace DOL.AI.Brain
         public int CastEffectBubble(ECSGameTimer timer)
         {
             Body.CastSpell(OGBubbleEffect, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
-            BroadcastMessage(String.Format("Olcasar tears off a chunk of himself and tosses it to the ground."));
+            BroadcastMessage("NamedMobs.OlcasarGeomancer.TearsChunk");
             new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(Spawn), 2000);
             return 0;
         }
@@ -331,7 +333,7 @@ namespace DOL.AI.Brain
                 Add.Z = Body.Z;
                 Add.CurrentRegion = Body.CurrentRegion;
                 Add.Heading = Body.Heading;
-                Add.AddToWorld();             
+                Add.AddToWorld();
                 new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(ResetSpawn), Util.Random(45000, 60000));
             }
             return 0;
@@ -508,27 +510,29 @@ namespace DOL.GS
         }
 
         public override bool CanDropLoot => false;
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(string key, params object[] args)
         {
             foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
+                string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
                 player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
         public override void Die(GameObject killer)
         {
-            BroadcastMessage(String.Format("As Olcasar minion falls to the ground, he begins to mutter some strange words and his slain minion rises back from the dead."));
+            BroadcastMessage("NamedMobs.OlcasarGeomancer.MinionRevives");
+            GameObject spawnSource = killer ?? this;
             OGAdds Add = new OGAdds();
-            Add.X = killer.X + Util.Random(-50, 80);
-            Add.Y = killer.Y + Util.Random(-50, 80);
-            Add.Z = killer.Z;
-            Add.CurrentRegion = killer.CurrentRegion;
-            Add.Heading = killer.Heading;
+            Add.X = spawnSource.X + Util.Random(-50, 80);
+            Add.Y = spawnSource.Y + Util.Random(-50, 80);
+            Add.Z = spawnSource.Z;
+            Add.CurrentRegion = spawnSource.CurrentRegion;
+            Add.Heading = spawnSource.Heading;
             Add.AddToWorld();
             base.Die(null); // null to not gain experience
         }
         public override short Strength { get => base.Strength; set => base.Strength = 300; }
-        public override short Quickness { get => base.Quickness; set => base.Quickness = 80; } 
+        public override short Quickness { get => base.Quickness; set => base.Quickness = 80; }
         public override bool AddToWorld()
         {
             foreach (GamePlayer ppl in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
@@ -579,7 +583,9 @@ namespace DOL.AI.Brain
             if(HasAggro && Body.TargetObject != null)
             {
                 GameLiving target = Body.TargetObject as GameLiving;
-                if (!target.effectListComponent.ContainsEffectForEffectType(eEffect.Stun) && !target.effectListComponent.ContainsEffectForEffectType(eEffect.StunImmunity) && target != null && target.IsAlive)
+                if (target != null && target.IsAlive
+                    && !target.effectListComponent.ContainsEffectForEffectType(eEffect.Stun)
+                    && !target.effectListComponent.ContainsEffectForEffectType(eEffect.StunImmunity))
                 {
                     Body.CastSpell(addstun, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
                 }

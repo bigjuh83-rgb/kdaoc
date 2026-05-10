@@ -1,4 +1,5 @@
 using DOL.GS.Housing;
+using DOL.Language;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -37,7 +38,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 			IndoorItem iitem = house.IndoorItems[position];
 			if (iitem == null)
 			{
-				client.Player.Out.SendMessage("error: id was null", eChatType.CT_Help, eChatLoc.CL_SystemWindow);
+				client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Player.Housing.HookPointIdNull"), eChatType.CT_Help, eChatLoc.CL_SystemWindow);
 				return;
 			} //should this ever happen?
 
@@ -55,8 +56,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 			// save item
 			GameServer.Database.SaveObject(iitem.DatabaseItem);
 
-			ChatUtil.SendSystemMessage(client,
-			                           string.Format("Interior decoration rotated from {0} degrees to {1}", old, iitem.Rotation));
+			ChatUtil.SendSystemMessage(client, "HousingDecorationRotate.Rotated", old, iitem.Rotation);
 
 			// update all players in the house.
 			foreach (GamePlayer plr in house.GetAllPlayersInHouse())

@@ -1,0 +1,13 @@
+﻿Alb.RecruitingNothingButTrouble.CheckPlayerAbortQuest.Text1:	좋아, 이제 나가서 맡은 일을 끝내게!
+Alb.RecruitingNothingButTrouble.CheckPlayerAbortQuest.Text2:	퀘스트 {0}을(를) 포기합니다. 원한다면 다시 시작할 수 있습니다.
+Alb.RecruitingNothingButTrouble.Conclusion.Text1:		이럴 수가! 정말로 내 검을 되찾아 왔구나! 솔직히 다시는 보지 못할 줄 알았어. 자네가 해 준 일의 대가로 이 작은 보상을 받아 주게.
+Alb.RecruitingNothingButTrouble.Init.Text1:			신병용 짧은 검
+Alb.RecruitingNothingButTrouble.Init.Text2:			신병용 더크
+Alb.RecruitingNothingButTrouble.Init.Text3:			신병용 철퇴
+Alb.RecruitingNothingButTrouble.Init.Text4:			신병용 지팡이
+Alb.RecruitingNothingButTrouble.Init.Text5:			레다의 검
+Alb.RecruitingNothingButTrouble.Init.Text6:			도적 신병 한 명 처치
+Alb.RecruitingNothingButTrouble.Notify.Text1:			도적 신병
+Alb.RecruitingNothingButTrouble.QuestTitle:			말썽만 끌어모으는 모집
+Alb.RecruitingNothingButTrouble.Story:				무모한 젊은 시절이 어떤지 나도 기억해. 우리 모두 젊었을 때는 그런 순간들이 있었을 테지. 나는 이 지역의 장난기 많은 젊은이들이 벌이는 짓도 가능한 한 참아 보려고 하네. 하지만 그런 행동을 부추기는 어른들은 정말 화가 나게 하지. 젊은이들은 본래 쉽게 영향을 받는 법이고, 그 점을 이용하는 어른들은 따끔한 교훈을 받아야 하네.\n\n숲속의 도적들을 예로 들어 보게. 그들 대부분은 달리 할 일도 없고, 말썽에서 벗어나게 해 줄 견습 자리도 얻지 못한 젊은 불량배 무리일 뿐이네. 하지만 그중 몇몇은 순전히 문제를 일으키려고 우리 마을의 십대들을 끌어들이는 젊은 어른들이지. 바로 지난주에도 그들 중 몇몇이 엘바르의 대장간 뒤편을 브라우니 피로 더럽혔네. 게다가 그중 하나가 내 가장 좋은 검 중 하나를 훔쳐 갔어!\n\n그들에게는 뭔가 조치가 필요하네. 도리안 경이 그들을 숲에서 몰아내기 위한 일을 조율하고 있다는 건 알고 있네. 어쩌면 자네가 도움이 될 만한 일을 할 수 있지 않겠나?\n\n
+Alb.RecruitingNothingButTrouble.Summary:			도적 신병 중 한 명이 아직 레다의 검을 가지고 있습니다. 그녀의 검을 찾을 때까지 도적 신병을 처치하십시오. 검을 찾으면 코츠월드의 레다에게 돌아가십시오.

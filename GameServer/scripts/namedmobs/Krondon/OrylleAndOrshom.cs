@@ -127,7 +127,7 @@ namespace DOL.AI.Brain
 				{
 					GamePlayer Target = Port_Enemys[Util.Random(0, Port_Enemys.Count - 1)];
 					RandomTarget = Target;
-					if (RandomTarget.IsAlive && RandomTarget != null)
+					if (RandomTarget != null && RandomTarget.IsAlive)
 					{
 						RandomTarget.MoveTo(61, 31406, 69599, 15605, 2150);
 						Port_Enemys.Remove(RandomTarget);
@@ -446,7 +446,7 @@ namespace DOL.GS
 			{
 				foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 					player.Out.SendSpellEffectAnimation(this, this, 7025, 0, false, 0x01);
-				
+
 				SetGroundTarget(X, Y, Z);
 				CastSpell(Fire_aoe, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
 				return 3000;
@@ -471,7 +471,7 @@ namespace DOL.GS
 					spell.TooltipId = 7025;
 					spell.Damage = 500;
 					spell.Name = "Fire Burn";
-					spell.Radius = 300; 
+					spell.Radius = 300;
 					spell.Range = 240;
 					spell.SpellID = 11751;
 					spell.Target = eSpellTarget.AREA.ToString();

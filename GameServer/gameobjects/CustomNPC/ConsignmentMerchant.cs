@@ -5,6 +5,7 @@ using System.Reflection;
 using DOL.Database;
 using DOL.GS.Housing;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 using DOL.Logging;
 
 namespace DOL.GS
@@ -94,7 +95,7 @@ namespace DOL.GS
                 player.Out.SendConsignmentMerchantMoney(amount);
 
                 if (ServerProperties.Properties.CONSIGNMENT_USE_BP)
-                    player.Out.SendMessage($"Your merchant currently holds {amount} Bounty Points.", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Consignment.HoldsBountyPoints", amount), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
             }
             else
                 player.Out.SendInventoryItemsUpdate(GetClientInventory(), eInventoryWindowType.ConsignmentViewer);
@@ -149,7 +150,7 @@ namespace DOL.GS
 
             if (!player.IsWithinRadius(this, 500))
             {
-                player.Out.SendMessage($"You are to far away to give anything to {Name}.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Consignment.TooFarToGive", Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
 
@@ -290,10 +291,10 @@ namespace DOL.GS
             if (item.IsTradable)
             {
                 ChatUtil.SendDebugMessage(player, $"{item.Name} SellPrice={price} OwnerLot={item.OwnerLot} OwnerID={item.OwnerID}");
-                player.Out.SendMessage("Price set!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Consignment.PriceSet"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             }
             else
-                player.Out.SendCustomDialog("This item is not tradable. You can store it here but cannot sell it.", null);
+                player.Out.SendCustomDialog(LanguageMgr.GetTranslation(player.Client.Account.Language, "Consignment.ItemNotTradableStoreOnly"), null);
 
             if (ServerProperties.Properties.MARKET_ENABLE_LOG)
                 log.Debug($"CM: {player.Name}:{player.Client.Account.Name} set sell price of '{item.Name}' to {item.SellPrice} for consignment merchant on lot {HouseNumber}.");
@@ -349,7 +350,7 @@ namespace DOL.GS
         {
             if (!TryGetItem((int) fromClientSlot, out DbInventoryItem fromItem))
             {
-                ChatUtil.SendErrorMessage(player, "I can't find the item you want to purchase!");
+                ChatUtil.SendErrorMessage(player, "Consignment.ItemToPurchaseNotFound", null);
 
                 if (log.IsErrorEnabled)
                     log.Error($"CM: {player.Name}:{player.Client.Account} can't find item to buy in slot {(int) fromClientSlot} on consignment merchant on lot {HouseNumber}.");
@@ -363,17 +364,17 @@ namespace DOL.GS
                 player.TempProperties.SetProperty(CONSIGNMENT_BUY_ITEM, fromClientSlot);
 
                 if (ServerProperties.Properties.MARKET_FEE_PERCENT > 0)
-                    player.Out.SendCustomDialog($"Buying directly from the market explorer costs an additional {ServerProperties.Properties.MARKET_FEE_PERCENT}% fee. Do you want to buy this item?", BuyMarketResponse);
+                    player.Out.SendCustomDialog(LanguageMgr.GetTranslation(player.Client.Account.Language, "Consignment.BuyWithMarketFeeConfirm", ServerProperties.Properties.MARKET_FEE_PERCENT), BuyMarketResponse);
                 else
-                    player.Out.SendCustomDialog($"Do you want to buy this item?", BuyResponse);
+                    player.Out.SendCustomDialog(LanguageMgr.GetTranslation(player.Client.Account.Language, "Consignment.BuyConfirm"), BuyResponse);
             }
             else if (player.TargetObject == this)
             {
                 player.TempProperties.SetProperty(CONSIGNMENT_BUY_ITEM, fromClientSlot);
-                player.Out.SendCustomDialog($"Do you want to buy this item?", BuyResponse);
+                player.Out.SendCustomDialog(LanguageMgr.GetTranslation(player.Client.Account.Language, "Consignment.BuyConfirm"), BuyResponse);
             }
             else
-                ChatUtil.SendErrorMessage(player, "I'm sorry, you need to be talking to a market explorer or consignment merchant in order to make a purchase.");
+                ChatUtil.SendErrorMessage(player, "Consignment.NeedMerchantOrExplorer", null);
         }
 
         private void BuyResponse(GamePlayer player, byte response)

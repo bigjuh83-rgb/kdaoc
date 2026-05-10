@@ -26,7 +26,7 @@ namespace DOL.GS.DailyQuest.Midgard
 
 		// Capture Goal
 		private const int MAX_CAPTURED = 1;
-		
+
 		private static GameNPC PazzMid = null; // Start NPC
 
 		private int _isCaptured = 0;
@@ -47,7 +47,7 @@ namespace DOL.GS.DailyQuest.Midgard
 		public ThidKeepCaptureMid(GamePlayer questingPlayer, DbQuest dbQuest) : base(questingPlayer, dbQuest)
 		{
 		}
-		
+
 		public override int Level
 		{
 			get
@@ -62,7 +62,7 @@ namespace DOL.GS.DailyQuest.Midgard
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -144,7 +144,7 @@ namespace DOL.GS.DailyQuest.Midgard
 
 		private static void TalkToHerou(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -162,17 +162,16 @@ namespace DOL.GS.DailyQuest.Midgard
 					switch (quest.Step)
 					{
 						case 1:
-							PazzMid.SayTo(player, "Find an enemy occupied keep and capture it. If you succeed come back for your reward.");
+							PazzMid.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.CaptureKeepObjective"));
 							break;
 						case 2:
-							PazzMid.SayTo(player, "Hello " + player.Name + ", did you [capture] a keep?");
+							PazzMid.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.CaptureKeepPrompt", player.Name));
 							break;
 					}
 				}
 				else
 				{
-					PazzMid.SayTo(player, "Look "+ player.Name +", I'll cut to the chase. " +
-					                    "We need the central keep back because I left some... contraband in the basement that I'd really like to reclaim before its found by the guards. Can you [help a skeleton] out?");
+					PazzMid.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.BGKeepIntro", player.Name));
 				}
 			}
 				// The player whispered to the NPC
@@ -184,7 +183,7 @@ namespace DOL.GS.DailyQuest.Midgard
 					switch (wArgs.Text)
 					{
 						case "help a skeleton":
-							player.Out.SendQuestSubscribeCommand(PazzMid, QuestMgr.GetIDForQuestType(typeof(ThidKeepCaptureMid)), "Will you help Pazz with "+questTitle+"");
+							player.Out.SendQuestSubscribeCommand(PazzMid, QuestMgr.GetIDForQuestType(typeof(ThidKeepCaptureMid)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcWithQuest", "Pazz", questTitle));
 							break;
 					}
 				}
@@ -193,20 +192,21 @@ namespace DOL.GS.DailyQuest.Midgard
 					switch (wArgs.Text)
 					{
 						case "capture":
+						case "점령":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -235,11 +235,11 @@ namespace DOL.GS.DailyQuest.Midgard
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -269,7 +269,7 @@ namespace DOL.GS.DailyQuest.Midgard
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for helping Midgard.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelpingRealm", "Midgard"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -277,7 +277,7 @@ namespace DOL.GS.DailyQuest.Midgard
 				if (!PazzMid.GiveQuest(typeof (ThidKeepCaptureMid), player, 1))
 					return;
 
-				PazzMid.SayTo(player, "Thank you "+player.Name+", you are a true soldier of Midgard!");
+				PazzMid.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.TrueSoldierRealm", player.Name, "Midgard"));
 
 			}
 		}
@@ -296,9 +296,9 @@ namespace DOL.GS.DailyQuest.Midgard
 				switch (Step)
 				{
 					case 1:
-						return "Go to the battlefield and conquer a keep. \nCaptured: Keep ("+ _isCaptured +" | "+MAX_CAPTURED+")";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.KeepCaptureDescription", _isCaptured, MAX_CAPTURED);
 					case 2:
-						return "Return to Pazz in Thidranki Portal Keep for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToPazz", "Thidranki Portal Keep");
 				}
 				return base.Description;
 			}
@@ -310,15 +310,15 @@ namespace DOL.GS.DailyQuest.Midgard
 
 			if (player?.IsDoingQuest(typeof(ThidKeepCaptureMid)) == null)
 				return;
-			
+
 			if (sender != m_questPlayer)
 				return;
 
 			if (Step != 1 || e != GamePlayerEvent.CapturedKeepsChanged) return;
 			_isCaptured = 1;
-			player.Out.SendMessage("[Daily] Captured Keep: ("+_isCaptured+" | "+MAX_CAPTURED+")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DailyCapturedKeep", _isCaptured, MAX_CAPTURED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (_isCaptured >= MAX_CAPTURED)
 			{
 				// FinishQuest or go back to Dean
@@ -326,21 +326,21 @@ namespace DOL.GS.DailyQuest.Midgard
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "ThidKeepCaptureMid";
 			set { ; }
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
-			
+
 		}
 
 		public override void SaveQuestParameters()
 		{
-			
+
 		}
 
 
@@ -357,7 +357,7 @@ namespace DOL.GS.DailyQuest.Midgard
 			}
 			else
 			{
-				m_questPlayer.Out.SendMessage("Clear one slot of your inventory for your reward", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ClearInventorySlots", 1), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 	}

@@ -1,6 +1,7 @@
 using DOL.GS;
 using DOL.GS.PacketHandler;
 using DOL.Database;
+using DOL.Language;
 
 namespace DOL.GS.Keeps
 {
@@ -30,7 +31,7 @@ namespace DOL.GS.Keeps
 			}
 			base.OnPlayerEnter(player);
 			if (Keep.Guild != null)
-				player.Out.SendMessage("Controlled by " + Keep.Guild.Name + ".", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Keep.ControlledBy", Keep.Guild.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		public void ChangeRadius(int newRadius)

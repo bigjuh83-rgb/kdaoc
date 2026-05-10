@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -41,7 +42,7 @@ namespace DOL.GS.Spells
 			int heal = (ad.Damage + ad.CriticalDamage)* Spell.LifeDrainReturn / 100; // % factor on all drains
 			if (m_caster.IsDiseased)
 			{
-				MessageToCaster("You are diseased!", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.YouAreDiseased"), eChatType.CT_SpellResisted);
 				heal >>= 1;
 			}
 
@@ -49,11 +50,11 @@ namespace DOL.GS.Spells
 
 			if (heal > 0)
 			{
-				MessageToCaster("You steal " + heal + " hit point" + (heal == 1 ? "." : "s."), eChatType.CT_Spell);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.StealLife", heal), eChatType.CT_Spell);
 			}
 			else
 			{
-				MessageToCaster("You cannot absorb any more life.", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.CannotAbsorbLife"), eChatType.CT_SpellResisted);
 			}
 		}
 
@@ -69,11 +70,11 @@ namespace DOL.GS.Spells
             renew = m_caster.ChangeEndurance(m_caster, eEnduranceChangeType.Spell, renew);
 			if (renew > 0)
 			{
-				MessageToCaster("You steal " + renew + " endurance.", eChatType.CT_Spell);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.StealEndurance", renew), eChatType.CT_Spell);
 			}
 			else
 			{
-				MessageToCaster("You cannot steal any more endurance.", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.CannotAbsorbEndurance"), eChatType.CT_SpellResisted);
 			}
 		}
 
@@ -89,11 +90,11 @@ namespace DOL.GS.Spells
             replenish = m_caster.ChangeMana(m_caster, eManaChangeType.Spell, replenish);
 			if (replenish > 0)
 			{
-				MessageToCaster("You steal " + replenish + " power.", eChatType.CT_Spell);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.StealPower", replenish), eChatType.CT_Spell);
 			}
 			else
 			{
-				MessageToCaster("Your power is already full.", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.PowerAlreadyFull"), eChatType.CT_SpellResisted);
 			}
 		}
 

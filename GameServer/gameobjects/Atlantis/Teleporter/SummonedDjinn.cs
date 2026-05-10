@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using DOL.Events;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -110,7 +111,7 @@ namespace DOL.GS
                     foreach (GamePlayer player in this.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
                         player.Out.SendModelChange(this, this.Model);
 
-                    Say("Greetings, great one.");
+                    Say(LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "SummonedDjinn.Say.Greeting"));
                     m_timer.Start(150, 1000, false, DjinnEvent.Vanishing);   // 2.5mins to hiding again.
                 }
 
@@ -122,7 +123,7 @@ namespace DOL.GS
 
                 lock (_lock)
                 {
-                    Say("My time here is done.");
+                    Say(LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "SummonedDjinn.Say.TimeDone"));
                     this.Model = InvisibleModel;
 
                     foreach (GamePlayer player in this.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))

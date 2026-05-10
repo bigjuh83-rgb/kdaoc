@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -54,7 +55,7 @@ namespace DOL.GS
                         }
 
                         List<eObjectType> weapons = GenerateWeaponsForClass(charclass, player);
-                        
+
                     }
                     else
                     {
@@ -100,7 +101,7 @@ namespace DOL.GS
                             item.AllowAdd = true;
                             DbInventoryItem invitem = GameInventoryItem.Create<DbItemUnique>(item);
                             client.Player.Inventory.AddItem(eInventorySlot.FirstEmptyBackpack, invitem);
-                            client.Player.Out.SendMessage("Generated: " + item.Name, eChatType.CT_System,
+                            client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "UniqueItemLootGenerator.Generated", item.Name), eChatType.CT_System,
                                 eChatLoc.CL_SystemWindow);
                         }
                     }
@@ -230,7 +231,7 @@ namespace DOL.GS
 
             return eObjectType.Cloth;
         }
-        
+
          private static List<eObjectType> GenerateWeaponsForClass(eCharacterClass charClass, GameLiving player) {
 			List<eObjectType> weapons = new List<eObjectType>();
 
@@ -355,7 +356,7 @@ namespace DOL.GS
 					GenerateWeapon(player, charClass, eObjectType.Blunt, eInventorySlot.LeftHandWeapon);
 					GenerateWeapon(player, charClass, eObjectType.Piercing, eInventorySlot.LeftHandWeapon);
 					GenerateWeapon(player, charClass, eObjectType.Fired, eInventorySlot.DistanceWeapon);
-					
+
 					break;
 
 				case eCharacterClass.Hero:
@@ -442,12 +443,12 @@ namespace DOL.GS
 				default:
 					weapons.Add(eObjectType.GenericWeapon);
 					break;
-					
+
             }
 
 			return weapons;
 		}
-         
+
          private static void GenerateWeapon(GameLiving player, eCharacterClass charClass, eObjectType type, eInventorySlot invSlot)
         {
 			//need to figure out shield size
@@ -479,7 +480,7 @@ namespace DOL.GS
 					DbInventoryItem invitem = GameInventoryItem.Create<DbItemUnique>(item);
 					player.Inventory.AddItem(eInventorySlot.FirstEmptyBackpack, invitem);
 				}
-				
+
 			}
 			else if (type == eObjectType.Flexible)
             {
@@ -519,7 +520,7 @@ namespace DOL.GS
 					//dmgTypeItem.CapUtility(81);
 					DbInventoryItem tempItem = GameInventoryItem.Create<DbItemUnique>(dmgTypeItem);
 					player.Inventory.AddItem(eInventorySlot.FirstEmptyBackpack, tempItem);
-				}	
+				}
 			} else
             {
 				GeneratedUniqueItem item = null;
@@ -530,7 +531,7 @@ namespace DOL.GS
 				//item.CapUtility(81);
 				DbInventoryItem invitem = GameInventoryItem.Create<DbItemUnique>(item);
 				player.Inventory.AddItem(eInventorySlot.FirstEmptyBackpack, invitem);
-			}	
+			}
 		}
 
         private static int GetShieldSizeFromClass(eCharacterClass charClass)

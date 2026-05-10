@@ -1,5 +1,6 @@
 ﻿using DOL.Database;
 using DOL.Events;
+using DOL.Language;
 using System;
 
 namespace DOL.GS.Scripts
@@ -29,9 +30,9 @@ namespace DOL.GS.Scripts
                     DbInventoryItem item = player.Inventory.GetFirstItemByID(wolfPeltCloak, eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack);
                     if(item != null)
                     {
-                        SayTo(player, "Thank you! Your service to the church will been noted!");
+                        SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.NamedMobs.BrotherDon.ThankYou"));
                         player.Inventory.RemoveItem(item);
-                        SayTo(player, "Well done! You've helped the children get over the harsh winter.");
+                        SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.NamedMobs.BrotherDon.WellDone"));
                         player.GainExperience(eXPSource.Quest, 200, true);
                         return;
                     }
@@ -54,10 +55,12 @@ namespace DOL.GS.Scripts
             switch (text)
             {
                 case "orphanage":
-                    SayTo(player, "Why yes, the little ones can get an awful chill during the long cold nights, so the orphanage could use a good [donation] of wolf cloaks. I would take any that you have.");
+							case "고아원":
+                    SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.NamedMobs.BrotherDon.Orphanage"));
                     break;
                 case "donation":
-                    SayTo(player, "Do you want to donate your cloak?");
+							case "기부":
+                    SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.NamedMobs.BrotherDon.Donation"));
                     break;
             }
             return base.WhisperReceive(source, text);
@@ -71,8 +74,8 @@ namespace DOL.GS.Scripts
             }
             if (player.Inventory.GetFirstItemByID(wolfPeltCloak, eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack) != null)
             {
-                SayTo(player, "Hail! You don't perhaps have one of those fine wolf pelt cloaks? If you no longer have need of it, we could greatly use it at the [orphanage].");
-            }            
+                SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.NamedMobs.BrotherDon.Interact"));
+            }
             return base.Interact(player);
         }
     }

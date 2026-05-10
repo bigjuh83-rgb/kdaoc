@@ -8,7 +8,7 @@ namespace DOL.GS.Effects
 {
     /// <summary>
     /// Minion Rescue
-    /// </summary> 
+    /// </summary>
     public class SearingPetEffect : TimedEffect
     {
         // Parameters
@@ -33,7 +33,7 @@ namespace DOL.GS.Effects
             // Build spell
             DbSpell tSpell = new DbSpell();
             tSpell.AllowAdd = false;
-            tSpell.Description = "Damage the target.";
+            tSpell.Description = DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "RealmAbility.RR5.SearingPet.Description");
             tSpell.Name = "PBAoE damage";
             tSpell.Target = eSpellTarget.ENEMY.ToString();
             tSpell.Radius = 0;

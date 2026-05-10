@@ -22,6 +22,12 @@ namespace DOL.GS.Scripts
         {
             const int radius = 650;
             Region region = WorldMgr.GetRegion(249);
+            if (region == null)
+            {
+                log.Error("Could not create Legion's Lair because region 249 was not found.");
+                return;
+            }
+
             legionArea = region.AddArea(new Area.Circle("Legion's Lair", 45000, 51700, 15468, radius));
             log.Debug("Legion's Lair created with radius " + radius + " at 45000 51700 15468");
             //legionArea.RegisterPlayerEnter(new DOLEventHandler(PlayerEnterLegionArea));
@@ -36,7 +42,9 @@ namespace DOL.GS.Scripts
         public static void ScriptUnloaded(DOLEvent e, object sender, EventArgs args)
         {
             //legionArea.UnRegisterPlayerEnter(new DOLEventHandler(PlayerEnterLegionArea));
-            WorldMgr.GetRegion(249).RemoveArea(legionArea);
+            Region region = WorldMgr.GetRegion(249);
+            if (region != null && legionArea != null)
+                region.RemoveArea(legionArea);
 
             //GameEventMgr.RemoveHandler(GameLivingEvent.Dying, new DOLEventHandler(PlayerKilledByLegion));
         }
@@ -161,7 +169,7 @@ namespace DOL.GS.Scripts
         {
             if (enemy != null && enemy is GamePlayer)
             {
-                BroadcastMessage("Legion says, \"Your soul give me new strength.\"");
+                BroadcastMessage(global::DOL.Language.LanguageMgr.GetTranslation(global::DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Legion.SoulStrength"));
                 Health += MaxHealth / 40; //heals if boss kill enemy player for 2.5% of his max health
             }
             base.EnemyKilled(enemy);
@@ -187,7 +195,7 @@ namespace DOL.GS.Scripts
                 {
                     foreach (GamePlayer nearbyPlayer in mob.GetPlayersInRadius(2500))
                     {
-                        nearbyPlayer.Out.SendMessage("Legion doesn't like enemies in his lair", eChatType.CT_Broadcast,
+                        nearbyPlayer.Out.SendMessage(global::DOL.Language.LanguageMgr.GetTranslation(nearbyPlayer.Client.Account.Language, "NamedMobs.Legion.EnemiesInLair"), eChatType.CT_Broadcast,
                             eChatLoc.CL_ChatWindow);
                         nearbyPlayer.Out.SendSpellEffectAnimation(mob, player, 5933, 0, false, 1);
                     }
@@ -237,7 +245,7 @@ namespace DOL.GS.Scripts
         {
             //possible AttackRange
             int distance = 1400;
-            
+
             if (source is GamePlayer || source is GameSummonedPet)
             {
                 if (!source.IsWithinRadius(this, distance)) //take no damage from source that is not in radius 1000
@@ -248,7 +256,7 @@ namespace DOL.GS.Scripts
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
                     if (truc != null)
-                        truc.Out.SendMessage(Name + " is not attackable from this range and is immune to your damage!", eChatType.CT_System,
+                        truc.Out.SendMessage(global::DOL.Language.LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Legion.NotAttackableFromRange", Name), eChatType.CT_System,
                             eChatLoc.CL_ChatWindow);
 
                     base.TakeDamage(source, damageType, 0, 0);
@@ -263,7 +271,7 @@ namespace DOL.GS.Scripts
         {
             int numPlayers = AwardLegionKillPoint();
             String message = String.Format("{0} has been slain by a force of {1} warriors!", Name, numPlayers);
-            NewsMgr.CreateNews(message, killer.Realm, eNewsType.PvE, true);
+            NewsMgr.CreateNews(message, killer?.Realm ?? eRealm.None, eNewsType.PvE, true);
 
             if (Properties.GUILD_MERIT_ON_LEGION_KILL <= 0) return;
             foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
@@ -298,7 +306,7 @@ namespace DOL.AI.Brain
     public class LegionBrain : EpicBossBrain
     {
         private static readonly Logging.Logger log = Logging.LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);
-        
+
         public LegionBrain()
             : base()
         {
@@ -555,7 +563,7 @@ namespace DOL.AI.Brain
 
                 if (Util.Chance(100))
                 {
-                    if (target.effectListComponent.ContainsEffectForEffectType(eEffect.Bladeturn) && target != null && target.IsAlive)
+                    if (target != null && target.IsAlive && target.effectListComponent.ContainsEffectForEffectType(eEffect.Bladeturn))
                     {
                         ECSGameEffect effect = EffectListService.GetEffectOnTarget(target, eEffect.Bladeturn);
 
@@ -567,7 +575,7 @@ namespace DOL.AI.Brain
                             if (target is GamePlayer player)
                             {
                                 if (player.IsAlive)
-                                    player.Out.SendMessage("Legion consume your bladeturn effect!", eChatType.CT_Say, eChatLoc.CL_ChatWindow);
+                                    player.Out.SendMessage(global::DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Legion.ConsumesBladeturn"), eChatType.CT_Say, eChatLoc.CL_ChatWindow);
                             }
                         }
                     }
@@ -580,7 +588,7 @@ namespace DOL.AI.Brain
             {
                 if (!Body.IsCasting)
                 {
-                    BroadcastMessage("Legion unleashing massive soul consumption blast.");
+                    BroadcastMessage(global::DOL.Language.LanguageMgr.GetTranslation(global::DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Legion.SoulConsumptionBlast"));
                     Body.CastSpell(LegionLifetapAoe, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
                 }
             }

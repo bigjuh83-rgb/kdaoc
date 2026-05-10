@@ -2,6 +2,7 @@
 using System.Threading;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 using DOL.Logging;
 
 namespace DOL.GS
@@ -53,7 +54,7 @@ namespace DOL.GS
 
                 if (ServerProperties.Properties.CONSIGNMENT_USE_BP)
                 {
-                    player.Out.SendMessage($"You withdraw {totalMoney} BountyPoints from your Merchant.", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Consignment.WithdrawBountyPoints", totalMoney), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
                     player.BountyPoints += totalMoney;
                     player.Out.SendUpdatePoints();
                 }
@@ -199,7 +200,7 @@ namespace DOL.GS
 
                                 if (toItem != null)
                                 {
-                                    player.Client.Out.SendMessage("You can only move an item to an empty slot!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                    player.Client.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Consignment.Move.EmptySlotOnly"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                     return false;
                                 }
 
@@ -217,7 +218,7 @@ namespace DOL.GS
                                 }
                                 else
                                 {
-                                    player.Client.Out.SendMessage("You can't buy items from yourself!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                    player.Client.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Consignment.Buy.CantBuyFromSelf"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                     return false;
                                 }
                             }
@@ -234,7 +235,7 @@ namespace DOL.GS
                         {
                             if (merchant.TryGetItem((int) toClientSlot, out DbInventoryItem _))
                             {
-                                player.Client.Out.SendMessage("You can only move an item to an empty slot!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                player.Client.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Consignment.Move.EmptySlotOnly"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                 return false;
                             }
 
@@ -271,7 +272,7 @@ namespace DOL.GS
 
                     if (fromClientSlot is eInventorySlot.Invalid || !merchant.TryGetItem((int)fromClientSlot, out DbInventoryItem item))
                     {
-                        ChatUtil.SendErrorMessage(player, "I can't find the item you want to purchase!");
+                        ChatUtil.SendErrorMessage(player, "Consignment.ItemToPurchaseNotFound", null);
 
                         if (log.IsErrorEnabled)
                             log.Error($"{player.Name}:{player.Client.Account} tried to purchase an item from slot {(int) fromClientSlot} for CM on lot {merchant.HouseNumber} and the item does not exist.");
@@ -291,7 +292,7 @@ namespace DOL.GS
                     {
                         if (purchasePrice <= 0)
                         {
-                            ChatUtil.SendErrorMessage(player, "This item can't be purchased!");
+                            ChatUtil.SendErrorMessage(player, "Consignment.ItemCannotBePurchased", null);
                             return;
                         }
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using DOL.GS.Housing;
+using DOL.Language;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -54,7 +55,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 			if (menu.TryGetValue(menuid, out var type))
 				OpenWindow(client, house, type);
 			else
-				client.Out.SendMessage("Invalid menu id " + menuid + " (hookpoint?).", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Player.Housing.InvalidMenuId", menuid), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void OpenWindow(GameClient client, House house, eMerchantWindowType type)

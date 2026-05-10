@@ -166,7 +166,7 @@ namespace DOL.GS.Keeps
                             keeplog.CombatTime = (int)((Component.Keep.CurrentRegion.Time - Component.Keep.StartCombatTick) / 1000 / 60);
                         }
 
-                        keeplog.CapturedBy = GlobalConstants.RealmToName(killer.Realm);
+                        keeplog.CapturedBy = GlobalConstants.RealmToName(killer?.Realm ?? eRealm.None);
 
                         string listRPGainers = string.Empty;
 
@@ -214,12 +214,12 @@ namespace DOL.GS.Keeps
 
             if (InCombat || Component.Keep.InCombat)
             {
-                player.Out.SendMessage("You can't talk to the lord while under siege.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "KeepLord.CantTalkUnderSiege"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
 
             if (GameServer.ServerRules.IsAllowedToClaim(player, CurrentRegion))
-                player.Out.SendMessage("Would you like to [Claim Keep] now? Or maybe [Release Keep]?", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "KeepLord.ClaimOrReleasePrompt"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 
             return true;
         }
@@ -265,10 +265,10 @@ namespace DOL.GS.Keeps
 
             if ((attacker != null && IsWithinRadius(attacker, distance) == false) || IsWithinRadius(source, distance) == false)
             {
-                if (attacker != null)
-                    attacker.Out.SendMessage(this.Name + " is immune to damage from this range", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
-                return;
-            }
+				if (attacker != null)
+					attacker.Out.SendMessage(LanguageMgr.GetTranslation(attacker.Client.Account.Language, "Keep.GuardLord.ImmuneRange", Name), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+				return;
+			}
 
             if (attacker != null && Component != null && Component.Keep != null && IsAlive && !GameServer.ServerRules.IsSameRealm(this, attacker, true))
             {
@@ -296,15 +296,17 @@ namespace DOL.GS.Keeps
             switch (str)
             {
                 case "Claim Keep":
+                case "킵 점령":
                     {
                         if (PlayerMgr.IsAllowedToInteract(player, Component.Keep, eInteractType.Claim))
                         {
-                            player.Out.SendDialogBox(eDialogCode.KeepClaim, (ushort)player.ObjectID, 0, 0, 0, eDialogType.YesNo, false, "Do you wish to claim\n" + Component.Keep.Name + "?");
+                            player.Out.SendDialogBox(eDialogCode.KeepClaim, (ushort)player.ObjectID, 0, 0, 0, eDialogType.YesNo, false, LanguageMgr.GetTranslation(player.Client.Account.Language, "Keep.Lord.ClaimDialog", Component.Keep.Name));
                             return true;
                         }
                         break;
                     }
                 case "Release Keep":
+                case "킵 해제":
                     {
                         if (PlayerMgr.IsAllowedToInteract(player, Component.Keep, eInteractType.Release))
                         {

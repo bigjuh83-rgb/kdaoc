@@ -11,4 +11,5 @@ GuardCaster.SkinsHardens:			The {0}'s skins hardens substantially.
 
 ## Kill Spam
 GameKeepGuard.GuardSpam.Killed:			{0} has been killed in {1} with {2} enemy player(s) in the area!
+GameKeepGuard.GuardRelicSpam.Killed:	{1} has been killed at {0} with {2} enemy player(s) in the area!
 

@@ -1,0 +1,14 @@
+﻿# Keep Guards
+
+## Examine
+GameKeepGuard.GetExamineMessages.YouTarget:	[{0}]을(를) 대상으로 선택했습니다
+GameKeepGuard.GetExamineMessages.YouExamine:	{0}을(를) 살펴봅니다. {1}은(는) {2}이며 렐름 가드입니다.
+GameKeepGuard.GetExamineMessages.Balancing:	{0}은(는) 성 밸런싱 레벨({1})을 가지고 있습니다
+GameKeepGuard.GetExamineMessages.Upgraded:	{0}은(는) 강화 장비({1})를 갖추고 있습니다.
+
+## Guard Caster
+GuardCaster.SkinsHardens:			{0}의 피부가 크게 단단해집니다.
+
+## Kill Spam
+GameKeepGuard.GuardSpam.Killed:			{1}에서 {0}이(가) 처치되었습니다. 지역 내 적 플레이어: {2}명!
+GameKeepGuard.GuardRelicSpam.Killed:	{0}에서 {1}이(가) 처치되었습니다. 지역 내 적 플레이어: {2}명!

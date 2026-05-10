@@ -2,6 +2,7 @@ using System.Reflection;
 using DOL.GS.PacketHandler;
 using DOL.GS.Effects;
 using DOL.Database;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -19,12 +20,12 @@ namespace DOL.GS.RealmAbilities
 
 			if (playerGroup == null)
 			{
-				player.Out.SendMessage("You must be in a group to use this ability!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Skill.Ability.CannotUseMustBeInGroup"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			int poolValue = 0;
-			
+
 			if(ServerProperties.Properties.USE_NEW_ACTIVES_RAS_SCALING)
 			{
 	            switch (Level)
@@ -34,7 +35,7 @@ namespace DOL.GS.RealmAbilities
 	                case 3: poolValue = 2000; break;
 	                case 4: poolValue = 2500; break;
 	                case 5: poolValue = 3000; break;
-	            }				
+	            }
 			}
 			else
 			{
@@ -43,7 +44,7 @@ namespace DOL.GS.RealmAbilities
 	                case 1: poolValue = 1000; break;
 	                case 2: poolValue = 2000; break;
 	                case 3: poolValue = 3000; break;
-	            }				
+	            }
 			}
 
 
@@ -52,7 +53,7 @@ namespace DOL.GS.RealmAbilities
 				DivineInterventionEffect DIEffect = groupMember.EffectList.GetOfType<DivineInterventionEffect>();
 				if (DIEffect != null)
 				{
-					player.Out.SendMessage("You are already protected by a pool of healing", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.DivineIntervention.AlreadyProtected"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 					return;
 				}
 			}

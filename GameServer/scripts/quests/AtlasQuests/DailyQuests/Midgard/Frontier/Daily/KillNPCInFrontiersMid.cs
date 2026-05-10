@@ -25,7 +25,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 		// Kill Goal
 		protected const int MAX_KILLED = 25;
-		
+
 		private static GameNPC Herou = null; // Start NPC
 
 		private int FrontierMobsKilled = 0;
@@ -46,7 +46,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 		public KillNPCInFrontiersMid(GamePlayer questingPlayer, DbQuest dbQuest) : base(questingPlayer, dbQuest)
 		{
 		}
-		
+
 		public override int Level
 		{
 			get
@@ -61,7 +61,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -139,7 +139,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 		protected static void TalkToHerou(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -157,18 +157,16 @@ namespace DOL.GS.DailyQuest.Hibernia
 					switch (quest.Step)
 					{
 						case 1:
-							Herou.SayTo(player, "Kill creatures in any RvR zone to help us clear more room for the armies to maneuver around.");
+							Herou.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.RvRMonsterObjective"));
 							break;
 						case 2:
-							Herou.SayTo(player, "Hello " + player.Name + ", did you [tidy the realm]?");
+							Herou.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[tidy the realm]"));
 							break;
 					}
 				}
 				else
 				{
-					Herou.SayTo(player, "Hello "+ player.Name +", I am Herou, Fen\'s friend. I serve the realm and ensure its borders are always protected. "+
-					                    "I heard you are strong. Do you think you're strong enough to help me with some trouble we've been having? \n\n"+
-					                    "I need an adventurer to help me [clear the frontiers].");
+					Herou.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.RvRMonsterIntro", player.Name, "Herou"));
 				}
 			}
 				// The player whispered to the NPC
@@ -180,7 +178,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 					switch (wArgs.Text)
 					{
 						case "clear the frontiers":
-							player.Out.SendQuestSubscribeCommand(Herou, QuestMgr.GetIDForQuestType(typeof(KillNPCInFrontiersMid)), "Will you help Herou "+questTitle+"");
+							player.Out.SendQuestSubscribeCommand(Herou, QuestMgr.GetIDForQuestType(typeof(KillNPCInFrontiersMid)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "Herou", questTitle));
 							break;
 					}
 				}
@@ -191,18 +189,18 @@ namespace DOL.GS.DailyQuest.Hibernia
 						case "tidy the realm":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -221,7 +219,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 			return true;
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			FrontierMobsKilled = GetCustomProperty(QuestPropertyKey) != null ? int.Parse(GetCustomProperty(QuestPropertyKey)) : 0;
@@ -242,11 +240,11 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -276,7 +274,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for helping our realm.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.RvRMonsterThanks"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -284,7 +282,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 				if (!Herou.GiveQuest(typeof (KillNPCInFrontiersMid), player, 1))
 					return;
 
-				Herou.SayTo(player, "Killing creatures in any RvR zone will work. Thanks for your service!");
+				Herou.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.RvRMonsterReminder"));
 
 			}
 		}
@@ -303,9 +301,9 @@ namespace DOL.GS.DailyQuest.Hibernia
 				switch (Step)
 				{
 					case 1:
-						return "Kill yellow con or higher mobs in any RvR zone. \nKilled: ("+ FrontierMobsKilled +" | "+MAX_KILLED+")";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.RvRMonsterDescription", FrontierMobsKilled, MAX_KILLED);
 					case 2:
-						return "Return to Herou in Svasud Faste for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "Herou", "Svasud Faste");
 				}
 				return base.Description;
 			}
@@ -314,26 +312,26 @@ namespace DOL.GS.DailyQuest.Hibernia
 		public override void Notify(DOLEvent e, object sender, EventArgs args)
 		{
 			GamePlayer player = sender as GamePlayer;
-			
+
 			if (player?.IsDoingQuest(typeof(KillNPCInFrontiersMid)) == null)
 				return;
-			
+
 			if (sender != m_questPlayer)
 				return;
 
 			if (e != GameLivingEvent.EnemyKilled || Step != 1) return;
-			
+
 			EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
-			
+
 			if (gArgs.Target is GameSummonedPet)
 				return;
 
 			if (!(player.GetConLevel(gArgs.Target) > -1) || !gArgs.Target.CurrentZone.IsRvR ||
 			    !player.CurrentZone.IsRvR) return;
 			FrontierMobsKilled++;
-			player.Out.SendMessage("[Daily] Monster Killed: (" + FrontierMobsKilled + " | " + MAX_KILLED + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DailyMonsterKilled", FrontierMobsKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (FrontierMobsKilled >= MAX_KILLED)
 			{
 				// FinishQuest or go back to npc
@@ -341,7 +339,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "KillNPCInFrontiersMid";

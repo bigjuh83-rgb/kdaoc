@@ -163,7 +163,7 @@ namespace DOL.AI.Brain
 		}
         public override void OnAttackedByEnemy(AttackData ad)
         {
-			if(ad.Damage > 0 && ad != null)
+			if(ad != null && ad.Damage > 0)
             {
 				if(Util.Chance(15))//here edit to change teleport chance to happen
 					PickRandomTarget();//start teleport here

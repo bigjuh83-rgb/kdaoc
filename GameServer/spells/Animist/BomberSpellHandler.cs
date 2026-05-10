@@ -1,5 +1,6 @@
 using DOL.AI.Brain;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -17,7 +18,7 @@ namespace DOL.GS.Spells
         {
             if (Spell.SubSpellID == 0)
             {
-                MessageToCaster("SPELL NOT IMPLEMENTED: CONTACT GM", eChatType.CT_Important);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "BomberSpellHandler.NotImplemented"), eChatType.CT_Important);
                 return false;
             }
 

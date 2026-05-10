@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -28,7 +28,7 @@
 *Done:
 *Bonuses to epic items
 *
-*ToDo:   
+*ToDo:
 *   Find Helm ModelID for epics..
 *   checks for all other epics done
 */
@@ -52,6 +52,14 @@ namespace DOL.GS.Quests.Midgard
 		protected const string questTitle = "An End to the Daggers";
 		protected const int minimumLevel = 50;
 		protected const int maximumLevel = 50;
+
+		private static string L(GamePlayer player, string key, params object[] args)
+		{
+			string language = player != null && player.Client != null && player.Client.Account != null
+				? player.Client.Account.Language
+				: ServerProperties.Properties.SERV_LANGUAGE;
+			return DOL.Language.LanguageMgr.GetTranslation(language, key, args);
+		}
 
 		private static GameNPC Lynnleigh = null; // Start NPC
 		private static Ydenia Ydenia = null; // Mob to kill
@@ -100,7 +108,7 @@ namespace DOL.GS.Quests.Midgard
         private static DbItemTemplate MaulerMidEpicGloves = null;
         private static DbItemTemplate MaulerMidEpicVest = null;
         private static DbItemTemplate MaulerMidEpicLegs = null;
-        private static DbItemTemplate MaulerMidEpicArms = null; 
+        private static DbItemTemplate MaulerMidEpicArms = null;
 
 
 		// Constructors
@@ -125,7 +133,7 @@ namespace DOL.GS.Quests.Midgard
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -1100,7 +1108,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 			}
 //end item
-			//Valhalla Touched Coif 
+			//Valhalla Touched Coif
 			SkaldEpicHelm = GameServer.Database.FindObjectByKey<DbItemTemplate>("SkaldEpicHelm");
 			if (SkaldEpicHelm == null)
 			{
@@ -1140,7 +1148,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 			}
 //end item
-			//Valhalla Touched Gloves 
+			//Valhalla Touched Gloves
 			SkaldEpicGloves = GameServer.Database.FindObjectByKey<DbItemTemplate>("SkaldEpicGloves");
 			if (SkaldEpicGloves == null)
 			{
@@ -1183,7 +1191,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Valhalla Touched Hauberk 
+			//Valhalla Touched Hauberk
 			SkaldEpicVest = GameServer.Database.FindObjectByKey<DbItemTemplate>("SkaldEpicVest");
 			if (SkaldEpicVest == null)
 			{
@@ -1225,7 +1233,7 @@ namespace DOL.GS.Quests.Midgard
 					GameServer.Database.AddObject(SkaldEpicVest);
 				}
 			}
-			//Valhalla Touched Legs 
+			//Valhalla Touched Legs
 			SkaldEpicLegs = GameServer.Database.FindObjectByKey<DbItemTemplate>("SkaldEpicLegs");
 			if (SkaldEpicLegs == null)
 			{
@@ -1267,7 +1275,7 @@ namespace DOL.GS.Quests.Midgard
 					GameServer.Database.AddObject(SkaldEpicLegs);
 				}
 			}
-			//Valhalla Touched Sleeves 
+			//Valhalla Touched Sleeves
 			SkaldEpicArms = GameServer.Database.FindObjectByKey<DbItemTemplate>("SkaldEpicArms");
 			if (SkaldEpicArms == null)
 			{
@@ -1309,7 +1317,7 @@ namespace DOL.GS.Quests.Midgard
 					GameServer.Database.AddObject(SkaldEpicArms);
 				}
 			}
-			//Subterranean Boots 
+			//Subterranean Boots
 			SavageEpicBoots = GameServer.Database.FindObjectByKey<DbItemTemplate>("SavageEpicBoots");
 			if (SavageEpicBoots == null)
 			{
@@ -1351,7 +1359,7 @@ namespace DOL.GS.Quests.Midgard
 					GameServer.Database.AddObject(SavageEpicBoots);
 				}
 			}
-			//Subterranean Coif 
+			//Subterranean Coif
 			SavageEpicHelm = GameServer.Database.FindObjectByKey<DbItemTemplate>("SavageEpicHelm");
 			if (SavageEpicHelm == null)
 			{
@@ -1393,7 +1401,7 @@ namespace DOL.GS.Quests.Midgard
 					GameServer.Database.AddObject(SavageEpicHelm);
 				}
 			}
-			//Subterranean Gloves 
+			//Subterranean Gloves
 			SavageEpicGloves = GameServer.Database.FindObjectByKey<DbItemTemplate>("SavageEpicGloves");
 			if (SavageEpicGloves == null)
 			{
@@ -1435,7 +1443,7 @@ namespace DOL.GS.Quests.Midgard
 					GameServer.Database.AddObject(SavageEpicGloves);
 				}
 			}
-			//Subterranean Hauberk 
+			//Subterranean Hauberk
 			SavageEpicVest = GameServer.Database.FindObjectByKey<DbItemTemplate>("SavageEpicVest");
 			if (SavageEpicVest == null)
 			{
@@ -1477,7 +1485,7 @@ namespace DOL.GS.Quests.Midgard
 					GameServer.Database.AddObject(SavageEpicVest);
 				}
 			}
-			//Subterranean Legs 
+			//Subterranean Legs
 			SavageEpicLegs = GameServer.Database.FindObjectByKey<DbItemTemplate>("SavageEpicLegs");
 			if (SavageEpicLegs == null)
 			{
@@ -1519,7 +1527,7 @@ namespace DOL.GS.Quests.Midgard
 					GameServer.Database.AddObject(SavageEpicLegs);
 				}
 			}
-			//Subterranean Sleeves 
+			//Subterranean Sleeves
 			SavageEpicArms = GameServer.Database.FindObjectByKey<DbItemTemplate>("SavageEpicArms");
 			if (SavageEpicArms == null)
 			{
@@ -1908,14 +1916,14 @@ namespace DOL.GS.Quests.Midgard
 
 			GameEventMgr.RemoveHandler(Elizabeth, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToElizabeth));
 			GameEventMgr.RemoveHandler(Elizabeth, GameLivingEvent.Interact, new DOLEventHandler(TalkToElizabeth));
-		
+
 			/* Now we remove to Lynnleigh the possibility to give this quest to players */
 			Lynnleigh.RemoveQuestToGive(typeof (Viking_50));
 		}
 
 		protected static void TalkToLynnleigh(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -1928,7 +1936,7 @@ namespace DOL.GS.Quests.Midgard
 				(MaulerMidEpicArms == null || MaulerMidEpicBoots == null || MaulerMidEpicGloves == null ||
 				MaulerMidEpicHelm == null || MaulerMidEpicLegs == null || MaulerMidEpicVest == null))
 			{
-				Elizabeth.SayTo(player, "This quest is not available to Maulers yet.");
+				Elizabeth.SayTo(player, L(player, "Quest.Epic.Viking50.MaulerUnavailable"));
 				return;
 			}
 
@@ -1942,22 +1950,22 @@ namespace DOL.GS.Quests.Midgard
 					switch (quest.Step)
 					{
 						case 1:
-							Lynnleigh.SayTo(player, "Seek out Ydenia in Vanern Swamp and kill her. You can find her on an island in the swamp.");
+							Lynnleigh.SayTo(player, L(player, "Quest.Epic.Viking50.Step1Reminder"));
 							break;
 						case 2:
-							Lynnleigh.SayTo(player, "Hello Adventurer, did you [get something] for me?");
+							Lynnleigh.SayTo(player, L(player, "Quest.Epic.Viking50.Step2Reminder"));
 							break;
 						case 3:
-							Lynnleigh.SayTo(player, $"Hey {player.Name}, please visit Elizabeth in Mularn. You can find her in the Healer House. Bring her the [sealed pouch]!");
+							Lynnleigh.SayTo(player, L(player, "Quest.Epic.Viking50.Step3Reminder", player.Name));
 							break;
 						case 4:
-							Lynnleigh.SayTo(player, $"Hey {player.Name}, have you visited Elizabeth in Mularn yet?");
+							Lynnleigh.SayTo(player, L(player, "Quest.Epic.Viking50.Step4Reminder", player.Name));
 							break;
 					}
 				}
 				else
 				{
-					Lynnleigh.SayTo(player, "Ah, this reveals exactly where Jango and his deserters took Ydenia to dispose of him. He also has a note here about how strong Ydenia really was. That [worries me].");
+					Lynnleigh.SayTo(player, L(player, "Quest.Epic.Viking50.Intro"));
 				}
 			}
 				// The player whispered to the NPC
@@ -1970,10 +1978,12 @@ namespace DOL.GS.Quests.Midgard
 					switch (wArgs.Text)
 					{
 						case "worries me":
-							Lynnleigh.SayTo(player, "Yes, it worries me, but I think that you are ready to [face Ydenia] and her minions.");
+						case "걱정":
+							Lynnleigh.SayTo(player, L(player, "Quest.Epic.Viking50.WorriesMe"));
 							break;
 						case "face Ydenia":
-							player.Out.SendQuestSubscribeCommand(Lynnleigh, QuestMgr.GetIDForQuestType(typeof(Viking_50)), "Will you face Ydenia [Viking Level 50 Epic]?");
+						case "이드니아와 맞서기":
+							player.Out.SendQuestSubscribeCommand(Lynnleigh, QuestMgr.GetIDForQuestType(typeof(Viking_50)), L(player, "Quest.Epic.Viking50.Subscribe"));
 							break;
 					}
 				}
@@ -1982,23 +1992,25 @@ namespace DOL.GS.Quests.Midgard
 					switch (wArgs.Text)
 					{
 						case "get something":
+						case "줄 물건":
 							if (quest.Step == 2)
 							{
 								RemoveItem(player, tome_enchantments);
 								quest.Step = 3;
-								Lynnleigh.SayTo(player, "Great! Please visit Elizabeth in Mularn and bring her the [sealed pouch].");
+								Lynnleigh.SayTo(player, L(player, "Quest.Epic.Viking50.VisitElizabeth"));
 							}
 							break;
 						case "sealed pouch":
+						case "봉인된 주머니":
 							if (quest.Step == 3)
 							{
-								Lynnleigh.SayTo(player, "You can find Elizabeth in an Healer House in Mularn.");
+								Lynnleigh.SayTo(player, L(player, "Quest.Epic.Viking50.FindElizabeth"));
 								GiveItem(player, sealed_pouch);
 								quest.Step = 4;
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
@@ -2010,14 +2022,14 @@ namespace DOL.GS.Quests.Midgard
 					if (rArgs.Item.Id_nb == tome_enchantments.Id_nb && quest.Step == 2)
 					{
 						quest.Step = 3;
-						Lynnleigh.SayTo(player, "Take this [sealed pouch] to Elizabeth in Mularn for your reward!");
+						Lynnleigh.SayTo(player, L(player, "Quest.Epic.Viking50.TakePouchToken"));
 					}
 			}
 		}
 
 		protected static void TalkToElizabeth(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -2036,12 +2048,12 @@ namespace DOL.GS.Quests.Midgard
 					{
 						case 3:
 						{
-							Elizabeth.SayTo(player, "Hello, Lynnleigh sent you with a [sealed pouch], right?");
+							Elizabeth.SayTo(player, L(player, "Quest.Epic.Viking50.ElizabethPouch"));
 							break;
 						}
                         case 4:
                             {
-                                Elizabeth.SayTo(player, "Greetings, there are six parts to your reward, so make sure you have room for them. Just let me know when you are ready, and then you can [take them] with our thanks!");
+                                Elizabeth.SayTo(player, L(player, "Quest.Epic.Viking50.RewardReadyGreeting"));
                                 break;
                             }
 					}
@@ -2057,25 +2069,27 @@ namespace DOL.GS.Quests.Midgard
 					switch (wArgs.Text)
 					{
 						case "sealed pouch":
+						case "봉인된 주머니":
 							if (quest.Step == 3)
 							{
 								RemoveItem(player, sealed_pouch);
 								quest.Step = 4;
-								Elizabeth.SayTo(player, "There are six parts to your reward, so make sure you have room for them. Just let me know when you are ready, and then you can [take them] with our thanks!");
+								Elizabeth.SayTo(player, L(player, "Quest.Epic.Viking50.RewardReady"));
 							}
-							
+
 							break;
 						case "take them":
+						case "받기":
 							if (quest.Step == 4)
 							{
 								if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 									    eInventorySlot.LastBackpack))
 								{
-									Elizabeth.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+									Elizabeth.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 									quest.FinishQuest();
 								}
 								else
-									player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+									player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 							}
 							break;
 					}
@@ -2090,11 +2104,11 @@ namespace DOL.GS.Quests.Midgard
 						if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 							    eInventorySlot.LastBackpack))
 						{
-							Elizabeth.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+							Elizabeth.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 							quest.FinishQuest();
 						}
 						else
-							player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					}
 			}
 		}
@@ -2141,11 +2155,11 @@ namespace DOL.GS.Quests.Midgard
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, no go out there and finish your work!");
+				SendSystemMessage(player, L(player, "Quest.Epic.Viking50.AbortDecline"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -2175,7 +2189,7 @@ namespace DOL.GS.Quests.Midgard
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Our God forgives your laziness, just look out for stray lightning bolts.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(L(player, "Quest.Epic.Viking50.Decline"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -2183,14 +2197,14 @@ namespace DOL.GS.Quests.Midgard
 				if (!Lynnleigh.GiveQuest(typeof (Viking_50), player, 1))
 					return;
 
-				Lynnleigh.SayTo(player, "Yes, you must face and defeat him! There is a note scrawled in the corner of the map that even in death Ydenia is strong. He has gathered followers to protect him in his spirit state and they will come to his aid if he is attacked. Even though you have improved your skills quite a bit, I would highley recommed taking some friends with you to face Ydenia. It is imperative that you defeat him and obtain the totem he holds if I am to end the spell. According to the map you can find Ydenia in Raumarik. Head to the river in Raumarik and go north. When you reach the end of it, go northwest to the next river. Cross the river and head west. Follow the snowline until you reach a group of trees. That is where you will find Ydenia and his followers. Return to me when you have the totem. May all the gods be with you.");
+				Lynnleigh.SayTo(player, L(player, "Quest.Epic.Viking50.FaceYdeniaDetail"));
 			}
 		}
 
 		//Set quest name
 		public override string Name
 		{
-			get { return "An End to the Daggers (level 50 Viking epic)"; }
+			get { return L(m_questPlayer, "Quest.Epic.Viking50.Name"); }
 		}
 
 		// Define Steps
@@ -2201,13 +2215,13 @@ namespace DOL.GS.Quests.Midgard
 				switch (Step)
 				{
 					case 1:
-						return "Seek out Ydenia in Vanern Swamp and kill her!";
+						return L(m_questPlayer, "Quest.Epic.Viking50.Description1");
 					case 2:
-						return "Return to Lynnleigh and give her Tome of Enchantments!";
+						return L(m_questPlayer, "Quest.Epic.Viking50.Description2");
 					case 3:
-						return "Take the Sealed Pouch to Elizabeth in Mularn!";
+						return L(m_questPlayer, "Quest.Epic.Viking50.Description3");
 					case 4:
-						return "Speak with Elizabeth for your reward!";
+						return L(m_questPlayer, "Quest.Epic.Viking50.Description4");
 				}
 				return base.Description;
 			}
@@ -2222,7 +2236,7 @@ namespace DOL.GS.Quests.Midgard
 
 			if (sender != m_questPlayer)
 				return;
-			
+
 			if (Step == 1 && e == GameLivingEvent.EnemyKilled)
 			{
 				EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
@@ -2231,7 +2245,7 @@ namespace DOL.GS.Quests.Midgard
 				{
 					Step = 2;
 					GiveItem(player, tome_enchantments);
-					m_questPlayer.Out.SendMessage("Ydenia drops the Tome of Enchantments and you pick it up!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					m_questPlayer.Out.SendMessage(L(m_questPlayer, "Quest.Epic.Viking50.CollectTome"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 			}
 			if (Step == 2 && e == GamePlayerEvent.GiveItem)
@@ -2240,7 +2254,7 @@ namespace DOL.GS.Quests.Midgard
 				if (gArgs.Target.Name == Lynnleigh.Name && gArgs.Item.Id_nb == tome_enchantments.Id_nb)
 				{
 					RemoveItem(Lynnleigh, player, tome_enchantments);
-					Lynnleigh.SayTo(player, "Take this sealed pouch to Elizabeth in Mularn for your reward!");
+					Lynnleigh.SayTo(player, L(player, "Quest.Epic.Viking50.TakePouch"));
 					GiveItem(Lynnleigh, player, sealed_pouch);
 					Step = 3;
 				}
@@ -2334,7 +2348,7 @@ namespace DOL.GS.Quests.Midgard
 			}
 
 			m_questPlayer.GainExperience(eXPSource.Quest, 1937768448, true);
-			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");		
+			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");
 		}
 	}
 }

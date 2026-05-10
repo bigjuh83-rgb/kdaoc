@@ -75,7 +75,7 @@ namespace DOL.GS
             if (base.FinalizeMeleeAttack())
             {
                 if (_playerOwner.UseDetailedCombatLog)
-                    _playerOwner.Out.SendMessage($"Attack Speed: {_interval / 1000.0}s", eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
+                    _playerOwner.Out.SendMessage(LanguageMgr.GetTranslation(_playerOwner.Client.Account.Language, "GamePlayer.Attack.Detailed.AttackSpeed", _interval / 1000.0), eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
 
                 StyleComponent.NextCombatStyle = null;
                 StyleComponent.NextCombatBackupStyle = null;

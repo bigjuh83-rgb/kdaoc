@@ -1,3 +1,5 @@
+using DOL.Language;
+
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	/// <summary>
@@ -15,22 +17,22 @@ namespace DOL.GS.PacketHandler.Client.v168
 				return;
 			if (client.Player.IsStealthed)
 			{
-				client.Out.SendMessage("You can't control a siege weapon while hidden!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Siege.Control.Hidden"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			if (client.Player.IsSitting)
 			{
-				client.Out.SendMessage("You can't fire a siege weapon while sitting!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Siege.Fire.Sitting"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			if (client.Player.IsIncapacitated)
 			{
-				client.Out.SendMessage("You can't control a siege weapon now!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Siege.Control.CantNow"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
             if( !client.Player.IsWithinRadius( client.Player.SiegeWeapon, client.Player.SiegeWeapon.SIEGE_WEAPON_CONTROLE_DISTANCE ) )
 			{
-				client.Out.SendMessage(client.Player.SiegeWeapon.GetName(0, true) + " is too far away for you to control!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Siege.Control.WeaponTooFar", client.Player.SiegeWeapon.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -48,7 +50,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 				case 10: { client.Player.SiegeWeapon.Fire(); } break;//swing
 				default:
 					{
-						client.Player.Out.SendMessage("Unhandled action ID: " + action, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Siege.Action.Unhandled", action), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						break;
 					}
 			}

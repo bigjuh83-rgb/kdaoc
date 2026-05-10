@@ -1,6 +1,7 @@
 
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -11,7 +12,7 @@ namespace DOL.GS
 	{
 
 		private const string StatsResetKey = "StatsReset";
-		
+
 		/// <summary>
 		/// Constructor
 		/// </summary>
@@ -30,17 +31,17 @@ namespace DOL.GS
 				return false;
 
 			TurnTo(player, 5000);
-			
+
 			var alreadyReset = DOLDB<DbCoreCharacterXCustomParam>.SelectObject(DB.Column("DOLCharactersObjectId")
 				.IsEqualTo(player.ObjectId).And(DB.Column("KeyName").IsEqualTo(StatsResetKey)));
-			
+
 			if(alreadyReset == null)
 			{
-				SayTo(player, eChatLoc.CL_PopupWindow, $"Hello {player.CharacterClass.Name}, I can grant you a [stats respec] if you need one." );
+				SayTo(player, eChatLoc.CL_PopupWindow, LanguageMgr.GetTranslation(player.Client.Account.Language, "StatsCustomiser.Interact.Offer", player.CharacterClass.Name));
 			}
 			else
 			{
-				SayTo(player, eChatLoc.CL_PopupWindow, "You have already been granted a reset.\n If you haven't used it yet, logout to customise your stats.");
+				SayTo(player, eChatLoc.CL_PopupWindow, LanguageMgr.GetTranslation(player.Client.Account.Language, "StatsCustomiser.Interact.AlreadyGranted"));
 			}
 
 			return true;
@@ -56,25 +57,27 @@ namespace DOL.GS
 		{
 			if (!base.WhisperReceive(source, text))
 				return false;
-			
+
 			GamePlayer player = source as GamePlayer;
 			if (player == null)
 				return false;
-			
+
 			var alreadyReset = DOLDB<DbCoreCharacterXCustomParam>.SelectObject(DB.Column("DOLCharactersObjectId")
 				.IsEqualTo(player.ObjectId).And(DB.Column("KeyName").IsEqualTo(StatsResetKey)));
 
-			if (alreadyReset == null && text == "stats respec")
+			string normalizedText = text.ToLowerInvariant();
+
+			if (alreadyReset == null && (normalizedText == "stats respec" || text == "능력치 초기화"))
 			{
-				SayTo(player, eChatLoc.CL_PopupWindow, "There it is done! Now, you must leave this world for a short time for the magic to work. (You must log out to change your appearance.)");
+				SayTo(player, eChatLoc.CL_PopupWindow, LanguageMgr.GetTranslation(player.Client.Account.Language, "StatsCustomiser.Whisper.DoneLogoutRequired"));
 				player.CustomisationStep = 3;
-				
+
 				DbCoreCharacterXCustomParam statsReset = new DbCoreCharacterXCustomParam();
 				statsReset.DOLCharactersObjectId = player.ObjectId;
 				statsReset.KeyName = StatsResetKey;
 				statsReset.Value = "1";
 				GameServer.Database.AddObject(statsReset);
-				
+
 			}
 			return true;
 		}

@@ -76,7 +76,7 @@ namespace DOL.GS
 
             if (_owner == null || recipe == null || skill == null)
             {
-                _owner?.Out.SendMessage("Could not find recipe or item to craft!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                _owner?.Out.SendMessage(LanguageMgr.GetTranslation(_owner.Client.Account.Language, "AbstractCraftingSkill.MakeItem.CouldNotFindRecipeOrItem"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                 log.Error("Crafting.MakeItem: Could not retrieve player, recipe, or raw materials to craft from CraftTimer.");
                 return;
             }

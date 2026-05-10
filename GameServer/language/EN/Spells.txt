@@ -10,14 +10,56 @@ SpellHandler.CastSpell.Msg.LivingCastsSpell:                    {0} casts a spel
 SpellHandler.CastSong.Msg.YouBeginPlaying:                      You begin playing {0}!
 SpellHandler.CancelPulsingSpell:	        You stop playing your song.
 SpellHandler.CasterMove:	                        You move and interrupt your spellcast!
+SpellHandler.Message.AreaTargetOutOfRange:	Your area target is out of range. Select a closer target.
+SpellHandler.Message.CancelEffect:		You cancel your effect.
+SpellHandler.Message.CantAttackSelf:		You can't attack yourself!
+SpellHandler.Message.CantCastDead:		You are dead and can't cast!
+SpellHandler.Message.CantCastInSiegeRam:	You can't cast in a siege ram!
+SpellHandler.Message.CantCastSitting:		You can't cast while sitting!
+SpellHandler.Message.InvalidTarget:		Invalid target.
+SpellHandler.Message.MustCastOnControlledCreature:	You must cast this spell on a creature you are controlling.
+SpellHandler.Message.MustSelectTarget:		You must select a target for this spell!
+SpellHandler.Message.MustWaitToCast:		You must wait {0} seconds to cast a spell!
+SpellHandler.Message.NotEnoughPower:		You don't have enough power to cast that!
+SpellHandler.Message.NotEnoughPowerSpellCanceled:	You do not have enough power and your spell was canceled.
+SpellHandler.Message.NoEffectOnTarget:		Your spell has no effect on the {0}.
+SpellHandler.Message.OnlyDeadRealmMembers:	This spell only works on dead members of your realm!
+SpellHandler.Message.PetMustWaitToCast:		Your {0} must wait {1} seconds to cast a spell!
+SpellHandler.Message.PetSpellInterruptedByAttack:	Your {0} was attacked by {1} and their spell was interrupted!
+SpellHandler.Message.PowerExhausted:		You have exhausted all of your power and cannot cast spells!
+SpellHandler.Message.RequiresConcentration:	This spell requires {0} concentration points to cast!
+SpellHandler.Message.SpellCancelled:		Your spell was cancelled.
+SpellHandler.Message.SpellInterruptedByAttack:	{0} attacks you and your spell is interrupted!
+SpellHandler.Message.StopPlayingSong:		You stop playing your song.
+SpellHandler.Message.TargetImmuneToEffect:	Your target is immune to this effect!
+SpellHandler.Message.TargetInvisibleToYou:	{0} is invisible to you!
+SpellHandler.Message.TargetIsDead:		{0} is dead!
+SpellHandler.Message.TargetNotInView:		You can't see your target from here!
+SpellHandler.Message.TargetNotVisible:		Your target is not visible!
+SpellHandler.Message.TargetResistsEffect:	{0} resists the effect! ({1}%)
+SpellHandler.Message.TargetTooFarAway:		That target is too far away!
+SpellHandler.Message.TooManyConcentrationSpells:	You can only cast up to {0} simultaneous concentration spells!
+SpellHandler.Message.YouCriticallyHitAdditional:	You critically hit for an additional {0} damage! ({1}%)
+SpellHandler.Message.YouHitForDamage:		You hit {0} for {1}{2} damage!
+SpellHandler.Message.YouResistEffect:		You resist the effect!
+SpellHandler.Message.YourPetHitsForDamage:	Your {0} hits {1} for {2}{3} damage!
+SpellHandler.Message.YourPetResistsEffect:	Your {0} resists the effect!
+SpellHandler.Message.WrongInstrument:		You are not wielding the right type of instrument!
+SpellHandler.Detailed.Effectiveness:		Effectiveness (bonus / crit): {0:0.##}
+SpellHandler.Detailed.TargetResistChance:	Target chance to resist: {0:0.##} RandomNumber: {1:0.##}
+SpellHandler.Detailed.YourResistChance:		Your chance to resist: {0:0.##} RandomNumber: {1:0.##}
+SpellHandler.Detailed.BaseDamage:			BaseDamage: {0:0.##} | SpecMod: {1:0.##} ({2:0.00}~{3:0.00})
 GamePlayer.CastSpell.MustWaitBeforeCast:	You need to wait {0} more seconds before casting a spell!
 SpellHandler.DelveInfo.Sec:	                sec
-GamePlayer.CastSpell.AlreadyCastFollow:			You are already casting a spell! You prepare this spell as a follow up!		
-GamePlayer.CastSpell.AlreadyCastNoQueue:		You are already casting a spell, to enable spell queueing use '/noqueue'!			
-GamePlayer.CastSpell.AlreadyPlaySong:			You are already playing a song!		
-GamePlayer.CastSpell.CantCastMezzed:			You can't cast while mesmerized!		
-GamePlayer.CastSpell.CantCastStunned:			You can't cast while stunned!		
+GamePlayer.CastSpell.AlreadyCastFollow:			You are already casting a spell! You prepare this spell as a follow up!
+GamePlayer.CastSpell.AlreadyCastNoQueue:		You are already casting a spell, to enable spell queueing use '/noqueue'!
+GamePlayer.CastSpell.AlreadyPlaySong:			You are already playing a song!
+GamePlayer.CastSpell.CantCastMezzed:			You can't cast while mesmerized!
+GamePlayer.CastSpell.CantCastStunned:			You can't cast while stunned!
 GamePlayer.CastSpell.CantCastFumblingWords:		You are fumbling for your words, and cannot cast!
+PlayerCastingComponent.CantCastWhileVolley:		You can't cast spells while Volley is active!
+PlayerCastingComponent.LoseFocus:			You lose your focus on your spell.
+PlayerCastingComponent.MoveInterruptFocus:		You move and interrupt your focus!
 GamePlayer.StartAttack.SpellCancelled:			Your spell is cancelled!
 GamePlayer.SwitchWeapon.SpellCancelled:			Your spell is cancelled!
 GamePlayer.Caster.Buff.EffectAlreadyActive:             {0} already has that effect. Wait until it expires. Spell failed.
@@ -28,7 +70,7 @@ DelveInfo.CastingTime:				Casting time: {0}
 DelveInfo.ConcentrationCost:		Concentration cost: {0}
 DelveInfo.Damage:					Damage: {0}
 DelveInfo.DamageType:				Damage Type: {0}
-DelveInfo.Duration:					Duration: 
+DelveInfo.Duration:					Duration:
 DelveInfo.Focus:					This is a focus spell. Cancels if you do any action.
 DelveInfo.Frequency:				Frequency: {0}
 DelveInfo.HealthReturned:			Health returned: {0}% of damage dealt
@@ -37,7 +79,7 @@ DelveInfo.PowerCost:				Power cost: {0}
 DelveInfo.HealthCost:				Health cost: {0}
 DelveInfo.Radius:					Radius: {0}
 DelveInfo.Range:					Range: {0}
-DelveInfo.RecastTime:				Recast time: 
+DelveInfo.RecastTime:				Recast time:
 DelveInfo.Target:					Target: {0}
 DelveInfo.Value:					Value: {0}
 DelveInfo.ValueNegative:			Value: -{0}
@@ -73,6 +115,7 @@ CharmSpell.DelveInfo.Desc.Animal:                                Attempts to bri
 CharmSpell.DelveInfo.Desc.Humanoid:                              Attempts to bring the target monster under the caster's control. Spell only works on humanoids. Cannot charm named or epic monsters.
 CharmSpell.DelveInfo.Desc.Insect:                                Attempts to bring the target monster under the caster's control. Spell only works on insects. Cannot charm named or epic monsters.
 CharmSpell.DelveInfo.Desc.AllMonsterTypes:                       Attempts to bring the target monster under the caster's control. Spell works on all monster types. Cannot charm named or epic monsters.
+CharmSpell.DelveInfo.Desc.NonNamedEpic:                          Cannot charm named or epic monsters.
 Summon.CheckBeginCast.AlreadyHaveaPet:	    You already have a charmed creature, release it first!
 CharmSpell.StartSpell.Fail.Resist:                               {0} resists the charm! ({1}%)
 CharmSpell.EndCast.Fail.WrongTarget:                           You can't charm that target!
@@ -101,6 +144,17 @@ DoTSpellHandler.SendDamageMessages.YourHitsFor:		Your {0} hits {1} for {2} damag
 ## Direct Damage
 DirectDamageDebuffSpellHandler.DelveInfo.Decrease:	Resist decrease ({0}): {1}%
 DirectDamageDebuffSpellHandler.DelveInfo.Function:	Function: dmg w/resist decrease
+
+## Buff Shear
+BuffShear.Message.CasterRemovedEnhancement:	Your spell rips away some of your target's enhancing magic.
+BuffShear.Message.EnhancementTooStrong:	The target's connection to their enhancement is too strong for you to remove.
+BuffShear.Message.NoEnhancementFound:	No enhancement of that type found on the target.
+BuffShear.Message.TargetEnhancementRemoved:	Some of your enhancing magic has been ripped away by a spell!
+
+## Heal Over Time
+HoTSpellHandler.Message.FullHealth:	You are at full health.
+HoTSpellHandler.Message.YouAreHealed:	You are healed by {0} for {1} hit points.
+HoTSpellHandler.Message.YourPetHealed:	Your {0} is healed for {1} hit points!
 
 ## Nearsight
 NearsightSpellHandler.DelveInfo.Function:		Function: {0}
@@ -135,6 +189,7 @@ GamePlayer.CastEnd.Fail.BadRegion:                  You can't do that here!
 SummonAnimistFnF.CheckBeginCast.NoGroundTarget:		You can't summon a turret without a ground target !
 SummonAnimistFnF.CheckBeginCast.TurretAreaCap:	You can't summon any more turrets in this area!
 SummonAnimistFnF.CheckBeginCast.TurretPlayerCap:	You cannot control any more turrets!
+SummonAnimistFnF.CheckBeginCast.TooHighNearKeep:	Cannot summon a turret this high near a keep!
 
 ## Summon Animist Pet
 SummonAnimistPet.CheckBeginCast.AlreadyHaveaPet:	You already have a charmed creature, release it first!
@@ -161,6 +216,7 @@ SummonCommanderPet.DelveInfo.Text5:			Casting time: {0}
 ## Summon Minion
 SummonMinionHandler.CheckBeginCast.Text1:		You must have a controlled leader monster to summon into a group!
 SummonMinionHandler.CheckBeginCast.Text2:		Your general already has as many followers as he can command!
+SummonMinionHandler.CheckBeginCast.CommanderTooWeak:	Your commander is not powerful enough to control a minion of this level.
 SummonMinionHandler.DelveInfo.Text1:			Target: {0}
 SummonMinionHandler.DelveInfo.Text2:			Power cost: {0}%
 SummonMinionHandler.DelveInfo.Text3:			Casting time: {0}
@@ -168,3 +224,238 @@ SummonMinionHandler.DelveInfo.Text3:			Casting time: {0}
 ## Turret Pet Release
 TurretsRelease.CheckBeginCast.NoSelectedTarget:	You must cast this spell on a creature you are controlling
 TurretsRelease.CheckBeginCast.TargetTooFarAway:	Your target is too far away
+
+## Water Breathing
+WaterBreathingSpellHandler.Message.Start:	You find yourself able to move freely and breathe water like air!
+WaterBreathingSpellHandler.Message.Expires:	With a gulp and a gasp you realize that you are unable to breathe underwater any longer!
+
+## Warlock
+Warlock.Chamber.MustWait:	You must wait {0} seconds to use this spell!
+Warlock.Chamber.MustStandStill:	You must be standing still to cast this spell!
+Warlock.Chamber.CantCastSitting:	You can't cast this spell while sitting!
+Warlock.Chamber.MustHaveTarget:	You must have a target!
+Warlock.Chamber.CantCastDead:	You cannot cast this while dead!
+Warlock.Chamber.TargetDead:	You cannot cast this on the dead!
+Warlock.Chamber.CantUseInState:	You can't use that in your current state.
+Warlock.Chamber.TargetNotVisible:	Your target is not visible!
+Warlock.Chamber.TargetNotInView:	Your target is not in view!
+Warlock.Chamber.CasterInvulnerable:	You are invulnerable at the moment and cannot use that spell!
+Warlock.Chamber.TargetInvulnerable:	Your target is invulnerable at the moment and cannot be attacked!
+Warlock.Chamber.TargetTooFar:	That target is too far away!
+Warlock.Chamber.TargetPhaseshifted:	{0} is phaseshifted and can't be attacked!
+Warlock.Chamber.TargetInvisible:	{0} is invisible to you!
+Warlock.Chamber.TargetImmune:	Your target is immune to this effect!
+Warlock.Chamber.FriendlyTargetsOnly:	This spell only works on friendly targets!
+Warlock.Chamber.TargetNotAttackable:	That target isn't attackable at this time!
+Warlock.Chamber.SelectFirstSpell:	Select the first spell for your {0}.
+Warlock.Chamber.NoSpellsLoaded:	No spells were loaded into {0}.
+Warlock.Chamber.Ready:	Your {0} is ready for use.
+Warlock.Powerless.AlreadyPreparingRange:	You are already preparing a Range spell.
+Warlock.Powerless.AlreadyPreparingUninterruptible:	You are already preparing an Uninterruptible spell.
+Warlock.Powerless.MustFinishPowerless:	You must finish casting Powerless before you can cast it again.
+Warlock.Primer.EffectExpired:	Your modification spell effect has expired.
+Warlock.Primer.MoveBreaksEffect:	Moving breaks your modification spell.
+
+## Power and Speed
+DamageToPowerSpellHandler.StealPower:	You steal {0} power.
+DamageToPowerSpellHandler.CannotAbsorbMorePower:	You cannot absorb any more power.
+SpeedEnhancementSpellHandler.NoEffectInCombat:	You've been in combat recently; the spell has no effect on you!
+SpreadhealSpellHandler.GroupFullyHealed:	Your group is already fully healed!
+SpreadhealSpellHandler.HealingReducedByDisease:	Your healing is reduced by disease!
+Conversion.ConvertDamageToHealth:	You convert {0} damage into {1} health.
+Conversion.ConvertDamageToHealthSimple:	You convert {0} damage into health.
+Conversion.ConvertDamageToEndurance:	You convert {0} damage into endurance.
+Conversion.ConvertDamageToPower:	You convert {0} damage into power.
+Conversion.CannotConvertHealth:	You cannot convert any more health!
+Conversion.CannotConvertEndurance:	You cannot convert any more endurance!
+Conversion.CannotConvertPower:	You cannot convert any more power!
+Conversion.MagicalSpellAbsorbsDamage:	A magical spell absorbs {0} damage of your attack!
+EnduranceHealSpellHandler.TargetIsDead:	{0} is dead!
+EnduranceHealSpellHandler.YourEnduranceFull:	Your endurance is full.
+EnduranceHealSpellHandler.TargetEnduranceFull:	{0}'s endurance is full.
+EnduranceHealSpellHandler.RestoreYourEndurance:	You restore {0} endurance points.
+EnduranceHealSpellHandler.RestoreTargetEndurance:	You restore {0} for {1} endurance points!
+EnduranceHealSpellHandler.EnduranceRestoredBy:	Your endurance was restored by {0} for {1} points.
+HealSpellHandler.TargetIsDead:	{0} is dead!
+HealSpellHandler.TargetDiseased:	Your target is diseased!
+HealSpellHandler.YouFullyHealed:	You are fully healed.
+HealSpellHandler.TargetFullyHealed:	{0} is fully healed.
+HealSpellHandler.HealSelf:	You heal yourself for {0:0} hit points.
+HealSpellHandler.HealTarget:	You heal {0} for {1:0} hit points!
+HealSpellHandler.HealedBy:	You are healed by {0} for {1:0} hit points.
+HealSpellHandler.CriticalHeal:	You heal for an extra {0:0} hit points! ({1:0.##}%)
+PowerHealSpellHandler.TargetIsDead:	{0} is dead!
+PowerHealSpellHandler.YourPowerFull:	Your power is full.
+PowerHealSpellHandler.TargetPowerFull:	{0}'s power is full.
+PowerHealSpellHandler.RestoreYourPower:	You restore {0} power points.
+PowerHealSpellHandler.RestoreTargetPower:	You restore {0} for {1} power points!
+PowerHealSpellHandler.PowerRestoredBy:	Your power was restored by {0} for {1} points.
+LifeTransferSpellHandler.TargetDiseased:	Your target is diseased!
+LifeTransferSpellHandler.TargetIsDead:	{0} is dead!
+LifeTransferSpellHandler.CannotTransferToSelf:	You cannot transfer life to yourself.
+LifeTransferSpellHandler.NotEnoughHealth:	You do not have enough health to transfer.
+LifeTransferSpellHandler.TargetFullyHealed:	{0} is fully healed.
+LifeTransferSpellHandler.HealTarget:	You heal {0} for {1} hit points!
+LifeTransferSpellHandler.HealedBy:	You are healed by {0} for {1} hit points.
+DamageReductionPowerReturn.AbsorbsDamage:	The damage reduction absorbs {0} damage!
+DamageReductionPowerReturn.AbsorbsYourAttack:	A damage reduction absorbs {0} damage of your attack!
+VampMaintainedSpeedDecrease.SpellCancelled:	Your spell was cancelled.
+VampMaintainedSpeedDecrease.TargetNoLongerInRange:	Your target is no longer in range.
+VampMaintainedSpeedDecrease.TargetNoLongerInView:	Your target is no longer in view.
+DrainSpell.YouAreDiseased:	You are diseased!
+DrainSpell.StealLife:	You steal {0} hit points.
+DrainSpell.DrainLife:	You drain {0} hit points.
+DrainSpell.CannotAbsorbLife:	You cannot absorb any more life.
+DrainSpell.StealPower:	You steal {0} power.
+DrainSpell.DrainPower:	You drain {0} power.
+DrainSpell.AbsorbPower:	You absorb {0} power.
+DrainSpell.CannotAbsorbPower:	You cannot absorb any more power.
+DrainSpell.PowerAlreadyFull:	Your power is already full.
+DrainSpell.StealEndurance:	You steal {0} endurance.
+DrainSpell.DrainEndurance:	You drain {0} endurance.
+DrainSpell.CannotAbsorbEndurance:	You cannot absorb any more endurance.
+DrainSpell.StealEnduranceFromTarget:	You steal {1} endurance from {0}!
+DrainSpell.StealPowerFromTarget:	You steal {1} power from {0}!
+DrainSpell.BarrierReturnsPower:	The barrier returns {0} power back to you.
+DrainSpell.SummonChannelsPower:	Your summon channels {0} power to you!
+VampiirPowerBolt.TargetLosesPower:	{0} takes {1} power!
+VampiirPowerBolt.ReceivePower:	You receive {0} power from {1}!
+VampiirPowerBolt.ReceiveNoPower:	You did not receive any power from {0}!
+VampiirPowerBolt.CannotCastInCombat:	You cannot cast this spell in combat!
+Warlock.Range.AlreadyPreparingUninterruptible:	You are already preparing an Uninterruptible spell.
+Warlock.Range.AlreadyPreparingPowerless:	You are already preparing a Powerless spell.
+Warlock.Range.MustFinishRange:	You must finish casting Range before you can cast it again.
+Warlock.Uninterruptible.AlreadyPreparingRange:	You are already preparing a Range spell.
+Warlock.Uninterruptible.AlreadyPreparingPowerless:	You are already preparing a Powerless spell.
+Warlock.Uninterruptible.MustFinishUninterruptible:	You must finish casting Uninterruptible before you can cast it again.
+Masterlevel.Stormlord.HarderToHit:	You are harder to hit!
+Masterlevel.Stormlord.YouLoseEndurance:	You lose {0} endurance!
+Masterlevel.Stormlord.TargetLosesEndurance:	{0} loses {1} endurance!
+Masterlevel.Stormlord.DexterityQuicknessDecreased:	Your dexterity and quickness decreased!
+Masterlevel.Stormlord.PowerStolenByCaster:	{0} steals {1} power from you!
+Masterlevel.Stormlord.VortexLocked:	The storm vortex is now locked in place!
+Masterlevel.Stormlord.ConcentrationFades:	You moved and lost your concentration.
+Masterlevel.Stormlord.StrengthConstitutionDecreased:	Your strength and constitution decreased!
+Masterlevel.Stormlord.AcuityDecreased:	Your acuity decreased!
+Masterlevel.Sojourner.MustSelectTarget:	You must select a target for this spell!
+Masterlevel.Sojourner.YouAreInZephyr:	You are in a Zephyr and cannot be attacked!
+Masterlevel.Sojourner.TargetIsInZephyr:	Your target is in a Zephyr and cannot be attacked!
+Masterlevel.Sojourner.PickedUpByZephyr:	You are picked up by a forceful zephyr!
+Masterlevel.Sojourner.NeedHalfEndurance:	You need 50% endurance for this spell!
+Masterlevel.Sojourner.TargetIsPhaseshifted:	{0} is Phaseshifted and cannot be attacked!
+Masterlevel.Sojourner.CannotUseAbilityHere:	You cannot use this ability here.
+Masterlevel.Sojourner.BindInAnotherRegion:	Bind in another region to use this ability.
+Masterlevel.Sojourner.GroupInCombat:	You cannot teleport a group that is in combat!
+Masterlevel.Sojourner.NotInGroup:	You are not in a group!
+ResurrectSpellHandler.ResurrectDialog:	Do you allow {0} to resurrect you with {1}% health and power?
+ResurrectSpellHandler.NoOneResurrecting:	No one is currently trying to resurrect you.
+ResurrectSpellHandler.Declined:	You decline to be resurrected.
+ResurrectSpellHandler.ResurrectedBy:	You have been resurrected by {0}!
+ResurrectSpellHandler.NoRealmPointsWorth:	The player you resurrected was not worth realm points on death.
+ResurrectSpellHandler.NoRealmPointsReward:	You get no realm points for this resurrection.
+ResurrectSpellHandler.Expired:	Your resurrection spell has expired.
+ResurrectSpellHandler.NotEnoughPower:	You don't have enough power to cast that!
+ResurrectSpellHandler.TargetAlreadyConsidering:	Your target is already considering a resurrection!
+Archery.DisarmedCannotCast:	You are disarmed and cannot cast a spell.
+Archery.MustBeStealthedWithBow:	You must be stealthed and wielding a bow to use this ability!
+Archery.MustWieldBow:	You must be wielding a bow to use this ability!
+Archery.PrepareShot:	You prepare a {0}.
+Archery.ShotPenetratesBarrier:	A shot penetrated your magic barrier!
+Archery.YourStrikeAbsorbed:	Your strike was absorbed by a magical barrier!
+Archery.BlowAbsorbed:	The blow was absorbed by a magical barrier!
+Archery.YouMiss:	You miss!
+Archery.CasterMissed:	{0} missed!
+Archery.EngageTargetRecentlyAttacked:	{0} has been attacked recently and you are unable to engage.
+Archery.ConcentrateOnBlocking:	You concentrate on blocking the blow!
+Archery.YouBlockArrow:	You block {0}'s arrow!
+Archery.TargetBlocksArrow:	{0} blocks your arrow!
+Masterlevel.Battlemaster.YouLoseEndurance:	You lose {0} endurance!
+Masterlevel.Battlemaster.TargetLosesEndurance:	{0} loses {1} endurance!
+Masterlevel.Battlemaster.RealmEnemiesOnly:	This spell only works on realm enemies.
+Masterlevel.Battlemaster.DisarmedCannotUse:	You are disarmed and cannot use this spell!
+Masterlevel.Battlemaster.EquipWeapon:	Equip a weapon before using this spell!
+Masterlevel.Spymaster.DecoyFallen:	Your decoy has fallen!
+Masterlevel.Spymaster.WardSabotaged:	Selected ward has been sabotaged!
+Masterlevel.Spymaster.TargetMustBeSitting:	Target must be sitting!
+Masterlevel.Spymaster.ConcentrationFadesMoving:	You moved and lost your concentration!
+Masterlevel.Spymaster.CamouflageFadesAttacking:	You attacked and your camouflage fades!
+Masterlevel.Spymaster.CamouflageFadesCasting:	You cast a spell and your camouflage fades!
+Masterlevel.Spymaster.CamouflageFadesMoving:	You moved and your camouflage fades!
+SiegeArrow.TargetMustBeKeepComponent:	Your target must be a keep component!
+SiegeArrow.PrepareShot:	You prepare {0}.
+CCSpellHandler.TargetImmune:	Your target is immune to this effect!
+CCSpellHandler.TargetMovingTooFast:	Your target is moving too fast for this spell to have any effect!
+CCSpellHandler.TargetEnraged:	Your target is enraged and resists the spell!
+CCSpellHandler.ItemInterceptsMesmerize:	Your item effect intercepts the mesmerization spell and fades!
+CCSpellHandler.CeremonialBracerInterceptsMez:	Ceremonial Bracer intercepts your mesmerize spell!
+Masterlevel.Convoker.AreaTargetOutOfRange:	Your area target is out of range. Set a closer ground position.
+Masterlevel.Convoker.ConcentrationFades:	Your concentration fades.
+Masterlevel.Convoker.BattleWarderFallen:	Your Battle Warder has fallen!
+Masterlevel.Convoker.NpcTemplateNotFound:	NPC template {0} not found!
+Masterlevel.Convoker.PetAbilityAlreadyActive:	Your pet already has an ability of this type active.
+Masterlevel.Convoker.CannotUseOnOwnPet:	You cannot use this ability on your own pet.
+Masterlevel.Convoker.MustSetGroundTarget:	You must set a ground target!
+Masterlevel.Convoker.AreaTargetNotInView:	Your area target is not in view.
+Spell.TargetAlreadyHasEffectOfType:	Your target already has an effect of that type!
+Spell.TargetAlreadyHasEffect:	Your target already has this effect!
+Spell.TargetImmuneToEffect:	Your target is immune to this effect!
+Spell.TargetMovingTooFast:	{0} is moving too fast for this spell to have any effect!
+Spell.NoEffectOnClass:	This spell has no effect on this class!
+PowerTransfer.CannotTransferToSelf:	You cannot transfer power to yourself!
+PowerTransfer.TargetPowerFull:	{0} is at full power already!
+PowerTransfer.TransferToTarget:	You transfer {0} power to {1}!
+PowerTransfer.TransferToYou:	{0} transfers {1} power to you!
+FocusShellHandler.CannotCastOnPets:	This spell may not be cast on pets!
+FocusShellHandler.RealmMembersOnly:	This spell only works on members of your realm!
+NearsightSpellHandler.TargetCannotBeNearsighted:	Your target can't be nearsighted!
+HealthToEndurance.EnduranceFull:	You already have full endurance!
+HealthToEndurance.TransferLifeToEndurance:	You transfer {0} life to endurance!
+RampingDamageFocus.NotEnoughPowerCanceled:	You do not have enough power and your spell was canceled.
+DoomHammer.DisarmedCannotUse:	You are disarmed and can't use this spell!
+SummonNoveltyPet.CannotSummonHere:	You cannot summon your pet here!
+SummonNoveltyPet.AlreadyHavePet:	You already have a pet by your side!
+GatewayPersonalBind.CannotUseHere:	You can't use that here!
+GatewayPersonalBind.InCombat:	You have been in combat recently and cannot use this item!
+GatewayPersonalBind.MustStandStill:	You must be standing still to use this item!
+Artifacts.ActiveMorph:	You already have an active morph!
+Artifacts.Alvarus.MustBeUnderwater:	You must be underwater to use this ability.
+Artifacts.BeltOfSun.RequiresSunlight:	The powers of the Belt of Sun can only be summoned under sunlight!
+Artifacts.BeltOfSun.PowerLeft:	The power of the Belt of Sun has left you!
+Artifacts.BeltOfMoon.RequiresMoonlight:	The powers of the Belt of Moon can only be summoned under moonlight!
+Artifacts.BeltOfMoon.PowerLeft:	The power of the Belt of Moon has left you!
+Artifacts.RealmLore.PlayersOnly:	This spell works only on players.
+Artifacts.RealmLore.TargetTooFar:	Your target is too far away.
+Artifacts.RealmLore.Title:	Realm Lore [{0}]
+Artifacts.RealmLore.Class:	Class: {0}
+Artifacts.RealmLore.RealmPoints:	Realm points: {0} = {1}
+Artifacts.RealmLore.StatsLine1:	Str: {0} Dex: {1} Con: {2}
+Artifacts.RealmLore.StatsLine2:	Qui: {0} Emp: {1} Cha: {2}
+Artifacts.RealmLore.StatsLine3:	Pie: {0} Int: {1} HP: {2}
+Artifacts.CrownOfZahur.ConvertPowerToHealth:	You convert {0} power into hit points!
+BainsheePulseDmgSpellHandler.CancelEffect:	You cancel your effect.
+HereticPiercingMagic.Concentrated:	You concentrate on the spell!
+HereticPiercingMagic.LoseConcentration:	You lose your concentration!
+HereticDamageSpeedDecrease.PetResistsEffect:	Your {0} resists the effect!
+HereticDamageSpeedDecrease.YouResistEffect:	You resist the effect!
+SummonTheurgistPet.TooManyControlledCreatures:	You have too many controlled creatures!
+Masterlevel.Warlord.HealsYou:	{0} heals you for {1} hit points!
+Masterlevel.Warlord.YouLoseHitPoints:	You lose {0} hit points.
+Masterlevel.SummonItem.ItemCreated:	Item created: {0}
+VampiirArmorDebuff.DebuffArmor:	You debuff {0}'s {1}.
+Spell.NpcTemplateNotFound:	NPC template {0} not found!
+BomberSpellHandler.NotImplemented:	Spell not implemented. Contact a GM.
+CharmSpellHandler.ResistDebug:	Resist chance={0}; roll={1}
+BoltSpellHandler.PartialBlock:	You partially block {0}'s spell!
+BoltSpellHandler.TargetBlocks:	{0} blocks!
+BoltSpellHandler.TargetInCombatMiss:	{0} is in combat and your bolt misses!
+BoltSpellHandler.YouMiss:	You miss!
+BoltSpellHandler.CasterMissed:	{0} missed!
+Artifacts.StyleDmgAbs.AbsorbsTarget:	Your style absorption absorbs {0} damage!
+Artifacts.AbsorbBarrier.Attacker:	A barrier absorbs {0} damage of your attack!
+Artifacts.ShadesOfMist.AblativeAbsorbs:	Your ablative absorbs {0} damage!
+SummonSpellHandler.PetUnderControl:	The {0} is now under your control.
+SiegeDirectDamageSpellHandler.YouHitForDamage:	You hit {0} for {1}{2} damage!
+BeFriendSpellHandler.TooStrong:	{0} is too strong for you to charm!
+BeFriendSpellHandler.AlreadyControlled:	{0} is already under control.
+SpeedDecreaseSpellHandler.SnareDoublyEffective:	Your snare is doubly effective!
+Spell.CriticalDebuff:	Your {0} critically debuffs the enemy for {1:0}% additional effect!

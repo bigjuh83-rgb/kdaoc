@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -21,6 +21,7 @@ using System;
 using System.Reflection;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -37,50 +38,50 @@ namespace DOL.GS.Commands
 		{
 			if (client.Player != null)
 			{
-				client.Out.SendMessage("\n  ===== [[[ Command Reload ]]] ===== \n", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-				client.Out.SendMessage(" Reload given element.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Header"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Description"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 		private static void SendSystemMessageMob(GameClient client)
 		{
 			if (client.Player != null)
 			{
-				client.Out.SendMessage(" /reload mob ' reload all mob in region.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-				client.Out.SendMessage(" /reload mob ' realm <0/1/2/3>' reload all mob with specifique realm in region.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-				client.Out.SendMessage(" /reload mob ' name <name_you_want>' reload all mob with specifique name in region.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-				client.Out.SendMessage(" /reload mob ' model <model_ID>' reload all mob with specifique model in region.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.Mob"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.MobRealm"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.MobName"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.MobModel"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 		private static void SendSystemMessageObject(GameClient client)
 		{
 			if (client.Player != null)
 			{
-				client.Out.SendMessage(" /reload object ' reload all static object in region.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-				client.Out.SendMessage(" /reload object ' realm <0/1/2/3>' reload all static object with specifique realm in region.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-				client.Out.SendMessage(" /reload object ' name <name_you_want>' reload all static object with specifique name in region.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-				client.Out.SendMessage(" /reload object ' model <model_ID>' reload all static object with specifique model in region.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.Object"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.ObjectRealm"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.ObjectName"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.ObjectModel"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 		private static void SendSystemMessageRealm(GameClient client)
 		{
 			if (client.Player != null)
 			{
-				client.Out.SendMessage("\n /reload <object/mob> realm <0/1/2/3>' reload all element with specifique realm in region.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-				client.Out.SendMessage(" can use 0/1/2/3 or n/a/m/h or no/alb/mid/hib....", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.Realm"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.RealmValues"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 		private static void SendSystemMessageName(GameClient client)
 		{
 			if (client.Player != null)
 			{
-				client.Out.SendMessage("\n /reload <object/mob>  name <name_you_want>' reload all element with specified name in region.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.Name"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 		private static void SendSystemMessageModel(GameClient client)
 		{
 			if (client.Player != null)
 			{
-				client.Out.SendMessage("\n /reload <object/mob>  model <model_ID>' reload all element with specified model_ID in region.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.Model"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 
@@ -99,10 +100,10 @@ namespace DOL.GS.Commands
 					SendSystemMessageBase(client);
 					SendSystemMessageMob(client);
 					SendSystemMessageObject(client);
-					client.Out.SendMessage(" /reload specs - reload all specializations.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-					client.Out.SendMessage(" /reload spells - reload a spells and spelllines, checking db for changed and new spells.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-					client.Out.SendMessage(" /reload teleports - reload all teleport locations", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-					client.Out.SendMessage(" /reload npctemplates - reload all NPCTemplates", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.Specs"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.Spells"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.Teleports"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.Usage.NPCTemplates"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 
 				if (log.IsInfoEnabled)
@@ -189,7 +190,7 @@ namespace DOL.GS.Commands
 				SkillBase.ReloadSpellLines();
 
 				if (client != null)
-					client.Out.SendMessage("Spells and spell lines reloaded", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.SpellsReloaded"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
 				if (log.IsInfoEnabled)
 					log.Info("Spells and spell lines reloaded.");
@@ -202,46 +203,46 @@ namespace DOL.GS.Commands
 				int count = SkillBase.LoadSpecializations();
 
 				if (client != null)
-					client.Out.SendMessage(string.Format("{0} specializations loaded.", count), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.SpecializationsLoaded", count), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
 				if (log.IsInfoEnabled)
 					log.Info(string.Format("{0} specializations loaded.", count));
 
 				return;
 			}
-			
+
 			if (args[1].ToLower() == "teleports")
 			{
 				WorldMgr.LoadTeleports();
 
 				if (client != null)
-					client.Out.SendMessage("Teleport locations reloaded.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.TeleportsReloaded"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
 				if (log.IsInfoEnabled)
 					log.Info("Teleport locations reloaded.");
 
 				return;
 			}
-			
+
 			if (args[1].ToLower() == "npctemplates")
 			{
 				NpcTemplateMgr.Reload();
 
 				if (client != null)
-					client.Out.SendMessage("NPC templates reloaded.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.NPCTemplatesReloaded"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
 				if (log.IsInfoEnabled)
 					log.Info("NPC templates reloaded.");
 
 				return;
 			}
-			
+
 			if (args[1].ToLower() == "doors")
 			{
 				DoorMgr.Init();
 
 				if (client != null)
-					client.Out.SendMessage("Doors reloaded.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.Reload.DoorsReloaded"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
 				if (log.IsInfoEnabled)
 					log.Info("Doors reloaded.");
@@ -262,7 +263,7 @@ namespace DOL.GS.Commands
 				return;
 			}
 
-			ChatUtil.SendSystemMessage(player, "Reloading Mobs:  " + arg1 + ", " + arg2 + " ...");
+			ChatUtil.SendSystemMessage(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AdminCommands.Reload.ReloadingMobs", arg1, arg2));
 
 			int count = 0;
 
@@ -339,7 +340,7 @@ namespace DOL.GS.Commands
 				}
 			}
 
-			ChatUtil.SendSystemMessage(player, count + " mobs reloaded!");
+			ChatUtil.SendSystemMessage(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AdminCommands.Reload.MobsReloaded", count));
 		}
 
 		private void ReloadStaticItem(ushort region, string arg1, string arg2)

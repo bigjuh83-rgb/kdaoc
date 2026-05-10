@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Reflection;
 using System.Threading;
+using DOL.AI.Brain;
 using DOL.GS.PacketHandler;
+using DOL.GS.ServerProperties;
 using DOL.GS.Spells;
+using DOL.Language;
 using DOL.Logging;
 using ECS.Debug;
 
@@ -164,7 +167,7 @@ namespace DOL.GS
                         }
                         else
                         {
-                            (spellHandler as SpellHandler).MessageToCaster("You do not have enough power and your spell was canceled.", eChatType.CT_SpellExpires);
+                            (spellHandler as SpellHandler).MessageToCaster(GetCasterTranslation(spellHandler.Caster, "SpellHandler.Message.NotEnoughPowerSpellCanceled"), eChatType.CT_SpellExpires);
                             pulseEffect.End();
                             return;
                         }
@@ -218,6 +221,16 @@ namespace DOL.GS
 
             spellEffect.OnEffectPulse();
             spellEffect.NextTick += spellEffect.PulseFreq;
+        }
+        private static string GetCasterTranslation(GameLiving caster, string translationId, params object[] args)
+        {
+            if (caster is GamePlayer playerCaster)
+                return LanguageMgr.GetTranslation(playerCaster.Client, translationId, args);
+
+            if (caster is GameNPC npcCaster && npcCaster.Brain is IControlledBrain controlledBrain && controlledBrain.GetPlayerOwner() is GamePlayer owner)
+                return LanguageMgr.GetTranslation(owner.Client, translationId, args);
+
+            return LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, translationId, args);
         }
     }
 }

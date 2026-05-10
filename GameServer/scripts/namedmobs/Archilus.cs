@@ -8,11 +8,10 @@ namespace DOL.GS.Scripts
 {
 	public class Archilus : GameNPC
 	{
-		protected String m_SpawnAnnounce;
+		private const string SpawnAnnounceKey = "NamedMobs.Archilus.SpawnAnnounce";
 
 		public Archilus()
 		{
-			m_SpawnAnnounce = "{0} will start to \'shake violently\' and spawns out some {1}!";
 			TetherRange = 4500;
 		}
 
@@ -27,19 +26,19 @@ namespace DOL.GS.Scripts
 			base.AddToWorld();
 			return true;
 		}
-		
+
 		/// <summary>
 		/// Broadcast relevant messages.
 		/// </summary>
 		/// <param name="message">The message to be broadcast.</param>
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(String key, params object[] args)
 		{
 			foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
-				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+				player.Out.SendMessage(global::DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 			}
 		}
-		
+
 		public void Spawn(GamePlayer player)
 		{
 			GameNPC mob = new GameNPC();
@@ -47,7 +46,7 @@ namespace DOL.GS.Scripts
 			//Level Range of 40-45
 			int level = Util.Random(40, 45);
 			mob.Level = (byte) level;
-			BroadcastMessage(String.Format(m_SpawnAnnounce, this.Name, mob.Name));
+			BroadcastMessage(SpawnAnnounceKey, this.Name, mob.Name);
 			mob.AddToWorld();
 
 			mob.StartAttack(player);
@@ -114,7 +113,7 @@ namespace DOL.GS.Scripts
 
 		public override void Die(GameObject killer)
 		{
-			
+
 			this.Level = 60;
 			this.Size = 100;
 			base.Die(killer);
@@ -135,7 +134,7 @@ namespace DOL.GS.Scripts
 				if (this.HealthPercent < 90)
 				{
 					new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(timer => CastShroud(timer, player)), 1000);
-					
+
 				}
 			}
 
@@ -147,11 +146,11 @@ namespace DOL.GS.Scripts
 			Spawn(player);
 			return 0;
 		}
-		
+
 		public void SendReply(GamePlayer player, string msg)
 		{
 			player.Out.SendMessage(msg, eChatType.CT_System, eChatLoc.CL_PopupWindow);
 		}
-		
+
 	}
 }

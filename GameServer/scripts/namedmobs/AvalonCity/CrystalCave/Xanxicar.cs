@@ -11,10 +11,9 @@ namespace DOL.GS
 	public class Xanxicar : GameEpicBoss
 	{
 		protected String[] m_deathAnnounce;
-		public Xanxicar() : base() 
+		public Xanxicar() : base()
 		{
-			m_deathAnnounce = new String[] { "The earth lurches beneath your feet as {0} staggers and topples to the ground.",
-				"A glowing light begins to form on the mound that served as {0}'s lair." };
+			m_deathAnnounce = new String[] { "NamedMobs.Xanxicar.DeathAnnounce1", "NamedMobs.Xanxicar.DeathAnnounce2" };
 		}
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
@@ -97,7 +96,7 @@ namespace DOL.GS
 
 			foreach (String message in m_deathAnnounce)
 			{
-				BroadcastMessage(String.Format(message, Name));
+				BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, message, Name));
 			}
 
 			if (canReportNews)
@@ -122,7 +121,7 @@ namespace DOL.GS
 		{
 			int numPlayers = GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE).Count;
 			String message = String.Format("{0} has been slain by a force of {1} warriors!", Name, numPlayers);
-			NewsMgr.CreateNews(message, killer.Realm, eNewsType.PvE, true);
+			NewsMgr.CreateNews(message, killer?.Realm ?? eRealm.None, eNewsType.PvE, true);
 
 			if (Properties.GUILD_MERIT_ON_DRAGON_KILL > 0)
 			{
@@ -218,9 +217,9 @@ namespace DOL.AI.Brain
 				{
 					GamePlayer Target = Port_Enemys[Util.Random(0, Port_Enemys.Count - 1)];
 					RandomTarget = Target;
-					if (RandomTarget.IsAlive && RandomTarget != null && HasAggro)
+					if (RandomTarget != null && RandomTarget.IsAlive && HasAggro)
 					{
-						BroadcastMessage(RandomTarget.Name + " is hurled into the air!");
+						BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Xanxicar.HurledIntoAir", RandomTarget.Name));
 						RandomTarget.MoveTo(62, 32338, 32387, 16539, 1830);
 						Port_Enemys.Remove(RandomTarget);
 					}
@@ -252,9 +251,9 @@ namespace DOL.AI.Brain
 				{
 					GamePlayer Target = DD_Enemys[Util.Random(0, DD_Enemys.Count - 1)];
 					RandomTarget2 = Target;
-					if (RandomTarget2.IsAlive && RandomTarget2 != null && HasAggro)
+					if (RandomTarget2 != null && RandomTarget2.IsAlive && HasAggro)
 					{
-						BroadcastMessage("Xanxicar preparing glare at "+ RandomTarget2.Name +"!");
+						BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Xanxicar.PreparingGlare", RandomTarget2.Name));
 						new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(DoGlare), 5000);
 					}
 				}
@@ -279,7 +278,7 @@ namespace DOL.AI.Brain
         #region PBAOE
         public int BombAnnounce(ECSGameTimer timer)
 		{
-			BroadcastMessage(String.Format("Xanxicar bellows in rage and prepares massive stomp at all of the creatures attacking him."));
+			BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Xanxicar.PreparesStomp"));
 			if (Body.IsAlive && HasAggro)
 			{
 				Body.StopFollowing();

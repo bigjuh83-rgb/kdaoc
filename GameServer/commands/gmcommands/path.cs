@@ -3,6 +3,7 @@ using System.Collections;
 using DOL.Database;
 using DOL.GS.Movement;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -88,7 +89,7 @@ namespace DOL.GS.Commands
             PathPoint startpoint = new PathPoint(client.Player.X, client.Player.Y, client.Player.Z, 1000, EPathType.Once);
             client.Player.TempProperties.SetProperty(TEMP_PATH_FIRST, startpoint);
             client.Player.TempProperties.SetProperty(TEMP_PATH_LAST, startpoint);
-            client.Player.Out.SendMessage("Path creation started! You can add new pathpoints via /path add now!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.CreateStarted"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             CreatePathPointObject(client, startpoint, 1);
         }
 
@@ -97,7 +98,7 @@ namespace DOL.GS.Commands
             PathPoint path = client.Player.TempProperties.GetProperty<PathPoint>(TEMP_PATH_LAST);
             if (path == null)
             {
-                DisplayMessage(client, "No path created yet! Use /path create first!");
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.NoPathCreateFirst"));
                 return;
             }
 
@@ -111,7 +112,7 @@ namespace DOL.GS.Commands
                 }
                 catch
                 {
-                    DisplayMessage(client, "No valid speedlimit '{0}'!", args[2]);
+                    DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.InvalidSpeedLimit", args[2]));
                     return;
                 }
 
@@ -123,7 +124,7 @@ namespace DOL.GS.Commands
                     }
                     catch
                     {
-                        DisplayMessage(client, "No valid wait time '{0}'!", args[3]);
+                        DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.InvalidWaitTime", args[3]));
                     }
                 }
             }
@@ -142,14 +143,14 @@ namespace DOL.GS.Commands
             }
             len += 2;
             CreatePathPointObject(client, newpp, len);
-            DisplayMessage(client, "Pathpoint added. Current pathlength = {0}", len);
+            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.PathPointAdded", len));
         }
 
         private void PathSpeed(GameClient client, string[] args)
         {
             if (args.Length < 3)
             {
-                DisplayMessage(client, "No valid speedlimit '{0}'!", args[2]);
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.InvalidSpeedLimit", args[2]));
                 return;
             }
 
@@ -160,7 +161,7 @@ namespace DOL.GS.Commands
             }
             catch
             {
-                DisplayMessage(client, "No valid speedlimit '{0}'!", args[2]);
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.InvalidSpeedLimit", args[2]));
                 return;
             }
 
@@ -168,7 +169,7 @@ namespace DOL.GS.Commands
 
             if (pathpoint == null)
             {
-                DisplayMessage(client, "No path created yet! Use /path create first!");
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.NoPathCreateFirst"));
                 return;
             }
 
@@ -180,7 +181,7 @@ namespace DOL.GS.Commands
                 pathpoint.MaxSpeed = speedlimit;
             }
 
-            DisplayMessage(client, "All path points set to speed {0}!", args[2]);
+            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.AllPointsSpeedSet", args[2]));
         }
 
         private void PathTravel(GameClient client)
@@ -188,13 +189,13 @@ namespace DOL.GS.Commands
             PathPoint path = client.Player.TempProperties.GetProperty<PathPoint>(TEMP_PATH_LAST);
             if (client.Player.TargetObject == null || !(client.Player.TargetObject is GameNPC))
             {
-                DisplayMessage(client, "You need to select a mob first!");
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.SelectMobFirst"));
                 return;
             }
 
             if (path == null)
             {
-                DisplayMessage(client, "No path created yet! Use /path create first!");
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.NoPathCreateFirst"));
                 return;
             }
             short speed = Math.Min(((GameNPC)client.Player.TargetObject).MaxSpeedBase, path.MaxSpeed);
@@ -207,7 +208,7 @@ namespace DOL.GS.Commands
 
             ((GameNPC)client.Player.TargetObject).MoveOnPath(speed);
 
-            DisplayMessage(client, "{0} told to travel path!", client.Player.TargetObject.Name);
+            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.NpcTravelPath", client.Player.TargetObject.Name));
 
         }
 
@@ -215,7 +216,7 @@ namespace DOL.GS.Commands
         {
             if (client.Player.TargetObject == null || !(client.Player.TargetObject is GameNPC))
             {
-                DisplayMessage(client, "You need to select a mob first!");
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.SelectMobFirst"));
                 return;
             }
 
@@ -224,7 +225,7 @@ namespace DOL.GS.Commands
             npcTarget.CurrentPathPoint = null;
             npcTarget.ReturnToSpawnPoint(npcTarget.MaxSpeed);
 
-            DisplayMessage(client, "{0} told to walk to spawn!", client.Player.TargetObject.Name);
+            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.NpcWalkToSpawn", client.Player.TargetObject.Name));
         }
 
         private void PathType(GameClient client, string[] args)
@@ -232,15 +233,15 @@ namespace DOL.GS.Commands
             PathPoint path = client.Player.TempProperties.GetProperty<PathPoint>(TEMP_PATH_LAST);
             if (args.Length < 2)
             {
-                DisplayMessage(client, "Usage: /path type <pathtype>");
-                DisplayMessage(client, "Current path type is '{0}'", path.Type.ToString());
-                DisplayMessage(client, "Possible pathtype values are:");
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.Usage.Type"));
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.CurrentType", path.Type.ToString()));
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.PossibleTypes"));
                 DisplayMessage(client, String.Join(", ", Enum.GetNames(typeof(EPathType))));
                 return;
             }
             if (path == null)
             {
-                DisplayMessage(client, "No path created yet! Use /path create or /path load first!");
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.NoPathCreateOrLoadFirst"));
                 return;
             }
 
@@ -251,9 +252,9 @@ namespace DOL.GS.Commands
             }
             catch
             {
-                DisplayMessage(client, "Usage: /path type <pathtype>");
-                DisplayMessage(client, "Current path type is '{0}'", path.Type.ToString());
-                DisplayMessage(client, "PathType must be one of the following:");
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.Usage.Type"));
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.CurrentType", path.Type.ToString()));
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.TypeMustBeOneOf"));
                 DisplayMessage(client, String.Join(", ", Enum.GetNames(typeof(EPathType))));
                 return;
             }
@@ -265,14 +266,14 @@ namespace DOL.GS.Commands
                 temp.Type = pathType;
                 temp = temp.Prev;
             }
-            DisplayMessage(client, "Current path type set to '{0}'", path.Type.ToString());
+            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.TypeSet", path.Type.ToString()));
         }
 
         private void PathLoad(GameClient client, string[] args)
         {
             if (args.Length < 2)
             {
-                DisplayMessage(client, "Usage: /path load <pathname>");
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.Usage.Load"));
                 return;
             }
 
@@ -281,12 +282,12 @@ namespace DOL.GS.Commands
 
             if (pathPoint == null)
             {
-                DisplayMessage(client, "Path '{0}' not found!", pathName);
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.NotFound", pathName));
                 return;
             }
 
             RemoveAllPathPointObjects(client);
-            DisplayMessage(client, "Path '{0}' loaded.", pathName);
+            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.Loaded", pathName));
             client.Player.TempProperties.SetProperty(TEMP_PATH_FIRST, pathPoint);
             int len = 0;
             PathPoint lastPathPoint;
@@ -306,19 +307,19 @@ namespace DOL.GS.Commands
             PathPoint path = client.Player.TempProperties.GetProperty<PathPoint>(TEMP_PATH_LAST);
             if (args.Length < 3)
             {
-                DisplayMessage(client, "Usage: /path save <pathname>");
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.Usage.Save"));
                 return;
             }
 
             if (path == null)
             {
-                DisplayMessage(client, "No path created yet! Use /path create first!");
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.NoPathCreateFirst"));
                 return;
             }
 
             string pathname = String.Join(" ", args, 2, args.Length - 2);
             MovementMgr.SavePath(pathname, path);
-            DisplayMessage(client, "Path saved as '{0}'", pathname);
+            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.SavedAs", pathname));
         }
 
         private void PathAssignTaxiRoute(GameClient client, string[] args)
@@ -326,13 +327,13 @@ namespace DOL.GS.Commands
             PathPoint path = client.Player.TempProperties.GetProperty<PathPoint>(TEMP_PATH_LAST);
             if (args.Length < 2)
             {
-                DisplayMessage(client, "Usage: /path assigntaxiroute <destination>");
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.Usage.AssignTaxiRoute"));
                 return;
             }
 
             if (path == null)
             {
-                DisplayMessage(client, "No path created yet! Use /path create first!");
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.NoPathCreateFirst"));
                 return;
             }
 
@@ -343,7 +344,7 @@ namespace DOL.GS.Commands
                 merchant = client.Player.TargetObject as GameBoatStableMaster;
             if (merchant == null)
             {
-                DisplayMessage(client, "You must select a stable master to assign a taxi route!");
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.SelectStableMaster"));
                 return;
             }
             string target = String.Join(" ", args, 2, args.Length - 2); ;
@@ -369,11 +370,11 @@ namespace DOL.GS.Commands
             }
             if (!ticketFound)
             {
-                DisplayMessage(client, "Stablemaster has no {0}!", ticket);
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.StableMasterMissingTicket", ticket));
                 return;
             }
             MovementMgr.SavePath(pathname, path);
-            DisplayMessage(client, "Taxi route set to path '{0}'!", pathname);
+            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.TaxiRouteSet", pathname));
         }
 
         private void TogglePathVisualization(GameClient client)
@@ -382,7 +383,7 @@ namespace DOL.GS.Commands
                 return;
 
             npc.movementComponent.TogglePathVisualization();
-            DisplayMessage(client, "Toggling path visualization for {0} ({1})", npc.Name, npc.ObjectID);
+            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Path.VisualizationToggled", npc.Name, npc.ObjectID));
         }
 
         public void OnCommand(GameClient client, string[] args)

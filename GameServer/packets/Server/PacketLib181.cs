@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using DOL.AI.Brain;
 using DOL.GS.PlayerTitles;
+using DOL.Language;
 
 namespace DOL.GS.PacketHandler
 {
@@ -47,12 +48,9 @@ namespace DOL.GS.PacketHandler
 				pak.WriteByte(0); // new in 1.75
 				pak.WriteByte(0); // new in 1.81
 
-				ReadOnlySpan<char> captionSpan = caption == null ? [] : caption;
+				ReadOnlySpan<char> captionSpan = TakeEncodedChunk(caption == null ? [] : caption.AsSpan(), byte.MaxValue);
 
-				if (captionSpan.Length > byte.MaxValue)
-					captionSpan = captionSpan[..byte.MaxValue];
-
-				pak.WritePascalString(captionSpan);
+				WriteCustomTextWindowString(pak, captionSpan);
 				WriteCustomTextWindowData(pak, text);
 
 				//Trailing Zero!
@@ -68,7 +66,7 @@ namespace DOL.GS.PacketHandler
 			{
 				pak.WriteByte(1); // new in 1.75
 				pak.WriteByte(0); // new in 1.81
-				pak.WritePascalString("Player Statistics"); //window caption
+				pak.WritePascalString(TakeEncodedChunk(LanguageMgr.GetTranslation(m_gameClient, "PacketLib.PlayerTitles.Caption"), byte.MaxValue)); //window caption
 
 				byte line = 1;
 				foreach (string str in m_gameClient.Player.FormatStatistics())

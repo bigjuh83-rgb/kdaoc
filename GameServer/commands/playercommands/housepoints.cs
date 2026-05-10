@@ -16,13 +16,13 @@ namespace DOL.GS.Commands
             House house = client.Player.CurrentHouse;
 			if (!client.Player.InHouse || house == null)
 			{
-                DisplayMessage(client, "You need to be in a House to use this command!");
+                DisplayMessage(client, T(client, "PlayerCommands.HousePoints.NeedHouse"));
 				return;
 			}
 
             if (!house.HasOwnerPermissions(client.Player))
             {
-                DisplayMessage(client, "You do not have permissions to do that!");
+                DisplayMessage(client, T(client, "PlayerCommands.Common.NoPermission"));
                 return;
             }
 

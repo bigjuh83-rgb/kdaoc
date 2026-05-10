@@ -1,16 +1,16 @@
 ﻿/*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -22,6 +22,7 @@ using DOL.Events;
 using DOL.Database;
 using DOL.GS.PacketHandler;
 using DOL.GS.Housing;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -31,7 +32,7 @@ namespace DOL.GS
     /// <author>Aredhel</author>
     public abstract class AncientBoundDjinn : GameTeleporter
     {
-        private const int NpcTemplateId = 3000;      
+        private const int NpcTemplateId = 3000;
         private const int ZOffset = 63;
 
         /// <summary>
@@ -91,6 +92,10 @@ namespace DOL.GS
             }
         }
 
+        private static string T(GamePlayer player, string key, params object[] args)
+            => LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+
+
         /// <summary>
         /// Pick a model for this zone.
         /// </summary>
@@ -127,7 +132,7 @@ namespace DOL.GS
                     case 34:
                     case 134:
                         return 0x4aa;
-                    
+
                     // Temple of Twilight:
                     case 80:
                     case 37:
@@ -165,35 +170,27 @@ namespace DOL.GS
             if (!base.Interact(player))
                 return false;
 
-            String intro = String.Format("According to the rules set down by the Atlantean [masters], {0} {1} ",
-                "you are authorized for expeditious transport to your homeland or any of the Havens. Please state",
-                "your destination:");
+            String intro = T(player, "AncientBoundDjinn.Interact.Intro");
 
             String destinations;
 
             switch (player.Realm)
             {
                 case eRealm.Albion:
-                    destinations = String.Format("[Castle Sauvage], [Oceanus], [Stygia], [Volcanus], [Aerus], the [dungeons of Atlantis], {0} {1}",
-                        "[Snowdonia Fortress], [Camelot], [Gothwaite Harbor], [Inconnu Crypt], your [Guild] house, your",
-                        "[Personal] house, your [Hearth] bind, or to the [Caerwent] housing area?");
+                    destinations = T(player, "AncientBoundDjinn.Interact.Destinations.Albion");
                     break;
                 case eRealm.Midgard:
-                    destinations = String.Format("[Svasud Faste], [Oceanus], [Stygia], [Volcanus], [Aerus], the [dungeons of Atlantis], {0} {1}",
-                        "[Vindsaul Faste], [Jordheim], [Aegirhamn], [Kobold] Undercity, your [Guild] house, your",
-                        "[Personal] house, your [Hearth] bind, or to the [Erikstaad] housing area?");
+                    destinations = T(player, "AncientBoundDjinn.Interact.Destinations.Midgard");
                     break;
                 case eRealm.Hibernia:
-                    destinations = String.Format("[Druim Ligen], [Oceanus], [Stygia], [Volcanus], [Aerus], the [dungeons of Atlantis], {0} {1}",
-                        "[Druim Cain], the [Grove of Domnann], [Tir na Nog], [Shar Labyrinth], your [Guild] house, your",
-                        "[Personal] house, your [Hearth] bind, or to the [Meath] housing area?");
+                    destinations = T(player, "AncientBoundDjinn.Interact.Destinations.Hibernia");
                     break;
                 default:
-                    SayTo(player, "I don't know you, which realm are you from?");
+                    SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AncientBoundDjinn.Interact.UnknownRealm"));
                     return true;
             }
 
-            SayTo(player, String.Format("{0}{1}", intro, destinations));
+            SayTo(player, String.Format("{0} {1}", intro, destinations));
             return true;
         }
 
@@ -209,13 +206,57 @@ namespace DOL.GS
                 return false;
 
             GamePlayer player = source as GamePlayer;
+			text = text switch
+			{
+					"마스터" => "masters",
+					"아틀란티스 던전" => "dungeons of Atlantis",
+					"오케아노스" => "Oceanus",
+					"스티지아" => "Stygia",
+					"볼카누스" => "Volcanus",
+					"에어러스" => "Aerus",
+					"케어웬트" => "Caerwent",
+					"에릭스타드" => "Erikstaad",
+					"미스" => "Meath",
+					"돔난 숲" => "Grove of Domnann",
+					"코볼드" => "Kobold",
+					"헤스페로스" => "Hesperos",
+					"세투스 구덩이" => "Cetus' Pit",
+					"소베카이트 이터널" => "Sobekite Eternal",
+					"신전" => "Temple",
+					"델타" => "Delta",
+					"아툼의 땅" => "Land of Atum",
+					"티폰의 영역" => "Typhon's Reach",
+					"투시아 네소스" => "Thusia Nesos",
+					"아폴로" => "Apollo",
+					"바줄의 요새" => "Vazul's Fortress",
+					"키메라" => "Chimera",
+					"초록 숲" => "Green Glades",
+					"탈로스" => "Talos",
+					"황혼" => "Twilight",
+					"대피라미드" => "Great Pyramid",
+					"마아티의 전당" => "Halls of Ma'ati",
+					"심연" => "Deep",
+					"도시" => "City",
+					"아누바이트" => "Anubite",
+					"암무트의 방" => "Chamber of Ammut",
+						"입구" => "entrance",
+						"개인 주택" => "personal",
+						"길드 주택" => "guild",
+						"귀환 위치" => "hearth",
+					"남서쪽" => "southwest",
+					"북동쪽" => "northeast",
+					"티폰 본인" => "Typhon himself",
+					"포털" => "portal",
+					"고대 왕들" => "ancient kings",
+					_ => text
+				};
 
             // Manage the chit-chat.
 
             switch (text.ToLower())
             {
                 case "masters":
-                    String reply = String.Format("The Atlantean masters are a great and powerful people to whom [we] are bound.");
+                    String reply = LanguageMgr.GetTranslation(player.Client.Account.Language, "AncientBoundDjinn.Whisper.Masters");
                     SayTo(player, reply);
                     return true;
                 case "we":
@@ -228,8 +269,52 @@ namespace DOL.GS
 
 		protected override bool GetTeleportLocation(GamePlayer player, string text)
 		{
+			text = text switch
+			{
+					"아틀란티스 던전" => "dungeons of Atlantis",
+					"오케아노스" => "Oceanus",
+					"스티지아" => "Stygia",
+					"볼카누스" => "Volcanus",
+					"에어러스" => "Aerus",
+					"케어웬트" => "Caerwent",
+					"에릭스타드" => "Erikstaad",
+					"미스" => "Meath",
+					"돔난 숲" => "Grove of Domnann",
+					"코볼드" => "Kobold",
+					"헤스페로스" => "Hesperos",
+					"세투스 구덩이" => "Cetus' Pit",
+					"소베카이트 이터널" => "Sobekite Eternal",
+					"신전" => "Temple",
+					"델타" => "Delta",
+					"아툼의 땅" => "Land of Atum",
+					"티폰의 영역" => "Typhon's Reach",
+					"투시아 네소스" => "Thusia Nesos",
+					"아폴로" => "Apollo",
+					"바줄의 요새" => "Vazul's Fortress",
+					"키메라" => "Chimera",
+					"초록 숲" => "Green Glades",
+					"탈로스" => "Talos",
+					"황혼" => "Twilight",
+					"대피라미드" => "Great Pyramid",
+					"마아티의 전당" => "Halls of Ma'ati",
+					"심연" => "Deep",
+					"도시" => "City",
+					"아누바이트" => "Anubite",
+					"암무트의 방" => "Chamber of Ammut",
+						"입구" => "entrance",
+					"개인 주택" => "personal",
+					"길드 주택" => "guild",
+					"귀환 위치" => "hearth",
+					"남서쪽" => "southwest",
+					"북동쪽" => "northeast",
+					"티폰 본인" => "Typhon himself",
+					"포털" => "portal",
+					"고대 왕들" => "ancient kings",
+					_ => text
+				};
+
 			// special cases
-			if (text.ToLower() == "battlegrounds" || text.ToLower() == "personal")
+			if (text.ToLower() == "battlegrounds" || text.ToLower() == "personal" || text.ToLower() == "guild" || text.ToLower() == "hearth")
 			{
 				return base.GetTeleportLocation(player, text);
 			}
@@ -265,73 +350,47 @@ namespace DOL.GS
             {
                 case "oceanus":
                     {
-                        String reply = String.Format("I can transport you to the Haven of Oceanus in {0} {1}",
-                            "Oceanus [Hesperos], the mouth of [Cetus' Pit], or the heights of the great",
-                            "[Temple] of Sobekite Eternal.");
-                        SayTo(player, reply);
+                        SayTo(player, T(player, "AncientBoundDjinn.SubSelection.Oceanus"));
                         return;
                     }
                 case "stygia":
                     {
-                        String reply = String.Format("Do you seek the sandy Haven of Stygia in the Stygian {0}",
-                            "[Delta] or the distant [Land of Atum]?");
-                        SayTo(player, reply);
+                        SayTo(player, T(player, "AncientBoundDjinn.SubSelection.Stygia"));
                         return;
                     }
                 case "volcanus":
                     {
-                        String reply = String.Format("Do you wish to approach [Typhon's Reach] from the Haven {0} {1}",
-                            "of Volcanus or do you perhaps have more ambitious plans, such as attacking",
-                            "[Thusia Nesos], the Temple of [Apollo], [Vazul's Fortress], or the [Chimera] herself?");
-                        SayTo(player, reply);
+                        SayTo(player, T(player, "AncientBoundDjinn.SubSelection.Volcanus"));
                         return;
                     }
                 case "aerus":
                     {
-                        String reply = String.Format("Do you seek the Haven of Aerus outside [Green Glades] or {0}",
-                            "perhaps the Temple of [Talos]?");
-                        SayTo(player, reply);
+                        SayTo(player, T(player, "AncientBoundDjinn.SubSelection.Aerus"));
                         return;
                     }
                 case "dungeons of atlantis":
                     {
-                        String reply = String.Format("I can provide access to [Sobekite Eternal], the {0} {1}",
-                            "Temple of [Twilight], the [Great Pyramid], the [Halls of Ma'ati], [Deep] within",
-                            "Volcanus, or even the [City] of Aerus.");
-                        SayTo(player, reply);
+                        SayTo(player, T(player, "AncientBoundDjinn.SubSelection.Dungeons"));
                         return;
                     }
                 case "twilight":
                     {
-                        String reply = String.Format("Do you seek an audience with one of the great ladies {0} {1}",
-                            "of that dark temple? I'm sure that [Moirai], [Kepa], [Casta], [Laodameia], [Antioos],",
-                            "[Sinovia], or even [Medusa] would love to have you over for dinner.");
-                        SayTo(player, reply);
+                        SayTo(player, T(player, "AncientBoundDjinn.SubSelection.Twilight"));
                         return;
                     }
                 case "halls of ma'ati":
                     {
-                        String reply = String.Format("Which interests you, the [entrance], the [Anubite] side, {0} {1}",
-                            "or the [An-Uat] side? Or are you already ready to face your final fate in the",
-                            "[Chamber of Ammut]?");
-                        SayTo(player, reply);
+                        SayTo(player, T(player, "AncientBoundDjinn.SubSelection.HallsOfMaati"));
                         return;
                     }
                 case "deep":
                     {
-                        String reply = String.Format("Do you wish to meet with the Mediators of the [southwest] {0} {1}",
-                            "or [northeast] hall, face [Katorii's] gaze, or are you foolish enough to battle the",
-                            "likes of [Typhon himself]?");
-                        SayTo(player, reply);
+                        SayTo(player, T(player, "AncientBoundDjinn.SubSelection.Deep"));
                         return;
                     }
                 case "city":
                     {
-                        String reply = String.Format("I can send you to the entrance near the [portal], the great {0} {1} {2}",
-                            "Unifier, [Lethos], the [ancient kings] remembered now only for their reputations, the",
-                            "famous teacher, [Nelos], the most well known and honored avriel, [Katri], or even",
-                            "the [Phoenix] itself.");
-                        SayTo(player, reply);
+                        SayTo(player, T(player, "AncientBoundDjinn.SubSelection.City"));
                         return;
                     }
 
@@ -352,29 +411,30 @@ namespace DOL.GS
 
             if (Region.IsAtlantis(player.CurrentRegionID) &&
                 Region.IsAtlantis(destination.RegionID))
+            {
+                destination = CopyTeleport(destination);
                 destination.RegionID = player.CurrentRegionID;
-
-            String teleportInfo = "The magic of the {0} delivers you to the Haven of {1}.";
+            }
 
             switch (destination.TeleportID.ToLower())
             {
                 case "hesperos":
                     {
-                        player.Out.SendMessage(String.Format(teleportInfo, Name, "Oceanus"),
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AncientBoundDjinn.Teleport.DeliversToHaven", Name, "Oceanus"),
                             eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         base.OnTeleport(player, destination);
                         return;
                     }
                 case "delta":
                     {
-                        player.Out.SendMessage(String.Format(teleportInfo, Name, "Stygia"),
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AncientBoundDjinn.Teleport.DeliversToHaven", Name, "Stygia"),
                             eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         base.OnTeleport(player, destination);
                         return;
                     }
                 case "green glades":
                     {
-                        player.Out.SendMessage(String.Format(teleportInfo, Name, "Aerus"),
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AncientBoundDjinn.Teleport.DeliversToHaven", Name, "Aerus"),
                             eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         base.OnTeleport(player, destination);
                         return;
@@ -384,14 +444,29 @@ namespace DOL.GS
             base.OnDestinationPicked(player, destination);
         }
 
+        private static DbTeleport CopyTeleport(DbTeleport source)
+        {
+            return new DbTeleport
+            {
+                Type = source.Type,
+                TeleportID = source.TeleportID,
+                Realm = source.Realm,
+                RegionID = source.RegionID,
+                X = source.X,
+                Y = source.Y,
+                Z = source.Z,
+                Heading = source.Heading
+            };
+        }
+
         /// <summary>
-        /// Teleport the player to the designated coordinates. 
+        /// Teleport the player to the designated coordinates.
         /// </summary>
         /// <param name="player"></param>
         /// <param name="destination"></param>
         protected override void OnTeleport(GamePlayer player, DbTeleport destination)
         {
-            player.Out.SendMessage("There is an odd distortion in the air around you...", 
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AncientBoundDjinn.Teleport.Distortion"),
                 eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
             base.OnTeleport(player, destination);
@@ -406,7 +481,7 @@ namespace DOL.GS
         {
 			foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.SAY_DISTANCE))
 			{
-				player.Out.SendMessage(String.Format("The {0} says, \"{1}\"", this.Name, message), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(T(player, "AncientBoundDjinn.Say", this.Name, message), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 
             return true;

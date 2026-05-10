@@ -42,61 +42,32 @@ namespace DOL.GS.PacketHandler
 				pak.WriteByte(0x00); // unknown
 				pak.WriteByte((offer) ? (byte)0x02 : (byte)0x01); // Accept/Decline or Finish/Not Yet
 				pak.WriteByte(0x01); // Wrap
-				pak.WritePascalString(quest.Name);
+				pak.WritePascalString(TakeEncodedChunk(quest.Name, byte.MaxValue));
 
 				string personalizedSummary = BehaviourUtils.GetPersonalizedMessage(quest.Description, player);
-				if (personalizedSummary.Length > 255)
-				{
-					pak.WritePascalString(personalizedSummary.AsSpan(0, 255)); // Summary is max 255 bytes or client will crash !
-				}
-				else
-				{
-					pak.WritePascalString(personalizedSummary);
-				}
+				pak.WritePascalString(TakeEncodedChunk(personalizedSummary, byte.MaxValue)); // Summary is max 255 bytes or client will crash !
 
 				if (offer)
 				{
 					string personalizedStory = BehaviourUtils.GetPersonalizedMessage(quest.Story, player);
 
-					if (personalizedStory.Length > MAX_STORY_LENGTH)
-					{
-						pak.WriteShort(MAX_STORY_LENGTH);
-						pak.WriteNonNullTerminatedString(personalizedStory.AsSpan(0, MAX_STORY_LENGTH));
-					}
-					else
-					{
-						pak.WriteShort((ushort)personalizedStory.Length);
-						pak.WriteNonNullTerminatedString(personalizedStory);
-					}
+					ReadOnlySpan<char> storySpan = TakeEncodedChunk(personalizedStory, MAX_STORY_LENGTH);
+					pak.WriteShort((ushort) GetEncodedByteCount(storySpan));
+					pak.WriteNonNullTerminatedString(storySpan);
 				}
 				else
 				{
-					if (quest.FinishText.Length > MAX_STORY_LENGTH)
-					{
-						pak.WriteShort(MAX_STORY_LENGTH);
-						pak.WriteNonNullTerminatedString(quest.FinishText.AsSpan(0, MAX_STORY_LENGTH));
-					}
-					else
-					{
-						pak.WriteShort((ushort)quest.FinishText.Length);
-						pak.WriteNonNullTerminatedString(quest.FinishText);
-					}
+					ReadOnlySpan<char> finishTextSpan = TakeEncodedChunk(quest.FinishText, MAX_STORY_LENGTH);
+					pak.WriteShort((ushort) GetEncodedByteCount(finishTextSpan));
+					pak.WriteNonNullTerminatedString(finishTextSpan);
 				}
 
 				pak.WriteShort(QuestID);
 				pak.WriteByte((byte)quest.StepTexts.Count); // #goals count
-				Span<char> buffer = stackalloc char[254]; // 253 + 1 for '\r'
 
 				foreach (string text in quest.StepTexts)
 				{
-					ReadOnlySpan<char> textSpan = text == null ? [] : text;
-
-					if (textSpan.Length > 253)
-						textSpan = textSpan[..253];
-
-					textSpan.CopyTo(buffer);
-					buffer[textSpan.Length] = '\r';
-					pak.WritePascalString(buffer[..(textSpan.Length + 1)]);
+					pak.WritePascalString(TakeEncodedChunk(String.Format("{0}\r", text), byte.MaxValue));
 				}
 
 				pak.WriteInt((uint)quest.MoneyReward());
@@ -130,48 +101,33 @@ namespace DOL.GS.PacketHandler
 				pak.WriteByte(0x00); // unknown
 				pak.WriteByte((offer) ? (byte)0x02 : (byte)0x01); // Accept/Decline or Finish/Not Yet
 				pak.WriteByte(0x01); // Wrap
-				pak.WritePascalString(quest.Name);
+				pak.WritePascalString(TakeEncodedChunk(quest.Name, byte.MaxValue));
 
 				string personalizedSummary = BehaviourUtils.GetPersonalizedMessage(quest.Summary, player);
-				if (personalizedSummary.Length > 255)
-					pak.WritePascalString(personalizedSummary.AsSpan(0, 255)); // Summary is max 255 bytes !
-				else
-					pak.WritePascalString(personalizedSummary);
+				pak.WritePascalString(TakeEncodedChunk(personalizedSummary, byte.MaxValue)); // Summary is max 255 bytes !
 
 				if (offer)
 				{
 					string personalizedStory = BehaviourUtils.GetPersonalizedMessage(quest.Story, player);
 
-					if (personalizedStory.Length > ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH)
-					{
-						pak.WriteShort((ushort)ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH);
-						pak.WriteNonNullTerminatedString(personalizedStory.AsSpan(0, ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH));
-					}
-					else
-					{
-						pak.WriteShort((ushort)personalizedStory.Length);
-						pak.WriteNonNullTerminatedString(personalizedStory);
-					}
+					int maxStoryBytes = Math.Min(ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH, ushort.MaxValue);
+					ReadOnlySpan<char> storySpan = TakeEncodedChunk(personalizedStory, maxStoryBytes);
+					pak.WriteShort((ushort) GetEncodedByteCount(storySpan));
+					pak.WriteNonNullTerminatedString(storySpan);
 				}
 				else
 				{
-					if (quest.Conclusion.Length > (ushort)ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH)
-					{
-						pak.WriteShort((ushort)ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH);
-						pak.WriteNonNullTerminatedString(quest.Conclusion.AsSpan(0, (ushort)ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH));
-					}
-					else
-					{
-						pak.WriteShort((ushort)quest.Conclusion.Length);
-						pak.WriteNonNullTerminatedString(quest.Conclusion);
-					}
+					int maxConclusionBytes = Math.Min(ServerProperties.Properties.MAX_REWARDQUEST_DESCRIPTION_LENGTH, ushort.MaxValue);
+					ReadOnlySpan<char> conclusionSpan = TakeEncodedChunk(quest.Conclusion, maxConclusionBytes);
+					pak.WriteShort((ushort) GetEncodedByteCount(conclusionSpan));
+					pak.WriteNonNullTerminatedString(conclusionSpan);
 				}
 
 				pak.WriteShort(QuestID);
 				pak.WriteByte((byte)quest.Goals.Count); // #goals count
 				foreach (RewardQuest.QuestGoal goal in quest.Goals)
 				{
-					pak.WritePascalString(String.Format("{0}\r", goal.Description));
+					pak.WritePascalString(TakeEncodedChunk(String.Format("{0}\r", goal.Description), byte.MaxValue));
 				}
 				pak.WriteInt((uint)(quest.Rewards.Money)); // unknown, new in 1.94
 				pak.WriteByte((byte)quest.Rewards.ExperiencePercent(player));

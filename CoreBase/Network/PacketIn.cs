@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.IO;
+using System.Text;
 
 namespace DOL.Network
 {
@@ -9,6 +10,9 @@ namespace DOL.Network
 	/// </summary>
 	public abstract class PacketIn : MemoryStream, IPacket
 	{
+		private static readonly Encoding StrictUtf8Encoding = new UTF8Encoding(false, true);
+		private static readonly Encoding StrictDefaultEncoding = CreateStrictDefaultEncoding();
+
 		protected PacketIn() { }
 
 		protected PacketIn(int size) : base(size) { }
@@ -81,17 +85,23 @@ namespace DOL.Network
 		/// <returns>A string of maxlen or less</returns>
 		public string ReadString(int maxlen)
 		{
+			maxlen = GetReadableLength(maxlen);
+
+			if (maxlen <= 0)
+				return string.Empty;
+
 			// Stack for small strings, ArrayPool for large strings.
 			if (maxlen <= 1024)
 			{
 				Span<byte> buffer = stackalloc byte[maxlen];
-				_ = Read(buffer);
-				int actualLength = buffer.IndexOf((byte) 0);
+				int bytesRead = Read(buffer);
+				Span<byte> readBuffer = buffer[..bytesRead];
+				int actualLength = readBuffer.IndexOf((byte) 0);
 
 				if (actualLength == -1)
-					actualLength = maxlen;
+					actualLength = bytesRead;
 
-				return BaseServer.DefaultEncoding.GetString(buffer[..actualLength]);
+				return BaseServer.DefaultEncoding.GetString(readBuffer[..actualLength]);
 			}
 			else
 			{
@@ -99,12 +109,12 @@ namespace DOL.Network
 
 				try
 				{
-					int actualLength = Array.IndexOf(buffer, (byte) 0, 0, maxlen);
+					int bytesRead = Read(buffer, 0, maxlen);
+					int actualLength = Array.IndexOf(buffer, (byte) 0, 0, bytesRead);
 
 					if (actualLength == -1)
-						actualLength = maxlen;
+						actualLength = bytesRead;
 
-					Read(buffer, 0, maxlen);
 					return BaseServer.DefaultEncoding.GetString(buffer, 0, actualLength);
 				}
 				finally
@@ -134,7 +144,112 @@ namespace DOL.Network
 
 		public string ReadIntPascalStringLowEndian()
 		{
-			return ReadString((int)ReadIntLowEndian());
+			uint declaredLength = ReadIntLowEndian();
+			int maxlen = GetReadableLength(declaredLength);
+
+			if (maxlen <= 0)
+				return string.Empty;
+
+			if (maxlen <= 1024)
+			{
+				Span<byte> buffer = stackalloc byte[maxlen];
+				int bytesRead = Read(buffer);
+				Span<byte> readBuffer = buffer[..bytesRead];
+				int actualLength = readBuffer.IndexOf((byte) 0);
+
+				if (actualLength == -1)
+					actualLength = bytesRead;
+
+				return DecodeIntPascalString(readBuffer[..actualLength]);
+			}
+
+			byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(maxlen);
+
+			try
+			{
+				int bytesRead = Read(rentedBuffer, 0, maxlen);
+				int actualLength = Array.IndexOf(rentedBuffer, (byte) 0, 0, bytesRead);
+
+				if (actualLength == -1)
+					actualLength = bytesRead;
+
+				return DecodeIntPascalString(rentedBuffer.AsSpan(0, actualLength));
+			}
+			finally
+			{
+				ArrayPool<byte>.Shared.Return(rentedBuffer);
+			}
+		}
+
+		private int GetReadableLength(uint declaredLength)
+		{
+			long remaining = Length - Position;
+
+			if (declaredLength == 0 || remaining <= 0)
+				return 0;
+
+			return (int) Math.Min(declaredLength, Math.Min(remaining, int.MaxValue));
+		}
+
+		private int GetReadableLength(int declaredLength)
+		{
+			if (declaredLength <= 0)
+				return 0;
+
+			return GetReadableLength((uint) declaredLength);
+		}
+
+		private static string DecodeIntPascalString(ReadOnlySpan<byte> bytes)
+		{
+			try
+			{
+				string utf8String = StrictUtf8Encoding.GetString(bytes);
+
+				try
+				{
+					string defaultString = StrictDefaultEncoding.GetString(bytes);
+
+					if (ShouldPreferDefaultEncoding(utf8String, defaultString))
+						return defaultString;
+				}
+				catch (DecoderFallbackException)
+				{
+				}
+
+				return utf8String;
+			}
+			catch (DecoderFallbackException)
+			{
+				return BaseServer.DefaultEncoding.GetString(bytes);
+			}
+		}
+
+		private static Encoding CreateStrictDefaultEncoding()
+		{
+			Encoding encoding = (Encoding) BaseServer.DefaultEncoding.Clone();
+			encoding.EncoderFallback = EncoderFallback.ExceptionFallback;
+			encoding.DecoderFallback = DecoderFallback.ExceptionFallback;
+			return encoding;
+		}
+
+		private static bool ShouldPreferDefaultEncoding(string utf8String, string defaultString)
+		{
+			return ContainsHangul(defaultString) && !ContainsHangul(utf8String);
+		}
+
+		private static bool ContainsHangul(string value)
+		{
+			foreach (char character in value)
+			{
+				if ((character >= '\uAC00' && character <= '\uD7AF')
+					|| (character >= '\u1100' && character <= '\u11FF')
+					|| (character >= '\u3130' && character <= '\u318F'))
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		public uint ReadIntLowEndian()
@@ -159,7 +274,7 @@ namespace DOL.Network
 
 		/// <summary>
 		/// Returns a <see cref="T:System.String"/> that represents the current <see cref="T:System.Object"/>.
-		/// </summary>		
+		/// </summary>
 		public override string ToString()
 		{
 			return GetType().Name;

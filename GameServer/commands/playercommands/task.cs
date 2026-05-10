@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -29,6 +29,7 @@ using System.Collections;
 using System.Collections.Generic;
 using DOL.GS.PacketHandler;
 using DOL.GS.Quests;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -55,26 +56,26 @@ namespace DOL.GS.Commands
 				//TaskCommand(client.Player);
 				if (player.GameTask != null)
 					player.GameTask.CheckTaskExpired();
-				
+
 				AbstractTask task = player.GameTask;
-				
+
 				if (task != null && task.TaskActive)
 				{
 					var messages = new List<string>();
-					messages.Add("You are on " + task.Name);
-					messages.Add("What to do: " + task.Description);
+					messages.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Task.YouAreOn", task.Name));
+					messages.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Task.WhatToDo", task.Description));
 					messages.Add(" ");
-					messages.Add("Task will expire at " + task.TimeOut.ToShortTimeString());
-					messages.Add("You have done " + task.TasksDone + " tasks out of " + AbstractTask.MaxTasksDone(player.Level) + " until now.");
-					player.Out.SendCustomTextWindow("Tasks (Snapshot)", messages);
+					messages.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Task.ExpiresAt", task.TimeOut.ToShortTimeString()));
+					messages.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Task.DoneCount", task.TasksDone, AbstractTask.MaxTasksDone(player.Level)));
+					player.Out.SendCustomTextWindow(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Task.WindowTitle"), messages);
 				}
 				else if (task != null && task.TasksDone >= AbstractTask.MaxTasksDone(player.Level))
 				{
-					player.Out.SendMessage("You can do no more tasks at your current level", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Task.NoMoreAtLevel"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				else
 				{
-					player.Out.SendMessage("You have currently no pending task", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Task.NoPending"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 			}
 		}
@@ -98,20 +99,20 @@ namespace DOL.GS.Commands
 				if (task != null && task.TaskActive)
 				{
 					IList messages = new ArrayList(4);
-					messages.Add("You are on " + task.Name);
-					messages.Add("What to do: " + task.Description);
+					messages.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Task.YouAreOn", task.Name));
+					messages.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Task.WhatToDo", task.Description));
 					messages.Add(" ");
-					messages.Add("Task will expire at " + task.TimeOut.ToShortTimeString());
-					messages.Add("You have done " + task.TasksDone + " tasks out of " + AbstractTask.MaxTasksDone(player.Level) + " until now.");
-					player.Out.SendCustomTextWindow("Tasks (Snapshot)", messages);
+					messages.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Task.ExpiresAt", task.TimeOut.ToShortTimeString()));
+					messages.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Task.DoneCount", task.TasksDone, AbstractTask.MaxTasksDone(player.Level)));
+					player.Out.SendCustomTextWindow(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Task.WindowTitle"), messages);
 				}
 				else if (task != null && task.TasksDone >= AbstractTask.MaxTasksDone(player.Level))
 				{
-					player.Out.SendMessage("You can do no more tasks at your current level", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Task.NoMoreAtLevel"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				else
 				{
-					player.Out.SendMessage("You have currently no pending task", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Task.NoPending"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				return true;
 			}

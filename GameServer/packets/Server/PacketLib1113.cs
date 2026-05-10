@@ -1,5 +1,6 @@
 using System.Reflection;
 using DOL.GS.PlayerTitles;
+using DOL.Language;
 
 namespace DOL.GS.PacketHandler
 {
@@ -27,7 +28,7 @@ namespace DOL.GS.PacketHandler
 
                 pak.WriteByte(1); // new in 1.75
                 pak.WriteByte(0); // new in 1.81
-                pak.WritePascalString("Player Statistics"); //window caption
+                pak.WritePascalString(TakeEncodedChunk(LanguageMgr.GetTranslation(m_gameClient, "PacketLib.PlayerTitles.Caption"), byte.MaxValue)); //window caption
 
                 byte line = 1;
                 foreach (string str in m_gameClient.Player.FormatStatistics())

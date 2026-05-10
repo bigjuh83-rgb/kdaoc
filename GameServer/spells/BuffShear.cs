@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using DOL.AI.Brain;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.GS.ServerProperties;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
 	/// <summary>
-	/// Shears strength buff 
+	/// Shears strength buff
 	/// </summary>
 	[SpellHandler(eSpellType.StrengthShear)]
 	public class StrengthShear : AbstractBuffShear
@@ -138,13 +140,13 @@ namespace DOL.GS.Spells
 					{
 						SendEffectAnimation(target, 0, false, 1);
 						effect.Cancel(false);
-						MessageToCaster("Your spell rips away some of your target's enhancing magic.", eChatType.CT_Spell);
-						MessageToLiving(target, "Some of your enhancing magic has been ripped away by a spell!", eChatType.CT_Spell);
+						MessageToCaster(Caster is GamePlayer casterPlayer ? LanguageMgr.GetTranslation(casterPlayer.Client, "BuffShear.Message.CasterRemovedEnhancement") : LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "BuffShear.Message.CasterRemovedEnhancement"), eChatType.CT_Spell);
+						MessageToLiving(target, target is GamePlayer targetPlayer ? LanguageMgr.GetTranslation(targetPlayer.Client, "BuffShear.Message.TargetEnhancementRemoved") : LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "BuffShear.Message.TargetEnhancementRemoved"), eChatType.CT_Spell);
 					}
 					else
 					{
 						SendEffectAnimation(target, 0, false, 0);
-						MessageToCaster("The target's connection to their enhancement is too strong for you to remove.", eChatType.CT_SpellResisted);
+						MessageToCaster(Caster is GamePlayer casterPlayer ? LanguageMgr.GetTranslation(casterPlayer.Client, "BuffShear.Message.EnhancementTooStrong") : LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "BuffShear.Message.EnhancementTooStrong"), eChatType.CT_SpellResisted);
 					}
 
 					return;
@@ -152,10 +154,10 @@ namespace DOL.GS.Spells
 			}
 
 			SendEffectAnimation(target, 0, false, 0);
-			MessageToCaster("No enhancement of that type found on the target.", eChatType.CT_SpellResisted);
+			MessageToCaster(Caster is GamePlayer playerCaster ? LanguageMgr.GetTranslation(playerCaster.Client, "BuffShear.Message.NoEnhancementFound") : LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "BuffShear.Message.NoEnhancementFound"), eChatType.CT_SpellResisted);
 
 			/*
-			if (!noMessages) 
+			if (!noMessages)
 			{
 				MessageToLiving(effect.Owner, effect.Spell.Message3, eChatType.CT_SpellExpires);
 				Message.SystemToArea(effect.Owner, Util.MakeSentence(effect.Spell.Message4, effect.Owner.GetName(0, false)), eChatType.CT_SpellExpires, effect.Owner);
@@ -176,14 +178,14 @@ namespace DOL.GS.Spells
 		/// </summary>
 		public override IList<string> DelveInfo
 		{
-			get 
+			get
 			{
 				/*
 				<Begin Info: Potency Whack>
 				Function: buff shear
- 
+
 				Destroys a positive enhancement on the target.
- 
+
 				Type: Str/Con
 				Maximum strength of buffs removed: 150
 				Target: Enemy realm players and controlled pets only
@@ -191,7 +193,7 @@ namespace DOL.GS.Spells
 				Power cost: 12
 				Casting time:      2.0 sec
 				Damage: Body
- 
+
 				<End Info>
 				*/
 
@@ -247,18 +249,18 @@ namespace DOL.GS.Spells
 					{
 						SendEffectAnimation(target, 0, false, 1);
 						effect.Cancel(false);
-						MessageToCaster("Your spell rips away some of your target's enhancing magic.", eChatType.CT_Spell);
-						MessageToLiving(target, "Some of your enhancing magic has been ripped away by a spell!", eChatType.CT_Spell);
+						MessageToCaster(Caster is GamePlayer casterPlayer ? LanguageMgr.GetTranslation(casterPlayer.Client, "BuffShear.Message.CasterRemovedEnhancement") : LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "BuffShear.Message.CasterRemovedEnhancement"), eChatType.CT_Spell);
+						MessageToLiving(target, target is GamePlayer targetPlayer ? LanguageMgr.GetTranslation(targetPlayer.Client, "BuffShear.Message.TargetEnhancementRemoved") : LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "BuffShear.Message.TargetEnhancementRemoved"), eChatType.CT_Spell);
 						return;
 					}
 				}
 			}
 
 			SendEffectAnimation(target, 0, false, 0);
-			MessageToCaster("No enhancement of that type found on the target.", eChatType.CT_SpellResisted);
+			MessageToCaster(Caster is GamePlayer playerCaster ? LanguageMgr.GetTranslation(playerCaster.Client, "BuffShear.Message.NoEnhancementFound") : LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "BuffShear.Message.NoEnhancementFound"), eChatType.CT_SpellResisted);
 
 			/*
-			if (!noMessages) 
+			if (!noMessages)
 			{
 				MessageToLiving(effect.Owner, effect.Spell.Message3, eChatType.CT_SpellExpires);
 				Message.SystemToArea(effect.Owner, Util.MakeSentence(effect.Spell.Message4, effect.Owner.GetName(0, false)), eChatType.CT_SpellExpires, effect.Owner);

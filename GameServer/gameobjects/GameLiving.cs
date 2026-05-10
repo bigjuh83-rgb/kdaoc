@@ -760,7 +760,7 @@ namespace DOL.GS
 			{
 				long elapsedTime = GameLoop.GameLoopTime - rangeAttackHoldStart;
 				long halfwayPoint = attackComponent.AttackSpeed(ActiveWeapon) / 2;
-				
+
 				if (rangeAttackComponent.RangedAttackState is not eRangedAttackState.ReadyToFire and not eRangedAttackState.None && elapsedTime > halfwayPoint)
 					return false;
 			}
@@ -1220,7 +1220,7 @@ namespace DOL.GS
 			if (engage.EngageTarget.LastAttackedByEnemyTick <= GameLoop.GameLoopTime - EngageAbilityHandler.ENGAGE_ATTACK_DELAY_TICK)
 				return true;
 
-			player?.Out.SendMessage($"{engage.EngageTarget.GetName(0, true)} has been attacked recently and you are unable to engage.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			player?.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "GameLiving.Engage.TargetAttackedRecently", engage.EngageTarget.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			return false;
 		}
 
@@ -1232,7 +1232,7 @@ namespace DOL.GS
 		private void ConsumeEngageEndurance(GamePlayer player)
 		{
 			Endurance -= EngageAbilityHandler.ENGAGE_ENDURANCE_COST;
-			player?.Out.SendMessage("You concentrate on blocking the blow!", eChatType.CT_Items, eChatLoc.CL_SystemWindow);
+			player?.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "GameLiving.Engage.ConcentrateBlocking"), eChatType.CT_Items, eChatLoc.CL_SystemWindow);
 		}
 
 		private double CalculateBaseBlockChance(GamePlayer player, DbInventoryItem shield, AttackData ad)
@@ -1496,8 +1496,8 @@ namespace DOL.GS
 						LastAttackedByEnemyTickPvP = GameLoop.GameLoopTime;
 				}
 
-				// Melee attack that actually caused damage.
-				if (ad.IsMeleeAttack && ad.Damage > 0)
+				// Attack that actually caused damage.
+				if (ad.Damage > 0)
 				{
 					// Handle ablatives.
 					List<ECSGameSpellEffect> effects = effectListComponent.GetSpellEffects(eEffect.AblativeArmor);
@@ -2894,9 +2894,9 @@ namespace DOL.GS
 			{
 				return false;
 			}
-			
+
 			Notify(GameLivingEvent.SayReceive, this, new SayReceiveEventArgs(source, this, str));
-			
+
 			return true;
 		}
 
@@ -2911,9 +2911,9 @@ namespace DOL.GS
 			{
 				return false;
 			}
-			
+
 			Notify(GameLivingEvent.Say, this, new SayEventArgs(str));
-			
+
 			foreach (GameNPC npc in GetNPCsInRadius(WorldMgr.SAY_DISTANCE))
 			{
 				GameNPC receiver = npc;
@@ -2936,7 +2936,7 @@ namespace DOL.GS
 					}
 				}
 			}
-			
+
 			foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.SAY_DISTANCE))
 			{
 				GamePlayer receiver = player;
@@ -2945,14 +2945,14 @@ namespace DOL.GS
 					receiver.SayReceive(this, str);
 				}
 			}
-			
+
 			// whisper to Targeted NPC.
 			if (TargetObject != null && TargetObject is GameNPC)
 			{
 				GameNPC targetNPC = (GameNPC)TargetObject;
 				targetNPC.WhisperReceive(this, str);
 			}
-			
+
 			return true;
 		}
 
@@ -2968,9 +2968,9 @@ namespace DOL.GS
 			{
 				return false;
 			}
-			
+
 			Notify(GameLivingEvent.YellReceive, this, new YellReceiveEventArgs(source, this, str));
-			
+
 			return true;
 		}
 
@@ -2985,9 +2985,9 @@ namespace DOL.GS
 			{
 				return false;
 			}
-			
+
 			Notify(GameLivingEvent.Yell, this, new YellEventArgs(str));
-			
+
 			foreach (GameNPC npc in GetNPCsInRadius(WorldMgr.YELL_DISTANCE))
 			{
 				GameNPC receiver = npc;
@@ -2996,7 +2996,7 @@ namespace DOL.GS
 					receiver.YellReceive(this, str);
 				}
 			}
-			
+
 			foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.YELL_DISTANCE))
 			{
 				GamePlayer receiver = player;
@@ -3005,7 +3005,7 @@ namespace DOL.GS
 					receiver.YellReceive(this, str);
 				}
 			}
-			
+
 			return true;
 		}
 
@@ -3032,7 +3032,7 @@ namespace DOL.GS
 					//player.Out.SendMessage("Speak slower!", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 					return false;
 				}
-				
+
 				player.TempProperties.SetProperty("WHISPERDELAY", GameLoop.GameLoopTime);
 
 				foreach (DOL.GS.Quests.DataQuest q in DataQuestList)
@@ -3058,19 +3058,19 @@ namespace DOL.GS
 			{
 				return false;
 			}
-			
+
 			if (!this.IsWithinRadius(target, WorldMgr.WHISPER_DISTANCE))
 			{
 				return false;
 			}
-			
+
 			Notify(GameLivingEvent.Whisper, this, new WhisperEventArgs(target, str));
-			
+
 			if (target is GameLiving)
 			{
 				return ((GameLiving)target).WhisperReceive(this, str);
 			}
-			
+
 			return false;
 		}
 		/// <summary>
@@ -3212,24 +3212,24 @@ namespace DOL.GS
 		public virtual bool HasAbility(string keyName)
 		{
 			bool hasit = false;
-			
+
 			lock (_abilitiesLock)
 			{
 				hasit = m_abilities.ContainsKey(keyName);
 			}
-			
+
 			return hasit;
 		}
 
 		public bool HasAbilityType(Type type)
 		{
 			bool hasit = false;
-			
+
 			lock (_abilitiesLock)
 			{
 				hasit = (m_abilities.Values.Count(x => x.GetType() == type) > 0 ? true : false);
 			}
-			
+
 			return hasit;
 		}
 
@@ -3254,7 +3254,7 @@ namespace DOL.GS
 			{
 				Ability oldAbility = null;
 				m_abilities.TryGetValue(ability.KeyName, out oldAbility);
-				
+
 				if (oldAbility == null)
 				{
 					isNewAbility = true;
@@ -3265,10 +3265,10 @@ namespace DOL.GS
 				{
 					int oldLevel = oldAbility.Level;
 					oldAbility.Level = ability.Level;
-					
+
 					isNewAbility |= oldAbility.Level > oldLevel;
 				}
-				
+
 				if (sendUpdates && (isNewAbility && (this is GamePlayer)))
 				{
 					(this as GamePlayer).Out.SendMessage(LanguageMgr.GetTranslation((this as GamePlayer).Client.Account.Language, "GamePlayer.AddAbility.YouLearn", ability.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
@@ -3287,14 +3287,14 @@ namespace DOL.GS
 			lock (_abilitiesLock)
 			{
 				m_abilities.TryGetValue(abilityKeyName, out ability);
-				
+
 				if (ability == null)
 					return false;
-				
+
 				ability.Deactivate(this, true);
 				m_abilities.Remove(ability.KeyName);
 			}
-			
+
 			if (this is GamePlayer)
 				(this as GamePlayer).Out.SendMessage(LanguageMgr.GetTranslation((this as GamePlayer).Client.Account.Language, "GamePlayer.RemoveAbility.YouLose", ability.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			return true;
@@ -3312,7 +3312,7 @@ namespace DOL.GS
 			{
 				m_abilities.TryGetValue(abilityKey, out ab);
 			}
-			
+
 			return ab;
 		}
 
@@ -3327,7 +3327,7 @@ namespace DOL.GS
 			{
 				tmp = (T)m_abilities.Values.FirstOrDefault(a => a.GetType().Equals(typeof(T)));
 			}
-			
+
 			return tmp;
 		}
 
@@ -3359,12 +3359,12 @@ namespace DOL.GS
 		public int GetAbilityLevel(string keyName)
 		{
 			Ability ab = null;
-			
+
 			lock (_abilitiesLock)
 			{
 				m_abilities.TryGetValue(keyName, out ab);
 			}
-			
+
 			if (ab == null)
 				return 0;
 
@@ -3382,7 +3382,7 @@ namespace DOL.GS
 			{
 				list = new List<Ability>(m_abilities.Values);
 			}
-			
+
 			return list;
 		}
 
@@ -3443,10 +3443,10 @@ namespace DOL.GS
 			lock (_disabledSkillsLock)
 			{
 				List<Skill> skillList = new List<Skill>();
-				
+
 				foreach(KeyValuePair<long, Skill> disabled in m_disabledSkills.Values)
 					skillList.Add(disabled.Value);
-				
+
 				return skillList;
 			}
 		}
@@ -3516,18 +3516,18 @@ namespace DOL.GS
 		{
 			if (ObjectState != eObjectState.Active)
 				return;
-			
+
 			foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
 				if (player == null)
 					continue;
-				
+
 				player.Out.SendLivingEquipmentUpdate(this);
 			}
 		}
-		
+
 		#endregion
-		
+
 		#region Region
 
 		/// <summary>

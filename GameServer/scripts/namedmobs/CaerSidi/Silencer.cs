@@ -11,16 +11,18 @@ namespace DOL.GS
     public class Silencer : GameEpicBoss
     {
         private static new readonly Logging.Logger log = Logging.LoggerManager.Create(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        private const string TemporaryImmunityKey = "NamedMobs.Silencer.TemporaryImmunity";
+        private const string ResistsFadeKey = "NamedMobs.Silencer.ResistsFade";
 
         public Silencer()
             : base()
         {
         }
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(String key, params object[] args)
         {
             foreach (GamePlayer player in this.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
 
@@ -59,7 +61,7 @@ namespace DOL.GS
                 {
                     if (resist_timer == false)
                     {
-                        BroadcastMessage(String.Format(this.Name + " becomes almost immune to any damage for short time!"));
+                        BroadcastMessage(TemporaryImmunityKey, this.Name);
                         new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(ResistTime), 2000);
                         resist_timer = true;
                     }
@@ -121,7 +123,7 @@ namespace DOL.GS
             attackers_count = 0;
             if (spam1 == false)
             {
-                BroadcastMessage(String.Format(this.Name + " resists fades away!"));
+                BroadcastMessage(ResistsFadeKey, this.Name);
                 spam1 = true;
             }
             return 0;

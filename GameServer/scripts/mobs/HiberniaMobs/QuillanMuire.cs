@@ -48,14 +48,14 @@ namespace DOL.AI.Brain
 				{
 					if (npc != null && npc.IsAlive && npc.Brain is MuireHerbalistBrain brian)
 					{
-						if (!brian.HasAggro && brian != null && target != null && target.IsAlive)
+						if (brian != null && !brian.HasAggro && target != null && target.IsAlive)
 							brian.AddToAggroList(target, 10);
 					}
 				}
 				foreach (GameNPC npc in WorldMgr.GetNPCsFromRegion(Body.CurrentRegionID))
 				{
 					if (npc != null && npc.IsAlive && npc.PackageID == "QuillanBaf")
-						AddAggroListTo(npc.Brain as StandardMobBrain); 
+						AddAggroListTo(npc.Brain as StandardMobBrain);
 				}
 			}
 			base.Think();
@@ -174,7 +174,7 @@ namespace DOL.AI.Brain
         {
 			foreach (GameNPC npc in Body.GetNPCsInRadius(1500))
 			{
-				if (npc.IsAlive && npc != null && npc.Faction == Body.Faction)
+				if (npc != null && npc.IsAlive && npc.Faction == Body.Faction)
 				{
 					foreach (Spell spell in Body.Spells)
 					{

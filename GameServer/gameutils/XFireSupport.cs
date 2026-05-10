@@ -62,13 +62,13 @@ namespace DOL.GS.Commands
 			if (args[1].ToLower().Equals("on"))
 			{
 				client.Player.ShowXFireInfo = true;
-				DisplayMessage(client, "Your XFire flag is ON. Your character data will be sent to the XFire service ( if you have XFire installed ). Use '/xfire off' to disable sending character data to the XFire service.");
+				DisplayMessage(client, T(client, "PlayerCommands.XFire.On"));
 				flag = 1;
 			}
 			else if (args[1].ToLower().Equals("off"))
 			{
 				client.Player.ShowXFireInfo = false;
-				DisplayMessage(client, "Your XFire flag is OFF. TODO correct message.");
+				DisplayMessage(client, T(client, "PlayerCommands.XFire.Off"));
 			}
 			else
 			{

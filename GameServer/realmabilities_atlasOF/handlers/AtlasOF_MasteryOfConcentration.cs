@@ -1,21 +1,21 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -28,6 +28,7 @@ using DOL.GS.PacketHandler;
 using DOL.GS.Effects;
 using DOL.Events;
 using DOL.Database;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -57,16 +58,16 @@ namespace DOL.GS.RealmAbilities
 			{
 				if (caster.IsWithinRadius(player, WorldMgr.INFO_DISTANCE))
 				{
-					if (player == caster)
-					{
-						player.MessageToSelf("You cast " + this.Name + "!", eChatType.CT_Spell);
-						player.MessageToSelf("You become steadier in your casting abilities!", eChatType.CT_Spell);
-					}
-					else
-					{
-						player.MessageFromArea(caster, caster.Name + " casts a spell!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
-						player.Out.SendMessage(caster.Name + "'s castings have perfect poise!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-					}
+						if (player == caster)
+						{
+							player.MessageToSelf(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.MasteryOfConcentration.CastSelf", Name), eChatType.CT_Spell);
+							player.MessageToSelf(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.MasteryOfConcentration.Steadier"), eChatType.CT_Spell);
+						}
+						else
+						{
+							player.MessageFromArea(caster, LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.MasteryOfConcentration.CastsSpell", caster.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.MasteryOfConcentration.PerfectPoise", caster.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						}
 				}
 			}
 

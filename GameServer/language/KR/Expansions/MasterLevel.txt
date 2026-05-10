@@ -1,0 +1,187 @@
+﻿DetailDisplayHandler.HandlePacket.UniqueObject:	고유 오브젝트
+
+# 마스터 레벨
+
+# 1. 미완료 단계
+SendMasterLevelWindow.Uncomplete.ML1.Step1:	Ianetor는 불장난을 좋아하며, Oceanus Anatole에서 벌어지는 폭발적인 놀이에 참여할 모험가를 찾고 있습니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML1.Step2:	Lornas를 털어 간 도둑이 아직 살아 있습니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML1.Step3:	Messothalassa와 Oceanus Boreal의 트리톤 Zhton 및 Kynhroe 부족은 죽어 가면서도 여전히 서로 전쟁을 벌이고 있습니다! 각 부족은 자신들의 대의를 위해 싸워 줄 모험가를 찾고 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML1.Step4:	Oceanus Hesperos의 저주받은 바다에 휩쓸린 이들을 장벽이 아직도 가두고 있습니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML1.Step5:	Lord Krojer의 챔피언들을 상대로 한 일대일 전투에서 아직 자신의 실력을 증명하지 못했습니다! 솔로 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML1.Step6:	Kirkleis는 자신의 저주를 조롱하는 거울 속 자신을 여전히 증오 어린 눈으로 바라보고 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML1.Step7:	포털들은 아직도 어둡고 고요합니다! The Rassa는 그 힘을 찾는 이들에게서 여전히 봉인되어 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML1.Step8:	영원의 심연을 외눈으로 응시하는 머리 아래 모래 속에 루비가 놓여 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML1.Step9:	Desmona는 아직 왕관을 쓰고 있으며, 필요한 증표는 아직 발견되지 않았습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML1.Step10:	반지, 루비, 거울, 왕관을 들고 Cetus와 맞서십시오! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML2.Step1:	Temple of the Sobekite Eternal의 그림자 속에서 죽음이 당신을 노리고 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML2.Step2:	사칭자의 암살자들이 Temple of the Sobekite Eternal의 수호자들을 살해하고 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML2.Step3:	Temple of the Sobekite Eternal의 물에 잠긴 깊은 곳에서 트리톤 족장들과 그 추종자들이 훔친 물건을 쌓아 두고 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML2.Step4:	Rrionnes의 비친 모습이 그녀의 무적성을 푸는 열쇠를 쥐고 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML2.Step5:	아직 Chaths의 전략 시험을 통과하지 못했습니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML2.Step6:	Kanahkt의 시험은 당신에게 너무 어려운 듯합니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML2.Step7:	공포, 전율, 혹은 경악과 맞서야 합니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML2.Step8:	승리를 증명하려면 자기 자신과 마주해야 합니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML2.Step9:	한때 Sobekite Eternal의 시련을 이겨 낸 Battle Masters를 물리치십시오! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML2.Step10:	사칭자가 Ankh of Life를 훔쳤고, Temple of the Sobekite Eternal 안에 머무는 한 그는 불멸의 존재가 됩니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML3.Step1:	Moirai는 여전히 마법 방어막 뒤에 룬의 힘을 간직하고 있습니다!
+SendMasterLevelWindow.Uncomplete.ML3.Step2:	Kepa가 자신의 룬의 힘을 주겠다고 했습니다. 도와주시겠습니까?
+SendMasterLevelWindow.Uncomplete.ML3.Step3:	Casta는 아직도 자신의 유물을 사용해 소굴에 들어오는 자들을 처치하고 있습니다!
+SendMasterLevelWindow.Uncomplete.ML3.Step4:	Laodamedia는 여전히 자신의 소굴을 엄격하게 지키고 있습니다!
+SendMasterLevelWindow.Uncomplete.ML3.Step5:	Antioos가 또 다른 룬의 힘을 대가로 당신의 도움을 요청합니다!
+SendMasterLevelWindow.Uncomplete.ML3.Step6:	기묘한 바라쿠다가 힘으로 빛나며 어둠 속에 살고 있습니다!
+SendMasterLevelWindow.Uncomplete.ML3.Step7:	Shraogh는 자신에게 맞서는 자들의 마음에 여전히 공포를 심어 줍니다!
+SendMasterLevelWindow.Uncomplete.ML3.Step8:	가오리 무리가 부자연스러운 힘으로 빛나고 있습니다!
+SendMasterLevelWindow.Uncomplete.ML3.Step9:	문어 Sinovia가 가까이 오는 자들을 집어삼킵니다!
+SendMasterLevelWindow.Uncomplete.ML3.Step10:	Medusa는 자신에게 맞서는 자들을 아직도 돌로 만들어 버립니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML4.Step1:	Colossal은 아직 Stygian Desert의 전갈들로부터 소환되지 않았습니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML4.Step2:	Fortress of Storms는 아직 함락되지 않았습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML4.Step3:	The Mighty One, the Eye of Ra가 아직도 Land of Atum의 사막을 배회한다는 소문이 있습니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML4.Step4:	누군가에게는 귀중한 돌이 아이에게는 한낱 장난감일 뿐입니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML4.Step5:	Land of Atum의 Jann들이 모래 언덕 사이를 소용돌이치고 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML4.Step6:	Oukesson the Ghillian은 전투 중에도 계속 증식하고 있습니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML4.Step7:	Iter 강의 수호자들이 아직 깨어나지 않았습니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML4.Step8:	Daehien의 피가 Land of Atum에 아직도 흐르고 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML4.Step9:	마리드 Gaurmaes는 토네이도와 먼지 뒤에 숨어 아직 안전합니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML4.Step10:	Martikhoras는 여전히 자신의 피라미드를 지배하고 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML5.Step1:	Echo of Qebehsenuef에게서 Canopic Jar - Intestines를 훔쳐야 합니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML5.Step2:	Echo of Duamutef에게서 또 다른 Canopic Jar - Stomach를 훔쳐야 합니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML5.Step3:	Echo of Hapy에게서 또 다른 Canopic Jar - Lungs를 훔쳐야 합니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML5.Step4:	Echo of Imsety에게서 또 다른 Canopic Jar - Liver를 훔쳐야 합니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML5.Step5:	Aeurs의 고르곤들이 아직도 Cau Suraes의 mirror of Ra를 가지고 있습니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML5.Step6:	속박된 자들이 보존의 수지를 가지고 있습니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML5.Step7:	속박된 자들이 Ammut와 맞서기 위해 필요한 가면을 아직 가지고 있습니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML5.Step8:	속박된 자들 사이에서 붕대를 찾을 수 있습니다. 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML5.Step9:	Mahaf의 도움을 얻으려면 독이 든 물을 마셔야 합니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML5.Step10:	Halls of Ma'ati 깊은 곳에서 Ammut와 맞서 심판을 받아야 합니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML6.Step1:	그들이 나타나는 곳에서 희귀한 uraeus를 찾으십시오. 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML6.Step2:	아직 희생 의식이 치러지지 않았고, salamander도 아직 태어나지 않았습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML6.Step3:	Lateef는 Am-he의 추종자로 살아가는 자신의 운명을 한탄하며 사막으로 돌아가고 싶어 합니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML6.Step4:	Pallida-uraei가 아직 나타나지 않았습니다! Uraeus의 거처를 찾아보십시오! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML6.Step5:	Volcanus 최동단의 불기둥들이 물건들을 지키고 있으니, 불길을 식혀야 합니다! 솔로 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML6.Step6:	Typhon's Reach의 복수의 기둥들 사이에서 희생 집행자 Siraadi를 찾으십시오! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML6.Step7:	Ankhkare의 수호자 셋이 그를 철저히 지키고 있습니다. 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML6.Step8:	섬 중앙의 화로들이 아직도 efreet를 불러내고 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML6.Step9:	Azhen Isles의 Vazul's Fortress는 아직 돌파되지 않았습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML6.Step10:	Chimera는 East Ashen Isles의 요새에서 아직도 굳건히 버티고 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML7.Step1:	불의 건틀릿을 획득해야 합니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML7.Step2:	전투를 통해 상대에 대한 모든 것을 알 수 있지만, 넷이 모이면 시간이 늘어납니다. 그들의 불화를 끝내는 것은 당신의 몫이 아니지만, 그들 모두가 당신을 위협으로 여기기 전에는 앞으로 나아갈 수 없습니다. 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML7.Step3:	Apophians는 당신의 인내심을 시험하고 싶어 합니다. 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML7.Step4:	Volurgons는 당신의 인내심을 시험하고 싶어 합니다. 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML7.Step5:	Shaitan은 당신의 인내심을 시험하고 싶어 합니다. 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML7.Step6:	Hephaestians는 당신의 인내심을 시험하고 싶어 합니다. 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML7.Step7:	Chamber of Flame에서 도전에 맞서야 합니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML7.Step8:	Katorii의 시선은 닿는 모든 생명을 파괴합니다. 반드시 그녀를 쓰러뜨려야 합니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML7.Step9:	수수께끼의 힘이 당신의 길을 막고 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML7.Step10:	Typhon은 Volcanus 깊은 곳 중앙의 용암 웅덩이에 누워 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML8.Step1:	지니 Bisul이 아직 제어 수정을 가지고 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML8.Step2:	Agnes의 방패는 오래전에 파괴되었지만, 그의 형제 Tholoss가 그 쌍둥이 방패를 가지고 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML8.Step3:	위대한 Agne의 검은 이제 장난기 많은 Jinn의 손에 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML8.Step4:	한때 고귀하고 자랑스러웠던 Agnes는 이제 Centaur의 집 곳곳에 조각난 채 흩어져 있습니다. 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML8.Step5:	Kratos는 아직 Agne의 다리를 넘겨주지 않았습니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML8.Step6:	Dawar의 하인이 Agne의 머리를 지니고 있습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML8.Step7:	Aerus의 석상들 사이에서 Agne의 몸통을 찾으십시오! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML8.Step8:	여러 고르곤이 Agne를 재건하려는 당신의 노력을 방해하려고 힘을 합쳤습니다. 과거의 시련에서 많은 고르곤이 죽었기 때문에, 그들은 그의 왼팔을 숨겼습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML8.Step9:	오른팔은 한때 웅장했으나 이제는 파괴된 Atlantean 사원의 대전당에 놓여 있습니다. 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML8.Step10:	먼저 Agnes의 전장에서 그의 군대를 물리치고, 그다음 그의 사원에서 Talos를 쓰러뜨려야 합니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML9.Step1:	오래전 Kyros는 전투에서 다양한 역할을 수행하는 궁극의 전사임을 증명했습니다. 감히 그에게 도전하시겠습니까? 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML9.Step2:	Lachlen은 새로운 땅마다 도사린 독특한 위험에 맞설 준비가 늘 되어 있던 위대한 탐험가였습니다! 그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML9.Step3:	오래전 Evzen은 세 전쟁 지역의 군주들을 각각 쓰러뜨린 뒤 그 지역들을 통합했고, 합쳐진 땅을 철권으로 지배했습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML9.Step4:	네 왕의 형상들이 잠들어 있으니 깨워야 합니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML9.Step5:	Nelos는 당신이 살아남지 못할지도 모르는 교훈을 주고 싶어 합니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML9.Step6:	Katri가 이끄는 Centaur 순찰대가 당신이 목표에 도달하지 못하게 방해합니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML9.Step7:	Iaculi는 서로를 잡아먹으며, 가장 강한 개체만 살아남습니다. 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML9.Step8:	Phoenix의 수호자들에게 아직 자신의 가치를 증명하지 못했습니다! 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML9.Step9:	Neola는 아직도 자신의 자매들을 잘 지키고 있습니다. 배틀그룹 인카운터입니다.
+SendMasterLevelWindow.Uncomplete.ML9.Step10:	Phoenix는 아직 약해지지 않았고, 여전히 위에서 군림하고 있습니다! 배틀그룹 인카운터입니다.
+
+# 1. 완료 단계
+SendMasterLevelWindow.Complete.ML1.Step1:	[완료] Ianetor를 물리쳤습니다!
+SendMasterLevelWindow.Complete.ML1.Step2:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML1.Step3:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML1.Step4:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML1.Step5:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML1.Step6:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML1.Step7:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML1.Step8:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML1.Step9:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML1.Step10:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML2.Step1:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML2.Step2:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML2.Step3:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML2.Step4:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML2.Step5:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML2.Step6:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML2.Step7:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML2.Step8:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML2.Step9:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML2.Step10:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML3.Step1:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML3.Step2:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML3.Step3:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML3.Step4:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML3.Step5:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML3.Step6:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML3.Step7:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML3.Step8:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML3.Step9:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML3.Step10:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML4.Step1:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML4.Step2:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML4.Step3:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML4.Step4:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML4.Step5:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML4.Step6:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML4.Step7:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML4.Step8:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML4.Step9:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML4.Step10:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML5.Step1:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML5.Step2:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML5.Step3:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML5.Step4:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML5.Step5:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML5.Step6:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML5.Step7:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML5.Step8:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML5.Step9:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML5.Step10:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML6.Step1:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML6.Step2:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML6.Step3:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML6.Step4:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML6.Step5:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML6.Step6:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML6.Step7:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML6.Step8:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML6.Step9:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML6.Step10:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML7.Step1:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML7.Step2:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML7.Step3:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML7.Step4:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML7.Step5:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML7.Step6:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML7.Step7:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML7.Step8:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML7.Step9:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML7.Step10:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML8.Step1:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML8.Step2:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML8.Step3:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML8.Step4:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML8.Step5:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML8.Step6:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML8.Step7:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML8.Step8:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML8.Step9:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML8.Step10:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML9.Step1:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML9.Step2:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML9.Step3:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML9.Step4:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML9.Step5:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML9.Step6:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML9.Step7:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML9.Step8:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML9.Step9:	[완료] 내용 없음
+SendMasterLevelWindow.Complete.ML9.Step10:	[완료] 내용 없음

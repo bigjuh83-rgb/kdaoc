@@ -20,6 +20,7 @@ using System;
 using System.Linq;
 
 using DOL.Database;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -45,20 +46,20 @@ namespace DOL.GS
 			{
 				if (player.CurrentRegion.Expansion == (int)eClientExpansion.DarknessRising)
 				{
-					SayTo(player, "Do you wish to [exit]?");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "ThroneRoomTeleporter.Interact.ExitPrompt"));
 				}
 				else
 				{
-					SayTo(player, "Do you require an audience with the [King]?");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "ThroneRoomTeleporter.Interact.KingPrompt"));
 				}
 				return true;
 			}
 			else
 			{
-				String reply = "I am afraid, but the King is busy right now.";
+				String reply = LanguageMgr.GetTranslation(player.Client.Account.Language, "ThroneRoomTeleporter.Interact.KingBusy");
 
 				if (player.Inventory.CountItemTemplate("Personal_Bind_Recall_Stone", eInventorySlot.Min_Inv, eInventorySlot.Max_Inv) == 0)
-					reply += " If you're only here to get your Personal Bind Recall Stone then I'll see what I can [do].";
+					reply += " " + LanguageMgr.GetTranslation(player.Client.Account.Language, "ThroneRoomTeleporter.Interact.StoneFallback");
 
 				SayTo(player, reply);
 				return false;
@@ -78,7 +79,9 @@ namespace DOL.GS
 
 			GamePlayer player = source as GamePlayer;
 
-			if ((text.ToLower() == "king" || text.ToLower() == "exit") && GlobalConstants.IsExpansionEnabled((int)eClientExpansion.DarknessRising))
+			string normalizedText = text.ToLowerInvariant();
+
+			if ((normalizedText == "king" || normalizedText == "exit" || text == "국왕" || text == "나가기") && GlobalConstants.IsExpansionEnabled((int)eClientExpansion.DarknessRising))
 			{
 				uint throneRegionID = 0;
 				string teleportThroneID = "error";
@@ -106,7 +109,7 @@ namespace DOL.GS
 				if (throneRegionID == 0)
 				{
 					log.ErrorFormat("Can't find King for player {0} speaking to {1} of realm {2}!", player.Name, Name, Realm);
-					player.Out.SendMessage("Server error, can't find throne room.", DOL.GS.PacketHandler.eChatType.CT_Staff, DOL.GS.PacketHandler.eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "ThroneRoomTeleporter.Error.ThroneRoomNotFound"), DOL.GS.PacketHandler.eChatType.CT_Staff, DOL.GS.PacketHandler.eChatLoc.CL_SystemWindow);
 					return false;
 				}
 
@@ -118,7 +121,7 @@ namespace DOL.GS
 					if (teleport == null)
 					{
 						log.ErrorFormat("Can't find throne room exit TeleportID {0}!", teleportExitID);
-						player.Out.SendMessage("Server error, can't find exit to this throne room.  Moving you to your last bind point.", DOL.GS.PacketHandler.eChatType.CT_Staff, DOL.GS.PacketHandler.eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "ThroneRoomTeleporter.Error.ExitNotFoundMoveBind"), DOL.GS.PacketHandler.eChatType.CT_Staff, DOL.GS.PacketHandler.eChatLoc.CL_SystemWindow);
 						player.MoveToBind();
 					}
 				}
@@ -128,13 +131,13 @@ namespace DOL.GS
 					if (teleport == null)
 					{
 						log.ErrorFormat("Can't find throne room TeleportID {0}!", teleportThroneID);
-						player.Out.SendMessage("Server error, can't find throne room teleport location.", DOL.GS.PacketHandler.eChatType.CT_Staff, DOL.GS.PacketHandler.eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "ThroneRoomTeleporter.Error.TeleportLocationNotFound"), DOL.GS.PacketHandler.eChatType.CT_Staff, DOL.GS.PacketHandler.eChatLoc.CL_SystemWindow);
 					}
 				}
 
 				if (teleport != null)
 				{
-					SayTo(player, "Very well ...");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "ThroneRoomTeleporter.Teleport.Accepted"));
 					player.MoveTo((ushort)teleport.RegionID, teleport.X, teleport.Y, teleport.Z, (ushort)teleport.Heading);
 				}
 
@@ -142,11 +145,11 @@ namespace DOL.GS
 			}
 
 
-			if (text.ToLower() == "do")
+				if (normalizedText == "do" || normalizedText == "드리기")
 			{
 				if (player.Inventory.CountItemTemplate("Personal_Bind_Recall_Stone", eInventorySlot.Min_Inv, eInventorySlot.Max_Inv) == 0)
 				{
-					SayTo(player, "Very well then. Here's your Personal Bind Recall Stone, may it serve you well.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "ThroneRoomTeleporter.Whisper.GiveStone"));
 					player.ReceiveItem(this, "Personal_Bind_Recall_Stone");
 				}
 				return false;

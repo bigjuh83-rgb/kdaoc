@@ -4,6 +4,7 @@ using System.Linq;
 using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -265,7 +266,7 @@ namespace DOL.GS
                 {
                     List<DbMobXLootTemplate> killedMobXLootTemplates = null;
 
-                    // Graveen: we first privilegiate the loottemplate named 'templateid' if it exists	
+                    // Graveen: we first privilegiate the loottemplate named 'templateid' if it exists
                     if (mob.NPCTemplate != null &&
                         m_mobXLootTemplates.ContainsKey(mob.NPCTemplate.TemplateId.ToString().ToLower()))
                     {
@@ -393,14 +394,12 @@ namespace DOL.GS
                                     timeDifference *= -1;
                                     //"PvE Time Remaining: " + TimeSpan.FromMilliseconds(pve).Hours + "h " + TimeSpan.FromMilliseconds(pve).Minutes + "m " + TimeSpan.FromMilliseconds(pve).Seconds + "s");
                                     if (timeDifference > 0)
-                                        player.Out.SendMessage(
-                                            TimeSpan.FromMilliseconds(timeDifference).Hours + "h " +
-                                            TimeSpan.FromMilliseconds(timeDifference).Minutes + "m " +
-                                            TimeSpan.FromMilliseconds(timeDifference).Seconds + "s until next XP item",
-                                            eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                    {
+                                        TimeSpan remaining = TimeSpan.FromMilliseconds(timeDifference);
+                                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LootGeneratorTemplate.XPItem.TimeRemaining", remaining.Hours, remaining.Minutes, remaining.Seconds), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                    }
                                     else
-                                        player.Out.SendMessage("XP item will drop after your next kill!",
-                                            eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LootGeneratorTemplate.XPItem.NextKill"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                 }
                             }
                         }
@@ -513,14 +512,12 @@ namespace DOL.GS
                             timeDifference *= -1;
                             //"PvE Time Remaining: " + TimeSpan.FromMilliseconds(pve).Hours + "h " + TimeSpan.FromMilliseconds(pve).Minutes + "m " + TimeSpan.FromMilliseconds(pve).Seconds + "s");
                             if (timeDifference > 0)
-                                player.Out.SendMessage(
-                                    TimeSpan.FromMilliseconds(timeDifference).Hours + "h " +
-                                    TimeSpan.FromMilliseconds(timeDifference).Minutes + "m " +
-                                    TimeSpan.FromMilliseconds(timeDifference).Seconds + "s until next XP item",
-                                    eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            {
+                                TimeSpan remaining = TimeSpan.FromMilliseconds(timeDifference);
+                                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LootGeneratorTemplate.XPItem.TimeRemaining", remaining.Hours, remaining.Minutes, remaining.Seconds), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            }
                             else
-                                player.Out.SendMessage("XP item will drop after your next kill!", eChatType.CT_System,
-                                    eChatLoc.CL_SystemWindow);
+                                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LootGeneratorTemplate.XPItem.NextKill"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         }
                     }
                 }

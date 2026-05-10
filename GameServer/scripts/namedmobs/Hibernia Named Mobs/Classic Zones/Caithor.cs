@@ -86,7 +86,7 @@ namespace DOL.GS
 			RealCaithorUp = false;
 			foreach(GameNPC npc in GetNPCsInRadius(8000))
             {
-				if (npc.IsAlive && npc != null && npc.PackageID == "RealCaithorDorocha")
+				if (npc != null && npc.IsAlive && npc.PackageID == "RealCaithorDorocha")
 					npc.Die(this);
             }
 			base.Die(killer);
@@ -282,7 +282,7 @@ namespace DOL.AI.Brain
             }
 			base.Think();
 		}
-		
+
 		private int DespawnGiantCaithor(ECSGameTimer timer)
 		{
 			if (!HasAggro)
@@ -292,7 +292,7 @@ namespace DOL.AI.Brain
 				{
 					despawnGiantCaithorTimer.Stop();
 					Body.TempProperties.RemoveProperty("giantcaithor_despawn");
-				}				
+				}
 				CaithorDorocha.DorochaKilled = 0;
 				oldFlags = Body.Flags;
 				Body.Flags ^= GameNPC.eFlags.CANTTARGET;

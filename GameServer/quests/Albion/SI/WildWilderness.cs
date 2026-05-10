@@ -21,7 +21,7 @@ namespace DOL.GS.Quests.Hibernia
 
         public override string Name
         {
-            get { return QUEST_TITLE; }
+            get { return L(m_questPlayer, "Quest.Hibernia.WildWilderness.Name"); }
         }
 
         public override string Description
@@ -31,11 +31,11 @@ namespace DOL.GS.Quests.Hibernia
                 switch (Step)
                 {
                     case 1:
-                        return "Speak with Miach about the lungers.";
+                        return L(m_questPlayer, "Quest.Hibernia.WildWilderness.Description1");
                     case 2:
-                        return "Kill a lunger for its tail. They can be found just outside the gates of Domnann.";
+                        return L(m_questPlayer, "Quest.Hibernia.WildWilderness.Description2");
                     case 3:
-                        return "Bring the tail to Resalg in Grove of Domnann and talk about the [formula].";
+                        return L(m_questPlayer, "Quest.Hibernia.WildWilderness.Description3");
                 }
                 return base.Description;
             }
@@ -82,9 +82,9 @@ namespace DOL.GS.Quests.Hibernia
                 _miach.AddToWorld();
                 if (SAVE_INTO_DATABASE)
                     _miach.SaveIntoDatabase();
-                
+
             }
-            
+
             npcs = WorldMgr.GetNPCsByName("Resalg", eRealm.Hibernia);
 
             if (npcs.Length > 0)
@@ -113,7 +113,7 @@ namespace DOL.GS.Quests.Hibernia
                 _resalg.Z = 5977;
                 _resalg.Heading = 125;
                 _resalg.AddToWorld();
-                if (SAVE_INTO_DATABASE) 
+                if (SAVE_INTO_DATABASE)
                     _resalg.SaveIntoDatabase();
             }
             #endregion
@@ -141,16 +141,16 @@ namespace DOL.GS.Quests.Hibernia
                 _lungerTail.MaxDurability = 1000;
             }
             #endregion
-            
+
             GameEventMgr.AddHandler(GamePlayerEvent.AcceptQuest, new DOLEventHandler(SubscribeQuest));
             GameEventMgr.AddHandler(GamePlayerEvent.DeclineQuest, new DOLEventHandler(SubscribeQuest));
 
             GameEventMgr.AddHandler(_miach, GameObjectEvent.Interact, new DOLEventHandler(TalkToMiach));
             GameEventMgr.AddHandler(_miach, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToMiach));
-            
+
             GameEventMgr.AddHandler(_resalg, GameObjectEvent.Interact, new DOLEventHandler(TalkToResalg));
             GameEventMgr.AddHandler(_resalg, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToResalg));
-            
+
             _miach.AddQuestToGive(typeof(WildWilderness));
             if (log.IsInfoEnabled)
             {
@@ -165,10 +165,10 @@ namespace DOL.GS.Quests.Hibernia
 
             GameEventMgr.RemoveHandler(GamePlayerEvent.AcceptQuest, new DOLEventHandler(SubscribeQuest));
             GameEventMgr.RemoveHandler(GamePlayerEvent.DeclineQuest, new DOLEventHandler(SubscribeQuest));
-            
+
             GameEventMgr.RemoveHandler(_miach, GameObjectEvent.Interact, new DOLEventHandler(TalkToMiach));
             GameEventMgr.RemoveHandler(_miach, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToMiach));
-            
+
             GameEventMgr.RemoveHandler(_resalg, GameObjectEvent.Interact, new DOLEventHandler(TalkToResalg));
             GameEventMgr.RemoveHandler(_resalg, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToResalg));
             _miach.RemoveQuestToGive(typeof(WildWilderness));
@@ -200,10 +200,10 @@ namespace DOL.GS.Quests.Hibernia
             GamePlayer player = ((SourceEventArgs)args).Source as GamePlayer;
             if (player == null)
                 return;
-            
+
             if (_miach.CanGiveQuest(typeof(WildWilderness), player) <= 0)
                 return;
-            
+
             WildWilderness quest = player.IsDoingQuest(typeof(WildWilderness)) as WildWilderness;
             _miach.TurnTo(player);
             if (e == GameObjectEvent.Interact)
@@ -213,20 +213,19 @@ namespace DOL.GS.Quests.Hibernia
                     switch (quest.Step)
                     {
                         case 1:
-                            _miach.SayTo(player, $"Great! While you are at it, bring one of the lunger tails to Resalg. He will pay you well for it. He is trying to create some potions and " +
-                                                 $"I told him I'd acquire a [tail] for him.");
+                            _miach.SayTo(player, L(player, "Quest.Hibernia.WildWilderness.MiachTailRequest"));
                             break;
                         case 2:
-                            _miach.SayTo(player, $"Hello {player.CharacterClass.Name}, find those lungers and bring a tail to Resalg!");
+                            _miach.SayTo(player, L(player, "Quest.Hibernia.WildWilderness.MiachFindLungers", player.CharacterClass.Name));
                             break;
                         case 3:
-                            _miach.SayTo(player, $"Oh you got a tail, please bring that to Resalg.");
+                            _miach.SayTo(player, L(player, "Quest.Hibernia.WildWilderness.MiachBringTail"));
                             break;
                     }
                 }
                 else
                 {
-                    _miach.SayTo(player, "There was once a time when all of Hy Brasil was tame. There was once a time when nature's beasts were tame. Now, though, the creatures we once had no reason to fear have become aggressive. They kill not just for food, but for pleasure. They no longer only kill their normal prey. Now, they [hunt] us.");
+                    _miach.SayTo(player, L(player, "Quest.Hibernia.WildWilderness.MiachIntro"));
                 }
             }
             else if (e == GameLivingEvent.WhisperReceive)
@@ -236,9 +235,10 @@ namespace DOL.GS.Quests.Hibernia
                 {
                     switch (wArgs.Text)
                     {
-                        case "hunt":
-                            _miach.SayTo(player, "Aye. It is not their normal way. I believe it is the evil touch of the Fomorians! They have ruined the homes of many of these creatures, they have destroyed their hunting grounds, and now some of the creatures have become twisted and abhorrent! The beasts I speak of are close to our town, the lungers, we must get rid of them!");
-                            player.Out.SendQuestSubscribeCommand(_miach, QuestMgr.GetIDForQuestType(typeof(WildWilderness)), "Will you help rid the area of young lungers?");
+	                        case "hunt":
+	                        case "사냥":
+                            _miach.SayTo(player, L(player, "Quest.Hibernia.WildWilderness.MiachHunt"));
+                            player.Out.SendQuestSubscribeCommand(_miach, QuestMgr.GetIDForQuestType(typeof(WildWilderness)), L(player, "Quest.Hibernia.WildWilderness.Subscribe"));
                             break;
                     }
                 }
@@ -247,12 +247,13 @@ namespace DOL.GS.Quests.Hibernia
                     switch (wArgs.Text)
                     {
                         case "abort":
-                            player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+                            player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
                             break;
-                        case "tail":
+	                        case "tail":
+	                        case "꼬리":
                             if (quest.Step == 1)
                             {
-                                _miach.SayTo(player, "Find those lunger and bring one tail to Resalg!");
+                                _miach.SayTo(player, L(player, "Quest.Hibernia.WildWilderness.FindTail"));
                                 quest.Step = 2;
                             }
                             break;
@@ -260,7 +261,7 @@ namespace DOL.GS.Quests.Hibernia
                 }
             }
         }
-        
+
           private static void TalkToResalg(DOLEvent e, object sender, EventArgs args)
         {
             GamePlayer player = ((SourceEventArgs)args).Source as GamePlayer;
@@ -276,16 +277,15 @@ namespace DOL.GS.Quests.Hibernia
                     switch (quest.Step)
                     {
                         case 1:
-                            _resalg.SayTo(player, $"Hey Adventurer, what can I do for you?");
+                            _resalg.SayTo(player, L(player, "Quest.Hibernia.WildWilderness.ResalgGreeting"));
                             break;
                         case 2:
-                            _resalg.SayTo(player, $"Hey Forester, Miach told me that you get me a tail?");
+                            _resalg.SayTo(player, L(player, "Quest.Hibernia.WildWilderness.ResalgTailQuestion"));
                             break;
                         case 3:
-                            _resalg.SayTo(player, $"What can I do for you, fine {player.CharacterClass.Name}?");
-                            
-                            _resalg.SayTo(player, "Ah! You've brought me a lunger tail! Now, I'm not sure if this is going to work, " +
-                                                  "but I think it just might... yes, it just might. You see, I'm working on a special [formula].");
+                            _resalg.SayTo(player, L(player, "Quest.Hibernia.WildWilderness.ResalgClassGreeting", player.CharacterClass.Name));
+
+                            _resalg.SayTo(player, L(player, "Quest.Hibernia.WildWilderness.ResalgFormulaIntro"));
                             break;
                     }
                 }
@@ -304,10 +304,11 @@ namespace DOL.GS.Quests.Hibernia
                     switch (wArgs.Text)
                     {
                         case "abort":
-                            player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+                            player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
                             break;
-                        case "formula":
-                            _resalg.SayTo(player, "Aye. It will calm down the maddened animals, I think. I can't truly be sure, but I'm hoping so! Some of the animals have even been mutated since the Fomorian's arrival, you know. I blame the foulness of that maleficent race! I would like to aid the Sylvan. I would like to see this ravaged land restored, and the peaceful balance that has taken generations upon generations to develop once again restored. Aye, and I'll not lie, but I'm willing to bet I'd have a name if I were to aid the process in some way! Maybe some prestige! Ah, but to work, yes, to work now. Here, I shall pay you for this tail! Good day, friend!");
+	                        case "formula":
+	                        case "제조법":
+                            _resalg.SayTo(player, L(player, "Quest.Hibernia.WildWilderness.ResalgFormula"));
                             RemoveItem(player, _lungerTail);
                             quest.FinishQuest();
                             break;
@@ -319,10 +320,10 @@ namespace DOL.GS.Quests.Hibernia
                 var rArgs = (ReceiveItemEventArgs) args;
                 if (quest == null) return;
                 if (rArgs.Item.Id_nb != _lungerTail.Id_nb) return;
-                _resalg.SayTo(player, "Ah! You've brought me a lunger tail! Now, I'm not sure if this is going to work, but I think it just might, yes, it just might. You see, I'm working on a special [formula].");
+                _resalg.SayTo(player, L(player, "Quest.Hibernia.WildWilderness.ResalgFormulaIntro"));
                 RemoveItem(player, _lungerTail);
             }
-            
+
         }
 
         public override void Notify(DOLEvent e, object sender, EventArgs args)
@@ -330,14 +331,14 @@ namespace DOL.GS.Quests.Hibernia
             GamePlayer player = sender as GamePlayer;
             if (player?.IsDoingQuest(typeof(WildWilderness)) == null)
                 return;
-            
+
             if (sender != m_questPlayer)
                 return;
-            
+
             if (Step == 2 && e == GameLivingEvent.EnemyKilled)
             {
                 EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs)args;
-               
+
                 if (gArgs.Target.Name.ToLower() == "lunger")
                 {
                     GiveItem(player, _lungerTail);
@@ -355,11 +356,11 @@ namespace DOL.GS.Quests.Hibernia
             }
             if (response == 0x00)
             {
-                SendSystemMessage(player, "Good, now go out there and finish your work!");
+                SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
             }
             else
             {
-                SendSystemMessage(player, "Aborting Quest " + QUEST_TITLE + ". You can start over again if you want.");
+                SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", QUEST_TITLE));
                 quest.AbortQuest();
             }
         }
@@ -374,14 +375,14 @@ namespace DOL.GS.Quests.Hibernia
 
             if (response == 0x00)
             {
-                SendReply(player, "Oh, well... if you change your mind, please come back!");
+                SendReply(player, L(player, "Quest.Hibernia.WildWilderness.Decline"));
             }
             else
             {
                 if (!_miach.GiveQuest(typeof(WildWilderness), player, 1))
                     return;
 
-                SendReply(player, "Great! While you are at it, bring one of the lunger tails to Resalg. He will pay you well for it. He is trying to create some potion. I told him I'd acquire a [tail] for him.");
+                SendReply(player, L(player, "Quest.Hibernia.WildWilderness.MiachTailRequest"));
             }
         }
 
@@ -398,16 +399,22 @@ namespace DOL.GS.Quests.Hibernia
             if (player.CharacterClass.ID != (byte) eCharacterClass.Animist &&
                 player.CharacterClass.ID != (byte) eCharacterClass.Forester)
                 return false;
-            
+
             return true;
         }
 
         public override void FinishQuest()
         {
             m_questPlayer.ForceGainExperience( 20);
-            m_questPlayer.AddMoney(Money.GetMoney(0, 0, 0, 6, 0), "You receive {0} as a reward.");
+            m_questPlayer.AddMoney(Money.GetMoney(0, 0, 0, 6, 0), L(m_questPlayer, "Quest.Hibernia.WildWilderness.MoneyReward"));
 
             base.FinishQuest();
+        }
+
+        private static string L(GamePlayer player, string key, params object[] args)
+        {
+            string language = player?.Client?.Account?.Language ?? "EN";
+            return DOL.Language.LanguageMgr.GetTranslation(language, key, args);
         }
     }
 }

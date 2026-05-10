@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -42,6 +43,9 @@ namespace DOL.GS.Commands
 
 	public class NPCCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
+		private static string T(GameClient client, string key, params object[] args)
+			=> LanguageMgr.GetTranslation(client.Account.Language, key, args);
+
 		public void OnCommand(GameClient client, string[] args)
 		{
 			if (args.Length == 1)
@@ -52,7 +56,7 @@ namespace DOL.GS.Commands
 
 			if (!(client.Player.TargetObject is GameNPC))
 			{
-				client.Out.SendMessage("You must target an NPC.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.NPC.NeedNpcTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -64,7 +68,7 @@ namespace DOL.GS.Commands
 					{
 						if (args.Length < 3)
 						{
-							client.Player.Out.SendMessage("Usage: /npc say <message>", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Player.Out.SendMessage(T(client, "GMCommands.NPC.UsageSay"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 						string message = string.Join(" ", args, 2, args.Length - 2);
@@ -75,7 +79,7 @@ namespace DOL.GS.Commands
 					{
 						if (args.Length < 3)
 						{
-							client.Player.Out.SendMessage("Usage: /npc yell <message>", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Player.Out.SendMessage(T(client, "GMCommands.NPC.UsageYell"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 						string message = string.Join(" ", args, 2, args.Length - 2);
@@ -86,7 +90,7 @@ namespace DOL.GS.Commands
 					{
 						if (args.Length < 3)
 						{
-							client.Player.Out.SendMessage("Usage: /npc action <action message>", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Player.Out.SendMessage(T(client, "GMCommands.NPC.UsageAction"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 						string action = string.Join(" ", args, 2, args.Length - 2);
@@ -101,7 +105,7 @@ namespace DOL.GS.Commands
 					{
 						if (args.Length != 3)
 						{
-							client.Player.Out.SendMessage("Usage: /npc emote <emote>", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Player.Out.SendMessage(T(client, "GMCommands.NPC.UsageEmote"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
@@ -187,7 +191,7 @@ namespace DOL.GS.Commands
 					{
 						if (args.Length < 3 || args.Length > 4)
 						{
-							client.Out.SendMessage("Usage: /npc walkto <targetname> [speed]", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.NPC.UsageWalkTo"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
@@ -240,19 +244,19 @@ namespace DOL.GS.Commands
 
 						if (X == 0 && Y == 0 && Z == 0)
 						{
-							client.Out.SendMessage("Can't find name " + args[2].ToLower() + " near your target.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.NPC.NameNotFoundNearTarget", args[2].ToLower()), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
 						npc.WalkTo(new Point3D(X, Y, Z), speed);
-						client.Out.SendMessage("Your target is walking to your location!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(T(client, "GMCommands.NPC.WalkingToYourLocation"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						break;
 					}
 				case "face":
 					{
 						if (args.Length != 3)
 						{
-							client.Player.Out.SendMessage("Usage: /npc face <targetname>", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Player.Out.SendMessage(T(client, "GMCommands.NPC.UsageFace"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
@@ -291,7 +295,7 @@ namespace DOL.GS.Commands
 
 						if (target == null)
 						{
-							client.Out.SendMessage("Can't find name " + args[2].ToLower() + " near your target.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.NPC.NameNotFoundNearTarget", args[2].ToLower()), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
@@ -302,7 +306,7 @@ namespace DOL.GS.Commands
 					{
 						if (args.Length != 3)
 						{
-							client.Player.Out.SendMessage("Usage: /npc follow <targetname>", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Player.Out.SendMessage(T(client, "GMCommands.NPC.UsageFollow"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
@@ -341,7 +345,7 @@ namespace DOL.GS.Commands
 
 						if (target == null)
 						{
-							client.Out.SendMessage("Can't find name " + args[2].ToLower() + " near your target.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.NPC.NameNotFoundNearTarget", args[2].ToLower()), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
@@ -352,7 +356,7 @@ namespace DOL.GS.Commands
 					{
 						if (args.Length != 2)
 						{
-							client.Player.Out.SendMessage("Usage: /npc stopfollow", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Player.Out.SendMessage(T(client, "GMCommands.NPC.UsageStopFollow"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
@@ -363,7 +367,7 @@ namespace DOL.GS.Commands
 					{
 						if (args.Length != 3)
 						{
-							client.Player.Out.SendMessage("Usage: /npc target <targetName>", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Player.Out.SendMessage(T(client, "GMCommands.NPC.UsageTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
@@ -408,12 +412,12 @@ namespace DOL.GS.Commands
 
 						if (target == null)
 						{
-							client.Out.SendMessage("Can't find name " + args[2].ToLower() + " near your target.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.NPC.NameNotFoundNearTarget", args[2].ToLower()), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
 						npc.TargetObject = target;
-						client.Out.SendMessage(npc.Name + " now target " + target.Name + ".", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(T(client, "GMCommands.NPC.NowTargets", npc.Name, target.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						break;
 					}
 
@@ -422,8 +426,8 @@ namespace DOL.GS.Commands
 					{
 						if (args.Length != 4)
 						{
-							client.Player.Out.SendMessage("Usage: /npc cast <spellLine> <spellID>", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-							client.Player.Out.SendMessage("(Be sure the npc target something to be able to cast)", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Player.Out.SendMessage(T(client, "GMCommands.NPC.UsageCast"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Player.Out.SendMessage(T(client, "GMCommands.NPC.CastNeedsTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
@@ -431,7 +435,7 @@ namespace DOL.GS.Commands
 						List<Spell> spells = SkillBase.GetSpellList(line.KeyName);
 						if (spells.Count <= 0)
 						{
-							client.Out.SendMessage("No spells found in line " + args[2] + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.NPC.NoSpellsFoundInLine", args[2]), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
@@ -447,7 +451,7 @@ namespace DOL.GS.Commands
 							}
 						}
 
-						client.Out.SendMessage("Spell with id " + Convert.ToInt16(args[3]) + " not found in db!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(T(client, "GMCommands.NPC.SpellNotFoundInDb", Convert.ToInt16(args[3])), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
 						break;
 					}
@@ -455,25 +459,25 @@ namespace DOL.GS.Commands
 					{
 						if (args.Length != 3)
 						{
-							client.Player.Out.SendMessage("Usage: /npc weapon <activeWeaponSlot>", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Player.Out.SendMessage(T(client, "GMCommands.NPC.UsageWeapon"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
 						if (Convert.ToInt16(args[2]) < 0 || Convert.ToInt16(args[2]) > 2)
 						{
-							client.Player.Out.SendMessage("The activeWeaponSlot must be between 0 and 2.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Player.Out.SendMessage(T(client, "GMCommands.NPC.ActiveWeaponSlotRange"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
 						eActiveWeaponSlot slot = (eActiveWeaponSlot)Convert.ToInt16(args[2]);
 						npc.SwitchWeapon(slot);
-						client.Player.Out.SendMessage(npc.Name + " will now use its " + Enum.GetName(typeof(eActiveWeaponSlot), slot) + " weapon to attack.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Player.Out.SendMessage(T(client, "GMCommands.NPC.NowUsesWeapon", npc.Name, Enum.GetName(typeof(eActiveWeaponSlot), slot)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
 						break;
 					}
 				default:
 					{
-						client.Out.SendMessage("Type /npc for command overview.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(T(client, "GMCommands.NPC.CommandOverview"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					}
 					break;
 			}

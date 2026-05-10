@@ -5,6 +5,7 @@ using System.Reflection;
 using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -98,7 +99,7 @@ namespace DOL.GS.Commands
                     else
                         DisplayMessage(client.Player, "Radius not valid");
                 }
-                
+
                 if (args[1].Equals("create"))
                 {
                     int temp = 0;
@@ -112,7 +113,7 @@ namespace DOL.GS.Commands
                 }
                 //create multiple mobs
             }
-            
+
             if (args.Length == 4)
             {
                 if (args[1].Equals("create"))
@@ -123,7 +124,7 @@ namespace DOL.GS.Commands
                     {
                         temp = 1;
                     }
-                    
+
                     int radius;
                     if (int.TryParse(args[3], out radius))
                     {
@@ -133,7 +134,7 @@ namespace DOL.GS.Commands
                     {
                         DisplayMessage(client.Player, "Radius not valid");
                     }
-                    
+
                 }
                 //create multiple mobs
             }
@@ -167,7 +168,7 @@ namespace DOL.GS.Commands
 
                 if (mob == null)
                 {
-                    client.Out.SendMessage("There was an error creating an instance of " + theType + "!",
+                    client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.SpamMob.CreateInstanceError", theType),
                         eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return;
                 }
@@ -196,7 +197,7 @@ namespace DOL.GS.Commands
                 //client.Out.SendMessage("The mob has been created with the peace flag, so it can't be attacked, to remove type /mob peace", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
             }
         }
-        
+
         private void remove(GameNPC targetMob)
         {
             targetMob.StopAttack();

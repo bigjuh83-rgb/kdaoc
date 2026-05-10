@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -42,7 +42,7 @@ namespace DOL.GS.Trainer
 		public StalkerTrainer() : base(eChampionTrainerType.Stalker)
 		{
 		}
-		
+
 		/// <summary>
 		/// Interact with trainer
 		/// </summary>
@@ -51,14 +51,14 @@ namespace DOL.GS.Trainer
 		public override bool Interact(GamePlayer player)
 		{
 			if (!base.Interact(player)) return false;
-			
+
 			// check if class matches
 			if (player.CharacterClass.ID == (int) TrainedClass)
 			{
 				// player can be promoted
 				if (player.Level>=5)
 				{
-					player.Out.SendMessage(this.Name + " says, \"You must now seek your training elsewhere. Which path would you like to follow? [Ranger] or [Nightshade]?\"", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "HiberniaTrainer.StalkerPaths", this.Name), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 				}
 				else
 				{
@@ -68,9 +68,9 @@ namespace DOL.GS.Trainer
 				// ask for basic equipment if player doesnt own it
 				if (player.Inventory.GetFirstItemByID(PRACTICE_WEAPON_ID, eInventorySlot.MinEquipable, eInventorySlot.LastBackpack) == null)
 				{
-					player.Out.SendMessage(this.Name + " says, \"Do you require a [practice weapon]?\"", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StarterTrainer.PracticeWeapon", this.Name), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 				}
-				
+
 			}
 			else
 			{
@@ -91,29 +91,32 @@ namespace DOL.GS.Trainer
 			GamePlayer player = source as GamePlayer;
 
 			switch (text) {
-				case "Ranger":
+					case "Ranger":
+					case "레인저":
 					if(player.Race == (int) eRace.Celt || player.Race == (int) eRace.Elf || player.Race == (int) eRace.Lurikeen || player.Race == (int) eRace.Shar){
-						player.Out.SendMessage(this.Name + " says, \"I can't tell you something about this class.\"", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StarterTrainer.ClassInfoUnavailable", this.Name), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 					}
 					else{
-						player.Out.SendMessage(this.Name + " says, \"The path of an Ranger is not available to your race. Please choose another.\"", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StarterTrainer.ClassUnavailable", this.Name, "Ranger"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 					}
 					return true;
-				case "Nightshade":
+					case "Nightshade":
+					case "나이트셰이드":
 					if(player.Race == (int) eRace.Elf || player.Race == (int) eRace.Lurikeen){
-						player.Out.SendMessage(this.Name + " says, \"I can't tell you something about this class.\"", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StarterTrainer.ClassInfoUnavailable", this.Name), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 					}
 					else{
-						player.Out.SendMessage(this.Name + " says, \"The path of a Nightshade is not available to your race. Please choose another.\"", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StarterTrainer.ClassUnavailable", this.Name, "Nightshade"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 					}
 					return true;
 				case "practice weapon":
+				case "연습용 무기":
 					if (player.Inventory.GetFirstItemByID(PRACTICE_WEAPON_ID, eInventorySlot.Min_Inv, eInventorySlot.Max_Inv) == null)
 					{
 						player.ReceiveItem(this,PRACTICE_WEAPON_ID);
 					}
 					return true;
-					
+
 			}
 			return true;
 		}

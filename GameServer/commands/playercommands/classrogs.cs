@@ -16,26 +16,32 @@ namespace DOL.GS.Commands
             if (args.Length < 2)
             {
                 DisplaySyntax(client);
-                DisplayMessage(client, "Current cap: " + ROGCap);
+                DisplayMessage(client, T(client, "PlayerCommands.ClassRog.CurrentCap", ROGCap));
                 return;
             }
 
-            cachedInput = int.Parse(args[1]);
+            if (!int.TryParse(args[1], out cachedInput))
+            {
+                DisplaySyntax(client);
+                DisplayMessage(client, T(client, "PlayerCommands.ClassRog.CurrentCap", ROGCap));
+                return;
+            }
+
             if ( cachedInput > ROGCap)
             {
-                DisplayMessage(client, "Input too high. Defaulting to cap: " + ROGCap);
+                DisplayMessage(client, T(client, "PlayerCommands.ClassRog.InputTooHigh", ROGCap));
                 cachedInput = ROGCap;
             }
             else if (cachedInput < 0)
             {
-                DisplayMessage(client, "Input must be 0 or above. Current cap: " + ROGCap);
+                DisplayMessage(client, T(client, "PlayerCommands.ClassRog.InputTooLow", ROGCap));
                 return;
             }
 
             client.Player.OutOfClassROGPercent = cachedInput;
-            
+
             if(client.Player.Level == 50)
-                DisplayMessage(client, "You will now receive out of class ROGs " + client.Player.OutOfClassROGPercent + "% of the time.");
+                DisplayMessage(client, T(client, "PlayerCommands.ClassRog.Updated", client.Player.OutOfClassROGPercent));
             else
             {
                 //DisplayMessage(client, "You are now " + client.Player.OutOfClassROGPercent + "% more likely to get ROGs relevant to your spec.");

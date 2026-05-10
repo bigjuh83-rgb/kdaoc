@@ -2,6 +2,7 @@ using System;
 using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -15,7 +16,7 @@ namespace DOL.GS.Spells
 		{
 			return ECSGameEffectFactory.Create(initParams, static (in i) => new FocusECSEffect(i));
 		}
-		
+
 		private GamePlayer FSTarget = null;
 		private FSTimer timer = null;
 
@@ -29,7 +30,7 @@ namespace DOL.GS.Spells
 				//This spell doesn't work on pets or monsters
 				if (selectedTarget is GameNPC)
 				{
-					MessageToCaster("This spell may not be cast on pets!", eChatType.CT_SpellResisted);
+					MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "FocusShellHandler.CannotCastOnPets"), eChatType.CT_SpellResisted);
 					return false;
 				}
 
@@ -49,7 +50,7 @@ namespace DOL.GS.Spells
 			}
 			else
 			{
-				MessageToCaster("This spell only works on members of your realm!", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "FocusShellHandler.RealmMembersOnly"), eChatType.CT_SpellResisted);
 				return false;
 			}
 
@@ -68,12 +69,12 @@ namespace DOL.GS.Spells
 				GameEventMgr.AddHandler(FSTarget, GameLivingEvent.AttackFinished, new DOLEventHandler(CancelSpell));
 				GameEventMgr.AddHandler(FSTarget, GameLivingEvent.CastStarting, new DOLEventHandler(CancelSpell));
 			}
-			
+
 
 			timer = new FSTimer(Caster, this);
 			timer.Start(1000);
 
- 			base.OnEffectStart(effect);
+			base.OnEffectStart(effect);
 		}
 
 		public override int OnEffectExpires(GameSpellEffect effect, bool noMessages)
@@ -88,7 +89,7 @@ namespace DOL.GS.Spells
 			}
 
 			timer.Stop();
-			
+
 			return base.OnEffectExpires(effect, noMessages);
 		}
 

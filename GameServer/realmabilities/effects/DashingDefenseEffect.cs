@@ -20,6 +20,7 @@
 using System;
 using System.Collections.Generic;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Effects
 {
@@ -105,13 +106,13 @@ namespace DOL.GS.Effects
 
             if (!guardSource.IsWithinRadius(guardTarget, DashingDefenseEffect.GUARD_DISTANCE))
             {
-                guardSource.Out.SendMessage(string.Format("You are now guarding {0}, but you must stand closer.", guardTarget.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                guardTarget.Out.SendMessage(string.Format("{0} is now guarding you, but you must stand closer.", guardSource.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                guardSource.Out.SendMessage(LanguageMgr.GetTranslation(guardSource.Client.Account.Language, "RealmAbility.DashingDefenseEffect.GuardingCloser", guardTarget.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                guardTarget.Out.SendMessage(LanguageMgr.GetTranslation(guardTarget.Client.Account.Language, "RealmAbility.DashingDefenseEffect.GuardedCloser", guardSource.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             }
             else
             {
-                guardSource.Out.SendMessage(string.Format("You are now guarding {0}.", guardTarget.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                guardTarget.Out.SendMessage(string.Format("{0} is now guarding you.", guardSource.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                guardSource.Out.SendMessage(LanguageMgr.GetTranslation(guardSource.Client.Account.Language, "RealmAbility.DashingDefenseEffect.Guarding", guardTarget.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                guardTarget.Out.SendMessage(LanguageMgr.GetTranslation(guardTarget.Client.Account.Language, "RealmAbility.DashingDefenseEffect.Guarded", guardSource.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             }
             guardTarget.TempProperties.SetProperty(RealmAbilities.DashingDefenseAbility.Dashing, true);
         }
@@ -128,8 +129,8 @@ namespace DOL.GS.Effects
 
             m_guardTarget.TempProperties.RemoveProperty(RealmAbilities.DashingDefenseAbility.Dashing);
 
-            m_guardSource.Out.SendMessage(string.Format("You are no longer guarding {0}.", m_guardTarget.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
-            m_guardTarget.Out.SendMessage(string.Format("{0} is no longer guarding you.", m_guardSource.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            m_guardSource.Out.SendMessage(LanguageMgr.GetTranslation(m_guardSource.Client.Account.Language, "RealmAbility.DashingDefenseEffect.NoLongerGuarding", m_guardTarget.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            m_guardTarget.Out.SendMessage(LanguageMgr.GetTranslation(m_guardTarget.Client.Account.Language, "RealmAbility.DashingDefenseEffect.NoLongerGuarded", m_guardSource.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
             m_playerGroup = null;
         }

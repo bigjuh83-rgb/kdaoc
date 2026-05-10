@@ -2,6 +2,7 @@ using System;
 using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PlayerClass;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -9,11 +10,11 @@ namespace DOL.GS.Spells
     /// Dream Sphere self morph spell handler
     /// The DoT proc is a subspell, affects only caster
     /// </summary>
-    
+
     //the self dream-morph doesnt break on damage/attacked by enemy only grp-target 1 does
     [SpellHandler(eSpellType.DreamMorph)]
     public class DreamMorph : OffensiveProcSpellHandler
-	{   	
+	{
 		public override void OnEffectStart(GameSpellEffect effect)
 		{
 			base.OnEffectStart(effect);
@@ -26,10 +27,10 @@ namespace DOL.GS.Spells
                         Effect.SpellHandler.Spell.SpellType.Equals("TraitorsDaggerProc") ||
                         Effect.SpellHandler.Spell.SpellType.Equals("DreamGroupMorph") ||
                         Effect.SpellHandler.Spell.SpellType.Equals("MaddeningScalars") ||
-                        Effect.SpellHandler.Spell.SpellType.Equals("AtlantisTabletMorph") || 
+                        Effect.SpellHandler.Spell.SpellType.Equals("AtlantisTabletMorph") ||
                         Effect.SpellHandler.Spell.SpellType.Equals("AlvarusMorph"))
                     {
-                        player.Out.SendMessage("You already have an active morph!", DOL.GS.PacketHandler.eChatType.CT_SpellResisted, DOL.GS.PacketHandler.eChatLoc.CL_ChatWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "Artifacts.ActiveMorph"), DOL.GS.PacketHandler.eChatType.CT_SpellResisted, DOL.GS.PacketHandler.eChatLoc.CL_ChatWindow);
                         return;
                     }
                 }
@@ -53,15 +54,15 @@ namespace DOL.GS.Spells
 
         public DreamMorph(GameLiving caster, Spell spell, SpellLine line) : base(caster, spell, line) { }
     }
-    
+
     /// <summary>
     /// Dream Sphere group morph spell handler
     /// The DoT proc is a subspell, affects only caster
-    /// </summary> 
+    /// </summary>
 
     //http://support.darkageofcamelot.com/kb/article.php?id=745
     //- The Panther Form level 10 ability of the Dreamsphere artifact has been changed.
-    //When a character in panther form is attacked, they revert to normal form and lose all associated bonuses. 
+    //When a character in panther form is attacked, they revert to normal form and lose all associated bonuses.
     //This change is specific to the Dreamsphere only and does not affect other shapechange forms
 
     //http://www.daoc-toa.net/img/dreamPrey.jpg
@@ -69,11 +70,11 @@ namespace DOL.GS.Spells
     [SpellHandler(eSpellType.DreamGroupMorph)]
     public class DreamGroupMorph : DreamMorph
     {
-    	private GameSpellEffect m_effect = null;
+	private GameSpellEffect m_effect = null;
         public override void OnEffectStart(GameSpellEffect effect)
         {
-         	m_effect = effect;    
-        	base.OnEffectStart(effect);
+	m_effect = effect;
+	base.OnEffectStart(effect);
             GamePlayer player = effect.Owner as GamePlayer;
 			foreach (GameSpellEffect Effect in player.EffectList.GetAllOfType<GameSpellEffect>())
             {
@@ -81,10 +82,10 @@ namespace DOL.GS.Spells
                     Effect.SpellHandler.Spell.SpellType.Equals("TraitorsDaggerProc") ||
                     Effect.SpellHandler.Spell.SpellType.Equals("DreamMorph") ||
                     Effect.SpellHandler.Spell.SpellType.Equals("MaddeningScalars") ||
-                    Effect.SpellHandler.Spell.SpellType.Equals("AtlantisTabletMorph") || 
+                    Effect.SpellHandler.Spell.SpellType.Equals("AtlantisTabletMorph") ||
                     Effect.SpellHandler.Spell.SpellType.Equals("AlvarusMorph"))
                 {
-                    player.Out.SendMessage("You already have an active morph!", DOL.GS.PacketHandler.eChatType.CT_SpellResisted, DOL.GS.PacketHandler.eChatLoc.CL_ChatWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "Artifacts.ActiveMorph"), DOL.GS.PacketHandler.eChatType.CT_SpellResisted, DOL.GS.PacketHandler.eChatLoc.CL_ChatWindow);
                     return;
                 }
             }

@@ -83,7 +83,7 @@ namespace DOL.GS
 			Level = 70;
 			Size = 35;
 			TetherRange = 2600;
-			BroadcastMessage("Bloody bones fly from all directions into a swirling cloud of gore in the air before you. The bones begin to join together forming a single giant skeleton.");
+			BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Blight.BonesFormSkeleton"));
 
 			RespawnInterval = -1;
 			BlightBrain sbrain = new BlightBrain();
@@ -214,7 +214,7 @@ namespace DOL.AI.Brain
 
 			if (!canGrowth && !SpamMessage)
 			{
-				BroadcastMessage("Blight has taken it's true form! It turns its deadful stare upon you!");
+				BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Blight.TrueForm"));
 				SpamMessage = true;
 			}
 
@@ -296,7 +296,7 @@ namespace DOL.GS
 
 			return 0;
 		}
-		
+
 		#endregion
 		public override void Die(GameObject killer)
         {
@@ -402,7 +402,7 @@ namespace DOL.GS
 			}
 			return 0;
 		}
-		
+
 		#endregion
 		public override void Die(GameObject killer)
 		{
@@ -630,7 +630,7 @@ namespace DOL.AI.Brain
 
 		public override void KillFSM()
 		{
-			
+
 		}
 
 		public void SpawnLateBlight()

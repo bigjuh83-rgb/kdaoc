@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.Reflection;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Quests
 {
@@ -32,7 +33,7 @@ namespace DOL.GS.Quests
 		/// possible mission types
 		/// </summary>
 		public enum eMissionType : int
-		{ 
+		{
 			None = 0,
 			Personal = 1,
 			Group = 2,
@@ -42,7 +43,7 @@ namespace DOL.GS.Quests
 
 		public eMissionType MissionType
 		{
-			get 
+			get
 			{
 				if (m_owner is GamePlayer)
 					return eMissionType.Personal;
@@ -75,7 +76,7 @@ namespace DOL.GS.Quests
 
 		public virtual long RewardMoney
 		{
-			get 
+			get
 			{
 				return 50 * 100 * 100;
 			}
@@ -83,7 +84,7 @@ namespace DOL.GS.Quests
 
 		public virtual long RewardRealmPoints
 		{
-			get 
+			get
 			{
 				return 1500;
 			}
@@ -94,16 +95,16 @@ namespace DOL.GS.Quests
 		/// </summary>
 		public virtual string Name
 		{
-			get 
+			get
 			{
 				switch (MissionType)
 				{
-					case eMissionType.Personal: return "Personal Mission";
-					case eMissionType.Group: return "Group Mission";
-					case eMissionType.Realm: return "Realm Mission";
-					case eMissionType.Task: return "Task";
-					case eMissionType.None: return "Unknown Mission";
-					default: return "MISSION NAME UNDEFINED!";
+					case eMissionType.Personal: return LanguageMgr.GetTranslation(MissionLanguage, "Mission.Name.Personal");
+					case eMissionType.Group: return LanguageMgr.GetTranslation(MissionLanguage, "Mission.Name.Group");
+					case eMissionType.Realm: return LanguageMgr.GetTranslation(MissionLanguage, "Mission.Name.Realm");
+					case eMissionType.Task: return LanguageMgr.GetTranslation(MissionLanguage, "Mission.Name.Task");
+					case eMissionType.None: return LanguageMgr.GetTranslation(MissionLanguage, "Mission.Name.Unknown");
+					default: return LanguageMgr.GetTranslation(MissionLanguage, "Mission.Name.Undefined");
 				}
 			}
 		}
@@ -113,7 +114,19 @@ namespace DOL.GS.Quests
 		/// </summary>
 		public virtual string Description
 		{
-			get { return "MISSION DESCRIPTION UNDEFINED!"; }
+			get { return LanguageMgr.GetTranslation(MissionLanguage, "Mission.Description.Undefined"); }
+		}
+
+		protected string MissionLanguage
+		{
+			get
+			{
+				if (m_owner is GamePlayer player)
+					return player.Client.Account.Language;
+				if (m_owner is Group group && group.Leader != null)
+					return group.Leader.Client.Account.Language;
+				return ServerProperties.Properties.SERV_LANGUAGE;
+			}
 		}
 
 		/// <summary>
@@ -189,14 +202,14 @@ namespace DOL.GS.Quests
 
                 if (RewardMoney > 0)
                 {
-                    player.AddMoney(RewardMoney, "You receive {0} for completing your task.");
+                    player.AddMoney(RewardMoney, LanguageMgr.GetTranslation(player.Client, "Mission.RewardMoney"));
                     InventoryLogging.LogInventoryAction("(MISSION;" + MissionType + ")", player, eInventoryActionType.Quest, RewardMoney);
                 }
 
 			    if (RewardRealmPoints > 0)
 					player.GainRealmPoints(RewardRealmPoints);
 
-				player.Out.SendMessage("You finish the " + Name + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "Mission.Finish", Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 
 			switch (MissionType)
@@ -247,7 +260,7 @@ namespace DOL.GS.Quests
 		{
 			foreach (GamePlayer player in Targets)
 			{
-				player.Out.SendMessage("Your " + Name + " has expired!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "Mission.Expired", Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 
 			switch (MissionType)

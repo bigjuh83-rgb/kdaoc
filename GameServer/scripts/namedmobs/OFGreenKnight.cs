@@ -6,6 +6,7 @@ using DOL.Database;
 using DOL.GS;
 using DOL.GS.PacketHandler;
 using DOL.GS.Styles;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -146,10 +147,7 @@ namespace DOL.GS
             //We send a message to player and make it appear in a popup
             //window. Text inside the [brackets] is clickable in popup
             //windows and will generate a /whis text command!
-            player.Out.SendMessage(
-                "You are wise to speak with me " + player.CharacterClass.Name +
-                "! My forest is a delicate beast that can easily turn against you. " +
-                "Should you wake the beast within, I must then rise to [defend it].",
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.OFGreenKnight.Greeting", player.CharacterClass.Name),
                 eChatType.CT_System, eChatLoc.CL_PopupWindow);
             return true;
         }
@@ -177,11 +175,10 @@ namespace DOL.GS
             //defined later in this class ... read on
             switch (str)
             {
-                case "defend it":
+	                case "defend it":
+	                case "숲을 지키기":
                 {
-                    SendReply(t,
-                        "Caution will be your guide through the dark places of Sauvage. " +
-                        "Tread lightly " + t.CharacterClass.Name + "! I am ever watchful of my home!");
+                    SendReply(t, LanguageMgr.GetTranslation(t.Client.Account.Language, "NamedMobs.OFGreenKnight.DefendReply", t.CharacterClass.Name));
                     if (t.IsAlive && t.IsAttackable)
                     {
                         Flags = 0;
@@ -191,9 +188,7 @@ namespace DOL.GS
                     break;
                 case "defend":
                 {
-                    SendReply(t,
-                        "Caution will be your guide through the dark places of Sauvage. " +
-                        "Tread lightly " + t.CharacterClass.Name + "! I am ever watchful of my home!");
+                    SendReply(t, LanguageMgr.GetTranslation(t.Client.Account.Language, "NamedMobs.OFGreenKnight.DefendReply", t.CharacterClass.Name));
                     if (t.IsAlive && t.IsAttackable)
                     {
                         Flags = 0;
@@ -370,7 +365,7 @@ namespace DOL.AI.Brain
                 if(!PortPoints.Contains(string2) && CanHeal2 == false)
                    PortPoints.Add(string2);
                 if(!PortPoints.Contains(string3) && CanHeal3 == false)
-                    PortPoints.Add(string3);  
+                    PortPoints.Add(string3);
                 if(!PortPoints.Contains(string4) && CanHeal4 == false)
                     PortPoints.Add(string4);
 
@@ -483,7 +478,7 @@ namespace DOL.AI.Brain
                     CanHeal1 = false;
                     CanHeal2 = false;
                     CanHeal4 = false;
-                    CanHeal3 = true;                  
+                    CanHeal3 = true;
                 }
                 if (Body.IsWithinRadius(point4, 40) && CanHeal4 == false)
                 {

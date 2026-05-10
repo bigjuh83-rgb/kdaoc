@@ -1,0 +1,10 @@
+Hib.ToReachTheBreach.CheckPlayerAbortQuest.Text1:	좋습니다. 이제 나가서 일을 마무리하세요!
+Hib.ToReachTheBreach.CheckPlayerAbortQuest.Text2:	퀘스트 {0}을(를) 포기합니다. 원한다면 다시 시작할 수 있습니다.
+Hib.ToReachTheBreach.Conclusion.Text1:			데몬의 균열로 가는 길을 찾았군요? 그 위치를 잘 기억해 두세요, {0}. 언젠가 당신의 도움이 필요할지도 모릅니다. 악마 무리나 알비온, 미드가르드의 병력이 우리 땅으로 쏟아져 나오게 둘 수는 없습니다.
+Hib.ToReachTheBreach.Init.Text1:			신병의 지능 허리띠
+Hib.ToReachTheBreach.Init.Text2:			신병의 힘 허리띠
+Hib.ToReachTheBreach.Init.Text3:			신병의 신앙 허리띠
+Hib.ToReachTheBreach.Init.Text4:			데몬의 균열 입구를 찾으세요
+Hib.ToReachTheBreach.QuestTitle:			균열에 닿는 길
+Hib.ToReachTheBreach.Story:				임무관 세비니아는 던전에서 우리 땅으로 스며드는 악에 맞서 부지런히 일하고 있습니다. 최근에는 데몬의 균열이라는 형태로 더 큰 악이 모습을 드러냈습니다. 언실리 궁정의 시아브라 대마법사들이 마그 멜 근처의 에너지를 건드렸습니다. 그 지역이 단 두 차원만 이어지는 결절점이라고 믿은 그들은 비전 에너지의 폭풍을 풀어 놓았고, 야생동물의 성향을 뒤틀고 죽은 자들을 움직이게 만들었으며 악마 차원으로 이어지는 균열을 만들어 냈습니다. 설상가상으로 미드가르드와 알비온까지 이 차원에 접근하게 되었습니다. 시아브라의 부주의로 하이버니아에 풀려난 적들은 언실리보다도 더 큰 피해를 줄 것입니다.\n\n다행히 우리의 길의 장로들이 즉시 이를 알아차리고 구멍을 막아, 그들이 우리 세계로 들어오는 것을 차단했습니다. 하지만 더 영구적인 해결책이 필요합니다. 적들이 은신처를 봉인한 결계를 깨뜨릴까 우려됩니다.
+Hib.ToReachTheBreach.Summary:				데몬의 균열 입구를 찾으세요. 균열을 방문한 뒤 리첼에게 돌아가세요.

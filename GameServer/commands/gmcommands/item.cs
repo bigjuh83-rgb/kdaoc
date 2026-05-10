@@ -21,7 +21,7 @@ namespace DOL.GS.Commands
 	     "GMCommands.Item.Usage.Color",
 	     "GMCommands.Item.Usage.Effect",
 	     "GMCommands.Item.Usage.Name",
-	     "/item description <Description> <slot> - set the description of this item",
+	     "GMCommands.Item.Usage.Description",
 	     "GMCommands.Item.Usage.CrafterName",
 	     "GMCommands.Item.Usage.Type",
 	     "GMCommands.Item.Usage.Object",
@@ -49,29 +49,32 @@ namespace DOL.GS.Commands
 	     "GMCommands.Item.Usage.Spell1",
 	     "GMCommands.Item.Usage.Proc",
 	     "GMCommands.Item.Usage.Proc1",
-	     "/item procchance <chance>",
+	     "GMCommands.Item.Usage.ProcChance",
 	     "GMCommands.Item.Usage.Poison",
 	     "GMCommands.Item.Usage.Realm",
-	     "/item classtype <ClassType> <slot> - Set this items ClassType",
-	     "/item packageid <PackageID> <slot> - Set this items PackageID",
-	     "/item levelrequired <level> <slot> - Set the required level needed to use spells and procs on this item",
-	     "/item bonuslevel <level> <slot> - Set the level required for item bonuses to effect player",
-	     "/item flags <flags> <slot> - Set the flags for this item",
-	     "/item classes <csv_allowed_classes> <slot> - Set and replace the Allowed Classes field (0 for everybody)",
-	     "/item salvageid <SalvageYield ID> <slot> - Set the SalvageYieldID for this item",
-	     "/item salvageinfo <SalvageYield ID> <slot> - Show the salvage yield for this item",
-	     "/item update <slot> - Changes to this item will also be made to the ItemTemplate and can be saved in the DB.",
-	     "/item save <TemplateID> [slot #]' - Create a new template or save an existing one",
-	     "/item addunique <id_nb> <slot> - save item as an unique one",
-	     "/item saveunique <id_nb> <slot> - update a unique item",
+	     "GMCommands.Item.Usage.ClassType",
+	     "GMCommands.Item.Usage.PackageID",
+	     "GMCommands.Item.Usage.LevelRequired",
+	     "GMCommands.Item.Usage.BonusLevel",
+	     "GMCommands.Item.Usage.Flags",
+	     "GMCommands.Item.Usage.Classes",
+	     "GMCommands.Item.Usage.SalvageID",
+	     "GMCommands.Item.Usage.SalvageInfo",
+	     "GMCommands.Item.Usage.Update",
+	     "GMCommands.Item.Usage.Save",
+	     "GMCommands.Item.Usage.AddUnique",
+	     "GMCommands.Item.Usage.SaveUnique",
 	     "GMCommands.Item.Usage.FindID",
 	     "GMCommands.Item.Usage.FindName",
-	     "/item load <id_nb> - Load an item from the DB and replace or add item to the ItemTemplate cache",
-	     "/item loadpackage <packageid> | **all** - Load all the items in a package from the DB and replace or add to the ItemTemplate cache. **all** is loading all items [! SLOW !]",
-	     "/item loadspells - Read each item spell from the database and update the global spell list")]
+	     "GMCommands.Item.Usage.Load",
+	     "GMCommands.Item.Usage.LoadPackage",
+	     "GMCommands.Item.Usage.LoadSpells")]
 	public class ItemCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		private static readonly Logging.Logger Log = Logging.LoggerManager.Create(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
+		private static string T(GameClient client, string key, params object[] args)
+			=> LanguageMgr.GetTranslation(client.Account.Language, key, args);
 
 		public void OnCommand(GameClient client, string[] args)
 		{
@@ -90,7 +93,7 @@ namespace DOL.GS.Commands
 						{
                             DbItemTemplate newTemplate = new DbItemTemplate
                             {
-                                Name = "(blank item)",
+                                Name = T(client, "GMCommands.Item.Blank.Name"),
                                 Id_nb = DbInventoryItem.BLANK_ITEM
                             };
                             GameInventoryItem item = new GameInventoryItem(newTemplate);
@@ -123,7 +126,7 @@ namespace DOL.GS.Commands
 								client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Item.Count.NoItemInSlot", slot), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 								return;
 							}
-							
+
 							item.AllowedClasses = args[2].Trim();
 							break;
 						}
@@ -683,7 +686,7 @@ namespace DOL.GS.Commands
 								client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Item.Count.NoItemInSlot", slot), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 								return;
 							}
-							
+
 							UpdateAllowed(item, client);
 							int con = Convert.ToInt32(args[2]);
 							int maxcon = Convert.ToInt32(args[3]);
@@ -718,7 +721,7 @@ namespace DOL.GS.Commands
 								client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Item.Count.NoItemInSlot", slot), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 								return;
 							}
-							
+
 							UpdateAllowed(item, client);
 							int Dur = Convert.ToInt32(args[2]);
 							int MaxDur = Convert.ToInt32(args[3]);
@@ -1560,20 +1563,20 @@ namespace DOL.GS.Commands
 							{
 								if (calculated == false)
 								{
-									list.Add("SalvageYield ID " + item.SalvageYieldID + " specified but not found!");
+									list.Add(T(client, "GMCommands.Item.SalvageInfo.SpecifiedNotFound", item.SalvageYieldID));
 								}
 								else if (ServerProperties.Properties.USE_NEW_SALVAGE)
 								{
-									list.Add("Calculated Values (USE_NEW_SALVAGE = True)");
+									list.Add(T(client, "GMCommands.Item.SalvageInfo.CalculatedValuesNew"));
 								}
 								else
 								{
-									list.Add("Calculated Values (USE_NEW_SALVAGE = False)");
+									list.Add(T(client, "GMCommands.Item.SalvageInfo.CalculatedValuesLegacy"));
 								}
 							}
 							else
 							{
-								list.Add("Using SalvageYield ID: " + yield.ID);
+								list.Add(T(client, "GMCommands.Item.SalvageInfo.UsingID", yield.ID));
 							}
 
 							list.Add(" ");
@@ -1587,32 +1590,32 @@ namespace DOL.GS.Commands
 							}
 							else
 							{
-								materialName = "Not Found! (" + materialName + ")";
+								materialName = T(client, "GMCommands.Item.SalvageInfo.MaterialNotFound", materialName);
 							}
 
 							if (calculated == false)
 							{
 								if (yield != null)
 								{
-									list.Add("SalvageYield ID: " + yield.ID);
-									list.Add("       Material: " + materialName);
-									list.Add("          Count: " + yield.Count);
-									list.Add("          Realm: " + (yield.Realm == 0 ? "Any" : GlobalConstants.RealmToName((eRealm)yield.Realm)));
-									list.Add("      PackageID: " + yield.PackageID);
+									list.Add(T(client, "GMCommands.Item.SalvageInfo.ID", yield.ID));
+									list.Add(T(client, "GMCommands.Item.SalvageInfo.Material", materialName));
+									list.Add(T(client, "GMCommands.Item.SalvageInfo.Count", yield.Count));
+									list.Add(T(client, "GMCommands.Item.SalvageInfo.Realm", yield.Realm == 0 ? T(client, "GMCommands.Item.SalvageInfo.Realm.Any") : GlobalConstants.RealmToName((eRealm)yield.Realm)));
+									list.Add(T(client, "GMCommands.Item.SalvageInfo.PackageID", yield.PackageID));
 								}
 							}
 							else
 							{
-								list.Add("SalvageYield ID: " + yield.ID);
-								list.Add("     ObjectType: " + yield.ObjectType);
-								list.Add("   SalvageLevel: " + yield.SalvageLevel);
-								list.Add("       Material: " + materialName);
-								list.Add("          Count: " + Salvage.GetMaterialYield(client.Player, item, yield, material));
-								list.Add("          Realm: " + (yield.Realm == 0 ? "Any" : GlobalConstants.RealmToName((eRealm)yield.Realm)));
-								list.Add("      PackageID: " + yield.PackageID);
+								list.Add(T(client, "GMCommands.Item.SalvageInfo.ID", yield.ID));
+								list.Add(T(client, "GMCommands.Item.SalvageInfo.ObjectType", yield.ObjectType));
+								list.Add(T(client, "GMCommands.Item.SalvageInfo.SalvageLevel", yield.SalvageLevel));
+								list.Add(T(client, "GMCommands.Item.SalvageInfo.Material", materialName));
+								list.Add(T(client, "GMCommands.Item.SalvageInfo.Count", Salvage.GetMaterialYield(client.Player, item, yield, material)));
+								list.Add(T(client, "GMCommands.Item.SalvageInfo.Realm", yield.Realm == 0 ? T(client, "GMCommands.Item.SalvageInfo.Realm.Any") : GlobalConstants.RealmToName((eRealm)yield.Realm)));
+								list.Add(T(client, "GMCommands.Item.SalvageInfo.PackageID", yield.PackageID));
 							}
 
-							client.Out.SendCustomTextWindow("Salvage info for " + item.Name, list);
+							client.Out.SendCustomTextWindow(T(client, "GMCommands.Item.SalvageInfo.WindowTitle", item.Name), list);
 							break;
 						}
 						#endregion Flags
@@ -1685,11 +1688,11 @@ namespace DOL.GS.Commands
 								DbItemUnique itemUnique = item.Template as DbItemUnique;
 								Log.Debug("update ItemUnique " + item.Template.Id_nb);
 								GameServer.Database.SaveObject(itemUnique);
-								client.Out.SendMessage(string.Format("ItemUnique {0} updated!", itemUnique.Id_nb), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+								client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Item.SaveUnique.Updated", itemUnique.Id_nb), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							}
 							else
 							{
-								DisplayMessage(client, "This is not an ItemUnique.  To create a new ItemUnique use addunique");
+								DisplayMessage(client, T(client, "GMCommands.Item.SaveUnique.NotItemUnique"));
 								return;
 							}
 						}
@@ -1742,14 +1745,14 @@ namespace DOL.GS.Commands
 							// if a blank item was created then AllowAdd will be false here
 							if (idnb == string.Empty && (item.AllowAdd == false || item.Id_nb == DbInventoryItem.BLANK_ITEM || args[1].ToLower() == "addunique"))
 							{
-								DisplayMessage(client, "You need to provide a new id_nb for this item.");
+								DisplayMessage(client, T(client, "GMCommands.Item.Save.NeedNewID"));
 								return;
 							}
 							else if (idnb == string.Empty)
 							{
 								if (args[1].ToLower() == "save" && item.Template is DbItemUnique)
 								{
-									DisplayMessage(client, "You need to provide a new id_nb to save this ItemUnique as an ItemTemplate.  Use saveunique to save this ItemUnique.");
+									DisplayMessage(client, T(client, "GMCommands.Item.Save.NeedNewIDForUniqueTemplate"));
 									return;
 								}
 
@@ -1777,14 +1780,14 @@ namespace DOL.GS.Commands
                                         };
                                         GameServer.Database.AddObject(itemTemplate);
 										Log.Debug("Added New Item Template: " + itemTemplate.Id_nb);
-										DisplayMessage(client, "Added New Item Template: " + itemTemplate.Id_nb);
+										DisplayMessage(client, T(client, "GMCommands.Item.Save.AddedTemplate", itemTemplate.Id_nb));
 										GameInventoryItem newItem = GameInventoryItem.Create(itemTemplate);
 										if (client.Player.Inventory.AddItem((eInventorySlot)slot, newItem))
 											InventoryLogging.LogInventoryAction(client.Player, client.Player, eInventoryActionType.Other, newItem.Template, newItem.Count);
 									}
 									catch (Exception ex)
 									{
-										DisplayMessage(client, "Error adding template: " + ex.Message);
+										DisplayMessage(client, T(client, "GMCommands.Item.Save.AddTemplateError", ex.Message));
 										return;
 									}
 								}
@@ -1798,14 +1801,14 @@ namespace DOL.GS.Commands
                                             Id_nb = idnb
                                         };
 										Log.Debug("Added New ItemUnique: " + unique.Id_nb + " (" + unique.ObjectId + ")");
-										DisplayMessage(client, "Added New ItemUnique: " + unique.Id_nb + " (" + unique.ObjectId + ")");
+										DisplayMessage(client, T(client, "GMCommands.Item.Save.AddedUnique", unique.Id_nb, unique.ObjectId));
 										GameInventoryItem newItem = GameInventoryItem.Create(unique);
 										if (client.Player.Inventory.AddItem((eInventorySlot)slot, newItem))
 											InventoryLogging.LogInventoryAction(client.Player, client.Player, eInventoryActionType.Other, newItem.Template, newItem.Count);
 									}
 									catch (Exception ex)
 									{
-										DisplayMessage(client, "Error adding unique: " + ex.Message);
+										DisplayMessage(client, T(client, "GMCommands.Item.Save.AddUniqueError", ex.Message));
 										return;
 									}
 								}
@@ -1815,12 +1818,12 @@ namespace DOL.GS.Commands
 								item.Template.Dirty = true;
 								GameServer.Database.SaveObject(item.Template);
 								GameServer.Database.UpdateInCache<DbItemTemplate>(item.Template.Id_nb);
-								DisplayMessage(client, "Updated Inventory Item: " + item.Id_nb);
+								DisplayMessage(client, T(client, "GMCommands.Item.Save.UpdatedInventoryItem", item.Id_nb));
 
 								if (item.Template is DbItemTemplate && (item.Template as DbItemTemplate).AllowUpdate)
 								{
 									Log.Debug("Updated ItemTemplate: " + item.Template.Id_nb);
-									DisplayMessage(client, "++ Source ItemTemplate Updated!");
+									DisplayMessage(client, T(client, "GMCommands.Item.Save.SourceTemplateUpdated"));
 								}
 							}
 
@@ -1865,19 +1868,19 @@ namespace DOL.GS.Commands
 							if (GameServer.Database.UpdateInCache<DbItemTemplate>(args[2]))
 							{
 								Log.DebugFormat("Item {0} updated or added to ItemTemplate cache.", args[2]);
-								DisplayMessage(client, "Item {0} updated or added to ItemTemplate cache.", args[2]);
+								DisplayMessage(client, T(client, "GMCommands.Item.Load.UpdatedOrAdded", args[2]), new object[] { });
 							}
 							else
 							{
 								Log.DebugFormat("Item {0} not found.", args[2]);
-								DisplayMessage(client, "Item {0} not found.", args[2]);
+								DisplayMessage(client, T(client, "GMCommands.Item.Load.NotFound", args[2]), new object[] { });
 							}
 							break;
 						}
 					case "reloadall":
 						{
 							var allItems = DOLDB<DbItemTemplate>.SelectAllObjects();
-							
+
 							if (allItems != null)
 							{
 								int count = 0;
@@ -1890,7 +1893,7 @@ namespace DOL.GS.Commands
 									}
 								}
 								Log.DebugFormat("{0} items updated or added to the ItemTemplate cache.", count);
-								DisplayMessage(client, "{0} items updated or added to the ItemTemplate cache.", count);
+								DisplayMessage(client, T(client, "GMCommands.Item.Load.CountUpdatedOrAdded", count), new object[] { });
 							}
 							break;
 						}
@@ -1917,11 +1920,11 @@ namespace DOL.GS.Commands
 									}
 
 									Log.DebugFormat("{0} items updated or added to the ItemTemplate cache.", count);
-									DisplayMessage(client, "{0} items updated or added to the ItemTemplate cache.", count);
+									DisplayMessage(client, T(client, "GMCommands.Item.Load.CountUpdatedOrAdded", count), new object[] { });
 								}
 								else
 								{
-									DisplayMessage(client, "No items found for package {0}.", args[2]);
+									DisplayMessage(client, T(client, "GMCommands.Item.LoadPackage.NoItemsFound", args[2]), new object[] { });
 								}
 							}
 							break;
@@ -1963,22 +1966,22 @@ namespace DOL.GS.Commands
 				DisplaySyntax(client);
 			}
 		}
-		
+
 		private void UpdateAllowed(DbInventoryItem item, GameClient client)
 		{
 			if (item.Template is DbItemUnique)
 			{
-				DisplayMessage(client, "This command is only applicable for items based on an ItemTemplate");
+				DisplayMessage(client, T(client, "GMCommands.Item.UpdateAllowed.ItemTemplateOnly"));
 				return;
 			}
 			else
 			{
 				(item.Template as DbItemTemplate).AllowUpdate = true;
-				client.Out.SendMessage("** When this item is saved all changes will also be made to the source ItemTemplate: " + item.Template.Id_nb, eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
-				DisplayMessage(client, "** When this item is saved all changes will also be made to the source ItemTemplate: " + item.Template.Id_nb);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Item.UpdateAllowed.SourceTemplateWarning", item.Template.Id_nb), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Item.UpdateAllowed.SourceTemplateWarning", item.Template.Id_nb));
 			}
 		}
-		
+
 		private void LoadSpell(GameClient client, int spellID)
 		{
 			if (spellID != 0)
@@ -1986,7 +1989,7 @@ namespace DOL.GS.Commands
 				if (SkillBase.UpdateSpell(spellID))
 				{
 					Log.DebugFormat("Spell ID {0} added / updated in the global spell list", spellID);
-					DisplayMessage(client, "Spell ID {0} added / updated in the global spell list", spellID);
+					DisplayMessage(client, T(client, "GMCommands.Item.LoadSpells.UpdatedOrAdded", spellID), new object[] { });
 				}
 			}
 		}

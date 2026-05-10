@@ -8,7 +8,7 @@ namespace DOL.GS.RealmAbilities
     public class AtlasOF_BatteryOfLife : TimedRealmAbility
     {
         public AtlasOF_BatteryOfLife(DbAbility dba, int level) : base(dba, level) { }
-        
+
         int m_duration = 0; // 30s
 
         public override int MaxLevel { get { return 1; } }
@@ -27,7 +27,7 @@ namespace DOL.GS.RealmAbilities
 
             ECSGameEffectFactory.Create(new(player, m_duration, 1, CreateSpell(player)), static (in i) => new AtlasOF_BatteryOfLifeECSEffect(i));
         }
-        
+
         private SpellHandler CreateSpell(GameLiving owner)
         {
             DbSpell tmpSpell = new DbSpell();
@@ -49,7 +49,7 @@ namespace DOL.GS.RealmAbilities
             tmpSpell.EffectGroup = 0;
             tmpSpell.Range = 0;
             tmpSpell.Frequency = 500;
-            tmpSpell.Description = "Creates a 1000HP buffer that is distributed to groupmembers within 1500 units as healing. Healing priority matches spreadheal.";
+            tmpSpell.Description = DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "RealmAbility.AtlasOF.BatteryOfLife.Description");
             SpellLine spellLine = GlobalSpellsLines.RealmSpellsSpellLine;
             return ScriptMgr.CreateSpellHandler(owner, new Spell(tmpSpell, 0) , spellLine) as SpellHandler;
         }
@@ -65,7 +65,7 @@ namespace DOL.GS.RealmAbilities
                 return delveInfoList;
             }
         }
-        
+
         public override void AddEffectsInfo(IList<string> list)
         {
             list.Add("Creates a 1000HP buffer that is distributed to groupmembers within 1500 units as healing. Healing priority matches spreadheal.");

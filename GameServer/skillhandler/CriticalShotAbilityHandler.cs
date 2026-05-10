@@ -35,7 +35,7 @@ namespace DOL.GS.SkillHandler
 
 			if (volley != null)
 			{
-				player.Out.SendMessage("You can't use Critical-Shot while Volley is active!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Skill.Ability.CannotUseWhileVolleyActive", "Critical-Shot"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 

@@ -44,18 +44,18 @@ namespace DOL.GS.Scripts
         {
             m_BombAnnounce = new String[]
             {
-                "{0} begins to perform a ritual!",
-                "{0} is powerful and begins a threatening attack!",
-                "Feeling strong and powerful, {0} prepares a deadly spell.",
-                "{0} begins a magic of mental destruction!"
+                "NamedMobs.Aros.BombText1",
+                "NamedMobs.Aros.BombText2",
+                "NamedMobs.Aros.BombText3",
+                "NamedMobs.Aros.BombText4"
             };
-            m_BigBombAnnounce = "{0} withdraws all souls around him in order to cast a powerful spell.";
-            m_DebuffAnnounce = "{0} weakens {1} and everyone around!";
-            m_SummonAnnounce = "{0} uses his power to summon a protective spirit!";
+            m_BigBombAnnounce = "NamedMobs.Aros.BigBomb";
+            m_DebuffAnnounce = "NamedMobs.Aros.WeakensEveryone";
+            m_SummonAnnounce = "NamedMobs.Aros.SummonSpirit";
             m_DeathAnnounce = new String[]
             {
-                "{0} trips and falls on the hard stone floor.",
-                "'You will remember my name! {0}!'"
+                "NamedMobs.Aros.TripsAndFalls",
+                "NamedMobs.Aros.RememberMyName"
             };
             TetherRange = 3500;
             SetOwnBrain(new ArosBrain());
@@ -97,7 +97,7 @@ namespace DOL.GS.Scripts
 
             foreach (String message in m_DeathAnnounce)
             {
-                BroadcastMessage(String.Format(message, Name));
+                BroadcastMessage(message, Name);
             }
             foreach (GameNPC npc in this.GetNPCsInRadius(4000))
             {
@@ -169,11 +169,11 @@ namespace DOL.GS.Scripts
         /// Broadcast relevant messages to the raid.
         /// </summary>
         /// <param name="message">The message to be broadcast.</param>
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(String key, params object[] args)
         {
             foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(global::DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
 
@@ -314,7 +314,7 @@ namespace DOL.GS.Scripts
             TurnTo(BombTarget);
             WalkTo(BombTarget, 250);
             int messageNo = Util.Random(1, m_BombAnnounce.Length) - 1;
-            BroadcastMessage(String.Format(m_BombAnnounce[messageNo], Name));
+            BroadcastMessage(m_BombAnnounce[messageNo], Name);
             new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(CastBomb), 5000);
         }
         /// <summary>
@@ -341,7 +341,7 @@ namespace DOL.GS.Scripts
             // Prevent brain from casting this over and over.
             HealthPercentOld = HealthPercent;
             int messageNo = Util.Random(1, m_BombAnnounce.Length) - 1;
-            BroadcastMessage(String.Format(m_BombAnnounce[messageNo], Name));
+            BroadcastMessage(m_BombAnnounce[messageNo], Name);
             new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(CastBomb), 5000);
         }
         /// <summary>
@@ -350,7 +350,7 @@ namespace DOL.GS.Scripts
         private void PrepareToBigBomb()
         {
             HealthPercentOld = HealthPercent;
-            BroadcastMessage(String.Format(m_BigBombAnnounce, Name));
+            BroadcastMessage(m_BigBombAnnounce, Name);
             new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(CastBigBomb), 5000);
         }
         /// <summary>
@@ -423,7 +423,7 @@ namespace DOL.GS.Scripts
         {
             if (DebuffTarget == null) return;
             TurnTo(DebuffTarget);
-            BroadcastMessage(String.Format(m_DebuffAnnounce, Name, DebuffTarget.Name));
+            BroadcastMessage(m_DebuffAnnounce, Name, DebuffTarget.Name);
             new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(CastDebuff), 1000);
         }
         /// <summary>
@@ -490,7 +490,7 @@ namespace DOL.GS.Scripts
         private void PrepareToSummon()
         {
             HealthPercentOld = HealthPercent;
-            BroadcastMessage(String.Format(m_SummonAnnounce, Name));
+            BroadcastMessage(m_SummonAnnounce, Name);
             new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(CastSummon), 2000);
         }
         /// <summary>

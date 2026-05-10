@@ -27,14 +27,14 @@ namespace DOL.GS.Commands
 
             if (house == null)
             {
-                DisplayMessage(client, "No house found.");
+                DisplayMessage(client, T(client, "PlayerCommands.HouseFace.NoHouse"));
                 return;
             }
 
             ushort direction = client.Player.GetHeading(house);
             client.Player.Heading = direction;
             client.Out.SendPlayerJump(true);
-            DisplayMessage(client, $"You face house {houseNumber}.");
+            DisplayMessage(client, T(client, "PlayerCommands.HouseFace.FaceHouse", houseNumber));
         }
     }
 }

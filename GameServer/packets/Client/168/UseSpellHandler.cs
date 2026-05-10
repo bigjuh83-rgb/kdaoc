@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Reflection;
+using DOL.Language;
 using DOL.Logging;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -97,7 +98,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                 if (Log.IsWarnEnabled)
                     Log.Warn($"Client <{player.Client.Account.Name}> requested incorrect spell at level {spellLevel} in spell-line {(sl == null || sl.Name == null ? "unknown" : sl.Name)}");
 
-                player.Out.SendMessage($"Error : Spell (Line {spellLineIndex}, Level {spellLevel}) can't be resolved...", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "UseSpellHandler.SpellCannotResolve", spellLineIndex, spellLevel), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
             }
         }
 

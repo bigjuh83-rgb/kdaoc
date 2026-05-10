@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -26,11 +26,12 @@ using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
 using DOL.GS.SkillHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
 	/// <summary>
-	/// 
+	///
 	/// </summary>
     public class PrimerSpellHandler : SpellHandler
 	{
@@ -41,7 +42,7 @@ namespace DOL.GS.Spells
 		public override void FinishSpellCast(GameLiving target)
 		{
 			m_caster.Mana -= PowerCost(target);
-			
+
 			base.FinishSpellCast(target);
 		}
 
@@ -51,22 +52,22 @@ namespace DOL.GS.Spells
 		}
 
 		public override void OnEffectStart(GameSpellEffect effect)
-		{			
+		{
 			GameEventMgr.AddHandler(effect.Owner, GamePlayerEvent.Moving, new DOLEventHandler(OnMove));
-			SendEffectAnimation(effect.Owner, 0, false, 1);			
+			SendEffectAnimation(effect.Owner, 0, false, 1);
 		}
 
 		public override int OnEffectExpires(GameSpellEffect effect, bool noMessages)
 		{
 			if(effect.Owner is GamePlayer && !noMessages)
-				((GamePlayer)effect.Owner).Out.SendMessage("You modification spell effect has expired.", eChatType.CT_SpellExpires, eChatLoc.CL_SystemWindow);
+				((GamePlayer)effect.Owner).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)effect.Owner).Client.Account.Language, "Warlock.Primer.EffectExpired"), eChatType.CT_SpellExpires, eChatLoc.CL_SystemWindow);
 
 			GameEventMgr.RemoveHandler(effect.Owner, GamePlayerEvent.Moving, new DOLEventHandler(OnMove));
 
 			return base.OnEffectExpires (effect, false);
 		}
 
-	
+
 		/// <summary>
 		/// Handles attacks on player/by player
 		/// </summary>
@@ -84,7 +85,7 @@ namespace DOL.GS.Spells
 				if (effect != null)
 				{
 					effect.Cancel(false);
-					((GamePlayer)living).Out.SendMessage("You move and break your modification spell.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+					((GamePlayer)living).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)living).Client.Account.Language, "Warlock.Primer.MoveBreaksEffect"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 				}
 			}
 		}

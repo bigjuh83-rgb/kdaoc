@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using DOL.Language;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerProperties;
 
@@ -73,7 +74,7 @@ namespace DOL.GS.Spells
                 if (mostInjuredLiving is null)
                 {
                     SendEffectAnimation(target, 0, false, 0);
-                    MessageToCaster("Your group is already fully healed!", eChatType.CT_SpellResisted);
+                    MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "SpreadhealSpellHandler.GroupFullyHealed"), eChatType.CT_SpellResisted);
                     return false;
                 }
 
@@ -103,7 +104,7 @@ namespace DOL.GS.Spells
                 bool isCasterDiseased = affectedByDisease && Caster.IsDiseased;
 
                 if (isCasterDiseased)
-                    MessageToCaster("Your healing is reduced by disease!", eChatType.CT_SpellResisted);
+                    MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "SpreadhealSpellHandler.HealingReducedByDisease"), eChatType.CT_SpellResisted);
 
                 // Reduce healed hp according to groupHealCap and apply the heal.
                 foreach (var (healTarget, uncappedHeal) in healAmounts)

@@ -1,6 +1,7 @@
 using DOL.AI.Brain;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -11,7 +12,7 @@ namespace DOL.GS.Spells
     public class CastingSpeedDebuff : MasterlevelDebuffHandling
     {
         public override eProperty Property1 { get { return eProperty.CastingSpeed; } }
-		
+
 		public override void ApplyEffectOnTarget(GameLiving target)
 		{
 			base.ApplyEffectOnTarget(target);
@@ -152,7 +153,7 @@ namespace DOL.GS.Spells
     [SpellHandler(eSpellType.MLFatDebuff)]
     public class MLFatDebuffHandler : MasterlevelDebuffHandling
     {
-        public override eProperty Property1 { get { return eProperty.FatigueConsumption; } }	
+        public override eProperty Property1 { get { return eProperty.FatigueConsumption; } }
 
         public override void ApplyEffectOnTarget(GameLiving target)
         {
@@ -234,7 +235,7 @@ namespace DOL.GS.Spells
         {
             if (target.HasAbility(Abilities.CCImmunity)||target.HasAbility(Abilities.StunImmunity))
             {
-                MessageToCaster("Your target is immune to this effect!", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.TargetImmuneToEffect"), eChatType.CT_SpellResisted);
                 return;
             }
 

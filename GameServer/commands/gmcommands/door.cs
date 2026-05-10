@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.PacketHandler;
 using DOL.GS.PacketHandler.Client.v168;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -41,13 +42,13 @@ namespace DOL.GS.Commands
 				if (client.Player.TempProperties.GetProperty<bool>(DoorMgr.WANT_TO_ADD_DOORS))
 				{
 					client.Player.TempProperties.RemoveProperty(DoorMgr.WANT_TO_ADD_DOORS);
-					client.Out.SendMessage("You will no longer be shown the add door dialog.", eChatType.CT_System,
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.AddDialogDisabled"), eChatType.CT_System,
 					                       eChatLoc.CL_SystemWindow);
 				}
 				else
 				{
 					client.Player.TempProperties.SetProperty(DoorMgr.WANT_TO_ADD_DOORS, true);
-					client.Out.SendMessage("You will now be shown the add door dialog if door is not found in the DB.",
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.AddDialogEnabled"),
 					                       eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 
@@ -56,20 +57,20 @@ namespace DOL.GS.Commands
 
 			if (client.Player.CurrentRegion.IsInstance)
 			{
-				client.Out.SendMessage("You can't add doors inside an instance.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.CantAddInInstance"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			if (client.Player.TargetObject == null)
 			{
-				client.Out.SendMessage("You must target a door", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.MustTargetDoor"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			if (client.Player.TargetObject != null &&
 			    (client.Player.TargetObject is GameNPC || client.Player.TargetObject is GamePlayer))
 			{
-				client.Out.SendMessage("You must target a door", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.MustTargetDoor"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -142,7 +143,7 @@ namespace DOL.GS.Commands
 
 			if (DOOR != null)
 			{
-				client.Out.SendMessage("The door is already in the database", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.AlreadyInDatabase"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			if (DOOR == null)
@@ -164,7 +165,7 @@ namespace DOL.GS.Commands
 					GameServer.Database.AddObject(door);
 					targetDoor.LoadFromDatabase(door);
 					DoorMgr.RegisterDoor(targetDoor);
-					client.Player.Out.SendMessage("Added door ID:" + DoorID + "to the database", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+					client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.AddedDoorId", DoorID), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					return;
 				}
 			}
@@ -194,7 +195,7 @@ namespace DOL.GS.Commands
 					GameServer.Database.AddObject(door);
 					targetDoor.LoadFromDatabase(door);
 					DoorMgr.RegisterDoor(targetDoor);
-					client.Player.Out.SendMessage("Added door " + DoorID + " to the database", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+					client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.AddedDoor", DoorID), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					return;
 				}
 			}
@@ -207,10 +208,10 @@ namespace DOL.GS.Commands
 			if (dbDoor != null)
 			{
 				GameServer.Database.DeleteObject(dbDoor);
-				client.Out.SendMessage("Door removed", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.Removed"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			else
-				client.Out.SendMessage("This door didn't exist in the database", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.NotInDatabase"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
 			DoorMgr.UnregisterDoor(DoorID);
 			targetDoor.RemoveFromWorld();
@@ -227,7 +228,7 @@ namespace DOL.GS.Commands
 			{
 				targetDoor.Name = CheckName(doorName, client);
 				targetDoor.SaveIntoDatabase();
-				client.Out.SendMessage("You changed the door name to " + targetDoor.Name, eChatType.CT_System,
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.NameChanged", targetDoor.Name), eChatType.CT_System,
 				                       eChatLoc.CL_SystemWindow);
 			}
 			else
@@ -247,7 +248,7 @@ namespace DOL.GS.Commands
 					doorSound = Convert.ToUInt16(args[2]);
 					targetDoor.Flag = doorSound;
 					targetDoor.SaveIntoDatabase();
-					client.Out.SendMessage("You set the door sound to " + doorSound, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.SoundSet", doorSound), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				else
 				{
@@ -271,7 +272,7 @@ namespace DOL.GS.Commands
 			{
 				targetDoor.GuildName = CheckGuildName(guildName, client);
 				targetDoor.SaveIntoDatabase();
-				client.Out.SendMessage("You changed the door guild to " + targetDoor.GuildName, eChatType.CT_System,
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.GuildChanged", targetDoor.GuildName), eChatType.CT_System,
 				                       eChatLoc.CL_SystemWindow);
 			}
 			else
@@ -280,7 +281,7 @@ namespace DOL.GS.Commands
 				{
 					targetDoor.GuildName = string.Empty;
 					targetDoor.SaveIntoDatabase();
-					client.Out.SendMessage("Door guild removed", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.GuildRemoved"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				else
 					DisplaySyntax(client, args[1]);
@@ -297,7 +298,7 @@ namespace DOL.GS.Commands
 				targetDoor.Level = level;
 				targetDoor.Health = targetDoor.MaxHealth;
 				targetDoor.SaveIntoDatabase();
-				client.Out.SendMessage("You changed the door level to " + targetDoor.Level, eChatType.CT_System,
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.LevelChanged", targetDoor.Level), eChatType.CT_System,
 				                       eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
@@ -315,7 +316,7 @@ namespace DOL.GS.Commands
 				realm = Convert.ToByte(args[2]);
 				targetDoor.Realm = (eRealm) realm;
 				targetDoor.SaveIntoDatabase();
-				client.Out.SendMessage("You changed the door realm to " + targetDoor.Realm, eChatType.CT_System,
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.RealmChanged", targetDoor.Realm), eChatType.CT_System,
 				                       eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
@@ -346,29 +347,29 @@ namespace DOL.GS.Commands
 
 			var info = new List<string>();
 
-			info.Add(" + Door Info :  " + targetDoor.Name);
+			info.Add(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.Info.DoorInfo", targetDoor.Name));
 			info.Add("  ");
-			info.Add(" + Name : " + targetDoor.Name);
-			info.Add(" + ID : " + DoorID);
-			info.Add(" + Realm : " + (int) targetDoor.Realm + " : " + Realmname);
-			info.Add(" + Level : " + targetDoor.Level);
-			info.Add(" + Guild : " + targetDoor.GuildName);
-			info.Add(" + Health : " + targetDoor.Health + " / " + targetDoor.MaxHealth);
-			info.Add(" + Statut : " + statut);
-			info.Add(" + Type : " + doorType);
-			info.Add(" + X : " + targetDoor.X);
-			info.Add(" + Y : " + targetDoor.Y);
-			info.Add(" + Z : " + targetDoor.Z);
-			info.Add(" + Heading : " + targetDoor.Heading);
+			info.Add(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.Info.Name", targetDoor.Name));
+			info.Add(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.Info.ID", DoorID));
+			info.Add(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.Info.Realm", (int) targetDoor.Realm, Realmname));
+			info.Add(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.Info.Level", targetDoor.Level));
+			info.Add(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.Info.Guild", targetDoor.GuildName));
+			info.Add(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.Info.Health", targetDoor.Health, targetDoor.MaxHealth));
+			info.Add(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.Info.Status", statut));
+			info.Add(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.Info.Type", doorType));
+			info.Add(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.Info.X", targetDoor.X));
+			info.Add(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.Info.Y", targetDoor.Y));
+			info.Add(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.Info.Z", targetDoor.Z));
+			info.Add(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.Info.Heading", targetDoor.Heading));
 
-			client.Out.SendCustomTextWindow("Door Information", info);
+			client.Out.SendCustomTextWindow(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.Info.WindowTitle"), info);
 		}
 
 		private void heal(GameClient client, GameDoor targetDoor)
 		{
 			targetDoor.Health = targetDoor.MaxHealth;
 			targetDoor.SaveIntoDatabase();
-			client.Out.SendMessage("You change the door health to " + targetDoor.Health, eChatType.CT_System,
+			client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.HealthChanged", targetDoor.Health), eChatType.CT_System,
 			                       eChatLoc.CL_SystemWindow);
 		}
 
@@ -376,14 +377,14 @@ namespace DOL.GS.Commands
 		{
 			targetDoor.Locked = true;
 			targetDoor.SaveIntoDatabase();
-			client.Out.SendMessage("Door " + targetDoor.Name + " is locked", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.IsLocked", targetDoor.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void unlocked(GameClient client, GameDoor targetDoor)
 		{
 			targetDoor.Locked = false;
 			targetDoor.SaveIntoDatabase();
-			client.Out.SendMessage("Door " + targetDoor.Name + " is unlocked", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.IsUnlocked", targetDoor.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void kill(GameClient client, GameDoor targetDoor, string[] args)
@@ -394,7 +395,7 @@ namespace DOL.GS.Commands
 				{
 					targetDoor.AddXPGainer(client.Player, targetDoor.Health);
 					targetDoor.Die(client.Player);
-					client.Out.SendMessage("Door " + targetDoor.Name + " health reaches 0", eChatType.CT_System,
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.HealthReachedZero", targetDoor.Name), eChatType.CT_System,
 										   eChatLoc.CL_SystemWindow);
 				}
 			}
@@ -407,7 +408,7 @@ namespace DOL.GS.Commands
 		private string CheckName(string name, GameClient client)
 		{
 			if (name.Length > 47)
-				client.Out.SendMessage("The door name must not be longer than 47 bytes", eChatType.CT_System,
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.NameTooLong"), eChatType.CT_System,
 				                       eChatLoc.CL_SystemWindow);
 			return name;
 		}
@@ -415,7 +416,7 @@ namespace DOL.GS.Commands
 		private string CheckGuildName(string name, GameClient client)
 		{
 			if (name.Length > 47)
-				client.Out.SendMessage("The guild name is " + name.Length + ", but only 47 bytes 'll be displayed",
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Door.GuildNameTooLong", name.Length),
 				                       eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			return name;
 		}

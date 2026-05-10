@@ -45,6 +45,10 @@ namespace DOL.GS.Quests.Albion
         public ImmediateResolutionVB(GamePlayer questingPlayer, int step) : base(questingPlayer, step) { }
         public ImmediateResolutionVB(GamePlayer questingPlayer, DbQuest dbQuest) : base(questingPlayer, dbQuest) { }
 
+        private static string L(GamePlayer player, string key, params object[] args)
+        {
+            return DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+        }
 
         public override void Notify(DOLEvent e, object sender, EventArgs args)
         {
@@ -69,8 +73,8 @@ namespace DOL.GS.Quests.Albion
                         GameNPC selectedGuard = gArgs.Target as GameNPC;
                         INpcTemplate template = NpcTemplateMgr.GetTemplate(12211);
                         RemoveItem(selectedGuard, player, waxSealedNote);
-                        selectedGuard.SayTo(player, "If you wish to assist us in our defense we would welcome it.");
-                        selectedGuard.SayTo(player, "Prepare yourselves!");
+                        selectedGuard.SayTo(player, L(player, "Quest.Albion.ImmediateResolution.GuardAssist"));
+                        selectedGuard.SayTo(player, L(player, "Quest.Albion.ImmediateResolution.GuardPrepare"));
                         FinishQuest();
                         if (gArgs.Target == _gaurdsman1 || gArgs.Target == _gaurdsman2)
                         {
@@ -88,7 +92,7 @@ namespace DOL.GS.Quests.Albion
                                 mob.TargetObject = gArgs.Target;
                                 mob.AddToWorld();
                                 if (i <= 5)
-                                {                                    
+                                {
                                     mob.WalkTo(_gaurdsman2, 180);
                                     (mob.Brain as StandardMobBrain).AddToAggroList(_gaurdsman2, 1000);
                                 }
@@ -191,7 +195,7 @@ namespace DOL.GS.Quests.Albion
 
             if (log.IsInfoEnabled)
                 log.Info("Quest \"" + questTitle + "\" initialized");
-        }        
+        }
 
         [ScriptUnloadedEvent]
         public static void ScriptUnloaded(DOLEvent e, object sender, EventArgs args)
@@ -221,7 +225,7 @@ namespace DOL.GS.Quests.Albion
             {
                 if (quest != null)
                 {
-                    _stewardWillie.SayTo(player, "You have been chosen to assist us in delivering [a message]. I'm sure it will be worth your time.");
+                    _stewardWillie.SayTo(player, L(player, "Quest.Albion.ImmediateResolution.StewardChosen"));
                     return;
                 }
             }
@@ -234,10 +238,12 @@ namespace DOL.GS.Quests.Albion
                     switch (wArgs.Text)
                     {
                         case "a message":
-                            _stewardWillie.SayTo(player, "Here! There is a large bridge to the northeast of this keep. It leads to the northern regions and then on into the frontier lands. You will take this message to the guards at the opposite side of the bridge. They are about to be [attacked] so you must hurry!");
+						case "전갈":
+                            _stewardWillie.SayTo(player, L(player, "Quest.Albion.ImmediateResolution.StewardMessage"));
                             break;
                         case "attacked":
-                            _stewardWillie.SayTo(player, "Barbarians have long attacked our borders! So long as they live, we shall never rest! Now off with ye");
+							case "공격":
+                            _stewardWillie.SayTo(player, L(player, "Quest.Albion.ImmediateResolution.StewardAttacked"));
                             if (quest.Step == 1)
                             {
                                 quest.Step = 2;
@@ -251,7 +257,7 @@ namespace DOL.GS.Quests.Albion
                     switch (wArgs.Text)
                     {
                         case "abort":
-                            player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+                            player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
                             break;
                     }
                 }
@@ -275,7 +281,7 @@ namespace DOL.GS.Quests.Albion
             {
                 if (quest == null)
                 {
-                    _masterTor.SayTo(player, "Welcome young warrior! It is good that you have decided to take up the fight in Albion. Our borders are in need of [adventurers] such as you");
+                    _masterTor.SayTo(player, L(player, "Quest.Albion.ImmediateResolution.MasterWelcome"));
                     return;
                 }
             }
@@ -288,7 +294,8 @@ namespace DOL.GS.Quests.Albion
                     switch (wArgs.Text)
                     {
                         case "adventurers":
-                            player.Out.SendQuestSubscribeCommand(_masterTor, QuestMgr.GetIDForQuestType(typeof(ImmediateResolutionVB)), $"Do you accept this task?");
+							case "모험가들":
+                            player.Out.SendQuestSubscribeCommand(_masterTor, QuestMgr.GetIDForQuestType(typeof(ImmediateResolutionVB)), L(player, "Quest.Albion.ImmediateResolution.SubscribePrompt"));
                             break;
                     }
                 }
@@ -297,7 +304,7 @@ namespace DOL.GS.Quests.Albion
                     switch (wArgs.Text)
                     {
                         case "abort":
-                            player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+                            player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
                             break;
                     }
                 }
@@ -314,11 +321,11 @@ namespace DOL.GS.Quests.Albion
 
             if (response == 0x00)
             {
-                SendSystemMessage(player, "Good, now go out there and finish your work!");
+                SendSystemMessage(player, L(player, "Quest.Albion.ImmediateResolution.AbortDeclined"));
             }
             else
             {
-                SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+                SendSystemMessage(player, L(player, "Quest.Albion.ImmediateResolution.AbortingQuest", questTitle));
                 quest.AbortQuest();
             }
         }
@@ -348,14 +355,14 @@ namespace DOL.GS.Quests.Albion
 
             if (response == 0x00)
             {
-                SendReply(player, "Oh well, if you change your mind, please come back!");
+                SendReply(player, L(player, "Quest.Albion.ImmediateResolution.DeclineQuest"));
             }
             else
             {
                 if (!_masterTor.GiveQuest(typeof(ImmediateResolutionVB), player, 1))
                     return;
 
-                _masterTor.SayTo(player, "Good! Locate Steward Willie in the keep overlooking Humberton!");
+                _masterTor.SayTo(player, L(player, "Quest.Albion.ImmediateResolution.AcceptQuest"));
             }
         }
 
@@ -371,9 +378,9 @@ namespace DOL.GS.Quests.Albion
                 switch (Step)
                 {
                     case 1:
-                        return "Locate Steward Willie in the keep overlooking Humberton!";
+                        return L(m_questPlayer, "Quest.Albion.ImmediateResolution.Description1");
                     case 2:
-                        return "Locate the guards who defend a bridge just east of Humberton. Deliver the wax-sealed note to them. Do not tarry!";
+                        return L(m_questPlayer, "Quest.Albion.ImmediateResolution.Description2");
                 }
                 return base.Description;
             }
@@ -395,7 +402,7 @@ namespace DOL.GS.Quests.Albion
             base.FinishQuest();
             m_questPlayer.ForceGainExperience( 50);
             long money = Money.GetMoney(0, 0, 0, 0, 30 + Util.Random(50));
-            m_questPlayer.AddMoney(money, "You recieve {0} for your service.");
+            m_questPlayer.AddMoney(money, L(m_questPlayer, "Quest.Albion.ImmediateResolution.MoneyReward"));
             InventoryLogging.LogInventoryAction("(QUEST;" + Name + ")", m_questPlayer, eInventoryActionType.Quest, money);
 
         }

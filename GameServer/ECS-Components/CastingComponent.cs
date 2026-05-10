@@ -15,7 +15,7 @@ namespace DOL.GS
     {
         private static readonly Logger log = LoggerManager.Create(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        private const string ALREADY_CASTING_MESSAGE = "You are already casting a spell!";
+        private const string ALREADY_CASTING_KEY = "CastingComponent.AlreadyCasting";
         private const int NO_QUEUE_INPUT_BUFFER = 250; // 250ms is roughly equivalent to the delay between inputs imposed by the client.
 
         private readonly Queue<StartSkillRequest> _startSkillRequests = new(); // This isn't the actual spell queue. Also contains abilities.
@@ -253,7 +253,8 @@ namespace DOL.GS
             // More importantly, it ends about a second too early, at which point the server side cooldown takes relay.
             // This can causes mismatches during server lags, but this is how it's supposed to work (I suspect it helps against latency a bit).
             // Server side cooldown: "You must wait ... to recast this type of spell!" (spell resisted, system window).
-            (Owner as GamePlayer)?.Out.SendMessage($"You must wait {FormatCooldown(cooldown)} to recast this type of spell!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+            if (Owner is GamePlayer recastPlayer)
+                recastPlayer.Out.SendMessage(LanguageMgr.GetTranslation(recastPlayer.Client.Account.Language, "CastingComponent.Cooldown.RecastSpell", FormatCooldown(cooldown)), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
             return false;
         }
 
@@ -267,7 +268,8 @@ namespace DOL.GS
             // Live behavior as of 1.127:
             // No client side cooldown.
             // Server side cooldown: "You must wait ... to use this ability." (system, system window).
-            (Owner as GamePlayer)?.Out.SendMessage($"You must wait {FormatCooldown(cooldown)} to use this ability.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            if (Owner is GamePlayer abilityPlayer)
+                abilityPlayer.Out.SendMessage(LanguageMgr.GetTranslation(abilityPlayer.Client.Account.Language, "CastingComponent.Cooldown.UseAbility", FormatCooldown(cooldown)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             return false;
         }
 
@@ -329,9 +331,9 @@ namespace DOL.GS
                         if (effect.End() && CastingComponent.Owner is GamePlayer player)
                         {
                             if (Spell.InstrumentRequirement == 0)
-                                player.Out.SendMessage("You cancel your effect.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "SpellHandler.Message.CancelEffect"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
                             else
-                                player.Out.SendMessage("You stop playing your song.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "SpellHandler.Message.StopPlayingSong"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
                         }
 
                         return;
@@ -370,7 +372,7 @@ namespace DOL.GS
 
                                 if (newSpell.SpellType is eSpellType.Mesmerize && newSpell.InstrumentRequirement != 0)
                                 {
-                                    currentSpellHandler.MessageToCaster("You stop playing your song.", eChatType.CT_Spell);
+                                    currentSpellHandler.MessageToCaster(LanguageMgr.GetTranslation(player.Client.Account.Language, "SpellHandler.Message.StopPlayingSong"), eChatType.CT_Spell);
                                     return;
                                 }
 
@@ -386,7 +388,7 @@ namespace DOL.GS
                                 if (newSpell.InstrumentRequirement != 0)
                                     player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "GamePlayer.CastSpell.AlreadyPlaySong"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                                 else
-                                    player.Out.SendMessage($"You must wait {(currentSpellHandler.CastStartTick + currentSpell.CastTime - GameLoop.GameLoopTime) / 1000 + 1} seconds to cast a spell!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "SpellHandler.Message.MustWaitToCast", (currentSpellHandler.CastStartTick + currentSpell.CastTime - GameLoop.GameLoopTime) / 1000 + 1), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                             }
 
                             return;
@@ -398,20 +400,20 @@ namespace DOL.GS
                             if (currentSpellHandler.CastState is eCastState.Focusing)
                                 CastingComponent.SpellHandler = newSpellHandler;
                             else
-                                player.Out.SendMessage(ALREADY_CASTING_MESSAGE, eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, ALREADY_CASTING_KEY), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 
                             return;
                         }
 
                         if (player.SpellQueue)
                         {
-                            player.Out.SendMessage($"{ALREADY_CASTING_MESSAGE} You prepare this spell as a follow up!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "CastingComponent.Queue.FollowUp", LanguageMgr.GetTranslation(player.Client.Account.Language, ALREADY_CASTING_KEY)), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                             CastingComponent.QueuedSpellHandler = newSpellHandler;
                         }
                         else if (currentSpellHandler.IsInCastingPhase && currentSpellHandler.IsCastEndingSoon(NO_QUEUE_INPUT_BUFFER))
                             CastingComponent.QueuedSpellHandler = newSpellHandler; // Spell queue is disabled. Silently queue the spell.
                         else
-                            player.Out.SendMessage(ALREADY_CASTING_MESSAGE, eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, ALREADY_CASTING_KEY), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                     }
                 }
                 else

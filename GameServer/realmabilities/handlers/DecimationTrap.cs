@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -69,7 +70,7 @@ namespace DOL.GS.RealmAbilities
 			{
 				player.RealmAbilityCastTimer.Stop();
 				player.RealmAbilityCastTimer = null;
-				player.Out.SendMessage("You cancel your Spell!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Message.CancelSpell"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 			}
 
 			foreach (GamePlayer p in living.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
@@ -169,7 +170,7 @@ namespace DOL.GS.RealmAbilities
 			int basedamage = (int)(effectiveness * mod);
 			int resist = (int)(basedamage * target.GetModified(eProperty.Resist_Energy) * -0.01);
 			int damage = basedamage + resist;
-			(owner as GamePlayer)?.Out.SendMessage($"You hit {target.Name} for {damage}({resist}) points of damage!", eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+			(owner as GamePlayer)?.Out.SendMessage(LanguageMgr.GetTranslation((owner as GamePlayer).Client.Account.Language, "RealmAbility.Damage.YouHitForDamageResist", target.Name, damage, resist), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
 			target.Stealth(false);
 
 			foreach (GamePlayer p in target.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))

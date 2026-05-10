@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Threading;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -21,7 +22,7 @@ namespace DOL.GS
 		{
 			if (owner == null)
 				throw new ArgumentNullException("owner");
-			
+
 			m_owner = owner;
 			m_tradeItems = new ArrayList(10);
 
@@ -131,9 +132,9 @@ namespace DOL.GS
 		public bool Repairing
 		{
 			get { return false; }
-			set 
+			set
 			{
-				m_owner.Out.SendMessage("You cannot repair while self-crafting!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Client.Account.Language, "SelfCraftWindow.CannotRepair"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 			}
 		}
 
@@ -143,9 +144,9 @@ namespace DOL.GS
 		public bool Combine
 		{
 			get { return true; }
-			set 
+			set
 			{
-				m_owner.Out.SendMessage("Combine flag is autoset while self-crafting!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				m_owner.Out.SendMessage(LanguageMgr.GetTranslation(m_owner.Client.Account.Language, "SelfCraftWindow.CombineAutoSet"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 			}
 		}
 
@@ -265,10 +266,10 @@ namespace DOL.GS
 			}
 		}
 
-		#endregion	
+		#endregion
 
 		#region AcceptTrade/CloseTrade
-		
+
 		/// <summary>
 		/// Called each time a player push the accept button to accept the trade
 		/// </summary>
@@ -311,7 +312,7 @@ namespace DOL.GS
 					((AdvancedCraftingSkill)skill).CombineItems(m_owner);
 				}
 			}
-				
+
 			CloseTrade();
 			return true;
 		}
@@ -320,7 +321,7 @@ namespace DOL.GS
 		/// Closes the tradewindow
 		/// </summary>
 		public void CloseTrade()
-		{	
+		{
 			lock (Lock)
 			{
 				m_owner.Out.SendCloseTradeWindow();

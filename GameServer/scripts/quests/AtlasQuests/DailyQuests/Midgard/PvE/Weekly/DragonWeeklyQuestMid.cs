@@ -24,12 +24,12 @@ namespace DOL.GS.WeeklyQuest.Midgard
 		private const string questTitle = "[Weekly] Extinction of " + DRAGON_NAME;
 		private const int minimumLevel = 45;
 		private const int maximumLevel = 50;
-		
+
 		// Kill Goal
 		private const int MAX_KILLED = 1;
 		// Quest Counter
 		private int DragonKilled = 0;
-		
+
 		private static GameNPC Isaac = null; // Start NPC
 
 		// Constructors
@@ -57,13 +57,13 @@ namespace DOL.GS.WeeklyQuest.Midgard
 				return minimumLevel;
 			}
 		}
-		
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -141,7 +141,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
 
 		private static void TalkToIsaac(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -162,15 +162,13 @@ namespace DOL.GS.WeeklyQuest.Midgard
 							Isaac.SayTo(player, player.Name + ", please travel to Malmohus and kill the dragon for Midgard!");
 							break;
 						case 2:
-							Isaac.SayTo(player, "Hello " + player.Name + ", did you [slay the dragon] and return for your reward?");
+							Isaac.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[slay the dragon] and return for your reward"));
 							break;
 					}
 				}
 				else
 				{
-					Isaac.SayTo(player, "Hello "+ player.Name +", I am Isaac. I bring sad news today. " + DRAGON_NAME + " razed a small settlement in Malmohus last night. \n" +
-					                    "Please, help the king avenge their deaths and keep Midgard safe from " + DRAGON_NAME +  "\'s influence. \n\n"+
-					                    "Can you support Midgard and [kill the dragon]?");
+					Isaac.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DragonIntro", player.Name, "Isaac", DRAGON_NAME, "Malmohus", "Midgard"));
 				}
 			}
 				// The player whispered to the NPC
@@ -182,7 +180,8 @@ namespace DOL.GS.WeeklyQuest.Midgard
 					switch (wArgs.Text)
 					{
 						case "kill the dragon":
-							player.Out.SendQuestSubscribeCommand(Isaac, QuestMgr.GetIDForQuestType(typeof(DragonWeeklyQuestMid)), "Will you help Isaac "+questTitle+"?");
+						case "드래곤 처치":
+							player.Out.SendQuestSubscribeCommand(Isaac, QuestMgr.GetIDForQuestType(typeof(DragonWeeklyQuestMid)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "Isaac", questTitle));
 							break;
 					}
 				}
@@ -193,18 +192,18 @@ namespace DOL.GS.WeeklyQuest.Midgard
 						case "slay the dragon":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -233,11 +232,11 @@ namespace DOL.GS.WeeklyQuest.Midgard
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and scout the dragon!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueScoutDragon"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -267,7 +266,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for your help.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -275,7 +274,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
 				if (!Isaac.GiveQuest(typeof (DragonWeeklyQuestMid), player, 1))
 					return;
 
-				Isaac.SayTo(player, "Please, find the dragon in Malmohus and defend our realm.");
+				Isaac.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DragonReminder", "Malmohus"));
 
 			}
 		}
@@ -294,9 +293,9 @@ namespace DOL.GS.WeeklyQuest.Midgard
 				switch (Step)
 				{
 					case 1:
-						return "Travel to Malmohus and slay " + DRAGON_NAME + " for Midgard. \nKilled: " + DRAGON_NAME + " ("+ DragonKilled +" | " + MAX_KILLED + ")";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.DragonDescription", "Malmohus", DRAGON_NAME, "Midgard", DragonKilled, MAX_KILLED);
 					case 2:
-						return "Return to Isaac for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpc", "Isaac");
 				}
 				return base.Description;
 			}
@@ -317,9 +316,9 @@ namespace DOL.GS.WeeklyQuest.Midgard
 
 			if (gArgs.Target.Name.ToLower() != DRAGON_NAME.ToLower()) return;
 			DragonKilled = 1;
-			player.Out.SendMessage("[Weekly] You killed " + DRAGON_NAME + ": (" + DragonKilled + " | " + MAX_KILLED + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyNamedKilled", DRAGON_NAME, DragonKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (DragonKilled >= MAX_KILLED)
 			{
 				// FinishQuest or go back to Isaac
@@ -327,13 +326,13 @@ namespace DOL.GS.WeeklyQuest.Midgard
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "DragonWeeklyQuestMid";
 			set { ; }
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 		}

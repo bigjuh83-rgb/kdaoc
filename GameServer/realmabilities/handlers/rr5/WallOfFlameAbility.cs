@@ -6,6 +6,7 @@ using DOL.GS.PacketHandler;
 using DOL.GS.Effects;
 using DOL.Events;
 using DOL.Database;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -28,7 +29,7 @@ namespace DOL.GS.RealmAbilities
 
 			if (caster.IsMoving)
 			{
-				caster.Out.SendMessage("You must be standing still to use this ability!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				caster.Out.SendMessage(LanguageMgr.GetTranslation(caster.Client.Account.Language, "RealmAbility.Message.MustStandStill"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -36,11 +37,11 @@ namespace DOL.GS.RealmAbilities
 			{
 				if (i_player == caster)
 				{
-					i_player.MessageToSelf("You cast " + this.Name + "!", eChatType.CT_Spell);
+					i_player.MessageToSelf(LanguageMgr.GetTranslation(i_player.Client.Account.Language, "RealmAbility.Generic.CastSelf", Name), eChatType.CT_Spell);
 				}
 				else
 				{
-					i_player.MessageFromArea(caster, caster.Name + " casts a spell!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+					i_player.MessageFromArea(caster, LanguageMgr.GetTranslation(i_player.Client.Account.Language, "RealmAbility.Message.CasterCastsSpell", caster.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 				}
 
 				i_player.Out.SendSpellCastAnimation(caster, 7028, 20);

@@ -60,7 +60,7 @@ namespace DOL.GS
 		#endregion
 		public static bool IsKilled = false;
 		public override bool AddToWorld()
-		{			
+		{
 			Name = "Melancholic Fairy Queen";
 			Model = 679;
 			Level = (byte)Util.Random(64,68);
@@ -87,7 +87,7 @@ namespace DOL.GS
 					adds.RemoveFromWorld();
 			}
 			base.Die(killer);
-        }      
+        }
 	}
 }
 namespace DOL.AI.Brain
@@ -140,7 +140,7 @@ namespace DOL.AI.Brain
 				{
 					Body.Flags = oldFlags;
 					Body.Model = oldModel;
-					BroadcastMessage("You hear the sound of trumpets in the distance.");
+					BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.MelancholicFairyQueen.Trumpets"));
 					CreateFairyGuards();
 					changed = false;
 				}
@@ -159,7 +159,7 @@ namespace DOL.AI.Brain
 					if (npc != null && npc.IsAlive && npc.Brain is MFQGuardsBrain brain)
 					{
 						GameLiving target = Body.TargetObject as GameLiving;
-						if (!brain.HasAggro && target.IsAlive && target != null)
+						if (!brain.HasAggro && target != null && target.IsAlive)
 							brain.AddToAggroList(target, 10);
 					}
 				}

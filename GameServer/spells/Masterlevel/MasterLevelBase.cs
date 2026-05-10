@@ -4,6 +4,7 @@ using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -504,7 +505,7 @@ namespace DOL.GS.Spells
 
         // constructor
         public FontSpellHandler(GameLiving caster, Spell spell, SpellLine line) : base(caster, spell, line) { }
-    }	
+    }
     #endregion
 
     #region Trapbase
@@ -647,7 +648,7 @@ namespace DOL.GS.Spells
         /// Execute create item spell
         /// </summary>
         /// <param name="target"></param>
-        /// 
+        ///
         public override void FinishSpellCast(GameLiving target)
         {
             m_caster.Mana -= PowerCost(target);
@@ -675,7 +676,7 @@ namespace DOL.GS.Spells
                     {
 
                         InventoryLogging.LogInventoryAction(Caster, targetPlayer, eInventoryActionType.Other, item.Template, item.Count);
-                        targetPlayer.Out.SendMessage("Item created: " + item.GetName(0, false), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        targetPlayer.Out.SendMessage(LanguageMgr.GetTranslation(targetPlayer.Client, "Masterlevel.SummonItem.ItemCreated", item.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     }
                 }
             }
@@ -846,8 +847,8 @@ namespace DOL.GS
         }
 
         public override int MaxHealth
-        { 
-            get { return 10000; } 
+        {
+            get { return 10000; }
         }
 
         public override void Die(GameObject killer)

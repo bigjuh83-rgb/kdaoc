@@ -29,7 +29,7 @@ namespace DOL.GS.Commands
                         int.TryParse(args[2], out int count);
                         if (count == 0)
                         {
-                            DisplayMessage(client, "Use: /craft set <#>");
+                            DisplayMessage(client, T(client, "PlayerCommands.CraftMacro.UseSet"));
                             return;
                         }
 
@@ -39,11 +39,11 @@ namespace DOL.GS.Commands
                         }
 
                         client.Player.TempProperties.SetProperty(CraftAction.CRAFT_QUEUE_LENGTH_PROPERTY, count);
-                        DisplayMessage(client, $"Crafting queue set to {count} items");
+                        DisplayMessage(client, T(client, "PlayerCommands.CraftMacro.QueueSetItems", count));
                     }
                     else
                     {
-                        DisplayMessage(client, "Use: /craft set <#>");
+                        DisplayMessage(client, T(client, "PlayerCommands.CraftMacro.UseSet"));
                     }
                 }
 
@@ -62,7 +62,7 @@ namespace DOL.GS.Commands
                         client.Player.TempProperties.RemoveProperty(CraftAction.RECIPE_TO_CRAFT_PROPERTY);
                     }
 
-                    DisplayMessage(client, "Crafting queue reset to 1 and item cleared");
+                    DisplayMessage(client, T(client, "PlayerCommands.CraftMacro.QueueReset"));
                 }
 
                 #endregion
@@ -73,9 +73,9 @@ namespace DOL.GS.Commands
                 {
                     if (client.Player.TempProperties.GetProperty<int>(CraftAction.CRAFT_QUEUE_LENGTH_PROPERTY) != 0)
                         DisplayMessage(client,
-                            $"Crafting queue set to {client.Player.TempProperties.GetProperty<int>(CraftAction.CRAFT_QUEUE_LENGTH_PROPERTY)}");
+                            T(client, "PlayerCommands.CraftMacro.QueueSet", client.Player.TempProperties.GetProperty<int>(CraftAction.CRAFT_QUEUE_LENGTH_PROPERTY)));
                     else
-                        DisplayMessage(client, "Crafting queue set to 1");
+                        DisplayMessage(client, T(client, "PlayerCommands.CraftMacro.QueueSet", 1));
                 }
 
                 #endregion
@@ -108,7 +108,7 @@ namespace DOL.GS.Commands
                             {
                                 recipeIngredients = recipe.Ingredients;
                             }
-                            
+
                             foreach (var ingredient in recipeIngredients)
                             {
                                 foreach (var items in merchantitems)
@@ -134,7 +134,7 @@ namespace DOL.GS.Commands
                             {
                                 recipeIngredients = recipe.Ingredients;
                             }
-                            
+
                             foreach (var ingredient in recipeIngredients)
                             {
                                 foreach (var items in merchantitems)
@@ -149,11 +149,11 @@ namespace DOL.GS.Commands
 
                             return;
                         }
-                        DisplayMessage(client, "You must target a merchant");
+                        DisplayMessage(client, T(client, "PlayerCommands.CraftMacro.TargetMerchant"));
                         return;
                     }
 
-                    DisplayMessage(client, "No recipe selected, start crafting an item first");
+                    DisplayMessage(client, T(client, "PlayerCommands.CraftMacro.NoRecipe"));
                 }
 
                 #endregion
@@ -164,7 +164,7 @@ namespace DOL.GS.Commands
                 {
                     if (args.Length < 3)
                     {
-                        DisplayMessage(client, "Use: /craft buyto <#>");
+                        DisplayMessage(client, T(client, "PlayerCommands.CraftMacro.UseBuyTo"));
                         return;
                     }
 
@@ -177,7 +177,7 @@ namespace DOL.GS.Commands
                     }
                     else
                     {
-                        DisplayMessage(client, "Use: /craft buyto <#>");
+                        DisplayMessage(client, T(client, "PlayerCommands.CraftMacro.UseBuyTo"));
                         return;
                     }
 
@@ -196,7 +196,7 @@ namespace DOL.GS.Commands
                                 recipeIngredients = recipe.Ingredients;
                             }
 
-                            var playerItems = new List<DbInventoryItem>(); 
+                            var playerItems = new List<DbInventoryItem>();
 
                             lock (client.Player.Inventory.Lock)
                             {
@@ -204,7 +204,7 @@ namespace DOL.GS.Commands
                                 {
                                     if (pItem.SlotPosition < (int)eInventorySlot.FirstBackpack ||
                                         pItem.SlotPosition > (int)eInventorySlot.LastBackpack)
-                                        continue; 
+                                        continue;
                                     playerItems.Add(pItem);
                                 }
                             }
@@ -229,15 +229,15 @@ namespace DOL.GS.Commands
                                 }
                             }
 
-                            DisplayMessage(client, $"Bought items to craft {amount}x {recipe.Product.Name}");
+                            DisplayMessage(client, T(client, "PlayerCommands.CraftMacro.BoughtItems", amount, recipe.Product.Name));
                             return;
                         }
 
-                        DisplayMessage(client, "You must target a merchant");
+                        DisplayMessage(client, T(client, "PlayerCommands.CraftMacro.TargetMerchant"));
                         return;
                     }
 
-                    DisplayMessage(client, "No recipe selected, start crafting an item first");
+                    DisplayMessage(client, T(client, "PlayerCommands.CraftMacro.NoRecipe"));
                 }
 
                 #endregion

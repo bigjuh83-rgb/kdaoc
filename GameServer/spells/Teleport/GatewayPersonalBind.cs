@@ -30,7 +30,7 @@ namespace DOL.GS.Spells
                 (player.CurrentRegion.ID == 497 && player.Client.Account.PrivLevel == 1)) // Jail.
             {
                 // Actual live message is: You can't use that item!
-                player.Out.SendMessage("You can't use that here!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "GatewayPersonalBind.CannotUseHere"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
 
@@ -107,12 +107,12 @@ namespace DOL.GS.Spells
 
         private static void SendInCombatMessage(GamePlayer player)
         {
-            player.Out.SendMessage("You have been in combat recently and cannot use this item!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "GatewayPersonalBind.InCombat"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
 
         private static void SendMovingMessage(GamePlayer player)
         {
-            player.Out.SendMessage("You must be standing still to use this item!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "GatewayPersonalBind.MustStandStill"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
     }
 }

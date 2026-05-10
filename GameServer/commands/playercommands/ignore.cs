@@ -1,3 +1,5 @@
+using DOL.Language;
+
 namespace DOL.GS.Commands
 {
     /// <summary>
@@ -20,7 +22,7 @@ namespace DOL.GS.Commands
             if (args.Length < 2)
             {
                 string[] ignores = client.Player.SerializedIgnoreList;
-                client.Out.SendCustomTextWindow("Ignore List (snapshot)", ignores);
+                client.Out.SendCustomTextWindow(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Ignore.WindowTitle"), ignores);
                 return;
             }
 
@@ -39,7 +41,7 @@ namespace DOL.GS.Commands
                 else
                 {
                     // nothing found
-                    DisplayMessage(client, "No players online with that name.");
+                    DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Group.NoPlayerOnline"));
                     return;
                 }
             }
@@ -48,7 +50,7 @@ namespace DOL.GS.Commands
             {
                 case ClientService.PlayerGuessResult.FOUND_MULTIPLE:
                 {
-                    DisplayMessage(client, "Character name is not unique.");
+                    DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Ignore.NameNotUnique"));
                     break;
                 }
                 case ClientService.PlayerGuessResult.FOUND_EXACT:
@@ -56,7 +58,7 @@ namespace DOL.GS.Commands
                 {
                     if (otherPlayer == client.Player)
                     {
-                        DisplayMessage(client, "You can't add yourself!");
+                        DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Ignore.CantAddSelf"));
                         return;
                     }
 

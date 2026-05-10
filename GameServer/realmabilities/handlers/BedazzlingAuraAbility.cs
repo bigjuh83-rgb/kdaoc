@@ -2,6 +2,7 @@ using System.Collections;
 using DOL.Database;
 using DOL.GS.PacketHandler;
 using DOL.GS.Spells;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -20,7 +21,7 @@ namespace DOL.GS.RealmAbilities
 			if (CheckPreconditions(living, DEAD | SITTING | MEZZED | STUNNED)) return;
 			if (player.TempProperties.GetProperty<bool>(BofBaSb))
 			{
-				player.Out.SendMessage("You already have an effect of that type!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Message.AlreadyEffect"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			if(ServerProperties.Properties.USE_NEW_ACTIVES_RAS_SCALING)
@@ -33,7 +34,7 @@ namespace DOL.GS.RealmAbilities
 					case 4: m_value = 30; break;
 					case 5: m_value = 40; break;
 					default: return;
-				}				
+				}
 			}
 			else
 			{
@@ -43,7 +44,7 @@ namespace DOL.GS.RealmAbilities
 					case 2: m_value = 20; break;
 					case 3: m_value = 40; break;
 					default: return;
-				}				
+				}
 			}
 
 

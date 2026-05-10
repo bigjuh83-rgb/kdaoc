@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -59,6 +59,14 @@ namespace DOL.GS.Quests.Midgard
 		protected const string questTitle = "Saving the Clan";
 		protected const int minimumLevel = 50;
 		protected const int maximumLevel = 50;
+
+		private static string L(GamePlayer player, string key, params object[] args)
+		{
+			string language = player != null && player.Client != null && player.Client.Account != null
+				? player.Client.Account.Language
+				: ServerProperties.Properties.SERV_LANGUAGE;
+			return DOL.Language.LanguageMgr.GetTranslation(language, key, args);
+		}
 
 		private static GameNPC Danica = null; // Start NPC
 		private static Kelic Kelic = null; // Mob to kill
@@ -112,7 +120,7 @@ namespace DOL.GS.Quests.Midgard
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -1319,7 +1327,7 @@ namespace DOL.GS.Quests.Midgard
 
 		protected static void TalkToDanica(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -1337,24 +1345,19 @@ namespace DOL.GS.Quests.Midgard
 					switch (quest.Step)
 					{
 						case 1:
-							Danica.SayTo(player, "Yes, you must face and defeat him! There is a note scrawled in the corner of the map that even in death Kelic is strong." +
-								"He has gathered followers to protect him in his spirit state and they will come to his aid if he is attacked. Even though you have improved your skills quite a bit, " +
-								"I would highley recommed taking some friends with you to face Kelic. It is imperative that you defeat him and obtain the totem he holds if I am to end the spell. " +
-								"According to the map you can find Kelic in Raumarik. Head to the river in Raumarik and go north. When you reach the end of it, go northwest to the next river. " +
-								"Cross the river and head west. Follow the snowline until you reach a group of trees. That is where you will find Kelic and his followers. " +
-								"Return to me when you have the totem. May all the gods be with you.");
+							Danica.SayTo(player, L(player, "Quest.Epic.Mystic50.FaceKelicDetail"));
 							break;
 						case 2:
-							Danica.SayTo(player, "It is good to see you were strong enough to survive Kelic. I can sense you have the controlling totem on you. Give me Kelic's [totem] now! Hurry!");
+							Danica.SayTo(player, L(player, "Quest.Epic.Mystic50.TotemReminder"));
 							break;
 						case 3:
-							Danica.SayTo(player, "The curse is broken and the clan is safe. They are in your debt, but I think Arnfinn, has come up with a suitable reward for you. There are six parts to it, so make sure you have room for them. Just let me know when you are ready, and then you can [take them] with our thanks!");
+							Danica.SayTo(player, L(player, "Quest.Epic.Mystic50.RewardReady"));
 							break;
 					}
 				}
 				else
 				{
-					Danica.SayTo(player, "Ah, this reveals exactly where Jango and his deserters took Kelic to dispose of him. He also has a note here about how strong Kelic really was. That [worries me].");
+					Danica.SayTo(player, L(player, "Quest.Epic.Mystic50.Intro"));
 				}
 			}
 				// The player whispered to the NPC
@@ -1366,10 +1369,12 @@ namespace DOL.GS.Quests.Midgard
 					switch (wArgs.Text)
 					{
 						case "worries me":
-							Danica.SayTo(player, "Yes, it worries me, but I think that you are ready to [face Kelic] and his minions.");
+						case "걱정":
+							Danica.SayTo(player, L(player, "Quest.Epic.Mystic50.WorriesMe"));
 							break;
 						case "face Kelic":
-							player.Out.SendQuestSubscribeCommand(Danica, QuestMgr.GetIDForQuestType(typeof(Mystic_50)), "Will you face Kelic [Mystic Level 50 Epic]?");
+						case "켈릭과 맞서기":
+							player.Out.SendQuestSubscribeCommand(Danica, QuestMgr.GetIDForQuestType(typeof(Mystic_50)), L(player, "Quest.Epic.Mystic50.Subscribe"));
 							break;
 					}
 				}
@@ -1378,31 +1383,30 @@ namespace DOL.GS.Quests.Midgard
 					switch (wArgs.Text)
 					{
 						case "take them":
+						case "받기":
 							if (quest.Step == 3)
 							{
 								if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 									    eInventorySlot.LastBackpack))
 								{
-									Danica.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+									Danica.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 									quest.FinishQuest();
 								}
 								else
-									player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+									player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 							}
 							break;
-						case "totem":
+							case "totem":
+							case "토템":
 							if (quest.Step == 2)
 							{
 								RemoveItem(player, kelics_totem);
 								quest.Step = 3;
-								Danica.SayTo(player, "The curse is broken and the clan is safe. " +
-								                     "They are in your debt, but I think Arnfinn, has come up with a suitable reward for you. " +
-								                     "There are six parts to it, so make sure you have room for them. " +
-								                     "Just let me know when you are ready, and then you can [take them] with our thanks!");
+								Danica.SayTo(player, L(player, "Quest.Epic.Mystic50.RewardReady"));
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
@@ -1415,8 +1419,8 @@ namespace DOL.GS.Quests.Midgard
 					if (rArgs.Item.Id_nb == kelics_totem.Id_nb)
 					{
 						RemoveItem(player, kelics_totem);
-						Danica.SayTo(player, "Ah, I can see how he wore the curse around the totem. I can now break the curse that is destroying the clan!");
-						Danica.SayTo(player, "The curse is broken and the clan is safe. They are in your debt, but I think Arnfinn, has come up with a suitable reward for you. There are six parts to it, so make sure you have room for them. Just let me know when you are ready, and then you can [take them] with our thanks!");
+						Danica.SayTo(player, L(player, "Quest.Epic.Mystic50.BreakCurse"));
+						Danica.SayTo(player, L(player, "Quest.Epic.Mystic50.RewardReady"));
 						quest.Step = 3;
 					}
 				}
@@ -1455,11 +1459,11 @@ namespace DOL.GS.Quests.Midgard
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, no go out there and finish your work!");
+				SendSystemMessage(player, L(player, "Quest.Epic.Mystic50.AbortDecline"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -1489,7 +1493,7 @@ namespace DOL.GS.Quests.Midgard
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Our God forgives your laziness, just look out for stray lightning bolts.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(L(player, "Quest.Epic.Mystic50.Decline"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -1498,18 +1502,13 @@ namespace DOL.GS.Quests.Midgard
 					return;
 
 			}
-			Danica.SayTo(player, "Yes, you must face and defeat him! There is a note scrawled in the corner of the map that even in death Kelic is strong. " +
-			                     "He has gathered followers to protect him in his spirit state and they will come to his aid if he is attacked. Even though you have improved your skills quite a bit, " +
-			                     "I would highley recommed taking some friends with you to face Kelic. It is imperative that you defeat him and obtain the totem he holds if I am to end the spell. " +
-			                     "According to the map you can find Kelic in Raumarik. Head to the river in Raumarik and go north. When you reach the end of it, go northwest to the next river. " +
-			                     "Cross the river and head west. Follow the snowline until you reach a group of trees. That is where you will find Kelic and his followers. " +
-			                     "Return to me when you have the totem. May all the gods be with you.");
+			Danica.SayTo(player, L(player, "Quest.Epic.Mystic50.FaceKelicDetail"));
 		}
 
 		//Set quest name
 		public override string Name
 		{
-			get { return "Saving the Clan (Level 50 Mystic Epic)"; }
+			get { return L(m_questPlayer, "Quest.Epic.Mystic50.Name"); }
 		}
 
 		// Define Steps
@@ -1520,11 +1519,11 @@ namespace DOL.GS.Quests.Midgard
 				switch (Step)
 				{
 					case 1:
-						return "Find Kelic in Raumarik. Head to the river and go north. At the end go northwest to the next river, cross and head west. Follow the snowline until you reach a group of trees.";
+						return L(m_questPlayer, "Quest.Epic.Mystic50.Description1");
 					case 2:
-						return "Return to Danica and give her the totem!";
+						return L(m_questPlayer, "Quest.Epic.Mystic50.Description2");
 					case 3:
-						return "Speak with Danica for your reward!";
+						return L(m_questPlayer, "Quest.Epic.Mystic50.Description3");
 				}
 				return base.Description;
 			}
@@ -1539,7 +1538,7 @@ namespace DOL.GS.Quests.Midgard
 
 			if (sender != m_questPlayer)
 				return;
-			
+
 			if (Step == 1 && e == GameLivingEvent.EnemyKilled)
 			{
 				EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
@@ -1547,7 +1546,7 @@ namespace DOL.GS.Quests.Midgard
 				{
 					Step = 2;
 					GiveItem(player, kelics_totem);
-					m_questPlayer.Out.SendMessage("Kelic drops his Totem and you pick it up!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					m_questPlayer.Out.SendMessage(L(m_questPlayer, "Quest.Epic.Mystic50.CollectTotem"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 			}
 			if (Step == 2 && e == GamePlayerEvent.GiveItem)
@@ -1556,8 +1555,8 @@ namespace DOL.GS.Quests.Midgard
 				if (gArgs.Target.Name == Danica.Name && gArgs.Item.Id_nb == kelics_totem.Id_nb)
 				{
 					RemoveItem(Danica, player, kelics_totem);
-					Danica.SayTo(player, "Ah, I can see how he wore the curse around the totem. I can now break the curse that is destroying the clan!");
-					Danica.SayTo(player, "The curse is broken and the clan is safe. They are in your debt, but I think Arnfinn, has come up with a suitable reward for you. There are six parts to it, so make sure you have room for them. Just let me know when you are ready, and then you can [take them] with our thanks!");
+					Danica.SayTo(player, L(player, "Quest.Epic.Mystic50.BreakCurse"));
+					Danica.SayTo(player, L(player, "Quest.Epic.Mystic50.RewardReady"));
 					Step = 3;
 				}
 			}
@@ -1618,45 +1617,45 @@ namespace DOL.GS.Quests.Midgard
 						break;
 					}
 			}
-			Danica.SayTo(m_questPlayer, "May it serve you well, knowing that you have helped preserve the history of Midgard!");
+			Danica.SayTo(m_questPlayer, L(m_questPlayer, "Quest.Epic.Mystic50.Finish"));
 
 			m_questPlayer.GainExperience(eXPSource.Quest, 1937768448, true);
-			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");		
-				
+			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");
+
 		}
 
 		#region Allakhazam Epic Source
 
 		/*
         *#25 talk to Inaksha
-        *#26 seek out Loken in Raumarik Loc 47k, 25k, 4k, and kill him purp and 2 blue adds 
-        *#27 return to Inaksha 
+        *#26 seek out Loken in Raumarik Loc 47k, 25k, 4k, and kill him purp and 2 blue adds
+        *#27 return to Inaksha
         *#28 give her the ball of flame
         *#29 talk with Inaksha about Loken�s demise
-        *#30 go to Miri in Jordheim 
+        *#30 go to Miri in Jordheim
         *#31 give her the sealed pouch
         *#32 you get your epic armor as a reward
         */
 
 		/*
-Spirit Touched Boots 
-Spirit Touched Cap 
-Spirit Touched Gloves 
-Spirit Touched Pants 
-Spirit Touched Sleeves 
-Spirit Touched Vest 
-Raven-Rune Boots 
-Raven-Rune Cap 
-Raven-Rune Gloves 
-Raven-Rune Pants 
-Raven-Rune Sleeves 
-Raven-Rune Vest 
-Raven-boned Boots 
-Raven-Boned Cap 
-Raven-boned Gloves 
-Raven-Boned Pants 
-Raven-Boned Sleeves 
-Bone-rune Vest 
+Spirit Touched Boots
+Spirit Touched Cap
+Spirit Touched Gloves
+Spirit Touched Pants
+Spirit Touched Sleeves
+Spirit Touched Vest
+Raven-Rune Boots
+Raven-Rune Cap
+Raven-Rune Gloves
+Raven-Rune Pants
+Raven-Rune Sleeves
+Raven-Rune Vest
+Raven-boned Boots
+Raven-Boned Cap
+Raven-boned Gloves
+Raven-Boned Pants
+Raven-Boned Sleeves
+Bone-rune Vest
         */
 
 		#endregion

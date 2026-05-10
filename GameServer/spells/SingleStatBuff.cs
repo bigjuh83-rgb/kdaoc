@@ -1,5 +1,6 @@
 using System;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -80,7 +81,7 @@ namespace DOL.GS.Spells
         {
             if (target.HasAbility(Abilities.VampiirStrength))
             {
-                MessageToCaster("Your target already has an effect of that type!", eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.TargetAlreadyHasEffectOfType"), eChatType.CT_Spell);
                 return;
             }
 
@@ -98,7 +99,7 @@ namespace DOL.GS.Spells
         {
             if (target.HasAbility(Abilities.VampiirDexterity))
             {
-                MessageToCaster("Your target already has an effect of that type!", eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.TargetAlreadyHasEffectOfType"), eChatType.CT_Spell);
                 return;
             }
 
@@ -116,7 +117,7 @@ namespace DOL.GS.Spells
         {
             if (target.HasAbility(Abilities.VampiirConstitution))
             {
-                MessageToCaster("Your target already has an effect of that type!", eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.TargetAlreadyHasEffectOfType"), eChatType.CT_Spell);
                 return;
             }
 

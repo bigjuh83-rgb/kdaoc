@@ -1,5 +1,6 @@
 using DOL.GS.Keeps;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -20,7 +21,7 @@ namespace DOL.GS.Spells
 			{
 				if (!(selectedTarget is GameKeepComponent || selectedTarget is Keeps.GameKeepDoor))
 				{
-					MessageToCaster("Your target must be a Keep Component!", eChatType.CT_Spell);
+					MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "SiegeArrow.TargetMustBeKeepComponent"), eChatType.CT_Spell);
 					return false;
 				}
 				return base.CheckBeginCast(selectedTarget);
@@ -28,19 +29,19 @@ namespace DOL.GS.Spells
 			}
 			return false;
 		}
-		
+
 		public override void FinishSpellCast(GameLiving target)
 		{
 			if (!(target is GameKeepComponent || target is Keeps.GameKeepDoor))
 			{
-				MessageToCaster("Your target must be a Keep Component!", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "SiegeArrow.TargetMustBeKeepComponent"), eChatType.CT_SpellResisted);
 				return;
 			}
 
 			base.FinishSpellCast(target);
 		}
 
-		public override void SendSpellMessages() { MessageToCaster("You prepare " + Spell.Name, eChatType.CT_Spell); }
+		public override void SendSpellMessages() { MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "SiegeArrow.PrepareShot", Spell.Name), eChatType.CT_Spell); }
 		public override AttackData CalculateDamageToTarget(GameLiving target)
 		{
 			AttackData ad = base.CalculateDamageToTarget(target);

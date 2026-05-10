@@ -1,5 +1,6 @@
 ﻿using DOL.AI.Brain;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -24,15 +25,15 @@ namespace DOL.GS.Commands
 						{
 							pet.RemoveFromWorld();
 							client.Player.TempProperties.RemoveProperty(NoveltyPetBrain.HAS_PET);
-							client.Player.MessageToSelf("You have dismissed your companion pet.",eChatType.CT_Spell);
+							client.Player.MessageToSelf(LanguageMgr.GetTranslation(client, "Scripts.Players.DismissPet.Dismissed"),eChatType.CT_Spell);
 						}
-		
+
 					}
 				}
 			}
 			else
 			{
-				client.Player.MessageToSelf("You have no companion pet.",eChatType.CT_SpellResisted);
+				client.Player.MessageToSelf(LanguageMgr.GetTranslation(client, "Scripts.Players.DismissPet.NoPet"),eChatType.CT_SpellResisted);
 			}
 		}
 

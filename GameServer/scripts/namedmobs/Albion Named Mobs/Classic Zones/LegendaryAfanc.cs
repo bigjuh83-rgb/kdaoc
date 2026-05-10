@@ -155,12 +155,12 @@ namespace DOL.AI.Brain
                 {
 					GamePlayer Target = Port_Enemys[Util.Random(0, Port_Enemys.Count - 1)];
 					if (Target != null && Target.IsAlive)
-                    {					
+                    {
 						Target.MoveTo(Body.CurrentRegionID, 451486, 393503, 2754, 2390);
 						if(Target.CharacterClass is not ClassDisciple)
                         {
 							Target.TakeDamage(Target, eDamageType.Falling, Target.MaxHealth / 5, 0);
-							Target.Out.SendMessage("You take falling damage!", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+							Target.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(Target.Client.Account.Language, "NamedMobs.Common.FallingDamage"), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
 						}
                     }
 					CanPort = false;

@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -18,6 +18,7 @@
  */
 using System;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -42,13 +43,13 @@ namespace DOL.GS.Commands
 				GameNPC[] npcs = WorldMgr.GetNPCsByNameFromRegion(name, client.Player.CurrentRegionID, (eRealm) client.Player.Realm);
 				if (npcs == null || npcs.Length <= 0)
 				{
-					targetnpc.SayTo(client.Player, "Sorry, i do not know this person.");
+					targetnpc.SayTo(client.Player, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Where.UnknownPerson"));
 					return;
 				}
 				GameNPC npc = npcs[0];
 				ushort heading = targetnpc.GetHeading(npc);
-				string directionstring = GetDirectionFromHeading(heading);
-				targetnpc.SayTo(client.Player, eChatLoc.CL_SystemWindow, npc.Name + " is in the " + directionstring);
+				string directionstring = LanguageMgr.GetTranslation(client.Account.Language, GetDirectionKeyFromHeading(heading));
+				targetnpc.SayTo(client.Player, eChatLoc.CL_SystemWindow, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Where.Result", npc.Name, directionstring));
 				targetnpc.TurnTo(npc, 10000);
 				targetnpc.Emote(eEmote.Point);
 			}
@@ -145,26 +146,26 @@ namespace DOL.GS.Commands
 			return false;
 		}
 
-		public string GetDirectionFromHeading(ushort heading)
+		public string GetDirectionKeyFromHeading(ushort heading)
 		{
 			if (heading < 0)
 				heading += 4096;
 			if (heading >= 3840 || heading <= 256)
-				return "South";
+				return "Scripts.Common.Direction.South";
 			else if (heading > 256 && heading < 768)
-				return "South West";
+				return "Scripts.Common.Direction.SouthWest";
 			else if (heading >= 768 && heading <= 1280)
-				return "West";
+				return "Scripts.Common.Direction.West";
 			else if (heading > 1280 && heading < 1792)
-				return "North West";
+				return "Scripts.Common.Direction.NorthWest";
 			else if (heading >= 1792 && heading <= 2304)
-				return "North";
+				return "Scripts.Common.Direction.North";
 			else if (heading > 2304 && heading < 2816)
-				return "North East";
+				return "Scripts.Common.Direction.NorthEast";
 			else if (heading >= 2816 && heading <= 3328)
-				return "East";
+				return "Scripts.Common.Direction.East";
 			else if (heading > 3328 && heading < 3840)
-				return "South East";
+				return "Scripts.Common.Direction.SouthEast";
 			return string.Empty;
 		}
 	}

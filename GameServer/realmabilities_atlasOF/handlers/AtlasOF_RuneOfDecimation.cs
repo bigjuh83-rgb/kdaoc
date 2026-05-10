@@ -3,6 +3,7 @@ using DOL.AI;
 using DOL.Database;
 using DOL.GS.PacketHandler;
 using DOL.GS.Spells;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -31,7 +32,8 @@ namespace DOL.GS.RealmAbilities
 
             if (living.IsCasting)
             {
-                (living as GamePlayer)?.Out.SendMessage("You are already casting an ability.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                if (living is GamePlayer player)
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Message.AlreadyCastingAbility"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
@@ -57,9 +59,9 @@ namespace DOL.GS.RealmAbilities
             foreach (GamePlayer player in living.GetPlayersInRadius(WorldMgr.INFO_DISTANCE))
             {
                 if (player == living)
-                    player.MessageToSelf($"You cast {Name}!", eChatType.CT_Spell);
+                    player.MessageToSelf(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Generic.CastSelf", Name), eChatType.CT_Spell);
                 else
-                    player.MessageFromArea(living, $"{living.Name} casts a spell!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                    player.MessageFromArea(living, LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Message.CasterCastsSpell", living.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
             }
 
             DisableSkill(living);

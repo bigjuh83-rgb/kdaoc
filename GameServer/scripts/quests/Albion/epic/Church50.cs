@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -50,21 +50,29 @@ namespace DOL.GS.Quests.Albion
 		protected const int minimumLevel = 50;
 		protected const int maximumLevel = 50;
 
+		private static string L(GamePlayer player, string key, params object[] args)
+		{
+			string language = player != null && player.Client != null && player.Client.Account != null
+				? player.Client.Account.Language
+				: ServerProperties.Properties.SERV_LANGUAGE;
+			return DOL.Language.LanguageMgr.GetTranslation(language, key, args);
+		}
+
 		private static GameNPC Roben = null; // Start NPC
 		private static SisterBlythe Blythe = null; // Mob to kill
 
 		private static DbItemTemplate statue_of_arawn = null; //sealed pouch
-		private static DbItemTemplate ClericEpicBoots = null; //Shadow Shrouded Boots 
-		private static DbItemTemplate ClericEpicHelm = null; //Shadow Shrouded Coif 
-		private static DbItemTemplate ClericEpicGloves = null; //Shadow Shrouded Gloves 
-		private static DbItemTemplate ClericEpicVest = null; //Shadow Shrouded Hauberk 
-		private static DbItemTemplate ClericEpicLegs = null; //Shadow Shrouded Legs 
-		private static DbItemTemplate ClericEpicArms = null; //Shadow Shrouded Sleeves 
-		private static DbItemTemplate PaladinEpicBoots = null; //Valhalla Touched Boots 
-		private static DbItemTemplate PaladinEpicHelm = null; //Valhalla Touched Coif 
-		private static DbItemTemplate PaladinEpicGloves = null; //Valhalla Touched Gloves 
-		private static DbItemTemplate PaladinEpicVest = null; //Valhalla Touched Hauberk 
-		private static DbItemTemplate PaladinEpicLegs = null; //Valhalla Touched Legs 
+		private static DbItemTemplate ClericEpicBoots = null; //Shadow Shrouded Boots
+		private static DbItemTemplate ClericEpicHelm = null; //Shadow Shrouded Coif
+		private static DbItemTemplate ClericEpicGloves = null; //Shadow Shrouded Gloves
+		private static DbItemTemplate ClericEpicVest = null; //Shadow Shrouded Hauberk
+		private static DbItemTemplate ClericEpicLegs = null; //Shadow Shrouded Legs
+		private static DbItemTemplate ClericEpicArms = null; //Shadow Shrouded Sleeves
+		private static DbItemTemplate PaladinEpicBoots = null; //Valhalla Touched Boots
+		private static DbItemTemplate PaladinEpicHelm = null; //Valhalla Touched Coif
+		private static DbItemTemplate PaladinEpicGloves = null; //Valhalla Touched Gloves
+		private static DbItemTemplate PaladinEpicVest = null; //Valhalla Touched Hauberk
+		private static DbItemTemplate PaladinEpicLegs = null; //Valhalla Touched Legs
 		private static DbItemTemplate PaladinEpicArms = null; //Valhalla Touched Sleeves
 
 		// Constructors
@@ -89,7 +97,7 @@ namespace DOL.GS.Quests.Albion
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -235,7 +243,7 @@ namespace DOL.GS.Quests.Albion
 
 			}
 //end item
-			//of the Defiant Soul  Coif 
+			//of the Defiant Soul  Coif
 			ClericEpicHelm = GameServer.Database.FindObjectByKey<DbItemTemplate>("ClericEpicHelm");
 			if (ClericEpicHelm == null)
 			{
@@ -281,7 +289,7 @@ namespace DOL.GS.Quests.Albion
 
 			}
 //end item
-			//of the Defiant Soul  Gloves 
+			//of the Defiant Soul  Gloves
 			ClericEpicGloves = GameServer.Database.FindObjectByKey<DbItemTemplate>("ClericEpicGloves");
 			if (ClericEpicGloves == null)
 			{
@@ -326,7 +334,7 @@ namespace DOL.GS.Quests.Albion
 				ClericEpicGloves = i;
 
 			}
-			//of the Defiant Soul  Hauberk 
+			//of the Defiant Soul  Hauberk
 			ClericEpicVest = GameServer.Database.FindObjectByKey<DbItemTemplate>("ClericEpicVest");
 			if (ClericEpicVest == null)
 			{
@@ -370,7 +378,7 @@ namespace DOL.GS.Quests.Albion
 				ClericEpicVest = i;
 
 			}
-			//of the Defiant Soul  Legs 
+			//of the Defiant Soul  Legs
 			ClericEpicLegs = GameServer.Database.FindObjectByKey<DbItemTemplate>("ClericEpicLegs");
 			if (ClericEpicLegs == null)
 			{
@@ -415,7 +423,7 @@ namespace DOL.GS.Quests.Albion
 				ClericEpicLegs = i;
 
 			}
-			//of the Defiant Soul  Sleeves 
+			//of the Defiant Soul  Sleeves
 			ClericEpicArms = GameServer.Database.FindObjectByKey<DbItemTemplate>("ClericEpicArms");
 			if (ClericEpicArms == null)
 			{
@@ -505,7 +513,7 @@ namespace DOL.GS.Quests.Albion
 
 			}
 //end item
-			//of the Iron Will Coif 
+			//of the Iron Will Coif
 			PaladinEpicHelm = GameServer.Database.FindObjectByKey<DbItemTemplate>("PaladinEpicHelm");
 			if (PaladinEpicHelm == null)
 			{
@@ -551,7 +559,7 @@ namespace DOL.GS.Quests.Albion
 
 			}
 //end item
-			//of the Iron Will Gloves 
+			//of the Iron Will Gloves
 			PaladinEpicGloves = GameServer.Database.FindObjectByKey<DbItemTemplate>("PaladinEpicGloves");
 			if (PaladinEpicGloves == null)
 			{
@@ -596,7 +604,7 @@ namespace DOL.GS.Quests.Albion
 				PaladinEpicGloves = i;
 
 			}
-			//of the Iron Will Hauberk 
+			//of the Iron Will Hauberk
 			PaladinEpicVest = GameServer.Database.FindObjectByKey<DbItemTemplate>("PaladinEpicVest");
 			if (PaladinEpicVest == null)
 			{
@@ -641,7 +649,7 @@ namespace DOL.GS.Quests.Albion
 				PaladinEpicVest = i;
 
 			}
-			//of the Iron Will Legs 
+			//of the Iron Will Legs
 			PaladinEpicLegs = GameServer.Database.FindObjectByKey<DbItemTemplate>("PaladinEpicLegs");
 			if (PaladinEpicLegs == null)
 			{
@@ -686,7 +694,7 @@ namespace DOL.GS.Quests.Albion
 				PaladinEpicLegs = i;
 
 			}
-			//of the Iron Will Sleeves 
+			//of the Iron Will Sleeves
 			PaladinEpicArms = GameServer.Database.FindObjectByKey<DbItemTemplate>("PaladinEpicArms");
 			if (PaladinEpicArms == null)
 			{
@@ -768,7 +776,7 @@ namespace DOL.GS.Quests.Albion
 
 		protected static void TalkToRoben(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -785,17 +793,17 @@ namespace DOL.GS.Quests.Albion
 				// Nag to finish quest
 				if (quest == null)
 				{
-					Roben.SayTo(player, "It appears that those present when the glyph was made whole received a [vision].");
+					Roben.SayTo(player, L(player, "Quest.Epic.Church50.Intro"));
 				}
 				else
 				{
 					switch (quest.Step)
 					{
 						case 1:
-							Roben.SayTo(player, "You must not let this occur " + player.GetName(0, false) + "! I am familar with [Lyonesse]. I suggest that you gather a strong group of adventurers in order to succeed in this endeavor!");
+							Roben.SayTo(player, L(player, "Quest.Epic.Church50.LyonesseReminder", player.GetName(0, false)));
 							break;
 						case 2:
-							Roben.SayTo(player, "Were you able to [defeat] the cult of the dark lord Arawn?");
+							Roben.SayTo(player, L(player, "Quest.Epic.Church50.DefeatReminder"));
 							break;
 					}
 				}
@@ -809,14 +817,17 @@ namespace DOL.GS.Quests.Albion
 				{
 					switch (wArgs.Text)
 					{
-						case "vision":
-							Roben.SayTo(player, "They speak of a broken cathedral located within the borders of Lyonesse. The glyph was able to show the new [occupants] of this cathedral.");
+							case "vision":
+							case "환영":
+							Roben.SayTo(player, L(player, "Quest.Epic.Church50.Vision"));
 							break;
-						case "occupants":
-							Roben.SayTo(player, "Occupants that worship not the church of Albion, but the dark lord Arawn! Magess Axton requests that you gather a group and destroy the leader of these dark disciples. She believes these worshippers of Arawan strive to [break the light of camelot] and establish their own religion within our realm.");
+							case "occupants":
+							case "거주자들":
+							Roben.SayTo(player, L(player, "Quest.Epic.Church50.Occupants"));
 							break;
-						case "break the light of camelot":
-							player.Out.SendQuestSubscribeCommand(Roben, QuestMgr.GetIDForQuestType(typeof(Church_50)), "Will you help Roben [Church Level 50 Epic]?");
+							case "break the light of camelot":
+							case "카멜롯의 빛 꺾기":
+							player.Out.SendQuestSubscribeCommand(Roben, QuestMgr.GetIDForQuestType(typeof(Church_50)), L(player, "Quest.Epic.Church50.Subscribe"));
 							break;
 					}
 				}
@@ -825,25 +836,26 @@ namespace DOL.GS.Quests.Albion
 					switch (wArgs.Text)
 					{
 						case "Lyonesse":
-							Roben.SayTo(player, "The cathedral that Axton speaks of lies deep at the heart of that land, behind the Pikeman, across from the Trees. Its remaining walls can be seen at great distances during the day so you should not miss it. I would travel with thee, but my services are required elswhere. Fare thee well " + player.CharacterClass.Name + ".");
+							Roben.SayTo(player, L(player, "Quest.Epic.Church50.Lyonesse", player.CharacterClass.Name));
 							break;
-						case "defeat":
+							case "defeat":
+							case "격파":
 							if (quest.Step == 2)
 							{
 								RemoveItem(player, statue_of_arawn);
 								if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 									    eInventorySlot.LastBackpack))
 								{
-									Roben.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+									Roben.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 									quest.FinishQuest();
 								}
 								else
-									player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+									player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 							}
 							break;
 
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
@@ -857,11 +869,11 @@ namespace DOL.GS.Quests.Albion
 						if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 							    eInventorySlot.LastBackpack))
 						{
-							Roben.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+							Roben.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 							quest.FinishQuest();
 						}
 						else
-							player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					}
 			}
 		}
@@ -903,11 +915,11 @@ namespace DOL.GS.Quests.Albion
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, no go out there and finish your work!");
+				SendSystemMessage(player, L(player, "Quest.Epic.Church50.AbortDecline"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -938,7 +950,7 @@ namespace DOL.GS.Quests.Albion
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Our God forgives your laziness, just look out for stray lightning bolts.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(L(player, "Quest.Epic.Church50.Decline"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -946,14 +958,14 @@ namespace DOL.GS.Quests.Albion
 				if (!Roben.GiveQuest(typeof (Church_50), player, 1))
 					return;;
 
-				Roben.SayTo(player, "You must not let this occur " + player.GetName(0, false) + "! I am familar with [Lyonesse]. I suggest that you gather a strong group of adventurers in order to succeed in this endeavor!");
+				Roben.SayTo(player, L(player, "Quest.Epic.Church50.LyonesseReminder", player.GetName(0, false)));
 			}
 		}
 
 		//Set quest name
 		public override string Name
 		{
-			get { return "Passage to Eternity (Level 50 Church Epic)"; }
+			get { return L(m_questPlayer, "Quest.Epic.Church50.Name"); }
 		}
 
 		// Define Steps
@@ -964,9 +976,9 @@ namespace DOL.GS.Quests.Albion
 				switch (Step)
 				{
 					case 1:
-						return "Gather a strong group of adventures and travel to the ancient temple of Arawn. This temple can be found within Lyonesse, surrounded by the dark one's priests. Only by slaying their leader can this evil be stopped!";
+						return L(m_questPlayer, "Quest.Epic.Church50.Description1");
 					case 2:
-						return "Return the statue of Arawn to Roben Fraomar for your reward!";
+						return L(m_questPlayer, "Quest.Epic.Church50.Description2");
 				}
 				return base.Description;
 			}
@@ -981,7 +993,7 @@ namespace DOL.GS.Quests.Albion
 
 			if (sender != m_questPlayer)
 				return;
-			
+
 			if (Step == 1 && e == GameLivingEvent.EnemyKilled)
 			{
 				EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
@@ -989,7 +1001,7 @@ namespace DOL.GS.Quests.Albion
 				{
 					if (gArgs.Target.Name == Blythe.Name)
 					{
-						m_questPlayer.Out.SendMessage("As you search the dead body of sister Blythe, you find a sacred " + statue_of_arawn.Name + ", bring it to " + Roben.Name + " has proof of your success.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						m_questPlayer.Out.SendMessage(L(m_questPlayer, "Quest.Epic.Church50.FindStatue", statue_of_arawn.Name, Roben.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						GiveItem(player, statue_of_arawn);
 						Step = 2;
 					}
@@ -1003,11 +1015,11 @@ namespace DOL.GS.Quests.Albion
 					if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 						    eInventorySlot.LastBackpack))
 					{
-						Roben.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+						Roben.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 						FinishQuest();
 					}
 					else
-						player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 				}
 			}
 		}
@@ -1045,24 +1057,24 @@ namespace DOL.GS.Quests.Albion
 			}
 
 			m_questPlayer.GainExperience(eXPSource.Quest, 1937768448, true);
-			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");		
+			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");
 		}
 
 		#region Allakhazam Epic Source
 
 		/*
         *#25 talk to Roben
-        *#26 seek out Loken in Raumarik Loc 47k, 25k, 4k, and kill him purp and 2 blue adds 
-        *#27 return to Roben 
+        *#26 seek out Loken in Raumarik Loc 47k, 25k, 4k, and kill him purp and 2 blue adds
+        *#27 return to Roben
         *#28 give her the ball of flame
         *#29 talk with Roben about Loken�s demise
-        *#30 go to MorlinCaan in Jordheim 
+        *#30 go to MorlinCaan in Jordheim
         *#31 give her the sealed pouch
         *#32 you get your epic armor as a reward
         */
 
 		/*
-            *Bernor's Numinous Boots 
+            *Bernor's Numinous Boots
             *Bernor's Numinous Coif
             *Bernor's Numinous Gloves
             *Bernor's Numinous Hauberk

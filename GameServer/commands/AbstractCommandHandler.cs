@@ -5,6 +5,12 @@ namespace DOL.GS.Commands
 	/// </summary>
 	public abstract class AbstractCommandHandler
 	{
+		protected static string T(GameClient client, string key, params object[] args)
+			=> DOL.Language.LanguageMgr.GetTranslation(client.Account.Language, key, args);
+
+		protected static string T(GamePlayer player, string key, params object[] args)
+			=> DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+
 		/// <summary>
 		/// Is this player spamming this command
 		/// </summary>
@@ -89,7 +95,7 @@ namespace DOL.GS.Commands
 				// Include main command type description below separator
 				ChatUtil.SendCommMessage(client, attrib[0].Description, null);
 			}
-			
+
 			// Run for each value found under "params usage" until the whole command list is displayed
 			foreach (var sentence in attrib[0].Usage)
 			{
@@ -101,7 +107,7 @@ namespace DOL.GS.Commands
 				// All other values display as command descriptions (i.e., CT_System)
 				else
 				{
-					ChatUtil.SendCommMessage(client, sentence, null);	
+					ChatUtil.SendCommMessage(client, sentence, null);
 				}
 			}
 		}

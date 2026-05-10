@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -53,7 +54,7 @@ namespace DOL.GS.Spells
             if (player == null) return;
             if (Spell.Pulse != 0 && CancelPulsingSpell(Caster, Spell.SpellType))
             {
-                MessageToCaster("You cancel your effect.", eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "BainsheePulseDmgSpellHandler.CancelEffect"), eChatType.CT_Spell);
                 return;
             }
         }

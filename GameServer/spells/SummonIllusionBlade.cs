@@ -3,6 +3,7 @@ using DOL.AI.Brain;
 using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -20,7 +21,7 @@ namespace DOL.GS.Spells
             {
                 if (log.IsWarnEnabled)
                     log.WarnFormat("NPC template {0} not found! Spell: {1}", Spell.LifeDrainReturn, Spell.ToString());
-                MessageToCaster("NPC template " + (ushort)Spell.LifeDrainReturn + " not found!", eChatType.CT_System);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.NpcTemplateNotFound", (ushort)Spell.LifeDrainReturn), eChatType.CT_System);
                 return;
             }
 

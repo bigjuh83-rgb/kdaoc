@@ -114,7 +114,7 @@ namespace DOL.GS
                 living.GroupIndex = (byte) (memberCount - 1);
             }
 
-            SendMessageToGroupMembers($"{living.Name} has joined the group.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            SendMessageToGroupMembers(LanguageMgr.GetTranslation(GetGroupLanguage(), "Group.MemberJoined", living.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
             if (living is GamePlayer player)
             {
@@ -186,7 +186,7 @@ namespace DOL.GS
                     DisbandGroup();
             }
 
-            SendMessageToGroupMembers($"{living.Name} has left the group.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            SendMessageToGroupMembers(LanguageMgr.GetTranslation(GetGroupLanguage(), "Group.MemberLeft", living.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
             // Update Player.
             if (living is GamePlayer player)
@@ -278,7 +278,7 @@ namespace DOL.GS
                         player.Out.SendObjectGuildID(player, playerGuild ?? Guild.DummyGuild);
                 }
 
-                player.Out.SendMessage("You leave your group.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Group.YouLeave"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 player.Notify(GamePlayerEvent.LeaveGroup, player);
             }
 
@@ -295,7 +295,7 @@ namespace DOL.GS
                 {
                     // Assign a new leader.
                     LivingLeader = _groupMembers.OfType<GamePlayer>().First() ?? _groupMembers[0];
-                    SendMessageToGroupMembers($"{Leader.Name} is the new group leader.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    SendMessageToGroupMembers(LanguageMgr.GetTranslation(GetGroupLanguage(), "Group.NewLeader", Leader.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 }
             }
 
@@ -362,7 +362,7 @@ namespace DOL.GS
 
             UpdateMembers([oldLeader, living], true, true);
             UpdateGroupWindow();
-            SendMessageToGroupMembers($"{Leader.Name} is the new group leader.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            SendMessageToGroupMembers(LanguageMgr.GetTranslation(GetGroupLanguage(), "Group.NewLeader", Leader.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             return true;
         }
 
@@ -384,8 +384,13 @@ namespace DOL.GS
 
             UpdateMembers([source, target], true, true);
             UpdateGroupWindow();
-            SendMessageToGroupMembers($"Switched group member {source.Name} with {target.Name}", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            SendMessageToGroupMembers(LanguageMgr.GetTranslation(GetGroupLanguage(), "Group.SwitchedMembers", source.Name, target.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             return true;
+        }
+
+        private string GetGroupLanguage()
+        {
+            return _groupMembers.OfType<GamePlayer>().FirstOrDefault()?.Client.Account.Language;
         }
 
         public GamePlayer GetMemberByIndex(byte index)

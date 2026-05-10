@@ -40,8 +40,8 @@ public class Recharger : GameNPC
         SayTo(player, eChatLoc.CL_PopupWindow,
                 LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Recharger.Interact"));
         SayTo(player, eChatLoc.CL_PopupWindow,
-            $"If you're in a hurry, I can also [recharge all] your items for an additional {RECHARGE_ALL_TAX*100}% fee.");
-        
+            LanguageMgr.GetTranslation(player.Client.Account.Language, "Recharger.Interact.RechargeAllOffer", RECHARGE_ALL_TAX * 100));
+
         return true;
     }
 
@@ -50,7 +50,8 @@ public class Recharger : GameNPC
         if (!base.WhisperReceive(source, text) || !(source is GamePlayer player))
             return false;
 
-        if (text.ToLower() != "recharge all") return false;
+        string normalizedText = text.ToLowerInvariant();
+        if (normalizedText != "recharge all" && text != "전체 충전") return false;
         AskRechargeAll(player);
         return true;
     }
@@ -174,10 +175,10 @@ public class Recharger : GameNPC
             LanguageMgr.GetTranslation(player.Client.Account.Language,
                 "Scripts.Recharger.RechargerDialogResponse.FullyCharged"));
     }
-    
+
 
     #endregion Receive item
-    
+
     #region RechargeAll
 
     private void AskRechargeAll(GamePlayer player)
@@ -188,14 +189,14 @@ public class Recharger : GameNPC
             if (!CanBeRecharged(inventoryItem)) continue;
             TotalCost += CalculateCost(inventoryItem);
         }
-        
+
         if (TotalCost > 0)
             player.Client.Out.SendCustomDialog(
             LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Recharger.ReceiveItem.Cost",
                 Money.GetString(TotalCost)), RechargeAll);
         else
             SayTo(player, eChatLoc.CL_PopupWindow,
-                "All items are fully charged already.");
+                LanguageMgr.GetTranslation(player.Client.Account.Language, "Recharger.RechargeAll.NothingToRecharge"));
     }
 
     private void RechargeAll(GamePlayer player, byte response)
@@ -237,7 +238,7 @@ public class Recharger : GameNPC
             Recharge(inventoryItem);
             player.Out.SendInventoryItemsUpdate(new[] {inventoryItem});
         }
-        
+
         SayTo(player,eChatLoc.CL_PopupWindow,
             LanguageMgr.GetTranslation(player.Client.Account.Language,
                 "Scripts.Recharger.RechargerDialogResponse.FullyCharged"));
@@ -245,7 +246,7 @@ public class Recharger : GameNPC
 
     private void Recharge(DbInventoryItem item)
     {
-        
+
         if (item == null || item.SlotPosition == (int) eInventorySlot.Ground
                          || item.OwnerID == null) return;
 
@@ -265,7 +266,7 @@ public class Recharger : GameNPC
         }
 
         var tax = NeededMoney * RECHARGE_ALL_TAX;
-        
+
         NeededMoney += (long)tax;
 
         return NeededMoney;

@@ -6,6 +6,7 @@ using DOL.GS.PacketHandler;
 using DOL.GS.RealmAbilities;
 using DOL.GS.Spells;
 using DOL.GS.Styles;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -520,7 +521,7 @@ namespace DOL.GS
                     if (ReflexAttackAD.AttackResult is eAttackResult.HitUnstyled)
                     {
                         GamePlayer playerAttacker = attacker as GamePlayer;
-                        playerAttacker?.Out.SendMessage($"{target.Name} counter-attacks you for {ReflexAttackAD.Damage} damage.", eChatType.CT_Damaged, eChatLoc.CL_SystemWindow);
+                        playerAttacker?.Out.SendMessage(LanguageMgr.GetTranslation(playerAttacker.Client.Account.Language, "GamePlayer.Attack.CounterAttack", target.Name, ReflexAttackAD.Damage), eChatType.CT_Damaged, eChatLoc.CL_SystemWindow);
                     }
 
                     break;

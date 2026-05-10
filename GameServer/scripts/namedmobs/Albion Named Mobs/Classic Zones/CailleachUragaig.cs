@@ -35,7 +35,7 @@ namespace DOL.GS
 						else
 							truc = ((source as GameSummonedPet).Owner as GamePlayer);
 						if (truc != null)
-							truc.Out.SendMessage(Name + " can't be attacked from this distance!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+							truc.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.CailleachUragaig.CantAttackFromDistance", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
 						base.TakeDamage(source, damageType, 0, 0);
 						return;
 					}
@@ -112,6 +112,7 @@ namespace DOL.AI.Brain
 	public class CailleachUragaigBrain : StandardMobBrain
 	{
 		private static readonly Logging.Logger log = Logging.LoggerManager.Create(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+		private const string TorchOfLightPleaKey = "NamedMobs.CailleachUragaig.TorchOfLightPlea";
 		public CailleachUragaigBrain() : base()
 		{
 			AggroLevel = 100;
@@ -119,11 +120,11 @@ namespace DOL.AI.Brain
 			ThinkInterval = 1500;
 		}
 		bool AggroMessage = false;
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(String key, params object[] args)
 		{
 			foreach (GamePlayer player in Body.GetPlayersInRadius(5000))
 			{
-				player.Out.SendMessage(message, eChatType.CT_Say, eChatLoc.CL_ChatWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Say, eChatLoc.CL_ChatWindow);
 			}
 		}
 		private bool SpawnAdds = false;
@@ -179,7 +180,7 @@ namespace DOL.AI.Brain
                 }
 				if(!AggroMessage)
                 {
-					BroadcastMessage(String.Format("{0} says, \"Father! Lend me your Torch of Light so we may be delivered from these aggressors!\"",Body.Name));
+					BroadcastMessage(TorchOfLightPleaKey, Body.Name);
 					AggroMessage = true;
                 }
 				if (Body.HealthPercent <= 30)

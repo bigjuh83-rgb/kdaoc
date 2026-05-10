@@ -92,7 +92,20 @@ namespace DOL.GS
 			{
 				GamePlayer player = (GamePlayer)source;
 
-                if (item.Name.ToLower().StartsWith(LanguageMgr.GetTranslation(ServerProperties.Properties.DB_LANGUAGE, "GameStableMaster.ReceiveItem.TicketTo")) && item.Item_Type == 40)
+				string ticketPrefix = LanguageMgr.GetTranslation(ServerProperties.Properties.DB_LANGUAGE, "GameStableMaster.ReceiveItem.TicketTo");
+				string englishTicketPrefix = LanguageMgr.GetTranslation("EN", "GameStableMaster.ReceiveItem.TicketTo");
+				string boatTicketPrefix = LanguageMgr.GetTranslation(ServerProperties.Properties.DB_LANGUAGE, "GameBoatStableMaster.ReceiveItem.TicketTo");
+				string itemName = item.Name;
+
+				string matchedPrefix = null;
+				if (itemName.StartsWith(ticketPrefix, StringComparison.OrdinalIgnoreCase))
+					matchedPrefix = ticketPrefix;
+				else if (itemName.StartsWith(englishTicketPrefix, StringComparison.OrdinalIgnoreCase))
+					matchedPrefix = englishTicketPrefix;
+				else if (itemName.StartsWith(boatTicketPrefix, StringComparison.OrdinalIgnoreCase))
+					matchedPrefix = boatTicketPrefix;
+
+				if (matchedPrefix != null && item.Item_Type == 40)
 				{
 					foreach (GameNPC npc in GetNPCsInRadius(1500))
 					{
@@ -103,7 +116,7 @@ namespace DOL.GS
 						}
 					}
 
-                    String destination = item.Name.Substring(LanguageMgr.GetTranslation(ServerProperties.Properties.DB_LANGUAGE, "GameStableMaster.ReceiveItem.TicketTo").Length);
+                    String destination = item.Name.Substring(matchedPrefix.Length);
 					PathPoint path = MovementMgr.LoadPath(item.Id_nb);
 					//PathPoint path = MovementMgr.Instance.LoadPath(this.Name + "=>" + destination);
                     if ((path != null) && ((Math.Abs(path.X - this.X)) < 500) && ((Math.Abs(path.Y - this.Y)) < 500))

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using DOL.GS;
+using DOL.Language;
 
 namespace DOL.AI.Brain
 {
@@ -51,7 +52,7 @@ namespace DOL.AI.Brain
                 else
                     playerToNotify = _target as GamePlayer;
 
-                playerToNotify?.Out.SendMessage($"{_brain.Body.GetName(0, true)} is alerted by your presence.", GS.PacketHandler.eChatType.CT_System, GS.PacketHandler.eChatLoc.CL_SystemWindow);
+                playerToNotify?.Out.SendMessage(LanguageMgr.GetTranslation(playerToNotify.Client.Account.Language, "ScoutMobBrainState.AlertedByPresence", _brain.Body.GetName(0, true)), GS.PacketHandler.eChatType.CT_System, GS.PacketHandler.eChatLoc.CL_SystemWindow);
                 _staringEndTime = GameLoop.GameLoopTime + STARE_DURATION;
             }
         }

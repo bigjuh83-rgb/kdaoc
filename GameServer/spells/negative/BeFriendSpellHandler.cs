@@ -3,17 +3,18 @@ using System.Collections.Generic;
 using DOL.AI.Brain;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
 	[SpellHandler(eSpellType.BeFriend)]
-	public class BeFriendSpellHandler : SpellHandler 
+	public class BeFriendSpellHandler : SpellHandler
 	{
 		/// <summary>
 		/// Dictionary to Keep track of Friend Brains Attached to NPC
 		/// </summary>
 		private readonly ConcurrentDictionary<GameNPC, FriendBrain> m_NPCFriendBrain = new();
-		
+
 		/// <summary>
 		/// Consume Power on Spell Start
 		/// </summary>
@@ -43,22 +44,22 @@ namespace DOL.GS.Spells
 		{
 			var npcTarget = target as GameNPC;
 			if (npcTarget == null) return;
-			
+
 			if (npcTarget.Level > Spell.Value)
 			{
 				// Resisted
 				SendSpellResistAnimation(target);
-				MessageToCaster($"{target.GetName(0, true)} is too strong for you to charm!", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "BeFriendSpellHandler.TooStrong", target.GetName(0, true)), eChatType.CT_SpellResisted);
 				return;
 			}
-			
+
 			if (npcTarget.Brain is IControlledBrain)
 			{
 				SendSpellResistAnimation(target);
-				MessageToCaster($"{target.GetName(0, true)} is already under control.", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "BeFriendSpellHandler.AlreadyControlled", target.GetName(0, true)), eChatType.CT_SpellResisted);
 				return;
 			}
-			
+
 			base.ApplyEffectOnTarget(target);
 		}
 
@@ -69,18 +70,18 @@ namespace DOL.GS.Spells
 		public override void OnEffectStart(GameSpellEffect effect)
 		{
 			var npcTarget = effect.Owner as GameNPC;
-			
+
 			var currentBrain = npcTarget.Brain as IOldAggressiveBrain;
 			var friendBrain = new FriendBrain(this);
 			m_NPCFriendBrain[npcTarget] = friendBrain;
-			
+
 			npcTarget.AddBrain(friendBrain);
 			friendBrain.Think();
-			
+
 			// Prevent Aggro on Effect Expires.
 			if (currentBrain != null)
 				currentBrain.ClearAggroList();
-			
+
 			base.OnEffectStart(effect);
 		}
 

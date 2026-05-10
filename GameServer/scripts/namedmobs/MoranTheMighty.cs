@@ -16,7 +16,7 @@ namespace DOL.GS
             : base()
         {
         }
-        
+
 
         public override int GetResist(eDamageType damageType)
         {
@@ -49,7 +49,7 @@ namespace DOL.GS
 
             return base.HasAbility(keyName);
         }
-        
+
         public override bool AddToWorld()
         {
             INpcTemplate npcTemplate = NpcTemplateMgr.GetTemplate(770024);
@@ -79,9 +79,10 @@ namespace DOL.AI.Brain
     public class MoranBrain : StandardMobBrain
     {
         private static readonly Logging.Logger log = Logging.LoggerManager.Create(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        private const string GustTossKey = "NamedMobs.MoranTheMighty.GustToss";
 
         public static bool _aggroStart = true;
-        
+
         public MoranBrain()
             : base()
         {
@@ -89,11 +90,11 @@ namespace DOL.AI.Brain
             AggroRange = 500;
         }
 
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(String key, params object[] args)
         {
             foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
 
@@ -123,7 +124,7 @@ namespace DOL.AI.Brain
                     }
                     else
                     {
-                        // chance to teleport a random player to another mob camp 
+                        // chance to teleport a random player to another mob camp
                         if (Util.Chance(5) && Body.HealthPercent <= 50)
                         {
                             new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(TeleportPlayerAway), 5000);
@@ -150,7 +151,7 @@ namespace DOL.AI.Brain
                 List<GamePlayer> portPlayer = new List<GamePlayer>();
                 portPlayer.Add(player);
                 int ranPlayer = Util.Random(0, portPlayer.Count - 1);
-                
+
                 if (player.IsAlive && ranPlayer >= 0)
                 {
                     switch(portPlayer[ranPlayer].Gender)
@@ -168,11 +169,11 @@ namespace DOL.AI.Brain
                             gender = "it";
                             break;
                     }
-                    
+
                     switch (Util.Random(1, 3))
                     {
                         case 1:
-                            BroadcastMessage(String.Format("{0} picked up {1} on gust of winds and tossed {2} away! ", Body.Name, portPlayer[ranPlayer].Name, gender));
+                            BroadcastMessage(GustTossKey, Body.Name, portPlayer[ranPlayer].Name, gender);
                             portPlayer[ranPlayer].Out.SendSpellEffectAnimation(portPlayer[ranPlayer], portPlayer[ranPlayer], 1735, 0, false, 1);
                             portPlayer[ranPlayer].MoveTo(1, 401943, 753091, 222, 3499);
                             foreach (GameNPC npc in portPlayer[ranPlayer].GetNPCsInRadius(2000))
@@ -182,7 +183,7 @@ namespace DOL.AI.Brain
                             portPlayer.Clear();
                             break;
                         case 2:
-                            BroadcastMessage(String.Format("{0} picked up {1} on gust of winds and tossed {2} away! ", Body.Name, portPlayer[ranPlayer].Name, gender));
+                            BroadcastMessage(GustTossKey, Body.Name, portPlayer[ranPlayer].Name, gender);
                             portPlayer[ranPlayer].Out.SendSpellEffectAnimation(portPlayer[ranPlayer], portPlayer[ranPlayer], 1735, 0, false, 1);
                             portPlayer[ranPlayer].MoveTo(1, 406787, 749150, 213, 3926);
                             foreach (GameNPC npc in portPlayer[ranPlayer].GetNPCsInRadius(2000))
@@ -192,7 +193,7 @@ namespace DOL.AI.Brain
                             portPlayer.Clear();
                             break;
                         case 3:
-                            BroadcastMessage(String.Format("{0} picked up {1} on gust of winds and tossed {2} away! ", Body.Name, portPlayer[ranPlayer].Name, gender));
+                            BroadcastMessage(GustTossKey, Body.Name, portPlayer[ranPlayer].Name, gender);
                             portPlayer[ranPlayer].Out.SendSpellEffectAnimation(portPlayer[ranPlayer], portPlayer[ranPlayer], 1735, 0, false, 1);
                             portPlayer[ranPlayer].MoveTo(1, 401061, 755882, 469, 3050);
                             foreach (GameNPC npc in portPlayer[ranPlayer].GetNPCsInRadius(2000))

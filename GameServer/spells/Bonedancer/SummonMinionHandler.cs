@@ -65,7 +65,7 @@ namespace DOL.GS.Spells
 
                 if (cumulativeLevel + newPetLevel > 75)
                 {
-                    MessageToCaster("Your commander is not powerful enough to control a minion of this level.", eChatType.CT_SpellResisted);
+                    MessageToCaster(LanguageMgr.GetTranslation(playerCaster.Client, "SummonMinionHandler.CheckBeginCast.CommanderTooWeak"), eChatType.CT_SpellResisted);
                     return false;
                 }
             }

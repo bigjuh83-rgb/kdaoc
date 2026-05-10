@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -128,7 +129,9 @@ namespace DOL.GS
                 }
             }
 
-            string message = $"Your relationship with {Name} has {(amount > 0 ? "decreased" : "increased")}";
+            string message = amount > 0
+                ? LanguageMgr.GetTranslation(player.Client.Account.Language, "Faction.RelationshipDecreased", Name)
+                : LanguageMgr.GetTranslation(player.Client.Account.Language, "Faction.RelationshipIncreased", Name);
             player.Out.SendMessage(message, eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
 

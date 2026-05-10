@@ -35,7 +35,7 @@ namespace DOL.GS
 						else
 							truc = ((source as GameSummonedPet).Owner as GamePlayer);
 						if (truc != null)
-							truc.Out.SendMessage(Name + " can't be attacked from this distance!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+							truc.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Common.CantAttackFromDistance", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
 						base.TakeDamage(source, damageType, 0, 0);
 						return;
 					}
@@ -158,11 +158,11 @@ namespace DOL.AI.Brain
                 {
 					switch(Util.Random(1,2))
                     {
-						case 1: BroadcastMessage("Sister Blythe shouts in a language you cannot understand!"); break;
-						case 2: BroadcastMessage(String.Format("{0} says, \"Come my pets! Let us show these fools what comes of failure!\"", Body.Name)); break;
+						case 1: BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.SisterBlythe.UnknownLanguage")); break;
+						case 2: BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.SisterBlythe.ComeMyPets", Body.Name)); break;
 					}
 					if(FallenExecutionerCount > 0)
-						BroadcastMessage("The fallen executioner says, \"By your command!\"");
+						BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.SisterBlythe.ExecutionerCommand"));
 					Message1 = true;
                 }
 				foreach (GameNPC npc in Body.GetNPCsInRadius(2500))
@@ -193,7 +193,7 @@ namespace DOL.AI.Brain
 					if (player != null)
 						player.Out.SendSpellEffectAnimation(Body, Body, 6040, 0, false, 0x01);
 				}
-				BroadcastMessage("Sister Blythe says, \"Witness the power of Lord Arawn!\"");
+				BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.SisterBlythe.WitnessPower"));
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(SpawnMoreExecutioners), 3000);
 			}
 			return 0;
@@ -246,7 +246,7 @@ namespace DOL.GS
 			base.AddToWorld();
 			return true;
 		}
-		
+
         public override void Die(GameObject killer)
         {
 			--SisterBlytheBrain.FallenExecutionerCount;

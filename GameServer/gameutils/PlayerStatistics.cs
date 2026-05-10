@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -192,37 +193,28 @@ namespace DOL.GS
             return sb.ToString();
         }
 
-        public virtual string GetStatisticsMessage()
+        public virtual string GetStatisticsMessage(string language = null)
         {
+            language ??= _player?.Client?.Account?.Language;
             TimeSpan onlineTime = DateTime.Now.Subtract(_loginTime);
 
             StringBuilder sb = new();
 
-            sb.Append(USAGE).Append('\n');
-            sb.Append("Statistics for ").Append(_player.Name).Append(" this session:\n");
-            sb.Append("Total RP: ").Append(TotalRealmPointsEarned).Append('\n');
-            sb.Append("RP earned from kills: ").Append(RealmPointsEarnedFromKills).Append('\n');
-            sb.Append("Kills that have earned RP: ").Append(KillsThatHaveEarnedRealmPoints).Append('\n');
+            sb.Append(LanguageMgr.GetTranslation(language, "PlayerStatistics.Usage")).Append('\n');
+            sb.Append(LanguageMgr.GetTranslation(language, "PlayerStatistics.Header", _player.Name)).Append('\n');
+            sb.Append(LanguageMgr.GetTranslation(language, "PlayerStatistics.TotalRp", TotalRealmPointsEarned)).Append('\n');
+            sb.Append(LanguageMgr.GetTranslation(language, "PlayerStatistics.RpFromKills", RealmPointsEarnedFromKills)).Append('\n');
+            sb.Append(LanguageMgr.GetTranslation(language, "PlayerStatistics.KillsThatEarnedRp", KillsThatHaveEarnedRealmPoints)).Append('\n');
             // Live shows solo kills here.
-            sb.Append("Deathblows: ").Append(Deathblows).Append('\n');
-            sb.Append("Deaths: ").Append(Deaths).Append('\n');
-            sb.Append("HP healed: ").Append(HitPointsHealed).Append(" and ").Append(RealmPointsEarnedFromHitPointsHealed).Append(" RP gained from heal\n");
-            sb.Append("Resurrections performed: ").Append(ResurrectionsPerformed).Append('\n');
-
-            sb.Append("Online time: ");
-
-            if (onlineTime.Days > 0)
-                sb.Append(onlineTime.Days).Append(" days, ");
-
-            sb.Append(onlineTime.Hours).Append(" hours, ")
-                .Append(onlineTime.Minutes)
-                .Append(" minutes, ")
-                .Append(onlineTime.Seconds).Append(" seconds\n");
-
-            sb.Append("RP/hour: ").Append(RPsPerHour(TotalRealmPointsEarned, onlineTime)).Append('\n');
-            sb.Append("Kills per death: ").Append(Divide(KillsThatHaveEarnedRealmPoints, Deaths)).Append('\n');
-            sb.Append("RP per kill: ").Append(Divide(RealmPointsEarnedFromKills, KillsThatHaveEarnedRealmPoints)).Append('\n');
-            sb.Append("\"I Remain Standing...\": ").Append(Divide(RealmPointsEarnedFromKills, Deaths)).Append('\n');
+            sb.Append(LanguageMgr.GetTranslation(language, "PlayerStatistics.Deathblows", Deathblows)).Append('\n');
+            sb.Append(LanguageMgr.GetTranslation(language, "PlayerStatistics.Deaths", Deaths)).Append('\n');
+            sb.Append(LanguageMgr.GetTranslation(language, "PlayerStatistics.HpHealed", HitPointsHealed, RealmPointsEarnedFromHitPointsHealed)).Append('\n');
+            sb.Append(LanguageMgr.GetTranslation(language, "PlayerStatistics.Resurrections", ResurrectionsPerformed)).Append('\n');
+            sb.Append(LanguageMgr.GetTranslation(language, "PlayerStatistics.OnlineTime", onlineTime.Days, onlineTime.Hours, onlineTime.Minutes, onlineTime.Seconds)).Append('\n');
+            sb.Append(LanguageMgr.GetTranslation(language, "PlayerStatistics.RpPerHour", RPsPerHour(TotalRealmPointsEarned, onlineTime))).Append('\n');
+            sb.Append(LanguageMgr.GetTranslation(language, "PlayerStatistics.KillsPerDeath", Divide(KillsThatHaveEarnedRealmPoints, Deaths))).Append('\n');
+            sb.Append(LanguageMgr.GetTranslation(language, "PlayerStatistics.RpPerKill", Divide(RealmPointsEarnedFromKills, KillsThatHaveEarnedRealmPoints))).Append('\n');
+            sb.Append(LanguageMgr.GetTranslation(language, "PlayerStatistics.IRemainStanding", Divide(RealmPointsEarnedFromKills, Deaths))).Append('\n');
 
             return sb.ToString();
         }
@@ -232,39 +224,39 @@ namespace DOL.GS
             CreateServerStats(client);
 
             if (string.Equals(command, "rp", StringComparison.OrdinalIgnoreCase))
-                client.Player.Out.SendMessage($"Top 20 for Realm Points\n{_statsRp}", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "PlayerStatistics.TopRealmPoints", _statsRp), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             else if (string.Equals(command, "lrp", StringComparison.OrdinalIgnoreCase))
-                client.Player.Out.SendMessage($"Top 20 for RP / Hour\n{_statsLrp}", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "PlayerStatistics.TopRpPerHour", _statsLrp), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             else if (string.Equals(command, "kills", StringComparison.OrdinalIgnoreCase))
-                client.Player.Out.SendMessage($"Top 20 Killers\n{_statsKills}", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "PlayerStatistics.TopKillers", _statsKills), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             else if (string.Equals(command, "deathblows", StringComparison.OrdinalIgnoreCase))
-                client.Player.Out.SendMessage($"Top 20 Deathblows\n{_statsDeathblows}", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "PlayerStatistics.TopDeathblows", _statsDeathblows), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             else if (string.Equals(command, "irs", StringComparison.OrdinalIgnoreCase))
-                client.Player.Out.SendMessage($"Top 20 \"I Remain Standing\"\n{_statsIrs}", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "PlayerStatistics.TopIRemainStanding", _statsIrs), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             else if (string.Equals(command, "heal", StringComparison.OrdinalIgnoreCase))
-                client.Player.Out.SendMessage($"Top 20 Healers\n{_statsHeal}", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "PlayerStatistics.TopHealers", _statsHeal), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             else if (string.Equals(command, "rez", StringComparison.OrdinalIgnoreCase))
-                client.Player.Out.SendMessage($"Top 20 Resurrectors\n{_statsResurrect}", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "PlayerStatistics.TopResurrectors", _statsResurrect), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             else if (string.Equals(command, "player", StringComparison.OrdinalIgnoreCase))
             {
                 GamePlayer otherPlayer = ClientService.Instance.GetPlayerByPartialName(playerName, out _);
 
                 if (otherPlayer == null || otherPlayer.IsAnonymous)
                 {
-                    client.Player.Out.SendMessage($"No player with name {playerName} found!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "PlayerStatistics.NoPlayerFound", playerName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return;
                 }
 
                 if (otherPlayer.IgnoreStatistics)
                 {
-                    client.Player.Out.SendMessage($"{otherPlayer.Name} doesn't want you to view his stats.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "PlayerStatistics.PrivateStats", otherPlayer.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return;
                 }
 
-                client.Player.Out.SendMessage(otherPlayer.Statistics.GetStatisticsMessage(), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Player.Out.SendMessage(otherPlayer.Statistics.GetStatisticsMessage(client.Account.Language), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             }
             else
-                client.Player.Out.SendMessage(USAGE, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "PlayerStatistics.Usage"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
 
         public static uint Divide(uint dividend, uint divisor)

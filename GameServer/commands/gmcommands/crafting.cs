@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using DOL.GS.PacketHandler;
-using DOL.Language;
 using DOL.Database;
 
 namespace DOL.GS.Commands
@@ -30,9 +29,9 @@ namespace DOL.GS.Commands
 		"GMCommands.Crafting.Description",
 		"GMCommands.Crafting.Usage.Add",
 		"GMCommands.Crafting.Usage.Change",
-		"/crafting salvageadd <SalvageYieldID (0 for next free)> <MaterialId_nb> <Count> [Realm] [PackageID]",
-		"/crafting salvageupdate <SalvageYieldID> <MaterialId_nb> <Count> <Realm> [PackageID]",
-		"/crafting salvageinfo <SalvageYieldID>",
+		"GMCommands.Crafting.Usage.SalvageAdd",
+		"GMCommands.Crafting.Usage.SalvageUpdate",
+		"GMCommands.Crafting.Usage.SalvageInfo",
 		"GMCommands.Crafting.Usage.List")]
 	public class CraftCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
@@ -57,7 +56,7 @@ namespace DOL.GS.Commands
 							list.Add(value + " = " + Enum.GetName(typeof(eCraftingSkill), value));
 					}
 
-					client.Out.SendCustomTextWindow(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Crafting.SkillDescription"), list);
+					client.Out.SendCustomTextWindow(T(client, "GMCommands.Crafting.SkillDescription"), list);
 					return;
 				}
 				#endregion List
@@ -72,30 +71,30 @@ namespace DOL.GS.Commands
 
 					if (salvage == null)
 					{
-						DisplayMessage(client, "SalvageYield ID not found!");
+						DisplayMessage(client, T(client, "GMCommands.Crafting.SalvageYieldNotFound"));
 						return;
 					}
 
 					DbItemTemplate template = GameServer.Database.FindObjectByKey<DbItemTemplate>(salvage.MaterialId_nb);
-					string materialName = "Not Found!";
+					string materialName = T(client, "GMCommands.Crafting.NotFound");
 
 					if (template != null)
 					{
 						materialName = template.Name;
 					}
 
-					list.Add("SalvageYield ID: " + salvageID);
-					list.Add("     ObjectType: " + (salvage.ObjectType == 0 ? "Unused" : salvage.ObjectType.ToString()));
-					list.Add("   SalvageLevel: " + (salvage.SalvageLevel == 0 ? "Unused" : salvage.SalvageLevel.ToString()));
-					list.Add("       Material: " + materialName + " (" + salvage.MaterialId_nb + ")");
-					list.Add("          Count: " + (salvage.Count == 0 ? "Calculated" : salvage.Count.ToString()));
-					list.Add("          Realm: " + (salvage.Realm == 0 ? "Any" : GlobalConstants.RealmToName((eRealm)salvage.Realm)));
-					list.Add("      PackageID: " + salvage.PackageID);
+					list.Add(T(client, "GMCommands.Crafting.SalvageInfo.ID", salvageID));
+					list.Add(T(client, "GMCommands.Crafting.SalvageInfo.ObjectType", salvage.ObjectType == 0 ? T(client, "GMCommands.Crafting.Unused") : salvage.ObjectType.ToString()));
+					list.Add(T(client, "GMCommands.Crafting.SalvageInfo.SalvageLevel", salvage.SalvageLevel == 0 ? T(client, "GMCommands.Crafting.Unused") : salvage.SalvageLevel.ToString()));
+					list.Add(T(client, "GMCommands.Crafting.SalvageInfo.Material", materialName, salvage.MaterialId_nb));
+					list.Add(T(client, "GMCommands.Crafting.SalvageInfo.Count", salvage.Count == 0 ? T(client, "GMCommands.Crafting.Calculated") : salvage.Count.ToString()));
+					list.Add(T(client, "GMCommands.Crafting.SalvageInfo.Realm", salvage.Realm == 0 ? T(client, "GMCommands.Crafting.Realm.Any") : GlobalConstants.RealmToName((eRealm)salvage.Realm)));
+					list.Add(T(client, "GMCommands.Crafting.SalvageInfo.PackageID", salvage.PackageID));
 
-					client.Out.SendCustomTextWindow("SalvageYield ID " + salvageID, list);
+					client.Out.SendCustomTextWindow(T(client, "GMCommands.Crafting.SalvageInfo.WindowTitle", salvageID), list);
 					return;
 				}
-				
+
 				if (args[1].ToLower() == "adjustprices")
 				{
 					var recipeIDs = new List<ushort>();
@@ -133,7 +132,7 @@ namespace DOL.GS.Commands
 
 						if (template == null)
 						{
-							DisplayMessage(client, "Material id_nb " + material + " not found!");
+							DisplayMessage(client, T(client, "GMCommands.Crafting.MaterialNotFound", material));
 							return;
 						}
 
@@ -143,7 +142,7 @@ namespace DOL.GS.Commands
 						{
 							if (salvage != null)
 							{
-								DisplayMessage(client, "This SalvageYield ID already exists, use salvageupdate to change it.");
+								DisplayMessage(client, T(client, "GMCommands.Crafting.SalvageYieldAlreadyExists"));
 								return;
 							}
 
@@ -164,20 +163,19 @@ namespace DOL.GS.Commands
 
 							GameServer.Database.AddObject(salvage);
 
-							DisplayMessage(client, string.Format("Created SalvageYield ID: {0}, Material: {1}, Count: {2}, Realm: {3}, PackageID: {4}",
-																	salvage.ID, salvage.MaterialId_nb, salvage.Count, salvage.Realm, salvage.PackageID));
+							DisplayMessage(client, T(client, "GMCommands.Crafting.SalvageYieldCreated", salvage.ID, salvage.MaterialId_nb, salvage.Count, salvage.Realm, salvage.PackageID));
 						}
 						else
 						{
 							if (salvage == null)
 							{
-								DisplayMessage(client, "SalvageID not found!");
+								DisplayMessage(client, T(client, "GMCommands.Crafting.SalvageIdNotFound"));
 								return;
 							}
 
 							if (salvage.PackageID == DbSalvageYield.LEGACY_SALVAGE_ID)
 							{
-								DisplayMessage(client, "This SalvageYield ID is used for legacy salvage support and can not be updated.");
+								DisplayMessage(client, T(client, "GMCommands.Crafting.SalvageYieldLegacyCannotUpdate"));
 								return;
 							}
 
@@ -197,8 +195,7 @@ namespace DOL.GS.Commands
 
 							GameServer.Database.SaveObject(salvage);
 
-							DisplayMessage(client, string.Format("Updated SalvageYield ID: {0}, Material: {1}, Count: {2}, Realm: {3}, PackageID: {4}",
-																	salvage.ID, salvage.MaterialId_nb, salvage.Count, salvage.Realm, salvage.PackageID));
+							DisplayMessage(client, T(client, "GMCommands.Crafting.SalvageYieldUpdated", salvage.ID, salvage.MaterialId_nb, salvage.Count, salvage.Realm, salvage.PackageID));
 						}
 
 					}
@@ -217,7 +214,7 @@ namespace DOL.GS.Commands
 					target = client.Player.TargetObject as GamePlayer;
 				else
 				{
-					DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Crafting.NoPlayerTarget"));
+					DisplayMessage(client, T(client, "GMCommands.Crafting.NoPlayerTarget"));
 					return;
 				}
 
@@ -237,7 +234,7 @@ namespace DOL.GS.Commands
 								AbstractCraftingSkill skill = CraftingMgr.getSkillbyEnum(craftingSkillID);
 								if (skill == null)
 								{
-									DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Crafting.InvalidSkill"));
+									DisplayMessage(client, T(client, "GMCommands.Crafting.InvalidSkill"));
 								}
 								else
 								{
@@ -245,11 +242,11 @@ namespace DOL.GS.Commands
 									{
 										target.Out.SendUpdateCraftingSkills();
 										target.SaveIntoDatabase();
-										DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Crafting.SkillAdded", skill.Name));
+										DisplayMessage(client, T(client, "GMCommands.Crafting.SkillAdded", skill.Name));
 									}
 									else
 									{
-										DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Crafting.AlreadyHaveSkill", target.Name, skill.Name));
+										DisplayMessage(client, T(client, "GMCommands.Crafting.AlreadyHaveSkill", target.Name, skill.Name));
 									}
 								}
 							}
@@ -277,13 +274,13 @@ namespace DOL.GS.Commands
 								AbstractCraftingSkill skill = CraftingMgr.getSkillbyEnum(craftingSkillID);
 								if (skill == null)
 								{
-									DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Crafting.InvalidSkill"));
+									DisplayMessage(client, T(client, "GMCommands.Crafting.InvalidSkill"));
 								}
 								else
 								{
 									if (target.GetCraftingSkillValue(craftingSkillID) < 0)
 									{
-										DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Crafting.NotHaveSkillAddIt", target.Name, skill.Name));
+										DisplayMessage(client, T(client, "GMCommands.Crafting.NotHaveSkillAddIt", target.Name, skill.Name));
 										return;
 									}
 
@@ -297,8 +294,8 @@ namespace DOL.GS.Commands
 									}
 									target.Out.SendUpdateCraftingSkills();
 									target.SaveIntoDatabase();
-									DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Crafting.SkillChanged", skill.Name));
-									DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Crafting.NowHasSkillPoints", target.Name, target.GetCraftingSkillValue(craftingSkillID), (eCraftingSkill)craftingSkillID));
+									DisplayMessage(client, T(client, "GMCommands.Crafting.SkillChanged", skill.Name));
+									DisplayMessage(client, T(client, "GMCommands.Crafting.NowHasSkillPoints", target.Name, target.GetCraftingSkillValue(craftingSkillID), (eCraftingSkill)craftingSkillID));
 								}
 							}
 							catch (Exception)

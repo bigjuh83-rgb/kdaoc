@@ -1,6 +1,7 @@
 using DOL.Database;
 using DOL.GS.PacketHandler;
 using DOL.GS.Spells;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -16,11 +17,11 @@ namespace DOL.GS.RealmAbilities
             {
                 if (t_player == living && living is GamePlayer)
                 {
-                    (living as GamePlayer).Out.SendMessage("You clear your mind and become more resistant to magic damage!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                    (living as GamePlayer).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)living).Client.Account.Language, "RealmAbility.TheEmptyMind.ClearMind"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
                 }
                 else
                 {
-                    t_player.Out.SendMessage(living.Name + " casts a spell!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                    t_player.Out.SendMessage(LanguageMgr.GetTranslation(t_player.Client.Account.Language, "RealmAbility.Message.CasterCastsSpell", living.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
                 }
             }
 

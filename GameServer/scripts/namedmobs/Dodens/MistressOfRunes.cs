@@ -13,10 +13,10 @@ namespace DOL.GS.Scripts
 {
 	public class MistressOfRunes : GameEpicBoss
 	{
-		protected String m_DeathAnnounce;	
+		protected String m_DeathAnnounce;
 		public MistressOfRunes() : base()
 		{
-			m_DeathAnnounce = "{0} has been killed and loses her power.";
+			m_DeathAnnounce = "NamedMobs.MistressOfRunes.Death";
 		}
 		/// <summary>
 		/// Add Mistress Of Runes to World
@@ -31,9 +31,9 @@ namespace DOL.GS.Scripts
 			SaveIntoDatabase();
 			base.AddToWorld();
 			BroadcastLivingEquipmentUpdate();
-			base.SetOwnBrain(new MistressOfRunesBrain());			
+			base.SetOwnBrain(new MistressOfRunesBrain());
 			return true;
-		}	
+		}
 
 		public override int MeleeAttackRange => 350;
 		public override bool HasAbility(string keyName)
@@ -86,20 +86,20 @@ namespace DOL.GS.Scripts
 		/// Broadcast relevant messages to the raid.
 		/// </summary>
 		/// <param name="message">The message to be broadcast.</param>
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(String key, params object[] args)
 		{
 			foreach (GamePlayer player in base.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
-				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+				player.Out.SendMessage(global::DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 			}
-		}	
+		}
 		/// <summary>
 		/// Invoked when Mistress of Runes dies.
 		/// </summary>
 		/// <param name="killer">The living that got the killing blow.</param>
 		public override void Die(GameObject killer)
 		{
-			BroadcastMessage(String.Format(m_DeathAnnounce, Name));
+			BroadcastMessage(m_DeathAnnounce, Name);
 			base.StopCurrentSpellcast();
 			base.Die(killer);
 		}
@@ -131,11 +131,11 @@ namespace DOL.AI.Brain
 			AggroLevel = 200;
 			AggroRange = 500;
 
-			m_SpearAnnounce = new String[] { "{0} casts a magical flaming spear on {1}!",
-					"{0} drops a flaming spear from above!",
-					"{0} uses all her might to create a flaming spear.",
-					"{0} casts a dangerous spell!" };
-			m_NearsightAnnounce = "{0} can no longer see properly and everyone in the vicinity!";
+			m_SpearAnnounce = new String[] { "NamedMobs.MistressOfRunes.SpearTarget",
+					"NamedMobs.MistressOfRunes.SpearFromAbove",
+					"NamedMobs.MistressOfRunes.SpearMight",
+					"NamedMobs.MistressOfRunes.DangerousSpell" };
+			m_NearsightAnnounce = "NamedMobs.MistressOfRunes.Nearsight";
 		}
 
 		/// <summary>
@@ -199,11 +199,11 @@ namespace DOL.AI.Brain
 		/// Broadcast relevant messages to the raid.
 		/// </summary>
 		/// <param name="message">The message to be broadcast.</param>
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(String key, params object[] args)
 		{
 			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
-				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+				player.Out.SendMessage(global::DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 			}
 		}
 
@@ -267,7 +267,7 @@ namespace DOL.AI.Brain
 			{
 				castsSpear = false;
 				int messageNo = Util.Random(1, m_SpearAnnounce.Length) - 1;
-				BroadcastMessage(String.Format(m_SpearAnnounce[messageNo], Body.Name, target.Name));
+				BroadcastMessage(m_SpearAnnounce[messageNo], Body.Name, target.Name);
 			}
 			else
 			{
@@ -345,7 +345,7 @@ namespace DOL.AI.Brain
 			if (castsNearsight && cast && Body.IsCasting)
 			{
 				castsNearsight = false;
-				BroadcastMessage(String.Format(m_NearsightAnnounce, NearsightTarget.Name));
+				BroadcastMessage(m_NearsightAnnounce, NearsightTarget.Name);
 			}
 			else
 			{

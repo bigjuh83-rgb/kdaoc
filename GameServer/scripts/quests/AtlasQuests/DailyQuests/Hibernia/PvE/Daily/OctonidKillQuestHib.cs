@@ -25,7 +25,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 		// Kill Goal
 		private const int MAX_KILLED = 10;
-		
+
 		private static GameNPC Anthony = null; // Start NPC
 
 		private int OctonidKilled = 0;
@@ -46,7 +46,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 		public OctonidKillQuestHib(GamePlayer questingPlayer, DbQuest dbQuest) : base(questingPlayer, dbQuest)
 		{
 		}
-		
+
 		public override int Level
 		{
 			get
@@ -61,7 +61,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -142,7 +142,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 		private static void TalkToAnthony(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -160,18 +160,16 @@ namespace DOL.GS.DailyQuest.Hibernia
 					switch (quest.Step)
 					{
 						case 1:
-							Anthony.SayTo(player, "You will find Octonids in the South East of World\'s End.");
+							Anthony.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NamedMobLocation", "Octonids", "the South East of World's End"));
 							break;
 						case 2:
-							Anthony.SayTo(player, "Hello " + player.Name + ", did you [kill] the Octonids?");
+							Anthony.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[kill] the Octonids"));
 							break;
 					}
 				}
 				else
 				{
-					Anthony.SayTo(player, "Hello "+ player.Name +", I am Anthony. I help the king with logistics, and he's tasked me with getting things done around here. "+
-					                   "The Octonids out in World's End are devouring the natural flora and fauna of the Shrouded Isles. They may soon destroy the ecosystem entirely.\n"+
-					                   "\nCan you [clear the Octonids] to save the Shrouded Isles?");
+					Anthony.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NamedMobDailyIntro", player.Name, "Anthony", "Octonids", "World's End", "the Shrouded Isles", "clear the Octonids"));
 				}
 			}
 				// The player whispered to the NPC
@@ -183,7 +181,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 					switch (wArgs.Text.ToLower())
 					{
 						case "clear the octonids":
-							player.Out.SendQuestSubscribeCommand(Anthony, QuestMgr.GetIDForQuestType(typeof(OctonidKillQuestHib)), "Will you help Anthony "+questTitle+"");
+							player.Out.SendQuestSubscribeCommand(Anthony, QuestMgr.GetIDForQuestType(typeof(OctonidKillQuestHib)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "Anthony", questTitle));
 							break;
 					}
 				}
@@ -194,18 +192,18 @@ namespace DOL.GS.DailyQuest.Hibernia
 						case "kill":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -224,7 +222,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 			return true;
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			OctonidKilled = GetCustomProperty(QuestPropertyKey) != null ? int.Parse(GetCustomProperty(QuestPropertyKey)) : 0;
@@ -245,11 +243,11 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -279,7 +277,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for your help.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -287,7 +285,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 				if (!Anthony.GiveQuest(typeof (OctonidKillQuestHib), player, 1))
 					return;
 
-				Anthony.SayTo(player, "You will find the Octonids in World\'s End.");
+				Anthony.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NamedMobLocation", "Octonids", "the South East of World's End"));
 
 			}
 		}
@@ -306,9 +304,9 @@ namespace DOL.GS.DailyQuest.Hibernia
 				switch (Step)
 				{
 					case 1:
-						return "Find Octonids South East in World\'s End. \nKilled: Octonids ("+ OctonidKilled +" | 10)";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.NamedMobDescription", "Octonids", "the South East of World's End", OctonidKilled, MAX_KILLED);
 					case 2:
-						return "Return to Anthony in Grove of Domnann for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "Anthony", "Grove of Domnann");
 				}
 				return base.Description;
 			}
@@ -320,7 +318,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
 			if (player == null || player.IsDoingQuest(typeof(OctonidKillQuestHib)) == null)
 				return;
-			
+
 			if (sender != m_questPlayer)
 				return;
 
@@ -328,16 +326,16 @@ namespace DOL.GS.DailyQuest.Hibernia
 			EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
 			if (gArgs.Target.Name.ToLower() != "octonid") return;
 			OctonidKilled++;
-			player.Out.SendMessage("[Daily] Octonid Killed: ("+OctonidKilled+" | "+MAX_KILLED+")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NamedDailyKilled", "Octonid", OctonidKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (OctonidKilled >= MAX_KILLED)
 			{
 				Step = 2;
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "OctonidKillQuestHib";

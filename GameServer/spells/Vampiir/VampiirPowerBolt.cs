@@ -1,5 +1,6 @@
 using System;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -10,7 +11,7 @@ namespace DOL.GS.Spells
 		{
 			if (Caster.InCombat == true)
 			{
-				MessageToCaster("You cannot cast this spell in combat!", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "VampiirPowerBolt.CannotCastInCombat"), eChatType.CT_SpellResisted);
 				return false;
 			}
 			return base.CheckBeginCast(selectedTarget);
@@ -66,7 +67,7 @@ namespace DOL.GS.Spells
 				{
 					if (target is GameNPC)
 						power = (int) Math.Round(target.Level * (double) m_handler.Spell.Value * 2 / 100);
-					else 
+					else
 						power = (int) Math.Round(target.MaxMana * ((double) m_handler.Spell.Value / 250));
 
 					if (target.Mana < power)
@@ -77,23 +78,23 @@ namespace DOL.GS.Spells
 					if (target is GamePlayer)
 					{
 						target.Mana -= power;
-						((GamePlayer)target).Out.SendMessage(caster.Name + " takes " + power + " power!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						((GamePlayer)target).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)target).Client.Account.Language, "VampiirPowerBolt.TargetLosesPower", caster.Name, power), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					}
 
 					if (caster is GamePlayer)
 					{
-						((GamePlayer)caster).Out.SendMessage("You receive " + power + " power from " + target.Name + "!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+						((GamePlayer)caster).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)caster).Client.Account.Language, "VampiirPowerBolt.ReceivePower", power, target.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 					}
 				}
 				else
-					((GamePlayer)caster).Out.SendMessage("You did not receive any power from " + target.Name + "!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+					((GamePlayer)caster).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)caster).Client.Account.Language, "VampiirPowerBolt.ReceiveNoPower", target.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 
 				//Place the caster in combat
 				if (target is GamePlayer)
 					caster.LastAttackTickPvP = caster.CurrentRegion.Time;
 				else
 					caster.LastAttackTickPvE = caster.CurrentRegion.Time;
-				
+
 				//create the attack data for the bolt
 				AttackData ad = new AttackData();
 				ad.Attacker = caster;
@@ -103,7 +104,7 @@ namespace DOL.GS.Spells
 				ad.AttackResult = eAttackResult.HitUnstyled;
 				ad.SpellHandler = m_handler;
 				target.OnAttackedByEnemy(ad);
-				
+
 				target.StartInterruptTimer(target.SpellInterruptDuration, AttackData.eAttackType.Spell, caster);
 
 				return 0;

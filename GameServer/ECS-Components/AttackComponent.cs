@@ -525,7 +525,7 @@ namespace DOL.GS
 
                 if (player.Steed is GameSiegeRam)
                 {
-                    player.Out.SendMessage("You can't attack while using a ram!", eChatType.CT_YouHit,eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "GamePlayer.StartAttack.CantAttackInSiegeRam"), eChatType.CT_YouHit,eChatLoc.CL_SystemWindow);
                     return;
                 }
 
@@ -1432,10 +1432,10 @@ namespace DOL.GS
                 }
 
                 if (ad.Attacker is GamePlayer attacker && attacker.UseDetailedCombatLog)
-                    attacker.Out.SendMessage($"target {message}", eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
+                    attacker.Out.SendMessage(LanguageMgr.GetTranslation(attacker.Client.Account.Language, "GamePlayer.Attack.Detailed.TargetMessage", message), eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
 
                 if (ad.Target is GamePlayer defender && defender.UseDetailedCombatLog)
-                    defender.Out.SendMessage($"your {message}", eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
+                    defender.Out.SendMessage(LanguageMgr.GetTranslation(defender.Client.Account.Language, "GamePlayer.Attack.Detailed.YourMessage", message), eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
 
                 if (blockSucceeded)
                     return true;
@@ -1510,10 +1510,10 @@ namespace DOL.GS
                     double guardRoll = owner.GetPseudoDouble(RandomDeckEvent.Block);
 
                     if (source is GamePlayer blockAttk && blockAttk.UseDetailedCombatLog)
-                        blockAttk.Out.SendMessage($"chance to guard: {guardChance * 100:0.##} rand: {guardRoll * 100:0.##}", eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
+                        blockAttk.Out.SendMessage(LanguageMgr.GetTranslation(blockAttk.Client.Account.Language, "GamePlayer.Attack.Detailed.GuardChance", guardChance * 100, guardRoll * 100), eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
 
                     if (guard.Target is GamePlayer blockTarg && blockTarg.UseDetailedCombatLog)
-                        blockTarg.Out.SendMessage($"chance to be guarded: {guardChance * 100:0.##} rand: {guardRoll * 100:0.##}", eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
+                        blockTarg.Out.SendMessage(LanguageMgr.GetTranslation(blockTarg.Client.Account.Language, "GamePlayer.Attack.Detailed.GuardedChance", guardChance * 100, guardRoll * 100), eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
 
                     if (guardChance > guardRoll)
                     {
@@ -1674,10 +1674,10 @@ namespace DOL.GS
                 if (evadeChance > 0)
                 {
                     if (ad.Attacker is GamePlayer evadeAtk && evadeAtk.UseDetailedCombatLog)
-                        evadeAtk.Out.SendMessage($"target evade%: {evadeChance * 100:0.##} rand: {evadeRoll * 100:0.##}", eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
+                        evadeAtk.Out.SendMessage(LanguageMgr.GetTranslation(evadeAtk.Client.Account.Language, "GamePlayer.Attack.Detailed.TargetEvade", evadeChance * 100, evadeRoll * 100), eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
 
                     if (ad.Target is GamePlayer evadeTarg && evadeTarg.UseDetailedCombatLog)
-                        evadeTarg.Out.SendMessage($"your evade%: {evadeChance * 100:0.##} rand: {evadeRoll * 100:0.##}", eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
+                        evadeTarg.Out.SendMessage(LanguageMgr.GetTranslation(evadeTarg.Client.Account.Language, "GamePlayer.Attack.Detailed.YourEvade", evadeChance * 100, evadeRoll * 100), eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
 
                     if (evadeChance > evadeRoll)
                         return eAttackResult.Evaded;
@@ -1692,10 +1692,10 @@ namespace DOL.GS
                     if (parryChance > 0)
                     {
                         if (ad.Attacker is GamePlayer parryAtk && parryAtk.UseDetailedCombatLog)
-                            parryAtk.Out.SendMessage($"target parry%: {parryChance * 100:0.##} rand: {parryRoll * 100:0.##}", eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
+                            parryAtk.Out.SendMessage(LanguageMgr.GetTranslation(parryAtk.Client.Account.Language, "GamePlayer.Attack.Detailed.TargetParry", parryChance * 100, parryRoll * 100), eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
 
                         if (ad.Target is GamePlayer parryTarg && parryTarg.UseDetailedCombatLog)
-                            parryTarg.Out.SendMessage($"your parry%: {parryChance * 100:0.##} rand: {parryRoll * 100:0.##}", eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
+                            parryTarg.Out.SendMessage(LanguageMgr.GetTranslation(parryTarg.Client.Account.Language, "GamePlayer.Attack.Detailed.YourParry", parryChance * 100, parryRoll * 100), eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
 
                         if (parryChance > parryRoll)
                             return eAttackResult.Parried;
@@ -1739,14 +1739,14 @@ namespace DOL.GS
 
                 if (playerAttacker != null && playerAttacker.UseDetailedCombatLog)
                 {
-                    playerAttacker.Out.SendMessage($"miss rate: {missChance * 100:0.##}% rand: {missRoll * 100:0.##}", eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
+                    playerAttacker.Out.SendMessage(LanguageMgr.GetTranslation(playerAttacker.Client.Account.Language, "GamePlayer.Attack.Detailed.MissRate", missChance * 100, missRoll * 100), eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
 
                     if (fumbleChance > 0)
-                        playerAttacker.Out.SendMessage($"chance to fumble: {fumbleChance * 100:0.##}% rand: {missRoll * 100:0.##}", eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
+                        playerAttacker.Out.SendMessage(LanguageMgr.GetTranslation(playerAttacker.Client.Account.Language, "GamePlayer.Attack.Detailed.FumbleChance", fumbleChance * 100, missRoll * 100), eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
                 }
 
                 if (playerTarget != null && playerTarget.UseDetailedCombatLog)
-                    playerTarget.Out.SendMessage($"chance to be missed: {missChance * 100:0.##}% rand: {missRoll * 100:0.##}", eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
+                    playerTarget.Out.SendMessage(LanguageMgr.GetTranslation(playerTarget.Client.Account.Language, "GamePlayer.Attack.Detailed.BeMissedChance", missChance * 100, missRoll * 100), eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
 
                 if (missChance > missRoll)
                     return fumbleChance > missRoll ? eAttackResult.Fumbled : eAttackResult.Missed;
@@ -2309,7 +2309,7 @@ namespace DOL.GS
              * The rates at 44+16 are as follows:
              * Triple: 14%
              * Quad: 4.75%
-             * 
+             *
              * Unknown grab bag:
              * The realm ability raises your chance to get a second attack.
              * It doesn't directly influence the triple or the quad hit chances,
@@ -2318,12 +2318,12 @@ namespace DOL.GS
              * So by increasing your chances to get a second,
              * you're automatically upping your chances to GET a third, and then a forth.
              * So the answer is the RA only helps get more double attacks, but the effect will trickle down into your other attacks.
-             * 
+             *
              * https://camelotherald.fandom.com/wiki/Patch_Notes:_Version_1.65
              * A bug in Savage's chances to triple or quad has been fixed.
              * Savages should now triple more frequently than before, and quad less frequently than before.
              * Due to this, overall savage damage should decrease.
-             * 
+             *
              * https://www.tapatalk.com/groups/lighttanksofdaoc/hth-quad-i-noticed-t1604.html
              * I noticed something interesting with my savage when I used a pierce HTH in my right and slash HTH in my left.
              * When I did a quad hit, hit number 1 and 3 had the same damage mod and hit 2 and 4 had the same damage mod.
@@ -2339,10 +2339,10 @@ namespace DOL.GS
              * where triple hit chances dropped to almost 0, fully consumed by quad hit chances:
              * https://forums.jeuxonline.info/sujet/212949-3/guide-le-sauvage#post4333752
              * Unfortunately, there is no data post 1.65 to confirm the new rates, or if anything else changed.
-             * 
+             *
              * One interesting thing about the old formula is that it appears to have triple and quad hit chances consuming from double hit chance,
              * But it's unclear if this is actually how it worked.
-             * 
+             *
              * Both the post on tapatalk and the way the grab bag mentions "10,000 swing tests" suggest the final chances weren't pre-calculated with a formula,
              * but rather a logic flow was used, where the game would first check if an offhand swing occurred, then each hand would check for a double hit.
              * This would also make Dualist Reflex naturally "trickles down" to triple and quads hits.

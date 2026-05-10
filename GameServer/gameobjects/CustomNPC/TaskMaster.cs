@@ -1,6 +1,7 @@
 using System.Reflection;
 using DOL.GS;
 using DOL.GS.Quests;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -16,13 +17,13 @@ namespace DOL.GS
 			//we need to disable them for players for now
 			if (player.Client.Account.PrivLevel == 1)
 			{
-				SayTo(player, "I'm sorry, Task Dungeons are currently disabled!");
+				SayTo(player, LanguageMgr.GetTranslation(player.Client, "TaskMaster.Disabled"));
 				return true;
 			}
 
 			if (player.Mission == null)
-				SayTo(player, "I'm sure you're already aware that the guards protecting our towns often pay bounties to young adventurers willing to help them deal with threats in the area. We've decided to expand upon this idea and begin what we call the Taskmaster program. Voulenteers such as myself have been authorized to reward those willing to confront the dangers lurking within our dungeons. If you would like to assist I can give you such an [assignment] right now, and you will be rewarded as soon as you complete it.");
-			else SayTo(player, "You already have a task that requires competion.");
+				SayTo(player, LanguageMgr.GetTranslation(player.Client, "TaskMaster.Intro"));
+			else SayTo(player, LanguageMgr.GetTranslation(player.Client, "TaskMaster.AlreadyHaveTask"));
 
 			return true;
 		}
@@ -42,17 +43,21 @@ namespace DOL.GS
             switch (str.ToLower())
             {
                 case "assignment":
+                case "임무":
                     {
-                        SayTo(player, "Based on your prowess and preference in engaging the enemy, I have assignments located in the [labyrinthine dungeons] for close quarter melee and tasks awaiting in [long corridors] for those who prefer ranged attacks. Select which you would prefer and I shall assign a task for you to complete or if you wish I can go into more detail about the Taskmaster [program]");
+                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "TaskMaster.Assignment"));
                         break;
                     }
                 case "program":
+                case "과업 제도":
                     {
-                        SayTo(player, "Unlike the tasks which you can receive from guards by using /whisper task when speaking to one, the taskmaster program is available to adventurers across a wide range of experience. You'll find taskmasters in many of our towns, ready to offer you the chance to aid the realm by confronting some of the monsters which inhabit a nearby dungeon. With the recent emergance of the new threat from beneath the Earth, as well as the ongoing war with the enemy realms, we need all the help that we can get.");
+                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "TaskMaster.Program"));
                         break;
                     }
                 case "long corridors":
+                case "긴 복도":
                 case "labyrinthine dungeons":
+                case "미로형 던전":
                     {
                         if (player.Mission != null)
                             break;
@@ -65,7 +70,7 @@ namespace DOL.GS
                         log.Info("INFO: TaskMaster Dungeons activated");
                         TaskDungeonMission mission;
                         if (player.Group != null)
-                        	mission = new TaskDungeonMission(player.Group, TaskDungeonMission.eDungeonType.Ranged);
+	mission = new TaskDungeonMission(player.Group, TaskDungeonMission.eDungeonType.Ranged);
                         else
                         {
                             mission = new TaskDungeonMission(player, TaskDungeonMission.eDungeonType.Melee);
@@ -75,17 +80,17 @@ namespace DOL.GS
                          * Very well Gwirenn, it's good to see adventurers willing to help out the realm in such times.  Dralkden the Thirster has taken over the caves to the south and needs to be disposed of.  Good luck!
                          * Very well Gwirenn, it's good to see adventurers willing to help out the realm in such times. Clear the caves to the south of creatures. Good luck!
                          */
-                        string msg = "Very well " + player.Name + ", it's good to see adventurers willing to help out the realm in such times.";
+                        string msg = LanguageMgr.GetTranslation(player.Client, "TaskMaster.MissionAccepted", player.Name);
                         switch (mission.TDMissionType)
                         {
                             case TaskDungeonMission.eTDMissionType.Clear:
-                                msg += " Clear " + mission.TaskRegion.Description + " of creatures. Good luck!";
+                                msg += " " + LanguageMgr.GetTranslation(player.Client, "TaskMaster.MissionClear", mission.TaskRegion.Description);
                                 break;
                             case TaskDungeonMission.eTDMissionType.Boss:
-                                msg += " " + mission.BossName + " has taken over " + mission.TaskRegion.Description + " and needs to be disposed of. Good luck!";
+                                msg += " " + LanguageMgr.GetTranslation(player.Client, "TaskMaster.MissionBoss", mission.BossName, mission.TaskRegion.Description);
                                 break;
                             case TaskDungeonMission.eTDMissionType.Specific:
-                                msg += " Please remove " + mission.Total + " " + mission.TargetName + " from " + mission.TaskRegion.Description + "! The entrance is nearby.";
+                                msg += " " + LanguageMgr.GetTranslation(player.Client, "TaskMaster.MissionSpecific", mission.Total, mission.TargetName, mission.TaskRegion.Description);
                                 break;
                         }
                         SayTo(player, msg);

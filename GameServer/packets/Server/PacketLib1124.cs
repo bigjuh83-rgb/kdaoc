@@ -510,19 +510,21 @@ namespace DOL.GS.PacketHandler
 				using (var pak = PooledObjectFactory.GetForTick<GSTCPPacketOut>().Init(GetPacketCode(eServerPackets.QuestEntry)))
 				{
 					pak.WriteByte((byte)index);
-					pak.WriteByte((byte)rewardQuest.Name.Length);
+					ReadOnlySpan<char> nameSpan = TakeEncodedChunk(rewardQuest.Name, byte.MaxValue);
+					pak.WriteByte((byte) GetEncodedByteCount(nameSpan));
 					pak.WriteShort(0x00); // unknown
 					pak.WriteByte((byte)rewardQuest.Goals.Count);
 					pak.WriteByte((byte)rewardQuest.Level);
-					pak.WriteNonNullTerminatedString(rewardQuest.Name);
-					pak.WritePascalString(rewardQuest.Description);
+					pak.WriteNonNullTerminatedString(nameSpan);
+					pak.WritePascalString(TakeEncodedChunk(rewardQuest.Description, byte.MaxValue));
 					int goalindex = 0;
 					foreach (RewardQuest.QuestGoal goal in rewardQuest.Goals)
 					{
 						goalindex++;
 						String goalDesc = String.Format("{0}\r", goal.Description);
-						pak.WriteShortLowEndian((ushort)goalDesc.Length);
-						pak.WriteNonNullTerminatedString(goalDesc);
+						ReadOnlySpan<char> goalDescSpan = TakeEncodedChunk(goalDesc, ushort.MaxValue);
+						pak.WriteShortLowEndian((ushort) GetEncodedByteCount(goalDescSpan));
+						pak.WriteNonNullTerminatedString(goalDescSpan);
 						pak.WriteShortLowEndian((ushort)goal.ZoneID2);
 						pak.WriteShortLowEndian((ushort)goal.XOffset2);
 						pak.WriteShortLowEndian((ushort)goal.YOffset2);
@@ -553,17 +555,13 @@ namespace DOL.GS.PacketHandler
 				{
 					pak.WriteByte(index);
 
-					ReadOnlySpan<char> nameSpan = $"{quest.Name} (Level {quest.Level})";
-					ReadOnlySpan<char> descSpan = $"[Step #{quest.Step}]: {quest.Description}";
+					string name = $"{quest.Name} (Level {quest.Level})";
+					string desc = $"[Step #{quest.Step}]: {quest.Description}";
+					ReadOnlySpan<char> nameSpan = TakeEncodedChunk(name, byte.MaxValue);
+					ReadOnlySpan<char> descSpan = TakeEncodedChunk(desc, byte.MaxValue);
 
-					if (nameSpan.Length > byte.MaxValue)
-						nameSpan = nameSpan[..byte.MaxValue];
-
-					if (descSpan.Length > byte.MaxValue)
-						descSpan = descSpan[..byte.MaxValue];
-
-					pak.WriteByte((byte) nameSpan.Length);
-					pak.WriteShortLowEndian((ushort) descSpan.Length);
+					pak.WriteByte((byte) GetEncodedByteCount(nameSpan));
+					pak.WriteShortLowEndian((ushort) GetEncodedByteCount(descSpan));
 					pak.WriteByte(0); // Quest Zone ID ?
 					pak.WriteByte(0);
 					pak.WriteNonNullTerminatedString(nameSpan); //Write Quest Name without trailing 0

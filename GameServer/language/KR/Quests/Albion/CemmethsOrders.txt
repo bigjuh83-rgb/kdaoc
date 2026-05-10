@@ -1,0 +1,15 @@
+﻿Alb.CemmethsOrders.CheckPlayerAbortQuest.Text1:	좋습니다. 이제 나가서 맡은 일을 마무리하십시오!
+Alb.CemmethsOrders.CheckPlayerAbortQuest.Text2:	퀘스트 {0}을(를) 중단합니다. 원한다면 다시 시작할 수 있습니다.
+Alb.CemmethsOrders.Conclusion.Text1:		잘했습니다, {0}, 정말 잘했습니다! 죽지도 않은 해충들이 여기저기 짓밟고 다니니 우리 앞에는 해야 할 일이 산더미처럼 쌓여 있습니다. 친구여, 당신은 다른 예비 영웅들과 모험가들에게 훌륭한 본보기가 되었습니다. 이 작은 감사의 표시를 받아 주십시오.
+Alb.CemmethsOrders.Init.Text1:			신병의 누빈 조끼
+Alb.CemmethsOrders.Init.Text2:			신병의 가죽 조끼
+Alb.CemmethsOrders.Init.Text3:			신병의 징 박힌 조끼
+Alb.CemmethsOrders.Init.Text4:			해골 두개골
+Alb.CemmethsOrders.Init.Text5:			부패한 좀비 가죽
+Alb.CemmethsOrders.Init.Text6:			해골 1마리 처치
+Alb.CemmethsOrders.Init.Text7:			부패한 좀비 1마리 처치
+Alb.CemmethsOrders.Notify.Text1:		해골
+Alb.CemmethsOrders.Notify.Text2:		부패한 좀비
+Alb.CemmethsOrders.QuestTitle:			Cemmeth의 명령
+Alb.CemmethsOrders.Story:			로렌스 수도사는 최근 지역 민병대 지도자들을 불러 회의를 열었습니다. 우리 지역에서 언데드의 수가 늘어나는 문제와, 그것이 악마의 균열로 들어가는 입구들이 생겨난 최근 사건과 어떤 관련이 있을지 논의하기 위해서였지요. 솔직히 말해 그의 우려는 저를 불안하게 합니다. 그 일이 왜, 어떻게 일어나는지는 잘 안다고 할 수 없습니다. 하지만 이 괴물들이 우리 시민들에게 위협이 된다면 반드시 쓰러뜨려야 한다는 것만은 압니다.\n\n보고에 따르면 프리드웬 납골당 근처에서 특히 조심해야 할 위험한 존재는 해골과 부패한 좀비라고 합니다. 그 수와 공격성이 모두 늘어나는 듯합니다. 그대로 내버려 둔다면 우리는 꽤 곤란한 상황에 처할지도 모릅니다. 언데드 군단이 카멜롯 힐스를 제멋대로 활보하게 둘 수는 없지 않습니까!\n\n어떻습니까? 그 해충들을 안식처로 돌려보내 우리 시골을 더 안전하게 만드는 일을 도와주시겠습니까? 이 임무를 맡겠다면, 일을 해냈다는 증거를 가져오십시오.\n\n
+Alb.CemmethsOrders.Summary:			프리드웬 납골당으로 가십시오. 주변 지역에는 여러 언데드가 있습니다. 해골을 처치해 두개골을 얻고, 부패한 좀비를 처치해 살점을 얻으십시오. 끝나면 세메스 버그월드에게 돌아가십시오.

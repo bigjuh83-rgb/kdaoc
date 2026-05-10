@@ -2,6 +2,7 @@
 using DOL.Database;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 using System;
 
 namespace DOL.GS
@@ -66,10 +67,11 @@ namespace DOL.AI.Brain
 		}
 		private bool InitlifeLeechForm = false;
 		private bool lifeLeechForm = false;
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(string key, params object[] args)
 		{
 			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
 				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
 			}
 		}
@@ -93,9 +95,9 @@ namespace DOL.AI.Brain
         {
 			if (HasAggro && Body.TargetObject != null)
 			{
-				BroadcastMessage(String.Format("{0} grows in size as he steals {1}'s life energy!",Body.Name,Body.TargetObject.Name));
+				BroadcastMessage("Mobs.Ick.StealsLifeEnergy", Body.Name, Body.TargetObject.Name);
 				lifeLeechForm = true;
-				Body.Size = 50;				
+				Body.Size = 50;
 			}
 			new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(EndLifeLeech), 20000);
 			return 0;
@@ -103,7 +105,7 @@ namespace DOL.AI.Brain
 		private int EndLifeLeech(ECSGameTimer timer)
 		{
 			INpcTemplate npcTemplate = NpcTemplateMgr.GetTemplate(60162371);
-			BroadcastMessage(String.Format("{0}'s stolen life energy fades and he returns to normal.",Body.Name));
+			BroadcastMessage("Mobs.Ick.LifeEnergyFades", Body.Name);
 			if (HasAggro && Body.TargetObject != null)
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(LifeLeech), 20000);
 			Body.Size = 20;

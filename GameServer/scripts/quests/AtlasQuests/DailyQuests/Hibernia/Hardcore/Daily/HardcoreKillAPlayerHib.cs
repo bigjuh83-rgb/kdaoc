@@ -48,7 +48,7 @@ namespace DOL.GS.DailyQuest
 				return minimumLevel;
 			}
 		}
-		
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
@@ -134,7 +134,7 @@ namespace DOL.GS.DailyQuest
 
 		protected static void TalkToSucci(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -152,19 +152,17 @@ namespace DOL.GS.DailyQuest
 					switch (oranges.Step)
 					{
 						case 1:
-							SucciHib.SayTo(player, "Hunt, or be hunted.");
+							SucciHib.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.HuntOrBeHunted"));
 							break;
 						case 2:
-							SucciHib.SayTo(player, "" + player.Name + ". You have earned [another sunrise].");
+							SucciHib.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.EarnedAnotherSunrise", player.Name));
 							break;
 					}
 				}
 				else
 				{
-					SucciHib.SayTo(player, "The flash of steel's bite. \n"+
-					                     "One stands above, one below. \n" +
-					                     "[Predator] eats well.");
-					SucciHib.SayTo(player, " NOTE: This is a HARDCORE quest. If you die or join a group while doing this quest, it will be aborted automatically.");
+					SucciHib.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.PredatorIntro"));
+					SucciHib.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.Warning"));
 				}
 			}
 				// The player whispered to the NPC
@@ -176,7 +174,7 @@ namespace DOL.GS.DailyQuest
 					switch (wArgs.Text.ToLower())
 					{
 						case "predator":
-							player.Out.SendQuestSubscribeCommand(SucciHib, QuestMgr.GetIDForQuestType(typeof(HardcoreKillAPlayerHib)), "Will you undertake " + questTitle + "?");
+							player.Out.SendQuestSubscribeCommand(SucciHib, QuestMgr.GetIDForQuestType(typeof(HardcoreKillAPlayerHib)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.SubscribePrompt", questTitle));
 							break;
 					}
 				}
@@ -185,20 +183,21 @@ namespace DOL.GS.DailyQuest
 					switch (wArgs.Text)
 					{
 						case "another sunrise":
+						case "또 하나의 일출":
 							if (oranges.Step == 2)
 							{
-								player.Out.SendMessage("Enjoy your meal. With luck, it shall not be your last.", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.EnjoyMeal"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								oranges.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("To face one's own demise is not for the faint of heart. Death has turned its back on you for today.", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.DeathRejected"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -222,11 +221,11 @@ namespace DOL.GS.DailyQuest
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "To face one's own demise is not for the faint of heart.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.DeathRejected"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ".");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuest", questTitle));
 				oranges.AbortQuest();
 			}
 		}
@@ -259,7 +258,7 @@ namespace DOL.GS.DailyQuest
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Look them in the eye.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.LookThemInEye"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -267,7 +266,7 @@ namespace DOL.GS.DailyQuest
 				if (!SucciHib.GiveQuest(typeof (HardcoreKillAPlayerHib), player, 1))
 					return;
 
-				SucciHib.SayTo(player, "Hunt, or be hunted. Only one shall eat this night.");
+				SucciHib.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.HuntOnlyOneEats"));
 
 			}
 		}
@@ -286,11 +285,11 @@ namespace DOL.GS.DailyQuest
 				switch (Step)
 				{
 					case -1:
-						return "Your deeds are done for today.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Hardcore.DoneToday");
 					case 1:
-						return "Kill another player without dying. \n Life Taken: ("+ PlayerKilled +" | "+MAX_KillGoal+")";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Hardcore.KillPlayerDescription", PlayerKilled, MAX_KillGoal);
 					case 2:
-						return "Return to Succi in Druim Ligen for your grim reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Hardcore.ReturnToSucciHib");
 				}
 				return base.Description;
 			}
@@ -308,7 +307,7 @@ namespace DOL.GS.DailyQuest
 				FailQuest();
 				return;
 			}
-				
+
 
 			if (sender != m_questPlayer)
 				return;
@@ -324,27 +323,27 @@ namespace DOL.GS.DailyQuest
 			if (!(player.GetConLevel(gArgs.Target) > -3) || gArgs.Target is not GamePlayer enemyPlayer ||
 			    enemyPlayer.Realm == 0 || player.Realm == enemyPlayer.Realm) return;
 			PlayerKilled = 1;
-			player.Out.SendMessage("[Hardcore] Enemy Killed: ("+PlayerKilled+" | "+MAX_KillGoal+")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.EnemyKilled", PlayerKilled, MAX_KillGoal), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
 			// FinishQuest or go back to npc
 			Step = 2;
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "HardcorePlayerKillQuestHib";
 			set { ; }
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
-			
+
 		}
 
 		public override void SaveQuestParameters()
 		{
-			
+
 		}
 
 
@@ -356,20 +355,20 @@ namespace DOL.GS.DailyQuest
 		public override void FinishQuest()
 		{
 			int reward = ServerProperties.Properties.HARDCORE_RVR_REWARD;
-			
+
 			m_questPlayer.ForceGainExperience((m_questPlayer.ExperienceForNextLevel - m_questPlayer.ExperienceForCurrentLevel)/2);
 			m_questPlayer.AddMoney(Money.GetMoney(0,0,m_questPlayer.Level*2,32,Util.Random(50)), "You receive {0} as a reward.");
 			AtlasROGManager.GenerateReward(m_questPlayer, 250);
 			PlayerKilled = 0;
-			
+
 			if (reward > 0)
 			{
-				m_questPlayer.Out.SendMessage($"You have been rewarded {reward} Realmpoints for finishing Hardcore Quest.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.RealmPointReward", reward, "Hardcore"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 				m_questPlayer.GainRealmPoints(reward, false);
 				m_questPlayer.Out.SendUpdatePlayer();
 			}
 			base.FinishQuest(); //Defined in Quest, changes the state, stores in DB etc ...
-			
+
 		}
 
 		private void FailQuest()

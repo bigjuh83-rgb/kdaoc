@@ -79,7 +79,7 @@ namespace DOL.GS.Commands
     [Cmd("&monty", ePrivLevel.Player, "Think Camelot is a silly place", "/monty")]
     [Cmd("&loco", ePrivLevel.Player, "Think this is crazy", "/loco")]
     [Cmd("&cower", ePrivLevel.Player, "Cower", "/cower")]
-	
+
 	public class EmoteCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		private const ushort EMOTE_RANGE_TO_TARGET = 2048; // 2064 was out of range and 2020 in range;
@@ -90,20 +90,20 @@ namespace DOL.GS.Commands
 			// no emotes if dead
 			if (!client.Player.IsAlive)
 			{
-				DisplayMessage(client, "You can't do that, you're dead!");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Emotes.CantDead"));
 				return;
 			}
 
 			// no emotes in combat / mez / stun
 			if (client.Player.attackComponent.AttackState || client.Player.IsCrowdControlled)
 			{
-				DisplayMessage(client, "You can't do that, you're busy!");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Emotes.Busy"));
 				return;
 			}
 
 			if (client.Player.IsMuted)
 			{
-				client.Player.Out.SendMessage("You have been muted and cannot emote!", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+				client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Emote.Muted"), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -112,7 +112,7 @@ namespace DOL.GS.Commands
 				// target not in range
 				if( client.Player.IsWithinRadius( client.Player.TargetObject, EMOTE_RANGE_TO_TARGET ) == false )
 				{
-					DisplayMessage(client, "You don't see your target around here.");
+					DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Emotes.TargetNotSeen"));
 					return;
 				}
 			}
@@ -122,7 +122,7 @@ namespace DOL.GS.Commands
 			{
 				client.Player.TempProperties.RemoveProperty(EMOTE_TICK);
 			}
-			
+
 			long changeTime = client.Player.CurrentRegion.Time - Tick;
 			if (changeTime < ServerProperties.Properties.EMOTE_DELAY && Tick > 0)
 			{

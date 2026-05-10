@@ -3,6 +3,7 @@ using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -43,11 +44,11 @@ namespace DOL.GS
         {
             get { return 100000; }
         }
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(String key, params object[] args)
         {
             foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
         public override void Die(GameObject killer) //on kill generate orbs
@@ -57,7 +58,7 @@ namespace DOL.GS
                 if (npc != null && npc.IsAlive && npc.Brain is FornShardBrain)
                     npc.RemoveFromWorld();
             }
-            BroadcastMessage(String.Format("The frosty glows in {0}'s eyes abruptly blinks out. {0}'s form slowly fades into the ice. The shard swiftly evaporate leaving no trace of their corporeal existence behind!", Name));
+            BroadcastMessage("NamedMobs.Fornfrusenen.DeathFade", Name);
             base.Die(killer);
         }
         public override bool AddToWorld()
@@ -110,7 +111,7 @@ namespace DOL.GS
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
                     if (truc != null)
-                        truc.Out.SendMessage(Name + " is immune to your damage!", eChatType.CT_System,
+                        truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Fornfrusenen.ImmuneToDamage", Name), eChatType.CT_System,
                             eChatLoc.CL_ChatWindow);
 
                     base.TakeDamage(source, damageType, 0, 0);
@@ -138,11 +139,11 @@ namespace DOL.AI.Brain
             AggroRange = 400;
             ThinkInterval = 2000;
         }
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(String key, params object[] args)
         {
             foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
         private bool SpamMessage = false;
@@ -150,8 +151,8 @@ namespace DOL.AI.Brain
         {
             if(ad != null && ad.Attacker != null && ad.Attacker.IsAlive && !SpamMessage)
             {
-                BroadcastMessage(String.Format("{0} awakens from its peaceful slumber and emerges from this ice walls and hisses \"I know your name {1}, take a good look at your surroundings! Within this ice is where you'll be entombed for all eternity! Hahahahaha\"", Body.Name, ad.Attacker.Name));
-                SpamMessage = true;            
+                BroadcastMessage("NamedMobs.Fornfrusenen.Awakens", Body.Name, ad.Attacker.Name);
+                SpamMessage = true;
             }
             base.OnAttackedByEnemy(ad);
         }
@@ -239,7 +240,7 @@ namespace DOL.GS
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
                     if (truc != null)
-                        truc.Out.SendMessage(Name + " is immune to your damage!", eChatType.CT_System,
+                        truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Fornfrusenen.ImmuneToDamage", Name), eChatType.CT_System,
                             eChatLoc.CL_ChatWindow);
 
                     base.TakeDamage(source, damageType, 0, 0);
@@ -311,7 +312,7 @@ namespace DOL.GS
             MeleeDamageType = eDamageType.Cold;
 
             RespawnInterval = -1;
-            MaxSpeedBase = 200; 
+            MaxSpeedBase = 200;
 
             FornShardBrain sbrain = new FornShardBrain();
             SetOwnBrain(sbrain);
@@ -366,7 +367,7 @@ namespace DOL.AI.Brain
         public FornShardBrain()
             : base()
         {
-            AggroLevel = 100; 
+            AggroLevel = 100;
             AggroRange = 800;
             ThinkInterval = 1000;
         }

@@ -2,6 +2,7 @@
 using System.Threading;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 using DOL.Logging;
 
 namespace DOL.GS
@@ -63,7 +64,7 @@ namespace DOL.GS
 
                         if (player.ActiveInventoryObject != vault)
                         {
-                            player.Out.SendMessage("You are not actively viewing a vault!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Vault.NotActivelyViewing"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             player.Out.SendInventoryItemsUpdate(null);
                             return false;
                         }
@@ -102,19 +103,19 @@ namespace DOL.GS
                         {
                             if (!vault.CanAddItems(player))
                             {
-                                player.Out.SendMessage("You don't have permission to add items!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Vault.NoAddPermission"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                 return false;
                             }
 
                             if (itemInToSlot != null && !vault.CanRemoveItems(player))
                             {
-                                player.Out.SendMessage("You don't have permission to remove items!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Vault.NoRemovePermission"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                 return false;
                             }
 
                             if (player.Client.Account.PrivLevel == 1 && vault is not AccountVault && !itemInFromSlot.IsTradable)
                             {
-                                player.Out.SendMessage("You can not put this untradable item into a house vault!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Vault.CantStoreUntradable"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                 player.Out.SendInventoryItemsUpdate(null);
                                 return false;
                             }
@@ -123,7 +124,7 @@ namespace DOL.GS
                         {
                             if (!vault.CanRemoveItems(player))
                             {
-                                player.Out.SendMessage("You don't have permission to remove items!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Vault.NoRemovePermission"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                 return false;
                             }
 
@@ -131,13 +132,13 @@ namespace DOL.GS
                             {
                                 if (!vault.CanAddItems(player))
                                 {
-                                    player.Out.SendMessage("You don't have permission to add items!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Vault.NoAddPermission"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                     return false;
                                 }
 
                                 if (player.Client.Account.PrivLevel == 1 && vault is not AccountVault && !itemInToSlot.IsTradable)
                                 {
-                                    player.Out.SendMessage("You cannot swap with an untradable item!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Vault.CantSwapUntradable"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                     player.Out.SendInventoryItemsUpdate(null);
                                     return false;
                                 }

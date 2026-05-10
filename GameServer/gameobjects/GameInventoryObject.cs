@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 using DOL.Logging;
 
 namespace DOL.GS
@@ -650,15 +651,15 @@ namespace DOL.GS
         private static void OnSaveError(this IGameInventoryObject thisObject, GamePlayer player, string method, eInventorySlot fromClientSlot, eInventorySlot toClientSlot, DbInventoryItem fromItem, DbInventoryItem toItem, ushort count)
         {
             thisObject.OnItemManipulationError(player);
-            player.Out.SendMessage($"Error while moving an item in '{method}':", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "GameInventoryObject.MoveError", method), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
             player.Out.SendMessage($"- [{fromItem?.Name}] [{fromClientSlot}] ({count})", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
             player.Out.SendMessage($"- [{toItem?.Name}] [{toClientSlot}]", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-            player.Out.SendMessage($"The item may be lost or temporarily invisible.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "GameInventoryObject.ItemMayBeLostOrInvisible"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
         }
 
         private static void SendUnsupportedActionMessage(GamePlayer player)
         {
-            player.Out.SendMessage("This action isn't currently supported. Try a different source or destination slot.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "GameInventoryObject.UnsupportedAction"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
         }
     }
 }

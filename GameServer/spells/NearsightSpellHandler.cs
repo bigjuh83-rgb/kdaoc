@@ -26,22 +26,22 @@ namespace DOL.GS.Spells
 			//Nearsight Immunity check
 			if (target.HasAbility(Abilities.NSImmunity))
 			{
-				MessageToCaster("Your target can't be nearsighted!", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "NearsightSpellHandler.TargetCannotBeNearsighted"), eChatType.CT_SpellResisted);
 				SendEffectAnimation(target, 0, false, 0);
 				return;
 			}
 			if (EffectListService.GetEffectOnTarget(target, eEffect.Nearsight) != null)
             {
-				MessageToCaster("Your target already has this effect!", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.TargetAlreadyHasEffect"), eChatType.CT_SpellResisted);
 				SendEffectAnimation(target, 0, false, 0);
 				//target.StartInterruptTimer(target.SpellInterruptDuration, AttackData.eAttackType.Spell, Caster);
 				return;
 			}
 			if (EffectListService.GetEffectOnTarget(target, eEffect.NearsightImmunity) != null)
 			{
-				MessageToCaster("Your target is immune to this effect!", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.TargetImmuneToEffect"), eChatType.CT_SpellResisted);
 				SendEffectAnimation(target, 0, false, 0);
-				
+
 				return;
 			}
 			base.ApplyEffectOnTarget(target);
@@ -70,7 +70,7 @@ namespace DOL.GS.Spells
 		public override void OnEffectStart(GameSpellEffect effect)
 		{
 			//GameSpellEffect mezz = SpellHandler.FindEffectOnTarget(effect.Owner, "Mesmerize");
- 		//	if(mezz != null) mezz.Cancel(false);
+		//	if(mezz != null) mezz.Cancel(false);
 			//// percent category
 			//effect.Owner.DebuffCategory[eProperty.ArcheryRange] += (int)Spell.Value;
 			//effect.Owner.DebuffCategory[eProperty.SpellRange] += (int)Spell.Value;
@@ -110,7 +110,7 @@ namespace DOL.GS.Spells
 				 * <Begin Info: Encrust Eyes>
 				 * Function: nearsight
 				 * Target's effective range of all their ranged attacks (archery and magic) reduced.
-				 *  
+				 *
 				 * Value: 25%
 				 * Target: Targetted
 				 * Range: 2300
@@ -118,7 +118,7 @@ namespace DOL.GS.Spells
 				 * Power cost: 5
 				 * Casting time:      2.0 sec
 				 * Damage: Matter
-				 *  
+				 *
 				 * <End Info>
 				 */
 

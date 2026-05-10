@@ -4,6 +4,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -37,10 +38,11 @@ namespace DOL.AI.Brain
 			ThinkInterval = 1500;
 		}
 		private bool mobHasAggro = false;
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(string key, params object[] args)
 		{
 			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
 				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 			}
 		}
@@ -54,7 +56,7 @@ namespace DOL.AI.Brain
 			{
 				if(!mobHasAggro)
                 {
-					BroadcastMessage(String.Format("Spriggit crackles as he attacks {0}!",Body.TargetObject.Name));
+					BroadcastMessage("Mobs.Spriggit.Attacks", Body.TargetObject.Name);
 					mobHasAggro = true;
                 }
 				GameLiving target = Body.TargetObject as GameLiving;

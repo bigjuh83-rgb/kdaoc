@@ -1,0 +1,35 @@
+﻿# WORLD
+
+## Areas
+AbstractArea.Entered:					        (지역) {0}에 들어왔습니다.
+AbstractArea.Left:					            (지역) {0}에서 나갔습니다.
+
+## Jump Requirements
+DemonsBreachJumpPoint.Requirements:			이 지역에 입장할 조건을 충족하지 못했습니다!
+
+## Zones
+PlayerPositionUpdateHandler.Entered:			{0}에 들어왔습니다.
+
+## Zone Bonuses
+ZoneBonus.AdditionalXP:                         이 지역에서 모험하여 추가 경험치 {0}을(를) 얻었습니다!
+ZoneBonus.AdditionalRP:                         이 지역에서 모험하여 추가 렐름 포인트 {0}점을 얻었습니다!
+ZoneBonus.AdditionalBP:                         이 지역에서 모험하여 추가 현상금 포인트 {0}점을 얻었습니다!
+ZoneBonus.AdditionalCoin:                       이 지역에서 모험하여 추가 코인을 얻었습니다!
+ZoneBonusRotator.Updated:                       보너스 지역이 갱신되었습니다.
+ZoneBonusRotator.WindowTitle:                   과업 보너스
+ZoneBonusRotator.OFBonusRegion:                 OF 보너스 렐름: {0}
+ZoneBonusRotator.CurrentOFBonusRegion:          현재 OF 보너스 렐름: {0}
+ZoneBonusRotator.BonusRP:                       렐름 포인트 보너스: {0}%
+ZoneBonusRotator.BonusBP:                       현상금 포인트 보너스: {0}%
+ZoneBonusRotator.BonusXP:                       경험치 보너스: {0}%
+ZoneBonusRotator.CurrentRealmZones:             현재 {0} 지역:
+ZoneBonusRotator.ClassicZone:                   클래식 지역: {0} {1} (경험치 +{2}%)
+ZoneBonusRotator.SIZone:                        SI 지역: {0} {1} (경험치 +{2}%)
+ZoneBonusRotator.RealmClassic:                  {0} 클래식: {1} (경험치 +{2}%)
+ZoneBonusRotator.RealmSI:                       {0} SI: {1} (경험치 +{2}%)
+ZoneBonusRotator.RvRTimeRemaining:              RvR 남은 시간: {0}시간 {1}분 {2}초
+ZoneBonusRotator.PvETimeRemaining:              PvE 남은 시간: {0}시간 {1}분 {2}초
+ZoneBonusRotator.PermanentBonuses:              상시 보너스:
+ZoneBonusRotator.AllDungeons:                   모든 던전: {0}%
+ZoneBonusRotator.RvRDungeons:                   RvR 던전: {0}%
+ZoneBonusRotator.DarknessFalls:                 다크니스 폴스: {0}%

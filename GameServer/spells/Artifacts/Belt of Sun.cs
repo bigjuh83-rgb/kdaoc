@@ -2,6 +2,7 @@ using System;
 using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -30,7 +31,7 @@ namespace DOL.GS.Spells
         {
             if (caster.CurrentRegion.IsNightTime)
             {
-                MessageToCaster("The powers of the Belt of Sun, can only be Summon under the Sun light!", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((caster as GamePlayer)?.Client, "Artifacts.BeltOfSun.RequiresSunlight"), eChatType.CT_SpellResisted);
                 return;
             }
 
@@ -446,7 +447,7 @@ namespace DOL.GS.Spells
 
             else
             {
-                player.Out.SendMessage("" + player.CharacterClass.Name + "'s cant Summon Light!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Spell.Artifact.BeltOfSun.CantSummonLight", player.CharacterClass.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
         }
@@ -1808,7 +1809,7 @@ namespace DOL.GS.Spells
                         if (invItem.Id_nb.Equals("Sun_Spear"))
                             player.Inventory.RemoveItem(invItem);
 
-                        player.Out.SendMessage("The Power of Belt of Sun, has left you!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "Artifacts.BeltOfSun.PowerLeft"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     }
                 }
             }

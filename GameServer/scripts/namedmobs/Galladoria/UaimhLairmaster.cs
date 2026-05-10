@@ -4,6 +4,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
 using DOL.GS.Scripts.DOL.AI.Brain;
+using DOL.Language;
 
 namespace DOL.GS.Scripts
 {
@@ -181,7 +182,6 @@ namespace DOL.GS.Scripts
 
             public UaimhLairmasterBrain() : base()
             {
-                m_AggroAnnounce = "{0} feels threatened and appears more menacing!";
             }
 
             public override void Think()
@@ -212,10 +212,11 @@ namespace DOL.GS.Scripts
             /// Broadcast relevant messages to the raid.
             /// </summary>
             /// <param name="message">The message to be broadcast.</param>
-            public void BroadcastMessage(String message)
+            public void BroadcastMessage(string key, params object[] args)
             {
                 foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
                 {
+                    string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
                     player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
                 }
             }
@@ -224,7 +225,7 @@ namespace DOL.GS.Scripts
 
             public void GrowSize()
             {
-                BroadcastMessage(String.Format(m_AggroAnnounce, Body.Name));
+                BroadcastMessage("NamedMobs.UaimhLairmaster.Threatened", Body.Name);
                 Body.Size = MAX_Size;
                 IsAggroEnemies = false;
             }

@@ -34,7 +34,7 @@ namespace DOL.GS.Commands
 
 			if (myKeep == null)
 			{
-				DisplayMessage(client, "You are not near a keep.");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.KeepComponents.NotNearKeep"));
 			}
 
 			switch (args[1])
@@ -165,7 +165,7 @@ namespace DOL.GS.Commands
                         client.Out.SendKeepInfo(myKeep);
                         client.Out.SendKeepComponentInfo(component);
 						client.Out.SendKeepComponentDetailUpdate(component);
-						client.Out.SendMessage("Component moved.  Use /keepcomponent save to save, or reload to reload the original position.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.KeepComponents.Moved"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     } break;
                 #endregion
 				#region Rotate
@@ -186,7 +186,7 @@ namespace DOL.GS.Commands
 							client.Out.SendKeepInfo(myKeep);
 							client.Out.SendKeepComponentInfo(component);
 							client.Out.SendKeepComponentDetailUpdate(component);
-							client.Out.SendMessage("Component rotated.  Use /keepcomponent save to save, or reload to reload the original position.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.KeepComponents.Rotated"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						}
 						catch
 						{
@@ -234,7 +234,7 @@ namespace DOL.GS.Commands
 						}
 
 						//client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.KeepComponents.Skin.YChangeSkin"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
-						client.Out.SendMessage("Component skin updated.  Use /keepcomponent save to save, or reload to reload the original skin.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.KeepComponents.SkinUpdated"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					} break;
 				#endregion Skin
 				#region Delete
@@ -263,10 +263,10 @@ namespace DOL.GS.Commands
 							return;
 						}
 						component.SaveIntoDatabase();
-						client.Out.SendMessage(string.Format("Saved ComponentID: {0}, KeepID: {1}, Skin: {2}, Health: {3}%", 
-															component.ID, 
-															(component.Keep == null ? "0" : component.Keep.KeepID.ToString()), 
-															component.Skin, 
+						client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.KeepComponents.Saved",
+															component.ID,
+															(component.Keep == null ? "0" : component.Keep.KeepID.ToString()),
+															component.Skin,
 															component.HealthPercent), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
 					} break;
@@ -294,7 +294,7 @@ namespace DOL.GS.Commands
 							otherPlayer.Out.SendKeepComponentDetailUpdate(component);
 						}
 
-                        client.Out.SendMessage("Component Reloaded", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.KeepComponents.Reloaded"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         break;
 					}
 				#endregion Reload

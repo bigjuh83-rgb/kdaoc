@@ -1,0 +1,11 @@
+# Game Guard
+
+## Examine
+GameGuard.GetExamineMessages.Examine:			{0}을(를) 살펴봅니다. {1}은(는) {2}이며 경비병입니다.
+GameGuard.GateKeeperIn.Interact:				어디로 이동하시겠습니까?
+GameGuard.GateKeeperOut.Interact:				어디로 이동하시겠습니까?
+
+## Attack Dialogue
+GameGuard.Albion.StartAttackSay:					덤벼라, 악당아!
+GameGuard.Midgard.StartAttackSay:					침입자에게 죽음을!
+GameGuard.Hibernia.StartAttackSay:					사악한 자는 심판받으리라!

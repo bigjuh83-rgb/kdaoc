@@ -40,7 +40,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                 var pakdata = new CreationCharacterData(packet, client);
 
                 // Graveen: changed the following to allow GMs to have special chars in their names (_,-, etc..)
-                var nameCheck = new Regex("^[A-Z][a-zA-Z]");
+                var nameCheck = new Regex(@"^(?:[A-Z][a-zA-Z]|[\p{IsHangulSyllables}\p{IsHangulJamo}\p{IsHangulCompatibilityJamo}])");
                 if (!string.IsNullOrEmpty(pakdata.CharName) && (pakdata.CharName.Length < 3 || !nameCheck.IsMatch(pakdata.CharName)))
                 {
                     if ((ePrivLevel)client.Account.PrivLevel == ePrivLevel.Player)
@@ -137,7 +137,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                 var pakdata = new CreationCharacterData(packet, client);
 
                 // Graveen: changed the following to allow GMs to have special chars in their names (_,-, etc..)
-                var nameCheck = new Regex("^[A-Z][a-zA-Z]");
+                var nameCheck = new Regex(@"^(?:[A-Z][a-zA-Z]|[\p{IsHangulSyllables}\p{IsHangulJamo}\p{IsHangulCompatibilityJamo}])");
                 if (!string.IsNullOrEmpty(pakdata.CharName) && (pakdata.CharName.Length < 3 || !nameCheck.IsMatch(pakdata.CharName)))
                 {
                     if ((ePrivLevel)client.Account.PrivLevel == ePrivLevel.Player)
@@ -264,7 +264,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                 {
                     CharacterSlot = packet.ReadByte();
                     CharName = packet.ReadIntPascalStringLowEndian();
-                    packet.Skip(4); // 0x18 0x00 0x00 0x00                   
+                    packet.Skip(4); // 0x18 0x00 0x00 0x00
                     CustomMode = packet.ReadByte();
                     EyeSize = packet.ReadByte();
                     LipSize = packet.ReadByte();
@@ -278,10 +278,11 @@ namespace DOL.GS.PacketHandler.Client.v168
                     Operation = (uint)packet.ReadByte(); // probably low end int, but im just gonna read the first byte
                     CustomizeType = packet.ReadByte(); // 1 = face 2 = attributes 3 = both
                     packet.Skip(2); // last two bytes in the supposed int
-                    // the following are now low endian int pascal strings
-                    packet.Skip(5); //Location string
-                    packet.Skip(5); //Skip class name
-                    packet.Skip(5); //Skip race name
+                    // The following are low-endian int Pascal strings.
+                    // Read and discard them so localized, non-empty strings don't desync the rest of the packet.
+                    packet.ReadIntPascalStringLowEndian(); // Location string
+                    packet.ReadIntPascalStringLowEndian(); // Class name
+                    packet.ReadIntPascalStringLowEndian(); // Race name
 
                     if (client.Version >= GameClient.eClientVersion.Version1126)
                     {
@@ -298,8 +299,8 @@ namespace DOL.GS.PacketHandler.Client.v168
                     {
                         CharacterSlot -= (Realm - 1) * 10; // calc to get character slot into same format used in database.
                     }
-                    
-                    byte startRaceGender1 = (byte)packet.ReadByte();                    
+
+                    byte startRaceGender1 = (byte)packet.ReadByte();
                     Race = startRaceGender1 & 0x1F;
                     Gender = ((startRaceGender1 >> 7) & 0x01);
                     //SIStartLocation = ((startRaceGender1 >> 7) != 0);
@@ -308,7 +309,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                     if (client.Version == GameClient.eClientVersion.Version1125)
                     {
                         Region = packet.ReadByte();
-                        packet.Skip(5);                       
+                        packet.Skip(5);
                     }
 
                     Strength = packet.ReadByte();
@@ -321,7 +322,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                     Charisma = packet.ReadByte();
 
                     packet.Skip(43);
-                    
+
                     NewConstitution = packet.ReadByte();
                     // trailing 0x00
                     return;

@@ -17,7 +17,7 @@ namespace DOL.GS.Commands
 			}
 			catch
 			{
-				DisplayMessage(client, "Incorrect format of the command");
+				DisplayMessage(client, T(client, "PlayerCommands.Summon.BadFormat"));
 			}
 			finally
 			{

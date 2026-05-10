@@ -2,6 +2,7 @@
 using DOL.Database;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 using System;
 
 namespace DOL.GS
@@ -42,13 +43,14 @@ namespace DOL.AI.Brain
 			if(HasAggro && Body.TargetObject != null)
             {
 				GameLiving target = Body.TargetObject as GameLiving;
-				if (Util.Chance(25) && !target.effectListComponent.ContainsEffectForEffectType(eEffect.StunImmunity) 
-					&& !target.effectListComponent.ContainsEffectForEffectType(eEffect.Stun) && target.IsAlive && target != null && !PrepareStun)
+				if (Util.Chance(25) && target != null && target.IsAlive
+					&& !target.effectListComponent.ContainsEffectForEffectType(eEffect.StunImmunity)
+					&& !target.effectListComponent.ContainsEffectForEffectType(eEffect.Stun) && !PrepareStun)
                 {
 					foreach(GamePlayer player in Body.GetPlayersInRadius(1500))
                     {
 						if (player != null)
-							player.Out.SendMessage("Ruckus begins saving energy for a stunning blow.\nRuckus attacks begin to stun his opponent with next blow.", eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Mobs.Ruckus.PrepareStun"), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
                     }
 					new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(CastStun), 2000);
 					PrepareStun = true;
@@ -60,7 +62,7 @@ namespace DOL.AI.Brain
 		}
 		private int CastStun(ECSGameTimer timer)
         {
-			if (HasAggro && Body.TargetObject != null)		
+			if (HasAggro && Body.TargetObject != null)
 				Body.CastSpell(Ruckus_stun, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
 			new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(ResetStun), 20000);
 			return 0;
@@ -128,4 +130,3 @@ namespace DOL.AI.Brain
         #endregion
     }
 }
-

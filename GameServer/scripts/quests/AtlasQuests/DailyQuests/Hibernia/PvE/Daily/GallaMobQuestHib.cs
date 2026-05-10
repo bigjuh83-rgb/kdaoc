@@ -120,7 +120,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
             GameEventMgr.AddHandler(Anthony, GameObjectEvent.Interact, new DOLEventHandler(TalkToAnthony));
             GameEventMgr.AddHandler(Anthony, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToAnthony));
-            
+
             Anthony.AddQuestToGive(typeof(GallaMobQuestHib));
 
             if (log.IsInfoEnabled)
@@ -139,13 +139,13 @@ namespace DOL.GS.DailyQuest.Hibernia
 
             GameEventMgr.RemoveHandler(Anthony, GameObjectEvent.Interact, new DOLEventHandler(TalkToAnthony));
             GameEventMgr.RemoveHandler(Anthony, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToAnthony));
-            
+
             Anthony.RemoveQuestToGive(typeof(GallaMobQuestHib));
         }
 
         private static void TalkToAnthony(DOLEvent e, object sender, EventArgs args)
         {
-            //We get the player from the event arguments and check if he qualifies		
+            //We get the player from the event arguments and check if he qualifies
             GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
             if (player == null)
                 return;
@@ -167,15 +167,13 @@ namespace DOL.GS.DailyQuest.Hibernia
                                 "Please, enter Galladoria and slay some monsters. If you succeed come back for your reward.");
                             break;
                         case 2:
-                            Anthony.SayTo(player, "Hello " + player.Name + ", did you [succeed]?");
+                            Anthony.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[succeed]"));
                             break;
                     }
                 }
                 else
                 {
-                    Anthony.SayTo(player, "Hello " + player.Name + ", I am Anthony. " +
-                                          "The king is preparing to send forces into Galladoria to clear it out. \n" +
-                                          "We could use your help [clearing the way] into the front gate, if you're so inclined.");
+                    Anthony.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DailyDungeonMonsterIntro", player.Name, "Anthony", "Galladoria"));
                 }
             }
             // The player whispered to the NPC
@@ -187,9 +185,10 @@ namespace DOL.GS.DailyQuest.Hibernia
                     switch (wArgs.Text)
                     {
                         case "clearing the way":
+						case "길 정리":
                             player.Out.SendQuestSubscribeCommand(Anthony,
                                 QuestMgr.GetIDForQuestType(typeof(GallaMobQuestHib)),
-                                "Will you help Anthony with " + questTitle + "");
+                                DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcWithQuest", "Anthony", questTitle));
                             break;
                     }
                 }
@@ -200,7 +199,7 @@ namespace DOL.GS.DailyQuest.Hibernia
                         case "succeed":
                             if (quest.Step == 2)
                             {
-                                player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat,
+                                player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat,
                                     eChatLoc.CL_PopupWindow);
                                 quest.FinishQuest();
                             }
@@ -208,7 +207,7 @@ namespace DOL.GS.DailyQuest.Hibernia
                             break;
                         case "abort":
                             player.Out.SendCustomDialog(
-                                "Do you really want to abort this quest, \nall items gained during quest will be lost?",
+                                DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"),
                                 new CustomDialogResponse(CheckPlayerAbortQuest));
                             break;
                     }
@@ -244,11 +243,11 @@ namespace DOL.GS.DailyQuest.Hibernia
 
             if (response == 0x00)
             {
-                SendSystemMessage(player, "Good, now go out there and finish your work!");
+                SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
             }
             else
             {
-                SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+                SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
                 quest.AbortQuest();
             }
         }
@@ -278,7 +277,7 @@ namespace DOL.GS.DailyQuest.Hibernia
 
             if (response == 0x00)
             {
-                player.Out.SendMessage("Thank you for your help.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
             }
             else
             {
@@ -286,7 +285,7 @@ namespace DOL.GS.DailyQuest.Hibernia
                 if (!Anthony.GiveQuest(typeof(GallaMobQuestHib), player, 1))
                     return;
 
-                Anthony.SayTo(player, "Thank you " + player.Name + ", be an enrichment for our realm!");
+                Anthony.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EnrichmentRealm", player.Name));
             }
         }
 
@@ -304,10 +303,9 @@ namespace DOL.GS.DailyQuest.Hibernia
                 switch (Step)
                 {
                     case 1:
-                        return "Find a way to Galladoria and kill some monsters. \nKilled: Monsters in Galladoria (" +
-                               _deadGallaMob + " | "+ MAX_KILLGOAL +")";
+                        return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.DailyDungeonMonsterDescription", "Galladoria", _deadGallaMob, MAX_KILLGOAL);
                     case 2:
-                        return "Return to Anthony in Grove of Domnann for your Reward.";
+                        return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "Anthony", "Grove of Domnann");
                 }
 
                 return base.Description;
@@ -317,20 +315,20 @@ namespace DOL.GS.DailyQuest.Hibernia
         public override void Notify(DOLEvent e, object sender, EventArgs args)
         {
             GamePlayer player = sender as GamePlayer;
-            
+
             if (sender != m_questPlayer)
                 return;
-            
+
             if (player?.IsDoingQuest(typeof(GallaMobQuestHib)) == null)
                 return;
-            
+
             if (Step != 1 || e != GameLivingEvent.EnemyKilled) return;
-            
+
             EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
-			
+
             if (gArgs.Target is GameSummonedPet)
                 return;
-            
+
             // check if a GameNPC died + if its in Galladoria
             if (gArgs.Target.Realm != 0 || gArgs.Target is not GameNPC || gArgs.Target.CurrentRegionID != 191) return;
             _deadGallaMob++;
@@ -360,7 +358,7 @@ namespace DOL.GS.DailyQuest.Hibernia
         {
             SetCustomProperty(QuestPropertyKey, _deadGallaMob.ToString());
         }
-        
+
         public override void FinishQuest()
         {
             m_questPlayer.ForceGainExperience((m_questPlayer.ExperienceForNextLevel - m_questPlayer.ExperienceForCurrentLevel)/5);

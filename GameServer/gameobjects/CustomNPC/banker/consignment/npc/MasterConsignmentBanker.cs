@@ -1,6 +1,7 @@
 ﻿using System;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -17,12 +18,11 @@ namespace DOL.GS
             if (!base.Interact(player))
                 return false;
 
+            string language = player.Client.Account.Language;
             string msg =
-                $"Why hello {player.Name}. I am the master consignment banker. " +
-                $"I can help you recover possessions from repossessed houses. " +
-                $"Which consignment merchant would you like to access?\n\n" +
-                $"[Personal Consignment]\n" +
-                $"[Guild Consignment]\n";
+                LanguageMgr.GetTranslation(language, "Banker.Consignment.MasterGreeting", player.Name) +
+                $"\n\n[{LanguageMgr.GetTranslation(language, "Banker.Consignment.PersonalLink")}]\n" +
+                $"[{LanguageMgr.GetTranslation(language, "Banker.Consignment.GuildLink")}]\n";
 
             player.Out.SendMessage(msg, eChatType.CT_Say, eChatLoc.CL_PopupWindow);
             return true;
@@ -36,13 +36,15 @@ namespace DOL.GS
             if (source is not GamePlayer player)
                 return false;
 
-            if (text.Equals("personal consignment", StringComparison.OrdinalIgnoreCase))
+            if (text.Equals("personal consignment", StringComparison.OrdinalIgnoreCase) ||
+                text.Equals("개인 위탁상인", StringComparison.OrdinalIgnoreCase))
             {
                 OpenConsignment(player, VaultType.Personal);
                 return true;
             }
 
-            if (text.Equals("guild consignment", StringComparison.OrdinalIgnoreCase))
+            if (text.Equals("guild consignment", StringComparison.OrdinalIgnoreCase) ||
+                text.Equals("길드 위탁상인", StringComparison.OrdinalIgnoreCase))
             {
                 OpenConsignment(player, VaultType.Guild);
                 return true;
@@ -55,10 +57,7 @@ namespace DOL.GS
         {
             if (!TryGetConsignmentMerchant(player, type, out GameConsignmentMerchant consignmentMerchant))
             {
-                string msg =
-                    $"I cannot access this consignment merchant at this time. " +
-                    $"Either you lack permission, or you have an active house and should use your real consignment merchant.";
-                player.Out.SendMessage(msg, eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Banker.Consignment.CannotAccess"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                 return;
             }
 

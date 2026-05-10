@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -35,7 +35,7 @@ namespace DOL.GS.Trainer
 		}
 
 		public const string PRACTICE_WEAPON_ID = "trimmed_branch";
-		
+
 
 		public ElementalistTrainer() : base(eChampionTrainerType.Elementalist)
 		{
@@ -49,14 +49,14 @@ namespace DOL.GS.Trainer
 		public override bool Interact(GamePlayer player)
 		{
 			if (!base.Interact(player)) return false;
-			
+
 			// check if class matches
 			if (player.CharacterClass.ID == (int)TrainedClass)
 			{
 				// player can be promoted
 				if (player.Level>=5)
 				{
-					player.Out.SendMessage(this.Name + " says, \"You must now seek your training elsewhere. Which path would you like to follow? [Theurgist] or [Wizard]?\"", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.ElementalistPaths", this.Name), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 				}
 				else
 				{
@@ -66,7 +66,7 @@ namespace DOL.GS.Trainer
 				// ask for basic equipment if player doesnt own it
 				if (player.Inventory.GetFirstItemByID(PRACTICE_WEAPON_ID, eInventorySlot.MinEquipable, eInventorySlot.LastBackpack) == null)
 				{
-					player.Out.SendMessage(this.Name + " says, \"Do you require a [practice weapon]?\"",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StarterTrainer.PracticeWeapon", this.Name),eChatType.CT_Say,eChatLoc.CL_PopupWindow);
 				}
 			}
 			else
@@ -88,23 +88,26 @@ namespace DOL.GS.Trainer
 			GamePlayer player = source as GamePlayer;
 
 			switch (text) {
-				case "Theurgist":
-					if(player.Race == (int) eRace.Briton || player.Race == (int) eRace.Avalonian || player.Race == (int) eRace.HalfOgre){
-						player.Out.SendMessage(this.Name + " says, \"You wish to study the art of magical enchantments do you? The Defenders of Albion rely immensely on this ability and their art of building and animating creatures that can fight and protect the army while in battle.\"",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
-					}
+					case "Theurgist":
+					case "시어지스트":
+						if(player.Race == (int) eRace.Briton || player.Race == (int) eRace.Avalonian || player.Race == (int) eRace.HalfOgre){
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.Elementalist.Info.Theurgist", this.Name), eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+						}
 					else{
-						player.Out.SendMessage(this.Name + " says, \"The path of a Theurgist is not available to your race. Please choose another.\"",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StarterTrainer.ClassUnavailable", this.Name, "Theurgist"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 					}
 					return true;
-				case "Wizard":
-					if(player.Race == (int) eRace.Briton || player.Race == (int) eRace.Avalonian || player.Race == (int) eRace.HalfOgre){
-						player.Out.SendMessage(this.Name + " says, \"I see you wish to specialize in molding the four elements of fire, ice, earth, and air to create magical spells of immense power. Even now many of The Academy well-trained Wizards rain destruction upon our enemies.\"",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
-					}
+					case "Wizard":
+					case "위저드":
+						if(player.Race == (int) eRace.Briton || player.Race == (int) eRace.Avalonian || player.Race == (int) eRace.HalfOgre){
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.Elementalist.Info.Wizard", this.Name), eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+						}
 					else{
-						player.Out.SendMessage(this.Name + " says, \"The path of a Wizard is not available to your race. Please choose another.\"",eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StarterTrainer.ClassUnavailable", this.Name, "Wizard"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 					}
 					return true;
 				case "practice weapon":
+				case "연습용 무기":
 					if (player.Inventory.GetFirstItemByID(PRACTICE_WEAPON_ID, eInventorySlot.Min_Inv, eInventorySlot.Max_Inv) == null)
 					{
 						player.ReceiveItem(this,PRACTICE_WEAPON_ID);

@@ -7,6 +7,7 @@ using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
 using DOL.Logging;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -62,7 +63,7 @@ namespace DOL.GS.Spells
 			if (Spell.Message1 == string.Empty)
 			{
 				if (m_isSilent == false)
-					MessageToCaster(string.Format("The {0} is now under your control.", m_pet.Name), eChatType.CT_Spell);
+					MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "SummonSpellHandler.PetUnderControl", m_pet.Name), eChatType.CT_Spell);
 			}
 			else
 				MessageToCaster(Spell.Message1, eChatType.CT_Spell);
@@ -131,7 +132,7 @@ namespace DOL.GS.Spells
 			{
 				if (log.IsWarnEnabled)
 					log.WarnFormat("NPC template {0} not found! Spell: {1}", Spell.LifeDrainReturn, Spell.ToString());
-				MessageToCaster("NPC template " + Spell.LifeDrainReturn + " not found!", eChatType.CT_System);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.NpcTemplateNotFound", Spell.LifeDrainReturn), eChatType.CT_System);
 				return;
 			}
 

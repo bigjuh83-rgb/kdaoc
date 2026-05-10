@@ -1,0 +1,141 @@
+﻿# Housing
+
+## Details
+House.DBHousePermissions.AccessLevel:			접근 레벨 {0}
+House.Edit.NotEnoughMoney:				돈이 부족합니다!
+House.Edit.PayForChanges:				변경 비용으로 {0}을(를) 지불했습니다.
+House.SendHouseInfo.DoorMaterial:			-문: {0}
+House.SendHouseInfo.ExteriorMaterials:			외장 재료:
+House.SendHouseInfo.ExteriorUpgrades:			외장 업그레이드:
+House.SendHouseInfo.HouseOwner:				{0}의 집
+House.SendHouseInfo.IndoorGuildBanner:			-배너: {0}
+House.SendHouseInfo.IndoorGuildShield:			-방패: {0}
+House.SendHouseInfo.InteriorCarpets:			실내 카펫:
+House.SendHouseInfo.InteriorUpgrades:			실내 업그레이드:
+House.SendHouseInfo.Level:				레벨: {0}
+House.SendHouseInfo.Lockbox:				금고: {0}
+House.SendHouseInfo.Lotnum:				부지 번호: {0}
+House.SendHouseInfo.MaxLockbox:				금고 최대 보관액: {0}
+House.SendHouseInfo.OutdoorGuildBanner:			-배너: {0}
+House.SendHouseInfo.OutdoorGuildShield:			-방패: {0}
+House.SendHouseInfo.Owner:				소유자: {0}
+House.SendHouseInfo.Owners:				소유자:
+House.SendHouseInfo.Porch:				현관:
+House.SendHouseInfo.PorchEnabled:			-활성화: {0}
+House.SendHouseInfo.PorchMaterial:			-현관: {0}
+House.SendHouseInfo.PorchRoofColor:			-색상: {0}
+House.SendHouseInfo.RentalPrice:			임대료: {0}
+House.SendHouseInfo.RentDueIn:				임대료 납부까지: {0}일 {1}시간
+House.SendHouseInfo.RoofMaterial:			-지붕: {0}
+House.SendHouseInfo.Rug1Color:				-첫 번째 색상: {0}
+House.SendHouseInfo.Rug2Color:				-두 번째 색상: {0}
+House.SendHouseInfo.Rug3Color:				-세 번째 색상: {0}
+House.SendHouseInfo.Rug4Color:				-네 번째 색상: {0}
+House.SendHouseInfo.TrussMaterial:			-지지대: {0}
+House.SendHouseInfo.WallMaterial:			-벽: {0}
+House.SendHouseInfo.WindowMaterial:			-덧문: {0}
+
+## House Management
+HousingDecorationRotate.Rotated:			실내 장식을 {0}도에서 {1}도로 회전했습니다.
+# /HousingPlaceItemHandler
+Scripts.Player.Housing.BadShieldBanner:			유효한 방패 또는 배너 오브젝트가 아닙니다.
+Scripts.Player.Housing.CantBeSold:			이 아이템은 판매할 수 없습니다!
+Scripts.Player.Housing.CarpetsRemoved:			카펫이 제거되었습니다.
+Scripts.Player.Housing.ClearHookPoint: 			현재 배치 지점을 비우시겠습니까?
+Scripts.Player.Housing.ActionErrorLogged:		하우징 작업을 처리하는 중 오류가 발생했습니다. 오류가 기록되었습니다!
+Scripts.Player.Housing.CannotAddConsignmentHere:	여기에는 위탁 상인을 추가할 수 없습니다.
+Scripts.Player.Housing.EnteredHouse:			{0}번 집에 들어왔습니다.
+Scripts.Player.Housing.EmptyConsignmentBeforeRemoval:	집을 철거하려면 위탁 상인의 모든 아이템과 돈을 먼저 회수해야 합니다!
+Scripts.Player.Housing.GardenItemPlaced:		정원 오브젝트를 배치했습니다. 남은 슬롯: {0}
+Scripts.Player.Housing.GardenItemPlacedName:		정원에 {0}을(를) 배치했습니다.
+Scripts.Player.Housing.GardenMaxObjects:		이미 정원에 오브젝트 30개를 배치했습니다. 더 이상 배치할 수 없습니다.
+Scripts.Player.Housing.GardenObjectRemoved:		정원 오브젝트를 제거했습니다.
+Scripts.Player.Housing.GuildNowOwns:			[길드] {0} 길드가 이제 {1}의 길드 하우스를 소유합니다!
+Scripts.Player.Housing.GuildAlreadyOwnsHouse:		길드가 이미 집을 소유하고 있습니다.
+Scripts.Player.Housing.HookPointAddError:		{0}번 위치를 추가하는 중 오류가 발생했습니다. 오류가 서버 로그에 기록되었습니다.
+Scripts.Player.Housing.HookPointAdded:			그 아이템이 집에 추가되었습니다.
+Scripts.Player.Housing.HookPointAlready: 		그 배치 지점에는 이미 아이템이 있습니다!
+Scripts.Player.Housing.HookPointCleared: 		배치 지점이 비워졌습니다.
+Scripts.Player.Housing.HookPointCloser:			배치 지점에 최대한 가까이 서서 올바른 방향을 바라본 뒤 수락을 누르세요.
+Scripts.Player.Housing.HookPointID:			배치 지점 ID: {0}
+Scripts.Player.Housing.HookPointIdNull:			오류: 배치 지점 ID가 없습니다.
+Scripts.Player.Housing.HookPointLogged:			배치 지점 위치 {0}을(를) 기록했습니다!
+Scripts.Player.Housing.HookPointLogLoc:			이 집 배치 지점 위치를 기록하시겠습니까?
+Scripts.Player.Housing.HookPointNot:			배치 지점 아이템이 아닙니다!
+Scripts.Player.Housing.HookPointNotPlaced:		그 배치 지점 아이템은 배치되지 않았습니다.
+Scripts.Player.Housing.HookPointUnknown:		알 수 없는 배치 지점입니다. 오류가 기록되었습니다.
+Scripts.Player.Housing.HouseNotYours:			이 집은 당신 소유가 아닙니다.
+Scripts.Player.Housing.HouseRemovalWarning:		경고: 이 집과 집 안팎에 배치된 모든 아이템을 삭제하려고 합니다!
+Scripts.Player.Housing.HouseRemoved:			집이 철거되었습니다!
+Scripts.Player.Housing.HouseUpgradeConfirm:		정말 집을 업그레이드하시겠습니까?
+Scripts.Player.Housing.HouseUpgradeWarning:		경고:\n현재 집의 *모든* 아이템이 제거됩니다!
+Scripts.Player.Housing.HouseUseMaterial:		해당 재료를 바꾸려면 집에서 Shift+오른쪽 클릭을 해야 합니다.
+Scripts.Player.Housing.HouseUseMaterial:		카펫을 바꾸려면 집에서 Shift+오른쪽 클릭을 해야 합니다.
+Scripts.Player.Housing.HouseUseMaterials:		해당 재료를 바꾸려면 집에서 Shift+오른쪽 클릭을 해야 합니다.
+Scripts.Player.Housing.HouseUseCarpets:			카펫을 바꾸려면 집에서 Shift+오른쪽 클릭을 해야 합니다.
+Scripts.Player.Housing.InvalidMenuId:			올바르지 않은 메뉴 ID입니다: {0} (배치 지점?)
+Scripts.Player.Housing.ItemClearedFromSurface:		{0}이(가) {1}에서 제거되었습니다.
+Scripts.Player.Housing.ItemReturnedToBackpack:		{0}을(를) 받아 배낭에 넣었습니다.
+Scripts.Player.Housing.MayNotChangeOtherHouses:		다른 사람의 집은 변경할 수 없습니다.
+Scripts.Player.Housing.MustBeInGuild:			그 작업을 하려면 길드에 속해 있어야 합니다.
+Scripts.Player.Housing.NeedHouseDeed:			집 증서가 있어야 합니다.
+Scripts.Player.Housing.NeedHouseRemovalDeed:		집 철거 증서가 필요합니다.
+Scripts.Player.Housing.NeedInventorySpace:		인벤토리에 공간이 필요합니다!
+Scripts.Player.Housing.NeedsPorchFirst:			먼저 집에 현관이 필요합니다.
+Scripts.Player.Housing.NoGardenTileAtSlot:		{0}번 슬롯에는 정원 타일이 없습니다!
+Scripts.Player.Housing.NoHouseSelected:			선택된 집이 없습니다!
+Scripts.Player.Housing.NoMoreVaults:			이 집에는 더 이상 금고를 추가할 수 없습니다!
+Scripts.Player.Housing.NotGuildLeader:			길드장이 아닙니다.
+Scripts.Player.Housing.PayRentDialog:			{0} {1}(으)로 임대료를 내시겠습니까?
+Scripts.Player.Housing.RemoveConsignmentFirst:		먼저 위탁 상인을 제거해야 합니다.
+Scripts.Player.Housing.SurfaceFloor:			바닥
+Scripts.Player.Housing.SurfaceWall:			벽면
+Scripts.Player.Housing.DecorationClearedFromSurface:	장식 아이템이 {0}에서 제거되었습니다.
+Scripts.Player.Housing.IndoorFloorPlaced:		집 바닥에 {0}을(를) 배치했습니다.
+Scripts.Player.Housing.IndoorItemPlaced:		실내 아이템을 배치했습니다. 남은 슬롯: {0}
+Scripts.Player.Housing.IndoorMaxItems:			이미 집에 {0}개를 배치했습니다. 더 이상 배치할 수 없습니다.
+Scripts.Player.Housing.IndoorWallPlaced:		집 벽에 {0}을(를) 배치했습니다.
+Scripts.Player.Housing.InteriorBannersAdded:		실내 길드 배너가 변경되었습니다.
+Scripts.Player.Housing.InteriorBannersRemoved:		실내 길드 배너가 제거되었습니다.
+Scripts.Player.Housing.InteriorShieldsAdded:		실내 길드 방패가 변경되었습니다.
+Scripts.Player.Housing.InteriorShieldsRemoved:		실내 길드 방패가 제거되었습니다.
+Scripts.Player.Housing.NotFloorObject:			이 아이템은 바닥에 배치할 수 없습니다!
+Scripts.Player.Housing.NotHookPoint:			이 아이템은 배치 지점에 놓을 수 없습니다!
+Scripts.Player.Housing.NotWallObject:			이 아이템은 벽에 배치할 수 없습니다!
+Scripts.Player.Housing.OutdoorBannersAdded:		실외 길드 배너가 변경되었습니다.
+Scripts.Player.Housing.OutdoorBannersRemoved:		실외 길드 배너가 제거되었습니다.
+Scripts.Player.Housing.OutdoorShieldsAdded:		실외 길드 방패가 변경되었습니다.
+Scripts.Player.Housing.OutdoorShieldsRemoved:		실외 길드 방패가 제거되었습니다.
+Scripts.Player.Housing.PaidChanges:			변경 비용으로 {0}을(를) 지불했습니다.
+Scripts.Player.Housing.PaidNotEnough:			돈이 부족합니다!
+Scripts.Player.Housing.PorchAlready:			이 집에는 이미 현관이 있습니다!
+Scripts.Player.Housing.PorchNone:			이 집에는 현관이 없습니다!
+Scripts.Player.Housing.PorchNotItem:			현관 아이템이 아닙니다!
+
+## Player Position
+Scripts.Player.Housing.LotTargeted:			{0}번 부지를 대상으로 선택했습니다.
+Scripts.Player.Housing.LotCanBeBought:			{0}에 구입할 수 있습니다.
+Scripts.Player.Housing.LotOwnedBy:			{0}이(가) 소유 중입니다.
+House.Enter.EnteredHouse:				{0}번 집에 들어왔습니다.
+House.Enter.EnteringHouse:				{0}번 집에 들어가는 중입니다.
+House.Exit.LeftHouse:					{0}번 집에서 나왔습니다.
+HouseEnterLeave.TooFarAway:					{0}번 집에 들어가기에는 너무 멀리 있습니다.
+HouseEnterLeave.CantEnter:					{0}번 집에 들어갈 수 없습니다.
+Scripts.Player.Housing.LeftHouse:			{0}번 집에서 나왔습니다.
+House.Rent.PersonalReminderTitle:			개인 하우스 임대료 알림
+House.Rent.PersonalReminder:				{0}번 개인 하우스 임대료 납부까지 {1}일 남았습니다!
+House.Rent.GuildReminderTitle:				길드 하우스 임대료 알림
+House.Rent.GuildReminder:				{0}번 길드 하우스 임대료 납부까지 {1}일 남았습니다!
+HouseVault.Examine:					[오른쪽 클릭으로 {0}번 하우스 금고 내용 보기]
+HouseVault.NoViewPermission:				이 금고를 볼 권한이 없습니다!
+
+## Purchasing
+Scripts.Player.Housing.AlreadyOwnHouse:			이미 집을 소유하고 있습니다!
+Scripts.Player.Housing.LotAlready:			이미 다른 부지 또는 집을 소유하고 있습니다 (번호 {0})
+Scripts.Player.Housing.LotBought:			이 부지를 {0}에 구입했습니다!
+Scripts.Player.Housing.LotCost:
+Scripts.Player.Housing.LotNotItem:			유효한 집 증서가 아닙니다.
+Scripts.Player.Housing.LotNotYours:			이 부지는 당신 소유가 아닙니다!
+Scripts.Player.Housing.LotOffer:			이 부지를 구입하시겠습니까? 가격은 {0}입니다.
+Scripts.Player.Housing.LotOfferNoDelete:		이 부지를 구입하시겠습니까?\n가격은 {0}입니다.\n구입 후에는 이 캐릭터를 삭제할 수 없습니다.
+Scripts.Player.Housing.TransferToGuild:			이 집을 {0}에게 양도하시겠습니까?

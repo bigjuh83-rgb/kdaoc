@@ -5,6 +5,7 @@ using DOL.Database;
 using DOL.GS.Effects;
 using DOL.GS.Housing;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Scripts
 {
@@ -77,7 +78,7 @@ namespace DOL.GS.Scripts
         //QoL medallions
         private const string BindID = "bind_necklace";
         private const string CityID = "city_necklace";
-        
+
         //Beta medallions
         private const string KeepID = "keep_necklace";
 
@@ -142,26 +143,24 @@ namespace DOL.GS.Scripts
                 {
                     case eRealm.Albion:
                     {
-                        portMessage =
-                            "From sodden ground to the glow of the moon, let each vessel in this circle depart to lands now lost from the light of our fair Camelot!";
+                        portMessage = LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "OFTeleporter.PortMessage.Albion");
                         break;
                     }
                     case eRealm.Midgard:
                     {
-                        portMessage = "Huginn and Munnin guide you all and return with news of your journeys.";
+                        portMessage = LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "OFTeleporter.PortMessage.Midgard");
                         break;
                     }
                     case eRealm.Hibernia:
                     {
-                        portMessage =
-                            "Go forth and rid Hibernia of the threat of foreign barbarians and fools forever.";
+                        portMessage = LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "OFTeleporter.PortMessage.Hibernia");
                         break;
                     }
                 }
 
                 foreach (GamePlayer player in GetPlayersInRadius(500))
                 {
-                    player.Out.SendMessage(this.Name + " says, \"" + portMessage + "\"", eChatType.CT_Say,
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "OFTeleporter.Says", Name, portMessage), eChatType.CT_Say,
                         eChatLoc.CL_ChatWindow);
                 }
 
@@ -233,7 +232,7 @@ namespace DOL.GS.Scripts
                                     //
                                     //     PortLocation = new GameLocation("Abermenai Alb", 253, 38113, 53507, 4160, 3268);
                                     // }
-                                    // else 
+                                    // else
                                     if (player.Level is >= 20 and <= 24)
                                     {
                                         if (player.RealmPoints >= 7125)
@@ -270,7 +269,7 @@ namespace DOL.GS.Scripts
                                     break;
                                 case AlbionHousingEntID:
                                     PortLocation = new GameLocation("Housing Entrance Alb", 2, 584736, 561341, 3576, 2268);
-                                    
+
                                     break;
                                 case PersonalHouseID:
                                     House house = HouseMgr.GetHouseByPlayer(player);
@@ -298,7 +297,7 @@ namespace DOL.GS.Scripts
                                     // Check if player has set a house bind
                                     if (!(player.BindHouseRegion > 0))
                                     {
-                                        SayTo(player, "Sorry, you haven't set any house bind point yet.");
+                                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.NoHouseBindPoint"));
                                         goto case AlbionHousingEntID;
                                     }
 
@@ -308,9 +307,7 @@ namespace DOL.GS.Scripts
                                         player.BindHouseXpos, player.BindHouseYpos, 700);
                                     if (houses.Count == 0)
                                     {
-                                        SayTo(player,
-                                            "I'm afraid I can't teleport you to your hearth since the house at your " +
-                                            "house bind location has been torn down.");
+                                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.HouseBindHouseTornDown"));
                                         goto case AlbionHousingEntID;
                                     }
 
@@ -331,18 +328,14 @@ namespace DOL.GS.Scripts
 
                                     if (!hasBindstone)
                                     {
-                                        SayTo(player,
-                                            "I'm sorry to tell that the bindstone of your current house bind location " +
-                                            "has been removed, so I'm not able to teleport you there.");
+                                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.HouseBindstoneRemoved"));
                                         goto case AlbionHousingEntID;
                                     }
 
                                     // Check if the player has the permission to bind at the house bind stone
                                     if (!targetHouse.CanBindInHouse(player))
                                     {
-                                        SayTo(player,
-                                            "You're no longer allowed to bind at the house bindstone you've previously " +
-                                            "chosen, hence I'm not allowed to teleport you there.");
+                                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.HouseBindNoPermission"));
                                         goto case AlbionHousingEntID;
                                     }
 
@@ -391,7 +384,7 @@ namespace DOL.GS.Scripts
                                     //
                                     //     PortLocation = new GameLocation("Abermenai Mid", 253, 53568, 23643, 4530);
                                     // }
-                                    // else 
+                                    // else
                                     if (player.Level >= 20 && player.Level <= 24)
                                     {
                                         if (player.RealmPoints >= 7125)
@@ -454,7 +447,7 @@ namespace DOL.GS.Scripts
                                     // Check if player has set a house bind
                                     if (!(player.BindHouseRegion > 0))
                                     {
-                                        SayTo(player, "Sorry, you haven't set any house bind point yet.");
+                                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.NoHouseBindPoint"));
                                         goto case MidgardHousingEntID;
                                     }
 
@@ -464,9 +457,7 @@ namespace DOL.GS.Scripts
                                         player.BindHouseXpos, player.BindHouseYpos, 700);
                                     if (houses.Count == 0)
                                     {
-                                        SayTo(player,
-                                            "I'm afraid I can't teleport you to your hearth since the house at your " +
-                                            "house bind location has been torn down.");
+                                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.HouseBindHouseTornDown"));
                                         goto case MidgardHousingEntID;
                                     }
 
@@ -487,18 +478,14 @@ namespace DOL.GS.Scripts
 
                                     if (!hasBindstone)
                                     {
-                                        SayTo(player,
-                                            "I'm sorry to tell that the bindstone of your current house bind location " +
-                                            "has been removed, so I'm not able to teleport you there.");
+                                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.HouseBindstoneRemoved"));
                                         goto case MidgardHousingEntID;
                                     }
 
                                     // Check if the player has the permission to bind at the house bind stone
                                     if (!targetHouse.CanBindInHouse(player))
                                     {
-                                        SayTo(player,
-                                            "You're no longer allowed to bind at the house bindstone you've previously " +
-                                            "chosen, hence I'm not allowed to teleport you there.");
+                                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.HouseBindNoPermission"));
                                         goto case MidgardHousingEntID;
                                     }
 
@@ -547,7 +534,7 @@ namespace DOL.GS.Scripts
                                     //
                                     //     PortLocation = new GameLocation("Abermenai Hib", 253, 17367, 18248, 4320);
                                     // }
-                                    // else 
+                                    // else
                                     if (player.Level >= 20 && player.Level <= 24)
                                     {
                                         if (player.RealmPoints >= 7125)
@@ -610,7 +597,7 @@ namespace DOL.GS.Scripts
                                     // Check if player has set a house bind
                                     if (!(player.BindHouseRegion > 0))
                                     {
-                                        SayTo(player, "Sorry, you haven't set any house bind point yet.");
+                                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.NoHouseBindPoint"));
                                         goto case HiberniaHousingEntID;
                                     }
 
@@ -620,9 +607,7 @@ namespace DOL.GS.Scripts
                                         player.BindHouseXpos, player.BindHouseYpos, 700);
                                     if (houses.Count == 0)
                                     {
-                                        SayTo(player,
-                                            "I'm afraid I can't teleport you to your hearth since the house at your " +
-                                            "house bind location has been torn down.");
+                                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.HouseBindHouseTornDown"));
                                         goto case HiberniaHousingEntID;
                                     }
 
@@ -643,18 +628,14 @@ namespace DOL.GS.Scripts
 
                                     if (!hasBindstone)
                                     {
-                                        SayTo(player,
-                                            "I'm sorry to tell that the bindstone of your current house bind location " +
-                                            "has been removed, so I'm not able to teleport you there.");
+                                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.HouseBindstoneRemoved"));
                                         goto case HiberniaHousingEntID;
                                     }
 
                                     // Check if the player has the permission to bind at the house bind stone
                                     if (!targetHouse.CanBindInHouse(player))
                                     {
-                                        SayTo(player,
-                                            "You're no longer allowed to bind at the house bindstone you've previously " +
-                                            "chosen, hence I'm not allowed to teleport you there.");
+                                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.HouseBindNoPermission"));
                                         goto case HiberniaHousingEntID;
                                     }
 

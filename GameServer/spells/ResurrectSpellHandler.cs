@@ -6,6 +6,7 @@ using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
 using DOL.GS.RealmAbilities;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -51,7 +52,7 @@ namespace DOL.GS.Spells
 				}
 
 				//send resurrect dialog
-				targetPlayer.Out.SendCustomDialog("Do you allow " + m_caster.GetName(0, true) + " to resurrected you\n with " + m_spell.ResurrectHealth + " percent hits/power?", new CustomDialogResponse(ResurrectResponceHandler));
+				targetPlayer.Out.SendCustomDialog(LanguageMgr.GetTranslation(targetPlayer.Client.Account.Language, "ResurrectSpellHandler.ResurrectDialog", m_caster.GetName(0, true), m_spell.ResurrectHealth), new CustomDialogResponse(ResurrectResponceHandler));
 			}
 		}
 
@@ -92,7 +93,7 @@ namespace DOL.GS.Spells
 			{
 				if (rezzer == null)
 				{
-					player.Out.SendMessage("No one is currently trying to resurrect you.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "ResurrectSpellHandler.NoOneResurrecting"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				else
 				{
@@ -102,7 +103,7 @@ namespace DOL.GS.Spells
 					}
 					else
 					{
-						player.Out.SendMessage("You decline to be resurrected.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "ResurrectSpellHandler.Declined"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						//refund mana
 						m_caster.Mana += PowerCost(player);
 
@@ -172,13 +173,13 @@ namespace DOL.GS.Spells
 			{
 				resurrectExpiredTimer.Stop();
 			}
-		
+
 			if (player != null)
 			{
 				player.StopReleaseTimer();
 				player.Out.SendPlayerRevive(player);
 				player.UpdatePlayerStatus();
-				player.Out.SendMessage("You have been resurrected by " + m_caster.GetName(0, false) + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "ResurrectSpellHandler.ResurrectedBy", m_caster.GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				//player.Notify(GamePlayerEvent.Revive, player, new RevivedEventArgs(Caster, Spell));
 
 				//Lifeflight add this should make it so players who have been ressurected don't take damage for 5 seconds
@@ -199,8 +200,8 @@ namespace DOL.GS.Spells
 						playerCaster.GainRealmPoints(rezRps);
 					else
 					{
-						playerCaster.Out.SendMessage("The player you resurrected was not worth realm points on death.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-						playerCaster.Out.SendMessage("You thus get no realm points for the resurrect.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						playerCaster.Out.SendMessage(LanguageMgr.GetTranslation(playerCaster.Client.Account.Language, "ResurrectSpellHandler.NoRealmPointsWorth"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						playerCaster.Out.SendMessage(LanguageMgr.GetTranslation(playerCaster.Client.Account.Language, "ResurrectSpellHandler.NoRealmPointsReward"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					}
 
 					playerCaster.Statistics.AddToResurrectionsPerformed();
@@ -218,7 +219,7 @@ namespace DOL.GS.Spells
 			GamePlayer player = callingTimer.Properties.GetProperty<GamePlayer>("targetPlayer");
 			if (player == null) return 0;
 			player.TempProperties.RemoveProperty(RESURRECT_CASTER_PROPERTY);
-			player.Out.SendMessage("Your resurrection spell has expired.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "ResurrectSpellHandler.Expired"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			return 0;
 		}
 
@@ -236,7 +237,7 @@ namespace DOL.GS.Spells
             //so I added another check here.
             if (m_caster.Mana < PowerCost(Target))
             {
-                MessageToCaster("You don't have enough power to cast that!", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "ResurrectSpellHandler.NotEnoughPower"), eChatType.CT_SpellResisted);
 				return false;
             }
 
@@ -244,7 +245,7 @@ namespace DOL.GS.Spells
 			if (resurrectionCaster != null)
 			{
 				//already considering resurrection - do nothing
-				MessageToCaster("Your target is already considering a resurrection!", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "ResurrectSpellHandler.TargetAlreadyConsidering"), eChatType.CT_SpellResisted);
 				return false;
 			}
 
@@ -262,7 +263,7 @@ namespace DOL.GS.Spells
 			if (resurrectionCaster != null)
 			{
 				//already considering resurrection - do nothing
-				MessageToCaster("Your target is already considering a resurrection!", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "ResurrectSpellHandler.TargetAlreadyConsidering"), eChatType.CT_SpellResisted);
 				return false;
 			}
 			return base.CheckEndCast(target);
@@ -271,23 +272,23 @@ namespace DOL.GS.Spells
 		/// <summary>
 		/// Delve Info
 		/// </summary>
-		public override IList<string> DelveInfo 
+		public override IList<string> DelveInfo
 		{
-			get 
+			get
 			{
 				/*
 				<Begin Info: Revive>
 				Function: raise dead
- 
-				Brings target back to life, restores a portion of their health 
-				and power and eliminates the experience penalty and con loss they 
+
+				Brings target back to life, restores a portion of their health
+				and power and eliminates the experience penalty and con loss they
 				would have suffered were they to have /release.
- 
+
 				Health restored: 10
 				Target: Dead
 				Range: 1500
 				Casting time: 4.0 sec
- 
+
 				<End Info>
 				*/
 
@@ -302,7 +303,7 @@ namespace DOL.GS.Spells
 				list.Add("Target: " + Spell.Target);
 				if (Spell.Range != 0) list.Add("Range: " + Spell.Range);
 				list.Add("Casting time: " + (Spell.CastTime*0.001).ToString("0.0## sec;-0.0## sec;'instant'"));
-			
+
 				return list;
 			}
 		}

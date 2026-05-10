@@ -649,7 +649,7 @@ namespace DOL.GS
 
 		/// <summary>
 		/// The last time this NPC was actually updated to at least one player
-		/// </summary> 
+		/// </summary>
 		protected long m_lastVisibleToPlayerTick = -VISIBLE_TO_PLAYER_SPAN; // Prevents 'IsVisibleToPlayers' from returning true during the first server tick.
 
 		/// <summary>
@@ -2536,7 +2536,7 @@ namespace DOL.GS
 
 				if (this is GameSiegeRam && player.Realm != Realm)
 				{
-					player.Out.SendMessage($"This siege equipment is owned by an enemy realm!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Siege.Control.EnemyRealm"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return false;
 				}
 
@@ -2616,6 +2616,24 @@ namespace DOL.GS
 			SayTo(target, eChatLoc.CL_PopupWindow, message, announce);
 		}
 
+		public static bool ShouldUseCustomTextWindowForSayTo(string language, eChatLoc loc)
+		{
+			return loc == eChatLoc.CL_PopupWindow
+				&& string.Equals(language, "KR", StringComparison.OrdinalIgnoreCase);
+		}
+
+		private static IList<string> BuildSayToTextWindowLines(string message)
+		{
+			if (string.IsNullOrEmpty(message))
+				return new List<string> { string.Empty };
+
+			return message
+				.Replace("\r\n", "\n")
+				.Replace('\r', '\n')
+				.Split('\n')
+				.ToList();
+		}
+
 		/// <summary>
 		/// Format "say" message and send it to target
 		/// </summary>
@@ -2628,15 +2646,21 @@ namespace DOL.GS
 				return;
 
 			TurnTo(target, 10000);
-			string resultText = LanguageMgr.GetTranslation(target.Client.Account.Language, "GameNPC.SayTo.Says", GetName(0, true, target.Client.Account.Language, this), message);
+			string language = target.Client.Account.Language;
+			string npcName = GetName(0, true, language, this);
+			string resultText = LanguageMgr.GetTranslation(language, "GameNPC.SayTo.Says", npcName, message);
 
 			switch (loc)
 			{
 				case eChatLoc.CL_PopupWindow:
-					target.Out.SendMessage(resultText, eChatType.CT_System, eChatLoc.CL_PopupWindow);
+					if (ShouldUseCustomTextWindowForSayTo(language, loc))
+						target.Out.SendCustomTextWindow(npcName, BuildSayToTextWindowLines(message));
+					else
+						target.Out.SendMessage(resultText, eChatType.CT_System, eChatLoc.CL_PopupWindow);
+
 					if (announce)
 					{
-						Message.ChatToArea(this, LanguageMgr.GetTranslation(target.Client.Account.Language, "GameNPC.SayTo.SpeaksTo", GetName(0, true, target.Client.Account.Language, this), target.GetName(0, false)), eChatType.CT_System, WorldMgr.SAY_DISTANCE, target);
+						Message.ChatToArea(this, LanguageMgr.GetTranslation(language, "GameNPC.SayTo.SpeaksTo", npcName, target.GetName(0, false)), eChatType.CT_System, WorldMgr.SAY_DISTANCE, target);
 					}
 					break;
 				case eChatLoc.CL_ChatWindow:
@@ -2805,10 +2829,10 @@ namespace DOL.GS
 
 			if (killer != null)
 			{
-				Message.SystemToArea(this, $"{GetName(0, true)} dies!", eChatType.CT_OthersDeath, killer);
+				Message.SystemToArea(this, LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "GameNPC.Die.Area", GetName(0, true)), eChatType.CT_OthersDeath, killer);
 
 				if (killer is GamePlayer player)
-					player.Out.SendMessage($"{GetName(0, true)} dies!", eChatType.CT_OthersDeath, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "GameNPC.Die.Area", GetName(0, true)), eChatType.CT_OthersDeath, eChatLoc.CL_SystemWindow);
 
 				// Deal out experience, realm points, loot... Based on server rules.
 				GameServer.ServerRules.OnNpcKilled(this, killer);

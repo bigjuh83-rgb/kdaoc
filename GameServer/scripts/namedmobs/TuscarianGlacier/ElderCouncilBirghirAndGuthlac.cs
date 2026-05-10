@@ -5,6 +5,7 @@ using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -86,10 +87,11 @@ namespace DOL.AI.Brain
             AggroRange = 600;
             ThinkInterval = 1500;
         }
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(string key, params object[] args)
         {
             foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
+                string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
                 player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
@@ -214,7 +216,7 @@ namespace DOL.AI.Brain
                         GamePlayer player = Body.TargetObject as GamePlayer;
                         if (player != null && player.IsAlive)
                         {
-                            BroadcastMessage(String.Format(Body.Name + " Impossible! An ugly " + player.CharacterClass.Name + " there? How could this be? Guthlac, we must defend our Queen and King!"));
+	                            BroadcastMessage("NamedMobs.ElderCouncil.BirghirDefendRoyalty", Body.Name, player.CharacterClass.Name);
                             message1 = true;
                         }
                     }
@@ -228,7 +230,7 @@ namespace DOL.AI.Brain
                 {
                     GameLiving target = Body.TargetObject as GameLiving;
                     if (Util.Chance(20))
-                    {                    
+                    {
                         if(target != null && target.IsAlive && !target.effectListComponent.ContainsEffectForEffectType(eEffect.StrConDebuff))
                             Body.CastSpell(Icelord_SC_Debuff, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
                     }
@@ -454,10 +456,11 @@ namespace DOL.AI.Brain
             AggroRange = 600;
             ThinkInterval = 1500;
         }
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(string key, params object[] args)
         {
             foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
+                string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
                 player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
@@ -620,8 +623,7 @@ namespace DOL.AI.Brain
                 }
                 if (message1 == false)
                 {
-                    BroadcastMessage(String.Format(Body.Name +" says, 'I didn't think it was possible that our home could fall victim to an invasion!" +
-                        " The Ice Lords were right! We should have wiped out all dangerous creatures on this island! And we're going to do that today!'"));
+                    BroadcastMessage("NamedMobs.ElderCouncil.HomeInvasion", Body.Name);
                     message1 = true;
                 }
                 if(!Body.IsCasting)
@@ -654,14 +656,14 @@ namespace DOL.AI.Brain
                 npc.X = RandomTarget.X;
                 npc.Y = RandomTarget.Y;
                 npc.Z = RandomTarget.Z;
-                BroadcastMessage(String.Format(npc.Name + " appears on " + RandomTarget.Name +", It's unstable form will soon errupt."));
+                BroadcastMessage("NamedMobs.ElderCouncil.UnstableSpikeOnTarget", npc.Name, RandomTarget.Name);
             }
             else
             {
                 npc.X = Body.X;
                 npc.Y = Body.Y;
                 npc.Z = Body.Z;
-                BroadcastMessage(String.Format(npc.Name + " appears nearby, It's unstable form will soon errupt."));
+                BroadcastMessage("NamedMobs.ElderCouncil.UnstableSpikeNearby", npc.Name);
             }
 
             npc.RespawnInterval = -1;

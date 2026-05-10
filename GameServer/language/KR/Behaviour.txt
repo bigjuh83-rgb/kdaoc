@@ -1,0 +1,6 @@
+﻿# Unique Behaviors
+## Message
+Behaviour.MessageAction.ReadMessage:		"{0}"라고 적혀 있습니다.
+
+## Teleport
+Behaviour.TeleportAction.TeleportedToLoc:	{0}이(가) {1}(으)로 순간이동합니다.

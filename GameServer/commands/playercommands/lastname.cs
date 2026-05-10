@@ -1,5 +1,6 @@
 using System;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -31,28 +32,28 @@ namespace DOL.GS.Commands
 			/* Check if level and/or crafting skill let you have a lastname */
 			if (client.Player.Level < LASTNAME_MIN_LEVEL && CraftSkill < LASTNAME_MIN_CRAFTSKILL)
 			{
-				client.Out.SendMessage("You must be " + LASTNAME_MIN_LEVEL + "th level or " + LASTNAME_MIN_CRAFTSKILL + " in your primary trade skill to register a last name!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.LastName.Requirement", LASTNAME_MIN_LEVEL, LASTNAME_MIN_CRAFTSKILL), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			/* When you don't have a lastname, change is for free, otherwise you need money */
 			if (client.Player.LastName != string.Empty && client.Player.GetCurrentMoney() < Money.GetMoney(0, 0, LASTNAME_FEE, 0, 0))
 			{
-				client.Out.SendMessage("Changing your last name costs " + Money.GetString(Money.GetMoney(0, 0, LASTNAME_FEE, 0, 0)) + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.LastName.Cost", Money.GetString(Money.GetMoney(0, 0, LASTNAME_FEE, 0, 0))), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			/* Check if you selected a Name Registrar NPC */
 			if (client.Player.TargetObject is NameRegistrar == false)
 			{
-				client.Out.SendMessage("You must select a name registrar to set your last name with!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.LastName.NeedRegistrar"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			/* Chek if you are near enough to NPC*/
 			if ( !client.Player.IsWithinRadius( client.Player.TargetObject, WorldMgr.INTERACT_DISTANCE ) )
 			{
-				client.Out.SendMessage("You are too far away to interact with " + client.Player.TargetObject.Name + ".", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.LastName.TooFar", client.Player.TargetObject.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -60,7 +61,7 @@ namespace DOL.GS.Commands
 			if (args.Length < 2)
 			{
 				client.Player.TempProperties.SetProperty(LASTNAME_WEAK, "");
-				client.Out.SendCustomDialog("Would you like to clear your last name?", new CustomDialogResponse(LastNameDialogResponse));
+				client.Out.SendCustomDialog(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.LastName.ConfirmClear"), new CustomDialogResponse(LastNameDialogResponse));
 				return;
 			}
 
@@ -69,7 +70,7 @@ namespace DOL.GS.Commands
 			/* Check to ensure that lastnames do not exeed maximum length */
 			if (NewLastname.Length > LASTNAME_MAXLENGTH)
 			{
-				client.Out.SendMessage("Last names can be no longer than " + LASTNAME_MAXLENGTH + " characters!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.LastName.TooLong", LASTNAME_MAXLENGTH), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -77,26 +78,26 @@ namespace DOL.GS.Commands
 			//if (!Char.IsUpper(NewLastname, 0)) /* IsUpper() use unicode characters, it doesn't catch all accented uppercase letters like É, Ä, Å, ecc.. that are invalid! */
 			if (NewLastname[0] < 'A' || NewLastname[0] > 'Z')
 			{
-				client.Out.SendMessage("Your lastname must start with a valid, uppercase character!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.LastName.MustStartUppercase"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			/* Only permits letters, with no spaces or symbols */
 			if (args.Length > 2 || LastnameIsInvalid(NewLastname))
 			{
-				client.Out.SendMessage("Your lastname must consist of valid characters!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.LastName.InvalidCharacters"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			/* Check if lastname is legal and is not contained in invalidnames.txt */
 			if (GameServer.Instance.PlayerManager.InvalidNames[NewLastname])
 			{
-				client.Out.SendMessage(NewLastname + " is not a legal last name! Choose another.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.LastName.NotLegal", NewLastname), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			client.Player.TempProperties.SetProperty(LASTNAME_WEAK, NewLastname);
-			client.Out.SendCustomDialog("Would you like to set your last name to \x000a" + NewLastname + "?", new CustomDialogResponse(LastNameDialogResponse));
+			client.Out.SendCustomDialog(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.LastName.ConfirmSet", NewLastname), new CustomDialogResponse(LastNameDialogResponse));
 
 			return;
 		}
@@ -120,26 +121,26 @@ namespace DOL.GS.Commands
 
 			if (!(player.TargetObject is NameRegistrar))
 			{
-				player.Out.SendMessage("You must select a name registrar to set your last name with!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.LastName.NeedRegistrar"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			if ( !player.IsWithinRadius( player.TargetObject, WorldMgr.INTERACT_DISTANCE ) )
 			{
-				player.Out.SendMessage("You are too far away to interact with " + player.TargetObject.Name + ".", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.LastName.TooFar", player.TargetObject.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			/* Check money only if your lastname is not blank */
 			if (player.LastName != string.Empty && player.GetCurrentMoney() < Money.GetMoney(0, 0, LASTNAME_FEE, 0, 0))
 			{
-				player.Out.SendMessage("Changing your last name costs " + Money.GetString(Money.GetMoney(0, 0, LASTNAME_FEE, 0, 0)) + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.LastName.Cost", Money.GetString(Money.GetMoney(0, 0, LASTNAME_FEE, 0, 0))), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			if (response != 0x01)
 			{
-				player.Out.SendMessage("You decline to " + (NewLastName != string.Empty ? ("take " + NewLastName + " as") : "clear") + " your last name.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, NewLastName != string.Empty ? "Scripts.Players.LastName.DeclineSet" : "Scripts.Players.LastName.DeclineClear", NewLastName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -152,7 +153,7 @@ namespace DOL.GS.Commands
 
 		    /* Set the new lastname */
 			player.LastName = NewLastName;
-			player.Out.SendMessage("Your last name has been " + (NewLastName != string.Empty ? ("set to " + NewLastName) : "cleared") + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, NewLastName != string.Empty ? "Scripts.Players.LastName.Set" : "Scripts.Players.LastName.Cleared", NewLastName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 	}
 }

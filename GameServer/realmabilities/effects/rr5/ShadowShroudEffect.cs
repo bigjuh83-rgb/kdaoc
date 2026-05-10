@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -23,6 +23,7 @@ using System.Collections.Generic;
 using DOL.GS.PacketHandler;
 using DOL.Events;
 using DOL.GS.RealmAbilities;
+using DOL.Language;
 
 namespace DOL.GS.Effects
 {
@@ -97,7 +98,7 @@ namespace DOL.GS.Effects
             AttackedByEnemyEventArgs args = arguments as AttackedByEnemyEventArgs;
             if (args == null) return;
             if (args.AttackData == null) return;
-          
+
             AttackData ad = args.AttackData;
             GameLiving living = sender as GameLiving;
             if (living == null) return;
@@ -106,9 +107,8 @@ namespace DOL.GS.Effects
             if (damageAbsorbed > 0)
             {
                 ad.Damage -= damageAbsorbed;
-                //TODO correct messages
-                MessageToLiving(ad.Target, string.Format("Shadow Shroud Ability absorbs {0} damage!", damageAbsorbed), eChatType.CT_Spell);
-                MessageToLiving(ad.Attacker, string.Format("A barrier absorbs {0} damage of your attack!", damageAbsorbed), eChatType.CT_Spell);
+                MessageToLiving(ad.Target, "RealmAbility.ShadowShroud.AbsorbsSelf", eChatType.CT_Spell, damageAbsorbed);
+                MessageToLiving(ad.Attacker, "RealmAbility.ShadowShroud.AbsorbsAttacker", eChatType.CT_Spell, damageAbsorbed);
             }
         }
 
@@ -118,11 +118,11 @@ namespace DOL.GS.Effects
         /// <param name="living"></param>
         /// <param name="message"></param>
         /// <param name="type"></param>
-        public void MessageToLiving(GameLiving living, string message, eChatType type)
+        public void MessageToLiving(GameLiving living, string translationId, eChatType type, params object[] args)
         {
-            if (living is GamePlayer && message != null && message.Length > 0)
+            if (living is GamePlayer player && translationId != null && translationId.Length > 0)
             {
-                living.MessageToSelf(message, type);
+                player.MessageToSelf(LanguageMgr.GetTranslation(player.Client.Account.Language, translationId, args), type);
             }
         }
         public override string Name { get { return "Shadow Shroud"; } }

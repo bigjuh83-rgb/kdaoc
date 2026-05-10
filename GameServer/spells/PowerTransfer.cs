@@ -1,5 +1,6 @@
 using System;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -26,7 +27,7 @@ namespace DOL.GS.Spells
 
 			if (selectedTarget == Caster || selectedTarget == owner)
 			{
-				owner.Out.SendMessage("You cannot transfer power to yourself!",
+				owner.Out.SendMessage(LanguageMgr.GetTranslation(owner.Client, "PowerTransfer.CannotTransferToSelf"),
 					eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 				return false;
 			}
@@ -57,18 +58,15 @@ namespace DOL.GS.Spells
 			if (powerHealed <= 0)
 			{
 				SendEffectAnimation(target, 0, false, 0);
-				owner.Out.SendMessage(String.Format("{0} is at full power already!",
-					target.Name), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+				owner.Out.SendMessage(LanguageMgr.GetTranslation(owner.Client, "PowerTransfer.TargetPowerFull", target.Name), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 			}
 			else
 			{
 				SendEffectAnimation(target, 0, false, 1);
-				owner.Out.SendMessage(String.Format("You transfer {0} power to {1}!",
-					powerHealed, target.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+				owner.Out.SendMessage(LanguageMgr.GetTranslation(owner.Client, "PowerTransfer.TransferToTarget", powerHealed, target.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 
-				if (target is GamePlayer)
-					(target as GamePlayer).Out.SendMessage(String.Format("{0} transfers {1} power to you!",
-						owner.Name, powerHealed), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+				if (target is GamePlayer targetPlayer)
+					targetPlayer.Out.SendMessage(LanguageMgr.GetTranslation(targetPlayer.Client, "PowerTransfer.TransferToYou", owner.Name, powerHealed), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 			}
 		}
 
@@ -80,7 +78,7 @@ namespace DOL.GS.Spells
 		{
 			if (Caster is GamePlayer)
 				return Caster as GamePlayer;
-			
+
 			return null;
 		}
 	}

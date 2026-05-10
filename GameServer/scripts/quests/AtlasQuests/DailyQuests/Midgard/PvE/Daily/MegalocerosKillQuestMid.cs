@@ -25,7 +25,7 @@ namespace DOL.GS.DailyQuest.Midgard
 
 		// Kill Goal
 		private const int MAX_KILLED = 10;
-		
+
 		private static GameNPC Jarek = null; // Start NPC
 
 		private int megalocerosKilled = 0;
@@ -46,7 +46,7 @@ namespace DOL.GS.DailyQuest.Midgard
 		public MegalocerosKillQuestMid(GamePlayer questingPlayer, DbQuest dbQuest) : base(questingPlayer, dbQuest)
 		{
 		}
-		
+
 		public override int Level
 		{
 			get
@@ -61,7 +61,7 @@ namespace DOL.GS.DailyQuest.Midgard
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -119,7 +119,7 @@ namespace DOL.GS.DailyQuest.Midgard
 
 			GameEventMgr.AddHandler(Jarek, GameObjectEvent.Interact, new DOLEventHandler(TalkToJarek));
 			GameEventMgr.AddHandler(Jarek, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToJarek));
-			
+
 			Jarek.AddQuestToGive(typeof (MegalocerosKillQuestMid));
 
 			if (log.IsInfoEnabled)
@@ -138,13 +138,13 @@ namespace DOL.GS.DailyQuest.Midgard
 
 			GameEventMgr.RemoveHandler(Jarek, GameObjectEvent.Interact, new DOLEventHandler(TalkToJarek));
 			GameEventMgr.RemoveHandler(Jarek, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToJarek));
-			
+
 			Jarek.RemoveQuestToGive(typeof (MegalocerosKillQuestMid));
 		}
 
 		private static void TalkToJarek(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -162,18 +162,16 @@ namespace DOL.GS.DailyQuest.Midgard
 					switch (quest.Step)
 					{
 						case 1:
-							Jarek.SayTo(player, "You will find Megaloceros in the South East of Gripklosa Mountains.");
+							Jarek.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NamedMobLocation", "Megaloceros", "the South East of Gripklosa Mountains"));
 							break;
 						case 2:
-							Jarek.SayTo(player, "Hello " + player.Name + ", did you [kill] the Megaloceros?");
+							Jarek.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[kill] the Megaloceros"));
 							break;
 					}
 				}
 				else
 				{
-					Jarek.SayTo(player, "Hello "+ player.Name +", I am Jarek, Fen\'s friend. "+
-					                    "The Megaloceros out in Gripklosa Mountains are devouring the natural flora and fauna of the Shrouded Isles. They may soon destroy the ecosystem entirely.\n"+
-					                    "\nCan you [clear the Megaloceros] to save the Shrouded Isles?");
+					Jarek.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NamedMobDailyIntro", player.Name, "Jarek", "Megaloceros", "Gripklosa Mountains", "the Shrouded Isles", "clear the Megaloceros"));
 				}
 			}
 				// The player whispered to the NPC
@@ -185,7 +183,7 @@ namespace DOL.GS.DailyQuest.Midgard
 					switch (wArgs.Text.ToLower())
 					{
 						case "clear the megaloceros":
-							player.Out.SendQuestSubscribeCommand(Jarek, QuestMgr.GetIDForQuestType(typeof(MegalocerosKillQuestMid)), "Will you help Jarek "+questTitle+"");
+							player.Out.SendQuestSubscribeCommand(Jarek, QuestMgr.GetIDForQuestType(typeof(MegalocerosKillQuestMid)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "Jarek", questTitle));
 							break;
 					}
 				}
@@ -196,18 +194,18 @@ namespace DOL.GS.DailyQuest.Midgard
 						case "kill":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -226,7 +224,7 @@ namespace DOL.GS.DailyQuest.Midgard
 
 			return true;
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			megalocerosKilled = GetCustomProperty(QuestPropertyKey) != null ? int.Parse(GetCustomProperty(QuestPropertyKey)) : 0;
@@ -247,11 +245,11 @@ namespace DOL.GS.DailyQuest.Midgard
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -281,7 +279,7 @@ namespace DOL.GS.DailyQuest.Midgard
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for your help.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -289,7 +287,7 @@ namespace DOL.GS.DailyQuest.Midgard
 				if (!Jarek.GiveQuest(typeof (MegalocerosKillQuestMid), player, 1))
 					return;
 
-				Jarek.SayTo(player, "You will find the Megaloceros in Gripklosa Mountains.");
+				Jarek.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NamedMobLocation", "Megaloceros", "the South East of Gripklosa Mountains"));
 
 			}
 		}
@@ -308,9 +306,9 @@ namespace DOL.GS.DailyQuest.Midgard
 				switch (Step)
 				{
 					case 1:
-						return "Find Megaloceros in the South East of Gripklosa Mountains. \nKilled: Megaloceros ("+ megalocerosKilled +" | "+MAX_KILLED+")";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.NamedMobDescription", "Megaloceros", "the South East of Gripklosa Mountains", megalocerosKilled, MAX_KILLED);
 					case 2:
-						return "Return to Jarek in Aegirhamn for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "Jarek", "Aegirhamn");
 				}
 				return base.Description;
 			}
@@ -322,7 +320,7 @@ namespace DOL.GS.DailyQuest.Midgard
 
 			if (player == null || player.IsDoingQuest(typeof(MegalocerosKillQuestMid)) == null)
 				return;
-			
+
 			if (sender != m_questPlayer)
 				return;
 
@@ -330,16 +328,16 @@ namespace DOL.GS.DailyQuest.Midgard
 			EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
 			if (gArgs.Target.Name.ToLower() != "megaloceros") return;
 			megalocerosKilled++;
-			player.Out.SendMessage("[Daily] Megaloceros Killed: ("+megalocerosKilled+" | "+MAX_KILLED+")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NamedDailyKilled", "Megaloceros", megalocerosKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (megalocerosKilled >= MAX_KILLED)
 			{
 				Step = 2;
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "MegalocerosKillQuestMid";

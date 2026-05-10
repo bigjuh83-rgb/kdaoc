@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -94,16 +95,16 @@ namespace DOL.GS.Commands
         }
 
         #region Helpers
-        private string GetRealmBySlotIndex(int slot)
+        private string GetRealmBySlotIndex(GameClient client, int slot)
         {
             string realm = string.Empty;
 
             if (slot >= 100 && slot <= 109)
-                realm = "Albion";
+                realm = LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Common.Realm.Albion");
             else if (slot >= 200 && slot <= 209)
-                realm = "Midgard";
+                realm = LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Common.Realm.Midgard");
             else if (slot >= 300 && slot <= 309)
-                realm = "Hibernia";
+                realm = LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Common.Realm.Hibernia");
 
             return realm;
         }
@@ -134,7 +135,7 @@ namespace DOL.GS.Commands
         #region Messages
         private void EmptySlot(GameClient client, int slot)
         {
-            client.Out.SendMessage("The given source slot (" + slot + ") is empty.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Rearrange.EmptySlot", slot), eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
 
         private void InvalidSlot(GameClient client, int[] slots)
@@ -149,19 +150,17 @@ namespace DOL.GS.Commands
                     str += ", " + slot.ToString();
             }
 
-            client.Out.SendMessage("Invalid character slot" + (slots.Length > 1 ? "s" : "") + ": " + str, eChatType.CT_System, eChatLoc.CL_SystemWindow); 
+            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Rearrange.InvalidSlots", str), eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
 
         private void NotSameRealm(GameClient client, int sourceSlot, int targetSlot)
         {
-            client.Out.SendMessage("You cannot set a slot to a different realm! (source realm = " + GetRealmBySlotIndex(sourceSlot) +
-                                   ", target realm = " + GetRealmBySlotIndex(targetSlot) + ")", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Rearrange.DifferentRealm", GetRealmBySlotIndex(client, sourceSlot), GetRealmBySlotIndex(client, targetSlot)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
 
         private void SlotChanged(GameClient client, string name, int oldSlot, int newSlot)
         {
-            client.Out.SendMessage("The character slot for " + name + " has been successfully changed. (old slot = " + oldSlot +
-                                   ", new slot = " + newSlot + ")", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Rearrange.SlotChanged", name, oldSlot, newSlot), eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
         #endregion Messages
 
@@ -177,19 +176,19 @@ namespace DOL.GS.Commands
                 switch (firstSlot)
                 {
                     case 100:
-                        slots.Add(-1, "Albion:");
+                        slots.Add(-1, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Common.Realm.Albion") + ":");
                         break;
                     case 200:
-                        slots.Add(-2, "Midgard:");
+                        slots.Add(-2, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Common.Realm.Midgard") + ":");
                         break;
                     case 300:
-                        slots.Add(-3, "Hibernia:");
+                        slots.Add(-3, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Common.Realm.Hibernia") + ":");
                         break;
                 }
 
                 for (int i = firstSlot; i <= (firstSlot + 9); i++)
                 {
-                    slots.Add(i, "Empty slot");
+                    slots.Add(i, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Rearrange.EmptySlotLabel"));
 
                     if (i == (firstSlot + 9))
                     {
@@ -225,7 +224,7 @@ namespace DOL.GS.Commands
                     data.Add("(" + slot.Key + ") " + slot.Value);
             }
 
-            client.Out.SendCustomTextWindow("Character slots", data);
+            client.Out.SendCustomTextWindow(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Rearrange.WindowTitle"), data);
         }
         #endregion SendCharacterListWindow
 

@@ -4,6 +4,7 @@ using DOL.Database;
 using DOL.GS.Housing;
 using DOL.GS.PacketHandler;
 using DOL.GS.Spells;
+using DOL.Language;
 
 /* Need to fix
  * EquipTemplate for Hib and Mid
@@ -25,7 +26,7 @@ namespace DOL.GS.Scripts
         }
 
         /// <summary>
-        /// The destination realm. 
+        /// The destination realm.
         /// </summary>
         protected virtual eRealm DestinationRealm
         {
@@ -101,55 +102,31 @@ namespace DOL.GS.Scripts
             if (player.Realm != this.Realm && player.Client.Account.PrivLevel == 1) return false;
 
             TurnTo(player, 10000);
-            
+
             var message = string.Empty;
 
             switch (Realm)
             {
                 case eRealm.Albion:
 
-                    message = "Greetings, " + player.Name +
-                              " I am able to channel energy to transport you to distant lands. I can send you to the following locations:\n\n" +
-                              "[Castle Sauvage] in Camelot Hills or \n[Snowdonia Fortress] in Black Mtns. North,\n" +
-                              "[Avalon Marsh] wharf,\n" +
-                              "[Gothwaite Harbor] in the [Shrouded Isles],\n" +
-                              "[Camelot] our glorious capital,\n" +
-                              "[Entrance] to the areas of [Housing]\n\n" +
-                              "or one of the many [towns] throughout Albion.";
+                    message = LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.Intro.Albion", player.Name);
                               //"For this event duration, I can send you to [Darkness Falls]";
                     break;
 
                 case eRealm.Midgard:
-                    
-                    message = "Greetings, " + player.Name +
-                              " I am able to channel energy to transport you to distant lands. I can send you to the following locations:\n\n" +
-                              "[Svasud Faste] in Mularn or \n[Vindsaul Faste] in West Svealand,\n" +
-                              "Beaches of [Gotar] near Nailiten,\n" +
-                              "[Aegirhamn] in the [Shrouded Isles],\n" +
-                              "Our glorious city of [Jordheim],\n" +
-                              "[Entrance] to the areas of [Housing]\n\n" +
-                              "or one of the many [towns] throughout Midgard.";
+                    message = LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.Intro.Midgard", player.Name);
                     break;
 
                 case eRealm.Hibernia:
-                    
-                    message = "Greetings, " + player.Name +
-                              " I am able to channel energy to transport you to distant lands. I can send you to the following locations:\n\n" +
-                              "[Druim Ligen] in Connacht or \n[Druim Cain] in Bri Leith,\n" +
-                              "[Shannon Estuary] watchtower,\n" +
-                              "[Domnann] Grove in the [Shrouded Isles],\n" +
-                              "[Tir na Nog] our glorious capital,\n" +
-                              "[Entrance] to the areas of [Housing]\n\n" +
-                              "or one of the many [towns] throughout Hibernia.";
+                    message = LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.Intro.Hibernia", player.Name);
                     break;
 
                 default:
-                    SayTo(player, "I have no Realm set, so don't know what locations to offer..");
+                    SayTo(player, LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.NoRealm"));
                     break;
             }
-            
-            message += "\n\n" +
-                       "Perhaps you would like the challenge of the [Epic Dungeon]?";
+
+            message += "\n\n" + LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.EpicDungeonPrompt");
 
             SayTo(player, message);
 
@@ -173,35 +150,80 @@ namespace DOL.GS.Scripts
 
         protected virtual bool GetTeleportLocation(GamePlayer player, string text)
         {
+		            text = text switch
+		            {
+		                "슈라우디드 아일스" => "shrouded isles",
+		                "주택" => "housing",
+	                "마을" => "towns",
+	                "입구" => "Entrance",
+	                "개인 주택" => "personal",
+	                "길드 주택" => "guild",
+	                "귀환 위치" => "hearth",
+	                "소바쥬 성" => "Castle Sauvage",
+	                "스노도니아 요새" => "Snowdonia Fortress",
+	                "아발론 습지" => "Avalon Marsh",
+	                "고스웨이트 항구" => "Gothwaite Harbor",
+	                "카멜롯" => "Camelot",
+	                "고스웨이트" => "Gothwaite",
+	                "위어리얼 마을" => "Wearyall Village",
+	                "귄텔 요새" => "Gwyntell",
+	                "케어 디오겔" => "Caer Diogel",
+	                "코츠월드 마을" => "Cotswold Village",
+	                "프리드웬 성채" => "Prydwen Keep",
+	                "케어 울프위치" => "Caer Ulfwych",
+	                "캄파코렌틴 기지" => "Campacorentin Station",
+	                "아드리바드 은거지" => "Adribard's Retreat",
+	                "야를리 농장" => "Yarley's Farm",
+	                "스바수드 파스테" => "Svasud Faste",
+	                "빈드사울 파스테" => "Vindsaul Faste",
+	                "고타르" => "Gotar",
+	                "에기르함" => "Aegirhamn",
+	                "요르드하임" => "Jordheim",
+	                "비야르켄" => "Bjarken",
+	                "하갈" => "Hagall",
+	                "크나르" => "Knarr",
+	                "물란" => "Mularn",
+	                "벨돈 요새" => "Fort Veldon",
+	                "아우들리텐" => "Audliten",
+	                "후긴펠" => "Huginfell",
+	                "아틀라 요새" => "Fort Atla",
+	                "웨스트 스코나" => "West Skona",
+	                "드루임 리겐" => "Druim Ligen",
+	                "드루임 케인" => "Druim Cain",
+	                "섀넌 하구" => "Shannon Estuary",
+	                "돔난" => "Domnann",
+	                "티르 나 노그" => "Tir na Nog",
+	                "드로하이드" => "Droighaid",
+	                "알리드 페이" => "Aalid Feie",
+	                "네흐트" => "Necht",
+	                "마그 멜" => "Mag Mell",
+	                "티르 나 므베오" => "Tir na mBeo",
+	                "아르다" => "Ardagh",
+	                "호스" => "Howth",
+	                "콘라" => "Connla",
+	                "이니스 카르사이그" => "Innis Carthaig",
+	                _ => text
+	            };
+
             switch (Realm) // Only offer locations based on what realm i am set at.
             {
                 case eRealm.Albion:
-                    
+
                     if (text.ToLower() == "shrouded isles")
                     {
-                        String reply = String.Format("The isles of Avalon are an excellent choice. {0} {1}",
-                            "Would you prefer [Gothwaite] or perhaps one of the outlying towns",
-                            "like [Wearyall Village], Fort [Gwyntell], or [Caer Diogel]?");
-                        SayTo(player, reply);
+                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.ShroudedIsles.Albion"));
                         return false;
                     }
-                    
+
                     if (text.ToLower() == "housing")
                     {
-                        SayTo(player,
-                            "I can send you to your [personal] or [guild] house. If you do not have a personal house, I can teleport you to the housing [entrance] or your housing [hearth] bindstone.");
+                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.Housing"));
                         return false;
                     }
-                    
+
                     if (text.ToLower() == "towns")
                     {
-                        SayTo(player, "I can send you to:\n" +
-                                      "[Cotswold Village]\n" +
-                                      "[Prydwen Keep]\n" +
-                                      "[Caer Ulfwych]\n" +
-                                      "[Campacorentin Station]\n" +
-                                      "[Adribard's Retreat]\n" +
-                                      "[Yarley's Farm]");
+                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.Towns.Albion"));
                         return false;
                     }
 
@@ -209,7 +231,7 @@ namespace DOL.GS.Scripts
                     if (text.ToLower() == "darkness falls")
                     {
                         IGameLocation location = new GameLocation("df", 249, 249, 23122, 19634, 22897, 3074);
-                        
+
                         Teleport teleport = new Teleport();
                         teleport.TeleportID = "Darkness Falls";
                         teleport.Realm = (int) DestinationRealm;
@@ -221,69 +243,49 @@ namespace DOL.GS.Scripts
                         OnDestinationPicked(player, teleport);
                         return true;
                     }*/
-                    
+
                     break;
-                
+
                 case eRealm.Midgard:
-                    
+
                     if (text.ToLower() == "shrouded isles")
                     {
-                        String reply = String.Format("The isles of Aegir are an excellent choice. {0} {1}",
-                            "Would you prefer the city of [Aegirhamn] or perhaps one of the outlying towns",
-                            "like [Bjarken], [Hagall], or [Knarr]?");
-                        SayTo(player, reply);
-                        
+                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.ShroudedIsles.Midgard"));
+
                         return false;
                     }
 
                     if (text.ToLower() == "housing")
                     {
-                        SayTo(player,
-                            "I can send you to your [personal] or [guild] house. If you do not have a personal house, I can teleport you to the housing [entrance] or your housing [hearth] bindstone.");
+                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.Housing"));
                         return false;
                     }
 
                     if (text.ToLower() == "towns")
                     {
-                        SayTo(player,
-                            "I can send you to:\n" +
-                            "[Mularn]\n" +
-                            "[Fort Veldon]\n" +
-                            "[Audliten]\n" +
-                            "[Huginfell]\n" +
-                            "[Fort Atla]\n" +
-                            "[West Skona]");
+                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.Towns.Midgard"));
                         return false;
                     }
-                    
+
                     break;
-                
+
                 case eRealm.Hibernia:
-                    
+
                     if (text.ToLower() == "shrouded isles")
                     {
-                        SayTo(player,
-                            "The isles of Hy Brasil are an excellent choice. Would you prefer the grove of [Domnann] or perhaps one of the outlying towns like [Droighaid], [Aalid Feie], or [Necht]?");
+                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.ShroudedIsles.Hibernia"));
                         return false;
                     }
 
                     if (text.ToLower() == "housing")
                     {
-                        SayTo(player,
-                            "I can send you to your [personal] or [guild] house. If you do not have a personal house, I can teleport you to the housing [entrance] or your housing [hearth] bindstone.");
+                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.Housing"));
                         return false;
                     }
 
                     if (text.ToLower() == "towns")
                     {
-                        SayTo(player,
-                            "I can send you to:\n" +
-                            "[Mag Mell]\n" +
-                            "[Tir na mBeo]\n" +
-                            "[Ardagh]\n" +
-                            "[Howth]\n" +
-                            "[Connla]\n" +
-                            "[Innis Carthaig]");
+                        SayTo(player, LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.Towns.Hibernia"));
                         return false;
                     }
 
@@ -293,7 +295,7 @@ namespace DOL.GS.Scripts
             // Another special case is personal house, as there is no location
             // that will work for every player.
             if (text == "Entrance") text = text.ToLower();
-            
+
             if (text.ToLower() == "personal")
             {
                 House house = HouseMgr.GetHouseByPlayer(player);
@@ -325,7 +327,7 @@ namespace DOL.GS.Scripts
                 // Check if player has set a house bind
                 if (!(player.BindHouseRegion > 0))
                 {
-                    SayTo(player, "Sorry, you haven't set any house bind point yet.");
+                    SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.NoHouseBindPoint"));
                     return false;
                 }
 
@@ -334,8 +336,7 @@ namespace DOL.GS.Scripts
                     player.BindHouseXpos, player.BindHouseYpos, 700);
                 if (houses.Count == 0)
                 {
-                    SayTo(player, "I'm afraid I can't teleport you to your hearth since the house at your " +
-                                  "house bind location has been torn down.");
+                    SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.HouseBindHouseTornDown"));
                     return false;
                 }
 
@@ -356,16 +357,14 @@ namespace DOL.GS.Scripts
 
                 if (!hasBindstone)
                 {
-                    SayTo(player, "I'm sorry to tell that the bindstone of your current house bind location " +
-                                  "has been removed, so I'm not able to teleport you there.");
+                    SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.HouseBindstoneRemoved"));
                     return false;
                 }
 
                 // Check if the player has the permission to bind at the house bind stone
                 if (!targetHouse.CanBindInHouse(player))
                 {
-                    SayTo(player, "You're no longer allowed to bind at the house bindstone you've previously " +
-                                  "chosen, hence I'm not allowed to teleport you there.");
+                    SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.HouseBindNoPermission"));
                     return false;
                 }
 
@@ -387,7 +386,7 @@ namespace DOL.GS.Scripts
 
                 if (house == null)
                 {
-                    SayTo(player, $"I'm sorry but {player.Guild.Name} doesn't own a Guild House.");
+                    SayTo(player, LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.NoGuildHouse", player.Guild?.Name ?? string.Empty));
                     return false;
                     return false; // no teleport when guild house not found
                 }
@@ -407,7 +406,7 @@ namespace DOL.GS.Scripts
                 }
             }
 
-            if (text.ToLower() == "epic dungeon")
+            if (text.ToLower() == "epic dungeon" || text == "에픽 던전")
             {
                 switch (player.Realm)
                 {
@@ -455,15 +454,15 @@ namespace DOL.GS.Scripts
 
             if (region == null || region.IsDisabled)
             {
-                player.Out.SendMessage("This destination is not available.", eChatType.CT_System,
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "GameTeleporter.DestinationUnavailable"), eChatType.CT_System,
                     eChatLoc.CL_SystemWindow);
                 return;
             }
-            
-            var message = $"{Name} says, \"I'm now teleporting you to {destination.TeleportID}.\"";
-            
+
+            var message = LanguageMgr.GetTranslation(player.Client, "InlandTeleporter.Teleporting", Name, destination.TeleportID);
+
             player.Out.SendMessage(message, eChatType.CT_Say, eChatLoc.CL_ChatWindow);
-            
+
             OnTeleportSpell(player, destination);
         }
 
@@ -499,7 +498,7 @@ namespace DOL.GS.Scripts
             // Spell not found in the database, fall back on default procedure.
 
             if (player.Client.Account.PrivLevel > 1)
-                player.Out.SendMessage("Uni-Portal spell not found.",
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "GameTeleporter.UniPortalSpellNotFound"),
                     eChatType.CT_Items, eChatLoc.CL_SystemWindow);
 
 
@@ -507,7 +506,7 @@ namespace DOL.GS.Scripts
         }
 
         /// <summary>
-        /// Teleport the player to the designated coordinates. 
+        /// Teleport the player to the designated coordinates.
         /// </summary>
         /// <param name="player"></param>
         /// <param name="destination"></param>

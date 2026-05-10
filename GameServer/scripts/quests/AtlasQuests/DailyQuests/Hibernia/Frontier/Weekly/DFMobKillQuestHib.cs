@@ -17,7 +17,7 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 		private const string questTitle = "[Weekly] Darkness Falls Invasion";
 		private const int minimumLevel = 30;
 		private const int maximumLevel = 50;
-		
+
 		// Kill Goal
 		private const int MAX_KILLED = 200;
 
@@ -50,13 +50,13 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 				return minimumLevel;
 			}
 		}
-		
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -141,7 +141,7 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 
 		private static void TalkToStefano(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -159,18 +159,16 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 					switch (quest.Step)
 					{
 						case 1:
-							Stefano.SayTo(player, "Head into Darkness Falls and slay monsters so they don\'t spread in our realm!");
+							Stefano.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DFMonsterReminder"));
 							break;
 						case 2:
-							Stefano.SayTo(player, "Hello " + player.Name + ", did you [slay monsters] for your reward?");
+							Stefano.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[slay monsters] for your reward"));
 							break;
 					}
 				}
 				else
 				{
-					Stefano.SayTo(player, "Hello "+ player.Name +", I am Stefano. I have received word from a ranger that forces are building in Darkness Falls. "+
-					                       "Clear out as many demons as you can find, and come back to me only when the halls of the dungeon are purged of their influence. \n\n"+
-					                       "Can you [stop the invasion]?");
+					Stefano.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DFMonsterIntro", player.Name, "Stefano"));
 				}
 			}
 				// The player whispered to the NPC
@@ -182,7 +180,8 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 					switch (wArgs.Text)
 					{
 						case "stop the invasion":
-							player.Out.SendQuestSubscribeCommand(Stefano, QuestMgr.GetIDForQuestType(typeof(DFMobKillQuestHib)), "Will you help Stefano "+questTitle+"?");
+						case "침공 저지":
+							player.Out.SendQuestSubscribeCommand(Stefano, QuestMgr.GetIDForQuestType(typeof(DFMobKillQuestHib)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "Stefano", questTitle));
 							break;
 					}
 				}
@@ -193,18 +192,18 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 						case "slay monsters":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -243,11 +242,11 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -277,7 +276,7 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for helping our realm. That should buy us some time to plot a counterattack.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.RvRMonsterThanks"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -285,7 +284,7 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 				if (!Stefano.GiveQuest(typeof (DFMobKillQuestHib), player, 1))
 					return;
 
-				Stefano.SayTo(player, "Defend your realm, head into Darkness Falls and kill monsters for your reward.");
+				Stefano.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DFMonsterReminder"));
 
 			}
 		}
@@ -304,10 +303,9 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 				switch (Step)
 				{
 					case 1:
-						return "Head into Darkness Falls and kill monsters for Hibernia. \nKilled: Monster (" +
-						       _mobsKilled + " | " + MAX_KILLED + ")";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.DFMonsterDescription", "Hibernia", _mobsKilled, MAX_KILLED);
 					case 2:
-						return "Return to Stefano in Darkness Falls for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "Stefano", "Darkness Falls");
 				}
 				return base.Description;
 			}
@@ -324,12 +322,12 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 				return;
 
 			if (Step != 1 || e != GameLivingEvent.EnemyKilled) return;
-			
+
 			EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
-			
+
 			if (gArgs.Target is GameSummonedPet)
 				return;
-			
+
 			if (gArgs.Target.Realm != 0 || gArgs.Target is not GameNPC || gArgs.Target.CurrentRegionID != 249 ||
 			    !(player.GetConLevel(gArgs.Target) > -2)) return;
 			if (player.Group != null)
@@ -340,7 +338,7 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 					_mobsKilled++;
 				else
 				{
-					player.Out.SendMessage("[Weekly] Monsters Killed in Darkness Falls - needs a higher level monster to count", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyDFMonsterTooLow"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return;
 				}
 			}
@@ -350,20 +348,20 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 					_mobsKilled++;
 				else
 				{
-					player.Out.SendMessage("[Weekly] Monsters Killed in Darkness Falls - needs a higher level monster to count", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyDFMonsterTooLow"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return;
 				}
 			}
-			player.Out.SendMessage("[Weekly] Monsters Killed in Darkness Falls: ("+_mobsKilled+" | "+MAX_KILLED+")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyDFMonstersKilled", _mobsKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (_mobsKilled >= MAX_KILLED)
 			{
 				Step = 2;
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "DFMobKillQuestHib";

@@ -1,3 +1,5 @@
+using DOL.Language;
+
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.ShipHookPoint, "Handles Ship hookpoint interact", eClientStatus.PlayerInGame)]
@@ -37,7 +39,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 						}
 						else
 						{
-							client.Player.Out.SendMessage("That seat isn't empty!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "ShipHookpointInteract.SeatNotEmpty"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						}
 						break;
 					}

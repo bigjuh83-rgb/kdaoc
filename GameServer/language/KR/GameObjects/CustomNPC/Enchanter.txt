@@ -1,0 +1,32 @@
+﻿# Enchanter NPC
+
+## Examine
+GameNPC.Enchanter.GetExamineMessages.YouTarget:		    [{0}]을(를) 대상으로 선택했습니다.
+GameNPC.Enchanter.GetExamineMessages.YouExamine:		{0}을(를) 살펴봅니다. {1}은(는) {2}이며 인챈터입니다.
+GameNPC.Enchanter.GetExamineMessages.GiveItem:		    [{0}에게 마법 강화를 받을 아이템을 건네세요]
+
+## Accept/Decline Enchant
+GameNPC.Enchanter.Interact.Message:			            {0}이(가) 말합니다. "약간의 비용으로 무기나 방어구에 품질을 높이는 마법을 부여할 수 있습니다. 아이템을 건네주세요. 제가 다룰 수 있는 재질이어야 합니다."
+GameNPC.Enchanter.ReceiveItem.Cost:			            강화 비용은 {0}입니다. 수락하시겠습니까?
+GameNPC.Enchanter.Response.YouGive:	                    {0}에게 {1}을(를) 건넵니다.
+GameNPC.Enchanter.Response.Decline:                     {0} 강화를 거절했습니다.
+
+## Receive Responses
+GameNPC.Enchanter.Response.NotEnoughMoney:	            {0}이(가) 말합니다. "{2}을(를) 강화하려면 {1}이(가) 필요합니다. 돈이 부족합니다."
+GameNPC.Enchanter.NotEnoughMoney:			            {0}이(가) 말합니다. "강화하려면 {1}이(가) 필요합니다."
+GameNPC.Enchanter.Response.CantEnchant:	                {0}이(가) 말합니다. "그것은 강화할 수 없습니다."
+GameNPC.Enchanter.ReceiveItem.AlreadyEnchanted:			{0}이(가) 말합니다. "이미 강화된 아이템입니다."
+GameNPC.Enchanter.ReceiveItem.CantBeEnchanted:			{0}이(가) 말합니다. "그 아이템은 강화할 수 없습니다."
+GameNPC.Enchanter.ReceiveItem.CantEnchantMaterial:	    {0}이(가) 말합니다. "그 재질은 강화할 수 없습니다."
+GameNPC.Enchanter.Response.NowEnchanted:	            {0}이(가) 말합니다. "좋습니다, 이제 {1} 상태입니다!"
+
+## Enchantment Labels
+GameNPC.Enchanter.ItemLevel.Bright:	                    밝은
+GameNPC.Enchanter.ItemLevel.Shining:                    빛나는
+GameNPC.Enchanter.ItemLevel.Lustrous:                   광택 나는
+GameNPC.Enchanter.ItemLevel.Luminous:                   환한
+GameNPC.Enchanter.ItemLevel.Shimmering:                 반짝이는
+
+## Not Used
+GameNPC.Enchanter.Interact.Quartz:			            석영
+GameNPC.Enchanter.Interact.Steel:			            강철

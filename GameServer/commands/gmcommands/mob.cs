@@ -10,6 +10,7 @@ using DOL.GS.Housing;
 using DOL.GS.Movement;
 using DOL.GS.PacketHandler;
 using DOL.GS.Quests;
+using DOL.Language;
 using static DOL.AI.Brain.StandardMobBrain;
 
 namespace DOL.GS.Commands
@@ -111,6 +112,9 @@ namespace DOL.GS.Commands
 
 		private const ushort AUTOSELECT_RADIUS = 100; // /mob select command
 
+		private static string T(GameClient client, string key, params object[] args)
+			=> LanguageMgr.GetTranslation(client.Account.Language, key, args);
+
 		public void OnCommand(GameClient client, string[] args)
 		{
 			if (args.Length == 1)
@@ -142,7 +146,7 @@ namespace DOL.GS.Commands
 					// it is not a mob
 					if (client.Player.TargetObject != null)
 					{
-						client.Out.SendMessage("Cannot use " + client.Player.TargetObject + " for /mob command.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(T(client, "GMCommands.Mob.CannotUseTarget", client.Player.TargetObject), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						return;
 					}
 
@@ -290,7 +294,7 @@ namespace DOL.GS.Commands
 
 			if (mob == null)
 			{
-				client.Out.SendMessage("There was an error creating an instance of " + theType + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.CreateInstanceError", theType), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -313,8 +317,8 @@ namespace DOL.GS.Commands
 			mob.AddToWorld();
 			mob.LoadedFromScript = false; // allow saving
 			mob.SaveIntoDatabase();
-			client.Out.SendMessage("Mob created: OID=" + mob.ObjectID, eChatType.CT_System, eChatLoc.CL_SystemWindow);
-			client.Out.SendMessage("The mob has been created with the peace flag, so it can't be attacked, to remove type /mob peace", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.Created", mob.ObjectID), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.CreatedWithPeaceFlag"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 		}
 
 		private void fastcreate(GameClient client, string[] args)
@@ -389,7 +393,7 @@ namespace DOL.GS.Commands
 				mob.SaveIntoDatabase();
 			}
 
-			client.Out.SendMessage("Mob created: OID=" + mob.ObjectID, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.Created", mob.ObjectID), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void nfastcreate(GameClient client, string[] args)
@@ -461,7 +465,7 @@ namespace DOL.GS.Commands
 				mob.GuildName = string.Empty;
 				mob.Size = 50;
 				mob.AddToWorld();
-				client.Out.SendMessage("Mob created: OID=" + mob.ObjectID, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.Created", mob.ObjectID), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 
@@ -522,9 +526,9 @@ namespace DOL.GS.Commands
 				mob.AddToWorld();
 			}
 
-			client.Out.SendMessage("Created " + number + " mobs", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.CreatedMany", number), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
-		
+
 		#region auto increment/decrement model display
 		// List of non-displayed models
 		// used with modelinc and modeldec
@@ -543,7 +547,7 @@ namespace DOL.GS.Commands
 			1907, 1923,	1926, 1927, 1928, 1943, 2004, 2005, 2006, 2007, 2008, 2019, 2067, 2068, 2069, 2070, 2071, 2072, 2073, 2280, 2281,
 			2282, 2283,	2284, 2285, 2286, 2287, 2288, 2289, 2290, 2291, 2292, 2293, 2294, 2299, 2300, 2302, 2305, 2319, 2333, 2334, 2335,
 			2336, 2337,	2338, 2364 };
-		
+
 		private void modelinc(GameClient client, GameNPC targetMob, string[] args)
 		{
 			if (targetMob == null)
@@ -551,25 +555,25 @@ namespace DOL.GS.Commands
 				DisplaySyntax(client, args[1]);
 				return;
 			}
-			
+
 			if (targetMob.Model >= 2363)
 			{
-				client.Out.SendMessage("Highest mob model reached!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.HighestModelReached"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
-			
+
 			ushort model = targetMob.Model;
 			model++;
-			
+
 			//Some models are not used, or cannot be targetted, i.e. ambient mobs and some invisible mobs, don't set mobs to these models
 			while (invmodel.Contains(model))
 				model++;
-			
+
 			try
 			{
 				targetMob.Model = model;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob model changed to: " + targetMob.Model, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.ModelChanged", targetMob.Model), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
 			{
@@ -585,25 +589,25 @@ namespace DOL.GS.Commands
 				DisplaySyntax(client, args[1]);
 				return;
 			}
-			
+
 			if (targetMob.Model == 1)
 			{
-				client.Out.SendMessage("Mob model cannot be 0!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.ModelCannotBeZero"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
-			
+
 			ushort model = targetMob.Model;
 			model--;
-			
+
 			//Some models are not used, or cannot be targetted, i.e. ambient mobs and some invisible mobs, don't set mobs to these models
 			while (invmodel.Contains(model))
 				model--;
-			
+
 			try
 			{
 				targetMob.Model = model;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob model changed to: " + targetMob.Model, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.ModelChanged", targetMob.Model), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
 			{
@@ -612,7 +616,7 @@ namespace DOL.GS.Commands
 			}
 		}
 		#endregion
-		
+
 		private void model(GameClient client, GameNPC targetMob, string[] args)
 		{
 			if (args.Length == 4)
@@ -631,7 +635,7 @@ namespace DOL.GS.Commands
 				model = Convert.ToUInt16(args[2]);
 				targetMob.Model = model;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob model changed to: " + targetMob.Model, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.ModelChanged", targetMob.Model), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
 			{
@@ -648,7 +652,7 @@ namespace DOL.GS.Commands
 				GameObject obj = client.Player.CurrentRegion.GetObject(mobOID);
 				if (obj == null)
 				{
-					client.Out.SendMessage("No object with OID: " + args[1] + " in current Region.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.NoObjectWithOidInRegion", args[1]), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return null;
 				}
 				else
@@ -659,7 +663,7 @@ namespace DOL.GS.Commands
 					}
 					else
 					{
-						client.Out.SendMessage("Object " + mobOID + " is a " + obj.GetType().ToString() + ", not a GameNPC.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(T(client, "GMCommands.Mob.ObjectNotGameNpc", mobOID, obj.GetType()), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						return null;
 					}
 				}
@@ -686,7 +690,7 @@ namespace DOL.GS.Commands
 
 				targetMob.Size = (byte)mobSize;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob size changed to: " + targetMob.Size, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.SizeChanged", targetMob.Size), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
 			{
@@ -737,7 +741,7 @@ namespace DOL.GS.Commands
 			{
 				targetMob.Name = CheckName(mobName, client);
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob name changed to: " + targetMob.Name, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.NameChanged", targetMob.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			else
 			{
@@ -749,7 +753,7 @@ namespace DOL.GS.Commands
 		{
 			if (targetMob.GetType().IsSubclassOf(typeof(GameMovingObject)))
 			{
-				client.Out.SendMessage("You cannot set a suffix for GameMovingObjects.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.CannotSetSuffixForMovingObjects"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -762,7 +766,7 @@ namespace DOL.GS.Commands
 			{
 				targetMob.Suffix = suf;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob suffix changed to: " + suf, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.SuffixChanged", suf), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			else
 				DisplaySyntax(client, args[1]);
@@ -779,7 +783,7 @@ namespace DOL.GS.Commands
 			{
 				targetMob.GuildName = CheckGuildName(guildName, client);
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob guild changed to: " + targetMob.GuildName, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.GuildChanged", targetMob.GuildName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			else
 			{
@@ -787,7 +791,7 @@ namespace DOL.GS.Commands
 				{
 					targetMob.GuildName = string.Empty;
 					targetMob.SaveIntoDatabase();
-					client.Out.SendMessage("Mob guild removed.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.GuildRemoved"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				else
 					DisplaySyntax(client, args[1]);
@@ -798,8 +802,7 @@ namespace DOL.GS.Commands
 		{
 			if (targetMob.GetType().IsSubclassOf(typeof(GameMovingObject)))
 			{
-				client.Out.SendMessage("Please change the default language examine article for GameMovingObjects in your code / database. If you want to set a " +
-				                       "examine article for other languages, please use '/translate examinearticle <language> <examine article>'.",
+				client.Out.SendMessage(T(client, "GMCommands.Mob.ChangeMovingObjectExamineArticleInCode"),
 				                       eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
@@ -813,7 +816,7 @@ namespace DOL.GS.Commands
 			{
 				targetMob.ExamineArticle = exa;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob examine article changed to: " + exa, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.ExamineArticleChanged", exa), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			else
 				DisplaySyntax(client, args[1]);
@@ -823,8 +826,7 @@ namespace DOL.GS.Commands
 		{
 			if (targetMob.GetType().IsSubclassOf(typeof(GameMovingObject)))
 			{
-				client.Out.SendMessage("Please change the default language message article for GameMovingObjects in your code / database. If you want to set a " +
-				                       "message article for other languages, please use '/translate messagearticle <language> <message article>'.",
+				client.Out.SendMessage(T(client, "GMCommands.Mob.ChangeMovingObjectMessageArticleInCode"),
 				                       eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
@@ -838,7 +840,7 @@ namespace DOL.GS.Commands
 			{
 				targetMob.Suffix = msg;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob message article changed to: " + msg, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.MessageArticleChanged", msg), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			else
 				DisplaySyntax(client, args[1]);
@@ -848,7 +850,7 @@ namespace DOL.GS.Commands
 		{
 			targetMob.Flags ^= GameNPC.eFlags.PEACE;
 			targetMob.SaveIntoDatabase();
-			client.Out.SendMessage("Mob PEACE flag is set to " + ((targetMob.Flags & GameNPC.eFlags.PEACE) != 0), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.FlagSet", "PEACE", ((targetMob.Flags & GameNPC.eFlags.PEACE) != 0)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void aggro(GameClient client, GameNPC targetMob, string[] args)
@@ -869,17 +871,17 @@ namespace DOL.GS.Commands
 			{
 				((IOldAggressiveBrain)targetMob.Brain).AggroLevel = aggroLevel;
 				targetMob.SaveIntoDatabase();
-				DisplayMessage(client, "Mob aggro changed to " + aggroLevel);
+				DisplayMessage(client, T(client, "GMCommands.Mob.AggroChanged", aggroLevel));
 			}
 			else
-				DisplayMessage(client, "Selected mob does not have an aggressive brain.");
+				DisplayMessage(client, T(client, "GMCommands.Mob.NoAggressiveBrain"));
 		}
 
 		private void race(GameClient client, GameNPC targetMob, string[] args)
 		{
 			if (args.Length < 3)
 			{
-				DisplayMessage(client, targetMob.Name + "'s race is " + targetMob.Race + ".");
+				DisplayMessage(client, T(client, "GMCommands.Mob.RaceIs", targetMob.Name, targetMob.Race));
 				return;
 			}
 
@@ -889,7 +891,7 @@ namespace DOL.GS.Commands
 			if (reloadResists)
 			{
 				SkillBase.InitializeRaceResists();
-				DisplayMessage(client, "Race resists reloaded from database.");
+				DisplayMessage(client, T(client, "GMCommands.Mob.RaceResistsReloaded"));
 				return;
 			}
 
@@ -904,7 +906,7 @@ namespace DOL.GS.Commands
 
 				if (npcRace == null)
 				{
-					DisplayMessage(client, "No race found named:  " + raceName);
+					DisplayMessage(client, T(client, "GMCommands.Mob.NoRaceFoundNamed", raceName));
 				}
 				else
 				{
@@ -916,7 +918,7 @@ namespace DOL.GS.Commands
 			{
 				targetMob.Race = raceID;
 				targetMob.SaveIntoDatabase();
-				DisplayMessage(client, targetMob.Name + "'s race set to " + raceID);
+				DisplayMessage(client, T(client, "GMCommands.Mob.RaceSet", targetMob.Name, raceID));
 			}
 		}
 
@@ -931,11 +933,11 @@ namespace DOL.GS.Commands
 					int range = int.Parse(args[2]);
 					aggroBrain.AggroRange = range;
 					targetMob.SaveIntoDatabase();
-					DisplayMessage(client, "Mob aggro range changed to {0}", aggroBrain.AggroRange);
+					DisplayMessage(client, T(client, "GMCommands.Mob.AggroRangeChanged", aggroBrain.AggroRange));
 				}
 				else
 				{
-					DisplayMessage(client, "Selected mob does not have an aggressive brain.");
+					DisplayMessage(client, T(client, "GMCommands.Mob.NoAggressiveBrain"));
 				}
 			}
 			catch
@@ -954,7 +956,7 @@ namespace DOL.GS.Commands
 				maxRoamingRange = Convert.ToInt32(args[2]);
 				targetMob.RoamingRange = maxRoamingRange;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob Roaming Range changed to: " + targetMob.RoamingRange, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.RoamingRangeChanged", targetMob.RoamingRange), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
 			{
@@ -970,7 +972,7 @@ namespace DOL.GS.Commands
 				eDamageType damage = (eDamageType)Enum.Parse(typeof(eDamageType), args[2], true);
 				targetMob.MeleeDamageType = damage;
 				targetMob.SaveIntoDatabase();
-				DisplayMessage(client, "Mob damage type changed to: {0}", targetMob.MeleeDamageType);
+				DisplayMessage(client, T(client, "GMCommands.Mob.DamageTypeChanged", targetMob.MeleeDamageType));
 			}
 			catch
 			{
@@ -982,7 +984,7 @@ namespace DOL.GS.Commands
 		{
 			targetMob.MoveTo(client.Player.CurrentRegionID, client.Player.X, client.Player.Y, client.Player.Z, client.Player.Heading);
 			targetMob.SaveIntoDatabase();
-			client.Out.SendMessage("Target Mob '" + targetMob.Name + "' moved to your location!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.MovedToYourLocation", targetMob.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void location(GameClient client, GameNPC targetMob, string[] args)
@@ -1016,14 +1018,14 @@ namespace DOL.GS.Commands
 					GameServer.Database.DeleteObject(deleteLoots);
 
 					var deleteLootTempl = DOLDB<DbLootTemplate>.SelectObjects(DB.Column("TemplateName").IsEqualTo(mobName));
-					
+
 					GameServer.Database.DeleteObject(deleteLootTempl);
 
-					DisplayMessage(client, "Removed MobXLootTemplate and LootTemplate entries for " + mobName + " from DB.");
+					DisplayMessage(client, T(client, "GMCommands.Mob.RemovedLootTemplates", mobName));
 				}
 			}
 
-			client.Out.SendMessage("Target Mob removed from DB.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.RemovedFromDb"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void flags(GameClient client, GameNPC targetMob, string[] args)
@@ -1042,28 +1044,28 @@ namespace DOL.GS.Commands
 
 			targetMob.Flags = (GameNPC.eFlags)flag;
 			targetMob.SaveIntoDatabase();
-			client.Out.SendMessage("Mob flags are set to " + targetMob.Flags.ToString(), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.FlagsSet", targetMob.Flags), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void ghost(GameClient client, GameNPC targetMob, string[] args)
 		{
 			targetMob.Flags ^= GameNPC.eFlags.GHOST;
 			targetMob.SaveIntoDatabase();
-			client.Out.SendMessage("Mob GHOST flag is set to " + ((targetMob.Flags & GameNPC.eFlags.GHOST) != 0), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.FlagSet", "GHOST", ((targetMob.Flags & GameNPC.eFlags.GHOST) != 0)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void stealth(GameClient client, GameNPC targetMob, string[] args)
 		{
 			targetMob.Flags ^= GameNPC.eFlags.STEALTH;
 			targetMob.SaveIntoDatabase();
-			client.Out.SendMessage("Mob STEALTH flag is set to " + ((targetMob.Flags & GameNPC.eFlags.STEALTH) != 0), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.FlagSet", "STEALTH", ((targetMob.Flags & GameNPC.eFlags.STEALTH) != 0)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void torch(GameClient client, GameNPC targetMob, string[] args)
 		{
 			targetMob.Flags ^= GameNPC.eFlags.TORCH;
 			targetMob.SaveIntoDatabase();
-			client.Out.SendMessage("Mob TORCH flag is set to " + ((targetMob.Flags & GameNPC.eFlags.TORCH) != 0), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.FlagSet", "TORCH", ((targetMob.Flags & GameNPC.eFlags.TORCH) != 0)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void statue(GameClient client, GameNPC targetMob, string[] args)
@@ -1072,9 +1074,9 @@ namespace DOL.GS.Commands
 			targetMob.SaveIntoDatabase();
 
 			if ((targetMob.Flags & GameNPC.eFlags.STATUE) > 0)
-				client.Out.SendMessage("You have set the STATUE flag - you will need to use \"/debug on\" to target this NPC.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.StatueNeedsDebug"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
-			client.Out.SendMessage(targetMob.Name + "'s STATUE flag is set to " + ((targetMob.Flags & GameNPC.eFlags.STATUE) != 0), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.NamedFlagSet", targetMob.Name, "STATUE", ((targetMob.Flags & GameNPC.eFlags.STATUE) != 0)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void fly(GameClient client, GameNPC targetMob, string[] args)
@@ -1098,28 +1100,28 @@ namespace DOL.GS.Commands
 
 			targetMob.SaveIntoDatabase();
 
-			client.Out.SendMessage(targetMob.Name + "'s FLYING flag is set to " + ((targetMob.Flags & GameNPC.eFlags.FLYING) != 0), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.NamedFlagSet", targetMob.Name, "FLYING", ((targetMob.Flags & GameNPC.eFlags.FLYING) != 0)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void swimming(GameClient client, GameNPC targetMob, string[] args)
 		{
 			targetMob.Flags ^= GameNPC.eFlags.SWIMMING;
 			targetMob.SaveIntoDatabase();
-			client.Out.SendMessage("Mob SWIMMING flag is set to " + ((targetMob.Flags & GameNPC.eFlags.SWIMMING) != 0), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.FlagSet", "SWIMMING", ((targetMob.Flags & GameNPC.eFlags.SWIMMING) != 0)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void noname(GameClient client, GameNPC targetMob, string[] args)
 		{
 			targetMob.Flags ^= GameNPC.eFlags.DONTSHOWNAME;
 			targetMob.SaveIntoDatabase();
-			client.Out.SendMessage("Mob DONTSHOWNAME flag is set to " + ((targetMob.Flags & GameNPC.eFlags.DONTSHOWNAME) != 0), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.FlagSet", "DONTSHOWNAME", ((targetMob.Flags & GameNPC.eFlags.DONTSHOWNAME) != 0)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void notarget(GameClient client, GameNPC targetMob, string[] args)
 		{
 			targetMob.Flags ^= GameNPC.eFlags.CANTTARGET;
 			targetMob.SaveIntoDatabase();
-			client.Out.SendMessage("Mob CANTTARGET flag is set to " + ((targetMob.Flags & GameNPC.eFlags.CANTTARGET) != 0), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.FlagSet", "CANTTARGET", ((targetMob.Flags & GameNPC.eFlags.CANTTARGET) != 0)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void kill(GameClient client, GameNPC targetMob, string[] args)
@@ -1130,7 +1132,7 @@ namespace DOL.GS.Commands
 				{
 					targetMob.AddXPGainer(client.Player, targetMob.Health);
 					targetMob.Die(client.Player);
-					client.Out.SendMessage("Mob '" + targetMob.Name + "' killed", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.Killed", targetMob.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 			}
 			catch (Exception e)
@@ -1146,7 +1148,7 @@ namespace DOL.GS.Commands
 				targetMob.Health = targetMob.MaxHealth;
 				targetMob.SaveIntoDatabase();
 				ClientService.UpdateNpcForPlayer(client.Player, targetMob);
-				client.Out.SendMessage("Mob '" + targetMob.Name + "' healed (" + targetMob.Health + "/" + targetMob.MaxHealth + ")", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.Healed", targetMob.Name, targetMob.Health, targetMob.MaxHealth), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception e)
 			{
@@ -1319,7 +1321,7 @@ namespace DOL.GS.Commands
 			}
 			client.Out.SendCustomTextWindow("[ " + targetMob.Name + " ]", info);
 		}
-		
+
 
 		private void realm(GameClient client, GameNPC targetMob, string[] args)
 		{
@@ -1330,7 +1332,7 @@ namespace DOL.GS.Commands
 				realm = Convert.ToByte(args[2]);
 				targetMob.Realm = (eRealm)realm;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob realm changed to: " + GlobalConstants.RealmToName(targetMob.Realm), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.RealmChanged", GlobalConstants.RealmToName(targetMob.Realm)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
 			{
@@ -1347,7 +1349,7 @@ namespace DOL.GS.Commands
 				maxSpeed = Convert.ToInt16(args[2]);
 				targetMob.MaxSpeedBase = maxSpeed;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob MaxSpeed changed to: " + targetMob.MaxSpeedBase, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.MaxSpeedChanged", targetMob.MaxSpeedBase), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
 			{
@@ -1363,7 +1365,7 @@ namespace DOL.GS.Commands
 			{
 				targetMob.Level = level;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob level changed to: " + targetMob.Level, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.LevelChanged", targetMob.Level), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			else
 			{
@@ -1381,14 +1383,14 @@ namespace DOL.GS.Commands
 				targetMob.Level = level;
 				targetMob.SetStats();
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob level changed to: " + targetMob.Level + " and stats adjusted", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.LevelChangedStatsAdjusted", targetMob.Level), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
 			{
 				DisplaySyntax(client, args[1]);
 			}
 		}
-		
+
 		private void autostats(GameClient client, GameNPC targetMob)
 		{
 
@@ -1396,7 +1398,7 @@ namespace DOL.GS.Commands
 			{
 				targetMob.SetStats();
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob stats adjusted to level " + targetMob.Level, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.StatsAdjustedToLevel", targetMob.Level), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
 			{
@@ -1438,10 +1440,10 @@ namespace DOL.GS.Commands
 					foreach (Assembly script in ScriptMgr.GameServerScripts)
 					{
 						try
-						{							
+						{
 							client.Out.SendDebugMessage(script.FullName);
 							brains = (ABrain)script.CreateInstance(brainType, false);
-							
+
 							if (brains != null) break;
 						}
 						catch (Exception e)
@@ -1452,13 +1454,13 @@ namespace DOL.GS.Commands
 				}
 				if (brains == null)
 				{
-					client.Out.SendMessage("Could not find brain " + brainType + ". Check spelling and script namespace (case sensitive)", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.BrainNotFound", brainType), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				else
 				{
 					targetMob.SetOwnBrain(brains);
 					targetMob.SaveIntoDatabase();
-					client.Out.SendMessage(targetMob.Name + "'s brain set to " + targetMob.Brain.ToString(), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.BrainSet", targetMob.Name, targetMob.Brain), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 			}
 			catch (Exception)
@@ -1476,7 +1478,7 @@ namespace DOL.GS.Commands
 				interval = Convert.ToInt32(args[2]);
 				targetMob.RespawnInterval = interval;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob respawn interval changed to: " + interval, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.RespawnIntervalChanged", interval), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
 			{
@@ -1488,19 +1490,19 @@ namespace DOL.GS.Commands
 		{
 			if (targetMob.QuestListToGive.Count == 0 && targetMob.DataQuestList.Count == 0)
 			{
-				client.Out.SendMessage("Mob does not have any quests.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.NoQuests"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			else
 			{
-				client.Out.SendMessage("Scripted Quests: ------------------------", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.ScriptedQuestsHeader"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 
 				foreach (AbstractQuest quest in targetMob.QuestListToGive)
-					client.Out.SendMessage("Quest Name: [" + quest.Name + "]", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.QuestName", quest.Name), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 
-				client.Out.SendMessage("Data Quests: ----------------------------", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.DataQuestsHeader"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 
 				foreach (DataQuest dq in targetMob.DataQuestList)
-					client.Out.SendMessage("Quest Name: [" + dq.Name + "] : " + (DataQuest.eStartType)dq.DBDataQuest.StartType, eChatType.CT_System, eChatLoc.CL_PopupWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.DataQuestName", dq.Name, (DataQuest.eStartType)dq.DBDataQuest.StartType), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 
 			}
 		}
@@ -1515,7 +1517,7 @@ namespace DOL.GS.Commands
 				{
 					player.Out.SendNPCsQuestEffect(targetMob, targetMob.GetQuestIndicator(player));
 				}
-				client.Out.SendMessage(targetMob.DataQuestList.Count + " Data Quests loaded for this mob.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.DataQuestsLoaded", targetMob.DataQuestList.Count), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception ex)
 			{
@@ -1528,7 +1530,7 @@ namespace DOL.GS.Commands
 		{
 			if (targetMob.Inventory == null)
 			{
-				client.Out.SendMessage("Mob inventory not found.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.InventoryNotFound"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -1548,12 +1550,12 @@ namespace DOL.GS.Commands
 
 			foreach (DbInventoryItem item in targetMob.Inventory.AllItems)
 			{
-				client.Out.SendMessage("Slot Description : [" + GlobalConstants.SlotToName(item.SlotPosition) + "]", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.SlotDescription", GlobalConstants.SlotToName(item.SlotPosition)), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 				client.Out.SendMessage("------------", eChatType.CT_System, eChatLoc.CL_PopupWindow);
-				client.Out.SendMessage("         Slot: " + GlobalConstants.SlotToName(item.Item_Type), eChatType.CT_System, eChatLoc.CL_PopupWindow);
-				client.Out.SendMessage("        Model: " + item.Model, eChatType.CT_System, eChatLoc.CL_PopupWindow);
-				client.Out.SendMessage("        Color: " + item.Color, eChatType.CT_System, eChatLoc.CL_PopupWindow);
-				client.Out.SendMessage("       Effect: " + item.Effect, eChatType.CT_System, eChatLoc.CL_PopupWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.EquipmentSlot", GlobalConstants.SlotToName(item.Item_Type)), eChatType.CT_System, eChatLoc.CL_PopupWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.EquipmentModel", item.Model), eChatType.CT_System, eChatLoc.CL_PopupWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.EquipmentColor", item.Color), eChatType.CT_System, eChatLoc.CL_PopupWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.EquipmentEffect", item.Effect), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 				client.Out.SendMessage("------------", eChatType.CT_System, eChatLoc.CL_PopupWindow);
 				client.Out.SendMessage("", eChatType.CT_System, eChatLoc.CL_PopupWindow);
 			}
@@ -1572,7 +1574,7 @@ namespace DOL.GS.Commands
 				targetMob.Inventory = null;
 				targetMob.EquipmentTemplateID = null;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob equipment cleared.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.EquipmentCleared"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				targetMob.BroadcastLivingEquipmentUpdate();
 				return;
 			}
@@ -1582,13 +1584,13 @@ namespace DOL.GS.Commands
 				{
 					if (targetMob.Inventory != null)
 					{
-						client.Out.SendMessage("Target mob inventory is set to " + targetMob.Inventory.GetType() + ", remove it first.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(T(client, "GMCommands.Mob.InventoryAlreadySet", targetMob.Inventory.GetType()), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						return;
 					}
 
 					targetMob.Inventory = new GameNpcInventoryTemplate();
 
-					client.Out.SendMessage("Inventory template created.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.InventoryTemplateCreated"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				catch
 				{
@@ -1604,7 +1606,7 @@ namespace DOL.GS.Commands
 				{
 					if (targetMob.Inventory != null && !(targetMob.Inventory is GameNpcInventoryTemplate))
 					{
-						client.Out.SendMessage("Target mob is not using GameNpcInventoryTemplate.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(T(client, "GMCommands.Mob.NotUsingInventoryTemplate"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						return;
 					}
 					try
@@ -1613,7 +1615,7 @@ namespace DOL.GS.Commands
 
 						if (!load.LoadFromDatabase(args[3]))
 						{
-							client.Out.SendMessage("Error loading equipment template \"" + args[3] + "\"", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.Mob.ErrorLoadingEquipmentTemplate", args[3]), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
@@ -1621,7 +1623,7 @@ namespace DOL.GS.Commands
 						targetMob.Inventory = load;
 						targetMob.SaveIntoDatabase();
 						targetMob.BroadcastLivingEquipmentUpdate();
-						client.Out.SendMessage("Mob equipment loaded!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(T(client, "GMCommands.Mob.EquipmentLoaded"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					}
 					catch
 					{
@@ -1639,7 +1641,7 @@ namespace DOL.GS.Commands
 			GameNpcInventoryTemplate template = targetMob.Inventory as GameNpcInventoryTemplate;
 			if (template == null)
 			{
-				client.Out.SendMessage("Target mob is not using GameNpcInventoryTemplate.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.NotUsingInventoryTemplate"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -1655,7 +1657,7 @@ namespace DOL.GS.Commands
 
 								if (slot == 0)
 								{
-									client.Out.SendMessage("No such slot available, remember to use slot name (distance, torso, cloak, etc.)!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+									client.Out.SendMessage(T(client, "GMCommands.Mob.NoSuchSlotUseName"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 									return;
 								}
 
@@ -1673,11 +1675,11 @@ namespace DOL.GS.Commands
 
 								if (!template.AddNPCEquipment((eInventorySlot)slot, model, color, effect, extension))
 								{
-									client.Out.SendMessage("Couldn't add new item to slot " + slot + ". Template could be closed.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+									client.Out.SendMessage(T(client, "GMCommands.Mob.CouldNotAddItemToSlot", slot), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 									return;
 								}
 
-								client.Out.SendMessage("Item added to the mob's inventory template.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+								client.Out.SendMessage(T(client, "GMCommands.Mob.ItemAddedToInventoryTemplate"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							}
 							catch
 							{
@@ -1703,16 +1705,16 @@ namespace DOL.GS.Commands
 
 								if (slot == 0)
 								{
-									client.Out.SendMessage("No such slot available!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+									client.Out.SendMessage(T(client, "GMCommands.Mob.NoSuchSlot"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 									return;
 								}
 
 								if (!template.RemoveNPCEquipment((eInventorySlot)slot))
 								{
-									client.Out.SendMessage("Couldn't remove item from slot " + slot + ". Template could be closed.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+									client.Out.SendMessage(T(client, "GMCommands.Mob.CouldNotRemoveItemFromSlot", slot), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 									return;
 								}
-								client.Out.SendMessage("Mob inventory template slot " + slot + " cleaned!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+								client.Out.SendMessage(T(client, "GMCommands.Mob.InventoryTemplateSlotCleaned", slot), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							}
 							catch
 							{
@@ -1732,12 +1734,12 @@ namespace DOL.GS.Commands
 					{
 						if (template.IsClosed)
 						{
-							client.Out.SendMessage("Template is already closed.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.Mob.TemplateAlreadyClosed"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 
 						targetMob.Inventory = template.CloseTemplate();
-						client.Out.SendMessage("Inventory template closed succesfully.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(T(client, "GMCommands.Mob.InventoryTemplateClosed"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					}
 					break;
 
@@ -1757,21 +1759,21 @@ namespace DOL.GS.Commands
 								}
 								else
 								{
-									client.Out.SendMessage("Template with name '" + args[3] + "' already exists. Use the 'replace' parameter if you want to overwrite it.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+									client.Out.SendMessage(T(client, "GMCommands.Mob.TemplateAlreadyExists", args[3]), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 									return;
 								}
 							}
 
 							if (!targetMob.Inventory.SaveIntoDatabase(args[3]))
 							{
-								client.Out.SendMessage("Error saving template with name " + args[3], eChatType.CT_System, eChatLoc.CL_SystemWindow);
+								client.Out.SendMessage(T(client, "GMCommands.Mob.ErrorSavingTemplate", args[3]), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 								return;
 							}
 
 							targetMob.EquipmentTemplateID = args[3];
 							targetMob.SaveIntoDatabase();
 							GameNpcInventoryTemplate.Init();
-							client.Out.SendMessage("Target mob equipment template is saved as '" + args[3] + "'", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(T(client, "GMCommands.Mob.EquipmentTemplateSavedAs", args[3]), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return;
 						}
 						else
@@ -1797,7 +1799,7 @@ namespace DOL.GS.Commands
 
 				if (slot == 0)
 				{
-					client.Out.SendMessage("Bad slot.  Use names like right, left, two, distance.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.BadVisibleSlot"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return;
 				}
 
@@ -1817,12 +1819,12 @@ namespace DOL.GS.Commands
 						break;
 
 					default:
-						client.Out.SendMessage("Invalid slot, must be a weapon slot (right, left, two, distance)!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(T(client, "GMCommands.Mob.InvalidWeaponSlot"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						return;
 				}
 
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Visible weapon slot set to " + slotname, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.VisibleWeaponSlotSet", slotname), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch
 			{
@@ -1837,7 +1839,7 @@ namespace DOL.GS.Commands
 
 			if (args.Length < 3)
 			{
-				DisplayMessage(client, "Mob '" + targetMob.Name + "' drops " + mxlt.DropCount + " items.");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Mob.DropsItems", targetMob.Name, mxlt.DropCount));
 			}
 			else
 			{
@@ -1862,7 +1864,7 @@ namespace DOL.GS.Commands
 					GameServer.Database.AddObject(mxlt);
 				else
 					GameServer.Database.SaveObject(mxlt);
-				DisplayMessage(client, "Mob '" + targetMob.Name + "' will drop a maximum of " + mxlt.DropCount + " items!");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Mob.WillDropMaxItems", targetMob.Name, mxlt.DropCount));
 			}
 		}
 
@@ -1889,7 +1891,7 @@ namespace DOL.GS.Commands
 				if (item == null)
 				{
 					DisplayMessage(client,
-					               "You cannot add the " + lootTemplateID + " to the " + targetMob.Name + " because the item does not exist.");
+					               T(client, "GMCommands.Mob.CannotAddMissingItem", lootTemplateID, targetMob.Name));
 					return;
 				}
 
@@ -1911,7 +1913,7 @@ namespace DOL.GS.Commands
 					DbItemTemplate itemtemplate = GameServer.Database.FindObjectByKey<DbItemTemplate>(lootTemplateID);
 					if (itemtemplate == null)
 					{
-						DisplayMessage(client, "ItemTemplate " + lootTemplateID + " not found!");
+						DisplayMessage(client, T(client, "GMCommands.Mob.ItemTemplateNotFound", lootTemplateID));
 						return;
 					}
 
@@ -1927,13 +1929,13 @@ namespace DOL.GS.Commands
 				if (chance < 100)
 				{
 					client.Out.SendMessage(
-						item.Name + " was succesfully added to the loot list for  " + name + " with a " + chance + "% chance to drop!",
+						T(client, "GMCommands.Mob.LootAddedWithChance", item.Name, name, chance),
 						eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				else
 				{
 					client.Out.SendMessage(
-						item.Name + " was succesfully added to the loot list for " + name + " with a drop count of " + numDrops + "!",
+						T(client, "GMCommands.Mob.LootAddedWithDropCount", item.Name, name, numDrops),
 						eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 
@@ -1942,12 +1944,12 @@ namespace DOL.GS.Commands
 				if (mxlt == null)
 				{
 					DisplayMessage(client,
-					               "If you need to limit max number of drops per kill for this mob then use /mob addmobxlt <max num drops> to add a MobXLootTemplate entry.");
+					               T(client, "GMCommands.Mob.UseDropcountToLimitDrops"));
 				}
 				else
 				{
 					DisplayMessage(client,
-					               "A MobXLootTemplate entry exists for this mob and limits the total drops per kill to " + mxlt.DropCount);
+					               T(client, "GMCommands.Mob.DropLimitExists", mxlt.DropCount));
 				}
 
 			}
@@ -1968,7 +1970,7 @@ namespace DOL.GS.Commands
 				DbItemTemplate item = GameServer.Database.FindObjectByKey<DbItemTemplate>(itemTemplateID);
 				if (item == null)
 				{
-					DisplayMessage(client, "You cannot add the " + itemTemplateID + " to the " + targetMob.Name + " because the item does not exist.");
+					DisplayMessage(client, T(client, "GMCommands.Mob.CannotAddMissingItem", itemTemplateID, targetMob.Name));
 					return;
 				}
 
@@ -1976,14 +1978,14 @@ namespace DOL.GS.Commands
 
 				if (otd != null)
 				{
-					DisplayMessage(client, "ItemTemplate " + itemTemplateID + " is already in this in " + mobName + "'s OTD list!");
+					DisplayMessage(client, T(client, "GMCommands.Mob.ItemAlreadyInOtdList", itemTemplateID, mobName));
 				}
 				else
 				{
 					DbItemTemplate itemtemplate = GameServer.Database.FindObjectByKey<DbItemTemplate>(itemTemplateID);
 					if (itemtemplate == null)
 					{
-						DisplayMessage(client, "ItemTemplate " + itemTemplateID + " not found!");
+						DisplayMessage(client, T(client, "GMCommands.Mob.ItemTemplateNotFound", itemTemplateID));
 						return;
 					}
 
@@ -1993,7 +1995,7 @@ namespace DOL.GS.Commands
 					loot.MinLevel = minlevel;
 					GameServer.Database.AddObject(loot);
 					refreshloot(client, targetMob, null);
-					client.Out.SendMessage(itemTemplateID + " was succesfully added to " + mobName + "'s one time drop list.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.AddedToOtdList", itemTemplateID, mobName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 
 			}
@@ -2018,7 +2020,7 @@ namespace DOL.GS.Commands
 				}
 
 				DbItemTemplate[] templates = LootMgr.GetLoot(targetMob, client.Player);
-				DisplayMessage(client, "[ " + targetMob.Name + "'s Loot Table ]\n\n");
+				DisplayMessage(client, T(client, "GMCommands.Mob.LootTableTitle", targetMob.Name) + "\n\n");
 				foreach (DbItemTemplate temp in templates)
 				{
 					string message = string.Format("Name: {0}, Id_nb: {1}", temp.Name, temp.Id_nb);
@@ -2047,11 +2049,11 @@ namespace DOL.GS.Commands
 						}
 						else
 						{
-							text.Add("Error, Item not found: " + otd.ItemTemplateID);
+							text.Add(T(client, "GMCommands.Mob.ErrorItemNotFound", otd.ItemTemplateID));
 						}
 					}
 
-					client.Out.SendCustomTextWindow(targetMob.Name + "'s One Time Drops", text);
+					client.Out.SendCustomTextWindow(T(client, "GMCommands.Mob.OneTimeDropsTitle", targetMob.Name), text);
 				}
 
 				text.Add("");
@@ -2064,7 +2066,7 @@ namespace DOL.GS.Commands
 				text.Add("");
 				DisplayLoots<DbMobDropTemplate, DbDropTemplateXItemTemplate>(text, targetMob);
 
-				client.Out.SendCustomTextWindow(targetMob.Name + "'s Loot Table", text);
+				client.Out.SendCustomTextWindow(T(client, "GMCommands.Mob.LootTableTitle", targetMob.Name), text);
 			}
 		}
 
@@ -2074,7 +2076,7 @@ namespace DOL.GS.Commands
 		{
 			bool didDefault = false;
 			bool fromNPCT = false;
-			
+
 			// is a templated mob, so its drop list is
 			IEnumerable<MobDropTemplateType> mobXloot = null;
 			string mobName = mob.Name;
@@ -2084,7 +2086,7 @@ namespace DOL.GS.Commands
 				mobXloot = DOLDB<MobDropTemplateType>.SelectObjects(DB.Column("MobName").IsEqualTo(mob.NPCTemplate.TemplateId));
 			}
 			if (mobXloot==null || (mobXloot!=null && mobXloot.Count()==0)) mobXloot = DOLDB<MobDropTemplateType>.SelectObjects(DB.Column("MobName").IsEqualTo(mobName));
-			
+
 			foreach (var mobXtemplate in mobXloot)
 			{
 				didDefault = didDefault || mobXtemplate.LootTemplateName == mobName;
@@ -2133,11 +2135,11 @@ namespace DOL.GS.Commands
 					}
 
 					refreshloot(client, targetMob, null);
-					client.Out.SendMessage("Removed all items from " + targetMob.Name, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.RemovedAllItemsFrom", targetMob.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				else
 				{
-					client.Out.SendMessage("No items found on " + targetMob.Name, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.NoItemsFoundOn", targetMob.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 			}
 			else
@@ -2150,11 +2152,11 @@ namespace DOL.GS.Commands
 					GameServer.Database.DeleteObject(template);
 
 					refreshloot(client, targetMob, null);
-					client.Out.SendMessage(lootTemplateID + " removed from " + targetMob.Name, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.ItemRemovedFrom", lootTemplateID, targetMob.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				else
 				{
-					client.Out.SendMessage(lootTemplateID + " does not exist on " + name, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.ItemDoesNotExistOn", lootTemplateID, name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 			}
 		}
@@ -2172,11 +2174,11 @@ namespace DOL.GS.Commands
 
 				refreshloot(client, targetMob, null);
 
-				client.Out.SendMessage(itemTemplateID + " OTD removed from " + targetMob.Name, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.OtdRemovedFrom", itemTemplateID, targetMob.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			else
 			{
-				client.Out.SendMessage(itemTemplateID + " OTD does not exist on " + name, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.OtdDoesNotExistOn", itemTemplateID, name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 
@@ -2230,7 +2232,7 @@ namespace DOL.GS.Commands
 
 			if (mob == null)
 			{
-				client.Out.SendMessage("There was an error creating an instance of " + args[2] + ".", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.CreateInstanceError", args[2]), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -2302,7 +2304,7 @@ namespace DOL.GS.Commands
 
 			if (brain == null)
 			{
-				client.Out.SendMessage("Cannot create brain, standard brain being applied", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.CannotCreateBrainUsingStandard"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				mob.SetOwnBrain(new StandardMobBrain());
 			}
 			else
@@ -2322,7 +2324,7 @@ namespace DOL.GS.Commands
 			targetMob.DeleteFromDatabase();
 			targetMob.Delete();
 
-			client.Out.SendMessage("Mob class changed: OID=" + mob.ObjectID, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.ClassChanged", mob.ObjectID), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void copy(GameClient client, GameNPC targetMob, string[] args)
@@ -2369,7 +2371,7 @@ namespace DOL.GS.Commands
 
 				if (mob == null || targetMob == null)
 				{
-					client.Out.SendMessage("Unable to find mob named:  " + mobName, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.UnableToFindNamed", mobName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return;
 				}
 			}
@@ -2377,7 +2379,7 @@ namespace DOL.GS.Commands
 			{
 				if (targetMob == null)
 				{
-					client.Out.SendMessage("You must have a mob targeted to copy.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.NeedMobTargetToCopy"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return;
 				}
 
@@ -2390,7 +2392,7 @@ namespace DOL.GS.Commands
 
 				if (mob == null)
 				{
-					client.Out.SendMessage("There was an error creating an instance of " + targetMob.GetType().FullName + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.CreateInstanceError", targetMob.GetType().FullName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return;
 				}
 			}
@@ -2456,7 +2458,7 @@ namespace DOL.GS.Commands
 
 			if (brain == null)
 			{
-				client.Out.SendMessage("Cannot create brain, standard brain being applied", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.CannotCreateBrainUsingStandard"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				mob.SetOwnBrain(new StandardMobBrain());
 			}
 			else if (brain is StandardMobBrain)
@@ -2474,11 +2476,11 @@ namespace DOL.GS.Commands
 			mob.AddToWorld();
 			mob.LoadedFromScript = false;
 			mob.SaveIntoDatabase();
-			client.Out.SendMessage("Mob created: OID=" + mob.ObjectID, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.Created", mob.ObjectID), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			if ((mob.Flags & GameNPC.eFlags.PEACE) != 0)
 			{
 				// because copying 100 mobs with their peace flag set is not fun
-				client.Out.SendMessage("This mobs PEACE flag is set!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.PeaceFlagSet"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 			}
 		}
 
@@ -2523,7 +2525,7 @@ namespace DOL.GS.Commands
 
 			if (template == null)
 			{
-				DisplayMessage(client, "No template found for " + id, new object[] { });
+				DisplayMessage(client, T(client, "GMCommands.Mob.NoTemplateFound", id), new object[] { });
 				return;
 			}
 
@@ -2536,7 +2538,7 @@ namespace DOL.GS.Commands
 				mob.Heading = client.Player.Heading;
 				mob.CurrentRegion = client.Player.CurrentRegion;
 				mob.AddToWorld();
-				DisplayMessage(client, "Created npc based on template " + id, new object[] { });
+				DisplayMessage(client, T(client, "GMCommands.Mob.CreatedNpcFromTemplate", id), new object[] { });
 			}
 			else
 			{
@@ -2544,7 +2546,7 @@ namespace DOL.GS.Commands
 				targetMob.BroadcastLivingEquipmentUpdate();
 				targetMob.NPCTemplate = template as NpcTemplate;
 				targetMob.SaveIntoDatabase();
-				DisplayMessage(client, "Updated npc based on template " + id, new object[] { });
+				DisplayMessage(client, T(client, "GMCommands.Mob.UpdatedNpcFromTemplate", id), new object[] { });
 			}
 		}
 
@@ -2558,7 +2560,7 @@ namespace DOL.GS.Commands
 
 			if (targetMob == null)
 			{
-				DisplayMessage(client, "You must have a mob selected to create the template from.");
+				DisplayMessage(client, T(client, "GMCommands.Mob.NeedMobSelectedForTemplate"));
 				return;
 			}
 
@@ -2575,7 +2577,7 @@ namespace DOL.GS.Commands
 
 			if (template != null && replace == false)
 			{
-				DisplayMessage(client, "A template with the ID " + id + " already exists.");
+				DisplayMessage(client, T(client, "GMCommands.Mob.TemplateIdAlreadyExists", id));
 				return;
 			}
 
@@ -2583,7 +2585,7 @@ namespace DOL.GS.Commands
 			template.TemplateId = id;
 			template.SaveIntoDatabase();
 			NpcTemplateMgr.AddTemplate(template);
-			DisplayMessage(client, "NPCTemplate saved with ID = " + id + ".");
+			DisplayMessage(client, T(client, "GMCommands.Mob.NpcTemplateSaved", id));
 		}
 
 		private void path(GameClient client, GameNPC targetMob, string[] args)
@@ -2594,7 +2596,7 @@ namespace DOL.GS.Commands
 
 				if (pathname != string.Empty && MovementMgr.LoadPath(pathname) == null)
 				{
-					client.Out.SendMessage("The specified path does not exist", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.PathDoesNotExist"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				else
 				{
@@ -2604,7 +2606,7 @@ namespace DOL.GS.Commands
 					if (targetMob.Brain.Stop())
 						targetMob.Brain.Start();
 
-					client.Out.SendMessage("The path has been assigned to this mob", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.PathAssigned"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 			}
 			catch
@@ -2628,10 +2630,10 @@ namespace DOL.GS.Commands
 					targetMob.HouseNumber = house;
 					targetMob.CurrentHouse = H;
 					targetMob.SaveIntoDatabase();
-					client.Out.SendMessage("Mob house changed to: " + house, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.HouseChanged", house), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				else
-					client.Out.SendMessage("House number " + house + " doesn't exist.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.HouseDoesNotExist", house), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
 			{
@@ -2664,13 +2666,13 @@ namespace DOL.GS.Commands
 				}
 
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob " + statType + " changed to: " + statval, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.StatChanged", statType, statval), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
 				if (targetMob.LoadedFromScript == true)
 				{
 					// Maybe stat changes work on the current script-loaded mob, but are lost on repop or reboot?
 					// Send user a warning message, but don't cancel the function altogether
-					client.Out.SendMessage("This mob is loaded from a script - stat changes cannot be saved.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.ScriptLoadedStatsVolatile"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 			}
 			catch (Exception)
@@ -2686,8 +2688,8 @@ namespace DOL.GS.Commands
 			{
 				int tether = Convert.ToInt32(args[2]);
 				targetMob.TetherRange = tether;
-				client.Out.SendMessage("Mob tether range changed to: " + tether, eChatType.CT_System, eChatLoc.CL_SystemWindow);
-				client.Out.SendMessage("Keep in mind that this setting is volatile, it needs to be set in this NPC's template to become permanent.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.TetherRangeChanged", tether), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.TemplateSettingPermanentNote"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
 			{
@@ -2700,7 +2702,7 @@ namespace DOL.GS.Commands
 			targetMob.IsCloakHoodUp ^= true;
 			targetMob.BroadcastLivingEquipmentUpdate();
 			targetMob.SaveIntoDatabase();
-			client.Out.SendMessage("Mob IsCloakHoodUp flag is set to " + targetMob.IsCloakHoodUp, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.FlagSet", "IsCloakHoodUp", targetMob.IsCloakHoodUp), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void cloak(GameClient client, GameNPC targetMob, string[] args)
@@ -2708,7 +2710,7 @@ namespace DOL.GS.Commands
 			targetMob.IsCloakInvisible ^= true;
 			targetMob.BroadcastLivingEquipmentUpdate();
 			targetMob.SaveIntoDatabase();
-			client.Out.SendMessage("Mob IsCloakInvisible flag is set to " + targetMob.IsCloakHoodUp, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.FlagSet", "IsCloakInvisible", targetMob.IsCloakHoodUp), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 
 		private void bodytype(GameClient client, GameNPC targetMob, string[] args)
@@ -2719,7 +2721,7 @@ namespace DOL.GS.Commands
 			{
 				targetMob.BodyType = type;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("Mob BodyType changed to " + targetMob.BodyType, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.BodyTypeChanged", targetMob.BodyType), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			else
 			{
@@ -2742,8 +2744,7 @@ namespace DOL.GS.Commands
 
 				targetMob.Gender = (eGender)gender;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage(String.Format("Mob gender changed to {0}.",
-				                                     targetMob.Gender.ToString().ToLower()),
+				client.Out.SendMessage(T(client, "GMCommands.Mob.GenderChanged", targetMob.Gender.ToString().ToLower()),
 				                       eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
@@ -2767,7 +2768,7 @@ namespace DOL.GS.Commands
 
 				targetMob.PackageID = packageID;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("PackageID set to " + packageID, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.PackageIdSet", packageID), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
 			{
@@ -2790,7 +2791,7 @@ namespace DOL.GS.Commands
 
 				targetMob.OwnerID = ownerID;
 				targetMob.SaveIntoDatabase();
-				client.Out.SendMessage("OwnerID set to " + ownerID, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.OwnerIdSet", ownerID), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception)
 			{
@@ -2801,14 +2802,14 @@ namespace DOL.GS.Commands
 		private string CheckName(string name, GameClient client)
 		{
 			if (name.Length > 47)
-				client.Out.SendMessage("WARNING: name length=" + name.Length + " but only first 47 chars will be shown.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.NameLengthWarning", name.Length), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			return name;
 		}
 
 		private string CheckGuildName(string name, GameClient client)
 		{
 			if (name.Length > 47)
-				client.Out.SendMessage("WARNING: guild name length=" + name.Length + " but only first 47 chars will be shown.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.GuildNameLengthWarning", name.Length), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			return name;
 		}
 
@@ -2819,11 +2820,11 @@ namespace DOL.GS.Commands
 			{
 				if (wantedMob == null)
 				{
-					client.Out.SendMessage("Unable to autoselect an NPC - nothing in range", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.AutoSelectNothingInRange"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				else
 				{
-					client.Out.SendMessage("You have autoselected the mob with OID " + wantedMob.ObjectID.ToString(), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.AutoSelected", wantedMob.ObjectID), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					client.Out.SendChangeTarget((GameObject)wantedMob);
 				}
 				return wantedMob;
@@ -2851,7 +2852,7 @@ namespace DOL.GS.Commands
 							n.RemoveFromWorld();
 							n.LoadFromDatabase(GameServer.Database.FindObjectByKey<DbMob>(n.InternalID));
 							n.AddToWorld();
-							client.Player.Out.SendMessage(n.Name + " reloaded!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							client.Player.Out.SendMessage(T(client, "GMCommands.Mob.Reloaded", n.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						}
 					}
 				}
@@ -2864,11 +2865,11 @@ namespace DOL.GS.Commands
 					targetMob.RemoveFromWorld();
 					targetMob.LoadFromDatabase(GameServer.Database.FindObjectByKey<DbMob>(targetMob.InternalID));
 					targetMob.AddToWorld();
-					client.Player.Out.SendMessage(targetMob.Name + " reloaded!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Player.Out.SendMessage(T(client, "GMCommands.Mob.Reloaded", targetMob.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				else
 				{
-					client.Player.Out.SendMessage(targetMob.Name + " is loaded from a script and can't be reloaded!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Player.Out.SendMessage(T(client, "GMCommands.Mob.ScriptLoadedCannotReload", targetMob.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 			}
 		}
@@ -2887,16 +2888,16 @@ namespace DOL.GS.Commands
 				if (mob != null)
 				{
 					Log.DebugFormat("Mob_ID {0} loaded from database.", args[2]);
-					DisplayMessage(client, "Mob_ID {0} loaded from database.", args[2]);
+					DisplayMessage(client, T(client, "GMCommands.Mob.MobIdLoaded", args[2]));
 					GameNPC npc = new GameNPC();
 					npc.LoadFromDatabase(mob);
 					npc.AddToWorld();
-					DisplayMessage(client, "Mob {0} added to the world.  Use care if this is a duplicate, removing original will delete mob from the DB!", args[2]);
+					DisplayMessage(client, T(client, "GMCommands.Mob.AddedToWorldDuplicateWarning", args[2]));
 				}
 				else
 				{
 					Log.DebugFormat("Mob_ID {0} not found.", args[2]);
-					DisplayMessage(client, "Mob_ID {0} not found.", args[2]);
+					DisplayMessage(client, T(client, "GMCommands.Mob.MobIdNotFound", args[2]));
 				}
 			}
 		}
@@ -2930,7 +2931,7 @@ namespace DOL.GS.Commands
 			}
 			else
 			{
-				client.Player.Out.SendMessage("No matches found.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Player.Out.SendMessage(T(client, "GMCommands.Mob.NoMatchesFound"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 
@@ -2938,7 +2939,7 @@ namespace DOL.GS.Commands
 		{
 			if (targetMob == null)
 			{
-				client.Out.SendMessage("You need a valid target!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.NeedValidTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -3009,7 +3010,7 @@ namespace DOL.GS.Commands
 					text.Add(attacker.Name);
 			}
 
-			client.Out.SendCustomTextWindow("Mob State", text);
+			client.Out.SendCustomTextWindow(T(client, "GMCommands.Mob.StateWindowTitle"), text);
 		}
 
 		private void trigger(GameClient client, GameNPC targetMob, string[] args)
@@ -3044,8 +3045,8 @@ namespace DOL.GS.Commands
 				}
 				catch
 				{
-					client.Out.SendMessage("You must specify a proper type for the trigger <spawning|aggroing|dying|fighting|moving|roaming|seeing|interact>.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-					client.Out.SendMessage("example: dying 0 This is what I will say when I die!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerInvalidType"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerExampleShort"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return;
 				}
 
@@ -3056,7 +3057,7 @@ namespace DOL.GS.Commands
 				}
 				catch
 				{
-					client.Out.SendMessage("You must specify a valid chance percent/emote number", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerInvalidChanceEmote"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				if (args.Length > 4)
 				{
@@ -3065,7 +3066,7 @@ namespace DOL.GS.Commands
 
 				if (text == string.Empty)
 				{
-					client.Out.SendMessage("You must specify some text for the trigger.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerMissingText"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return;
 				}
 
@@ -3080,7 +3081,7 @@ namespace DOL.GS.Commands
 					voice = "c";
 				text = text.Replace("{b}", string.Empty).Replace("{y}", string.Empty).Replace("{s}", string.Empty).Replace("{c}", string.Empty);
 				GameServer.Database.AddObject(new DbMobXAmbientBehavior(targetMob.Name, trig.ToString(), emote, text, chance, voice) {Dirty = true, AllowAdd = true});
-				client.Out.SendMessage(" Trigger added to mobs with name " + targetMob.Name + " when they " + type + ".", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerAdded", targetMob.Name, type), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			catch (Exception)
@@ -3100,19 +3101,19 @@ namespace DOL.GS.Commands
 			var triggers = client.Player.TempProperties.GetProperty<IList<DbMobXAmbientBehavior>>("mob_triggers");
 			if (triggers == null)
 			{
-				ChatUtil.SendSystemMessage(client, "You must use '/mob trigger info' before using this command !");
+				ChatUtil.SendSystemMessage(client, T(client, "GMCommands.Mob.TriggerUseInfoFirst"));
 				return;
 			}
 			var trigger = triggers[i - 1];
 			GameServer.Database.DeleteObject(trigger);
-			ChatUtil.SendSystemMessage(client, "Trigger: \"" + trigger.Trigger + ", chance: " + trigger.Chance + ", voice: " + trigger.Voice + ", emote: " + trigger.Emote + ", text: " + trigger.Text + "\" has been removed.");
+			ChatUtil.SendSystemMessage(client, T(client, "GMCommands.Mob.TriggerRemoved", trigger.Trigger, trigger.Chance, trigger.Voice, trigger.Emote, trigger.Text));
 		}
 
 		private void trigger_info(GameClient client, GameNPC targetMob)
 		{
 			var triggers = GameServer.Instance.NpcManager.AmbientBehaviour[targetMob.Name];
 			client.Player.TempProperties.SetProperty("mob_triggers", triggers);
-			ChatUtil.SendSystemMessage(client, targetMob.Name + "'s triggers:");
+			ChatUtil.SendSystemMessage(client, T(client, "GMCommands.Mob.TriggersTitle", targetMob.Name));
 			var i = 0;
 			foreach (var trigger in triggers)
 				ChatUtil.SendSystemMessage(client, ++i + ". " + trigger.Trigger + ", chance: " + trigger.Chance + ", voice: " + trigger.Voice + ", emote: " + trigger.Emote + ", text: " + trigger.Text);
@@ -3120,17 +3121,17 @@ namespace DOL.GS.Commands
 
 		private void trigger_help(GameClient client)
 		{
-			client.Out.SendMessage("The trigger command lets you add sentences for the mob to say when he spawns, aggros, fights or dies.", eChatType.CT_System, eChatLoc.CL_PopupWindow);
-			client.Out.SendMessage("Triggers apply to all mobs with the same mob name.  Each mob name can have multiple triggers and trigger types.", eChatType.CT_System, eChatLoc.CL_PopupWindow);
-			client.Out.SendMessage("The aggro and die trigger types allow for keywords of {targetname} (name of the mob/NPC's target), {class} (target class if player), {race} (target race if player), and {sourcename} (mob/NPC's name) and {controller} (the pet's controller).", eChatType.CT_System, eChatLoc.CL_PopupWindow);
-			client.Out.SendMessage("Ex: /mob trigger aggroing 50 10 This is what I'll say 50% time when I aggro!", eChatType.CT_System, eChatLoc.CL_PopupWindow);
-			client.Out.SendMessage("Ex: /mob trigger dying 100 5 This is what I'll say when I die!", eChatType.CT_System, eChatLoc.CL_PopupWindow);
-			client.Out.SendMessage("Ex: /mob trigger aggroing 100 0 {y}I really hate {class}'s like you!", eChatType.CT_System, eChatLoc.CL_PopupWindow);
-			client.Out.SendMessage("Ex: /mob trigger roaming 5 12 Prepare to die {targetname}!", eChatType.CT_System, eChatLoc.CL_PopupWindow);
-			client.Out.SendMessage("Ex: /mob trigger aggroing 5 0 {b}I've been waiting for this moment ever since I was a young {sourcename}!", eChatType.CT_System, eChatLoc.CL_PopupWindow);
-			client.Out.SendMessage("Usage: '/mob trigger <type(dying|aggroing|spawning|fighting|killing|roaming|interact)> <percentChance> <emote {0 for no emote{> <sentence(can include {targetname},{sourcename},{class},{race}, {controller})(can also be formatted with {y} for yelled and {b} for broadcasted sentence)>'", eChatType.CT_System, eChatLoc.CL_PopupWindow);
-			client.Out.SendMessage("Usage: '/mob trigger info' - Give information regarding a selected mob/NPC's ambient trigger(s).", eChatType.CT_System, eChatLoc.CL_PopupWindow);
-			client.Out.SendMessage("Usage: '/mob trigger remove <id>' Remove a trigger", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerHelpIntro"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerHelpScope"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerHelpKeywords"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerHelpExample1"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerHelpExample2"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerHelpExample3"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerHelpExample4"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerHelpExample5"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerHelpUsageAdd"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerHelpUsageInfo"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
+			client.Out.SendMessage(T(client, "GMCommands.Mob.TriggerHelpUsageRemove"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 		}
 	}
 }

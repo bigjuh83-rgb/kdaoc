@@ -2,6 +2,7 @@ using System;
 using DOL.Database;
 using DOL.GS.PacketHandler;
 using DOL.GS.Keeps;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -36,33 +37,34 @@ namespace DOL.GS.Commands
             {
                 case "add":
                 {
-                        var npcString = args[2];
+                        var npcString = args[2].ToLowerInvariant();
                         if (npcString == string.Empty)
                         {
-                            client.Out.SendMessage("You must specify a teleport string to whisper the npc.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                            return;
-                        }
-                        
-                        if (npcString != "enter" || npcString != "exit")
-                        {
-                            client.Out.SendMessage("Valid strings are \"enter\" and \"exit\"", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                            return;
-                        }
-                        
-                        if (args[3] == string.Empty)
-                        {
-                            client.Out.SendMessage("You must specify the teleport type", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.KeepDoorTeleport.MustSpecifyString"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
-                        if (args[3] != "in" || args[3] != "out")
+                        if (!IsValidTeleportText(npcString))
                         {
-                            client.Out.SendMessage("Valid types are \"in\" and \"out\"", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.KeepDoorTeleport.ValidStrings"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            return;
+                        }
+
+                        var teleportDirection = args[3].ToLowerInvariant();
+                        if (teleportDirection == string.Empty)
+                        {
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.KeepDoorTeleport.MustSpecifyType"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            return;
+                        }
+
+                        if (!IsValidTeleportDirection(teleportDirection))
+                        {
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.KeepDoorTeleport.ValidTypes"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
                         var teleportType = string.Empty;
-                        if (args[3] == "in")
+                        if (teleportDirection == "in")
                         {
                             teleportType = "GateKeeperIn";
                         }
@@ -74,7 +76,7 @@ namespace DOL.GS.Commands
                         var keep = GameServer.KeepManager.GetClosestKeepToSpot(client.Player.CurrentRegionID, client.Player, WorldMgr.VISIBILITY_DISTANCE);
                         if (keep == null)
                         {
-                            client.Out.SendMessage("You need to be inside a keep area.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.KeepDoorTeleport.NeedKeepArea"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
@@ -83,17 +85,27 @@ namespace DOL.GS.Commands
                     break;
 
                 case "reload":
-                    
+
                     var results = WorldMgr.LoadTeleports();
                     log.Info(results);
                     client.Out.SendMessage(results, eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                    
+
                     break;
 
                 default:
                     DisplaySyntax(client);
                     break;
             }
+        }
+
+        private static bool IsValidTeleportText(string text)
+        {
+            return text == "enter" || text == "exit";
+        }
+
+        private static bool IsValidTeleportDirection(string direction)
+        {
+            return direction == "in" || direction == "out";
         }
 
         /// <summary>
@@ -110,7 +122,7 @@ namespace DOL.GS.Commands
             var verification = GameServer.Database.SelectObject<DbKeepDoorTeleport>(DB.Column("KeepID").IsEqualTo(keep.KeepID).And(DB.Column("Text").IsEqualTo(Text).And(DB.Column("Type").IsEqualTo(teleportType))));
             if (verification != null)
             {
-                client.Out.SendMessage(String.Format("Teleport ID with same parameter already exists!"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.KeepDoorTeleport.AlreadyExists"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
             DbKeepDoorTeleport teleport = new DbKeepDoorTeleport();
@@ -125,7 +137,7 @@ namespace DOL.GS.Commands
             teleport.TeleportType = teleportType;
 
             GameServer.Database.AddObject(teleport);
-            client.Out.SendMessage(String.Format("KeepDoor Teleport ID [{0}] successfully added.", Text),
+            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "AdminCommands.KeepDoorTeleport.Added", Text),
                 eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
     }

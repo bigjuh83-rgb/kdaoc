@@ -24,7 +24,7 @@ namespace DOL.GS.Commands
 
             if (client.Player.IsMuted)
             {
-                client.Player.Out.SendMessage("You have been muted. You cannot broadcast.", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Broadcast.Muted"), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
                 return;
             }
 

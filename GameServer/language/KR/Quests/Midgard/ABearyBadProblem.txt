@@ -1,0 +1,11 @@
+Mid.ABearyBadProblem.EnemyKilled:	검은 마울러 새끼곰
+Mid.ABearyBadProblem.GoodJob:		잘했습니다!
+Mid.ABearyBadProblem.NPCKreimhilde:	바이킹 크라임힐데
+Mid.ABearyBadProblem.OfferQuest:	'곰 같은 골칫거리' 퀘스트를 수락하시겠습니까?
+Mid.ABearyBadProblem.QuestTitle:	곰 같은 골칫거리
+Mid.ABearyBadProblem.Step1:		[1단계] 검은 마울러 새끼곰을 처치하세요
+Mid.ABearyBadProblem.Step2:		[2단계] 바이킹에게 돌아가세요
+Mid.ABearyBadProblem.Talk1:		새로 도착한 이들 중 하나로군요? 미안합니다, 저쪽에서 트레이너와 나누던 이야기를 우연히 들었습니다.
+Mid.ABearyBadProblem.Talk2:		이 지역에 바이킹 경비병이 부족하다는 말은 안타깝지만 사실입니다. 에이릭 왕은 방어 병력을 너무 넓게 분산시켰고, 이 근처 사람들은 자신의 안전을 꽤 걱정하고 있습니다. 왕을 탓할 수만은 없습니다. 이런 힘든 시기에는 걱정해야 할 적이 너무 많으니까요.
+Mid.ABearyBadProblem.Talk3:		정말 말한 대로 도울 마음이 있다면, 제게도 당신의 도움이 필요합니다. 최근 "자연" 야생동물의 수가 감당하기 어려울 만큼 늘었고, 마을 사람들과 야생동물 사이의 불행한 "사건"도 점점 많아지고 있습니다. 얼마 전에는 어린 소년이 가족과 함께 북쪽 산을 걷다가 검은 마울러 곰에게 잔혹하게 공격당했습니다.
+Mid.ABearyBadProblem.Talk4:		이미 몇몇 사람들이 근처 곰 개체 수를 줄이는 일에 자원했습니다. 당신도 도와주시겠습니까?

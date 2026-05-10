@@ -81,7 +81,7 @@ namespace DOL.GS.Housing
                 log.Info("[Housing] Loaded " + houses + " houses and " + lotmarkers + " lotmarkers in " + regions + " regions!");
 
             if (client != null)
-                client.Out.SendMessage("Loaded " + houses + " houses and " + lotmarkers + " lotmarkers in " + regions + " regions!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "HouseMgr.Loaded", houses, lotmarkers, regions), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
             return true;
         }

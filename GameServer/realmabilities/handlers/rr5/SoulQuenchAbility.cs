@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -59,10 +60,10 @@ namespace DOL.GS.RealmAbilities
 
 			if (caster is GamePlayer playerCaster)
 			{
-				playerCaster.Out.SendMessage($"You hit {target.Name} for {damage}({resist}) points of damage!", eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+				playerCaster.Out.SendMessage(LanguageMgr.GetTranslation(playerCaster.Client.Account.Language, "RealmAbility.Damage.YouHitForDamageResist", target.Name, damage, resist), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
 
 				if (modheal > 0)
-					playerCaster.Out.SendMessage($"Your Soul Quench returns {modheal} hit points to you", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+					playerCaster.Out.SendMessage(LanguageMgr.GetTranslation(playerCaster.Client.Account.Language, "RealmAbility.SoulQuench.ReturnsHitPoints", modheal), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 			}
 
 			target.Stealth(false);

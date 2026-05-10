@@ -18,6 +18,7 @@
  */
 using System;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -45,7 +46,7 @@ namespace DOL.GS.Commands
                     if (Enum.IsDefined(typeof(ePanel), value))
                     {
 						// Give the user some information
-                        client.Out.SendMessage("Start blinking UI part: " + Enum.GetName(typeof(ePanel), value), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Blink.Start", Enum.GetName(typeof(ePanel), value)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
 						// If we have a target, send the blink panel to him or make our own UI blink otherwise
                         if (player.TargetObject != null && player.TargetObject is GamePlayer && (player.TargetObject as GamePlayer).Client.IsPlaying)
@@ -75,7 +76,7 @@ namespace DOL.GS.Commands
 			// Create a new string and add some Info to it
 			String visualEffectList = string.Empty;
 
-			visualEffectList += "You must specify a value!\nID: Name\n";
+			visualEffectList += LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Blink.MustSpecifyValue") + "\n";
 
 			int count = 0;
 

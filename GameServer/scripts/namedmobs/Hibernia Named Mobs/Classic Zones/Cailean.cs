@@ -160,7 +160,7 @@ namespace DOL.AI.Brain
 					CanSpawnTree = true;
                 }
 				if(Body.TargetObject != null)
-                {					
+                {
 					if(Util.Chance(20) && !target.effectListComponent.ContainsEffectForEffectType(eEffect.SnareImmunity) && !target.effectListComponent.ContainsEffectForEffectType(eEffect.MovementSpeedDebuff))
 						Body.CastSpell(TreeRoot, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
 					if (Util.Chance(20) && !target.effectListComponent.ContainsEffectForEffectType(eEffect.MezImmunity) && !target.effectListComponent.ContainsEffectForEffectType(eEffect.Mez))
@@ -537,13 +537,15 @@ namespace DOL.AI.Brain
 				GameLiving target = Body.TargetObject as GameLiving;
 				if (Util.Chance(20))
 				{
-					if(target.effectListComponent.ContainsEffectForEffectType(eEffect.SnareImmunity) && target != null && target.IsAlive)
+					if(target != null && target.IsAlive && target.effectListComponent.ContainsEffectForEffectType(eEffect.SnareImmunity))
                     {
 						var effect = EffectListService.GetEffectOnTarget(target, eEffect.SnareImmunity);
 						if(effect != null)
 							effect.End();//remove snare immunity here
 					}
-					if(!target.effectListComponent.ContainsEffectForEffectType(eEffect.SnareImmunity) && !target.effectListComponent.ContainsEffectForEffectType(eEffect.MovementSpeedDebuff) && target != null && target.IsAlive)
+					if(target != null && target.IsAlive
+						&& !target.effectListComponent.ContainsEffectForEffectType(eEffect.SnareImmunity)
+						&& !target.effectListComponent.ContainsEffectForEffectType(eEffect.MovementSpeedDebuff))
 						Body.CastSpell(TreeRoot2, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 				}
 			}

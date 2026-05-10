@@ -2,6 +2,7 @@
 using DOL.Database;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 using System;
 
 namespace DOL.GS
@@ -56,10 +57,11 @@ namespace DOL.AI.Brain
 			ThinkInterval = 1500;
 		}
 		private bool CallforHelp = false;
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(string key, params object[] args)
 		{
 			foreach (GamePlayer player in Body.GetPlayersInRadius(3000))
 			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
 				player.Out.SendMessage(message, eChatType.CT_Say, eChatLoc.CL_ChatWindow);
 			}
 		}
@@ -78,17 +80,17 @@ namespace DOL.AI.Brain
 				{
 					if (Body.HealthPercent <= 10)
 					{
-						BroadcastMessage("The " + Body.Name + " calls for help!");
+						BroadcastMessage("Mobs.Vagdush.CallsForHelp", Body.Name);
 						foreach (GameNPC npc in Body.GetNPCsInRadius(1500))
 						{
 							if (npc != null && npc.IsAlive && npc.PackageID == "VagdushBaf")
 								AddAggroListTo(npc.Brain as StandardMobBrain);
 						}
 						CallforHelp = true;
-					}				
+					}
 				}
 				GameLiving target = Body.TargetObject as GameLiving;
-				if(!target.IsWithinRadius(Body,Body.attackComponent.AttackRange) && target.IsAlive && target != null)
+				if(target != null && !target.IsWithinRadius(Body,Body.attackComponent.AttackRange) && target.IsAlive)
                 {
 					Body.MaxSpeedBase = 0;
 					if (!Body.IsCasting && Util.Chance(100))

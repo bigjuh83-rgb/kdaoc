@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -40,7 +41,7 @@ namespace DOL.GS.Spells
 					duration *= instrument.Quality * 0.01 * instrument.ConditionPercent * 0.01;
 				}
 			}
-			
+
 			if (duration < 1)
 				duration = 1;
 			else if (duration > (Spell.Duration * 4))
@@ -71,7 +72,7 @@ namespace DOL.GS.Spells
 			// Graveen: archery speed shot
 			if ((Spell.Pulse != 0 || Spell.CastTime != 0) && target.InCombat)
 			{
-				MessageToLiving(target, "You've been in combat recently, the spell has no effect on you!", eChatType.CT_SpellResisted);
+				MessageToLiving(target, LanguageMgr.GetTranslation((target as GamePlayer)?.Client.Account.Language, "SpeedEnhancementSpellHandler.NoEffectInCombat"), eChatType.CT_SpellResisted);
 				return;
 			}
 			base.ApplyEffectOnTarget(target);
@@ -86,15 +87,15 @@ namespace DOL.GS.Spells
 			{
 				/*
 				<Begin Info: Motivation Sng>
- 
+
 				The movement speed of the target is increased.
- 
+
 				Target: Group
 				Range: 2000
 				Duration: 30 sec
 				Frequency: 6 sec
 				Casting time:      3.0 sec
-				
+
 				This spell's effect will not take hold while the target is in combat.
 				<End Info>
 				*/

@@ -1,0 +1,10 @@
+﻿Alb.ToReachTheBreach.CheckPlayerAbortQuest.Text1:	좋아, 이제 나가서 맡은 일을 끝내게!
+Alb.ToReachTheBreach.CheckPlayerAbortQuest.Text2:	퀘스트 {0}을(를) 포기합니다. 원한다면 다시 시작할 수 있습니다.
+Alb.ToReachTheBreach.Conclusion.Text1:			악마의 균열로 가는 길을 찾았군, {0}? 그 위치를 잘 기억해 두게. 언젠가 자네의 도움이 필요해질지도 모르니. 악마 무리나 하이버니아, 미드가르드의 적들이 우리 땅으로 풀려나오게 둘 수는 없네.
+Alb.ToReachTheBreach.Init.Text1:			신병의 지혜로운 허리띠
+Alb.ToReachTheBreach.Init.Text2:			신병의 강력한 허리띠
+Alb.ToReachTheBreach.Init.Text3:			신병의 경건한 허리띠
+Alb.ToReachTheBreach.Init.Text4:			악마의 균열 입구 찾기
+Alb.ToReachTheBreach.QuestTitle:			균열에 이르는 길
+Alb.ToReachTheBreach.Story:				우리는 오래전부터 악마 같은 생명체들이 지하에 도사리고 있다는 사실을 알고 있었네. 다크니스 폴스가 그 한 예지. 최근에는 더 많은 악이 지표로 솟구쳐 올라오고 말았네. 아카데미의 학장들이 슈라우디드 아일스 포털을 원래 있던 곳에서 코츠월드로 옮겼을 때, 실수로 현실의 직물에 균열을 만들어 버린 걸세. 그 균열을 통해 악이 지상으로 기어 올라올 수 있게 되었지!\n\n다행히 그 작업에 참여했던 소서리스 한 명이 즉시 이를 알아차렸고, 구멍은 봉인되어 악마들이 우리 세계로 들어오지 못하게 되었네. 하지만 영구적인 해결책이 나오기 전까지는, 놈들이 수를 모아 빠져나오려 할까 걱정이 크네. 우리 마을 사람들 중 일부는 악마의 수를 줄이려고 스스로 안으로 들어가기도 했지. 더 불안한 것은, 그 안에서 하이버니아와 미드가르드의 적들까지 마주쳤다는 보고가 있다는 점이네.\n\n자네는 악마의 균열의 입구를 익혀 두어야 하네. 그래야 악의 세력과 하이버니아, 미드가르드를 막아야 할 때 어디로 가야 할지 알 수 있을 테니까.\n\n
+Alb.ToReachTheBreach.Summary:				악마의 균열 입구를 찾으십시오. 균열을 방문한 뒤 그리노크 부인에게 돌아가십시오.

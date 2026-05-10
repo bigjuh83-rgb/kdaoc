@@ -34,6 +34,11 @@ namespace DOL.GS.Quests.Albion
         public WolfPeltCloak(GamePlayer questingPlayer, int step) : base(questingPlayer, step) { }
         public WolfPeltCloak(GamePlayer questingPlayer, DbQuest dbQuest) : base(questingPlayer, dbQuest) { }
 
+        private static string L(GamePlayer player, string key, params object[] args)
+        {
+            return DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+        }
+
         [ScriptLoadedEvent]
         public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
         {
@@ -139,16 +144,16 @@ namespace DOL.GS.Quests.Albion
                 if (quest != null)
                 {
                     if (player.Inventory.GetFirstItemByID(_wolfFur.Id_nb, eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack) != null)
-                        _stewardWillie.SayTo(player, "Ah, well done! His Lordship will be pleased to know there is one less mongrel in the pack! Give me the fur so I can throw it with the others.");
+                        _stewardWillie.SayTo(player, L(player, "Quest.Albion.WolfPeltCloak.StewardHasFur"));
                     else if (player.Inventory.GetFirstItemByID(_wolfHeadToken.Id_nb, eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack) != null)
-                        _stewardWillie.SayTo(player, "Give the token to Seamstress Lynnet in Ludlow, she'll give ye your reward. Thank ye for your fine services to His Lordship.");
+                        _stewardWillie.SayTo(player, L(player, "Quest.Albion.WolfPeltCloak.StewardHasToken"));
                     else
-                        _stewardWillie.SayTo(player, "Good! I know we ca'count on ye. I will reward ye for the pelt ye bring me from one of those vile beasts!");
+                        _stewardWillie.SayTo(player, L(player, "Quest.Albion.WolfPeltCloak.StewardInProgress"));
                     return;
                 }
                 else
                 {
-                    _stewardWillie.SayTo(player, "Aye, hello there! Have ye been sent t'help with our [problem]");
+                    _stewardWillie.SayTo(player, L(player, "Quest.Albion.WolfPeltCloak.StewardGreeting"));
                     return;
                 }
             }
@@ -161,16 +166,20 @@ namespace DOL.GS.Quests.Albion
                     switch (wArgs.Text)
                     {
                         case "problem":
-                            _stewardWillie.SayTo(player, "What? Ye haven't heard? Hhhmm, then I wonder if ye would [like to help]");
+						case "문제":
+                            _stewardWillie.SayTo(player, L(player, "Quest.Albion.WolfPeltCloak.Problem"));
                             break;
                         case "pack of wolves":
-                            _stewardWillie.SayTo(player, "There should be some around the area of this village, take a look near the road to Camelot. Kill any wolf pups you can find, and bring me its fur.");
+							case "늑대 무리":
+                            _stewardWillie.SayTo(player, L(player, "Quest.Albion.WolfPeltCloak.PackOfWolves"));
                             break;
                         case "like to help":
-                            _stewardWillie.SayTo(player, "That's wonderful! We've been havin' a serious problem with a [pack of wolves]. His Lordship wants'em eliminated because they have been a-bothering the people here about. His Lordship has authorized me to reward those who [serve him well].");
+							case "도울 의향이 있는지":
+                            _stewardWillie.SayTo(player, L(player, "Quest.Albion.WolfPeltCloak.LikeToHelp"));
                             break;
                         case "serve him well":
-                            player.Out.SendQuestSubscribeCommand(_stewardWillie, QuestMgr.GetIDForQuestType(typeof(WolfPeltCloak)), "Do you accept the Wolf Pelt Cloak quest?");
+							case "그분을 잘 섬긴":
+                            player.Out.SendQuestSubscribeCommand(_stewardWillie, QuestMgr.GetIDForQuestType(typeof(WolfPeltCloak)), L(player, "Quest.Albion.WolfPeltCloak.SubscribePrompt"));
                             break;
                     }
                 }
@@ -179,7 +188,7 @@ namespace DOL.GS.Quests.Albion
                     switch (wArgs.Text)
                     {
                         case "abort":
-                            player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+                            player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
                             break;
                     }
                 }
@@ -217,12 +226,12 @@ namespace DOL.GS.Quests.Albion
             if (e == GameObjectEvent.Interact)
             {
                 if (quest != null)
-                {             
-                    _lynett.SayTo(player, "I hear you have a token for me, as proof of your valuable work for his Lordship. Give it to me and I will reward you.");
+                {
+                    _lynett.SayTo(player, L(player, "Quest.Albion.WolfPeltCloak.LynnetToken"));
                 }
             }
         }
-        
+
         protected static void TalkToBrotherDon(DOLEvent e, object sender, EventArgs args)
         {
             GamePlayer player = ((SourceEventArgs)args).Source as GamePlayer;
@@ -232,7 +241,7 @@ namespace DOL.GS.Quests.Albion
             if (e == GameObjectEvent.Interact)
             {
                 if (player.Inventory.GetFirstItemByID(_wolfPeltCloak.Id_nb, eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack) != null)
-                    _don.SayTo(player, "Hail! You don't perhaps have one of those fine wolf pelt cloaks? If you no longer have need of it, we could greatly use it at the [orphanage].");
+                    _don.SayTo(player, L(player, "Quest.Albion.WolfPeltCloak.BrotherDonGreeting"));
                 return;
             }
             else if (e == GameLivingEvent.WhisperReceive)
@@ -241,20 +250,22 @@ namespace DOL.GS.Quests.Albion
                 switch (wArgs.Text)
                 {
                     case "orphanage":
-                        _don.SayTo(player, "Why yes, the little ones can get an awful chill during the long cold nights, so the orphanage could use a good [donation] of wolf cloaks. I would take any that you have.");
+							case "고아원":
+                        _don.SayTo(player, L(player, "Quest.Albion.WolfPeltCloak.Orphanage"));
                         break;
                     case "donation":
-                        _don.SayTo(player, "Do you want to donate your cloak?");
+							case "기부":
+                        _don.SayTo(player, L(player, "Quest.Albion.WolfPeltCloak.Donation"));
                         break;
                 }
             }
         }
 
         public override bool CheckQuestQualification(GamePlayer player)
-        {            
+        {
             if (player.IsDoingQuest(typeof(WolfPeltCloak)) != null)
                 return true;
-                        
+
             if (player.Level < MIN_LEVEL || player.Level > MAX_LEVEL)
                 return false;
 
@@ -269,11 +280,11 @@ namespace DOL.GS.Quests.Albion
 
             if (response == 0x00)
             {
-                SendSystemMessage(player, "Good, now go out there and finish your work!");
+                SendSystemMessage(player, L(player, "Quest.Albion.WolfPeltCloak.AbortDeclined"));
             }
             else
             {
-                SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+                SendSystemMessage(player, L(player, "Quest.Albion.WolfPeltCloak.AbortingQuest", questTitle));
                 quest.AbortQuest();
             }
         }
@@ -288,14 +299,14 @@ namespace DOL.GS.Quests.Albion
 
             if (response == 0x00)
             {
-                SendReply(player, "Oh well, if you change your mind, please come back!");
+                SendReply(player, L(player, "Quest.Albion.WolfPeltCloak.DeclineQuest"));
             }
             else
             {
                 if (!_stewardWillie.GiveQuest(typeof(WolfPeltCloak), player, 1))
                     return;
 
-                _stewardWillie.SayTo(player, "Good! I know we ca'count on ye. I will reward ye for the pelt ye bring me from one of those vile beasts!");
+                _stewardWillie.SayTo(player, L(player, "Quest.Albion.WolfPeltCloak.StewardInProgress"));
             }
         }
 
@@ -311,11 +322,11 @@ namespace DOL.GS.Quests.Albion
                 switch (Step)
                 {
                     case 1:
-                        return "[Step #1] Go out into the fields to hunt a wolf pup and flay its fur.";
+                        return L(m_questPlayer, "Quest.Albion.WolfPeltCloak.Description1");
                     case 2:
-                        return "[Step #2] Bring the fur back to Steward Willie in Humberton Fort.";
+                        return L(m_questPlayer, "Quest.Albion.WolfPeltCloak.Description2");
                     case 3:
-                        return "[Step #3] Go to Seamstress Lynnet in Ludlow and bring her the wolf head token.";
+                        return L(m_questPlayer, "Quest.Albion.WolfPeltCloak.Description3");
                 }
                 return base.Description;
             }
@@ -334,9 +345,9 @@ namespace DOL.GS.Quests.Albion
                 GiveItemEventArgs gArgs = (GiveItemEventArgs)args;
                 if (gArgs.Target.Name == _don.Name && gArgs.Item.Id_nb == _wolfPeltCloak.Id_nb)
                 {
-                    _don.SayTo(player, "Thank you! Your service to the church will been noted!");
+                    _don.SayTo(player, L(player, "Quest.Albion.WolfPeltCloak.BrotherDonThanks"));
                     RemoveItem(_don, m_questPlayer, _wolfPeltCloak);
-                    _don.SayTo(player, "Well done! You've helped the children get over the harsh winter.");
+                    _don.SayTo(player, L(player, "Quest.Albion.WolfPeltCloak.BrotherDonComplete"));
 
                     player.ForceGainExperience(200);
 
@@ -352,7 +363,7 @@ namespace DOL.GS.Quests.Albion
                 EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs)args;
                 if (gArgs.Target.Name.IndexOf("wolf") >= 0)
                 {
-                    SendSystemMessage("You've killed the " + gArgs.Target.Name + " and flayed the fur from it.!");
+                    SendSystemMessage(L(player, "Quest.Albion.WolfPeltCloak.WolfKilled", gArgs.Target.Name));
                     _wolfFur.Name = gArgs.Target.GetName(1, true) + " fur";
                     GiveItem(player, _wolfFur);
                     Step = 2;
@@ -365,7 +376,7 @@ namespace DOL.GS.Quests.Albion
                 if (gArgs.Target.Name == _stewardWillie.Name && gArgs.Item.Id_nb == _wolfFur.Id_nb)
                 {
                     _stewardWillie.TurnTo(m_questPlayer);
-                    _stewardWillie.SayTo(m_questPlayer, "Take this token from His Lordship. If ye give it to Seamstress Lynnet in Ludlow, she'll give ye your reward. Thank ye for your fine services to His Lordship.");
+                    _stewardWillie.SayTo(m_questPlayer, L(m_questPlayer, "Quest.Albion.WolfPeltCloak.StewardTakeToken"));
 
                     RemoveItem(_stewardWillie, player, _wolfFur);
                     GiveItem(_stewardWillie, player, _wolfHeadToken);
@@ -379,7 +390,7 @@ namespace DOL.GS.Quests.Albion
                 if (gArgs.Target.Name == _lynett.Name && gArgs.Item.Id_nb == _wolfHeadToken.Id_nb)
                 {
                     RemoveItem(_lynett, player, _wolfHeadToken);
-                    _lynett.SayTo(player, "Well done! Here's your fine wolf pelt cloak. Wear it with pride knowing you have helped his Lordship.");
+                    _lynett.SayTo(player, L(player, "Quest.Albion.WolfPeltCloak.LynnetReward"));
                     FinishQuest();
                     return;
                 }
@@ -400,7 +411,7 @@ namespace DOL.GS.Quests.Albion
 
             m_questPlayer.GainExperience(eXPSource.Quest, 50, true);
             long money = Money.GetMoney(0, 0, 0, 0, 50);
-            m_questPlayer.AddMoney(money, "You recieve {0} for your service.");
+            m_questPlayer.AddMoney(money, L(m_questPlayer, "Quest.Albion.WolfPeltCloak.MoneyReward"));
             InventoryLogging.LogInventoryAction("(QUEST;" + Name + ")", m_questPlayer, eInventoryActionType.Quest, money);
 
         }

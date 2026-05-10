@@ -7,6 +7,7 @@ using System.Threading;
 using DOL.Events;
 using DOL.GS;
 using DOL.Logging;
+using DOL.Language;
 using DOL.Timing;
 using ECS.Debug;
 
@@ -307,11 +308,11 @@ namespace DOL.GS.Commands
     [Cmd(
     "&diag",
     ePrivLevel.GM,
-    "Toggle server logging of performance diagnostics.",
-    "/diag perf <on|off> [duration] to toggle performance diagnostics logging on server with an optional duration (in minutes).",
-    "/diag notify <on|off> <interval> to toggle GameEventMgr Notify profiling, where interval is the period of time in milliseconds during which to accumulate stats.",
-    "/diag tick <on|off> [threshold] to toggle tick profiling, optionally setting the long tick threshold in milliseconds.",
-    "/diag object to count non-null service objects in ServiceObjectStore arrays.")]
+    "GMCommands.Diagnostics.Description",
+    "GMCommands.Diagnostics.Syntax.Perf",
+    "GMCommands.Diagnostics.Syntax.Notify",
+    "GMCommands.Diagnostics.Syntax.Tick",
+    "GMCommands.Diagnostics.Syntax.Object")]
     public class ECSDiagnosticsCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)
@@ -338,7 +339,7 @@ namespace DOL.GS.Commands
                 case "object":
                 {
                     Diagnostics.RequestServiceObjectCount();
-                    DisplayMessage(client, "Service object count scheduled for next tick.");
+                    DisplayMessage(client, T(client, "GMCommands.Diagnostics.ServiceObjectCountScheduled"));
                     break;
                 }
                 case "perf":
@@ -354,18 +355,18 @@ namespace DOL.GS.Commands
                         if (args.Length > 3 && int.TryParse(args[3], out int duration) && duration > 0)
                         {
                             Diagnostics.RequestPerfCounters(true, GameLoop.GameLoopTime + duration * 60000);
-                            DisplayMessage(client, $"Performance diagnostics logging turned on for {duration} minutes.");
+                            DisplayMessage(client, T(client, "GMCommands.Diagnostics.PerfLoggingOnForMinutes", duration));
                         }
                         else
                         {
                             Diagnostics.RequestPerfCounters(true);
-                            DisplayMessage(client, "Performance diagnostics logging turned on.");
+                            DisplayMessage(client, T(client, "GMCommands.Diagnostics.PerfLoggingOn"));
                         }
                     }
                     else if (args[2].Equals("off", StringComparison.OrdinalIgnoreCase))
                     {
                         Diagnostics.RequestPerfCounters(false);
-                        DisplayMessage(client, "Performance diagnostics logging turned off.");
+                        DisplayMessage(client, T(client, "GMCommands.Diagnostics.PerfLoggingOff"));
                     }
                     else
                         DisplaySyntax(client);
@@ -384,17 +385,17 @@ namespace DOL.GS.Commands
                     {
                         if (args.Length < 4 || !int.TryParse(args[3], out int interval) || interval <= 0)
                         {
-                            DisplayMessage(client, "Invalid interval argument. Please specify a positive value in milliseconds.");
+                            DisplayMessage(client, T(client, "GMCommands.Diagnostics.InvalidInterval"));
                             return;
                         }
 
                         Diagnostics.RequestGameEventMgrNotifyTimeReporting(true, interval);
-                        DisplayMessage(client, "GameEventMgr Notify() logging turned on.");
+                        DisplayMessage(client, T(client, "GMCommands.Diagnostics.NotifyLoggingOn"));
                     }
                     else if (args[2].Equals("off", StringComparison.OrdinalIgnoreCase))
                     {
                         Diagnostics.RequestGameEventMgrNotifyTimeReporting(false);
-                        DisplayMessage(client, "GameEventMgr Notify() logging turned off.");
+                        DisplayMessage(client, T(client, "GMCommands.Diagnostics.NotifyLoggingOff"));
                     }
                     else
                         DisplaySyntax(client);
@@ -415,7 +416,7 @@ namespace DOL.GS.Commands
                         {
                             if (!int.TryParse(args[3], out int threshold) || threshold <= 0)
                             {
-                                DisplayMessage(client, "Invalid threshold argument. Please specify a positive value in milliseconds.");
+                                DisplayMessage(client, T(client, "GMCommands.Diagnostics.InvalidThreshold"));
                                 return;
                             }
 
@@ -423,12 +424,12 @@ namespace DOL.GS.Commands
                         }
 
                         Diagnostics.EnableTickProfiling = true;
-                        DisplayMessage(client, $"Tick profiling turned on. Long tick threshold is set to {Diagnostics.LongTickThreshold}ms.");
+                        DisplayMessage(client, T(client, "GMCommands.Diagnostics.TickProfilingOn", Diagnostics.LongTickThreshold));
                     }
                     else if (args[2].Equals("off", StringComparison.OrdinalIgnoreCase))
                     {
                         Diagnostics.EnableTickProfiling = false;
-                        DisplayMessage(client, "Tick profiling turned off.");
+                        DisplayMessage(client, T(client, "GMCommands.Diagnostics.TickProfilingOff"));
                     }
                     else
                         DisplaySyntax(client);

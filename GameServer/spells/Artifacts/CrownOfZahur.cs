@@ -95,7 +95,7 @@ namespace DOL.GS.Spells
                     list.Add(string.Format("Duration: {0}:{1} min", Spell.Duration / 60000, (Spell.Duration % 60000 / 1000).ToString("00")));
                 //Cost
                 list.Add("Power cost: " + Spell.Power.ToString("0;0'%'"));
-                
+
                 //Cast
                 list.Add(LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "DelveInfo.CastingTime", (Spell.CastTime * 0.001).ToString("0.0## sec;-0.0## sec;'instant'")));
                 return list;
@@ -126,12 +126,12 @@ namespace DOL.GS.Spells
                 {
                     player.Health += player.Mana;
                     player.Mana -= (int)ManaHeal;
-                    player.Out.SendMessage("You convert "+player.Mana+" power into hit points!", eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "Artifacts.CrownOfZahur.ConvertPowerToHealth", player.Mana), eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
                     return;
                 }
                 player.Health += (int)ManaHeal;
                 player.Mana -= (int)ManaHeal;
-                player.Out.SendMessage("You convert " + ManaHeal + " power into hit points!", eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "Artifacts.CrownOfZahur.ConvertPowerToHealth", ManaHeal), eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
                 return;
             }
         }

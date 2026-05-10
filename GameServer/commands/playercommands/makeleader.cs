@@ -1,4 +1,5 @@
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -14,13 +15,13 @@ namespace DOL.GS.Commands
         {
             if (client.Player.Group == null || client.Player.Group.MemberCount < 2)
             {
-                client.Out.SendMessage("You are not part of a group.",eChatType.CT_System,eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Group.NotInGroup"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
             if(client.Player.Group.Leader != client.Player)
             {
-                client.Out.SendMessage("You are not the leader of your group.",eChatType.CT_System,eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Group.NotLeader"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
@@ -30,13 +31,13 @@ namespace DOL.GS.Commands
             {
                 if (client.Player.TargetObject == null || client.Player.TargetObject == client.Player)
                 {
-                    client.Out.SendMessage("You have not selected a valid player as your target.",eChatType.CT_System,eChatLoc.CL_SystemWindow);
+                    client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Group.InvalidTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return;
                 }
 
                 if(client.Player.TargetObject is not GamePlayer)
                 {
-                    client.Out.SendMessage("You have not selected a valid player as your target.",eChatType.CT_System,eChatLoc.CL_SystemWindow);
+                    client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Group.InvalidTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return;
                 }
 
@@ -44,7 +45,7 @@ namespace DOL.GS.Commands
 
                 if(client.Player.Group != target.Group)
                 {
-                    client.Out.SendMessage("You have not selected a valid player as your target.",eChatType.CT_System,eChatLoc.CL_SystemWindow);
+                    client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Group.InvalidTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return;
                 }
             }
@@ -55,13 +56,13 @@ namespace DOL.GS.Commands
 
                 if(target==null || client.Player.Group != target.Group)
                 { // Invalid target
-                    client.Out.SendMessage("No players in group with that name.",eChatType.CT_System,eChatLoc.CL_SystemWindow);
+                    client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Group.NoPlayerInGroup"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return;
                 }
 
                 if(target==client.Player)
                 {
-                    client.Out.SendMessage("You are the group leader already.",eChatType.CT_System,eChatLoc.CL_SystemWindow);
+                    client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Group.AlreadyLeader"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return;
                 }
 

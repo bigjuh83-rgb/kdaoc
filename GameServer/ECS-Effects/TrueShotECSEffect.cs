@@ -1,5 +1,6 @@
 ﻿using DOL.GS.PacketHandler;
 using DOL.GS.RealmAbilities;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -19,7 +20,7 @@ namespace DOL.GS
 
         public override void OnStartEffect()
         {
-            OwnerPlayer?.Out.SendMessage("You prepare a Trueshot!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            OwnerPlayer?.Out.SendMessage(LanguageMgr.GetTranslation(OwnerPlayer.Client.Account.Language, "Skill.Ability.TrueShot.Prepare"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
 
         public void Cancel(bool disableAbility)

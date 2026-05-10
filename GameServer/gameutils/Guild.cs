@@ -255,7 +255,7 @@ namespace DOL.GS
 
 			if (!player.RemoveMoney(amount))
 			{
-				player.Out.SendMessage("You don't have this amount of money !", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "Guild.NotEnoughMoney"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -362,7 +362,7 @@ namespace DOL.GS
 
 		public bool GuildBanner
 		{
-			get 
+			get
 			{
 				return this.m_DBguild.GuildBanner;
 			}
@@ -425,13 +425,13 @@ namespace DOL.GS
 		/// </summary>
 		public Alliance alliance
 		{
-			get 
-			{ 
-				return m_alliance; 
+			get
+			{
+				return m_alliance;
 			}
-			set 
-			{ 
-				m_alliance = value; 
+			set
+			{
+				m_alliance = value;
 			}
 		}
 
@@ -440,11 +440,11 @@ namespace DOL.GS
 		/// </summary>
 		public string GuildID
 		{
-			get 
-			{ 
-				return m_DBguild.GuildID; 
+			get
+			{
+				return m_DBguild.GuildID;
 			}
-			set 
+			set
 			{
 				m_DBguild.GuildID = value;
 			}
@@ -470,11 +470,11 @@ namespace DOL.GS
 		/// </summary>
 		public string Name
 		{
-			get 
-			{ 
-				return m_DBguild.GuildName; 
+			get
+			{
+				return m_DBguild.GuildName;
 			}
-			set 
+			set
 			{
 				m_DBguild.GuildName = value;
 			}
@@ -482,9 +482,9 @@ namespace DOL.GS
 
 		public long RealmPoints
 		{
-			get 
-			{ 
-				return this.m_DBguild.RealmPoints; 
+			get
+			{
+				return this.m_DBguild.RealmPoints;
 			}
 			set
 			{
@@ -494,9 +494,9 @@ namespace DOL.GS
 
 		public long BountyPoints
 		{
-			get 
-			{ 
-				return this.m_DBguild.BountyPoints; 
+			get
+			{
+				return this.m_DBguild.BountyPoints;
 			}
 			set
 			{
@@ -506,9 +506,9 @@ namespace DOL.GS
 
 		public bool IsStartingGuild
 		{
-			get 
-			{ 
-				return m_DBguild.IsStartingGuild; 
+			get
+			{
+				return m_DBguild.IsStartingGuild;
 			}
 			set
 			{
@@ -568,7 +568,7 @@ namespace DOL.GS
 			{
 				if (player == member) continue;
 				if (player.ShowGuildLogins)
-					player.Out.SendMessage("Guild member " + member.Name + " has logged in!", DOL.GS.PacketHandler.eChatType.CT_System, DOL.GS.PacketHandler.eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "Guild.MemberLoggedIn", member.Name), DOL.GS.PacketHandler.eChatType.CT_System, DOL.GS.PacketHandler.eChatLoc.CL_SystemWindow);
 			}
 		}
 
@@ -639,7 +639,7 @@ namespace DOL.GS
 		{
 			if (addPlayer == null || addPlayer.Guild != null)
 				return false;
-			
+
 			if (log.IsDebugEnabled)
 				log.Debug("Adding player to the guild, guild name=\"" + Name + "\"; player name=" + addPlayer.Name);
 
@@ -654,9 +654,14 @@ namespace DOL.GS
 				addPlayer.Guild = this;
 				addPlayer.SaveIntoDatabase();
 				GuildMgr.AddPlayerToGuildMemberViews(addPlayer);
-				addPlayer.Out.SendMessage("You have agreed to join " + this.Name + "!", eChatType.CT_Group, eChatLoc.CL_SystemWindow);
-				addPlayer.Out.SendMessage("Your current rank is " + addPlayer.GuildRank.Title + "!", eChatType.CT_Group, eChatLoc.CL_SystemWindow);
-				SendMessageToGuildMembers(addPlayer.Name + " has joined the guild!", eChatType.CT_Group, eChatLoc.CL_SystemWindow);
+				addPlayer.Out.SendMessage(LanguageMgr.GetTranslation(addPlayer.Client, "Guild.YouJoined", this.Name), eChatType.CT_Group, eChatLoc.CL_SystemWindow);
+				addPlayer.Out.SendMessage(LanguageMgr.GetTranslation(addPlayer.Client, "Guild.CurrentRank", addPlayer.GuildRank.Title), eChatType.CT_Group, eChatLoc.CL_SystemWindow);
+
+				foreach (GamePlayer guildPlayer in GetListOfOnlineMembers())
+				{
+					if (HasRank(guildPlayer, eRank.GcHear))
+						guildPlayer.Out.SendMessage(LanguageMgr.GetTranslation(guildPlayer.Client, "Guild.MemberJoined", addPlayer.Name), eChatType.CT_Group, eChatLoc.CL_SystemWindow);
+				}
 			}
 			catch (Exception e)
 			{
@@ -690,9 +695,9 @@ namespace DOL.GS
 				member.Out.SendObjectGuildID(member, member.Guild);
 				// Send message to removerClient about successful removal
 				if (removername == member.Name)
-					member.Out.SendMessage("You leave the guild.", DOL.GS.PacketHandler.eChatType.CT_System, DOL.GS.PacketHandler.eChatLoc.CL_SystemWindow);
+					member.Out.SendMessage(LanguageMgr.GetTranslation(member.Client, "Guild.YouLeave"), DOL.GS.PacketHandler.eChatType.CT_System, DOL.GS.PacketHandler.eChatLoc.CL_SystemWindow);
 				else
-					member.Out.SendMessage(removername + " removed you from " + this.Name, PacketHandler.eChatType.CT_System, PacketHandler.eChatLoc.CL_SystemWindow);
+					member.Out.SendMessage(LanguageMgr.GetTranslation(member.Client, "Guild.RemovedBy", removername, this.Name), PacketHandler.eChatType.CT_System, PacketHandler.eChatLoc.CL_SystemWindow);
 			}
 			catch (Exception e)
 			{
@@ -869,7 +874,7 @@ namespace DOL.GS
 		}
 
 		/// <summary>
-		/// Sends a message to all guild members 
+		/// Sends a message to all guild members
 		/// </summary>
 		/// <param name="msg">message string</param>
 		/// <param name="type">message type</param>
@@ -881,7 +886,7 @@ namespace DOL.GS
 			{
 				guildPlayers.AddRange(m_onlineGuildPlayers.Values);
 			}
-			
+
 			foreach (GamePlayer pl in guildPlayers)
 			{
 				if (!HasRank(pl, eRank.GcHear))
@@ -889,6 +894,24 @@ namespace DOL.GS
 					continue;
 				}
 				pl.Out.SendMessage(msg, type, loc);
+			}
+		}
+
+		public void SendTranslatedMessageToGuildMembers(string translationId, eChatType type, eChatLoc loc, params object[] args)
+		{
+			var guildPlayers = GameLoop.GetListForTick<GamePlayer>();
+			lock (m_memberListLock)
+			{
+				guildPlayers.AddRange(m_onlineGuildPlayers.Values);
+			}
+
+			foreach (GamePlayer pl in guildPlayers)
+			{
+				if (!HasRank(pl, eRank.GcHear))
+				{
+					continue;
+				}
+				pl.Out.SendMessage(LanguageMgr.GetTranslation(pl.Client.Account.Language, translationId, args), type, loc);
 			}
 		}
 
@@ -912,11 +935,11 @@ namespace DOL.GS
 		/// </summary>
 		public long MeritPoints
 		{
-			get 
+			get
 			{
 				return this.m_DBguild.MeritPoints;
 			}
-			set 
+			set
 			{
 				this.m_DBguild.MeritPoints = value;
 			}
@@ -924,7 +947,7 @@ namespace DOL.GS
 
 		public long GuildLevel
 		{
-			get 
+			get
 			{
 				// added by Dunnerholl
 				// props to valmerwolf for formula
@@ -938,11 +961,11 @@ namespace DOL.GS
 		/// </summary>
 		public eBonusType BonusType
 		{
-			get 
-			{ 
-				return (eBonusType)m_DBguild.BonusType; 
+			get
+			{
+				return (eBonusType)m_DBguild.BonusType;
 			}
-			set 
+			set
 			{
 				this.m_DBguild.BonusType = (byte)value;
 			}

@@ -1,22 +1,23 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -32,19 +33,19 @@ namespace DOL.GS.Commands
 		{
 			if (client.Player.Guild == null)
 			{
-				DisplayMessage(client, "You don't belong to a player guild.");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.GuildChat.NotInGuild"));
 				return;
 			}
 
 			if (!client.Player.Guild.HasRank(client.Player, Guild.eRank.GcSpeak))
 			{
-				DisplayMessage(client, "You don't have permission to speak on the guild channel.");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.GuildChat.NoGuildSpeakPermission"));
 				return;
 			}
 
 			if (IsSpammingCommand(client.Player, "guildchat", 500))
 			{
-				DisplayMessage(client, "Slow down! Think before you say each word!");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Speech.SlowDown"));
 				return;
 			}
 
@@ -65,19 +66,19 @@ namespace DOL.GS.Commands
 		{
 			if (client.Player.Guild == null)
 			{
-				DisplayMessage(client, "You don't belong to a player guild.");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.GuildChat.NotInGuild"));
 				return;
 			}
 
 			if (!client.Player.Guild.HasRank(client.Player, Guild.eRank.OcSpeak))
 			{
-				DisplayMessage(client, "You don't have permission to speak on the officer channel.");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.GuildChat.NoOfficerSpeakPermission"));
 				return;
 			}
 
 			if (IsSpammingCommand(client.Player, "osend", 500))
 			{
-				DisplayMessage(client, "Slow down! Think before you say each word!");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Speech.SlowDown"));
 				return;
 			}
 
@@ -105,31 +106,31 @@ namespace DOL.GS.Commands
 		{
 			if (client.Player.Guild == null)
 			{
-				DisplayMessage(client, "You don't belong to a player guild.");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.GuildChat.NotInGuild"));
 				return;
 			}
 
 			if (client.Player.Guild.alliance == null)
 			{
-				DisplayMessage(client, "Your guild doesn't belong to any alliance.");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.GuildChat.NotInAlliance"));
 				return;
 			}
 
 			if (!client.Player.Guild.HasRank(client.Player, Guild.eRank.AcSpeak))
 			{
-				DisplayMessage(client, "You don't have permission to speak on the alliance channel.");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.GuildChat.NoAllianceSpeakPermission"));
 				return;
 			}
 
 			if (IsSpammingCommand(client.Player, "asend", 500))
 			{
-				DisplayMessage(client, "Slow down! Think before you say each word!");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Speech.SlowDown"));
 				return;
 			}
 
 			if (client.Player.IsMuted)
 			{
-				client.Player.Out.SendMessage("You have been muted and are not allowed to speak in this channel.", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+				client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.GuildChat.Muted"), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
 				return;
 			}
 

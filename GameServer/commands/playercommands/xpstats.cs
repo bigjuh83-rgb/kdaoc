@@ -1,4 +1,5 @@
 ﻿using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands {
 	[CmdAttribute(
@@ -21,17 +22,17 @@ namespace DOL.GS.Commands {
 			if (args[1].ToLower().Equals("on"))
 			{
 				client.Player.XPLogState = eXPLogState.On;
-				client.Out.SendMessage("You will now see detailed experience gain stats. Use '/xpstats off' to stop seeing these details.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.XPStats.On"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 			}
 			else if (args[1].ToLower().Equals("off"))
 			{
 				client.Player.XPLogState = eXPLogState.Off;
-				client.Out.SendMessage("You will no longer see detailed experience gain stats. Use '/xpstats on' to see these details once more.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.XPStats.Off"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 			}
 			else if (args[1].ToLower().Equals("verbose"))
 			{
 				client.Player.XPLogState = eXPLogState.Verbose;
-				client.Out.SendMessage("You will see verbose experience gain stats. Use '/xpstats off' to stop seeing these details.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.XPStats.Verbose"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 			}
 		}
 	}

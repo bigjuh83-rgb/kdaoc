@@ -108,6 +108,29 @@ AdminCommands.Plvl.Err.NoPlvlPerm:                      You do not have the '/pl
 AdminCommands.Plvl.Note.PlvlSingle:                     To retain access to specific command types as a Player, enter '/plvl single' or '/plvl singleaccount' for details.
 
 # '/refresh' Commands
+AdminCommands.Refresh.Description:                      Refresh specific static data caches stored in scripts or other objects.
+AdminCommands.Refresh.Syntax:                           /refresh list | ClassName.MethodName
+AdminCommands.Refresh.WrongModule:                      Wrong module argument given. Try /refresh list!
+AdminCommands.Refresh.Refreshing:                       --- Refreshing module static cache for: {0}
+AdminCommands.Refresh.ReturnedValue:                    --- Module returned value: {0}
+AdminCommands.Refresh.Error:                            -!- Error while refreshing module static cache for: {0} - {1}
+AdminCommands.Refresh.Finished:                         -.- Refresh module static cache finished for: {0}
+AdminCommands.Refresh.AvailableModules:                 Available refreshable modules:
+
+AdminCommands.Snoop.Description:                        Monitors a player's private/system messages for administrative debugging.
+AdminCommands.Snoop.Syntax:                             /snoop <player>
+AdminCommands.Snoop.InvalidTarget:                      Invalid target.
+AdminCommands.Snoop.NoPlayerFound:                      No player found for '{0}'.
+AdminCommands.Snoop.InsufficientPrivileges:             You lack sufficient privileges to snoop this player.
+AdminCommands.Snoop.Enabled:                            Now snooping {0}.
+AdminCommands.Snoop.Disabled:                           Stopped snooping {0}.
+
+AdminCommands.SpeedHack.Description:                    Change speed hack detection parameters without saving them permanently.
+AdminCommands.SpeedHack.Syntax:                         /speedhack <parameter> <value>
+AdminCommands.SpeedHack.InvalidProperty:                "{0}" is not a valid property.
+AdminCommands.SpeedHack.InvalidValue:                   "{0}" is not a valid value for "{1}".
+AdminCommands.SpeedHack.ValueSet:                       Set "{0}" to "{1}".
+AdminCommands.SpeedHack.CurrentValues:                  Available properties and current values:
 
 # '/reload' Commands
 
@@ -119,7 +142,31 @@ AdminCommands.ServerProperties.Usage:				/serverproperties <refresh | cleanup>
 AdminCommands.ServerProperties.DataBaseXML:			XML is cached sorry, you cannot refresh server properties unless using MySQL!
 AdminCommands.ServerProperties.PropertiesRefreshed:	Refreshed server properties!
 
+# '/fixnpcspawn' Commands
+AdminCommands.FixNpcSpawn.Description:          Fix NPC positions and spawn points using navmesh.
+AdminCommands.FixNpcSpawn.Syntax.Run:          /fixnpcspawn [target|zone|region|world] <SnapDown> <SnapUp> <DryRun(true(default)/false)>
+AdminCommands.FixNpcSpawn.Syntax.Goto:         /fixnpcspawn goto <index> - Teleport to a fixed NPC from the last run
+AdminCommands.FixNpcSpawn.Syntax.Result:       /fixnpcspawn result <page|clear> - Print results (2k per page) or clear memory
+AdminCommands.FixNpcSpawn.Started:             ==== FixNpcSpawn: {0} ({1}: {2}, {3}: {4}, {5}: {6}) ====
+AdminCommands.FixNpcSpawn.NoNpcsForScope:      No NPCs found for the selected scope.
+AdminCommands.FixNpcSpawn.NoResultsInMemory:   No fix results in memory.
+AdminCommands.FixNpcSpawn.InvalidIndex:        Invalid index.
+AdminCommands.FixNpcSpawn.IndexOutOfRange:     Index out of range. Valid range: 0 - {0}
+AdminCommands.FixNpcSpawn.TeleportedToResult:  Teleported to result #{0}: {1} in {2}.
+AdminCommands.FixNpcSpawn.ResultsCleared:      Cleared results.
+AdminCommands.FixNpcSpawn.ResultsPageHeader:   ==== Results Page {0}/{1} (Total: {2}) ====
+AdminCommands.FixNpcSpawn.NextPageHint:        Type '/fixnpcspawn result {0}' for the next page.
+AdminCommands.FixNpcSpawn.TargetNotNpc:        Your target is not an NPC.
+AdminCommands.FixNpcSpawn.UnknownScope:        Unknown scope '{0}'. Use: target, zone, region, world.
+AdminCommands.FixNpcSpawn.ScanComplete:        Scanned {0} NPCs. Issues found: {1}.
+AdminCommands.FixNpcSpawn.TotalResultsHint:    Total results: {0}. Type '/fixnpcspawn result <page>' to view details or '/fixnpcspawn goto <index>' to teleport.
+AdminCommands.FixNpcSpawn.ResultLine:          [{0}]: {1} (Dist: {2:F1}) in {3}
+
 # '/shutdown' Commands
+Dialog.Header.Content.Shutdown:                 ----- Implications of a Shutdown -----
+Dialog.Header.Content.MoreInfo:                 ----- Additional Info -----
+Dialog.Header.Content.Attention:                ----- ATTENTION -----
+Dialog.Header.Content.PrivLevels:               ----- Privilege Levels -----
 AdminCommands.Shutdown.Msg.CountdownHours:          A server reboot is scheduled to occur in {0} hours!
 AdminCommands.Shutdown.Msg.CountdownHrMn:           A server reboot is scheduled to occur in {0} hours and {1} minutes!
 AdminCommands.Shutdown.Msg.CountdownMins:           A server reboot will occur in {0} minutes!

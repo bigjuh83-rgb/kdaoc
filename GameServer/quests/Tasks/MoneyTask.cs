@@ -3,6 +3,7 @@ using System.Collections;
 using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Quests
 {
@@ -31,7 +32,7 @@ namespace DOL.GS.Quests
         /// <param name="taskPlayer">The player doing this task</param>
         public MoneyTask(GamePlayer taskPlayer) : base(taskPlayer)
         {
-        }		
+        }
 
         /// <summary>
         /// Constructs a new Task from a database Object
@@ -39,31 +40,31 @@ namespace DOL.GS.Quests
         /// <param name="taskPlayer">The player doing the task</param>
         /// <param name="dbTask">The database object</param>
         public MoneyTask(GamePlayer taskPlayer, DbTask dbTask) : base(taskPlayer, dbTask)
-        {			
+        {
         }
 
         public override long RewardMoney
         {
-            get 
+            get
             {
                 ushort Scarto = 3; // Add/Remove % to the Result
-                                
+
                 int ValueScarto = ((MoneyReward[m_taskPlayer.Level-1]/100)*Scarto);
-                return Util.Random(MoneyReward[m_taskPlayer.Level-1]-ValueScarto,MoneyReward[m_taskPlayer.Level-1]+ValueScarto); 
+                return Util.Random(MoneyReward[m_taskPlayer.Level-1]-ValueScarto,MoneyReward[m_taskPlayer.Level-1]+ValueScarto);
             }
         }
 
         public override IList RewardItems
         {
             get {return null;}
-        }		
+        }
 
         /// <summary>
         /// Retrieves the name of the task
         /// </summary>
         public override string Name
         {
-            get { return "Money Task"; }
+            get { return LanguageMgr.GetTranslation(m_taskPlayer.Client, "Task.Money.Name"); }
         }
 
         /// <summary>
@@ -71,8 +72,8 @@ namespace DOL.GS.Quests
         /// </summary>
         public override string Description
         {
-            get { return "Bring the "+ItemName+" to "+ReceiverName+" in " + RecieverZone; }
-        }	
+            get { return LanguageMgr.GetTranslation(m_taskPlayer.Client, "Task.Money.Description", ItemName, ReceiverName, RecieverZone); }
+        }
 
 
         /// <summary>
@@ -89,9 +90,9 @@ namespace DOL.GS.Quests
         /// Should be overridden and some rewards given etc.
         /// </summary>
         public override void FinishTask()
-        {			
+        {
             base.FinishTask();
-        }		
+        }
 
         /// <summary>
         /// This method needs to be implemented in each task.
@@ -108,7 +109,7 @@ namespace DOL.GS.Quests
             if (sender != m_taskPlayer)
                 return;
 
-            if (CheckTaskExpired()) 
+            if (CheckTaskExpired())
             {
                 return;
             }
@@ -117,7 +118,7 @@ namespace DOL.GS.Quests
 
             if (e == GamePlayerEvent.GiveItem)
             {
-                GiveItemEventArgs gArgs = (GiveItemEventArgs)args;				
+                GiveItemEventArgs gArgs = (GiveItemEventArgs)args;
                 GameLiving target = gArgs.Target as GameLiving;
                 DbInventoryItem item = gArgs.Item;
 
@@ -127,7 +128,7 @@ namespace DOL.GS.Quests
                     InventoryLogging.LogInventoryAction(player, target, eInventoryActionType.Quest, item.Template, item.Count);
                     FinishTask();
                 }
-            }	
+            }
         }
 
         /// <summary>
@@ -137,12 +138,12 @@ namespace DOL.GS.Quests
         /// <param name="Level">Level of Generated Item</param>
         /// <returns>A Generated NPC Item</returns>
         public static DbInventoryItem GenerateNPCItem(string Name, int Level)
-        {			
+        {
             int Id = Util.Random(0, TaskObjects.Length-1);
             int format = Util.Random(0, StrFormat.Length-1);
             int middle = Util.Random(0, Middle.Length-1);
             return GenerateItem(string.Format(StrFormat[format] ,Name,Middle[middle],TaskObjects[Id]), Level, ObjectModels[Id]);
-        }		
+        }
 
         /// <summary>
         /// Create an Item, Search for a NPC to consign the Item and give Item to the Player
@@ -158,37 +159,37 @@ namespace DOL.GS.Quests
             GameNPC NPC = GetRandomNPC(player);
             if(NPC == null)
             {
-                player.Out.SendMessage("I have no task for you, come back some time later.",eChatType.CT_System,eChatLoc.CL_PopupWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Task.Availability.NoTaskComeLater"),eChatType.CT_System,eChatLoc.CL_PopupWindow);
                 return false;
             }
             else
             {
                 DbInventoryItem TaskItems = GenerateNPCItem(NPC.Name, player.Level);
-                
+
                 player.GameTask = new MoneyTask(player);
                 player.GameTask.TimeOut = DateTime.Now.AddHours(2);
                 player.GameTask.ItemName = TaskItems.Name;
                 player.GameTask.ReceiverName = NPC.Name;
                 ((MoneyTask)player.GameTask).RecieverZone = NPC.CurrentZone.Description;
-                
-                player.Out.SendMessage("Bring "+TaskItems.GetName(0,false)+" to "+NPC.Name +" in "+ NPC.CurrentZone.Description, eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Task.Money.BringItemToNpc", TaskItems.GetName(0,false), NPC.Name, NPC.CurrentZone.Description), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                 //Player.Out.SendCustomDialog("", new CustomDialogResponse(TaskDialogResponse));
 
                 player.ReceiveItem(source,TaskItems);
                 return true;
             }
-            
+
         }
 
 
         /// <summary>
         /// Find a Random NPC
         /// </summary>
-        /// <param name="Player">The GamePlayer Object</param>		
+        /// <param name="Player">The GamePlayer Object</param>
         /// <returns>The GameNPC Searched</returns>
         public static GameNPC GetRandomNPC(GamePlayer Player)
         {
-            return Player.CurrentZone.GetRandomNPC(new eRealm[]{eRealm.Albion,eRealm.Hibernia,eRealm.Midgard});			
+            return Player.CurrentZone.GetRandomNPC(new eRealm[]{eRealm.Albion,eRealm.Hibernia,eRealm.Midgard});
         }
 
         public new static bool CheckAvailability(GamePlayer player, GameLiving target)
@@ -196,11 +197,11 @@ namespace DOL.GS.Quests
             if (target==null)
                 return false;
 
-            if (target is GameTrainer || target is GameMerchant || target.Name.IndexOf("Crier")>=0) 
+            if (target is GameTrainer || target is GameMerchant || target.Name.IndexOf("Crier")>=0)
             {
                 return AbstractTask.CheckAvailability(player,target,CHANCE);
-            } 
-            else 
+            }
+            else
             {
                 return false;
             }

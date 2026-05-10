@@ -1,4 +1,5 @@
-﻿
+﻿using DOL.Language;
+
 namespace DOL.AI.Brain
 {
     public class SINeckBossBrain : StandardMobBrain
@@ -11,7 +12,7 @@ namespace DOL.AI.Brain
 
             if (!Body.InCombatInLast(60 * 1000) && Body.InCombatInLast(65 * 1000)) // 60 seconds
             {
-                Body.Say("Cowards..");
+                Body.Say(LanguageMgr.GetTranslation("EN", "SINeckBoss.Cowards"));
                 Body.RemoveFromWorld();
             }
             base.Think();

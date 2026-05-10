@@ -1,5 +1,6 @@
 using System;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -47,11 +48,11 @@ namespace DOL.GS.Spells
 			powerGain = owner.ChangeMana(m_caster, eManaChangeType.Spell, powerGain);
 
 			if (powerGain > 0)
-				MessageToOwner(String.Format("Your summon channels {0} power to you!", powerGain), eChatType.CT_Spell);
+				MessageToOwner(LanguageMgr.GetTranslation((Owner() as GamePlayer)?.Client.Account.Language, "DrainSpell.SummonChannelsPower", powerGain), eChatType.CT_Spell);
 			else
-				MessageToOwner("You cannot absorb any more power.", eChatType.CT_SpellResisted);
+				MessageToOwner(LanguageMgr.GetTranslation((Owner() as GamePlayer)?.Client.Account.Language, "DrainSpell.CannotAbsorbPower"), eChatType.CT_SpellResisted);
 		}
-		
+
 		/// <summary>
 		/// The target of the drain. Generally the caster, except for necropet
 		/// </summary>
@@ -60,7 +61,7 @@ namespace DOL.GS.Spells
 		{
 			return Caster;
 		}
-		
+
 
 		/// <summary>
 		/// Send message to owner.

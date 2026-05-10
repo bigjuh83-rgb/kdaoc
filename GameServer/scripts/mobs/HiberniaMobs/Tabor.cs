@@ -3,6 +3,7 @@ using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 #region Tabor
 namespace DOL.GS
@@ -36,16 +37,17 @@ namespace DOL.GS
 			base.AddToWorld();
 			return true;
 		}
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(string key, params object[] args)
 		{
 			foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
 				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 			}
 		}
 		public override void Die(GameObject killer)
         {
-			BroadcastMessage(String.Format("As {0} falls to the ground, you feel a breeze in the air.\nA swirl of dirt covers the area.", Name));
+			BroadcastMessage("Mobs.Tabor.DeathBreeze", Name);
 			SpawnSwirlDirt();
             base.Die(killer);
         }
@@ -227,16 +229,17 @@ namespace DOL.GS
     public class TaborGhost : GameNPC
 	{
 		public TaborGhost() : base() { }
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(string key, params object[] args)
 		{
 			foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
 				player.Out.SendMessage(message, eChatType.CT_Say, eChatLoc.CL_ChatWindow);
 			}
 		}
 		public override bool AddToWorld()
 		{
-			BroadcastMessage("Ghost of Tabor says, \"You thought the fight was over did you ? \"");
+			BroadcastMessage("Mobs.TaborGhost.FightNotOver");
 			INpcTemplate npcTemplate = NpcTemplateMgr.GetTemplate(60161293);
 			LoadTemplate(npcTemplate);
 
@@ -259,7 +262,7 @@ namespace DOL.GS
         public override void Die(GameObject killer)
         {
 			if(killer != null)
-				BroadcastMessage(String.Format("{0} says, \"I will return some day.Be warned!\"",Name));
+				BroadcastMessage("Mobs.TaborGhost.ReturnWarning", Name);
 			base.Die(killer);
         }
     }

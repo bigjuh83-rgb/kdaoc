@@ -1,4 +1,5 @@
 ﻿using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -75,13 +76,13 @@ namespace DOL.GS.Spells
                 GameSiegeWeapon siege = (Caster as GameSiegeWeapon);
                 if (siege.Owner != null)
                 {
-                    siege.Owner.Out.SendMessage(string.Format("You hit {0} for {1}{2} damage!", ad.Target.GetName(0, false), ad.Damage, modmessage), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+                    siege.Owner.Out.SendMessage(LanguageMgr.GetTranslation(siege.Owner.Client.Account.Language, "SiegeDirectDamageSpellHandler.YouHitForDamage", ad.Target.GetName(0, false), ad.Damage, modmessage), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
                 }
             }
 
             if (Caster is GamePlayer p)
             {
-                p.Out.SendMessage(string.Format("You hit {0} for {1}{2} damage!", ad.Target.GetName(0, false), ad.Damage, modmessage), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+                p.Out.SendMessage(LanguageMgr.GetTranslation(p.Client.Account.Language, "SiegeDirectDamageSpellHandler.YouHitForDamage", ad.Target.GetName(0, false), ad.Damage, modmessage), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
             }
         }
 

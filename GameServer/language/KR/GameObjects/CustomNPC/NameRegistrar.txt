@@ -1,0 +1,5 @@
+# Name Registrar NPC
+
+NameRegistrar.YouExamine:	{0}을(를) 살펴봅니다. {1}은(는) {2}입니다.
+NameRegistrar.ReturnToMe:	성을 정하려면 {0}레벨이 되었을 때 다시 찾아오십시오.
+NameRegistrar.LastName:		원하는 성으로 알려지도록 해 드릴 수 있습니다. /lastname <이름> 명령어를 사용하십시오.

@@ -57,7 +57,7 @@ namespace DOL.GS
             INpcTemplate npcTemplate = NpcTemplateMgr.GetTemplate(60160395);
             LoadTemplate(npcTemplate);
             Faction = FactionMgr.GetFactionByID(140);
-            RespawnInterval = -1; 
+            RespawnInterval = -1;
             BodyType = (ushort)NpcTemplateMgr.eBodyType.Giant;
 
             GameNpcInventoryTemplate template = new GameNpcInventoryTemplate();
@@ -71,7 +71,7 @@ namespace DOL.GS
             VisibleActiveWeaponSlots = 16;
             SuttungBrain sbrain = new SuttungBrain();
             SetOwnBrain(sbrain);
-            LoadedFromScript = true; 
+            LoadedFromScript = true;
             base.AddToWorld();
             return true;
         }
@@ -153,7 +153,7 @@ namespace DOL.AI.Brain
         {
             if (Body.IsAlive && IsBerserker == true && Body.InCombat && HasAggro)
             {
-                BroadcastMessage(String.Format(Body.Name + " goes into berserker stance!"));
+                BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.ElderIcelord.BerserkerStance", Body.Name));
                 Body.Emote(eEmote.MidgardFrenzy);
                 Body.Strength = 850;
                 Body.MaxSpeedBase = 200; //slow under zerk mode
@@ -167,7 +167,7 @@ namespace DOL.AI.Brain
         {
             if (Body.IsAlive)
             {
-                BroadcastMessage(String.Format(Body.Name + " berserker stance fades away!"));
+                BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.ElderIcelord.BerserkerFades", Body.Name));
                 Body.Strength = Body.NPCTemplate.Strength;
                 Body.Size = Convert.ToByte(Body.NPCTemplate.Size);
                 Body.MaxSpeedBase = Body.NPCTemplate.MaxSpeed;
@@ -219,9 +219,7 @@ namespace DOL.AI.Brain
             {
                 if(!AggroText)
                 {
-                    BroadcastMessage(String.Format(Body.Name + " says, 'The price of your invading our frozen fortress is death!" +
-                    " Death to you and your allies! Your presence here mocks the pacifist philosophy of my opponents on the Council." +
-                    " I weep for no council member who has perished!'"));
+                    BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.ElderIcelord.FrozenFortress", Body.Name));
                     AggroText = true;
                 }
                 if (IsBerserker == false)
@@ -239,7 +237,7 @@ namespace DOL.AI.Brain
         }
         private int Announce(ECSGameTimer timer)
         {
-            BroadcastMessage("An otherworldly howling sound suddenly becomes perceptible. The sound quickly grows louder but it is not accompanied by a word. Moments after it begins, the howling sound is gone, replace by the familiar noises of the slowly shifting glacier.");
+            BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.ElderIcelord.OtherworldlyHowl"));
             return 0;
         }
         private Spell m_IcelordHjalmar_aoe;
@@ -385,7 +383,7 @@ namespace DOL.GS
         }
         public void SpawnAdds()
         {
-            BroadcastMessage(Name + " spasms as dark energies swirl around his body!");
+            BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.ElderIcelord.DarkEnergies", Name));
             Morkimma npc = new Morkimma();
             npc.X = TargetObject.X + Util.Random(-100, 100);
             npc.Y = TargetObject.Y + Util.Random(-100, 100);
@@ -480,9 +478,8 @@ namespace DOL.AI.Brain
                 RemoveAdds = false;
                 if (message2 == false)
                 {
-                    BroadcastMessage(Body.Name + " bellows 'I am amazed that you have made it this far! I'm afraid that your journey ends here with all of your death, however, I will show you no mercy!'");
-                    BroadcastMessage(String.Format(Body.Name +" says, I have warned the Council that if we do not destroy those who threaten us before they destroy us, we will perish." +
-                        " You deserve this fate more than I do. I will not mourn her death beyond the grave!"));
+                    BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.ElderIcelord.NoMercy", Body.Name));
+                    BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.ElderIcelord.CouncilWarning", Body.Name));
                     message2 = true;
                 }
 
@@ -509,7 +506,7 @@ namespace DOL.AI.Brain
         }
         private int Announce(ECSGameTimer timer)
         {
-            BroadcastMessage("An otherworldly howling sound suddenly becomes perceptible. The sound quickly grows louder but it is not accompanied by a word. Moments after it begins, the howling sound is gone, replace by the familiar noises of the slowly shifting glacier.");
+            BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.ElderIcelord.OtherworldlyHowl"));
             return 0;
         }
     }
@@ -549,7 +546,7 @@ namespace DOL.GS
 
             return 0;
         }
-        
+
         public override double GetArmorAF(eArmorSlot slot)
         {
             return 200;
@@ -642,7 +639,7 @@ namespace DOL.AI.Brain
         public override void Think()
         {
             base.Think();
-        }     
+        }
     }
 }
 #endregion
@@ -745,7 +742,7 @@ namespace DOL.AI.Brain
 
         public override void KillFSM()
         {
-            
+
         }
 
         private int SpawnBoss(ECSGameTimer timer)

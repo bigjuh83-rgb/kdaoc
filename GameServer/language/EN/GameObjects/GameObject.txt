@@ -51,14 +51,34 @@ GamePlayer.UseSlot.CantUseCast:				You need to finish your current action for us
 GamePlayer.UseSlot.AttemptToUse:				You attempt to use {0}.
 GamePlayer.UseSlot.CantUseFromBackpack:		You can't use this item from your backpack. Equip it before!
 GamePlayer.UseSlot.CantUseInCombat:				You can't use this item in combat!
+GamePlayer.UseSlot.ItemSitting:				You can't use an item while sitting!
+GamePlayer.UseSlot.PotionEffectNotImplemented:	Potion effect ID {0} is not implemented yet.
+GamePlayer.UseSlot.PotionEffectLineNotFound:	Potion effect line not found.
+GamePlayer.UseSlot.PotionEffectSpellNotFound:	Potion effect spell ID {0} not found.
+GamePlayer.UseSlot.CantDischargeState:		In your state you can't discharge any object.
+GamePlayer.UseSlot.MustWaitBeforeDischargeItem:	You must wait {0} more seconds before discharging {1}!
+GamePlayer.UseSlot.MustWaitBeforeDischargeObject:	You must wait {0} more seconds before discharging another object!
+GamePlayer.UseSlot.MaxBuffChargeEffects:		You may only use two buff charge effects.
+GamePlayer.UseSlot.ChargeEffectNotImplemented:	Charge effect ID {0} is not implemented yet.
+GamePlayer.UseSlot.ChargeEffectNotFound:		Charge effect ID {0} not found.
+GamePlayer.UseSlot.AlreadyCasting:			You are already casting a spell.
+GamePlayer.UseSlot.YouUse:				You use {0}.
+GamePlayer.Saddlebag.RequiresChampionLevel:	This saddlebag requires Champion Level {0}!
+GamePlayer.Saddlebag.Activated:			You've activated a saddlebag!
+GamePlayer.Saddlebag.ActivationError:		An error occurred while trying to activate this saddlebag!
+GamePlayer.Saddlebag.AlreadyActivated:		You've already activated this saddlebag!
+GamePlayer.HorseInventory.NeedHorseEquipped:	You must be equipped with a horse.
+GamePlayer.HorseInventory.MustBeOnHorse:		You must be on your horse to use this inventory.
+GamePlayer.HorseInventory.MustBeChampion:		You must be a champion to use this inventory.
+GamePlayer.HorseInventory.CantUse:			You can't use this inventory.
 GameObject.Casting.CastsASpell:				{0} casts a spell!
 GameLiving.StartWeaponMagicalEffect.NotPowerful:	You are not powerful enough to use this item's spell.
 GamePlayer.Spell.NotEnoughPowerful:			You are not powerful enough to use this item's spell.
 
 ## Condition
 GamePlayer.Attack.CouldRepair:				Your {0} could use repairs.
-GamePlayer.Attack.NeedRepair:				Your {0} is in need of repairs.	
-GamePlayer.Attack.NeedRepairDire:			Your {0} is in dire need of repairs.	
+GamePlayer.Attack.NeedRepair:				Your {0} is in need of repairs.
+GamePlayer.Attack.NeedRepairDire:			Your {0} is in dire need of repairs.
 
 ## Item Bonuses
 ### Stats
@@ -101,13 +121,13 @@ DetailDisplayHandler.HandlePacket.CannotSold:		    Cannot be sold to merchants.
 DetailDisplayHandler.HandlePacket.CannotTraded:		    Cannot be traded to other players.
 DetailDisplayHandler.HandlePacket.ChatItem:		        [Chat] {0}/Item: "{1}"
 DetailDisplayHandler.HandlePacket.CrafterName:		    Crafter : {0}
-DetailDisplayHandler.HandlePacket.Damage:		        Damage: 
-DetailDisplayHandler.HandlePacket.Defense:		        Defense: 
+DetailDisplayHandler.HandlePacket.Damage:		        Damage:
+DetailDisplayHandler.HandlePacket.Defense:		        Defense:
 DetailDisplayHandler.HandlePacket.Devastating:		    Devastating
 DetailDisplayHandler.HandlePacket.DontBelongGuild:	    You don't belong to a player guild.
-DetailDisplayHandler.HandlePacket.FatigueCost:		    Fatigue Cost: 
+DetailDisplayHandler.HandlePacket.FatigueCost:		    Fatigue Cost:
 DetailDisplayHandler.HandlePacket.FollowupStyle:	    Followup Style: {0}
-DetailDisplayHandler.HandlePacket.Front:		        (Front)	
+DetailDisplayHandler.HandlePacket.Front:		        (Front)
 DetailDisplayHandler.HandlePacket.GuildItem:		    [Guild] {0}/Item: "{1}"
 DetailDisplayHandler.HandlePacket.High:			        High
 DetailDisplayHandler.HandlePacket.HighBonus:		    High Bonus
@@ -126,24 +146,24 @@ DetailDisplayHandler.HandlePacket.NoBonus:		        No Bonus
 DetailDisplayHandler.HandlePacket.NoGroup:		        You are not part of a group.
 DetailDisplayHandler.HandlePacket.NoInformation:	    No special information!
 DetailDisplayHandler.HandlePacket.None:		            None
-DetailDisplayHandler.HandlePacket.NoPermissionToSpeak:	You don't have permission to speak on the on guild line.	
+DetailDisplayHandler.HandlePacket.NoPermissionToSpeak:	You don't have permission to speak on the on guild line.
 DetailDisplayHandler.HandlePacket.OnlyModerator:	    Only moderator can talk on this chat group.
-DetailDisplayHandler.HandlePacket.Opening:		        Opening: 
-DetailDisplayHandler.HandlePacket.OpeningStyle:		    Opening Style: 
+DetailDisplayHandler.HandlePacket.Opening:		        Opening:
+DetailDisplayHandler.HandlePacket.OpeningStyle:		    Opening Style:
 DetailDisplayHandler.HandlePacket.Or:			        or {0}
-DetailDisplayHandler.HandlePacket.Positional:		    Positional 
+DetailDisplayHandler.HandlePacket.Positional:		    Positional
 DetailDisplayHandler.HandlePacket.Side:			        (Side)
 DetailDisplayHandler.HandlePacket.TargetBlocks:		    Target Blocks
-DetailDisplayHandler.HandlePacket.TargetEffect:		    Target Effect: 
+DetailDisplayHandler.HandlePacket.TargetEffect:		    Target Effect:
 DetailDisplayHandler.HandlePacket.TargetEvades:		    Target Evades
 DetailDisplayHandler.HandlePacket.TargetFumbles:	    Target Fumbles
 DetailDisplayHandler.HandlePacket.TargetHits:		    Target Hits
 DetailDisplayHandler.HandlePacket.TargetMisses:		    Target Misses
 DetailDisplayHandler.HandlePacket.TargetParrys:		    Target Parries
 DetailDisplayHandler.HandlePacket.TargetStyle:		    Target Style
-DetailDisplayHandler.HandlePacket.ToHit:		        To Hit: 
+DetailDisplayHandler.HandlePacket.ToHit:		        To Hit:
 DetailDisplayHandler.HandlePacket.VeryHigh:		        Very High
-DetailDisplayHandler.HandlePacket.VeryHighBonus:	    Very High Bonus	
+DetailDisplayHandler.HandlePacket.VeryHighBonus:	    Very High Bonus
 DetailDisplayHandler.HandlePacket.VeryHighPenalty:	    Very High Penalty
 DetailDisplayHandler.HandlePacket.VeryLow:		        Very Low
 DetailDisplayHandler.HandlePacket.VeryLowBonus:		    Very Low Bonus
@@ -179,6 +199,7 @@ DetailDisplayHandler.WriteClassicWeaponInfos.Condition:	- {0}% Condition
 DetailDisplayHandler.WriteClassicWeaponInfos.DamageMod:	Damage Modifiers:
 DetailDisplayHandler.WriteClassicWeaponInfos.DamageType:- Damage Type: {0}
 DetailDisplayHandler.WriteClassicWeaponInfos.EffDamage:	Effective Damage:
+DetailDisplayHandler.WriteClassicWeaponInfos.EffectiveDPS:- {0} DPS
 DetailDisplayHandler.WriteClassicWeaponInfos.Quality:	- {0}% Quality
 DetailDisplayHandler.WriteClassicWeaponInfos.SPD:	    - {0} Weapon Speed
 DetailDisplayHandler.WriteMagicalBonuses.ChargedMagic:	Charged Magic Ability:
@@ -190,8 +211,13 @@ DetailDisplayHandler.WriteMagicalBonuses.LevelRequired2:Level Requirement: {0} L
 DetailDisplayHandler.WriteMagicalBonuses.MagicAbility:	Magical Ability:
 DetailDisplayHandler.WriteMagicalBonuses.MagicBonus:	Magical Bonuses:
 DetailDisplayHandler.WriteMagicalBonuses.MaxCharges:	- {0} Max
+DetailDisplayHandler.WriteMagicalBonuses.CastWhenItemUsed:- This spell is cast when the item is used.
+DetailDisplayHandler.WriteMagicalBonuses.ItemEffectsSpellLineMissing:- Item_Effects Spell Line Missing
+DetailDisplayHandler.WriteMagicalBonuses.SpellHandlerNotImplemented:- {0} (Spell Handler Not Implemented)
+DetailDisplayHandler.WriteMagicalBonuses.SpellNotFound:- Spell Not Found: {0}
 DetailDisplayHandler.WriteMagicalBonuses.StrikeArmor:	- Spell has a chance of casting when enemy strikes at this armor.
 DetailDisplayHandler.WriteMagicalBonuses.StrikeEnemy:	- Spell has a chance of casting when this weapon strikes an enemy.
+DetailDisplayHandler.WriteMagicalBonuses.TotalUtility:	Total utility: {0}
 DetailDisplayHandler.WriteMagicalBonuses.UsedItem:	    - Spell has a chance of casting when this item is used.
 DetailDisplayHandler.WriteMagicalBonuses.UseItem1:	    Can use item every: {0}
 DetailDisplayHandler.WriteMagicalBonuses.UseItem2:	    Can use item every: 3:00 min.
@@ -201,6 +227,7 @@ DetailDisplayHandler.WritePoisonInfo.Level:		        - {0} Level
 DetailDisplayHandler.WritePoisonInfo.LevelRequired:	    Level Requirement:
 DetailDisplayHandler.WritePoisonInfo.MaxCharges:	    - {0} Max
 DetailDisplayHandler.WritePoisonInfo.ProcAbility:	    Offensive Proc Ability:
+DetailDisplayHandler.WriteFocusLine.FocusLevel:- {0}: {1} lvls
 DetailDisplayHandler.WritePotionInfo.ChargedMagic:	    Charged Magic Ability:
 DetailDisplayHandler.WritePotionInfo.Charges:		    - {0} Charges
 DetailDisplayHandler.WritePotionInfo.Level:		        - {0} Level
@@ -209,8 +236,163 @@ DetailDisplayHandler.WritePotionInfo.MaxCharges:	    - {0} Max
 DetailDisplayHandler.WritePotionInfo.NoUseInCombat:	    Cannot be used in combat
 DetailDisplayHandler.WritePotionInfo.UseItem2:		    Can use item every: 1:00 min
 DetailDisplayHandler.WritePotionInfo.UseItem3:		    Can use again in: {0}
+DetailDisplayHandler.WritePotionInfo.UseItemEverySeconds:	Can use item every: {0} sec
+DetailDisplayHandler.WritePotionInfo.UseItemEveryMinutes:	Can use item every: {0}:{1:00} min
+DetailDisplayHandler.WritePotionInfo.UseAgainSeconds:		Can use again in: {0} sec
+DetailDisplayHandler.WritePotionInfo.UseAgainMinutes:		Can use again in: {0}:{1:00} min
 DetailDisplayHandler.WritePotionInfo.Type:		        Type : {0}
 DetailDisplayHandler.WritePotionInfo.Value:		        Value : {0}
 DetailDisplayHandler.WritePotionInfo.Target:	        Target : {0}
 DetailDisplayHandler.WritePotionInfo.Range:		        Range : {0}
-DetailDisplayHandler.WriteUsableClasses.UsableBy:	    Usable by: 
+DetailDisplayHandler.WriteUsableClasses.UsableBy:	    Usable by:
+
+## Global Constant Names
+GlobalConstants.Stat.STR:					Strength
+GlobalConstants.Stat.DEX:					Dexterity
+GlobalConstants.Stat.CON:					Constitution
+GlobalConstants.Stat.QUI:					Quickness
+GlobalConstants.Stat.INT:					Intelligence
+GlobalConstants.Stat.PIE:					Piety
+GlobalConstants.Stat.EMP:					Empathy
+GlobalConstants.Stat.CHR:					Charisma
+GlobalConstants.InstrumentType.Drum:			Drum
+GlobalConstants.InstrumentType.Lute:			Lute
+GlobalConstants.InstrumentType.Flute:			Flute
+GlobalConstants.InstrumentType.Harp:			Harp
+GlobalConstants.AmmunitionDamage.light:			light
+GlobalConstants.AmmunitionDamage.medium:		medium
+GlobalConstants.AmmunitionDamage.heavy:			heavy
+GlobalConstants.AmmunitionDamage.X-heavy:		X-heavy
+GlobalConstants.AmmunitionRange.short:			short
+GlobalConstants.AmmunitionRange.medium:			medium
+GlobalConstants.AmmunitionRange.long:			long
+GlobalConstants.AmmunitionRange.X-long:			X-long
+GlobalConstants.AmmunitionAccuracy.reduced:		reduced
+GlobalConstants.AmmunitionAccuracy.normal:		normal
+GlobalConstants.AmmunitionAccuracy.improved:	improved
+GlobalConstants.AmmunitionAccuracy.enhanced:	enhanced
+GlobalConstants.ShieldType.Small:				Small
+GlobalConstants.ShieldType.Medium:				Medium
+GlobalConstants.ShieldType.Large:				Large
+GlobalConstants.WeaponDamageType.Elemental:		Elemental
+GlobalConstants.WeaponDamageType.Crush:			Crush
+GlobalConstants.WeaponDamageType.Slash:			Slash
+GlobalConstants.WeaponDamageType.Thrust:		Thrust
+GlobalConstants.WeaponDamageType.Body:			Body
+GlobalConstants.WeaponDamageType.Cold:			Cold
+GlobalConstants.WeaponDamageType.Energy:		Energy
+GlobalConstants.WeaponDamageType.Heat:			Heat
+GlobalConstants.WeaponDamageType.Matter:		Matter
+GlobalConstants.WeaponDamageType.Spirit:		Spirit
+GlobalConstants.ItemHand.twohanded:				twohanded
+GlobalConstants.ItemHand.lefthand:				lefthand
+GlobalConstants.ItemHand.both:					both
+GlobalConstants.DamageType.Body:				Body
+GlobalConstants.DamageType.Cold:				Cold
+GlobalConstants.DamageType.Crush:				Crush
+GlobalConstants.DamageType.Energy:				Energy
+GlobalConstants.DamageType.Falling:				Falling
+GlobalConstants.DamageType.Heat:				Heat
+GlobalConstants.DamageType.Matter:				Matter
+GlobalConstants.DamageType.Natural:				Natural
+GlobalConstants.DamageType.Slash:				Slash
+GlobalConstants.DamageType.Spirit:				Spirit
+GlobalConstants.DamageType.Thrust:				Thrust
+GlobalConstants.Realm.None:						None
+GlobalConstants.Realm.Albion:					Albion
+GlobalConstants.Realm.Midgard:					Midgard
+GlobalConstants.Realm.Hibernia:					Hibernia
+GlobalConstants.Realm.Door:						Door
+GlobalConstants.Property.Strength:				Strength
+GlobalConstants.Property.Dexterity:				Dexterity
+GlobalConstants.Property.Constitution:			Constitution
+GlobalConstants.Property.Quickness:				Quickness
+GlobalConstants.Property.Intelligence:			Intelligence
+GlobalConstants.Property.Piety:					Piety
+GlobalConstants.Property.Empathy:				Empathy
+GlobalConstants.Property.Charisma:				Charisma
+GlobalConstants.Property.Resist_Body:			Body Resist
+GlobalConstants.Property.Resist_Cold:			Cold Resist
+GlobalConstants.Property.Resist_Crush:			Crush Resist
+GlobalConstants.Property.Resist_Energy:			Energy Resist
+GlobalConstants.Property.Resist_Heat:			Heat Resist
+GlobalConstants.Property.Resist_Matter:			Matter Resist
+GlobalConstants.Property.Resist_Slash:			Slash Resist
+GlobalConstants.Property.Resist_Spirit:			Spirit Resist
+GlobalConstants.Property.Resist_Thrust:			Thrust Resist
+GlobalConstants.Property.Resist_Natural:		Essence Resist
+GlobalConstants.ObjectType.0:					generic (item)
+GlobalConstants.ObjectType.1:					generic (weapon)
+GlobalConstants.ObjectType.2:					crushing (weapon)
+GlobalConstants.ObjectType.3:					slashing (weapon)
+GlobalConstants.ObjectType.4:					thrusting (weapon)
+GlobalConstants.ObjectType.5:					fired (weapon)
+GlobalConstants.ObjectType.6:					twohanded (weapon)
+GlobalConstants.ObjectType.7:					polearm (weapon)
+GlobalConstants.ObjectType.8:					staff (weapon)
+GlobalConstants.ObjectType.9:					longbow (weapon)
+GlobalConstants.ObjectType.10:					crossbow (weapon)
+GlobalConstants.ObjectType.11:					sword (weapon)
+GlobalConstants.ObjectType.12:					hammer (weapon)
+GlobalConstants.ObjectType.13:					axe (weapon)
+GlobalConstants.ObjectType.14:					spear (weapon)
+GlobalConstants.ObjectType.15:					composite bow (weapon)
+GlobalConstants.ObjectType.16:					thrown (weapon)
+GlobalConstants.ObjectType.17:					left axe (weapon)
+GlobalConstants.ObjectType.18:					recurve bow (weapon)
+GlobalConstants.ObjectType.19:					blades (weapon)
+GlobalConstants.ObjectType.20:					blunt (weapon)
+GlobalConstants.ObjectType.21:					piercing (weapon)
+GlobalConstants.ObjectType.22:					large (weapon)
+GlobalConstants.ObjectType.23:					celtic spear (weapon)
+GlobalConstants.ObjectType.24:					flexible (weapon)
+GlobalConstants.ObjectType.25:					hand to hand (weapon)
+GlobalConstants.ObjectType.26:					scythe (weapon)
+GlobalConstants.ObjectType.27:					fist wraps (weapon)
+GlobalConstants.ObjectType.28:					mauler staff (weapon)
+GlobalConstants.ObjectType.31:					generic (armor)
+GlobalConstants.ObjectType.32:					cloth (armor)
+GlobalConstants.ObjectType.33:					leather (armor)
+GlobalConstants.ObjectType.34:					studded leather (armor)
+GlobalConstants.ObjectType.35:					chain (armor)
+GlobalConstants.ObjectType.36:					plate (armor)
+GlobalConstants.ObjectType.37:					reinforced (armor)
+GlobalConstants.ObjectType.38:					scale (armor)
+GlobalConstants.ObjectType.41:					magical (item)
+GlobalConstants.ObjectType.42:					shield (armor)
+GlobalConstants.ObjectType.43:					arrow (item)
+GlobalConstants.ObjectType.44:					bolt (item)
+GlobalConstants.ObjectType.45:					instrument (item)
+GlobalConstants.ObjectType.46:					poison (item)
+GlobalConstants.ObjectType.47:					alchemy tincture
+GlobalConstants.ObjectType.48:					spellcrafting gem
+GlobalConstants.ObjectType.49:					garden object
+GlobalConstants.ObjectType.50:					house wall object
+GlobalConstants.ObjectType.51:					house floor object
+GlobalConstants.ObjectType.53:					house npc
+GlobalConstants.ObjectType.54:					house vault
+GlobalConstants.ObjectType.55:					house crafting object
+GlobalConstants.ObjectType.68:					house bindstone
+GlobalConstants.Slot.10:						righthand
+GlobalConstants.Slot.11:						lefthand
+GlobalConstants.Slot.12:						twohanded
+GlobalConstants.Slot.13:						distance
+GlobalConstants.Slot.21:						head
+GlobalConstants.Slot.22:						hand
+GlobalConstants.Slot.23:						feet
+GlobalConstants.Slot.24:						jewel
+GlobalConstants.Slot.25:						torso
+GlobalConstants.Slot.26:						cloak
+GlobalConstants.Slot.27:						legs
+GlobalConstants.Slot.28:						arms
+GlobalConstants.Slot.29:						neck
+GlobalConstants.Slot.32:						belt
+GlobalConstants.Slot.33:						leftbracer
+GlobalConstants.Slot.34:						rightbracer
+GlobalConstants.Slot.35:						leftring
+GlobalConstants.Slot.36:						rightring
+GlobalConstants.Slot.37:						mythirian
+GlobalConstants.Slot.96:						leftfront saddlebag
+GlobalConstants.Slot.97:						rightfront saddlebag
+GlobalConstants.Slot.98:						leftrear saddlebag
+GlobalConstants.Slot.99:						rightrear saddlebag

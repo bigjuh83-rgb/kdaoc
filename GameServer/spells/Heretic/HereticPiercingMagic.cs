@@ -4,6 +4,7 @@ using System.Threading;
 using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -30,7 +31,7 @@ namespace DOL.GS.Spells
                 if (!m_focusTargets.Contains(effect.Owner))
                     m_focusTargets.Add(effect.Owner);
 
-                MessageToCaster("You concentrated on the spell!", eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "HereticPiercingMagic.Concentrated"), eChatType.CT_Spell);
             }
         }
         protected virtual void BeginEffect()
@@ -46,7 +47,7 @@ namespace DOL.GS.Spells
             GameLiving player = sender as GameLiving;
 
             if (player == null) return;
-            MessageToCaster("You lose your concentration!", eChatType.CT_SpellExpires);
+            MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "HereticPiercingMagic.LoseConcentration"), eChatType.CT_SpellExpires);
             RemoveEffect();
         }
         protected virtual void RemoveEffect()
@@ -63,7 +64,7 @@ namespace DOL.GS.Spells
                     }
                 }
             }
-            MessageToCaster("You lose your concentration!", eChatType.CT_Spell);
+            MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "HereticPiercingMagic.LoseConcentration"), eChatType.CT_Spell);
             if (Spell.Pulse != 0 && Spell.Frequency > 0)
                 CancelPulsingSpell(Caster, Spell.SpellType);
 
@@ -77,7 +78,7 @@ namespace DOL.GS.Spells
                 player.Out.SendInterruptAnimation(m_caster);
             }
         }
-	
+
 		public HereticPiercingMagic(GameLiving caster, Spell spell, SpellLine line) : base(caster, spell, line) {}
 	}
 }

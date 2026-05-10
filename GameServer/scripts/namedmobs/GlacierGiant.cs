@@ -118,7 +118,7 @@ namespace DOL.AI.Brain
 			AggroLevel = 0;//is neutral
 			AggroRange = 600;
 			ThinkInterval = 1500;
-		}	
+		}
 		public override void Think()
 		{
 			if (!CheckProximityAggro())
@@ -145,7 +145,7 @@ namespace DOL.AI.Brain
 				Body.Health = Body.MaxHealth;
 			base.Think();
 		}
-	
+
 		public static GamePlayer randomtarget = null;
 		public static GamePlayer RandomTarget
 		{
@@ -173,7 +173,7 @@ namespace DOL.AI.Brain
 			{
 				GamePlayer PortTarget = (GamePlayer)Enemys_To_Port[Util.Random(0, Enemys_To_Port.Count - 1)];
 				RandomTarget = PortTarget;
-				if (RandomTarget.IsAlive && RandomTarget != null && RandomTarget.IsWithinRadius(Body,2000) && !Teleported_Players.Contains(RandomTarget))
+				if (RandomTarget != null && RandomTarget.IsAlive && RandomTarget.IsWithinRadius(Body,2000) && !Teleported_Players.Contains(RandomTarget))
 				{
 					switch(Util.Random(1,6))
                     {
@@ -188,8 +188,8 @@ namespace DOL.AI.Brain
 					foreach (GamePlayer player in Body.GetPlayersInRadius(2000))
 					{
 						if (player != null)
-							player.Out.SendMessage("Glacier Giant kick away " + RandomTarget.Name + "!", eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
-					}					
+							player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.GlacierGiant.KickAway", RandomTarget.Name), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+					}
 					if (RandomTarget != null && RandomTarget.IsAlive && !Teleported_Players.Contains(RandomTarget))
 					{
 						Teleported_Players.Add(RandomTarget);
@@ -198,7 +198,7 @@ namespace DOL.AI.Brain
 							new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(ListCleanTimer), 45000);//clear list of teleported players, so it will not pick instantly already teleported target
 							Clear_List = true;
 						}
-					}					
+					}
 					RandomTarget = null;
 				}
 			}

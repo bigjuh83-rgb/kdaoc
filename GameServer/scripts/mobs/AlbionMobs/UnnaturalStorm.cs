@@ -3,6 +3,7 @@ using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -66,7 +67,7 @@ namespace DOL.GS
 		private void SpawnAdditionalStorms()
         {
 			foreach (GamePlayer player in ClientService.Instance.GetPlayersOfZone(CurrentZone))
-				player.Out.SendMessage("An intense supernatural storm explodes in the sky over the northeastern expanse of Lyonesse!", eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Mobs.UnnaturalStorm.SpawnsOverLyonesse"), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 
 			for (int i = 0; i < Util.Random(4, 5); i++)
 			{

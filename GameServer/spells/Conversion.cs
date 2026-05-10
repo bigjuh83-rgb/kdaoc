@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -34,7 +35,7 @@ namespace DOL.GS.Spells
 			effect.Owner.TempProperties.RemoveProperty(ConvertDamage);
 			return 1;
 		}
-		
+
 		protected virtual void OndamageConverted(AttackData ad, int DamageAmount)
 		{
 		}
@@ -62,36 +63,36 @@ namespace DOL.GS.Spells
 			}
 
 			if (ad.Damage > 0)
-				MessageToLiving(ad.Target, string.Format("You convert {0} damage into " + damageConverted + " Health.", damageConverted), eChatType.CT_Spell);
-			MessageToLiving(ad.Attacker, string.Format("A magical spell absorbs {0} damage of your attack!", damageConverted), eChatType.CT_Spell);
+				MessageToLiving(ad.Target, LanguageMgr.GetTranslation((ad.Target as GamePlayer)?.Client.Account.Language, "Conversion.ConvertDamageToHealth", damageConverted, damageConverted), eChatType.CT_Spell);
+			MessageToLiving(ad.Attacker, LanguageMgr.GetTranslation((ad.Attacker as GamePlayer)?.Client.Account.Language, "Conversion.MagicalSpellAbsorbsDamage", damageConverted), eChatType.CT_Spell);
 
 			if (Caster.Health != Caster.MaxHealth)
 			{
-				MessageToCaster("You convert " + damageConverted + " damage into health.", eChatType.CT_Spell);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Conversion.ConvertDamageToHealthSimple", damageConverted), eChatType.CT_Spell);
 				Caster.Health = Caster.Health + damageConverted;
 			}
 			else
 			{
-				MessageToCaster("You cannot convert anymore health!", eChatType.CT_Spell);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Conversion.CannotConvertHealth"), eChatType.CT_Spell);
 			}
 
 			if (Caster.Endurance != Caster.MaxEndurance)
 			{
-				MessageToCaster("You convert " + damageConverted + " damage into endurance", eChatType.CT_Spell);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Conversion.ConvertDamageToEndurance", damageConverted), eChatType.CT_Spell);
 				Caster.Endurance = Caster.Endurance + damageConverted;
 			}
 			else
 			{
-				MessageToCaster("You cannot convert anymore endurance!", eChatType.CT_Spell);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Conversion.CannotConvertEndurance"), eChatType.CT_Spell);
 			}
 			if (Caster.Mana != Caster.MaxMana)
 			{
-				MessageToCaster("You convert " + damageConverted + " damage into power.", eChatType.CT_Spell);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Conversion.ConvertDamageToPower", damageConverted), eChatType.CT_Spell);
 				Caster.Mana = Caster.Mana + damageConverted;
 			}
 			else
 			{
-				MessageToCaster("You cannot convert anymore power!", eChatType.CT_Spell);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Conversion.CannotConvertPower"), eChatType.CT_Spell);
 			}
 
 			if (reduceddmg <= 0)
@@ -121,7 +122,7 @@ namespace DOL.GS.Spells
 		}
 		public ConversionSpellHandler(GameLiving caster, Spell spell, SpellLine line) : base(caster, spell, line) { }
 	}
-	
+
 	[SpellHandler(eSpellType.MagicConversion)]
 	public class MagicConversionSpellHandler : ConversionSpellHandler
 	{
@@ -161,35 +162,35 @@ namespace DOL.GS.Spells
 								if (effect != null)
 									effect.Cancel(false);
 							}
-							MessageToLiving(ad.Target, string.Format("You convert {0} damage into " + damageConverted + " Health.", damageConverted), eChatType.CT_Spell);
-							MessageToLiving(ad.Attacker, string.Format("A magical spell absorbs {0} damage of your attack!", damageConverted), eChatType.CT_Spell);
+							MessageToLiving(ad.Target, LanguageMgr.GetTranslation((ad.Target as GamePlayer)?.Client.Account.Language, "Conversion.ConvertDamageToHealth", damageConverted, damageConverted), eChatType.CT_Spell);
+							MessageToLiving(ad.Attacker, LanguageMgr.GetTranslation((ad.Attacker as GamePlayer)?.Client.Account.Language, "Conversion.MagicalSpellAbsorbsDamage", damageConverted), eChatType.CT_Spell);
 							if (Caster.Health != Caster.MaxHealth)
 							{
-								MessageToCaster("You convert " + damageConverted + " damage into health.", eChatType.CT_Spell);
+								MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Conversion.ConvertDamageToHealthSimple", damageConverted), eChatType.CT_Spell);
 								Caster.Health = Caster.Health + damageConverted;
 							}
 							else
 							{
-								MessageToCaster("You cannot convert anymore health!", eChatType.CT_Spell);
+								MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Conversion.CannotConvertHealth"), eChatType.CT_Spell);
 							}
 
 							if (Caster.Endurance != Caster.MaxEndurance)
 							{
-								MessageToCaster("You convert " + damageConverted + " damage into endurance", eChatType.CT_Spell);
+								MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Conversion.ConvertDamageToEndurance", damageConverted), eChatType.CT_Spell);
 								Caster.Endurance = Caster.Endurance + damageConverted;
 							}
 							else
 							{
-								MessageToCaster("You cannot convert anymore endurance!", eChatType.CT_Spell);
+								MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Conversion.CannotConvertEndurance"), eChatType.CT_Spell);
 							}
 							if (Caster.Mana != Caster.MaxMana)
 							{
-								MessageToCaster("You convert " + damageConverted + " damage into power.", eChatType.CT_Spell);
+								MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Conversion.ConvertDamageToPower", damageConverted), eChatType.CT_Spell);
 								Caster.Mana = Caster.Mana + damageConverted;
 							}
 							else
 							{
-								MessageToCaster("You cannot convert anymore power!", eChatType.CT_Spell);
+								MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Conversion.CannotConvertPower"), eChatType.CT_Spell);
 							}
 						}
 						break;

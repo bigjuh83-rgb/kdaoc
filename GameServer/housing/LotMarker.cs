@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Housing
 {
@@ -24,15 +25,15 @@ namespace DOL.GS.Housing
 		public override IList GetExamineMessages(GamePlayer player)
 		{
 			IList list = new ArrayList();
-			list.Add("You target lot number " + DatabaseItem.HouseNumber + ".");
+			list.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Player.Housing.LotTargeted", DatabaseItem.HouseNumber));
 
 			if (string.IsNullOrEmpty(DatabaseItem.OwnerID))
 			{
-				list.Add(" It can be bought for " + Money.GetString(HouseTemplateMgr.GetLotPrice(DatabaseItem)) + ".");
+				list.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Player.Housing.LotCanBeBought", Money.GetString(HouseTemplateMgr.GetLotPrice(DatabaseItem))));
 			}
 			else if (!string.IsNullOrEmpty(DatabaseItem.Name))
 			{
-				list.Add(" It is owned by " + DatabaseItem.Name + ".");
+				list.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Player.Housing.LotOwnedBy", DatabaseItem.Name));
 			}
 
 			return list;
@@ -50,19 +51,19 @@ namespace DOL.GS.Housing
 				// The player might be targeting a lot he already purchased that has no house on it yet.
 				if (house.HouseNumber != DatabaseItem.HouseNumber && (ePrivLevel) player.Client.Account.PrivLevel is not ePrivLevel.Admin)
 				{
-					ChatUtil.SendSystemMessage(player, "You already own a house!");
+					ChatUtil.SendSystemMessage(player, "Scripts.Player.Housing.AlreadyOwnHouse", null);
 					return false;
 				}
 			}
 
 			if (string.IsNullOrEmpty(DatabaseItem.OwnerID))
-				player.Out.SendCustomDialog($"Do you want to buy this lot?\nIt costs {Money.GetString(HouseTemplateMgr.GetLotPrice(DatabaseItem))}.\nYou won't be able to delete this character.", BuyLot);
+				player.Out.SendCustomDialog(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Player.Housing.LotOfferNoDelete", Money.GetString(HouseTemplateMgr.GetLotPrice(DatabaseItem))), BuyLot);
 			else
 			{
 				if (HouseMgr.IsOwner(DatabaseItem, player))
 					player.Out.SendMerchantWindow(HouseTemplateMgr.GetLotMarkerItems(this), eMerchantWindowType.Normal);
 				else
-					ChatUtil.SendSystemMessage(player, "You do not own this lot!");
+					ChatUtil.SendSystemMessage(player, "Scripts.Player.Housing.LotNotYours", null);
 			}
 
 			return true;
@@ -70,7 +71,7 @@ namespace DOL.GS.Housing
 
 		private void BuyLot(GamePlayer player, byte response)
 		{
-			if (response != 0x01) 
+			if (response != 0x01)
 				return;
 
 			lock (DatabaseItem)
@@ -80,12 +81,12 @@ namespace DOL.GS.Housing
 
 				if (HouseMgr.GetHouseNumberByPlayer(player) != 0 && player.Client.Account.PrivLevel != (int)ePrivLevel.Admin)
 				{
-					ChatUtil.SendMerchantMessage(player, "You already own another lot or house (Number " + HouseMgr.GetHouseNumberByPlayer(player) + ").");
+					ChatUtil.SendMerchantMessage(player, "Scripts.Player.Housing.LotAlready", HouseMgr.GetHouseNumberByPlayer(player));
 					return;
 				}
 
 			    long totalCost = HouseTemplateMgr.GetLotPrice(DatabaseItem);
-				if (player.RemoveMoney(totalCost, "You just bought this lot for {0}.",
+				if (player.RemoveMoney(totalCost, LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Player.Housing.LotBought"),
 				                       eChatType.CT_Merchant, eChatLoc.CL_SystemWindow))
 				{
                     InventoryLogging.LogInventoryAction(player, this, eInventoryActionType.Merchant, totalCost);
@@ -95,17 +96,17 @@ namespace DOL.GS.Housing
 				}
 				else
 				{
-					ChatUtil.SendMerchantMessage(player, "You don't have enough money!");
+					ChatUtil.SendMerchantMessage(player, "House.Edit.NotEnoughMoney", null);
 				}
 			}
 		}
 
 		public override bool ReceiveItem(GameLiving source, DbInventoryItem item)
 		{
-			if (source == null || item == null) 
+			if (source == null || item == null)
 				return false;
 
-			if (!(source is GamePlayer)) 
+			if (!(source is GamePlayer))
 				return false;
 
 			var player = (GamePlayer) source;
@@ -162,7 +163,7 @@ namespace DOL.GS.Housing
 				return true;
 			}
 
-			ChatUtil.SendSystemMessage(player, "You do not own this lot!");
+			ChatUtil.SendSystemMessage(player, "Scripts.Player.Housing.LotNotYours", null);
 
 			return false;
 		}
@@ -203,7 +204,7 @@ namespace DOL.GS.Housing
 		{
 			if (!item.IsDropable)
 			{
-				ChatUtil.SendMerchantMessage(player, "This item can't be sold.");
+				ChatUtil.SendMerchantMessage(player, "Scripts.Player.Housing.CantBeSold", null);
 				return false;
 			}
 
@@ -227,16 +228,16 @@ namespace DOL.GS.Housing
 		public static void SpawnLotMarker(DbHouse house)
 		{
 			var obj = new GameLotMarker
-			          	{
-			          		X = house.X,
-			          		Y = house.Y,
-			          		Z = house.Z,
-			          		CurrentRegionID = house.RegionID,
-			          		Heading = (ushort) house.Heading,
-			          		Name = "Lot Marker",
-			          		Model = 1308,
-			          		DatabaseItem = house
-			          	};
+				{
+					X = house.X,
+					Y = house.Y,
+					Z = house.Z,
+					CurrentRegionID = house.RegionID,
+					Heading = (ushort) house.Heading,
+					Name = "Lot Marker",
+					Model = 1308,
+					DatabaseItem = house
+				};
 
 			//No clue how we can check if a region
 			//is in albion, midgard or hibernia instead

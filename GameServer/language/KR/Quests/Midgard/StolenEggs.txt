@@ -1,0 +1,50 @@
+Mid.StolenEggs.CheckPlayerAbortQuest.Text1:	좋습니다. 이제 나가서 일을 마무리하세요!
+Mid.StolenEggs.CheckPlayerAbortQuest.Text2:	퀘스트 {0}을(를) 포기합니다. 원한다면 다시 시작할 수 있습니다.
+Mid.StolenEggs.CheckPlayerAcceptQuest.Text1:	알겠습니다. 마음이 바뀌면 다시 찾아오세요!
+Mid.StolenEggs.CheckPlayerAcceptQuest.Text2:	고맙습니다, {0}. 요르드하임 성문 근처에 있는 바이킹 힌들라와 이야기해 주세요. 이곳으로 오던 행인 몇 명이 길가에서 이상한 생물을 봤다고 합니다. 그녀에게 정확한 위치를 알려 줄 수 있는지 물어보세요. 다시 한 번 고맙습니다, {0}.
+Mid.StolenEggs.Descriptiont.Text1:		[1단계] 요르드하임 성문 근처의 바이킹 힌들라를 찾으세요. 수상한 [아스케프루어] 행동을 보거나 들은 적이 있는지 물어보세요.
+Mid.StolenEggs.Descriptiont.Text2:		[2단계] 하거펠로 향하세요. 하거펠에서 길을 따라 북북동쪽으로 이동하다가 나무 그루터기 두 개가 보이면, 네 그루의 나무가 모인 곳을 찾으세요. 그 생물이 그곳에 숨어 있습니다.
+Mid.StolenEggs.Descriptiont.Text3:		[3단계] 아스케프루어 조련사를 처치하세요!
+Mid.StolenEggs.Descriptiont.Text4:		[4단계] 이제 새끼 그리핀과 상호작용할 수 있습니다. 오른쪽 클릭으로 상호작용하세요.
+Mid.StolenEggs.Descriptiont.Text5:		[5단계] 새끼 그리핀을 요르드하임 성문 근처의 그리핀 조련사 니에디에게 데려가세요. 그가 요구하면 채찍을 건네세요. 새끼 그리핀이 길을 잃더라도 니에디에게 가면 됩니다. 새끼 그리핀은 스스로 집을 찾아올 것입니다.
+Mid.StolenEggs.Descriptiont.Text6:		[6단계] 그리핀 조련사 니에디와 이야기하세요.
+Mid.StolenEggs.Descriptiont.Text7:		[7단계] 물란 근처 경비탑에 있는 달리코르에게 돌아가세요. 새끼 그리핀을 니에디에게 [무사히] 돌려보냈다고 말하세요.
+Mid.StolenEggs.FinishQuest.Text1:		보상으로 {0}을(를) 받았습니다.
+Mid.StolenEggs.InitGrifflet.NPCGrifflet:	새끼 그리핀
+Mid.StolenEggs.Notify.Text1:			{0}이(가) 말합니다. "땅에 묶인 혐오스러운 것아, 정당하게 우리 것인 것을 가져가게 둘 수 없다!"
+Mid.StolenEggs.Notify.Text2:			그 생물을 처치하고 아스케프루어 조련사의 손에서 채찍을 빼앗았습니다.
+Mid.StolenEggs.Notify.Text3:			채찍이라고요?! 말도 안 됩니다! 그들은 이 아이를 고문하려 했던 게 분명합니다. 아스케프루어는 참으로 악의적인 생물입니다. 언젠가 당신이 그들을 쓸어버리길 바랍니다, {0}. 자, 이 작은 아이를 돌려준 [감사]의 표시로 받아 주세요.
+Mid.StolenEggs.NPCAskefruerTrainer:		아스케프루어 조련사
+Mid.StolenEggs.NPCGriffinHandlerNjiedi:		그리핀 조련사 니에디
+Mid.StolenEggs.NPCVikingHyndla:			바이킹 힌들라
+Mid.StolenEggs.QuestTitle:			도둑맞은 알
+Mid.StolenEggs.TalkToDalikor.AbortQuest:	정말 이 퀘스트를 포기하시겠습니까? \n퀘스트 중 얻은 모든 아이템을 잃게 됩니다.
+Mid.StolenEggs.TalkToDalikor.OfferQuest:	그리핀 알이 어디로 사라졌는지 알아봐 주시겠습니까?
+Mid.StolenEggs.TalkToDalikor.Talk1:		돌아왔군요, 친구여. 또 다른 아스케프루어 문제가 생긴 듯합니다. 장로들은 경비병들을 초소에서 빼내 도움을 주는 것을 원치 않으니, 이번 일도 다시 당신에게 맡겨졌습니다. 상황을 [설명]하겠습니다.
+Mid.StolenEggs.TalkToDalikor.Talk2:		아, 신병. 돌아왔군요. 임무를 [무사히] 마친 것으로 봐도 되겠습니까?
+Mid.StolenEggs.TalkToDalikor.Talk3:		하루쯤 전, 니에디는 짝을 이룬 그리핀 한 쌍이 최근 낳은 알들을 살피고 있었습니다. 그 알들 중에서 강한 탈것이 몇 마리 나오기를 기대하고 있었는데, 그중 하나가 [사라진] 것을 알아차렸습니다.
+Mid.StolenEggs.TalkToDalikor.Talk4:		그는 처음부터 크게 놀라지는 않았습니다. 가끔 알이 둥지 밖으로 굴러 나가는 일도 있으니까요. 부화장을 둘러보았지만 사라진 알을 찾지 못했습니다. 알의 부모들이 들어왔을 때, 암컷이 둥지로 가더니 [공포]에 빠지기 시작했습니다.
+Mid.StolenEggs.TalkToDalikor.Talk5:		그 암컷도 알 하나가 사라진 것을 알아차린 겁니다. 부화장 주변을 날아다니며 날뛰었고, 니에디도 짝도 진정시킬 수 없었습니다. 그때 니에디는 부화장 주변 그물의 작은 부분이 [잘린] 것을 발견했습니다.
+Mid.StolenEggs.TalkToDalikor.Talk6:		구멍은 아주 작았고 둥지에서 너무 멀어서 사람이 한 짓이라고 보기는 어려웠습니다. 구멍에는 찢긴 날개 조각이 남아 있었습니다. 니에디가 그것을 제게 가져왔을 때, 저는 즉시 [아스케프루어]의 날개 조각임을 알아봤습니다.
+Mid.StolenEggs.TalkToDalikor.Talk7:		저는 장로들과의 일로 너무 바빠 그 아스케프루어가 알을 어디로 가져갔는지 찾을 수 없습니다. 하지만 니에디와 그의 짝 그리핀들이 그 알이 돌아오길 간절히 바란다는 것은 압니다. 알이 둥지 밖에 너무 오래 있으면 안의 새끼가 죽을 겁니다. 그들을 [도와]주시겠습니까?
+Mid.StolenEggs.TalkToDalikor.Talk8:		훌륭합니다! 알이 이미 부화했다는 이야기를 들었습니다. 놀랍군요! 불쌍한 아이가 너무 심하게 다치지 않았기를 바랍니다. 이제 부모의 따뜻한 보살핌 속으로 돌아갔으니 마음과 몸 모두 회복할 수 있을 겁니다. 하지만 당신은 무언가를 [받을 자격]이 있습니다.
+Mid.StolenEggs.TalkToDalikor.Talk9:		자, 받아 주세요, 친구여. 대단한 것은 아니지만 주머니 속 작은 동전도 도움이 되는 법입니다. 이 상황에서 사심 없이 도와준 것은 니에디에게도, 제게도 큰 의미가 있습니다. 당신의 도움이 없었다면 그 새끼 그리핀은 죽었을 겁니다. 고맙습니다.
+Mid.StolenEggs.TalkToDalikor.Whisper1:		설명
+Mid.StolenEggs.TalkToDalikor.Whisper2:		사라진
+Mid.StolenEggs.TalkToDalikor.Whisper3:		공포
+Mid.StolenEggs.TalkToDalikor.Whisper4:		잘린
+Mid.StolenEggs.TalkToDalikor.Whisper5:		아스케프루어
+Mid.StolenEggs.TalkToDalikor.Whisper6:		도와
+Mid.StolenEggs.TalkToDalikor.Whisper7:		무사히
+Mid.StolenEggs.TalkToDalikor.Whisper8:		받을 자격
+Mid.StolenEggs.TalkToDalikor.Whisper9:		포기
+Mid.StolenEggs.TalkToGrifflet.Talk1:		새끼 그리핀이 조용히 콧소리를 냅니다.
+Mid.StolenEggs.TalkToHyndla.Talk1:		미드가르드의 바이킹이여, 반갑습니다. 무엇을 도와드릴까요?
+Mid.StolenEggs.TalkToHyndla.Talk2:		달리코르가 보냈겠군요. 네, 최근 하거펠 북쪽에서 수상한 움직임이 있었다는 이야기를 들었습니다. 행인들이 알처럼 보이는 것을 든 분홍빛 생물을 봤다고 보고했습니다. 니에디에게도 말했지만, 그는 마음이 무너진 [그리핀들] 곁을 떠날 수 없습니다.
+Mid.StolenEggs.TalkToHyndla.Talk3:		제가 들은 위치는 모호하지만 대략적인 곳은 알려드릴 수 있습니다. 먼저 하거펠로 가세요. 도착하면 길을 따라 북북동쪽으로 이동해 두 개의 [나무 그루터기]를 지나세요. 오른쪽에 보일 것입니다.
+Mid.StolenEggs.TalkToHyndla.Talk4:		그 길을 따라 계속 북북동쪽으로 조금만 더 가면 아주 키 큰 소나무 네 그루가 모인 곳이 보일 겁니다. 그 분홍빛 생물은 그 근처에서 목격되었습니다. 더 알려드릴 수 있으면 좋겠지만, 제가 아는 것은 이게 전부입니다. 그 생물을 찾는 데 행운이 따르길 바랍니다, {0}.
+Mid.StolenEggs.TalkToHyndla.Whisper1:		그리핀들
+Mid.StolenEggs.TalkToHyndla.Whisper2:		나무 그루터기
+Mid.StolenEggs.TalkToNjiedi.Talk1:		아, 새끼 그리핀을 데려와 줘서 고맙습니다, {0}. 부모도 무사히 돌아온 것을 알고 안심할 겁니다. 어떻게 데려온 겁니까? 아스케프루어들이 뭔가를 썼나요? 사슬이나 굴레 같은 것 말입니다.
+Mid.StolenEggs.TalkToNjiedi.Talk2:		대단한 것은 아니지만, 저도 한때는 모험을 좀 했습니다. 분명 쓸모가 있을 겁니다. 이제 달리코르에게 돌아가 무슨 일이 있었는지 알려 주는 게 좋겠습니다.
+Mid.StolenEggs.TalkToNjiedi.Whisper1:		감사

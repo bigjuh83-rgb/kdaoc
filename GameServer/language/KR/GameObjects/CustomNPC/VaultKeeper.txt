@@ -1,0 +1,5 @@
+# Vault Keeper NPC
+
+## Examine
+VaultKeeper.YouExamine:		{0}을(를) 살펴봅니다. {1}은(는) {2}이며 금고지기입니다.
+VaultKeeper.RightClick:		[오른쪽 클릭으로 금고 창 열기]

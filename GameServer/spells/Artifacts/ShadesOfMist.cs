@@ -1,16 +1,16 @@
 ﻿/*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -21,6 +21,7 @@ using System;
 using DOL.GS.Effects;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -49,7 +50,7 @@ namespace DOL.GS.Spells
                         Effect.SpellHandler.Spell.SpellType.Equals("AtlantisTabletMorph") ||
                         Effect.SpellHandler.Spell.SpellType.Equals("AlvarusMorph"))
                     {
-                        player.Out.SendMessage("You already have an active morph!", DOL.GS.PacketHandler.eChatType.CT_SpellResisted, DOL.GS.PacketHandler.eChatLoc.CL_ChatWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "Artifacts.ActiveMorph"), DOL.GS.PacketHandler.eChatType.CT_SpellResisted, DOL.GS.PacketHandler.eChatLoc.CL_ChatWindow);
                         return;
                     }
                 }
@@ -69,14 +70,14 @@ namespace DOL.GS.Spells
             }
             GameEventMgr.RemoveHandler(effect.Owner, GameLivingEvent.AttackedByEnemy, new DOLEventHandler(EventHandler));
             return base.OnEffectExpires(effect, noMessages);
-            
+
         }
 
         public void EventHandler(DOLEvent e, object sender, EventArgs arguments)
         {
             AttackedByEnemyEventArgs args = arguments as AttackedByEnemyEventArgs;
             if (args == null) return;
-            
+
             if (args.AttackData == null) return;
             if (args.AttackData.SpellHandler != null) return;
             if (args.AttackData.AttackResult != eAttackResult.HitUnstyled
@@ -112,10 +113,10 @@ namespace DOL.GS.Spells
                 OnDamageAbsorbed(ad, damageAbsorbed);
 
                 //TODO correct messages
-                MessageToLiving(ad.Target, string.Format("Your ablative absorbs {0} damage!", damageAbsorbed), eChatType.CT_Spell);//since its not always Melee absorbing
-                MessageToLiving(ad.Attacker, string.Format("A barrier absorbs {0} damage of your attack!", damageAbsorbed), eChatType.CT_Spell);  
+                MessageToLiving(ad.Target, LanguageMgr.GetTranslation((ad.Target as GamePlayer)?.Client.Account.Language, "Artifacts.ShadesOfMist.AblativeAbsorbs", damageAbsorbed), eChatType.CT_Spell);//since its not always Melee absorbing
+                MessageToLiving(ad.Attacker, LanguageMgr.GetTranslation((ad.Attacker as GamePlayer)?.Client.Account.Language, "Artifacts.AbsorbBarrier.Attacker", damageAbsorbed), eChatType.CT_Spell);
             }
-            
+
         }
 
         protected virtual void OnDamageAbsorbed(AttackData ad, int DamageAmount)

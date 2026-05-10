@@ -29,7 +29,7 @@ namespace DOL.GS.DailyQuest.Albion
 		private int _playersKilledMid = 0;
 		private int _playersKilledHib = 0;
 		private const int MAX_KILLGOAL = 5;
-		
+
 		// prevent grey killing
 		protected const int MIN_PLAYER_CON = -3;
 
@@ -58,7 +58,7 @@ namespace DOL.GS.DailyQuest.Albion
 				return minimumLevel;
 			}
 		}
-		
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
@@ -144,7 +144,7 @@ namespace DOL.GS.DailyQuest.Albion
 
 		private static void TalkToRey(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -162,18 +162,16 @@ namespace DOL.GS.DailyQuest.Albion
 					switch (quest.Step)
 					{
 						case 1:
-							ReyAlb.SayTo(player, "Find and kill enemies of Midgard and Hibernia. You will find suitable players in the frontiers.");
+							ReyAlb.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.KillEnemiesInFrontiers", "Midgard", "Hibernia"));
 							break;
 						case 2:
-							ReyAlb.SayTo(player, "Hello " + player.Name + ", did you [kill enemies] for your reward?");
+							ReyAlb.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[kill enemies] for your reward"));
 							break;
 					}
 				}
 				else
 				{
-					ReyAlb.SayTo(player, "Hello "+ player.Name +", I am Rey. My master, Fen, has a need for some... exotic bones. "+
-					                     "Stuff you can't really get here in Albion, if you catch my drift.\n"+
-					                     "\nThink you could [take the toeknuckle] off of a troll for me? A firbolg could probably work too.");
+					ReyAlb.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ReyExoticBonesFlavor", player.Name, "Albion"));
 				}
 			}
 				// The player whispered to the NPC
@@ -185,7 +183,9 @@ namespace DOL.GS.DailyQuest.Albion
 					switch (wArgs.Text)
 					{
 						case "take the toeknuckle":
-							player.Out.SendQuestSubscribeCommand(ReyAlb, QuestMgr.GetIDForQuestType(typeof(EveryLittleBitHelpsQuestAlb)), "Will you undertake " + questTitle + "?");
+						case "발가락뼈 가져오기":
+						case "발가락뼈":
+							player.Out.SendQuestSubscribeCommand(ReyAlb, QuestMgr.GetIDForQuestType(typeof(EveryLittleBitHelpsQuestAlb)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.SubscribePrompt", questTitle));
 							break;
 					}
 				}
@@ -196,18 +196,18 @@ namespace DOL.GS.DailyQuest.Albion
 						case "kill enemies":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -236,11 +236,11 @@ namespace DOL.GS.DailyQuest.Albion
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and shed some blood!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueBloodshed"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -270,7 +270,7 @@ namespace DOL.GS.DailyQuest.Albion
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for helping me.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -278,7 +278,7 @@ namespace DOL.GS.DailyQuest.Albion
 				if (!ReyAlb.GiveQuest(typeof (EveryLittleBitHelpsQuestAlb), player, 1))
 					return;
 
-				ReyAlb.SayTo(player, "You will find suitable players in the frontiers.");
+				ReyAlb.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.SuitablePlayersFrontiers"));
 
 			}
 		}
@@ -297,11 +297,9 @@ namespace DOL.GS.DailyQuest.Albion
 				switch (Step)
 				{
 					case 1:
-						return "You will find suitable players in the frontiers. \n" +
-						       "Players Killed: Hibernia ("+ _playersKilledHib +" | "+ MAX_KILLGOAL +")\n" +
-						       "Players Killed: Midgard ("+ _playersKilledMid +" | "+ MAX_KILLGOAL +")";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TwoRealmPlayersKilled", DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.SuitablePlayersFrontiers"), "Hibernia", _playersKilledHib, MAX_KILLGOAL, "Midgard", _playersKilledMid, MAX_KILLGOAL);
 					case 2:
-						return "Return to Rey in Castle Sauvage for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "Rey", "Castle Sauvage");
 				}
 				return base.Description;
 			}
@@ -320,32 +318,32 @@ namespace DOL.GS.DailyQuest.Albion
 			if (e != GameLivingEvent.EnemyKilled || Step != 1) return;
 			EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
 
-			if (gArgs.Target.Realm == eRealm.Midgard && gArgs.Target.Realm != player.Realm && gArgs.Target is GamePlayer && player.GetConLevel(gArgs.Target) > MIN_PLAYER_CON && _playersKilledMid < MAX_KILLGOAL) 
+			if (gArgs.Target.Realm == eRealm.Midgard && gArgs.Target.Realm != player.Realm && gArgs.Target is GamePlayer && player.GetConLevel(gArgs.Target) > MIN_PLAYER_CON && _playersKilledMid < MAX_KILLGOAL)
 			{
 				_playersKilledMid++;
-				player.Out.SendMessage("[Daily] Midgard Enemy Killed: (" + _playersKilledMid + " | " + MAX_KILLGOAL + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DailyRealmEnemyKilled", "Midgard", _playersKilledMid, MAX_KILLGOAL), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 				player.Out.SendQuestUpdate(this);
 			}
-			else if (gArgs.Target.Realm == eRealm.Hibernia && gArgs.Target.Realm != player.Realm && gArgs.Target is GamePlayer && player.GetConLevel(gArgs.Target) > MIN_PLAYER_CON && _playersKilledHib < MAX_KILLGOAL) 
+			else if (gArgs.Target.Realm == eRealm.Hibernia && gArgs.Target.Realm != player.Realm && gArgs.Target is GamePlayer && player.GetConLevel(gArgs.Target) > MIN_PLAYER_CON && _playersKilledHib < MAX_KILLGOAL)
 			{
 				_playersKilledHib++;
-				player.Out.SendMessage("[Daily] Hibernia Enemy Killed: (" + _playersKilledHib + " | " + MAX_KILLGOAL + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DailyRealmEnemyKilled", "Hibernia", _playersKilledHib, MAX_KILLGOAL), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 				player.Out.SendQuestUpdate(this);
 			}
-				
+
 			if (_playersKilledMid >= MAX_KILLGOAL && _playersKilledHib >= MAX_KILLGOAL)
 			{
 				// FinishQuest or go back to Rey
 				Step = 2;
 			}
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "EveryLittleBitHelpsQuestAlb";
 			set { ; }
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			_playersKilledHib = GetCustomProperty("PlayersKilledHib") != null ? int.Parse(GetCustomProperty("PlayersKilledHib")) : 0;
@@ -357,26 +355,26 @@ namespace DOL.GS.DailyQuest.Albion
 			SetCustomProperty("PlayersKilledHib", _playersKilledHib.ToString());
 			SetCustomProperty("PlayersKilledMid", _playersKilledMid.ToString());
 		}
-		
+
 		public override void FinishQuest()
 		{
 			int reward = ServerProperties.Properties.DAILY_RVR_REWARD;
-			
+
 			m_questPlayer.ForceGainExperience((m_questPlayer.ExperienceForNextLevel - m_questPlayer.ExperienceForCurrentLevel)/5);
 			m_questPlayer.AddMoney(Money.GetMoney(0,0,m_questPlayer.Level,32,Util.Random(50)), "You receive {0} as a reward.");
 			AtlasROGManager.GenerateReward(m_questPlayer, 250);
 			AtlasROGManager.GenerateJewel(m_questPlayer, (byte)(m_questPlayer.Level + 1), m_questPlayer.Level + Util.Random(5, 15));
 			_playersKilledHib = 0;
 			_playersKilledMid = 0;
-			
+
 			if (reward > 0)
 			{
-				m_questPlayer.Out.SendMessage($"You have been rewarded {reward} Realmpoints for finishing Daily Quest.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.RealmPointReward", reward, "Daily"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 				m_questPlayer.GainRealmPoints(reward, false);
 				m_questPlayer.Out.SendUpdatePlayer();
 			}
 			base.FinishQuest(); //Defined in Quest, changes the state, stores in DB etc ...
-			
+
 		}
 	}
 }

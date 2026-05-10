@@ -1,4 +1,5 @@
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Keeps
 {
@@ -40,7 +41,7 @@ namespace DOL.GS.Keeps
 		{
 			if (Level < 10)
 				return UpgradeTime[this.Level + 1];
-			else 
+			else
 				return UpgradeTime[this.Level - 1];
 		}
 
@@ -52,7 +53,7 @@ namespace DOL.GS.Keeps
 		public override bool CheckForClaim(GamePlayer player)
 		{
 
-			player.Out.SendMessage("Relic keeps cannot be claimed.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Keep.RelicKeepCannotClaim"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			return false;
 
 		}

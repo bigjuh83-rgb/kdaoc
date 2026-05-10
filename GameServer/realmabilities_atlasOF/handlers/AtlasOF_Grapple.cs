@@ -47,10 +47,9 @@ namespace DOL.GS.RealmAbilities
             m_dbspell.EffectGroup = 0;
             m_dbspell.RecastDelay = GetReUseDelay(0); // Spell code is responsible for disabling this ability and will use this value.
             m_dbspell.Range = m_range;
-            m_dbspell.Description = "Reduce the movement speed of all enemies in a " 
-                                               + m_range + " unit radius by 100%.";
-            m_dbspell.Message1 = "You are grappled and cannot move.";
-            m_dbspell.Message2 = "{0}'s is grappled and cannot move!";
+            m_dbspell.Description = DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "RealmAbility.AtlasOF.Grapple.Description", m_range);
+            m_dbspell.Message1 = DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "RealmAbility.AtlasOF.Grapple.Message1");
+            m_dbspell.Message2 = DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "RealmAbility.AtlasOF.Grapple.Message2");
 			m_spell = new Spell(m_dbspell, caster.Level);
             m_spellline = GlobalSpellsLines.RealmSpellsSpellLine;
         }
@@ -77,7 +76,7 @@ namespace DOL.GS.RealmAbilities
 
 			// We do not need to handle disabling the skill here. This ability casts a spell and is linked to that spell.
             // The spell casting code will disable this ability in SpellHandler's FinishSpellcast().
-            
+
             DisableSkill(caster);
 		}
 

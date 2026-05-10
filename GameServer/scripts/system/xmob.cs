@@ -4,6 +4,7 @@ using System.Reflection;
 using DOL.AI;
 using DOL.AI.Brain;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -23,6 +24,9 @@ namespace DOL.GS.Commands
     public class XCreateCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public static readonly Logging.Logger log = Logging.LoggerManager.Create(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
+        private static string Msg(GamePlayer player, string key, params object[] args)
+            => LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
 
         #region spot cache
 
@@ -82,7 +86,7 @@ namespace DOL.GS.Commands
 
                         if (ushort.TryParse(args[2], out radius))
                         {
-                            if (GetClientSpot(client).Count != 0)                                               
+                            if (GetClientSpot(client).Count != 0)
                                 ClearClientSpot(client);
 
                             if (radius < 0) radius = 0;
@@ -110,12 +114,12 @@ namespace DOL.GS.Commands
 
 
                             if (GetClientSpot(client).Count != 0)
-                                DisplayMessage(player, "Your cache has " + GetClientSpot(client).Count + " mobs Loaded!");
+                                DisplayMessage(player, Msg(player, "Scripts.System.XMob.CacheLoaded", GetClientSpot(client).Count));
                             else
-                                DisplayMessage(player, "No mobs found in this radius!");
+                                DisplayMessage(player, Msg(player, "Scripts.System.XMob.NoMobsInRadius"));
                         }
                         else
-                            DisplayMessage(player, "Radius not valid");
+                            DisplayMessage(player, Msg(player, "Scripts.System.XMob.InvalidRadius"));
                         #endregion
                     }
                     break;
@@ -125,21 +129,21 @@ namespace DOL.GS.Commands
                         #region view
                         if (GetClientSpot(client).Count != 0)
                         {
-                            DisplayMessage(player, "There are " + GetClientSpot(client).Count + " mobs loaded : ");
+                            DisplayMessage(player, Msg(player, "Scripts.System.XMob.MobsLoaded", GetClientSpot(client).Count));
                             foreach (GameNPC npc in GetClientSpot(client))
                                 DisplayMessage(player, npc.Name);
                         }
                         else
-                            DisplayMessage(player, "There are no mobs in the list!");
+                            DisplayMessage(player, Msg(player, "Scripts.System.XMob.NoMobsInList"));
                         #endregion
                     }
                     break;
-                
+
                 case "clear":
                     {
                         #region clear
                         ClearClientSpot(client);
-                        DisplayMessage(player, "Spot cleared!");
+                        DisplayMessage(player, Msg(player, "Scripts.System.XMob.SpotCleared"));
                         #endregion
                     }
                     break;
@@ -165,17 +169,17 @@ namespace DOL.GS.Commands
                                 foreach (GameNPC npc in GetClientSpot(client))
                                 {
                                     if (npc is GameSummonedPet) continue;
-                                    
+
                                     copy(client, npc, radius);
                                 }
                             }
                             else
-                                DisplayMessage(player, "Radius not valid");
+                                DisplayMessage(player, Msg(player, "Scripts.System.XMob.InvalidRadius"));
 
-                            DisplayMessage(player, GetClientSpot(client).Count + " added in the new spot!");
+                            DisplayMessage(player, Msg(player, "Scripts.System.XMob.AddedInNewSpot", GetClientSpot(client).Count));
                         }
                         else
-                            DisplayMessage(player, "There are no spots loaded to release!");
+                            DisplayMessage(player, Msg(player, "Scripts.System.XMob.NoSpotsLoaded"));
                         #endregion
                     }
                     break;
@@ -203,8 +207,8 @@ namespace DOL.GS.Commands
                         GameNPC merchant;
 
                         #region load list
-                        //base 
-                    
+                        //base
+
                         mob = new GameHealer();
                         mob.GuildName = "Healer";
                         setupmobs.Add(mob);
@@ -221,11 +225,11 @@ namespace DOL.GS.Commands
                         setupmobs.Add(mob);
 
                         //items
-                    
+
                         mob = new GameVaultKeeper();
                         mob.GuildName = "VaultKeeper";
                         setupmobs.Add(mob);
-                    
+
                         #endregion load list
 
                         // spawn in  2 circle
@@ -234,7 +238,7 @@ namespace DOL.GS.Commands
                             ushort h = (ushort)(4096 / (setupmobs.Count/2) * i);
                             Point2D loc = client.Player.GetPointFromHeading(h, 150);
                             spawnsetupmob(client, setupmobs[i], realm,loc.X, loc.Y, h);
-                        
+
                         }
                         for (int i = setupmobs.Count/2; i < setupmobs.Count; i++)
                         {
@@ -252,7 +256,7 @@ namespace DOL.GS.Commands
                         #region copy
                         GameNPC targetMob = null;
 
-                        
+
                         if (client.Player.TargetObject != null && client.Player.TargetObject is GameNPC)
                             targetMob = (GameNPC)client.Player.TargetObject;
 
@@ -274,7 +278,7 @@ namespace DOL.GS.Commands
 
                             if (targetMob == null)
                             {
-                                client.Out.SendMessage("You must have a mob targeted to copy.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                SendXMobMessage(client, "XMob.Copy.NeedTarget");
                                 return;
                             }
 
@@ -288,7 +292,7 @@ namespace DOL.GS.Commands
 
                             if (mob == null)
                             {
-                                client.Out.SendMessage("There was an error creating an instance of " + targetMob.GetType().FullName + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                SendXMobMessage(client, "XMob.Copy.CreateInstanceError", targetMob.GetType().FullName);
                                 return;
                             }
                             // Load NPCTemplate before overriding NPCTemplate's variables
@@ -348,7 +352,7 @@ namespace DOL.GS.Commands
 
                             if (brain == null)
                             {
-                                client.Out.SendMessage("Cannot create brain, standard brain being applied", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                SendXMobMessage(client, "XMob.Copy.BrainCreateError");
                                 mob.SetOwnBrain(new StandardMobBrain());
                             }
                             else if (brain is StandardMobBrain)
@@ -366,11 +370,11 @@ namespace DOL.GS.Commands
                             mob.AddToWorld();
                             mob.LoadedFromScript = false;
                             mob.SaveIntoDatabase();
-                            client.Out.SendMessage("Mob created: OID=" + mob.ObjectID, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            SendXMobMessage(client, "XMob.MobCreated", mob.ObjectID);
                             if ((mob.Flags & GameNPC.eFlags.PEACE) != 0)
                             {
                                 // because copying 100 mobs with their peace flag set is not fun
-                                client.Out.SendMessage("This mobs PEACE flag is set!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                                SendXMobMessage(client, "XMob.PeaceFlagSet", eChatType.CT_Important);
                             }
                             #endregion old
                         }
@@ -380,7 +384,7 @@ namespace DOL.GS.Commands
                 case "randomspawn":
                     {
                         #region randomspawn
-                        
+
 
                         if (args.Length < 4)
                         {
@@ -402,9 +406,9 @@ namespace DOL.GS.Commands
                                     move(client, npc, newradius);
                         }
                         else
-                            DisplayMessage(player, "Radius not valid");
+                            DisplayMessage(player, Msg(player, "Scripts.System.XMob.InvalidRadius"));
 
-                        DisplayMessage(player, "Spot respawned! ");
+                        DisplayMessage(player, Msg(player, "Scripts.System.XMob.SpotRespawned"));
 
                         #endregion randomspawn
                     }
@@ -465,7 +469,7 @@ namespace DOL.GS.Commands
                             }
                         }
                         else
-                            DisplayMessage(player, "Radius not valid");
+                            DisplayMessage(player, Msg(player, "Scripts.System.XMob.InvalidRadius"));
                         #endregion setlevels
                     }
                     break;
@@ -495,7 +499,7 @@ namespace DOL.GS.Commands
                             }
                         }
                         else
-                            DisplayMessage(player, "Invalid Radius or realm value");
+                            DisplayMessage(player, Msg(player, "Scripts.System.XMob.InvalidRadiusOrRealm"));
                         #endregion setlevels
                     }
                     break;
@@ -513,7 +517,7 @@ namespace DOL.GS.Commands
                                     remove(npc);
                         }
                         else
-                            DisplayMessage(player, "Radius not valid");
+                            DisplayMessage(player, Msg(player, "Scripts.System.XMob.InvalidRadius"));
                         #endregion remove
                     }
                     break;
@@ -540,7 +544,7 @@ namespace DOL.GS.Commands
             mob.AddToWorld();
             mob.LoadedFromScript = false; // allow saving
             mob.SaveIntoDatabase();
-            client.Out.SendMessage("Mob created: OID=" + mob.ObjectID, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            SendXMobMessage(client, "XMob.MobCreated", mob.ObjectID);
         }
 
         private void copy(GameClient client,GameNPC targetMob,ushort radius)
@@ -549,7 +553,7 @@ namespace DOL.GS.Commands
 
                 if (targetMob == null)
                 {
-                    client.Out.SendMessage("You must have a mob targeted to copy.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    SendXMobMessage(client, "XMob.Copy.NeedTarget");
                     return;
                 }
 
@@ -563,7 +567,7 @@ namespace DOL.GS.Commands
 
                 if (mob == null)
                 {
-                    client.Out.SendMessage("There was an error creating an instance of " + targetMob.GetType().FullName + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    SendXMobMessage(client, "XMob.Copy.CreateInstanceError", targetMob.GetType().FullName);
                     return;
                 }
                 // Load NPCTemplate before overriding NPCTemplate's variables
@@ -623,7 +627,7 @@ namespace DOL.GS.Commands
 
                 if (brain == null)
                 {
-                    client.Out.SendMessage("Cannot create brain, standard brain being applied", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    SendXMobMessage(client, "XMob.Copy.BrainCreateError");
                     mob.SetOwnBrain(new StandardMobBrain());
                 }
                 else if (brain is StandardMobBrain)
@@ -641,12 +645,22 @@ namespace DOL.GS.Commands
                 mob.AddToWorld();
                 mob.LoadedFromScript = false;
                 mob.SaveIntoDatabase();
-                client.Out.SendMessage("Mob created: OID=" + mob.ObjectID, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                SendXMobMessage(client, "XMob.MobCreated", mob.ObjectID);
                 if ((mob.Flags & GameNPC.eFlags.PEACE) != 0)
                 {
                     // because copying 100 mobs with their peace flag set is not fun
-                    client.Out.SendMessage("This mobs PEACE flag is set!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                    SendXMobMessage(client, "XMob.PeaceFlagSet", eChatType.CT_Important);
                 }
+        }
+
+        private static void SendXMobMessage(GameClient client, string key, params object[] args)
+        {
+            SendXMobMessage(client, key, eChatType.CT_System, args);
+        }
+
+        private static void SendXMobMessage(GameClient client, string key, eChatType chatType, params object[] args)
+        {
+            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, key, args), chatType, eChatLoc.CL_SystemWindow);
         }
 
         private void remove(GameNPC targetMob)
@@ -665,6 +679,6 @@ namespace DOL.GS.Commands
             targetMob.MoveTo(client.Player.CurrentRegionID, X, Y, client.Player.Z, (ushort)Util.Random(1, 4100));
             targetMob.SaveIntoDatabase();
         }
-        
+
     }
 }

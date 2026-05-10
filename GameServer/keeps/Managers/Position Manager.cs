@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -22,6 +22,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using DOL.Database;
+using DOL.Language;
 using DOL.GS.Movement;
 using DOL.GS.PacketHandler;
 
@@ -310,7 +311,7 @@ namespace DOL.GS.Keeps
 
 		/// <summary>
 		/// Method to retrieve the Patrol Path from the Patrol ID and Component
-		/// 
+		///
 		/// We need this because we store this all using our offset system
 		/// </summary>
 		/// <param name="pathID">The path ID, which is the Patrol ID</param>
@@ -415,7 +416,7 @@ namespace DOL.GS.Keeps
 			AbstractGameKeep keep = GameServer.KeepManager.GetKeepByID(keepID);
 			if (keep == null)
 			{
-				player.Out.SendMessage("Cannot create door as keep is null!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "KeepPosition.CreateDoor.KeepNull"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			GameKeepComponent component = null;
@@ -429,7 +430,7 @@ namespace DOL.GS.Keeps
 			}
 			if (component == null)
 			{
-				player.Out.SendMessage("Cannot create door as component is null!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "KeepPosition.CreateDoor.ComponentNull"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			DbKeepPosition pos = new DbKeepPosition();
@@ -450,7 +451,7 @@ namespace DOL.GS.Keeps
 
 			GameServer.Database.AddObject(pos);
 
-			player.Out.SendMessage("Added door as a position to keep.  A server restart will be required to load this position.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "KeepPosition.CreateDoor.Added"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 		}
 	}
 }

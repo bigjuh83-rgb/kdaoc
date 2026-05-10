@@ -145,7 +145,7 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 
         private static void TalkToAnthony(DOLEvent e, object sender, EventArgs args)
         {
-            //We get the player from the event arguments and check if he qualifies		
+            //We get the player from the event arguments and check if he qualifies
             GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
             if (player == null)
                 return;
@@ -167,15 +167,13 @@ namespace DOL.GS.WeeklyQuest.Hibernia
                                 "Please, enter Galladoria and slay strong opponents. If you succeed come back for your reward.");
                             break;
                         case 2:
-                            Anthony.SayTo(player, "Hello " + player.Name + ", did you [succeed]?");
+                            Anthony.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[succeed]"));
                             break;
                     }
                 }
                 else
                 {
-                    Anthony.SayTo(player, "Hello " + player.Name + ", I am Anthony. " +
-                                       "A nightshade has reported the forces in Galladoria are planning an attack. \n" +
-                                       "We want to pre-empt them and [end their plotting] before they have the chance. Care to help?");
+                    Anthony.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyBossQuestIntro", player.Name, "Anthony", "Galladoria"));
                 }
             }
             // The player whispered to the NPC
@@ -187,9 +185,10 @@ namespace DOL.GS.WeeklyQuest.Hibernia
                     switch (wArgs.Text)
                     {
                         case "end their plotting":
+						case "음모 저지":
                             player.Out.SendQuestSubscribeCommand(Anthony,
                                 QuestMgr.GetIDForQuestType(typeof(GalladoriaBossQuestHib)),
-                                "Will you help Anthony " + questTitle + "");
+                                DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "Anthony", questTitle));
                             break;
                     }
                 }
@@ -200,7 +199,7 @@ namespace DOL.GS.WeeklyQuest.Hibernia
                         case "succeed":
                             if (quest.Step == 2)
                             {
-                                player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat,
+                                player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat,
                                     eChatLoc.CL_PopupWindow);
                                 quest.FinishQuest();
                             }
@@ -208,7 +207,7 @@ namespace DOL.GS.WeeklyQuest.Hibernia
                             break;
                         case "abort":
                             player.Out.SendCustomDialog(
-                                "Do you really want to abort this quest, \nall items gained during quest will be lost?",
+                                DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"),
                                 new CustomDialogResponse(CheckPlayerAbortQuest));
                             break;
                     }
@@ -244,11 +243,11 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 
             if (response == 0x00)
             {
-                SendSystemMessage(player, "Good, now go out there and finish your work!");
+                SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
             }
             else
             {
-                SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+                SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
                 quest.AbortQuest();
             }
         }
@@ -278,7 +277,7 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 
             if (response == 0x00)
             {
-                player.Out.SendMessage("Thank you for your help.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
             }
             else
             {
@@ -286,7 +285,7 @@ namespace DOL.GS.WeeklyQuest.Hibernia
                 if (!Anthony.GiveQuest(typeof(GalladoriaBossQuestHib), player, 1))
                     return;
 
-                Anthony.SayTo(player, "Thank you " + player.Name + ", be an enrichment for our realm!");
+                Anthony.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EnrichmentRealm", player.Name));
             }
         }
 
@@ -304,10 +303,9 @@ namespace DOL.GS.WeeklyQuest.Hibernia
                 switch (Step)
                 {
                     case 1:
-                        return "Find a way to Galladoria and kill strong opponents. \nKilled: Bosses in Galladoria (" +
-                               _deadGallaBossMob + " | "+ MAX_KILLGOAL +")";
+                        return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.WeeklyBossQuestDescription", "Galladoria", _deadGallaBossMob, MAX_KILLGOAL);
                     case 2:
-                        return "Return to Anthony in Grove of Domnann for your Reward.";
+                        return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "Anthony", "Grove of Domnann");
                 }
 
                 return base.Description;
@@ -326,13 +324,13 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 
             if (Step != 1 || e != GameLivingEvent.EnemyKilled) return;
             EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
-                
+
             // check if a GameEpicBoss died + if its in Galladoria
             if (gArgs.Target.Realm == 0 && gArgs.Target is GameEpicBoss && gArgs.Target.CurrentRegionID == 191)
             {
                 _deadGallaBossMob++;
                 player.Out.SendMessage(
-                    "[Weekly] Bosses killed in Galladoria: (" + _deadGallaBossMob + " | " + MAX_KILLGOAL + ")",
+                    DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyBossesKilled", "Galladoria", _deadGallaBossMob, MAX_KILLGOAL),
                     eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
                 player.Out.SendQuestUpdate(this);
 

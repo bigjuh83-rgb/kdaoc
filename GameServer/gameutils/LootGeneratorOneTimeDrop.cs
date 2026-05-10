@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -184,13 +185,13 @@ namespace DOL.GS
 													charXDrop.ItemTemplateID = drop.ItemTemplateID;
 													GameServer.Database.AddObject(charXDrop);
 
-													player.Out.SendMessage(string.Format("You receive {0} from {1}!", item.GetName(1, false), mob.GetName(1, false)), eChatType.CT_Loot, eChatLoc.CL_SystemWindow);
+													player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "GamePlayer.ReceiveItem.ReceiveFrom", item.GetName(1, false), mob.GetName(1, false)), eChatType.CT_Loot, eChatLoc.CL_SystemWindow);
 													InventoryLogging.LogInventoryAction(mob, player, eInventoryActionType.Loot, item);
 												}
 												else
 												{
 													// do not drop, player will have to try again
-													player.Out.SendMessage("Your inventory is full and a one time drop cannot be added!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+													player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LootGeneratorOneTimeDrop.InventoryFull"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 													log.DebugFormat("OTD Failed, Inventory full: {0} from mob {1} for player {2}.", drop.ItemTemplateID, drop.MobName, player.Name);
 													break;
 												}

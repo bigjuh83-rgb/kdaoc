@@ -1,0 +1,29 @@
+﻿# General Language
+
+## Languages
+System.LanguagesName.EN:				영어
+System.LanguagesName.IT:				이탈리아어
+System.LanguagesName.FR:				프랑스어
+System.LanguagesName.DE:				독일어
+System.LanguagesName.KR:				한국어
+
+## Social
+### Player Login
+PlayerInitRequestHandler.AllianceMessage:		        동맹 메시지: {0}
+PlayerInitRequestHandler.DebugMode:			        서버가 DEBUG 모드로 실행 중입니다!
+PlayerInitRequestHandler.GuildMessage:			        길드 메시지:
+PlayerInitRequestHandler.GuildMessage.Error:	        길드 공지를 보내는 중 오류가 발생했습니다. 길드 랭크 정보가 없거나 손상되었을 수 있습니다.
+PlayerInitRequestHandler.OfficerMessage:		            임원 메시지: {0}
+PlayerInitRequestHandler.StarterHelp.Commands:	        자주 쓰는 명령어:
+PlayerInitRequestHandler.StarterHelp.Intro:		        플레이 중 필요한 기본 서버 명령어와 설정을 여기서 확인할 수 있습니다.
+PlayerInitRequestHandler.StarterHelp.Keyboard:	        /keyboard - 키 설정을 확인하거나 변경합니다.
+PlayerInitRequestHandler.StarterHelp.Language:	        /language en 또는 /language kr - 표시 언어를 변경합니다.
+PlayerInitRequestHandler.StarterHelp.Realm:		        /realm - 렐름, 성, 렐릭 상태를 확인합니다.
+PlayerInitRequestHandler.StarterHelp.Title:		        도움말
+PlayerInitRequestHandler.StarterHelp.Welcome:	        OpenDAoC 프리샤드에 오신 것을 환영합니다.
+PlayerInitRequestHandler.UnsafeAreaMove:		        현재 지역이 안전하지 않아 더 안전한 위치로 이동합니다.
+
+## Player Enter/Exit
+Scripts.Events.PlayerEnterExit.Entered:			        {0} 님이 게임에 접속했습니다!
+Scripts.Events.PlayerEnterExit.Left:			        {0} 님이 게임에서 나갔습니다!
+Scripts.Events.PlayerEnterExit.Staff:			        [운영팀] {0}

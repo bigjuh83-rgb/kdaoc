@@ -4,6 +4,7 @@ using DOL.AI.Brain;
 using DOL.Events;
 using DOL.GS.PacketHandler;
 using DOL.GS.Realm;
+using DOL.Language;
 
 namespace DOL.GS.PlayerClass
 {
@@ -88,7 +89,7 @@ namespace DOL.GS.PlayerClass
                 return true;
             else
             {
-                Player.Out.SendMessage("You cannot enter combat while in shade form!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                Player.Out.SendMessage(LanguageMgr.GetTranslation(Player.Client.Account.Language, "ClassDisciple.CannotCombatShadeForm"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                 return false;
             }
         }

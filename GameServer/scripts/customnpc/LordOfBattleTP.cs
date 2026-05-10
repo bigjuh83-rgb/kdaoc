@@ -4,10 +4,11 @@ using DOL.Events;
 using DOL.GS.PacketHandler;
 using System;
 using System.Collections.Generic;
+using DOL.Language;
 
 namespace DOL.GS {
     public class LordOfBattleTP : GameTrainingDummy {
-       
+
 
         public override bool AddToWorld()
         {
@@ -28,16 +29,16 @@ namespace DOL.GS {
 			if (!base.Interact(player)) return false;
 			TurnTo(player.X, player.Y);
 
-			if ((Flags & GameNPC.eFlags.GHOST) == 0)
+            if ((Flags & GameNPC.eFlags.GHOST) == 0)
             {
-				player.Out.SendMessage("Greetings, " + player.CharacterClass.Name + ".\n\n" + "I can teleport you to our [fight club], if you promise not to speak of it to anyone.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "CustomTeleporter.Battle.Greeting", player.CharacterClass.Name), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 
 			}
 
-           
+
             return true;
-			
-			
+
+
 		}
 		public override bool WhisperReceive(GameLiving source, string str)
 		{
@@ -48,7 +49,8 @@ namespace DOL.GS {
 			TurnTo(t.X, t.Y);
 			switch (str)
 			{
-				case "fight club":
+					case "fight club":
+					case "결투장":
                     t.MoveTo(90, 34868, 33912, 19034, 4089);
                     break;
 				default: break;

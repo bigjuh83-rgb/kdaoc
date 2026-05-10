@@ -89,9 +89,9 @@ namespace DOL.GS
 
 			switch (Util.Random(1, 2))
 			{
-				case 1: BroadcastMessage("'You will remember my name! " + Name + "!'"); break;
-				case 2: BroadcastMessage(Name + " trips and falls on the hard stone floor."); break;
-			}					
+				case 1: BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Aros.RememberMyName", Name)); break;
+				case 2: BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Aros.TripsAndFalls", Name)); break;
+			}
 			base.Die(killer);
         }
         public override void DealDamage(AttackData ad)
@@ -123,10 +123,10 @@ namespace DOL.AI.Brain
 		}
 		List<string> Aros_bomb_text = new List<string>()
 		{
-			"Aros the Spiritmaster begins to perform a ritual!",
-			"Aros the Spiritmaster is powerful and begins a threatening attack!",
-			"Feeling strong and powerful, Aros the Spiritmaster prepares a deadly spell.",
-			"Aros the Spiritmaster begins a magic of mental destruction!"
+			"NamedMobs.Aros.BombText1",
+			"NamedMobs.Aros.BombText2",
+			"NamedMobs.Aros.BombText3",
+			"NamedMobs.Aros.BombText4"
 		};
         public override void Think()
 		{
@@ -180,14 +180,14 @@ namespace DOL.AI.Brain
 							if(spells == Aros_Bomb && Body.GetSkillDisabledDuration(Aros_Bomb) == 0)
                             {
 								string message = Aros_bomb_text[Util.Random(0, Aros_bomb_text.Count - 1)];
-								BroadcastMessage(message);
+								BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, message));
 							}
 							if(spells == Aros_Debuff && DebuffTarget != null)
-								BroadcastMessage(Body.Name+" weakens "+ DebuffTarget.Name + " and everyone around!");
+								BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Aros.WeakensEveryone", Body.Name, DebuffTarget.Name));
 							//Body.TurnTo(target);
 							if (Util.Chance(100))
 							{
-								if (!Body.IsCasting && Body.GetSkillDisabledDuration(Aros_Bomb) == 0)									
+								if (!Body.IsCasting && Body.GetSkillDisabledDuration(Aros_Bomb) == 0)
 									Body.CastSpell(Aros_Bomb, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
 								else if (Body.GetSkillDisabledDuration(Aros_Debuff) == 0)
 								{

@@ -1,5 +1,6 @@
 using System;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -11,14 +12,14 @@ namespace DOL.GS.Commands
     {
         public void OnCommand(GameClient client, string[] args)
         {
-            client.Out.SendMessage("Server information", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-            client.Out.SendMessage($"Online: {ClientService.Instance.ClientCount}", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            client.Out.SendMessage(LanguageMgr.GetTranslation(client, "Commands.ServerInfo.Title"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+            client.Out.SendMessage(LanguageMgr.GetTranslation(client, "Commands.ServerInfo.Online", ClientService.Instance.ClientCount), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             TimeSpan uptime = DateTime.Now.Subtract(GameServer.Instance.StartupTime);
             double sec = uptime.TotalSeconds;
             long min = Convert.ToInt64(sec) / 60;
             long hours = min / 60;
             long days = hours / 24;
-            DisplayMessage(client, $"Uptime: {days}d {hours % 24}h {min % 60}m {sec % 60:00}s");
+            DisplayMessage(client, LanguageMgr.GetTranslation(client, "Commands.ServerInfo.Uptime", days, hours % 24, min % 60, sec % 60));
         }
     }
 }

@@ -126,9 +126,9 @@ namespace DOL.GS.PacketHandler.Client.v168
                 if (doorType != 9 && client.Account.PrivLevel > 1 && !client.Player.CurrentRegion.IsInstance)
                 {
                     if (client.Player.TempProperties.GetProperty<bool>(DoorMgr.WANT_TO_ADD_DOORS))
-                        client.Player.Out.SendCustomDialog("This door is not in the database. Place yourself nearest to this door and click Accept to add it.", AddDoor);
+                        client.Player.Out.SendCustomDialog(LanguageMgr.GetTranslation(client.Account.Language, "DoorRequestHandler.AddDoorPrompt"), AddDoor);
                     else
-                        client.Player.Out.SendMessage("This door is not in the database. Use '/door show' to enable the add door dialog when targeting doors.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                        client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "DoorRequestHandler.DoorNotInDatabase"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                 }
 
                 UseDoor();
@@ -209,7 +209,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                 };
 
                 GameServer.Database.AddObject(door);
-                player.Out.SendMessage($"Added door {HandlerDoorId} to the database!", eChatType.CT_Important,eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "DoorRequestHandler.AddedDoor", HandlerDoorId), eChatType.CT_Important,eChatLoc.CL_SystemWindow);
                 GameServer.Database.SaveObject(door);
                 DoorMgr.Init();
             }

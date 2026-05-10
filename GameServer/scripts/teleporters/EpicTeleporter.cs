@@ -3,6 +3,7 @@ using DOL.GS;
 using DOL.Events;
 using DOL.GS.PacketHandler;
 using System.Reflection;
+using DOL.Language;
 
 namespace DOL.GS.Scripts
 {
@@ -40,13 +41,13 @@ namespace DOL.GS.Scripts
 		{
 			if (!base.Interact(player)) return false;
 			//TurnTo(player.X,player.Y);
-			player.Out.SendMessage("Hello "+player.Name+"! I can teleport you to [Celestius]", eChatType.CT_Say,eChatLoc.CL_PopupWindow);
+			player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "EpicTeleporter.Interact.Celestius", player.Name), eChatType.CT_Say,eChatLoc.CL_PopupWindow);
 			return true;
 		}
 		public override bool WhisperReceive(GameLiving source, string str)
 		{
 			if(!base.WhisperReceive(source,str)) return false;
-		  	if(!(source is GamePlayer)) return false;
+			if(!(source is GamePlayer)) return false;
 			GamePlayer t = (GamePlayer) source;
 			//TurnTo(t.X,t.Y);
 			switch(str)
@@ -56,14 +57,14 @@ namespace DOL.GS.Scripts
 
                     //if (t.Group.MemberCount >= 4) //You have enough
                     {
-                        Say("I'm now teleporting you to the Celestius");
+                        SayTo(t, LanguageMgr.GetTranslation(t.Client.Account.Language, "EpicTeleporter.Teleport.Celestius"));
                         t.MoveTo(91, 31955, 30276, 15733, 35);
                         break;
                     }
                     //else if (t.Group.MemberCount <= 3) //You dont have enough
                         //t.Out.SendMessage("You need a group of at least 4 adventurers for this encounter!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     break;
-            
+
 
                 default: break;
 			}
@@ -79,7 +80,7 @@ namespace DOL.GS.Scripts
         public static void OnScriptCompiled(DOLEvent e, object sender, EventArgs args)
         {
             log.Info("Teleporter initialized: true");
-        }	
+        }
     }
-	
+
 }

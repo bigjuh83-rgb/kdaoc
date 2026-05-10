@@ -6,6 +6,7 @@ using System.Threading;
 using DOL.Database;
 using DOL.GS.Housing;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -79,7 +80,7 @@ namespace DOL.GS
             {
                 if (DoesGuildExist(guildName))
                 {
-                    creator?.Out.SendMessage($"{guildName} already exists. Please choose a different name.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    creator?.Out.SendMessage(LanguageMgr.GetTranslation(creator.Client, "GuildMgr.GuildAlreadyExists", guildName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return null;
                 }
 
@@ -94,7 +95,7 @@ namespace DOL.GS
 
                 if (!guild.AddToDatabase())
                 {
-                    creator?.Out.SendMessage("Database error, unable to add a new guild.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    creator?.Out.SendMessage(LanguageMgr.GetTranslation(creator.Client, "GuildMgr.DatabaseErrorAddGuild"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return null;
                 }
 
@@ -208,7 +209,7 @@ namespace DOL.GS
                 {
                     if (otherGuild.Emblem == newEmblem)
                     {
-                        player.Out.SendMessage("This emblem is already in use by another guild, please choose another one.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "GuildMgr.EmblemInUse"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return;
                     }
                 }

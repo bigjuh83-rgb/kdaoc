@@ -67,7 +67,7 @@ namespace DOL.GS.Commands
 
                         if (args[2] == string.Empty)
                         {
-                            client.Out.SendMessage("You must specify a teleport ID.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Teleport.NeedTeleportId"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
@@ -88,7 +88,7 @@ namespace DOL.GS.Commands
                 default:
                     DisplaySyntax(client);
                     break;
-            }    
+            }
         }
 
         /// <summary>
@@ -105,7 +105,7 @@ namespace DOL.GS.Commands
 
             if (WorldMgr.GetTeleportLocation(realm, String.Format("{0}:{1}", type, teleportID)) != null)
             {
-                client.Out.SendMessage(String.Format("Teleport ID [{0}] already exists!", teleportID), 
+                client.Out.SendMessage(String.Format("Teleport ID [{0}] already exists!", teleportID),
                     eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
@@ -122,7 +122,7 @@ namespace DOL.GS.Commands
 
             if (!WorldMgr.AddTeleportLocation(teleport))
             {
-                client.Out.SendMessage(String.Format("Failed to add teleport ID [{0}] in memory!", teleportID), 
+                client.Out.SendMessage(String.Format("Failed to add teleport ID [{0}] in memory!", teleportID),
                     eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }

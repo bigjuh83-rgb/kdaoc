@@ -1,0 +1,15 @@
+﻿# GameHastener
+
+## Examine
+GameHousingHastener.GetExamineMessages.Examine:		{0}을(를) 살펴봅니다. {1}은(는) {2}이며 이동 지원가입니다.
+
+## Interact
+GameHastener.Greeting:					안녕하세요,
+
+## PvE
+GameHastener.CityMovementOffer:			여행을 돕기 위해 이곳에 있습니다. 도시 안을 이동할 때 [이동] 속도를 높여 드릴까요?
+GameHastener.StrengthOffer:				도시 안에서 물건을 나르는 데 도움이 되도록 추가 [힘]도 부여해 드릴 수 있습니다.
+
+## RvR
+GameHastener.BorderKeepPortOffer:		아직 10레벨에 도달하지 않았다면, 전장 전투를 도울 수 있도록 [국경 요새]로 이동시켜 드릴 수 있습니다.
+GameHastener.DefaultMovementOffer:		이 아름다운 땅을 여행하는 분들을 돕기 위해 이곳에 있습니다. 말씀만 하시면 모험에 도움이 되도록 기꺼이 [이동] 속도를 높여 드리겠습니다!

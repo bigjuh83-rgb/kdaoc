@@ -1,6 +1,7 @@
 ﻿using DOL.AI.Brain;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Scripts
 {
@@ -58,7 +59,7 @@ namespace DOL.AI.Brain
                         spawnants = false; //we check here to avoid spawning adds multiple times
                         foreach (GamePlayer player in Body.GetPlayersInRadius(2000))
                         {
-                            player.Out.SendMessage("Lets loose a high pitch whistle.", eChatType.CT_Say,
+                            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.NamedMobs.Gnat.HighPitchWhistle"), eChatType.CT_Say,
                                 eChatLoc.CL_SystemWindow);
                         }
                     }

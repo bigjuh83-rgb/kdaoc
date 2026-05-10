@@ -4,6 +4,8 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
 using DOL.GS.Scheduler;
+using DOL.Language;
+using DOL.GS.ServerProperties;
 
 namespace DOL.GS.Scripts
 {
@@ -21,12 +23,12 @@ namespace DOL.GS.Scripts
         private static List<int> albionRvRZones = new List<int>() { 11, 12, 14, 15};
         private static List<int> midgardRvRZones = new List<int>() { 111, 112, 113, 115 };
         private static List<int> hiberniaRvRZones = new List<int>() { 210, 211, 212, 214 };
-        
+
         // low level zone ids
         private static List<int> albionLowbieZones = new List<int>() { 0, 1, 52, 8, 6};
         private static List<int> midgardLowbieZones = new List<int>() {102, 104, 106, 155};
         private static List<int> hiberniaLowbieZones = new List<int>() { 201, 202, 203, 206, 182};
-        
+
         // high level zone ids
         private static List<int> albionHighZones = new List<int>() {4, 7, 10, 53, 55, 56, 57};
         private static List<int> midgardHighZones = new List<int>() {107, 108, 116, 152, 153, 154, 156, 158};
@@ -61,10 +63,10 @@ namespace DOL.GS.Scripts
         private static SimpleScheduler scheduler = new SimpleScheduler();
 
         public static int PvETimer { get; set; }
-        public static int RvRTimer { get; set; } 
+        public static int RvRTimer { get; set; }
         public static int PvEExperienceBonusAmount { get; set; }
-        public static int RvRExperienceBonusAmount { get; set; } 
-        public static int RPBonusAmount { get; set; } 
+        public static int RvRExperienceBonusAmount { get; set; }
+        public static int RPBonusAmount { get; set; }
         public static int BPBonusAmount { get; set; }
 
         public static long _lastRvRChangeTick { get; set; }
@@ -78,7 +80,7 @@ namespace DOL.GS.Scripts
         {
             Initialize();
             GameEventMgr.AddHandler(GamePlayerEvent.GameEntered, new DOLEventHandler(PlayerEntered));
-            
+
         }
 
         [GameServerStoppedEvent]
@@ -338,7 +340,7 @@ namespace DOL.GS.Scripts
                     if (albionSIZones.Contains(lowZone))
                         SILowZones.Add(lowZone);
                 }
-                
+
                 currentAlbionZone = ClassicHighZones[Util.Random(ClassicHighZones.Count - 1)];
                 currentAlbionZoneSI = SILowZones[Util.Random(SILowZones.Count - 1)];
             }
@@ -357,7 +359,7 @@ namespace DOL.GS.Scripts
                     if (albionSIZones.Contains(highZone))
                         SIHighZones.Add(highZone);
                 }
-                
+
                 currentAlbionZone = ClassicLowZones[Util.Random(ClassicLowZones.Count - 1)];
                 currentAlbionZoneSI = SIHighZones[Util.Random(SIHighZones.Count - 1)];
             }
@@ -380,7 +382,7 @@ namespace DOL.GS.Scripts
                     if (midgardSIZones.Contains(lowZone))
                         SILowZones.Add(lowZone);
                 }
-                
+
                 currentMidgardZone = ClassicHighZones[Util.Random(ClassicHighZones.Count - 1)];
                 currentMidgardZoneSI = SILowZones[Util.Random(SILowZones.Count - 1)];
             }
@@ -399,11 +401,11 @@ namespace DOL.GS.Scripts
                     if (midgardSIZones.Contains(highZone))
                         SIHighZones.Add(highZone);
                 }
-                
+
                 currentMidgardZone = ClassicLowZones[Util.Random(ClassicLowZones.Count - 1)];
                 currentMidgardZoneSI = SIHighZones[Util.Random(SIHighZones.Count - 1)];
             }
-            
+
             //currentMidgardZone = Util.Random(midgardClassicZones.Count - 1);
             //currentMidgardZoneSI = Util.Random(midgardSIZones.Count - 1);
 
@@ -423,7 +425,7 @@ namespace DOL.GS.Scripts
                     if (hiberniaSIZones.Contains(lowZone))
                         SILowZones.Add(lowZone);
                 }
-                
+
                 currentHiberniaZone = ClassicHighZones[Util.Random(ClassicHighZones.Count - 1)];
                 currentHiberniaZoneSI = SILowZones[Util.Random(SILowZones.Count - 1)];
             }
@@ -442,7 +444,7 @@ namespace DOL.GS.Scripts
                     if (hiberniaSIZones.Contains(highZone))
                         SIHighZones.Add(highZone);
                 }
-                
+
                 currentHiberniaZone = ClassicLowZones[Util.Random(ClassicLowZones.Count - 1)];
                 currentHiberniaZoneSI = SIHighZones[Util.Random(SIHighZones.Count - 1)];
             }
@@ -453,7 +455,7 @@ namespace DOL.GS.Scripts
 
         private static void TellPlayer(GamePlayer player)
         {
-            player.Out.SendMessage("Bonus zones updated.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "ZoneBonusRotator.Updated"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
         }
 
         private static string GetLevelRange(int zoneID)
@@ -521,72 +523,72 @@ namespace DOL.GS.Scripts
             switch (currentRvRRealm)
             {
                 case 1:
-                    realm = "Albion";
+                    realm = GlobalConstants.RealmToName(eRealm.Albion, Properties.SERV_LANGUAGE);
                     break;
                 case 2:
-                    realm = "Midgard";
+                    realm = GlobalConstants.RealmToName(eRealm.Midgard, Properties.SERV_LANGUAGE);
                     break;
                 case 3:
-                    realm = "Hibernia";
+                    realm = GlobalConstants.RealmToName(eRealm.Hibernia, Properties.SERV_LANGUAGE);
                     break;
             }
-            return "\nOF Bonus Region: " + realm + "\n\n" +
-                "Albion Classic: " + albDBZone.Name + " (XP +" + albDBZone.Experience + "%)\n" +
-                "Albion SI: " + albDBZoneSI.Name + " (XP +" + albDBZoneSI.Experience + "%)\n\n" +
-                "Midgard Classic: " + midDBZone.Name + " (XP +" + midDBZone.Experience + "%)\n" +
-                "MIdgard SI: " + midDBZoneSI.Name + " (XP +" + midDBZoneSI.Experience + "%)\n\n" +
-                "Hibernia Classic: " + hibDBZone.Name + " (XP +" + hibDBZone.Experience + "%)\n" +
-                "Hibernia SI: " + hibDBZoneSI.Name + " (XP +" + hibDBZoneSI.Experience + "%)\n\n";
+            return "\n" + LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.OFBonusRegion", realm) + "\n\n" +
+                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmClassic", GlobalConstants.RealmToName(eRealm.Albion, Properties.SERV_LANGUAGE), albDBZone.Name, albDBZone.Experience) + "\n" +
+                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmSI", GlobalConstants.RealmToName(eRealm.Albion, Properties.SERV_LANGUAGE), albDBZoneSI.Name, albDBZoneSI.Experience) + "\n\n" +
+                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmClassic", GlobalConstants.RealmToName(eRealm.Midgard, Properties.SERV_LANGUAGE), midDBZone.Name, midDBZone.Experience) + "\n" +
+                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmSI", GlobalConstants.RealmToName(eRealm.Midgard, Properties.SERV_LANGUAGE), midDBZoneSI.Name, midDBZoneSI.Experience) + "\n\n" +
+                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmClassic", GlobalConstants.RealmToName(eRealm.Hibernia, Properties.SERV_LANGUAGE), hibDBZone.Name, hibDBZone.Experience) + "\n" +
+                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmSI", GlobalConstants.RealmToName(eRealm.Hibernia, Properties.SERV_LANGUAGE), hibDBZoneSI.Name, hibDBZoneSI.Experience) + "\n\n";
         }
 
-        public static List<string> GetTextList()
+        public static List<string> GetTextList(string language)
         {
             List<string> temp = new List<string>();
             string realm = string.Empty;
             switch (currentRvRRealm)
             {
                 case 1:
-                    realm = "Albion";
+                    realm = GlobalConstants.RealmToName(eRealm.Albion, language);
                     break;
                 case 2:
-                    realm = "Midgard";
+                    realm = GlobalConstants.RealmToName(eRealm.Midgard, language);
                     break;
                 case 3:
-                    realm = "Hibernia";
+                    realm = GlobalConstants.RealmToName(eRealm.Hibernia, language);
                     break;
             }
-            temp.Add("Current OF Bonus Region: " + realm);
-            temp.Add("Bonus RP: " + RPBonusAmount + "%");
-            temp.Add("Bonus BP: " + BPBonusAmount + "%");
-            temp.Add("Bonus XP: " + RvRExperienceBonusAmount + "%");
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.CurrentOFBonusRegion", realm));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.BonusRP", RPBonusAmount));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.BonusBP", BPBonusAmount));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.BonusXP", RvRExperienceBonusAmount));
             temp.Add("");
-            temp.Add("Current Albion Zones: ");
-            temp.Add("Classic Zone: " + albDBZone.Name + " " + GetLevelRange(albDBZone.ZoneID) + " (XP +" + albDBZone.Experience + "%)");
-            temp.Add("SI Zone: " + albDBZoneSI.Name + " " + GetLevelRange(albDBZoneSI.ZoneID) + " (XP +" + albDBZoneSI.Experience + "%)");
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.CurrentRealmZones", GlobalConstants.RealmToName(eRealm.Albion, language)));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.ClassicZone", albDBZone.Name, GetLevelRange(albDBZone.ZoneID), albDBZone.Experience));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.SIZone", albDBZoneSI.Name, GetLevelRange(albDBZoneSI.ZoneID), albDBZoneSI.Experience));
             temp.Add("");
-            temp.Add("Current Midgard Zones: ");
-            temp.Add("Classic Zone: " + midDBZone.Name + " " + GetLevelRange(midDBZone.ZoneID) + " (XP +" + midDBZone.Experience + "%)");
-            temp.Add("SI Zone: " + midDBZoneSI.Name + " " + GetLevelRange(midDBZoneSI.ZoneID) + " (XP +" + midDBZoneSI.Experience + "%)");
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.CurrentRealmZones", GlobalConstants.RealmToName(eRealm.Midgard, language)));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.ClassicZone", midDBZone.Name, GetLevelRange(midDBZone.ZoneID), midDBZone.Experience));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.SIZone", midDBZoneSI.Name, GetLevelRange(midDBZoneSI.ZoneID), midDBZoneSI.Experience));
             temp.Add("");
-            temp.Add("Current Hibernia Zones: ");
-            temp.Add("Classic Zone: " + hibDBZone.Name + " " + GetLevelRange(hibDBZone.ZoneID) + " (XP +" + hibDBZone.Experience + "%)");
-            temp.Add("SI Zone: " + hibDBZoneSI.Name + " " + GetLevelRange(hibDBZoneSI.ZoneID) + " (XP +" + hibDBZoneSI.Experience + "%)");
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.CurrentRealmZones", GlobalConstants.RealmToName(eRealm.Hibernia, language)));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.ClassicZone", hibDBZone.Name, GetLevelRange(hibDBZone.ZoneID), hibDBZone.Experience));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.SIZone", hibDBZoneSI.Name, GetLevelRange(hibDBZoneSI.ZoneID), hibDBZoneSI.Experience));
 
             temp.Add("");
             var rvr = _lastRvRChangeTick + RvRTimer - GameLoop.GameLoopTime;
-            temp.Add("RvR Time Remaining: " + TimeSpan.FromMilliseconds(rvr).Hours + "h " + TimeSpan.FromMilliseconds(rvr).Minutes + "m " + TimeSpan.FromMilliseconds(rvr).Seconds + "s");
-            
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.RvRTimeRemaining", TimeSpan.FromMilliseconds(rvr).Hours, TimeSpan.FromMilliseconds(rvr).Minutes, TimeSpan.FromMilliseconds(rvr).Seconds));
+
             var pve = _lastPvEChangeTick + PvETimer - GameLoop.GameLoopTime;
-            temp.Add("PvE Time Remaining: " + TimeSpan.FromMilliseconds(pve).Hours + "h " + TimeSpan.FromMilliseconds(pve).Minutes + "m " + TimeSpan.FromMilliseconds(pve).Seconds + "s");
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.PvETimeRemaining", TimeSpan.FromMilliseconds(pve).Hours, TimeSpan.FromMilliseconds(pve).Minutes, TimeSpan.FromMilliseconds(pve).Seconds));
 
             temp.Add("");
             temp.Add("");
 
-            temp.Add("Permanent Bonuses:");
-            temp.Add("All Dungeons: 25%");
-            temp.Add("RvR Dungeons: 50%");
-            temp.Add("Darkness Falls: 75%");
-            
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.PermanentBonuses"));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.AllDungeons", 25));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.RvRDungeons", 50));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.DarknessFalls", 75));
+
             temp.Add("");
             temp.Add("");
 
@@ -672,7 +674,7 @@ namespace DOL.GS.Scripts
             GameServer.Database.SaveObject(hibDBZone);
             GameServer.Database.SaveObject(midDBZoneSI);
 
-            
+
             foreach (var zone in albionClassicZones)
                 WorldMgr.Zones[(ushort)zone].BonusExperience = 0;
 

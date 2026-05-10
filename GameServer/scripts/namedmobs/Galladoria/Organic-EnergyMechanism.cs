@@ -5,6 +5,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -108,10 +109,11 @@ namespace DOL.AI.Brain
             AggroRange = 500;
         }
         private bool RemoveAdds = false;
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(string key, params object[] args)
         {
             foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
+                string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
                 player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
@@ -148,7 +150,7 @@ namespace DOL.AI.Brain
                     {
                         GamePlayer Target = (GamePlayer)Enemys_To_DOT[Util.Random(0, Enemys_To_DOT.Count - 1)];//pick random target from list
                         RandomTarget = Target;//set random target to static RandomTarget
-                        BroadcastMessage(String.Format(Body.Name + "looks sickly... powerfull magic essense will errupt on " + RandomTarget.Name + "!"));
+                        BroadcastMessage("NamedMobs.OrganicEnergyMechanism.SicklyEssence", Body.Name, RandomTarget.Name);
                         new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(CastDOT), 5000);
                         CanCast = true;
                     }
@@ -463,7 +465,7 @@ namespace DOL.AI.Brain
                     }
                 }
                 if (Util.Chance(15) && Body.TargetObject != null)
-                {                    
+                {
                     if(!target.effectListComponent.ContainsEffectForEffectType(eEffect.MovementSpeedDebuff) && !target.effectListComponent.ContainsEffectForEffectType(eEffect.SnareImmunity))
                     {
                         Body.CastSpell(FeederRoot, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));

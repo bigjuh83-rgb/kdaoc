@@ -96,70 +96,70 @@ namespace DOL.GS.Spells
 				int duration = caster.GetSkillDisabledDuration(m_spell);
 				if (duration > 0)
 				{
-					MessageToCaster("You must wait " + (duration / 1000 + 1) + " seconds to use this spell!", eChatType.CT_System);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.MustWait", duration / 1000 + 1), eChatType.CT_System);
 					return false;
 				}
 				if (caster.IsMoving || caster.IsStrafing)
 				{
-					MessageToCaster("You must be standing still to cast this spell!", eChatType.CT_System);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.MustStandStill"), eChatType.CT_System);
 					return false;
 				}
 				if (caster.IsSitting)
 				{
-					MessageToCaster("You can't cast this spell while sitting!", eChatType.CT_System);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.CantCastSitting"), eChatType.CT_System);
 					return false;
 				}
 				if (Target == null)
 				{
-					MessageToCaster("You must have a target!", eChatType.CT_SpellResisted);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.MustHaveTarget"), eChatType.CT_SpellResisted);
 					return false;
 				}
 				if (!caster.IsAlive)
 				{
-					MessageToCaster("You cannot cast this dead!", eChatType.CT_SpellResisted);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.CantCastDead"), eChatType.CT_SpellResisted);
 					return false;
 				}
 				if (!Target.IsAlive)
 				{
-					MessageToCaster("You cannot cast this on the dead!", eChatType.CT_SpellResisted);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.TargetDead"), eChatType.CT_SpellResisted);
 					return false;
 				}
 				if (caster.IsCrowdControlled || caster.IsSilenced)
 				{
-					MessageToCaster("You can't use that in your state.", eChatType.CT_System);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.CantUseInState"), eChatType.CT_System);
 					return false;
 				}
 				if (!caster.TargetInView)
 				{
-					MessageToCaster("Your target is not visible!", eChatType.CT_SpellResisted);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.TargetNotVisible"), eChatType.CT_SpellResisted);
 					return false;
 				}
 				if (caster.IsObjectInFront(Target, 180) == false)
 				{
-					MessageToCaster("Your target is not in view!", eChatType.CT_SpellResisted);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.TargetNotInView"), eChatType.CT_SpellResisted);
 					return false;
 				}
 				if (caster.IsInvulnerableToAttack)
 				{
-					MessageToCaster("Your invunerable at the momment and cannot use that spell!", eChatType.CT_System);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.CasterInvulnerable"), eChatType.CT_System);
 					return false;
 				}
 				if (Target is GamePlayer)
 				{
 					if ((Target as GamePlayer).IsInvulnerableToAttack)
 					{
-						MessageToCaster("Your target is invunerable at the momment and cannot be attacked!", eChatType.CT_System);
+						MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.TargetInvulnerable"), eChatType.CT_System);
 						return false;
 					}
 				}
 				if (!caster.IsWithinRadius(Target, Spell.CalculateEffectiveRange(caster)))
 				{
-					MessageToCaster("That target is too far away!", eChatType.CT_SpellResisted);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.TargetTooFar"), eChatType.CT_SpellResisted);
 					return false;
 				}
 				if (PhaseShift != null)
 				{
-					MessageToCaster(Target.Name + " is Phaseshifted and can't be attacked!", eChatType.CT_System); return false;
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.TargetPhaseshifted", Target.Name), eChatType.CT_System); return false;
 				}
 				if (SelectiveBlindness != null)
 				{
@@ -167,24 +167,24 @@ namespace DOL.GS.Spells
 					if (EffectOwner == Target)
 					{
 						if (m_caster is GamePlayer)
-							((GamePlayer)m_caster).Out.SendMessage(string.Format("{0} is invisible to you!", Target.GetName(0, true)), eChatType.CT_Action, eChatLoc.CL_SystemWindow);
+							((GamePlayer)m_caster).Out.SendMessage(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.TargetInvisible", Target.GetName(0, true)), eChatType.CT_Action, eChatLoc.CL_SystemWindow);
 
 						return false;
 					}
 				}
 				if (Target.HasAbility(Abilities.DamageImmunity))
 				{
-					MessageToCaster("Your target is immune to this effect!", eChatType.CT_SpellResisted);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.TargetImmune"), eChatType.CT_SpellResisted);
 					return false;
 				}
 				if (GameServer.ServerRules.IsAllowedToAttack(Caster, Target, true) && chamber.PrimarySpell.Target == eSpellTarget.REALM)
 				{
-					MessageToCaster("This spell only works on friendly targets!", eChatType.CT_System);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.FriendlyTargetsOnly"), eChatType.CT_System);
 					return false;
 				}
 				if (!GameServer.ServerRules.IsAllowedToAttack(Caster, Target, true) && chamber.PrimarySpell.Target != eSpellTarget.REALM)
 				{
-					MessageToCaster("That target isn't attackable at this time!", eChatType.CT_System);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.TargetNotAttackable"), eChatType.CT_System);
 					return false;
 				}
 				spellhandler.StartSpell(Target);
@@ -213,7 +213,7 @@ namespace DOL.GS.Spells
 				base.StartSpell(Target);
 				int duration = caster.GetSkillDisabledDuration(m_spell);
 				if(Caster is GamePlayer && duration == 0)
-					((GamePlayer)Caster).Out.SendMessage("Select the first spell for your " + Spell.Name + ".", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					((GamePlayer)Caster).Out.SendMessage(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.SelectFirstSpell", Spell.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			return true;
 		}
@@ -225,7 +225,7 @@ namespace DOL.GS.Spells
 		public override void FinishSpellCast(GameLiving target)
 		{
 			m_caster.Mana -= PowerCost(target);
-			
+
 			// endurance
 			m_caster.Endurance -= 5;
 
@@ -235,18 +235,18 @@ namespace DOL.GS.Spells
 			{
 				if(SecondarySpell == null && PrimarySpell == null)
 				{
-					MessageToCaster("No spells were loaded into " + m_spell.Name + ".", eChatType.CT_Spell);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.NoSpellsLoaded", m_spell.Name), eChatType.CT_Spell);
 				}
 				else
 				{
-					MessageToCaster("Your " + m_spell.Name + " is ready for use.", eChatType.CT_Spell);
+					MessageToCaster(LanguageMgr.GetTranslation(caster.Client.Account.Language, "Warlock.Chamber.Ready", m_spell.Name), eChatType.CT_Spell);
 					//StartSpell(target); // and action
 					GameSpellEffect neweffect = CreateSpellEffect(target, 1);
 					neweffect.Start(m_caster);
 					SendEffectAnimation(m_caster, 0, false, 1);
 					((GamePlayer)m_caster).Out.SendWarlockChamberEffect((GamePlayer)m_caster);
 				}
-				
+
 				foreach (GamePlayer player in m_caster.GetPlayersInRadius(WorldMgr.INFO_DISTANCE))
 				{
 					if (player != m_caster)

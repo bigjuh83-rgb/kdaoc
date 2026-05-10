@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using DOL.Events;
 using DOL.GS.Keeps;
+using DOL.Language;
 
 namespace DOL.GS.Quests
 {
@@ -92,8 +93,8 @@ namespace DOL.GS.Quests
 			get
 			{
 				if (m_keep == null)
-					return "Keep is null when trying to send the description";
-				else return "Scout the area around " + m_keep.Name;
+					return LanguageMgr.GetTranslation(MissionLanguage, "Mission.Description.KeepNull");
+				else return LanguageMgr.GetTranslation(MissionLanguage, "Mission.Description.ScoutKeep", m_keep.Name);
 			}
 		}
 

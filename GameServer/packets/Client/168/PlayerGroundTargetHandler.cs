@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using DOL.GS.ServerProperties;
+using DOL.Language;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -30,7 +31,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                 player.GroundTarget.Unset();
 
             if (!player.GroundTargetInView)
-                player.Out.SendMessage("Your ground target is not visible!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "PlayerGroundTargetHandler.NotVisible"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
             if (player.SiegeWeapon != null && player.SiegeWeapon.Owner == player)
             {
@@ -47,7 +48,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                 {
                     if (player.Steed.OwnerID == player.InternalID)
                     {
-                        player.Out.SendMessage("You usher your boat forward.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "PlayerGroundTargetHandler.UsherBoatForward"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         player.Steed.WalkTo(player.GroundTarget, player.Steed.MaxSpeed);
                         return;
                     }
@@ -55,7 +56,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
                 if (player.Steed.MAX_PASSENGERS > 8 && player.Steed.CurrentRiders.Length < player.Steed.REQUIRED_PASSENGERS)
                 {
-                    player.Out.SendMessage($"The {player.Steed.Name} does not yet have enough passengers to move!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "PlayerGroundTargetHandler.NotEnoughPassengers", player.Steed.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return;
                 }
 

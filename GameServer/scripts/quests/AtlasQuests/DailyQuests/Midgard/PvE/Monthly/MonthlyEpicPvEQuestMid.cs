@@ -22,7 +22,7 @@ namespace DOL.GS.MonthlyQuest.Midgard
 		private const string questTitle = "[Monthly] Annihilation of Malevolence";
 		private const int minimumLevel = 45;
 		private const int maximumLevel = 50;
-		
+
 		// Kill Goal
 		private const int MAX_KILLED = 1;
 		// Quest Counter
@@ -33,8 +33,8 @@ namespace DOL.GS.MonthlyQuest.Midgard
 
 		private const string Iarnvidiur_NAME = "Iarnvidiur";
 		private const string Nosdoden_NAME = "Nosdoden";
-		
-		
+
+
 		// Constructors
 		public MonthlyEpicPvEQuestMid() : base()
 		{
@@ -60,13 +60,13 @@ namespace DOL.GS.MonthlyQuest.Midgard
 				return minimumLevel;
 			}
 		}
-		
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -124,7 +124,7 @@ namespace DOL.GS.MonthlyQuest.Midgard
 
 			GameEventMgr.AddHandler(Jarek, GameObjectEvent.Interact, new DOLEventHandler(TalkToJarek));
 			GameEventMgr.AddHandler(Jarek, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToJarek));
-			
+
 			Jarek.AddQuestToGive(typeof (MonthlyEpicPvEQuestMid));
 
 			if (log.IsInfoEnabled)
@@ -149,7 +149,7 @@ namespace DOL.GS.MonthlyQuest.Midgard
 
 		private static void TalkToJarek(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -170,15 +170,13 @@ namespace DOL.GS.MonthlyQuest.Midgard
 							Jarek.SayTo(player, player.Name + ", please find allies and kill the epic creatures in Trollheim and Iarnvidiur's Lair!");
 							break;
 						case 2:
-							Jarek.SayTo(player, "Hello " + player.Name + ", did you [slay the creatures] and return for your reward?");
+							Jarek.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[slay the creatures] and return for your reward"));
 							break;
 					}
 				}
 				else
 				{
-					Jarek.SayTo(player, "Hello "+ player.Name +", I am Jarek. For several months the situation in Trollheim and Iarnvidur's Lair has changed. " +
-					                    "A place of mineral wealth and natural resources is now a place of violence and poisoning. \n\n"+
-					                    "Can you support Midgard and [kill Nosdoden and Iarnvidiur] in Trollheim and Iarnvidur's Lair?");
+					Jarek.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyEpicIntro", player.Name, "Jarek", "Trollheim and Iarnvidiur's Lair"));
 				}
 			}
 				// The player whispered to the NPC
@@ -190,7 +188,7 @@ namespace DOL.GS.MonthlyQuest.Midgard
 					switch (wArgs.Text)
 					{
 						case "kill Nosdoden and Iarnvidiur":
-							player.Out.SendQuestSubscribeCommand(Jarek, QuestMgr.GetIDForQuestType(typeof(MonthlyEpicPvEQuestMid)), "Will you help Jarek "+questTitle+"?");
+							player.Out.SendQuestSubscribeCommand(Jarek, QuestMgr.GetIDForQuestType(typeof(MonthlyEpicPvEQuestMid)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "Jarek", questTitle));
 							break;
 					}
 				}
@@ -201,18 +199,18 @@ namespace DOL.GS.MonthlyQuest.Midgard
 						case "slay the creatures":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -241,11 +239,11 @@ namespace DOL.GS.MonthlyQuest.Midgard
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and slay those creatures!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueSlayCreatures"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -275,7 +273,7 @@ namespace DOL.GS.MonthlyQuest.Midgard
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for your help.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -283,7 +281,7 @@ namespace DOL.GS.MonthlyQuest.Midgard
 				if (!Jarek.GiveQuest(typeof (MonthlyEpicPvEQuestMid), player, 1))
 					return;
 
-				Jarek.SayTo(player, "Please, find the epic monsters in Trollheim and Iarnvidiur's Lair and return for your reward.");
+				Jarek.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyEpicReminder", "Trollheim and Iarnvidiur's Lair"));
 
 			}
 		}
@@ -302,11 +300,9 @@ namespace DOL.GS.MonthlyQuest.Midgard
 				switch (Step)
 				{
 					case 1:
-						return "Make your way and defeat the epic creatures in Trollheim as well as in Iarnvidiur's Lair! \n" +
-						       "Killed: " + Nosdoden_NAME + " ("+ _nosdodenKilled +" | " + MAX_KILLED + ") in Trollheim\n" +
-						       "Killed: " + Iarnvidiur_NAME + " ("+ _iarnvidiurKilled +" | " + MAX_KILLED + ") in Iarnvidiur's Lair\n";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.MonthlyEpicDescription", "Trollheim and Iarnvidiur's Lair", Nosdoden_NAME, _nosdodenKilled, MAX_KILLED, Iarnvidiur_NAME, _iarnvidiurKilled, MAX_KILLED);
 					case 2:
-						return "Return to Jarek for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpc", "Jarek");
 				}
 				return base.Description;
 			}
@@ -328,13 +324,13 @@ namespace DOL.GS.MonthlyQuest.Midgard
 			if (gArgs.Target.Name.ToLower() == Iarnvidiur_NAME.ToLower() && gArgs.Target is GameNPC && _iarnvidiurKilled < MAX_KILLED)
 			{
 				_iarnvidiurKilled = 1;
-				player.Out.SendMessage("[Monthly] You killed " + Iarnvidiur_NAME + ": (" + _iarnvidiurKilled + " | " + MAX_KILLED + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyNamedKilled", Iarnvidiur_NAME, _iarnvidiurKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 				player.Out.SendQuestUpdate(this);
 			}
 			else if (gArgs.Target.Name.ToLower() == Nosdoden_NAME.ToLower() && gArgs.Target is GameNPC && _nosdodenKilled < MAX_KILLED)
 			{
 				_nosdodenKilled = 1;
-				player.Out.SendMessage("[Monthly] You killed " + Nosdoden_NAME + ": (" + _nosdodenKilled + " | " + MAX_KILLED + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyNamedKilled", Nosdoden_NAME, _nosdodenKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 				player.Out.SendQuestUpdate(this);
 			}
 
@@ -343,13 +339,13 @@ namespace DOL.GS.MonthlyQuest.Midgard
 				Step = 2;
 			}
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "MonthlyEpicPvEQuestMid";
 			set { ; }
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			_iarnvidiurKilled = GetCustomProperty(Iarnvidiur_NAME) != null ? int.Parse(GetCustomProperty(Iarnvidiur_NAME)) : 0;
@@ -376,7 +372,7 @@ namespace DOL.GS.MonthlyQuest.Midgard
 			}
 			else
 			{
-				m_questPlayer.Out.SendMessage("Clear three slots of your inventory for your reward", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ClearInventorySlots", 3), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 	}

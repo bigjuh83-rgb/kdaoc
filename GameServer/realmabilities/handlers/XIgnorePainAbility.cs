@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -31,7 +32,7 @@ namespace DOL.GS.RealmAbilities
 					case 3: heal = 50; break;
 					case 4: heal = 65; break;
 					case 5: heal = 80; break;
-				}				
+				}
 			}
 			else
 			{
@@ -40,7 +41,7 @@ namespace DOL.GS.RealmAbilities
 					case 1: heal = 20; break;
 					case 2: heal = 50; break;
 					case 3: heal = 80; break;
-				}				
+				}
 			}
 
 			int healed = living.ChangeHealth(living, eHealthChangeType.Spell, living.MaxHealth * heal / 100);
@@ -50,10 +51,10 @@ namespace DOL.GS.RealmAbilities
 			GamePlayer player = living as GamePlayer;
 			if (player != null)
 			{
-				if (healed > 0) player.Out.SendMessage("You heal yourself for " + healed + " hit points.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+				if (healed > 0) player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Heal.SelfForHitPoints", healed), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 				if (heal > healed)
 				{
-					player.Out.SendMessage("You are fully healed.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Heal.FullyHealed"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 				}
 			}
 			if (healed > 0) DisableSkill(living);

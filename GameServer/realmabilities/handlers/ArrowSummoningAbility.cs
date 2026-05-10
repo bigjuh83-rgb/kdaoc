@@ -2,6 +2,7 @@ using System;
 using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -25,19 +26,19 @@ namespace DOL.GS.RealmAbilities
 
             if(!player.Inventory.AddTemplate(GameInventoryItem.Create(arrow_summoning_1),10,eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack))
 			{
-				player.Out.SendMessage("You do not have enough inventory space to place this item!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.ArrowSummoning.NotEnoughInventorySpace"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			else if (!player.Inventory.AddTemplate(GameInventoryItem.Create(arrow_summoning_2), 10, eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack))
 			{
-                player.Out.SendMessage("You do not have enough inventory space to place this item!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.ArrowSummoning.NotEnoughInventorySpace"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 			else if (!player.Inventory.AddTemplate(GameInventoryItem.Create(arrow_summoning_3), 10, eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack))
 			{
-                player.Out.SendMessage("You do not have enough inventory space to place this item!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-			}			
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.ArrowSummoning.NotEnoughInventorySpace"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			}
 
-			GameEventMgr.AddHandler(player,GamePlayerEvent.Quit, new DOLEventHandler(PlayerQuit));	
-            DisableSkill(living);	
+			GameEventMgr.AddHandler(player,GamePlayerEvent.Quit, new DOLEventHandler(PlayerQuit));
+            DisableSkill(living);
 		}
         public override int GetReUseDelay(int level)
         {
@@ -52,7 +53,7 @@ namespace DOL.GS.RealmAbilities
 		public void PlayerQuit(DOLEvent e, object sender, EventArgs arguments)
 		{
 			GamePlayer player = sender as GamePlayer;
-			if (player == null) return;		
+			if (player == null) return;
 			lock (player.Inventory.Lock)
 			{
                 DbInventoryItem item = player.Inventory.GetFirstItemByID("arrow_summoning1", eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack);
@@ -79,8 +80,8 @@ namespace DOL.GS.RealmAbilities
 		public static void OnScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
             if (!ServerProperties.Properties.LOAD_ARROW_SUMMONING)
-                return;            
-            
+                return;
+
             DbItemTemplate arrow_summoning1 = GameServer.Database.FindObjectByKey<DbItemTemplate>("arrow_summoning1");
 			if (arrow_summoning1 == null)
 			{

@@ -2,6 +2,7 @@
 using DOL.AI;
 using DOL.AI.Brain;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -23,7 +24,7 @@ namespace DOL.GS
 			MeleeDamageType = eDamageType.Crush;
 			Race = 2003;
 			Flags = 0;
-			
+
 			RockyGolemBrain sbrain = new RockyGolemBrain();
 			SetOwnBrain(sbrain);
 			LoadedFromScript = false;//load from database
@@ -31,20 +32,21 @@ namespace DOL.GS
 			bool success = base.AddToWorld();
 			if (success)
 			{
-				new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(PrepareTeleport), 1000);			
+				new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(PrepareTeleport), 1000);
 			}
 			return success;
 		}
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(string key, params object[] args)
 		{
 			foreach (GamePlayer player in GetPlayersInRadius(1000))
 			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
 				player.Out.SendMessage(message, eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 			}
 		}
 		private protected int PrepareTeleport(ECSGameTimer timer)
         {
-			BroadcastMessage(String.Format("The {0} says, \"Ahh, I feel the power of the stone... through the living rock I send you!\"",Name));
+			BroadcastMessage("Mobs.RockyGolem.TeleportWarning", Name);
 			foreach (GamePlayer player in GetPlayersInRadius(2000))
 			{
 				if (player != null)
@@ -253,7 +255,7 @@ namespace DOL.GS
 
 			Brain.FSM.SetCurrentState(eFSMStateType.RETURN_TO_SPAWN);
             return 0;
-        }		
+        }
 	}
 }
 namespace DOL.AI.Brain

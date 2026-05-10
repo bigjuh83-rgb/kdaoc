@@ -50,52 +50,51 @@ namespace DOL.GS
             }
         }
         public int Message_timer(ECSGameTimer timer)
-        {         
-            BroadcastMessage(String.Format("Fames says loudly, 'I sense presence of many, the presence of power and ambition...'"));
+        {
+            BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.FamesPresence"));
             new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(Message_timer2), 6000);//60s before starting
             return 0;
         }
         public int Message_timer2(ECSGameTimer timer)
         {
-            BroadcastMessage(String.Format("Morbus says, 'The presence of those who would challenge fate.'"));
+            BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.MorbusChallengeFate"));
             new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(Message_timer3), 6000);//60s before starting
             return 0;
         }
         public int Message_timer3(ECSGameTimer timer)
         {
-            BroadcastMessage(String.Format("Bellum says, '...challenge the inevitable.'"));
+            BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.BellumInevitable"));
             new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(Message_timer4), 5000);//60s before starting
             return 0;
         }
         public int Message_timer4(ECSGameTimer timer)
         {
-            BroadcastMessage(String.Format("Morbus says, 'Fate cannot be changed.'"));
+            BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.MorbusFateCannotChange"));
             new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(Message_timer5), 5000);//60s before starting
             return 0;
         }
         public int Message_timer5(ECSGameTimer timer)
         {
-            BroadcastMessage(String.Format("Funus says with a gravely hiss, 'It is the fate of man to die, to expire like the flame of a candle.'"));
+            BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.FunusFateOfMan"));
             new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(Message_timer6), 8000);//60s before starting
             return 0;
         }
         public int Message_timer6(ECSGameTimer timer)
         {
-            BroadcastMessage(String.Format("Bellum says, 'It is the fate of man to know pain and loss.'"));
+            BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.BellumPainLoss"));
             new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(Message_timer7), 6000);//60s before starting
             return 0;
         }
         public int Message_timer7(ECSGameTimer timer)
         {
-            BroadcastMessage(String.Format("Morbus says, '... and misery.'"));
+            BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.MorbusMisery"));
             new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(Message_timer8), 5000);//60s before starting
             return 0;
         }
         public static bool FamesWaitForText = false;
         public int Message_timer8(ECSGameTimer timer)
         {
-            BroadcastMessage(String.Format("Fames asks, 'You, "+RandomTarget.Name+", do you come to challenge fate? Come to me with your answer so that I may see the answer" +
-                " in your eyes as well as hear it your voice"));
+            BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.FamesChallengeQuestion", RandomTarget.Name));
             new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(SpawnHorsemanFames), 1000);
             return 0;
         }
@@ -118,7 +117,7 @@ namespace DOL.GS
         }
         public static bool OthersCanInteract = false;
         private int OtherPlayersCanInteract(ECSGameTimer timer)
-        {          
+        {
             OthersCanInteract = true;
             RandomTarget = null;
             return 0;
@@ -169,7 +168,7 @@ namespace DOL.GS
                 {
                     RandomTarget = null;//reset picked player
                     PlayersInRoom.Clear();
-                    int time = ServerProperties.Properties.SET_SI_EPIC_ENCOUNTER_RESPAWNINTERVAL * 60000;//1min is 60000miliseconds 
+                    int time = ServerProperties.Properties.SET_SI_EPIC_ENCOUNTER_RESPAWNINTERVAL * 60000;//1min is 60000miliseconds
                     new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(DoRespawnNow), time);
                     log.Debug("Starting respawn time for final caer sidi encounter, will respawn in " + time / 60000 + " minutes!");
                     start_respawn_check = true;
@@ -177,7 +176,7 @@ namespace DOL.GS
             }
         }
         public int DoRespawnNow(ECSGameTimer timer)
-        {           
+        {
             PickedTarget = false;//we start encounter again here!
             OthersCanInteract = false;//other players can interact too!
             return 0;
@@ -250,7 +249,7 @@ namespace DOL.GS
                                 if(player.IsWithinRadius(point1,150) && player.Client.Account.PrivLevel == 1)//only players will be ported back
                                 {
                                     player.MoveTo(60, 29469, 25244, 19490, 2014);
-                                    player.Out.SendMessage("Magic energy moves you to the center of room!", eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+                                    player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Apocalypse.MagicMovesCenter"), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
                                 }
                             }
                         }
@@ -319,9 +318,7 @@ namespace DOL.GS
                 {
                     TurnTo(player.X, player.Y);
 
-                    player.Out.SendMessage("Fames says, Well? Do you challenge fate itself?\n" +
-                        "Say [no] and walk away...\n" +
-                        "Say [yes] and prepare yourselves.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                    player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Apocalypse.FamesChallengePrompt").Replace("\\n", "\n"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                 }
             }
             if (ApocInitializator.OthersCanInteract == true)
@@ -330,39 +327,37 @@ namespace DOL.GS
                 {
                     TurnTo(player.X, player.Y);
 
-                    player.Out.SendMessage("Fames says, Well? Do you challenge fate itself?\n" +
-                        "Say [no] and walk away...\n" +
-                        "Say [yes] and prepare yourselves.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                    player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Apocalypse.FamesChallengePrompt").Replace("\\n", "\n"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                 }
             }
             return true;
-        }      
+        }
         public override bool WhisperReceive(GameLiving source, string str)
         {
             if (!base.WhisperReceive(source, str)) return false;
             if (!(source is GamePlayer)) return false;
             GamePlayer t = (GamePlayer)source;
             if (CanInteract == false)
-            {            
+            {
                 if (t == ApocInitializator.RandomTarget || ApocInitializator.OthersCanInteract == true)
                 {
                     TurnTo(t.X, t.Y);
                     switch (str.ToLower())
                     {
-                        case "no":
+	                        case "no":
+	                        case "아니오":
                             {
-                                t.Out.SendMessage("Then be gone and continue on with what you were meant to do.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                                t.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(t.Client.Account.Language, "NamedMobs.Apocalypse.FamesBeGone"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                             }
                             break;
-                        case "yes":
+	                        case "yes":
+	                        case "예":
                             {
                                 foreach (GamePlayer player in GetPlayersInRadius(2500))
                                 {
                                     if (player != null)
                                     {
-                                        player.Out.SendMessage("Fames says, 'Done. You are brave " + t.CharacterClass.Name + " ... or foolish. While it is most certain that your" +
-                                            " actions will have little chance to alter the course of fate, you and your companions are granted a few grains of time," +
-                                            " two minutes in your terms, to prepare.", eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+                                        player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Apocalypse.FamesTwoMinutes", t.CharacterClass.Name), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
                                         new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(StartFamesTimer), 120000);//2min
                                         CanInteract = true;
                                     }
@@ -408,10 +403,10 @@ namespace DOL.GS
         private bool prepareBellum = false;
         public override void Die(GameObject killer)//on kill generate orbs
         {
-            
+
             if(!prepareBellum)
-            { 
-                BroadcastMessage(String.Format("Bellum says, 'Prepare yourselves for war. One minute, you are granted.'"));
+            {
+                BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.BellumOneMinute"));
                 new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(SpawnHorsemanBellum), 60000);//60s before starting
                 prepareBellum = true;
             }
@@ -581,7 +576,7 @@ namespace DOL.GS
         {
             if (!prepareMorbus)
             {
-                BroadcastMessage(String.Format("Morbus says, 'Sometimes it is the smallest things that are the most deadly. Be prepared in one minute..'"));
+                BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.MorbusOneMinute"));
                 new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(SpawnHorsemanMorbus), 60000);//60s before starting
                 prepareMorbus = true;
             }
@@ -599,7 +594,7 @@ namespace DOL.GS
                     }
                 }
             }
-            
+
             BellumBrain.StartedBellum = false;
             BellumUP = false;
             spawn_fate2 = false;
@@ -837,7 +832,7 @@ namespace DOL.GS
                         VisibleActiveWeaponSlots = 10;
                     }
                     break;
-            }          
+            }
             Model = 665;
             Name = "war incarnate";
             MeleeDamageType = eDamageType.Crush;
@@ -956,8 +951,8 @@ namespace DOL.GS
         {
             // 85% ABS is cap.
             return 0.15;
-        }  
-        
+        }
+
         public override int MaxHealth
         {
             get { return 10000; }
@@ -1316,7 +1311,7 @@ namespace DOL.GS
                         else
                             truc = ((source as GameSummonedPet).Owner as GamePlayer);
                         if (truc != null)
-                            truc.Out.SendMessage(Name + " is immune to any damage!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                            truc.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Common.ImmuneToDamage", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
 
                         base.TakeDamage(source, damageType, 0, 0);
                         return;
@@ -1356,11 +1351,7 @@ namespace DOL.GS
         {
             if (!prepareFunus)
             {
-                BroadcastMessage(String.Format("Funus says, 'Prepare to die. Sixty seconds you are given to arrange for the event.'\n" +
-                "For a brief moment, the clerics in the area glow softly as if bathed in a divine light, and their eyes shine as if a sudden" +
-                " rush of energy now courses through them. A faint whisper in your mind warns you that mundane attacks on this creature of death" +
-                " would have little effect or even make the situation worse, but it also reassures you that the clerics, a direct conduit between the " +
-                "divine and this world, posses an unexpected advantage over the creature, Funus."));
+                BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.FunusClericWarning").Replace("\\n", "\n"));
                 new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(SpawnHorsemanFunus), 60000);//60s before starting
                 prepareFunus = true;
             }
@@ -1408,7 +1399,7 @@ namespace DOL.GS
             Size = 140;
             Level = 83;
             MaxSpeedBase = 300;
-            
+
             INpcTemplate npcTemplate = NpcTemplateMgr.GetTemplate(60164171);
             LoadTemplate(npcTemplate);
             Faction = FactionMgr.GetFactionByID(64);
@@ -1541,10 +1532,10 @@ namespace DOL.AI.Brain
                 {
                     Body.Model = 771;
                     Body.Size = 50;
-                    IsBug = true;                   
+                    IsBug = true;
                     if (message_warning1 == false)
                     {
-                        BroadcastMessage(String.Format("Morbus looks very pale as he slowly reads over the note."));
+                        BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.MorbusReadsNote"));
                         message_warning1 = true;
                     }
                     Body.StopAttack();
@@ -1650,7 +1641,7 @@ namespace DOL.GS
             base.SetStats(dbMob);
         }
         public override bool AddToWorld()
-        {         
+        {
             Name = "swarm of morbus";
             RespawnInterval = -1;
             int random = Util.Random(1, 5);
@@ -1732,7 +1723,7 @@ namespace DOL.GS
 
             Faction = FactionMgr.GetFactionByID(64);
             BodyType = 7;
-            Realm = eRealm.None;          
+            Realm = eRealm.None;
 
             MorbusSwarmBrain adds = new MorbusSwarmBrain();
             SetOwnBrain(adds);
@@ -1830,15 +1821,15 @@ namespace DOL.GS
             {
                 GamePlayer truc = source as GamePlayer;
                 //cleri,merc,arms,infi,scout
-                if (truc.CharacterClass.ID == 6 || (truc.CharacterClass.ID == 11 && truc.ActiveWeapon.Object_Type == 5) || (truc.CharacterClass.ID == 2 && truc.ActiveWeapon.Object_Type == 10) 
+                if (truc.CharacterClass.ID == 6 || (truc.CharacterClass.ID == 11 && truc.ActiveWeapon.Object_Type == 5) || (truc.CharacterClass.ID == 2 && truc.ActiveWeapon.Object_Type == 10)
                     || (truc.CharacterClass.ID == 9 && truc.ActiveWeapon.Object_Type == 10) || (truc.CharacterClass.ID == 3 && truc.ActiveWeapon.Object_Type == 9))
                 {
                     base.TakeDamage(source, damageType, damageAmount, criticalAmount);
                 }
                 else
                 {
-                    truc.Out.SendMessage(Name + " absorbs all your damage to heal iself!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
-                    BroadcastMessage(String.Format("Funus takes damage from " + source.Name + " and restoring it's whole health."));
+                    truc.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.Apocalypse.AbsorbsDamage", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                    BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.FunusRestoresHealth", source.Name));
                     Health += MaxHealth;
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
@@ -1848,8 +1839,8 @@ namespace DOL.GS
             {
                 GameSummonedPet truc = source as GameSummonedPet;
                 GamePlayer pet_owner = truc.Owner as GamePlayer;
-                pet_owner.Out.SendMessage(Name + " absorbs all your damage to heal iself!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
-                BroadcastMessage(String.Format("Funus takes damage from " + pet_owner.Name + " and restoring it's whole health."));
+                pet_owner.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(pet_owner.Client.Account.Language, "NamedMobs.Apocalypse.AbsorbsDamage", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.FunusRestoresHealth", pet_owner.Name));
                 Health += MaxHealth;
                 base.TakeDamage(source, damageType, 0, 0);
                 return;
@@ -1883,7 +1874,7 @@ namespace DOL.GS
         {
             if (!prepareApoc)
             {
-                BroadcastMessage(String.Format("A thunderous voice echoes off the walls, 'Well done. You have succeeded in besting my harbingers.'"));
+                BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.HarbingersBested"));
                 new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(SpawnApoc), 5000);
                 prepareApoc = true;
             }
@@ -2081,16 +2072,16 @@ namespace DOL.GS
                     }
                 }
             }
-            BroadcastMessage(String.Format("Apocalypse shouts, 'Your end is at hand!'"));
+            BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Apocalypse.EndAtHand"));
 
             AwardEpicEncounterKillPoint();
-           
+
             ApocalypseBrain.StartedApoc = false;
             ApocInitializator.start_respawn_check = false;
             ApocUP = false;
             base.Die(killer);
-        }      
-        
+        }
+
         protected int AwardEpicEncounterKillPoint()
         {
             int count = 0;
@@ -2249,7 +2240,7 @@ namespace DOL.AI.Brain
                             foreach (GamePlayer player in Body.GetPlayersInRadius(2500))
                             {
                                 if (player != null)
-                                    player.Out.SendMessage("Apocalypse says, 'Is it power? Fame? Fortune? Perhaps it is all three.'", eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+                                    player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Apocalypse.PowerFameFortune"), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
                             }
                             ApocAggro = true;
                         }
@@ -2285,7 +2276,7 @@ namespace DOL.AI.Brain
                     if (!Body.IsWithinRadius(point1, 100))
                     {
                         Body.WalkTo(point1, 200);
-                        IsInFlyPhase = true;                       
+                        IsInFlyPhase = true;
                     }
                     else
                     {
@@ -2295,7 +2286,7 @@ namespace DOL.AI.Brain
                             foreach (GamePlayer player in Body.GetPlayersInRadius(2500))
                             {
                                 if (player != null)
-                                    player.Out.SendMessage("Apocalypse says, 'I wonder, also, about the motivation that drives one to such an audacious move.'", eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+                                    player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Apocalypse.Motivation"), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
                             }
                            fly_phase1 = true;
                         }
@@ -2353,7 +2344,7 @@ namespace DOL.AI.Brain
                 {
                     if (player != null)
                     {
-                        player.Out.SendMessage("Apocalypse says, 'One has to wonder what kind of power lay behind that feat, for my harbingers of fate were no small adversaries.'", eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+                        player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Apocalypse.FeatPower"), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
                     }
                 }
                 for (int i = 0; i < 2; i++)
@@ -2376,9 +2367,7 @@ namespace DOL.AI.Brain
                 {
                     if (player != null)
                     {
-                        player.Out.SendMessage("Apocalypse says, 'In all of this, however, it would seem that you have overlooked " +
-                            "the small matter of price for your actions. I am not the vengeful sort, so do not take this the wrong way," +
-                            " but good harbingers are hard to come by. And, thanks to you, they will need to be replaced.'", eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+                        player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Apocalypse.PriceForActions"), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
                     }
                 }
                 for (int i = 0; i < 2; i++)

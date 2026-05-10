@@ -34,7 +34,7 @@ namespace DOL.GS.Commands
 
             if (client.Player.IsMuted)
             {
-                client.Player.Out.SendMessage("You have been muted. You cannot broadcast.", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Broadcast.Muted"), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
                 return;
             }
 
@@ -48,7 +48,7 @@ namespace DOL.GS.Commands
 
             if (changeTime < 800 && BroadTick > 0)
             {
-                client.Player.Out.SendMessage("Slow down! Think before you say each word!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Speech.SlowDown"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 client.Player.TempProperties.SetProperty(BROAD_TICK, client.Player.CurrentRegion.Time);
                 return;
             }

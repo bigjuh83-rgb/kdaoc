@@ -19,7 +19,7 @@ namespace DOL.GS.Commands
             // Early exit if the currently set safe position cannot be used.
             if (!player.movementComponent.TryGetSafePosition(out Vector3 _))
             {
-                DisplayMessage(client, "No safe position could be found. Please use your bind stone instead.");
+                DisplayMessage(client, T(client, "PlayerCommands.Stuck.NoSafePosition"));
                 return;
             }
 

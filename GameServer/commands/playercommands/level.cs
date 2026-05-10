@@ -1,4 +1,5 @@
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -11,13 +12,13 @@ namespace DOL.GS.Commands
         {
             if (ServerProperties.Properties.SLASH_LEVEL_TARGET <= 1)
             {
-                DisplayMessage(client, "/level is disabled on this server.");
+                DisplayMessage(client, T(client, "Scripts.Players.Level.Disabled"));
                 return;
             }
 
             if (client.Player.TargetObject is not GameTrainer)
             {
-                client.Player.Out.SendMessage("You need to be at your trainer to use this command", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Level.TrainerRequired"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
@@ -34,20 +35,20 @@ namespace DOL.GS.Commands
                     case eCharacterClass.MaulerHib:
                     case eCharacterClass.MaulerMid:
                     {
-                        client.Player.Out.SendMessage("Your class cannot use /level command.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Level.ClassCannotUse"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return;
                     }
                 }
             }
             if (!client.Player.CanUseSlashLevel)
             {
-                client.Player.Out.SendMessage($"You don't have a level {ServerProperties.Properties.SLASH_LEVEL_REQUIREMENT} on your account!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Level.RequirementMissing", ServerProperties.Properties.SLASH_LEVEL_REQUIREMENT), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
             if (client.Player.Experience >= client.Player.GetExperienceNeededForLevel(ServerProperties.Properties.SLASH_LEVEL_TARGET - 1))
             {
-                client.Player.Out.SendMessage($"/level only allows you to level to {ServerProperties.Properties.SLASH_LEVEL_TARGET}", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Level.TargetOnly", ServerProperties.Properties.SLASH_LEVEL_TARGET), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
@@ -63,7 +64,7 @@ namespace DOL.GS.Commands
 
             client.Player.GainExperience(eXPSource.Other, newXP);
             client.Player.UsedLevelCommand = true;
-            client.Player.Out.SendMessage($"You have been rewarded enough experience to reach level {ServerProperties.Properties.SLASH_LEVEL_TARGET}. Right click on your trainer to gain levels!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Level.Rewarded", ServerProperties.Properties.SLASH_LEVEL_TARGET), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             client.Player.SaveIntoDatabase();
         }
     }

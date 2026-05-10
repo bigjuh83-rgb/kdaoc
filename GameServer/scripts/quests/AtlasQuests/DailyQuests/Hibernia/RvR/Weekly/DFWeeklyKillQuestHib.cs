@@ -22,7 +22,7 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 		private const string questTitle = "[Weekly] Femurs From Darkness Falls";
 		private const int minimumLevel = 15;
 		private const int maximumLevel = 50;
-		
+
 		// prevent grey killing
 		private const int MIN_PLAYER_CON = -3;
 		// Kill Goal
@@ -57,13 +57,13 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 				return minimumLevel;
 			}
 		}
-		
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -148,7 +148,7 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 
 		private static void TalkToStefano(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -166,17 +166,16 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 					switch (quest.Step)
 					{
 						case 1:
-							Stefano.SayTo(player, "Please head into Darkness Falls and harvest parts from Hibernia's enemies!");
+							Stefano.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DFEnemyPrompt", "Hibernia"));
 							break;
 						case 2:
-							Stefano.SayTo(player, "Hello " + player.Name + ", did you [find the bones] we needed?");
+							Stefano.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[find the bones] we needed"));
 							break;
 					}
 				}
 				else
 				{
-					Stefano.SayTo(player, "Oh, "+ player.Name +", glad you finally returned. Boss has a new recipe that requires bones that have been steeped in a [demonic aura]. \n"+
-					                   "Sure hope you know what that means, because I sure don't. My best guess is to try looking in Darkness Falls.");
+					Stefano.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DFEnemyIntro", player.Name));
 				}
 			}
 				// The player whispered to the NPC
@@ -188,7 +187,8 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 					switch (wArgs.Text)
 					{
 						case "demonic aura":
-							player.Out.SendQuestSubscribeCommand(Stefano, QuestMgr.GetIDForQuestType(typeof(DFWeeklyKillQuestHib)), "Will you help Stefano with "+questTitle+"?");
+						case "악마의 기운":
+							player.Out.SendQuestSubscribeCommand(Stefano, QuestMgr.GetIDForQuestType(typeof(DFWeeklyKillQuestHib)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcWithQuest", "Stefano", questTitle));
 							break;
 					}
 				}
@@ -199,18 +199,18 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 						case "find the bones":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -239,11 +239,11 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -273,7 +273,7 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for helping me out.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -281,7 +281,7 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 				if (!Stefano.GiveQuest(typeof (DFWeeklyKillQuestHib), player, 1))
 					return;
 
-				Stefano.SayTo(player, "Find your realm's enemies in Darkness Falls and kill them for your reward.");
+				Stefano.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DFEnemyReminder"));
 
 			}
 		}
@@ -300,9 +300,9 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 				switch (Step)
 				{
 					case 1:
-						return "Kill Hibernia's enemies in Darkness Falls. \nKilled: Enemies ("+ EnemiesKilled +" | "+MAX_KILLED+")";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.DFEnemyDescription", "Hibernia", EnemiesKilled, MAX_KILLED);
 					case 2:
-						return "Return to Stefano in Darkness Falls for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "Stefano", "Darkness Falls");
 				}
 				return base.Description;
 			}
@@ -320,27 +320,27 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 
 			if (Step != 1 || e != GameLivingEvent.EnemyKilled) return;
 			EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
-				
+
 			//prevent grey killing
 			if (gArgs.Target.Realm == 0 || gArgs.Target.Realm == player.Realm || gArgs.Target is not GamePlayer ||
 			    !(player.GetConLevel(gArgs.Target) > MIN_PLAYER_CON) || gArgs.Target.CurrentRegionID != 249) return;
 			EnemiesKilled++;
-			player.Out.SendMessage("[Weekly] Enemy Killed: ("+EnemiesKilled+" | "+MAX_KILLED+")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyEnemyKilled", EnemiesKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (EnemiesKilled >= MAX_KILLED)
 			{
 				Step = 2;
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "DFWeeklyKillQuestHib";
 			set { ; }
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			EnemiesKilled = GetCustomProperty(QuestPropertyKey) != null ? int.Parse(GetCustomProperty(QuestPropertyKey)) : 0;
@@ -354,20 +354,20 @@ namespace DOL.GS.WeeklyQuest.Hibernia
 		public override void FinishQuest()
 		{
 			int reward = ServerProperties.Properties.WEEKLY_RVR_REWARD;
-			
+
 			m_questPlayer.ForceGainExperience((m_questPlayer.ExperienceForNextLevel - m_questPlayer.ExperienceForCurrentLevel));
 			m_questPlayer.AddMoney(Money.GetMoney(0,0,m_questPlayer.Level * 5,32,Util.Random(50)), "You receive {0} as a reward.");
 			AtlasROGManager.GenerateReward(m_questPlayer, 1500);
 			EnemiesKilled = 0;
-			
+
 			if (reward > 0)
 			{
-				m_questPlayer.Out.SendMessage($"You have been rewarded {reward} Realmpoints for finishing Weekly Quest.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.RealmPointReward", reward, "Weekly"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 				m_questPlayer.GainRealmPoints(reward, false);
 				m_questPlayer.Out.SendUpdatePlayer();
 			}
 			base.FinishQuest(); //Defined in Quest, changes the state, stores in DB etc ...
-			
+
 		}
 	}
 }

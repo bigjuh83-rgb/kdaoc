@@ -1,0 +1,11 @@
+# Guilds
+
+## Startup Guilds
+Guild.StartupGuild.Hibernia:		티르 나 노그 모험가
+Guild.StartupGuild.Albion:		    코츠월드 클랜
+Guild.StartupGuild.Midgard:		    물란 수호대
+
+### Startup Messages
+Guild.StartupGuild.Motd: 			초보자 길드에 말하려면 '/gu <내용>'을 입력하세요.
+Guild.StartupGuild.Omotd:			길드를 탈퇴하려면 '/gc quit'을 입력하세요.
+Guild.StartupGuild.Title:			입문자

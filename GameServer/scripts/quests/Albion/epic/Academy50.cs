@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -50,6 +50,14 @@ namespace DOL.GS.Quests.Albion
 		protected const string questTitle = "Symbol of the Broken";
 		protected const int minimumLevel = 50;
 		protected const int maximumLevel = 50;
+
+		private static string L(GamePlayer player, string key, params object[] args)
+		{
+			string language = player != null && player.Client != null && player.Client.Account != null
+				? player.Client.Account.Language
+				: ServerProperties.Properties.SERV_LANGUAGE;
+			return DOL.Language.LanguageMgr.GetTranslation(language, key, args);
+		}
 		protected private int _DemonicMinionsKilled = 0;
 		protected private int _BechardKilled = 0;
 		protected private int _SilchardeKilled = 0;
@@ -62,24 +70,24 @@ namespace DOL.GS.Quests.Albion
 		//private static IArea morganaArea = null;
 
 		private static DbItemTemplate sealed_pouch = null; //sealed pouch
-		private static DbItemTemplate WizardEpicBoots = null; //Bernor's Numinous Boots 
-		private static DbItemTemplate WizardEpicHelm = null; //Bernor's Numinous Coif 
-		private static DbItemTemplate WizardEpicGloves = null; //Bernor's Numinous Gloves 
-		private static DbItemTemplate WizardEpicVest = null; //Bernor's Numinous Hauberk 
-		private static DbItemTemplate WizardEpicLegs = null; //Bernor's Numinous Legs 
-		private static DbItemTemplate WizardEpicArms = null; //Bernor's Numinous Sleeves 
-		private static DbItemTemplate MinstrelEpicBoots = null; //Shadow Shrouded Boots 
-		private static DbItemTemplate MinstrelEpicHelm = null; //Shadow Shrouded Coif 
-		private static DbItemTemplate MinstrelEpicGloves = null; //Shadow Shrouded Gloves 
-		private static DbItemTemplate MinstrelEpicVest = null; //Shadow Shrouded Hauberk 
-		private static DbItemTemplate MinstrelEpicLegs = null; //Shadow Shrouded Legs 
-		private static DbItemTemplate MinstrelEpicArms = null; //Shadow Shrouded Sleeves 
-		private static DbItemTemplate SorcerorEpicBoots = null; //Valhalla Touched Boots 
-		private static DbItemTemplate SorcerorEpicHelm = null; //Valhalla Touched Coif 
-		private static DbItemTemplate SorcerorEpicGloves = null; //Valhalla Touched Gloves 
-		private static DbItemTemplate SorcerorEpicVest = null; //Valhalla Touched Hauberk 
-		private static DbItemTemplate SorcerorEpicLegs = null; //Valhalla Touched Legs 
-		private static DbItemTemplate SorcerorEpicArms = null; //Valhalla Touched Sleeves                 
+		private static DbItemTemplate WizardEpicBoots = null; //Bernor's Numinous Boots
+		private static DbItemTemplate WizardEpicHelm = null; //Bernor's Numinous Coif
+		private static DbItemTemplate WizardEpicGloves = null; //Bernor's Numinous Gloves
+		private static DbItemTemplate WizardEpicVest = null; //Bernor's Numinous Hauberk
+		private static DbItemTemplate WizardEpicLegs = null; //Bernor's Numinous Legs
+		private static DbItemTemplate WizardEpicArms = null; //Bernor's Numinous Sleeves
+		private static DbItemTemplate MinstrelEpicBoots = null; //Shadow Shrouded Boots
+		private static DbItemTemplate MinstrelEpicHelm = null; //Shadow Shrouded Coif
+		private static DbItemTemplate MinstrelEpicGloves = null; //Shadow Shrouded Gloves
+		private static DbItemTemplate MinstrelEpicVest = null; //Shadow Shrouded Hauberk
+		private static DbItemTemplate MinstrelEpicLegs = null; //Shadow Shrouded Legs
+		private static DbItemTemplate MinstrelEpicArms = null; //Shadow Shrouded Sleeves
+		private static DbItemTemplate SorcerorEpicBoots = null; //Valhalla Touched Boots
+		private static DbItemTemplate SorcerorEpicHelm = null; //Valhalla Touched Coif
+		private static DbItemTemplate SorcerorEpicGloves = null; //Valhalla Touched Gloves
+		private static DbItemTemplate SorcerorEpicVest = null; //Valhalla Touched Hauberk
+		private static DbItemTemplate SorcerorEpicLegs = null; //Valhalla Touched Legs
+		private static DbItemTemplate SorcerorEpicArms = null; //Valhalla Touched Sleeves
 
 		// Constructors
 		public Academy_50() : base()
@@ -103,7 +111,7 @@ namespace DOL.GS.Quests.Albion
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -277,7 +285,7 @@ namespace DOL.GS.Quests.Albion
 				sealed_pouch.Quality = 100;
 				sealed_pouch.Weight = 12;
 
-				
+
 					GameServer.Database.AddObject(sealed_pouch);
 			}
 // end item
@@ -320,13 +328,13 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus4 = 8;
 				item.Bonus4Type = (int) eResist.Energy;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				WizardEpicBoots = item;
 			}
 //end item
-			//Bernor's Numinous Coif 
+			//Bernor's Numinous Coif
 			WizardEpicHelm = GameServer.Database.FindObjectByKey<DbItemTemplate>("WizardEpicHelm");
 			if (WizardEpicHelm == null)
 			{
@@ -363,13 +371,13 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus4 = 8;
 				item.Bonus4Type = (int) eResist.Spirit;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				WizardEpicHelm = item;
 			}
 //end item
-			//Bernor's Numinous Gloves 
+			//Bernor's Numinous Gloves
 			WizardEpicGloves = GameServer.Database.FindObjectByKey<DbItemTemplate>("WizardEpicGloves");
 			if (WizardEpicGloves == null)
 			{
@@ -406,13 +414,13 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus4 = 8;
 				item.Bonus4Type = (int) eResist.Heat;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				WizardEpicGloves = item;
 			}
 
-			//Bernor's Numinous Hauberk 
+			//Bernor's Numinous Hauberk
 			WizardEpicVest = GameServer.Database.FindObjectByKey<DbItemTemplate>("WizardEpicVest");
 			if (WizardEpicVest == null)
 			{
@@ -446,13 +454,13 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus3 = 24;
 				item.Bonus3Type = (int) eProperty.MaxHealth;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				WizardEpicVest = item;
 
 			}
-			//Bernor's Numinous Legs 
+			//Bernor's Numinous Legs
 			WizardEpicLegs = GameServer.Database.FindObjectByKey<DbItemTemplate>("WizardEpicLegs");
 			if (WizardEpicLegs == null)
 			{
@@ -486,13 +494,13 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus3 = 8;
 				item.Bonus3Type = (int) eResist.Energy;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				WizardEpicLegs = item;
 
 			}
-			//Bernor's Numinous Sleeves 
+			//Bernor's Numinous Sleeves
 			WizardEpicArms = GameServer.Database.FindObjectByKey<DbItemTemplate>("WizardEpicArms");
 			if (WizardEpicArms == null)
 			{
@@ -526,7 +534,7 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus3 = 16;
 				item.Bonus3Type = (int) eStat.INT;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				WizardEpicArms = item;
@@ -569,14 +577,14 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus4 = 8;
 				item.Bonus4Type = (int) eResist.Cold;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				MinstrelEpicBoots = item;
 
 			}
 //end item
-			//of Coruscating Harmony  Coif 
+			//of Coruscating Harmony  Coif
 			MinstrelEpicHelm = GameServer.Database.FindObjectByKey<DbItemTemplate>("MinstrelEpicHelm");
 			if (MinstrelEpicHelm == null)
 			{
@@ -613,14 +621,14 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus4 = 8;
 				item.Bonus4Type = (int) eResist.Energy;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				MinstrelEpicHelm = item;
 
 			}
 //end item
-			//of Coruscating Harmony  Gloves 
+			//of Coruscating Harmony  Gloves
 			MinstrelEpicGloves = GameServer.Database.FindObjectByKey<DbItemTemplate>("MinstrelEpicGloves");
 			if (MinstrelEpicGloves == null)
 			{
@@ -657,13 +665,13 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus4 = 8;
 				item.Bonus4Type = (int) eResist.Heat;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				MinstrelEpicGloves = item;
 
 			}
-			//of Coruscating Harmony  Hauberk 
+			//of Coruscating Harmony  Hauberk
 			MinstrelEpicVest = GameServer.Database.FindObjectByKey<DbItemTemplate>("MinstrelEpicVest");
 			if (MinstrelEpicVest == null)
 			{
@@ -700,13 +708,13 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus4 = 6;
 				item.Bonus4Type = (int) eResist.Energy;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				MinstrelEpicVest = item;
 
 			}
-			//of Coruscating Harmony  Legs 
+			//of Coruscating Harmony  Legs
 			MinstrelEpicLegs = GameServer.Database.FindObjectByKey<DbItemTemplate>("MinstrelEpicLegs");
 			if (MinstrelEpicLegs == null)
 			{
@@ -743,13 +751,13 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus4 = 8;
 				item.Bonus4Type = (int) eResist.Heat;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				MinstrelEpicLegs = item;
 
 			}
-			//of Coruscating Harmony  Sleeves 
+			//of Coruscating Harmony  Sleeves
 			MinstrelEpicArms = GameServer.Database.FindObjectByKey<DbItemTemplate>("MinstrelEpicArms");
 			if (MinstrelEpicArms == null)
 			{
@@ -786,7 +794,7 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus4 = 8;
 				item.Bonus4Type = (int) eResist.Body;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				MinstrelEpicArms = item;
@@ -828,14 +836,14 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus4 = 8;
 				item.Bonus4Type = (int) eResist.Energy;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				SorcerorEpicBoots = item;
 
 			}
 //end item
-			//of Mental Acuity Coif 
+			//of Mental Acuity Coif
 			SorcerorEpicHelm = GameServer.Database.FindObjectByKey<DbItemTemplate>("SorcerorEpicHelm");
 			if (SorcerorEpicHelm == null)
 			{
@@ -872,14 +880,14 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus4 = 8;
 				item.Bonus4Type = (int) eResist.Thrust;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				SorcerorEpicHelm = item;
 
 			}
 //end item
-			//of Mental Acuity Gloves 
+			//of Mental Acuity Gloves
 			SorcerorEpicGloves = GameServer.Database.FindObjectByKey<DbItemTemplate>("SorcerorEpicGloves");
 			if (SorcerorEpicGloves == null)
 			{
@@ -916,13 +924,13 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus4 = 8;
 				item.Bonus4Type = (int) eResist.Heat;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				SorcerorEpicGloves = item;
 
 			}
-			//of Mental Acuity Hauberk 
+			//of Mental Acuity Hauberk
 			SorcerorEpicVest = GameServer.Database.FindObjectByKey<DbItemTemplate>("SorcerorEpicVest");
 			if (SorcerorEpicVest == null)
 			{
@@ -956,13 +964,13 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus3 = 24;
 				item.Bonus3Type = (int) eProperty.MaxHealth;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				SorcerorEpicVest = item;
 
 			}
-			//of Mental Acuity Legs 
+			//of Mental Acuity Legs
 			SorcerorEpicLegs = GameServer.Database.FindObjectByKey<DbItemTemplate>("SorcerorEpicLegs");
 			if (SorcerorEpicLegs == null)
 			{
@@ -999,13 +1007,13 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus4 = 8;
 				item.Bonus4Type = (int) eResist.Spirit;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				SorcerorEpicLegs = item;
 
 			}
-			//of Mental Acuity Sleeves 
+			//of Mental Acuity Sleeves
 			SorcerorEpicArms = GameServer.Database.FindObjectByKey<DbItemTemplate>("SorcerorEpicArms");
 			if (SorcerorEpicArms == null)
 			{
@@ -1039,7 +1047,7 @@ namespace DOL.GS.Quests.Albion
 				item.Bonus3 = 18;
 				item.Bonus3Type = (int) eStat.INT;
 
-				
+
 					GameServer.Database.AddObject(item);
 
 				SorcerorEpicArms = item;
@@ -1129,7 +1137,7 @@ namespace DOL.GS.Quests.Albion
 				Morgana.Z = 3095;
 				Morgana.Heading = 3261;
 
-				
+
 				StandardMobBrain brain = new StandardMobBrain();
 				brain.AggroLevel = 0;
 				brain.AggroRange = 0;
@@ -1155,7 +1163,7 @@ namespace DOL.GS.Quests.Albion
 
 		protected static void TalkToFerowl(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -1174,17 +1182,17 @@ namespace DOL.GS.Quests.Albion
 					switch (quest.Step)
 					{
 						case 1:
-							Ferowl.SayTo(player, "Albions fate lies in you hands. Seek out [Morgana] at the fallen tower in Lyonesse!");
+							Ferowl.SayTo(player, L(player, "Quest.Epic.Academy50.Step1Reminder"));
 							break;
 						case 2:
-							Ferowl.SayTo(player, "Were you able to [fulfill] your given task? Albions fate lies in you hands. ");
+							Ferowl.SayTo(player, L(player, "Quest.Epic.Academy50.Step2Reminder"));
 							break;
 					}
-					
+
 				}
 				else
 				{
-					Ferowl.SayTo(player, "Ah good to see you, there are rumors about your tasks all over Albion, yet we are in need of your [services] once again!");
+					Ferowl.SayTo(player, L(player, "Quest.Epic.Academy50.Intro"));
 				}
 				return;
 			}
@@ -1197,7 +1205,8 @@ namespace DOL.GS.Quests.Albion
 					switch (wArgs.Text)
 					{
 						case "services":
-							player.Out.SendQuestSubscribeCommand(Ferowl, QuestMgr.GetIDForQuestType(typeof(Academy_50)), "Will you help Ferowl [Academy Level 50 Epic]");
+						case "도움":
+							player.Out.SendQuestSubscribeCommand(Ferowl, QuestMgr.GetIDForQuestType(typeof(Academy_50)), L(player, "Quest.Epic.Academy50.Subscribe"));
 							break;
 					}
 				}
@@ -1206,39 +1215,44 @@ namespace DOL.GS.Quests.Albion
 					switch (wArgs.Text)
 					{
 						case "Morgana":
-							Ferowl.SayTo(player, "You must have heard about her, she's the evil sister of King Arthur, tried to take his throne. She must be [stopped]!");
+							Ferowl.SayTo(player, L(player, "Quest.Epic.Academy50.Morgana"));
 							break;
 						case "stopped":
-							Ferowl.SayTo(player, "Once Morgana has summoned her army everything is lost. So hurry and stop her unholy rituals. With the help of two mighty demons Silcharde and Bechard she can summon as many minions as she wants. Killing them should be enough to stop her [ritual].");
+						case "저지":
+							Ferowl.SayTo(player, L(player, "Quest.Epic.Academy50.Stopped"));
 							break;
 						case "ritual":
-							Ferowl.SayTo(player, "Morgana is probably performing her rital at the fallen tower in Lyonesse. To get there follow the Telamon road past the majority of the Danaoian Farmers, until you see the [fallen tower].");
+						case "의식":
+							Ferowl.SayTo(player, L(player, "Quest.Epic.Academy50.Ritual"));
 							break;
 						case "fallen tower":
-							Ferowl.SayTo(player, "Be wise and don't take any unneccessary risks by going directly on Morgana , you might be a strong " + player.CharacterClass.Name + ", but you are no match for Morgana herself. Kill her demons and return to me, we will then try to take care of the rest, once her time has come.");
+						case "무너진 탑":
+							Ferowl.SayTo(player, L(player, "Quest.Epic.Academy50.FallenTower", player.CharacterClass.Name));
 							break;
 
 							// once the deomns are dead:
 						case "fulfill":
-							Ferowl.SayTo(player, "Did you find anything near the fallen tower? If yes [give it to me], we could need any hints we can get on our crusade against Morgana.");
+						case "완수":
+							Ferowl.SayTo(player, L(player, "Quest.Epic.Academy50.Fulfill"));
 							break;
 						case "give it to me":
+						case "제게 주세요":
 							if (quest.Step == 2)
 							{
 								RemoveItem(player, sealed_pouch);
 								if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 									    eInventorySlot.LastBackpack))
 								{
-									Ferowl.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+									Ferowl.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 									quest.FinishQuest();
 								}
 								else
-									player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+									player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 							}
 							break;
 
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
@@ -1252,11 +1266,11 @@ namespace DOL.GS.Quests.Albion
 						if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 							eInventorySlot.LastBackpack))
 						{
-							Ferowl.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+							Ferowl.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 							quest.FinishQuest();
 						}
 						else
-							player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					}
 			}
 		}
@@ -1314,11 +1328,11 @@ namespace DOL.GS.Quests.Albion
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, L(player, "Quest.Epic.Academy50.AbortDecline"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -1333,7 +1347,7 @@ namespace DOL.GS.Quests.Albion
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Our God forgives your laziness, just look out for stray lightning bolts.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(L(player, "Quest.Epic.Academy50.Decline"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -1341,14 +1355,14 @@ namespace DOL.GS.Quests.Albion
 				if (!Ferowl.GiveQuest(typeof (Academy_50), player, 1))
 					return;
 
-				Ferowl.SayTo(player, "I have heard rumors about the witch [Morgana] trying to summon an army of demons to crush the mighty city of Camelot!");
+				Ferowl.SayTo(player, L(player, "Quest.Epic.Academy50.Accept"));
 			}
 		}
 
 		//Set quest name
 		public override string Name
 		{
-			get { return "Symbol of the Broken (Level 50 Academy Epic)"; }
+			get { return L(m_questPlayer, "Quest.Epic.Academy50.Name"); }
 		}
 
 		// Define Steps
@@ -1359,12 +1373,9 @@ namespace DOL.GS.Quests.Albion
 				switch (Step)
 				{
 					case 1:
-						return "Seek out Bechard and Silcharde at the fallen tower in Lyonesse and kill them with rest of summoned demons!\n" +
-							"Bechard killed: ("+_BechardKilled+" | 1)\n" +
-							"Silcharde killed: (" + _SilchardeKilled + " | 1)\n" +
-							"Summoned demons killed: (" + _DemonicMinionsKilled + " | 20)";
+						return L(m_questPlayer, "Quest.Epic.Academy50.Description1", _BechardKilled, _SilchardeKilled, _DemonicMinionsKilled);
 					case 2:
-						return "Return the pouch to Ferowl for your reward!";
+						return L(m_questPlayer, "Quest.Epic.Academy50.Description2");
 				}
 				return base.Description;
 			}
@@ -1399,14 +1410,14 @@ namespace DOL.GS.Quests.Albion
 					{
 						_SilchardeKilled++;
 						player.Out.SendQuestUpdate(this);
-					}				
+					}
 					if (_BechardKilled >= 1 && _SilchardeKilled >= 1 && _DemonicMinionsKilled >= 20 )
 					{
-						Morgana.Yell("You may have stopped me here, but I'll come back! Albion will be mine!");
+						Morgana.Yell(L(player, "Quest.Epic.Academy50.MorganaYell"));
 						//DeleteMorgana();
-						player.Out.SendMessage("A sense of calm settles about you!", eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+						player.Out.SendMessage(L(player, "Quest.Epic.Academy50.Calm"), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 						GiveItem(player, sealed_pouch);
-						m_questPlayer.Out.SendMessage("Take the pouch to " + Ferowl.GetName(0, true), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						m_questPlayer.Out.SendMessage(L(m_questPlayer, "Quest.Epic.Academy50.TakePouch", Ferowl.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						Step = 2;
 					}
 				}
@@ -1419,11 +1430,11 @@ namespace DOL.GS.Quests.Albion
 					if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 						    eInventorySlot.LastBackpack))
 					{
-						Ferowl.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+						Ferowl.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 						FinishQuest();
 					}
 					else
-						player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 				}
 			}
 		}
@@ -1471,19 +1482,19 @@ namespace DOL.GS.Quests.Albion
 
 
 			m_questPlayer.GainExperience(eXPSource.Quest, 1937768448, false);
-			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");		
+			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");
 		}
 
 		#region Allakhazam Epic Source
 
 		/*
-        * Return to Esmond in Cornwall Station once you reach level 50. If you had given him the dagger at the end of the level 48 epic, he will ask you if you want it back. If he asks, accept the knife back and continue. If not, make sure you have the ritual dagger with you. 
-		* Go to Lyonesse and find the tower, which is located at 20k, 39k. You can simply follow the Telamon road past the majority of the Danaoian Farmers, until you see a fallen tower with two large named demons (purple to 50) and Morgana sitting on top of the tower. 
-		* To defeat them is quite easy and can take as little as 6 people. As long as you have at least one tank, a healer, and someone who can root or mez, you should be ok. 
-		* Do not attack Morgana. She will not do anything during this attack. Have someone root or mez one of the named demons, while the tank(s) hold aggro on the second one. When the aggroed one is defeated, a large group of tiny demons will appear and fly around the tower (they were all green to a 50). Take care of the previously rooted/mezed demon and another group of tiny demons will appear. Morgana will spout off something that can be heard across the zone, then leave. Kill all the tiny demons that remain. 
-		* Once all the aggro has been cleared, stand next to the tower. There will be a message that says, "You sense the tower is clear of necromantic ties!" about 5 or so times. Your dagger should dissapear from your inventory, followed by a message that says, "A sense of calm settles about you!" When you recieve that message, your journal will update and tell you go to meet Master Ferowl again. 
-		* Master Ferowl congratulates you on a job well done and asks you to go meet your trainer in Camelot for your reward. Also, Ferowl gives you 1,937,768,448 experience for some reason. 
-		* Your trainer in Camelot should give you your epic armor, with another congratulations. 
+        * Return to Esmond in Cornwall Station once you reach level 50. If you had given him the dagger at the end of the level 48 epic, he will ask you if you want it back. If he asks, accept the knife back and continue. If not, make sure you have the ritual dagger with you.
+		* Go to Lyonesse and find the tower, which is located at 20k, 39k. You can simply follow the Telamon road past the majority of the Danaoian Farmers, until you see a fallen tower with two large named demons (purple to 50) and Morgana sitting on top of the tower.
+		* To defeat them is quite easy and can take as little as 6 people. As long as you have at least one tank, a healer, and someone who can root or mez, you should be ok.
+		* Do not attack Morgana. She will not do anything during this attack. Have someone root or mez one of the named demons, while the tank(s) hold aggro on the second one. When the aggroed one is defeated, a large group of tiny demons will appear and fly around the tower (they were all green to a 50). Take care of the previously rooted/mezed demon and another group of tiny demons will appear. Morgana will spout off something that can be heard across the zone, then leave. Kill all the tiny demons that remain.
+		* Once all the aggro has been cleared, stand next to the tower. There will be a message that says, "You sense the tower is clear of necromantic ties!" about 5 or so times. Your dagger should dissapear from your inventory, followed by a message that says, "A sense of calm settles about you!" When you recieve that message, your journal will update and tell you go to meet Master Ferowl again.
+		* Master Ferowl congratulates you on a job well done and asks you to go meet your trainer in Camelot for your reward. Also, Ferowl gives you 1,937,768,448 experience for some reason.
+		* Your trainer in Camelot should give you your epic armor, with another congratulations.
 		* The description of this quest was done by a Wizard. Other Academy classes might be slightly different. Also, this quest takes into consideration that you gave the knife to Esmond at the end of the 48 epic quest, which may or may not be a big deal.
         */
 

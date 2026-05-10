@@ -1,0 +1,10 @@
+﻿Alb.DredgeUpAPledge.CheckPlayerAbortQuest.Text1:	좋아, 이제 나가서 맡은 일을 끝내게!
+Alb.DredgeUpAPledge.CheckPlayerAbortQuest.Text2:	퀘스트 {0}을(를) 포기합니다. 원한다면 다시 시작할 수 있습니다.
+Alb.DredgeUpAPledge.Conclusion.Text1:			잘했네, {0}!
+Alb.DredgeUpAPledge.Conclusion.Text2:			이제 그 불한당들도 누구에게 충성을 맹세할지 두 번은 생각하게 되겠지. 수고한 대가로 이 작은 보상을 받아 주게.
+Alb.DredgeUpAPledge.Init.Text1:				도적 문장 반지
+Alb.DredgeUpAPledge.Init.Text2:				도적 맹세자 2명 처치
+Alb.DredgeUpAPledge.Notify:				도적 맹세자
+Alb.DredgeUpAPledge.QuestTitle:				맹세자를 끌어내다
+Alb.DredgeUpAPledge.Story:				참으로 어려운 시절이네. 아서가 살아 있던 때가 어땠는지 기억할 만큼 나이가 든 우리에게는, 그 이후 얼마나 많은 것을 잃었는지 떠올리는 것만으로도 괴롭지. 그때가 황금기였네.\n\n아, 콘스탄틴 왕이 최선을 다하지 않는다는 뜻은 아니네! 그런 강직한 왕이 우리 왕국을 이끌어 주고 있으니 우리는 운이 좋은 편이지. 하지만 예전과 같지는 않네. 그분을 생각하면 마음이 쓰일 수밖에 없어. 모두가 자신을 아서와 비교한다는 걸 왕께서도 알고 계실 테니까. 콘스탄틴은 훨씬 더 많은 짐을 짊어졌고, 곁에는 멀린도 없으니 얼마나 답답하겠는가. 게다가 모르가나가 아직도 어딘가에서 그림자 속에 숨어 음모를 꾸미고 있다는 말까지 있지. 이 근방 마을들이 이런 꼴이 된 것도 놀랄 일이 아니네.\n\n우리 보잘것없는 마을 사정으로 말하자면, 최근 도적들에게 경고를 보내려던 노력은 별 효과가 없었네. 놈들은 여전히 우리를 괴롭히는 골칫거리야. 그 선동꾼들에게 따끔한 교훈을 주고, 그 증거를 가져오는 이에게는 현상금을 주고 있네. 관심 있나?
+Alb.DredgeUpAPledge.Summary:				도적 무리 몇몇이 코츠월드 근처에 야영지를 세웠습니다. 도적 맹세자 두 명을 찾아 처치하십시오. 그들의 문장 반지 두 개를 모은 뒤, 보상을 받으러 도리안 경에게 돌아가십시오.

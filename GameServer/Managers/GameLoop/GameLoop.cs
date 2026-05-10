@@ -20,7 +20,7 @@ namespace DOL.GS
         private static bool _running;
         private static List<TickStep> _tickSequence;
 
-        public static int DegreeOfParallelism { get; } = Environment.ProcessorCount;
+        public static int DegreeOfParallelism { get; } = Math.Min(Environment.ProcessorCount, GameLoopThreadPoolMultiThreaded.MAX_DEGREE_OF_PARALLELISM);
         public static double TickDuration { get; private set; }
         public static long GameLoopTime { get; private set; }
         public static string ActiveService { get; set; }
@@ -32,15 +32,15 @@ namespace DOL.GS
 
             TickDuration = 1000.0 / Properties.GAME_LOOP_TICK_RATE;
 
+            _tickPacer = new(TickDuration);
+            _tickPacer.Start();
+
             _gameLoopThread = new(new ThreadStart(Run))
             {
                 Name = THREAD_NAME,
                 IsBackground = true
             };
             _gameLoopThread.Start();
-
-            _tickPacer = new(TickDuration);
-            _tickPacer.Start();
             return true;
         }
 
@@ -52,8 +52,8 @@ namespace DOL.GS
             if (Thread.CurrentThread != _gameLoopThread && _gameLoopThread.IsAlive)
                 _gameLoopThread.Join();
 
-            _tickPacer.Stop();
-            _threadPool.Dispose();
+            _tickPacer?.Stop();
+            _threadPool?.Dispose();
         }
 
         public static List<(int, double)> GetAverageTps()

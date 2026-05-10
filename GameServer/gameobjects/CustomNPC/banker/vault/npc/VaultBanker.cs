@@ -1,5 +1,6 @@
 ﻿using DOL.GS.Housing;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -27,26 +28,13 @@ namespace DOL.GS
 
         protected static string BuildInteractionMessage(GamePlayer player, VaultType type, int index)
         {
-            string msg = $"Why hello {player.Name}. ";
-
             if (type is VaultType.Personal)
-            {
-                msg +=
-                    $"If your house had {ToCardinalWord(index)} or more vaults and has been repossessed, " +
-                    $"I have the ability to give you the items you had in the {ToOrdinalWord(index)} vault. ";
-            }
-            else if (type is VaultType.Guild)
-            {
-                msg +=
-                    $"If your guild's house has been repossessed, " +
-                    $"and you had permission to use the guild vaults, " +
-                    $"I can give you the items from the {ToOrdinalWord(index)} vault. ";
-            }
-            else
-                return msg;
+                return LanguageMgr.GetTranslation(player.Client.Account.Language, "Banker.Vault.LegacyPersonalGreeting", player.Name, index + 1);
 
-            msg += "I can't take any new possessions, but feel free to take back whatever you want.";
-            return msg;
+            else if (type is VaultType.Guild)
+                return LanguageMgr.GetTranslation(player.Client.Account.Language, "Banker.Vault.LegacyGuildGreeting", player.Name, index + 1);
+
+            return LanguageMgr.GetTranslation(player.Client.Account.Language, "Banker.Vault.GenericGreeting", player.Name);
         }
 
         protected static bool TryGetHouseVault(GamePlayer player, VaultType vaultType, int index, out GameHouseVault vault)
@@ -109,36 +97,5 @@ namespace DOL.GS
             return house != null && house.HouseVaults.TryGetValue(index, out vault);
         }
 
-        private static string ToOrdinalWord(int index)
-        {
-            return index switch
-            {
-                0 => "first",
-                1 => "second",
-                2 => "third",
-                3 => "fourth",
-                4 => "fifth",
-                5 => "sixth",
-                6 => "seventh",
-                7 => "eighth",
-                _ => index.ToString()
-            };
-        }
-
-        private static string ToCardinalWord(int index)
-        {
-            return index switch
-            {
-                0 => "one",
-                1 => "two",
-                2 => "three",
-                3 => "four",
-                4 => "five",
-                5 => "six",
-                6 => "seven",
-                7 => "eight",
-                _ => index.ToString()
-            };
-        }
     }
 }

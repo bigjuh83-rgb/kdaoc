@@ -2,6 +2,7 @@ using System;
 using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -21,29 +22,29 @@ namespace DOL.GS.RealmAbilities
             GamePlayer caster = living as GamePlayer;
 			if (caster.IsMoving)
 			{
-				caster.Out.SendMessage("You must be standing still to use this ability!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				caster.Out.SendMessage(LanguageMgr.GetTranslation(caster.Client.Account.Language, "RealmAbility.Message.MustStandStill"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
             if (!caster.GroundTarget.IsValid)
             {
-                caster.Out.SendMessage("You must set a ground target to use this ability!", eChatType.CT_System, eChatLoc.CL_SystemWindow );
+                caster.Out.SendMessage(LanguageMgr.GetTranslation(caster.Client.Account.Language, "RealmAbility.Message.MustSetGroundTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow );
                 return;
             }
 
             if (!caster.IsWithinRadius(caster.GroundTarget, 1500))
             {
-                caster.Out.SendMessage("Your ground target is too far away to use this ability!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                caster.Out.SendMessage(LanguageMgr.GetTranslation(caster.Client.Account.Language, "RealmAbility.Message.GroundTargetTooFar"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
             if (caster.TempProperties.GetProperty<bool>(IS_CASTING))
             {
-                caster.Out.SendMessage("You are already casting an ability.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                caster.Out.SendMessage(LanguageMgr.GetTranslation(caster.Client.Account.Language, "RealmAbility.Message.AlreadyCastingAbility"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
             this.player = caster;
-            if (caster.attackComponent.AttackState) 
+            if (caster.attackComponent.AttackState)
             {
                 caster.attackComponent.StopAttack();
             }
@@ -74,17 +75,17 @@ namespace DOL.GS.RealmAbilities
             }*/
 
             dmgValue = 240;
-            
+
 			duration = 30;
 			foreach (GamePlayer i_player in caster.GetPlayersInRadius(WorldMgr.INFO_DISTANCE))
 			{
 				if (i_player == caster)
 				{
-					i_player.MessageToSelf("You cast " + this.Name + "!", eChatType.CT_Spell);
+					i_player.MessageToSelf(LanguageMgr.GetTranslation(i_player.Client.Account.Language, "RealmAbility.Generic.CastSelf", Name), eChatType.CT_Spell);
 				}
 				else
 				{
-					i_player.MessageFromArea(caster, caster.Name + " casts a spell!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+					i_player.MessageFromArea(caster, LanguageMgr.GetTranslation(i_player.Client.Account.Language, "RealmAbility.Message.CasterCastsSpell", caster.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 				}
 
 				i_player.Out.SendSpellCastAnimation(caster, 7027, 20);
@@ -112,12 +113,12 @@ namespace DOL.GS.RealmAbilities
                 return 0;
 			Statics.NegativeMaelstromBase nm = new Statics.NegativeMaelstromBase(dmgValue);
 			nm.CreateStatic(player, player.GroundTarget, duration, 5, 500);
-            DisableSkill(player); 
+            DisableSkill(player);
 			timer.Stop();
 			timer = null;
 			return 0;
 		}
-        private void CastInterrupted(DOLEvent e, object sender, EventArgs arguments) 
+        private void CastInterrupted(DOLEvent e, object sender, EventArgs arguments)
         {
             AttackFinishedEventArgs attackFinished = arguments as AttackFinishedEventArgs;
             if (attackFinished != null && attackFinished.AttackData.Attacker != sender)

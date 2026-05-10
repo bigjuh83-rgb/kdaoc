@@ -4,6 +4,7 @@ using System.Reflection;
 using DOL.Database;
 using DOL.GS.Quests;
 using DOL.GS.ServerRules;
+using DOL.Language;
 using DOL.Logging;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -66,7 +67,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                     {
                         if (client.Player.Mission is not TaskDungeonMission taskDungeonMission || taskDungeonMission.TaskRegion.Skin != region.Skin)
                         {
-                            client.Out.SendMessage("This region has been disabled!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "RegionChangeRequestHandler.RegionDisabled"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
                             if (client.Account.PrivLevel == 1)
                                 return;
@@ -126,7 +127,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
             if (region != null && (GameClient.eClientType) region.Expansion > player.Client.ClientType)
             {
-                player.Out.SendMessage($"Destination region {region.Description} is not supported by your client type.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RegionChange.DestinationUnsupported", region.Description), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
@@ -159,7 +160,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                     if (Log.IsErrorEnabled)
                         Log.Error($"Jump point handler ({zonePoint.ClassType})", e);
 
-                    player.Out.SendMessage($"exception in jump point ({zonePoint.Id}) handler", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RegionChange.JumpPointException", zonePoint.Id), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return;
                 }
             }

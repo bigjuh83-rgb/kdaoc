@@ -1,4 +1,5 @@
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -18,12 +19,12 @@ namespace DOL.GS.Commands
                 {
                     if (!client.Player.IsWithinRadius(targetPlayer, WorldMgr.YELL_DISTANCE) || targetPlayer.IsStealthed || GameServer.ServerRules.IsAllowedToAttack(client.Player, targetPlayer, true))
                     {
-                        client.Out.SendMessage($"You don't see {args[1]} around here!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Target.NotSeen", args[1]), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return;
                     }
 
                     client.Out.SendChangeTarget(targetPlayer);
-                    client.Out.SendMessage($"You target {targetPlayer.GetName(0, true)}.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Target.YouTarget", targetPlayer.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return;
                 }
                 else if (client.Account.PrivLevel > 1)
@@ -33,20 +34,20 @@ namespace DOL.GS.Commands
                         if (npc.Name == args[1])
                         {
                             client.Out.SendChangeTarget(npc);
-                            client.Out.SendMessage($"[GM] You target {npc.GetName(0, true)}.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Target.GMYouTarget", npc.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
                     }
                 }
 
-                client.Out.SendMessage($"You don't see {args[1]} around here!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Target.NotSeen", args[1]), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
             if (client.Account.PrivLevel > 1)
-                client.Out.SendMessage("/target <player/mobname>", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Target.UsageGM"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             else
-                client.Out.SendMessage("/target <playername>", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Target.Usage"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
     }
 }

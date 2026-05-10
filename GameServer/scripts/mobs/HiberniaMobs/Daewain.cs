@@ -1,6 +1,7 @@
 ﻿using DOL.AI.Brain;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 using System;
 
 namespace DOL.GS
@@ -38,10 +39,11 @@ namespace DOL.AI.Brain
 		GameNPC.eFlags oldFlags;
 		bool changed;
 		bool playerOnBridge = false;
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(string key, params object[] args)
 		{
 			foreach (GamePlayer player in Body.GetPlayersInRadius(2500))
 			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
 				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
 			}
 		}
@@ -60,7 +62,7 @@ namespace DOL.AI.Brain
 					{
 						Body.Flags = oldFlags;
 						Body.Model = oldModel;
-						BroadcastMessage("Daewain croaks softly as he rests in the shade under the bridge.");
+						BroadcastMessage("Mobs.Daewain.Resting");
 						changed = false;
 					}
 				}
@@ -93,5 +95,4 @@ namespace DOL.AI.Brain
 		}
 	}
 }
-
 

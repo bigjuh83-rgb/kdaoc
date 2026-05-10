@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -20,6 +20,7 @@
 using System;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -43,12 +44,12 @@ namespace DOL.GS
 				return false;
 
 			TurnTo(player, 5000);
-			
+
 			// Check for ambient trigger messages for the NPC in the 'MobXAmbientBehaviour' table
 			var triggers = GameServer.Instance.NpcManager.AmbientBehaviour[base.Name];
 			// If the NPC has no ambient trigger message assigned, then return this message
 			if (triggers == null || triggers.Length == 0)
-				SayTo(player, eChatLoc.CL_ChatWindow, "For 5 gold, I can put the emblem of your guild on the item. Just hand me the item.");
+				SayTo(player, eChatLoc.CL_ChatWindow, LanguageMgr.GetTranslation(player.Client.Account.Language, "EmblemNPC.Interact.Offer"));
 
 			return true;
 		}
@@ -58,10 +59,10 @@ namespace DOL.GS
 			GamePlayer t = source as GamePlayer;
 			if (t == null || item == null)
 				return false;
-			
+
 			if (item.Emblem != 0)
 			{
-				t.Out.SendMessage("This item already has an emblem on it.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				t.Out.SendMessage(LanguageMgr.GetTranslation(t.Client.Account.Language, "EmblemNPC.ItemAlreadyHasEmblem"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return false;
 			}
 
@@ -70,26 +71,26 @@ namespace DOL.GS
 			{
 				if (t.Guild == null)
 				{
-					t.Out.SendMessage("You have no guild.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					t.Out.SendMessage(LanguageMgr.GetTranslation(t.Client.Account.Language, "EmblemNPC.NoGuild"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return false;
 				}
 				if (t.Guild.Emblem == 0)
 				{
-					t.Out.SendMessage("Your guild has no emblem.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					t.Out.SendMessage(LanguageMgr.GetTranslation(t.Client.Account.Language, "EmblemNPC.GuildNoEmblem"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return false;
 				}
 				if (t.Level < 20) //if level of player < 20 so can not put emblem
 				{
 					if (t.CraftingPrimarySkill == eCraftingSkill.NoCrafting)
 					{
-						t.Out.SendMessage("You have to be at least level 20 or have 400 in a tradeskill to be able to wear an emblem.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						t.Out.SendMessage(LanguageMgr.GetTranslation(t.Client.Account.Language, "EmblemNPC.LevelOrTradeskillRequired"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						return false;
 					}
 					else
 					{
 						if (t.GetCraftingSkillValue(t.CraftingPrimarySkill) < 400)
 						{
-							t.Out.SendMessage("You have to be at least level 20 or have 400 in a tradeskill to be able to wear an emblem.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							t.Out.SendMessage(LanguageMgr.GetTranslation(t.Client.Account.Language, "EmblemNPC.LevelOrTradeskillRequired"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return false;
 						}
 					}
@@ -98,14 +99,14 @@ namespace DOL.GS
 
 				if (!t.Guild.HasRank(t, Guild.eRank.Emblem))
 				{
-					t.Out.SendMessage("You do not have enough privileges for that.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					t.Out.SendMessage(LanguageMgr.GetTranslation(t.Client.Account.Language, "EmblemNPC.NotEnoughPrivileges"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return false;
 				}
 				t.TempProperties.SetProperty(EMBLEMIZE_ITEM_WEAK, new WeakRef(item));
-				t.Out.SendCustomDialog($"Do you agree to put an emblem on this object for {Money.GetString(EmblemNPC.EMBLEM_COST)}?", new CustomDialogResponse(EmblemerDialogResponse));
+				t.Out.SendCustomDialog(LanguageMgr.GetTranslation(t.Client.Account.Language, "EmblemNPC.ConfirmPutEmblem", Money.GetString(EmblemNPC.EMBLEM_COST)), new CustomDialogResponse(EmblemerDialogResponse));
 			}
 			else
-				t.Out.SendMessage("I can not put an emblem on this item.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				t.Out.SendMessage(LanguageMgr.GetTranslation(t.Client.Account.Language, "EmblemNPC.CannotPutEmblemOnItem"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
 			return false;
 		}
@@ -123,14 +124,14 @@ namespace DOL.GS
 			if (item == null || item.SlotPosition == (int) eInventorySlot.Ground
 				|| item.OwnerID == null || item.OwnerID != player.InternalID)
 			{
-				player.Out.SendMessage("Invalid item.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "EmblemNPC.InvalidItem"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			if (!player.RemoveMoney(EMBLEM_COST))
 			{
                 InventoryLogging.LogInventoryAction(player, this, eInventoryActionType.Merchant, EMBLEM_COST);
-				player.Out.SendMessage("You don't have enough money.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "EmblemNPC.NotEnoughMoney"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -138,7 +139,7 @@ namespace DOL.GS
 			player.Out.SendInventoryItemsUpdate(new DbInventoryItem[] {item});
 			if (item.SlotPosition < (int) eInventorySlot.FirstBackpack)
 				player.UpdateEquipmentAppearance();
-			SayTo(player, eChatLoc.CL_ChatWindow, "I have put an emblem on your item.");
+			SayTo(player, eChatLoc.CL_ChatWindow, LanguageMgr.GetTranslation(player.Client.Account.Language, "EmblemNPC.EmblemApplied"));
 			return;
 		}
 	}

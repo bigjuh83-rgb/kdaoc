@@ -26,7 +26,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 
 		// Capture Goal
 		private const int MAX_CAPTURED = 1;
-		
+
 		private static GameNPC Kelteen = null; // Start NPC
 
 		private int _isCaptured = 0;
@@ -47,7 +47,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 		public CaptureRelicQuestAlb(GamePlayer questingPlayer, DbQuest dbQuest) : base(questingPlayer, dbQuest)
 		{
 		}
-		
+
 		public override int Level
 		{
 			get
@@ -62,7 +62,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -152,7 +152,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 
 		private static void TalkToKelteen(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -170,18 +170,16 @@ namespace DOL.GS.MonthlyQuest.Albion
 					switch (quest.Step)
 					{
 						case 1:
-							Kelteen.SayTo(player, "Encourage allies to conquer a relic keep in Hibernia or Midgard and return the relic to your realm.");
+							Kelteen.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.CaptureRelicObjective", "Hibernia", "Midgard"));
 							break;
 						case 2:
-							Kelteen.SayTo(player, "Hello " + player.Name + ", did you [capture] a relic?");
+							Kelteen.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[capture] a relic"));
 							break;
 					}
 				}
 				else
 				{
-					Kelteen.SayTo(player, "Hello " + player.Name +
-					                    ", I am Kelteen. I serve the realm and its interests. \n" +
-					                    "Our armies will be pushing the enemy relic keeps soon, and I need your assistance in [securing a foothold] for them.");
+					Kelteen.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.CaptureRelicIntro", player.Name, "Hibernia", "Midgard"));
 				}
 			}
 				// The player whispered to the NPC
@@ -193,7 +191,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 					switch (wArgs.Text)
 					{
 						case "securing a foothold":
-							player.Out.SendQuestSubscribeCommand(Kelteen, QuestMgr.GetIDForQuestType(typeof(CaptureRelicQuestAlb)), "Will you help Kelteen "+questTitle+"");
+							player.Out.SendQuestSubscribeCommand(Kelteen, QuestMgr.GetIDForQuestType(typeof(CaptureRelicQuestAlb)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "Kelteen", questTitle));
 							break;
 					}
 				}
@@ -202,20 +200,21 @@ namespace DOL.GS.MonthlyQuest.Albion
 					switch (wArgs.Text)
 					{
 						case "capture":
+						case "점령":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -244,11 +243,11 @@ namespace DOL.GS.MonthlyQuest.Albion
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -278,7 +277,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for helping Albion.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelpingRealm", "Albion"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -286,7 +285,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 				if (!Kelteen.GiveQuest(typeof (CaptureRelicQuestAlb), player, 1))
 					return;
 
-				Kelteen.SayTo(player, "Thank you "+player.Name+", you are a true fighter of Albion!");
+				Kelteen.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.TrueFighterRealm", player.Name, "Albion"));
 
 			}
 		}
@@ -305,9 +304,9 @@ namespace DOL.GS.MonthlyQuest.Albion
 				switch (Step)
 				{
 					case 1:
-						return "Encourage allies to conquer a relic keep in Hibernia or Midgard and return the relic to your realm. \nCaptured: Relic ("+ _isCaptured +" | "+MAX_CAPTURED+")";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.CaptureRelicDescription", "Hibernia", "Midgard", _isCaptured, MAX_CAPTURED);
 					case 2:
-						return "Return to Kelteen for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpc", "Kelteen");
 				}
 				return base.Description;
 			}
@@ -319,15 +318,15 @@ namespace DOL.GS.MonthlyQuest.Albion
 
 			if (player?.IsDoingQuest(typeof(CaptureRelicQuestAlb)) == null)
 				return;
-			
+
 			if (sender != m_questPlayer)
 				return;
 
 			if (Step != 1 || e != GamePlayerEvent.CapturedRelicsChanged) return;
 			_isCaptured = 1;
-			player.Out.SendMessage("[Monthly] Captured Relic: ("+_isCaptured+" | "+MAX_CAPTURED+")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyCapturedRelic", _isCaptured, MAX_CAPTURED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (_isCaptured >= MAX_CAPTURED)
 			{
 				// FinishQuest or go back to Dean
@@ -335,13 +334,13 @@ namespace DOL.GS.MonthlyQuest.Albion
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "CaptureRelicQuestAlb";
 			set { ; }
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			_isCaptured = GetCustomProperty(QuestPropertyKey) != null ? int.Parse(GetCustomProperty(QuestPropertyKey)) : 0;
@@ -355,7 +354,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 		public override void FinishQuest()
 		{
 			int reward = ServerProperties.Properties.MONTHLY_RVR_REWARD;
-			
+
 			if (m_questPlayer.Inventory.IsSlotsFree(3, eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack))
 			{
 				m_questPlayer.ForceGainExperience((m_questPlayer.ExperienceForNextLevel - m_questPlayer.ExperienceForCurrentLevel));
@@ -363,10 +362,10 @@ namespace DOL.GS.MonthlyQuest.Albion
 				AtlasROGManager.GenerateReward(m_questPlayer, 5000);
 				AtlasROGManager.GenerateJewel(m_questPlayer, 51);
 				_isCaptured = 0;
-				
+
 				if (reward > 0)
 				{
-					m_questPlayer.Out.SendMessage($"You have been rewarded {reward} Realmpoints for finishing Monthly Quest.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+					m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.RealmPointReward", reward, "Monthly"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					m_questPlayer.GainRealmPoints(reward, false);
 					m_questPlayer.Out.SendUpdatePlayer();
 				}
@@ -374,7 +373,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 			}
 			else
 			{
-				m_questPlayer.Out.SendMessage("Clear three slots of your inventory for your reward", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ClearInventorySlots", 3), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 	}

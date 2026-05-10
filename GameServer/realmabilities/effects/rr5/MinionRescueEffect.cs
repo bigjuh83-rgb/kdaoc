@@ -7,7 +7,7 @@ namespace DOL.GS.Effects
 {
     /// <summary>
     /// Minion Rescue
-    /// </summary> 
+    /// </summary>
     public class MinionRescueEffect : TimedEffect
     {
         // Parameters
@@ -36,7 +36,7 @@ namespace DOL.GS.Effects
             // Build spell
             DbSpell tSpell = new DbSpell();
             tSpell.AllowAdd = false;
-            tSpell.Description = "Target is stunned and can't move or do any action during spell duration.";
+            tSpell.Description = DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "RealmAbility.RR5.MinionRescue.Description");
             tSpell.Name = "Rescue stun";
             tSpell.Target = eSpellTarget.ENEMY.ToString();
             tSpell.Radius = 0;

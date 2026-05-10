@@ -23,7 +23,7 @@ namespace DOL.GS.Commands
                 client.Player.SendFriendsListSocial();
                 return;
             }
-            
+
             string name = string.Join(" ", args, 1, args.Length - 1);
 
             // attempt to remove from friends list now to avoid being unable to do so because of a guessed name from an online player
@@ -45,12 +45,12 @@ namespace DOL.GS.Commands
             {
                 case ClientService.PlayerGuessResult.NOT_FOUND:
                 {
-                    DisplayMessage(client, "No players with that name, or you cannot add this player.");
+                    DisplayMessage(client, T(client, "PlayerCommands.Friend.NotFoundOrCannotAdd"));
                     return;
                 }
                 case ClientService.PlayerGuessResult.FOUND_MULTIPLE:
                 {
-                    DisplayMessage(client, "Character name is not unique.");
+                    DisplayMessage(client, T(client, "PlayerCommands.Friend.NameNotUnique"));
                     return;
                 }
                 case ClientService.PlayerGuessResult.FOUND_EXACT:
@@ -68,7 +68,7 @@ namespace DOL.GS.Commands
 
                     if (IsNameInFriendsList(name, client))
                     {
-                        DisplayMessage(client, $"Type the full name to remove {name} from your list.");
+                        DisplayMessage(client, T(client, "PlayerCommands.Friend.TypeFullNameToRemove", name));
                         return;
                     }
 
@@ -82,7 +82,7 @@ namespace DOL.GS.Commands
         {
             if (playerToAdd == user)
             {
-                DisplayMessage(user.Client, "You can't add yourself!");
+                DisplayMessage(user.Client, T(user, "PlayerCommands.Friend.NoSelf"));
                 return true;
             }
 
@@ -98,7 +98,7 @@ namespace DOL.GS.Commands
         {
             if (IsNameInFriendsList(name, user.Client, StringComparer.OrdinalIgnoreCase) && user.RemoveFriend(name))
             {
-                DisplayMessage(user.Client, $"{name} was removed from your friend list!");
+                DisplayMessage(user.Client, T(user, "PlayerCommands.Friend.Removed", name));
                 return true;
             }
 
@@ -108,7 +108,7 @@ namespace DOL.GS.Commands
         private void AddFriend(string name, GamePlayer user)
         {
             if (user.AddFriend(name))
-                DisplayMessage(user.Client, $"{name} was added from your friend list!");
+                DisplayMessage(user.Client, T(user, "PlayerCommands.Friend.Added", name));
         }
     }
 }

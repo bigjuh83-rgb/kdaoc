@@ -1,0 +1,683 @@
+﻿# Gamemaster Commands
+GMCommands.Error:							오류: {0}
+
+## /addbind
+GMCommands.AddBind.Description:				게임에 바인드 지점을 추가합니다.
+GMCommands.AddBind.Usage:					/addbind [radius=750]
+GMCommands.AddBind.BindPointAdded:			바인드 지점 추가됨: X={0}, Y={1}, Z={2}, Radius={3}, Region={4}
+
+## /addhookpoint
+GMCommands.HookPoint.Description:			요새 구성 요소에 후크 지점을 추가합니다.
+GMCommands.HookPoint.Usage:					후크 지점을 추가하려면 '/addhookpoint <skin> <id>'를 사용하세요(GameKeepComponent 선택).
+GMCommands.HookPoint.NoGKCTarget:			GameKeepComponent를 대상으로 지정하고 있지 않습니다!
+
+## /announce
+GMCommands.Announce.Description:			온라인 상태인 모든 플레이어에게 메시지를 보냅니다
+GMCommands.Announce.Usage:					/announce <log|window|send|center|confirm> <message>
+GMCommands.Announce.LogAnnounce:			[공지]: {0}
+GMCommands.Announce.WindowAnnounce:			{0}님의 공지
+GMCommands.Announce.SendAnnounce:			[공지]: {0}
+GMCommands.Announce.ConfirmAnnounce:		{0}님의 공지: {1}
+
+## /area
+GMCommands.Area.Description:				영역 관리를 돕는 다양한 명령어입니다
+GMCommands.Area.Usage.Create:				/area create <name> <type(circle|square|safe|bind)> <radius> <broadcast(y|n)> <soundid>
+GMCommands.Area.AreaCreated:				영역 생성됨 - Description: {0}, X={1}, Y={2}, Z={3}, Radius={4}, Broadcast={5}, Sound={6}.
+
+## /ban
+GMCommands.Ban.Description:					/ban 명령어 사용법:
+GMCommands.Ban.Usage.IP:					'/ban ip <account or player name> <reason>' - 지정한 IP 주소를 차단합니다.
+GMCommands.Ban.Usage.Account:				'/ban account <player name> <reason>' - 지정한 계정을 차단합니다.
+GMCommands.Ban.Usage.Both:					'/ban both <player name> <reason>' - 지정한 계정과 연결된 IP 주소를 차단합니다.
+GMCommands.Ban.UnableToFindPlayer:			지정한 플레이어를 찾을 수 없습니다!
+GMCommands.Ban.AAlreadyBanned:				이 계정은 이미 차단되어 있습니다.
+GMCommands.Ban.ABanned:						계정 {0}이(가) 차단되었습니다!
+GMCommands.Ban.IAlreadyBanned:				이 IP는 이미 차단되어 있습니다.
+GMCommands.Ban.IBanned:						IP {0}이(가) 차단되었습니다!
+GMCommands.Ban.BAlreadyBanned:				이 계정과 IP 주소는 이미 차단되어 있습니다.
+GMCommands.Ban.BBanned:						계정 {0} 및 IP {1}이(가) 차단되었습니다!
+
+## /cast
+GMCommands.Cast.Description:            주문/효과/소리를 시전합니다
+GMCommands.Cast.Usage:                  '/cast <effect|cast|spell|sound|style> <id>' <id>에 연결된 Spell/VisualEffect/Sound를 시전합니다
+GMCommands.Cast.InvalidId:               잘못된 ID입니다.
+GMCommands.Cast.IdNegative:               ID는 음수일 수 없습니다.
+GMCommands.Cast.EffectExecuted:            효과 애니메이션을 실행했습니다. Id={0}
+GMCommands.Cast.CastExecuted:            시전 애니메이션을 실행했습니다. Id={0}
+GMCommands.Cast.SoundPlayed:            소리를 재생했습니다. Id={0}
+GMCommands.Cast.Spell.CastOnLiving:         {1}에게 {0}을(를) 시전했습니다.
+GMCommands.Cast.Spell.CastOnSelf:         자신에게 {0}을(를) 시전했습니다.
+GMCommands.Cast.Spell.GMCastOnYou:         {0} {1}님이 당신에게 {2}을(를) 시전했습니다.
+GMCommands.Cast.Spell.Inexistent:         주문이 존재하지 않습니다. Id={0}
+
+## /crafting
+GMCommands.Crafting.Description:			대상의 제작 레벨을 변경합니다
+GMCommands.Crafting.Usage.Add:				'/crafting add <craftingSkillID> <startLevel>' 대상에게 새 제작 스킬을 추가합니다
+GMCommands.Crafting.Usage.Change:			'/crafting change <craftingSkillID> <amount>' 대상의 제작 스킬 레벨을 올리거나 낮춥니다
+GMCommands.Crafting.Usage.SalvageAdd:		/crafting salvageadd <SalvageYieldID (0 for next free)> <MaterialId_nb> <Count> [Realm] [PackageID]
+GMCommands.Crafting.Usage.SalvageUpdate:	/crafting salvageupdate <SalvageYieldID> <MaterialId_nb> <Count> <Realm> [PackageID]
+GMCommands.Crafting.Usage.SalvageInfo:		/crafting salvageinfo <SalvageYieldID>
+GMCommands.Crafting.Usage.List:				'/crafting list' 모든 제작 스킬과 해당 ID 목록을 표시합니다
+GMCommands.Crafting.SkillDescription:		제작 스킬 ID 설명:
+GMCommands.Crafting.NoPlayerTarget:			이 명령어를 사용하려면 플레이어를 대상으로 지정해야 합니다.
+GMCommands.Crafting.InvalidSkill:			유효한 제작 스킬 ID를 입력해야 합니다. 명령어 개요를 보려면 /crafting을 입력하세요.
+GMCommands.Crafting.SkillAdded:				제작 스킬 {0}이(가) 정상적으로 추가되었습니다.
+GMCommands.Crafting.AlreadyHaveSkill:		{0}은(는) 이미 제작 스킬 {1}을(를) 보유하고 있습니다.
+GMCommands.Crafting.NotHaveSkillAddIt:		{0}은(는) 제작 스킬 {1}을(를) 보유하고 있지 않습니다. 먼저 추가하세요.
+GMCommands.Crafting.SkillChanged:			제작 스킬 {0}이(가) 정상적으로 변경되었습니다.
+GMCommands.Crafting.NowHasSkillPoints:		{0}은(는) 이제 {2}에 {1}을(를) 보유합니다.
+GMCommands.Crafting.SalvageYieldNotFound:	분해 산출 ID를 찾을 수 없습니다!
+GMCommands.Crafting.NotFound:				찾을 수 없음!
+GMCommands.Crafting.Unused:					사용 안 함
+GMCommands.Crafting.Calculated:				계산됨
+GMCommands.Crafting.Realm.Any:				전체
+GMCommands.Crafting.SalvageInfo.ID:			분해 산출 ID: {0}
+GMCommands.Crafting.SalvageInfo.ObjectType:	     오브젝트 타입: {0}
+GMCommands.Crafting.SalvageInfo.SalvageLevel:	   분해 레벨: {0}
+GMCommands.Crafting.SalvageInfo.Material:	       재료: {0} ({1})
+GMCommands.Crafting.SalvageInfo.Count:	          수량: {0}
+GMCommands.Crafting.SalvageInfo.Realm:	          렐름: {0}
+GMCommands.Crafting.SalvageInfo.PackageID:	      패키지 ID: {0}
+GMCommands.Crafting.SalvageInfo.WindowTitle:	분해 산출 ID {0}
+GMCommands.Crafting.MaterialNotFound:			재료 id_nb {0}을(를) 찾을 수 없습니다!
+GMCommands.Crafting.SalvageYieldAlreadyExists:	이 분해 산출 ID는 이미 존재합니다. 변경하려면 salvageupdate를 사용하세요.
+GMCommands.Crafting.SalvageYieldCreated:		분해 산출 ID 생성됨: {0}, 재료: {1}, 수량: {2}, 렐름: {3}, 패키지 ID: {4}
+GMCommands.Crafting.SalvageIdNotFound:		분해 ID를 찾을 수 없습니다!
+GMCommands.Crafting.SalvageYieldLegacyCannotUpdate:	이 분해 산출 ID는 레거시 분해 지원에 사용되므로 업데이트할 수 없습니다.
+GMCommands.Crafting.SalvageYieldUpdated:		분해 산출 ID 업데이트됨: {0}, 재료: {1}, 수량: {2}, 렐름: {3}, 패키지 ID: {4}
+
+## /debug
+GMCommands.Debug.Description:				디버그를 활성화하거나 비활성화합니다
+GMCommands.Debug.Usage:						/debug <on/off>
+GMCommands.Debug.ModeON:					디버그 모드 켜짐
+GMCommands.Debug.ModeOFF:					디버그 모드 꺼짐
+
+## /hascredit
+GMCommands.HasCredit.Description:			플레이어에게 몹 처치 크레딧이 있는지 확인합니다
+GMCommands.HasCredit.Usage:					/hascredit <mobname>
+
+
+# ]jump
+GMCommands.DebugJump.Description:			자신을 지정한 위치로 순간이동합니다
+GMCommands.DebugJump.Usage:					']jump <zoneID> <locX> <locY> <locZ> <heading>' 디버그 모드에서 *jump에 자동 사용됩니다
+GMCommands.DebugJump.InvalidZoneID:			잘못된 zone Id: {0}
+GMCommands.DebugJump.UnknownZoneID:			알 수 없는 zone Id: {0}
+GMCommands.DebugJump.UnknownRegion:			알 수 없는 region({0})입니다.
+GMCommands.DebugJump.RegionNotSuppByClient:	region({0})은(는) 당신의 클라이언트에서 지원되지 않습니다.
+
+## /door
+GMCommands.Door.Description:				문을 수정합니다
+GMCommands.Door.Name:					문 이름을 변경하려면 '/door name <name>'을 사용하세요
+GMCommands.Door.Level:					문 레벨을 변경하려면 '/door level <level>'을 사용하세요
+GMCommands.Door.Realm:					문 렐름을 변경하려면 '/door realm <realm>'을 사용하세요. realm = 0이면 파괴되기 전까지 문이 열리지 않습니다
+GMCommands.Door.Guild:					문 길드를 변경하려면 '/door guild <guild>'를 사용하세요
+GMCommands.Door.Info:					정보를 표시하려면 '/door info'를 사용하세요
+GMCommands.Door.Heal:					문 내구도를 최대치로 설정하려면 '/door heal'을 사용하세요
+GMCommands.Door.Kill:					문 내구도를 0으로 설정하려면 '/door kill'을 사용하세요(문 열림)
+GMCommands.Door.Locked:					문을 잠그려면 '/door locked'를 사용하세요 - 잠금 해제 아이템을 코딩할 수 있습니다
+GMCommands.Door.Unlocked:				문을 잠금 해제하려면 '/door unlocked'를 사용하세요 - 잠금 아이템을 코딩할 수 있습니다
+GMCommands.Door.Update:					GM의 xyz 좌표로 데이터베이스의 문을 업데이트하려면 '/door update'를 사용하세요
+GMCommands.Door.Delete:					대상 문을 삭제하려면 '/door delete'를 사용하세요
+GMCommands.Door.Add:					문을 추가하려면 '/door add'를 사용하세요
+
+## /faction
+GMCommands.Faction.Description:				팩션을 만들고 우호/적대 팩션을 지정합니다
+GMCommands.Faction.Usage.Create:			팩션을 만들려면 '/faction create <name> <base aggro level>'을 사용하세요
+GMCommands.Faction.Usage.Assign:			대상 몹에 팩션을 배정하려면 '/faction assign'을 사용하세요
+GMCommands.Faction.Usage.AddFriend:			현재 팩션에 우호 팩션을 추가하려면 '/faction addfriend <factionid>'를 사용하세요
+GMCommands.Faction.Usage.AddEnemy:			현재 팩션에 적을 추가하려면 '/faction addenemy <factionid>'를 사용하세요
+GMCommands.Faction.Usage.Relations:			현재 팩션의 관계를 표시하려면 '/faction relations'를 사용하세요
+GMCommands.Faction.Usage.List:				모든 팩션 목록을 보려면 '/faction list'를 사용하세요
+GMCommands.Faction.Usage.Select:			해당 ID의 팩션을 선택하려면 '/faction select <factionid>'를 사용하세요
+GMCommands.Faction.MustSelectFaction:		먼저 팩션을 선택해야 합니다.
+GMCommands.Faction.IndexMustBeNumber:		인덱스는 숫자여야 합니다.
+GMCommands.Faction.FactionNotLoaded:		이 Faction은 로드되지 않았습니다
+GMCommands.Faction.Create.BAMustBeNumber:	baseAggro는 숫자여야 합니다.
+GMCommands.Faction.Create.NewCreated:		새 팩션이 생성되었습니다
+GMCommands.Faction.Assign.MustSelectMob:	먼저 몹을 선택해야 합니다.
+GMCommands.Faction.Assign.MobHasJoinedFact:	몹 {0}이(가) {1}의 팩션에 합류했습니다.
+GMCommands.Faction.Relations.Header:        #{0}: {1} ({2}) 팩션 관계:
+GMCommands.Faction.Relations.FriendsHeader:  우호 관계:
+GMCommands.Faction.Relations.EnemiesHeader:  적대 관계:
+GMCommands.Faction.Relations.Hardcoded:     [하드코딩]
+GMCommands.Faction.Relations.NotReciprocal: [상호 관계 아님]
+GMCommands.Faction.Relations.Line:          #{0}: {1} ({2}){3}
+GMCommands.Faction.Select.Selected:         #{0}: {1} ({2}) 팩션을 선택했습니다.
+
+## /gmappeal
+Scripts.Players.Appeal.UseGMappeal:				플레이어의 appeal 처리를 도우려면 /gmappeal을 사용하세요.
+Scripts.Players.Appeal.MustBeAssisting:			먼저 appeal을 제출한 활성 플레이어를 지원 중이어야 합니다.
+Scripts.Players.Appeal.NoLocationToJump:		되돌아갈 위치가 없습니다.
+Scripts.Players.Appeal.NoLongerReceiveMsg:		이번 세션에서는 더 이상 Appeal 메시지를 받지 않습니다.
+Scripts.Players.Appeal.NowReceiveMsg:			이번 세션에서 Appeal 메시지를 다시 받습니다.
+Scripts.Players.Appeal.UseCmdTurnBackOn:		메시지를 다시 켜려면 /gmappeal mute를 한 번 더 사용하세요.
+Scripts.Players.Appeal.UseCmdTurnBackOff:		메시지를 다시 끄려면 /gmappeal mute를 한 번 더 사용하세요.
+Scripts.Players.Appeal.CantCancelWhile:			도움을 받는 중에는 appeal을 취소할 수 없습니다.
+Scripts.Players.Appeal.NoAppealToView:			현재 확인할 appeal이 없습니다.
+Scripts.Players.Appeal.NoAppealsinQueue:		현재 대기열에 Appeal이 없습니다.
+Scripts.Players.Appeal.CantFindAppeal:			해당 오프라인 플레이어 이름으로 된 appeal을 찾을 수 없습니다. 철자가 맞는지 확인하세요.
+Scripts.Players.Appeal.NameNotUnique:			캐릭터 이름이 고유하지 않습니다.
+Scripts.Players.Appeal.PlayerNotFound:			{0}은(는) 게임에 접속해 있지 않습니다.
+Scripts.Players.Appeal.RandMessage0:			{0}님, 기다려 주셔서 감사합니다. 무엇을 도와드릴까요?
+Scripts.Players.Appeal.RandMessage1:			안녕하세요 {0}님, 오늘 무엇을 도와드릴까요?
+Scripts.Players.Appeal.RandMessage2:			안녕하세요 {0}님! 도와드리러 왔습니다. 무엇을 도와드릴까요?
+Scripts.Players.Appeal.RandMessage3:			안녕하세요 {0}님, 도움이 필요하신 것으로 알고 있습니다. 오늘 무엇을 도와드릴까요?
+Scripts.Players.Appeal.RandMessage4:			안녕하세요 {0}님, 문제가 생겨 유감입니다. 어떤 문제가 있으신가요?
+Scripts.Players.Appeal.BeingHelped:				해당 플레이어는 이미 도움을 받고 있습니다.
+Scripts.Players.Appeal.NotBeingHelped:			해제하려면 먼저 이 플레이어의 appeal을 지원 중이어야 합니다.
+Scripts.Players.Appeal.DoesntHaveAppeal:		해당 플레이어는 이미 appeal을 취소했거나 appeal이 없습니다.
+
+## /gmrelic
+GMCommands.GMRelic.Description:				새 Relic을 생성합니다
+GMCommands.GMRelic.Usage:					/gmrelic <magic|strength> <realm>
+
+## /gmrelicpad
+GMCommands.GMRelicPad.Description:			새 RelicPad를 생성합니다
+GMCommands.GMRelicPad.Usage:				/gmrelicpad <magic|strength> <name> <realm>
+
+## /harm
+GMCommands.Harm.Description:				대상에게 피해를 줍니다(체력)
+GMCommands.Harm.Usage:						/harm <amount>
+GMCommands.Harm.InvalidTarget:				유효한 대상을 선택하지 않았습니다
+
+## /heal
+GMCommands.Heal.Description:				대상의 체력, 지구력, 마나를 회복합니다
+GMCommands.Heal.Usage:						/heal
+
+## /item
+GMCommands.Item.Description:				아이템 관리 명령어입니다.
+GMCommands.Item.Information:				슬롯 번호는 선택 사항이며 생략하면 기본값은 79번(마지막 가방 슬롯)입니다. 공백이 있는 이름은 "<name>"처럼 따옴표로 입력하세요.
+GMCommands.Item.Usage.Blank:				'/item blank' - 빈 아이템을 생성합니다
+GMCommands.Item.Usage.Info:					'/item info <ItemTemplateName>' - ItemTemplate 정보를 표시합니다
+GMCommands.Item.Usage.Create:				'/item create <ItemTemplateName> [count]' - 템플릿에서 새 아이템을 생성합니다
+GMCommands.Item.Usage.Count:				'/item count <Amount> [slot #]' - 아이템 수량을 변경합니다
+GMCommands.Item.Usage.MaxCount:				'/item maxcount <Amount> [slot #]' - 한 슬롯에 허용되는 최대 수량을 변경합니다
+GMCommands.Item.Usage.PackSize:				'/item packsize <Amount> [slot #]' - 한 번에 판매되는 아이템 수량을 변경합니다
+GMCommands.Item.Usage.Model:				'/item model <ModelID> [slot #]' - 아이템 모델을 변경합니다
+GMCommands.Item.Usage.Extension:			'/item extension <ExtensionID> [slot #]' - 아이템 확장값을 변경합니다
+GMCommands.Item.Usage.Color:				'/item color <ColorID> [slot #]' - 아이템 색상을 변경합니다
+GMCommands.Item.Usage.Effect:				'/item effect <EffectID> [slot #]' - 아이템 효과를 변경합니다
+GMCommands.Item.Usage.Name:					'/item name <NameID> [slot #]' - 아이템 이름을 변경합니다
+GMCommands.Item.Usage.Description:			'/item description <Description> <slot>' - 아이템 설명을 설정합니다
+GMCommands.Item.Usage.CrafterName:			'/item craftername <CrafterNameID> [slot #]' - 아이템 제작자 이름을 변경합니다
+GMCommands.Item.Usage.Type:					'/item type <TypeID> [slot #]' - 아이템 타입을 변경합니다
+GMCommands.Item.Usage.Object:				'/item object <ObjectID> [slot #]' - 오브젝트 타입을 변경합니다
+GMCommands.Item.Usage.Hand:					'/item hand <HandID> [slot #]' - 아이템 착용 손 정보를 변경합니다
+GMCommands.Item.Usage.DamageType:			'/item damagetype <DamageTypeID> [slot #]' - 아이템 피해 타입을 변경합니다
+GMCommands.Item.Usage.Emblem:				'/item emblem <EmblemID> [slot #]' - 아이템 문장을 변경합니다
+GMCommands.Item.Usage.Price:				'/item price <platinum> <gold> <silver> <copper> [slot #]' - 아이템 가격을 변경합니다
+GMCommands.Item.Usage.Condition:			'/item condition <con> <maxCon> [slot #]' - 아이템 상태를 변경합니다
+GMCommands.Item.Usage.Quality:				'/item quality <qua> [slot #]' - 아이템 품질을 변경합니다
+GMCommands.Item.Usage.Durability:			'/item durability <dur> <maxDur> [slot #]' - 아이템 내구도를 변경합니다
+GMCommands.Item.Usage.isPickable:			'/item ispickable <true|false> [slot #]' - 아이템을 주울 수 있는지 설정합니다
+GMCommands.Item.Usage.isDropable:			'/item isdropable <true|false> [slot #]' - 아이템을 버릴 수 있는지 설정합니다
+GMCommands.Item.Usage.IsTradable:			'/item istradable <true|false> [slot #]' - 아이템을 거래할 수 있는지 설정합니다
+GMCommands.Item.Usage.IsStackable:			'/item isstackable <true|false> [slot #]' - 아이템을 중첩할 수 있는지 설정합니다
+GMCommands.Item.Usage.IsNotLosingDUR:		'/item isnotlosingdur <true|false> [slot #]' - 수리 후 내구도가 감소하지 않는지 설정합니다
+GMCommands.Item.Usage.IsIndestructible:		'/item isindestructible <true|false> [slot #]' - 아이템이 파괴 불가능한지 설정합니다
+GMCommands.Item.Usage.CanDropAsLoot:		'/item candropasloot <true|false> [slot #]' - 아이템이 전리품으로 드롭될 수 있는지 설정합니다
+GMCommands.Item.Usage.Bonus:				'/item bonus <bonus> [slot #]' - 아이템 보너스를 설정합니다
+GMCommands.Item.Usage.mBonus:				'/item mbonus <num> <BonusType> <value> [slot #]' - 아이템 마법 보너스를 설정합니다(num 0 = ExtraBonus)
+GMCommands.Item.Usage.Weight:				'/item weight <weight> [slot #]' - 아이템 무게를 설정합니다
+GMCommands.Item.Usage.DPS_AF:				'/item dps_af <NewDPS_AF> [slot #]' - 아이템 DPS_AF를 변경합니다
+GMCommands.Item.Usage.SPD_ABS:				'/item spd_abs <NewSPD_ABS> [slot #]' - 아이템 SPD_ABS를 변경합니다
+GMCommands.Item.Usage.Material:				'/item material <Material> <MaterialLevel> [slot #]' - 아이템 재질을 변경합니다
+GMCommands.Item.Usage.Scroll:				'/item scroll <ArtifactID> <PageNumber>' - 아티팩트 스크롤을 생성합니다
+GMCommands.Item.Usage.Spell:				'/item spell <Charges> <MaxCharges> <SpellID> [slot #]' - 아이템 주문 충전 #0을 변경합니다
+GMCommands.Item.Usage.Spell1:				'/item spell1 <Charges> <MaxCharges> <SpellID> [slot #]' - 아이템 주문 충전 #1을 변경합니다
+GMCommands.Item.Usage.Proc:					'/item proc <SpellID> [slot #]' - 아이템 발동 주문 #0을 변경합니다
+GMCommands.Item.Usage.Proc1:				'/item proc1 <SpellID> [slot #]' - 아이템 발동 주문 #1을 변경합니다
+GMCommands.Item.Usage.ProcChance:			'/item procchance <chance>' - 발동 확률을 변경합니다
+GMCommands.Item.Usage.Poison:				'/item poison <Charges> <MaxCharges> <SpellID> [slot #]' - 아이템 독을 변경합니다
+GMCommands.Item.Usage.Realm:				'/item realm <num> [slot #]' - 아이템 렐름을 변경합니다
+GMCommands.Item.Usage.ClassType:			'/item classtype <ClassType> <slot>' - 아이템 ClassType을 설정합니다
+GMCommands.Item.Usage.PackageID:			'/item packageid <PackageID> <slot>' - 아이템 PackageID를 설정합니다
+GMCommands.Item.Usage.LevelRequired:		'/item levelrequired <level> <slot>' - 주문과 발동 효과 사용에 필요한 레벨을 설정합니다
+GMCommands.Item.Usage.BonusLevel:			'/item bonuslevel <level> <slot>' - 아이템 보너스가 적용되기 위한 레벨을 설정합니다
+GMCommands.Item.Usage.Flags:				'/item flags <flags> <slot>' - 아이템 플래그를 설정합니다
+GMCommands.Item.Usage.Classes:				'/item classes <csv_allowed_classes> <slot>' - 허용 클래스 목록을 설정 및 교체합니다(0은 전체 허용)
+GMCommands.Item.Usage.SalvageID:			'/item salvageid <SalvageYield ID> <slot>' - 아이템 SalvageYieldID를 설정합니다
+GMCommands.Item.Usage.SalvageInfo:			'/item salvageinfo <SalvageYield ID> <slot>' - 아이템 분해 산출 정보를 표시합니다
+GMCommands.Item.Usage.Update:				'/item update <slot>' - 이 아이템의 변경 사항을 ItemTemplate에도 적용하고 DB 저장 대상으로 표시합니다
+GMCommands.Item.Usage.Save:					'/item save <TemplateID> [slot #]' - 새 템플릿을 생성하거나 기존 템플릿을 저장합니다
+GMCommands.Item.Usage.AddUnique:			'/item addunique <id_nb> <slot>' - 아이템을 고유 아이템으로 저장합니다
+GMCommands.Item.Usage.SaveUnique:			'/item saveunique <id_nb> <slot>' - 고유 아이템을 업데이트합니다
+GMCommands.Item.Usage.SaveTemplate:			'/item savetemplate <TemplateID> [slot #]' - 새 템플릿을 생성합니다
+GMCommands.Item.Usage.TemplateID:			'/item templateid <TemplateID> [slot #]' - 아이템 템플릿 ID를 변경합니다
+GMCommands.Item.Usage.FindID:				'/item findid <part_of_id>'
+GMCommands.Item.Usage.FindName:				'/item findname <part_of_name>'
+GMCommands.Item.Usage.Load:					'/item load <id_nb>' - DB에서 아이템을 불러와 ItemTemplate 캐시에 교체 또는 추가합니다
+GMCommands.Item.Usage.LoadPackage:			'/item loadpackage <packageid> | **all**' - 패키지의 모든 아이템을 DB에서 불러와 ItemTemplate 캐시에 교체 또는 추가합니다. **all**은 모든 아이템을 불러옵니다[! 느림 !]
+GMCommands.Item.Usage.LoadSpells:			'/item loadspells' - 아이템 주문을 DB에서 읽어 전역 주문 목록을 업데이트합니다
+GMCommands.Item.Blank.Name:					(빈 아이템)
+GMCommands.Item.Blank.ItemCreated:			빈 아이템이 가방의 첫 빈 슬롯에 생성되었습니다.
+GMCommands.Item.Blank.CreationError:		아이템 생성 중 오류가 발생했습니다.
+GMCommands.Item.Scroll.NotFound:			아티팩트 {1}의 스크롤 페이지 {0}을(를) 찾을 수 없습니다.
+GMCommands.Item.Scroll.Created:				스크롤 {0}이(가) 생성되었습니다.
+GMCommands.Item.Create.NotFound:			ID가 {0}인 ItemTemplate을 찾을 수 없습니다!
+GMCommands.Item.Create.Created:				아이템 생성됨: Level={0}, Name={1}, Count={2}
+GMCommands.Item.Count.NoItemInSlot:			{0} 슬롯에 아이템이 없습니다!
+GMCommands.Item.Count.NotStackable:			{0}은(는) 중첩할 수 없습니다.
+GMCommands.Item.Info.ItemTemplateUnknown:	ID={0}인 ItemTemplate을 알 수 없습니다!
+GMCommands.Item.Info.Informations:			아이템 {0} 정보
+GMCommands.Item.mBonus.NonSetBonusNumber:	보너스 번호가 설정되지 않았습니다!
+GMCommands.Item.mBonus.TypeShouldBeInRange:	보너스 타입은 0부터 {0} 사이여야 합니다.
+GMCommands.Item.mBonus.NonSetBonusType:		보너스 타입이 설정되지 않았습니다!
+GMCommands.Item.mBonus.NotSetBonusValue:	보너스 값이 설정되지 않았습니다!
+GMCommands.Item.mBonus.UnknownBonusNumber:	알 수 없는 보너스 번호: {0}
+GMCommands.Item.SaveTemplate.ItemSaved:		ItemTemplate {0}이(가) 성공적으로 저장되었습니다.
+GMCommands.Item.SaveUnique.NotItemUnique:	이 아이템은 ItemUnique가 아닙니다. 새 ItemUnique를 만들려면 addunique를 사용하세요.
+GMCommands.Item.Save.NeedNewID:				이 아이템에 사용할 새 id_nb를 입력해야 합니다.
+GMCommands.Item.Save.NeedNewIDForUniqueTemplate:	이 ItemUnique를 ItemTemplate으로 저장하려면 새 id_nb를 입력해야 합니다. 이 ItemUnique를 저장하려면 saveunique를 사용하세요.
+GMCommands.Item.Save.AddedTemplate:			새 ItemTemplate 추가됨: {0}
+GMCommands.Item.Save.AddTemplateError:		템플릿 추가 중 오류: {0}
+GMCommands.Item.Save.AddedUnique:			새 ItemUnique 추가됨: {0} ({1})
+GMCommands.Item.Save.AddUniqueError:		고유 아이템 추가 중 오류: {0}
+GMCommands.Item.Save.UpdatedInventoryItem:	인벤토리 아이템 업데이트됨: {0}
+GMCommands.Item.Save.SourceTemplateUpdated:	++ 원본 ItemTemplate도 업데이트되었습니다!
+GMCommands.Item.SalvageInfo.SpecifiedNotFound:	지정한 SalvageYield ID {0}을(를) 찾을 수 없습니다!
+GMCommands.Item.SalvageInfo.CalculatedValuesNew:	계산된 값(USE_NEW_SALVAGE = True)
+GMCommands.Item.SalvageInfo.CalculatedValuesLegacy:	계산된 값(USE_NEW_SALVAGE = False)
+GMCommands.Item.SalvageInfo.UsingID:		사용 중인 SalvageYield ID: {0}
+GMCommands.Item.SalvageInfo.MaterialNotFound:	찾을 수 없음! ({0})
+GMCommands.Item.SalvageInfo.ID:				분해 산출 ID: {0}
+GMCommands.Item.SalvageInfo.ObjectType:		오브젝트 유형: {0}
+GMCommands.Item.SalvageInfo.SalvageLevel:	분해 레벨: {0}
+GMCommands.Item.SalvageInfo.Material:		재료: {0}
+GMCommands.Item.SalvageInfo.Count:			수량: {0}
+GMCommands.Item.SalvageInfo.Realm:			렐름: {0}
+GMCommands.Item.SalvageInfo.Realm.Any:		전체
+GMCommands.Item.SalvageInfo.PackageID:		패키지 ID: {0}
+GMCommands.Item.SalvageInfo.WindowTitle:	{0} 분해 정보
+GMCommands.Item.Load.UpdatedOrAdded:			아이템 {0}이(가) ItemTemplate 캐시에 업데이트 또는 추가되었습니다.
+GMCommands.Item.Load.NotFound:				아이템 {0}을(를) 찾을 수 없습니다.
+GMCommands.Item.Load.CountUpdatedOrAdded:	아이템 {0}개가 ItemTemplate 캐시에 업데이트 또는 추가되었습니다.
+GMCommands.Item.LoadPackage.NoItemsFound:	패키지 {0}의 아이템을 찾을 수 없습니다.
+GMCommands.Item.UpdateAllowed.ItemTemplateOnly:	이 명령은 ItemTemplate 기반 아이템에만 사용할 수 있습니다.
+GMCommands.Item.LoadSpells.UpdatedOrAdded:	주문 ID {0}이(가) 전역 주문 목록에 추가 또는 업데이트되었습니다
+GMCommands.Item.FindID.MatchingIDsForX:		{0}에 일치하는 ID 수: {1}
+GMCommands.Item.FindName.MatchingNamesForX:	{0}에 일치하는 이름 수: {1}
+
+## /jump
+GMCommands.Jump.Description:				플레이어나 자신을 지정한 위치로 이동시킵니다.
+GMCommands.Jump.Information:				플레이어 이름에는 [me]를 사용할 수 있습니다:
+GMCommands.Jump.Usage.ToPlayerName:			/jump to <PlayerName or MobName>
+GMCommands.Jump.Usage.AbovePlayerName:		/jump above <PlayerName> - 해당 플레이어 위 10000 유닛 위치로 이동합니다. 던전 안의 플레이어에게는 사용할 수 없습니다.
+GMCommands.Jump.Usage.ToNameRealmID:		/jump to <Name> <RealmID>
+GMCommands.Jump.Usage.ToXYZRegionID:		/jump to <x> <y> <z> [<RegionID>]
+GMCommands.Jump.Usage.ToJail:               /jump <name> to jail  - 플레이어를 DF 감옥으로 이동시킵니다.
+GMCommands.Jump.Usage.PlayerNameToXYZ:		/jump <PlayerName> to <x> <y> <z>
+GMCommands.Jump.Usage.PlayerNameToXYZRegID:	/jump <PlayerName> to <x> <y> <z> [<RegionID>]
+GMCommands.Jump.Usage.PlayerNToPlayerN:		/jump <PlayerName> to <PlayerName>
+GMCommands.Jump.Usage.ToGT:					/jump to GT
+GMCommands.Jump.Usage.RelXYZ:				/jump rel <x> <y> <z>
+GMCommands.Jump.Usage.Push:					/jump push - 현재 위치를 스택에 저장합니다
+GMCommands.Jump.Usage.Pop:					/jump pop - 이전 위치를 꺼내 그곳으로 이동합니다
+GMCommands.Jump.CannotBeFound:				{0}을(를) 찾을 수 없습니다.
+GMCommands.Jump.JumpToX:					{0}(으)로 이동합니다.
+GMCommands.Jump.CannotBeFoundInRealm:		렐름 {1}에서 {0}을(를) 찾을 수 없습니다.
+GMCommands.Jump.CannotJumpToInsideHouse:	집 안에 있는 대상에게는 이동할 수 없습니다.
+GMCommands.Jump.PlayerIsNotInGame:			{0}은(는) 게임 안에 없습니다.
+GMCommands.Jump.CheckExpansion.CannotJump:	{0}은(는) 클라이언트 타입이 대상 지역({1})을 지원하지 않아 이동할 수 없습니다.
+GMCommands.Jump.CheckExpansion.ClientNoSup:	{0}이(가) 당신을 대상 지역({1})으로 이동시키려 했지만, 당신의 클라이언트 타입이 해당 지역을 지원하지 않습니다.
+GMCommands.Jump.Pushed:						현재 위치를 저장했습니다
+GMCommands.Jump.PushedTotal:				(총 {0}개)
+GMCommands.Jump.PopInstructions:			돌아가려면 '/jump pop'을 입력하세요.
+GMCommands.Jump.NothingPushed:				스택에 저장된 위치가 없습니다. 먼저 '/jump push'를 사용해야 합니다.
+
+## /offlinejump
+GMCommands.Offlinejump.Description:         오프라인 상태의 캐릭터를 지정한 위치로 이동시킵니다.
+GMCommands.Offlinejump.Usage.Jail:			'/offlinejump <PlayerName> to jail' - 플레이어를 감옥으로 이동시킵니다
+GMCommands.Offlinejump.Usage.Capital:		'/offlinejump <PlayerName> to capital' - 플레이어를 해당 렐름의 수도로 이동시킵니다
+
+## /keep
+GMCommands.Keep.Description:				성 생성 및 관리 명령어입니다!
+GMCommands.Keep.Usage.FastCreate:			'/keep fastcreate <type> <id> <name>' 기본 템플릿으로 성을 생성합니다
+GMCommands.Keep.Usage.FastCreate.Info:		'/keep fastcreate' 빠른 생성에 사용할 수 있는 모든 템플릿을 표시합니다
+GMCommands.Keep.Usage.Create:				'/keep create <keepid> <baselevel> <radius (set to 0 for default)> <name>' 성을 생성합니다
+GMCommands.Keep.Usage.TowerCreate:			'/keep towercreate <keepid> <baselevel> <name>' 타워를 생성합니다
+GMCommands.Keep.Usage.Remove:				'/keep remove' 데이터베이스에서 성을 삭제합니다
+GMCommands.Keep.Usage.Name:					'/keep name <Name>' 이름을 변경합니다
+GMCommands.Keep.Usage.KeepID:				'/keep keepid <keepID>' 성에 KeepID를 지정합니다
+GMCommands.Keep.Usage.Level:				'/keep level <level>' 성의 레벨을 변경합니다
+GMCommands.Keep.Usage.BaseLevel:			'/keep baselevel <level>' 성의 기본 레벨을 변경합니다
+GMCommands.Keep.Usage.Move:				'/keep move {[x,y,z,h] [amount]}' 관리자 전용
+GMCommands.Keep.Usage.SkinType:			'/keep skintype [0 = any, 1 = old, 2 = new]' 성이 구형 또는 신형 스킨을 사용하도록 강제합니다
+# GMCommands.Keep.Usage.MoveHere:			'/keep movehere' To move keep to player position
+# GMCommands.Keep.Usage.AddComponent:		'/keep addcomponent <compx> <compy> <comphead> <skin> <height>' To add component to current keep
+GMCommands.Keep.Usage.Save:					'/keep save' 성을 DB에 저장합니다
+GMCommands.Keep.Usage.AddTeleporter:		'/keep addteleporter' 텔레포트 스톤을 생성합니다
+GMCommands.Keep.Usage.AddBanner:			'/keep addbanner <realm|guild>' 배너를 생성합니다
+GMCommands.Keep.Usage.Realm:				'/keep realm <newrealm>' 성의 렐름을 변경합니다
+GMCommands.Keep.Usage.Radius:				'/keep radius <newRadius (set to 0 for default)>' 성의 반경을 변경합니다
+GMCommands.Keep.FastCreate.TypeOfKeep:		성 타입:
+GMCommands.Keep.FastCreate.CompCreated:		CompID={0}; KeepID={1}
+GMCommands.Keep.FastCreate.KeepCreated:		성을 생성했습니다.
+GMCommands.Keep.FastCreate.InvalidParameters:	Keep Type, Keep ID 또는 Keep Name 매개변수가 올바르지 않습니다
+GMCommands.Keep.FastCreate.KeepIDMustBeUnusedLessThan256:	KeepID는 사용 중이지 않아야 하며 256보다 작아야 합니다.
+GMCommands.Keep.FastCreate.WrongType:		잘못된 성 타입입니다
+GMCommands.Keep.TowerCreate.InvalidKeepID:	KeepID 입력이 올바르지 않습니다!
+GMCommands.Keep.TowerCreate.KeepIDExists:	KeepID {0}이(가) 이미 존재합니다!
+GMCommands.Keep.TowerCreate.WrongKeepID:	잘못된 KeepID({0})입니다. 타워 KeepID는 255보다 커야 합니다!
+GMCommands.Keep.TowerCreate.InvalidBaseLev:	BaseLevel 입력이 올바르지 않습니다!
+GMCommands.Keep.TowerCreate.CreatedSaved:	현재 위치에 타워를 생성하고 저장했습니다!
+GMCommands.Keep.Remove.YourNotInAKeepArea:	성 지역 안에 있지 않습니다!
+GMCommands.Keep.Remove.KeepUnloaded:		성을 언로드했습니다!
+GMCommands.Keep.Remove.MustCreateKeepFirst:	먼저 성을 생성해야 합니다.
+GMCommands.Keep.Remove.YouChangeKeepName:	현재 성의 이름을 {0}(으)로 변경했습니다.
+GMCommands.Keep.KeepID.Changed:			현재 성의 ID를 {0}(으)로 변경했습니다.
+GMCommands.Keep.Level.YouChangeKeepLevel:	현재 성의 레벨을 {0}(으)로 변경했습니다.
+GMCommands.Keep.BaseLevel.YouChangeBaseLev:	현재 성의 기본 레벨을 {0}(으)로 변경했습니다.
+GMCommands.Keep.Realm.YouChangeKeepRealm:	현재 성의 렐름을 {0}(으)로 변경했습니다.
+GMCommands.Keep.Radius.YouChangeKeepRadius:	현재 성의 반경을 {0}(으)로 변경했습니다.
+GMCommands.Keep.Save.KeepSavedInDatabase:	성을 데이터베이스에 저장했습니다.
+GMCommands.Keep.AddTeleport.StoneAdded:		텔레포트 스톤을 추가했습니다!
+GMCommands.Keep.AddBanner.BannerAdded:		배너를 추가했습니다!
+GMCommands.Keep.Move.Usage:				/keep move [direction] [amount]
+GMCommands.Keep.Move.Moved:				성을 이동했습니다. 변경 사항을 저장하려면 '/keep save'를 잊지 마세요.
+GMCommands.Keep.SkinType.Usage:			/keep skintype [0 = any, 1 = old, 2 = new]
+GMCommands.Keep.SkinType.Changed:			성 스킨 타입을 {0}(으)로 변경했습니다. 변경 사항을 저장하려면 '/keep save'를 잊지 마세요.
+
+## /keepguard
+GMCommands.KeepGuard.Description:			성 가드 관련 명령어입니다!
+GMCommands.KeepGuard.Information:			가드의 다른 매개변수를 변경하려면 '/mob' 명령을 사용하세요.
+GMCommands.KeepGuard.Usage.Create:			'/keepguard create <lord|fighter|archer|healer|stealther|caster|merchant|currencymerchant|hastener|mission|patrol|corpsesummoner|gatekeeperin|gatekeeperout> <static(궁수와 캐스터는 선택 사항)>'.
+GMCommands.KeepGuard.Usage.Position.Add:	'/keepguard position add <height(선택 사항)>'.
+GMCommands.KeepGuard.Usage.Position.Remove:	'/keepguard position remove'.
+GMCommands.KeepGuard.Usage.Path.Create:		'/keepguard path create'.
+GMCommands.KeepGuard.Usage.Path.Add:		'/keepguard path add'.
+GMCommands.KeepGuard.Usage.Path.Save:		'/keepguard path save'.
+GMCommands.KeepGuard.Create.NoKCompTarget:	순찰을 생성하려면 성 구성요소를 대상으로 선택해야 합니다!
+GMCommands.KeepGuard.Create.GuardAdded:		가드를 추가했습니다!
+GMCommands.KeepGuard.Create.PatrolNameRequired: 이 순찰의 이름을 입력해야 합니다.
+GMCommands.KeepGuard.Create.KeepTypeRequired: 이 순찰이 사용할 성 유형을 입력해야 합니다.
+GMCommands.KeepGuard.Create.InvalidKeepType: 지정한 성 유형이 올바르지 않습니다.
+GMCommands.KeepGuard.Create.PatrolCreatedForKeepType: 성 유형 {0}에 대한 순찰을 생성했습니다.
+GMCommands.KeepGuard.Position.PAlreadyAss:	높이 {0}에 이미 위치가 지정되어 있습니다. 먼저 제거하세요!
+GMCommands.KeepGuard.Position.GuardPAdded:	가드 위치를 추가했습니다
+GMCommands.KeepGuard.Position.TargetGuard:	먼저 가드를 대상으로 선택하세요!
+GMCommands.KeepGuard.Position.GuardRemoved:	가드 위치를 제거했습니다!
+GMCommands.KeepGuard.Path.CreationStarted:	경로 생성을 시작했습니다! 이제 '/keepguard path add'로 새 경로 지점을 추가할 수 있습니다!
+GMCommands.KeepGuard.Path.NoPathCreatedYet:	아직 생성된 경로가 없습니다! 먼저 '/keepguard path create'를 사용하세요!
+GMCommands.KeepGuard.Path.NoValidSpLimit:	올바른 속도 제한이 아닙니다: '{0}'!
+GMCommands.KeepGuard.Path.PPAdded:			경로 지점을 추가했습니다. 현재 경로 길이 = {0}.
+GMCommands.KeepGuard.Path.TargPatrolGuard:	먼저 순찰 가드를 대상으로 선택하세요!
+GMCommands.KeepGuard.Path.Saved:			경로를 저장했습니다
+GMCommands.KeepGuard.Path.PatrolGroupsInitialized: 순찰 그룹을 초기화했습니다!
+
+## /setsalvage
+GMCommands.SetSalvage.Syntax:               /setsalvage - 수정할 아이템은 마지막 배낭 슬롯에 있어야 합니다. 아이템은 자동으로 저장 및 갱신됩니다.
+GMCommands.SetSalvage.ItemCannotBeConfigured: 이 아이템은 설정할 수 없습니다.
+GMCommands.SetSalvage.PriceChanged:         {0} 가격을 {1}에서 {2}(으)로 변경했습니다!
+
+## /kick
+GMCommands.Kick.Description:				선택한 플레이어를 서버에서 추방합니다.
+GMCommands.Kick.Usage:						'/kick <PlayerName>' 플레이어를 추방합니다.
+GMCommands.Kick.NoPlayerOnLine:				해당 이름으로 접속 중인 플레이어가 없어 추방할 수 없습니다!
+GMCommands.Kick.RemovedFromServer:			서버에서 추방되었습니다!
+GMCommands.Kick.RemovedFromServerByGM:		GM {0}에 의해 서버에서 추방되었습니다!
+
+## /merchant
+GMCommands.Merchant.Description:			상인 생성 및 관리 명령어입니다!
+GMCommands.Merchant.Usage.Create:			'/merchant create' 빈 상인을 생성합니다;
+GMCommands.Merchant.Usage.CreateType:		'/merchant create <type>' 지정한 클래스 타입의 빈 상인을 생성합니다;
+GMCommands.Merchant.Usage.Info:				'/merchant info' 상인 정보를 표시합니다;
+GMCommands.Merchant.Usage.Save:				'/merchant save' 이 상인을 DB에 새 오브젝트로 저장합니다;
+GMCommands.Merchant.Usage.Remove:			'/merchant remove' 이 상인을 DB에서 제거합니다;
+GMCommands.Merchant.Usage.Sell:				'/merchant sell add <itemsListTemplateID>' 이 상인에게 판매 목록 템플릿을 지정합니다;
+GMCommands.Merchant.Usage.SellRemove:		'/merchant sellremove' 상인에서 판매 목록 템플릿을 제거합니다;
+GMCommands.Merchant.Usage.Articles.Add:		'/merchant articles add <itemTemplateID> <pageNumber> [slot]' 상인 판매 목록 템플릿에 아이템을 추가합니다;
+GMCommands.Merchant.Usage.Articles.Remove:	'/merchant articles remove <pageNumber> <slot>' 상인 인벤토리 판매 목록 템플릿의 지정 슬롯에서 아이템을 제거합니다;
+GMCommands.Merchant.Usage.Articles.Delete:	'/merchant articles delete' 상인의 인벤토리 판매 목록 템플릿을 삭제합니다;
+GMCommands.Merchant.Usage.Type:				'/merchant type <classtype>';
+GMCommands.Merchant.CommandOverview:		명령어 개요를 보려면 /merchant를 입력하세요
+GMCommands.Merchant.ErrorCreateInstance:	{0} 인스턴스를 생성하는 중 오류가 발생했습니다!
+GMCommands.Merchant.Create.NewName:			새 상인
+GMCommands.Merchant.Create.NewGuildName:	일반 상인
+GMCommands.Merchant.Create.Created:			상인 생성됨: OID={0}
+GMCommands.Merchant.Info.ArtListIsEmpty:	상인 판매 목록이 비어 있습니다!
+GMCommands.Merchant.Info.ArtList:			상인 판매 목록: "{0}"
+GMCommands.Merchant.NewName:			새 상인
+GMCommands.Merchant.NewGuildName:		상인
+GMCommands.Merchant.Save.SavedInDB:			대상 상인을 DB에 저장했습니다!
+GMCommands.Merchant.Remove.RemovedFromDB:	대상 상인을 DB에서 제거했습니다!
+GMCommands.Merchant.Sell.Add.Loaded:		상인 판매 목록을 불러왔습니다!
+GMCommands.Merchant.Sell.Remove.Removed:	상인 판매 목록을 제거했습니다!
+GMCommands.Merchant.Articles.ListNoFound:				상인 판매 목록을 찾을 수 없습니다!
+GMCommands.Merchant.Articles.Add.ItemTemplateNoFound:	ID가 {0}인 ItemTemplate을 찾을 수 없습니다!
+GMCommands.Merchant.Articles.Add.PageAndSlotInvalid:	페이지 번호({0})는 0부터 {1} 사이, 슬롯({2})은 0부터 {3} 사이여야 합니다.
+GMCommands.Merchant.Articles.Add.ItemAdded:				상인 판매 목록에 아이템을 추가했습니다!
+GMCommands.Merchant.Articles.Remove.PageInvalid:		페이지 번호({0})는 [0-{1}] 사이여야 합니다!
+GMCommands.Merchant.Articles.Remove.SlotInvalid:		슬롯({0})은 [0-{1}] 사이여야 합니다!
+GMCommands.Merchant.Articles.Remove.SlotInPageIsAEmpty:	페이지 {1}의 슬롯 {0}은(는) 이미 비어 있습니다.
+GMCommands.Merchant.Articles.Remove.SlotInPageCleaned:	상인 판매 목록의 페이지 {1}, 슬롯 {0}을(를) 비웠습니다!
+GMCommands.Merchant.Articles.Delete.DeletingListTemp:	판매 목록 템플릿을 삭제 중입니다...
+GMCommands.Merchant.Articles.Delete.ListDeleted:		상인 판매 목록을 삭제했습니다.
+GMCommands.Merchant.Type.Changed:			상인 타입을 {0}(으)로 변경했습니다.
+
+## /path
+GMCommands.Path.CreateStarted:			경로 생성을 시작했습니다! 이제 '/path add'로 새 경로 지점을 추가할 수 있습니다.
+GMCommands.Path.NoPathCreateFirst:			아직 생성된 경로가 없습니다. 먼저 /path create를 사용하세요.
+GMCommands.Path.NoPathCreateOrLoadFirst:	아직 생성된 경로가 없습니다. 먼저 /path create 또는 /path load를 사용하세요.
+GMCommands.Path.InvalidSpeedLimit:			올바른 속도 제한이 아닙니다: '{0}'.
+GMCommands.Path.InvalidWaitTime:			올바른 대기 시간이 아닙니다: '{0}'.
+GMCommands.Path.PathPointAdded:				경로 지점을 추가했습니다. 현재 경로 길이는 {0}입니다.
+GMCommands.Path.AllPointsSpeedSet:			모든 경로 지점의 속도를 {0}(으)로 설정했습니다.
+GMCommands.Path.SelectMobFirst:				먼저 몹을 선택해야 합니다.
+GMCommands.Path.NpcTravelPath:				{0}에게 경로를 따라 이동하도록 지시했습니다.
+GMCommands.Path.NpcWalkToSpawn:				{0}에게 스폰 위치로 돌아가도록 지시했습니다.
+GMCommands.Path.Usage.Type:					사용법: /path type <pathtype>
+GMCommands.Path.CurrentType:				현재 경로 타입은 '{0}'입니다.
+GMCommands.Path.PossibleTypes:				가능한 경로 타입 값:
+GMCommands.Path.TypeMustBeOneOf:			PathType은 다음 중 하나여야 합니다:
+GMCommands.Path.TypeSet:					현재 경로 타입을 '{0}'(으)로 설정했습니다.
+GMCommands.Path.Usage.Load:					사용법: /path load <pathname>
+GMCommands.Path.NotFound:					경로 '{0}'을(를) 찾을 수 없습니다.
+GMCommands.Path.Loaded:						경로 '{0}'을(를) 불러왔습니다.
+GMCommands.Path.Usage.Save:					사용법: /path save <pathname>
+GMCommands.Path.SavedAs:					경로를 '{0}'(으)로 저장했습니다.
+GMCommands.Path.Usage.AssignTaxiRoute:		사용법: /path assigntaxiroute <destination>
+GMCommands.Path.SelectStableMaster:			택시 경로를 지정하려면 먼저 마구간 주인을 선택해야 합니다.
+GMCommands.Path.StableMasterMissingTicket:	마구간 주인에게 {0}이(가) 없습니다.
+GMCommands.Path.TaxiRouteSet:				택시 경로를 경로 '{0}'(으)로 설정했습니다.
+GMCommands.Path.VisualizationToggled:		{0} ({1})의 경로 시각화를 전환합니다.
+
+## /mob
+
+## /object
+GMCommands.Object.Info.BlankName:			(이름 없음)
+GMCommands.Object.Info.OID:					OID: {0}
+GMCommands.Object.Info.Type:				타입: {0}
+GMCommands.Object.Info.Name:				이름: {0}
+GMCommands.Object.Info.Model:				모델: {0}
+GMCommands.Object.Info.Emblem:				엠블럼: {0}
+GMCommands.Object.Info.Realm:				렐름: {0}
+GMCommands.Object.Info.Owner:				소유자: {0}
+GMCommands.Object.Info.OwnerID:				소유자 ID: {0}
+GMCommands.Object.Info.RespawnInterval:		리스폰 간격(초): {0}
+GMCommands.Object.Info.Count:				수량: {0}
+GMCommands.Object.Info.Location:			위치: X= {0} ,Y= {1} ,Z= {2}
+GMCommands.Object.Created:					오브젝트 생성됨: OID={0}
+GMCommands.Object.CreatedWithSpaces:		오브젝트 생성됨: OID = {0}
+GMCommands.Object.ModelChanged:				오브젝트 모델을 {0}(으)로 변경했습니다.
+GMCommands.Object.HighestModelReached:		가장 높은 오브젝트 모델에 도달했습니다!
+GMCommands.Object.ModelCannotBeZero:		오브젝트 모델은 0이 될 수 없습니다!
+GMCommands.Object.EmblemChanged:			오브젝트 엠블럼을 {0}(으)로 변경했습니다.
+GMCommands.Object.RealmChanged:				오브젝트 렐름을 {0}(으)로 변경했습니다.
+GMCommands.Object.NameChanged:				오브젝트 이름을 {0}(으)로 변경했습니다.
+GMCommands.Object.NameRemoved:				오브젝트 이름을 제거했습니다.
+GMCommands.Object.CreateInstanceError:		{0} 인스턴스를 생성하는 중 오류가 발생했습니다!
+GMCommands.Object.SavedToDatabase:			오브젝트를 데이터베이스에 저장했습니다.
+GMCommands.Object.RemovedFromClientsAndDatabase:	오브젝트를 클라이언트와 데이터베이스에서 제거했습니다.
+GMCommands.Object.TargetSetToNearest:		가장 가까운 오브젝트를 대상으로 지정했습니다!
+GMCommands.Object.NoObjectsInRange:			{0} 유닛 범위 안에 오브젝트가 없습니다!
+GMCommands.Object.RespawnIntervalSet:		오브젝트 리스폰 간격을 {0}초로 설정했습니다.
+GMCommands.Object.DataQuestsLoaded:			이 오브젝트의 데이터 퀘스트 {0}개를 불러왔습니다.
+GMCommands.Object.RefreshQuestsError:		퀘스트를 새로고침하는 중 오류가 발생했습니다.
+
+## /mute
+GMCommands.Mute.Err.NoSpeakChannel:                   음소거 상태라 이 채널에서 말할 수 없습니다.
+GMCommands.Mute.Err.NoUseCommand:                     음소거 상태라 이 명령어를 사용할 수 없습니다.
+
+## /team or /te
+GMCommands.Header.Command.Team:                         <----- '/team' 명령어 (plvl 2) ----->
+GMCommands.Team.Syntax.Team:                            '/team <message>' 또는 '/te <message>'
+GMCommands.Team.Usage.Team:                             모든 서버 팀원(plvl 2 이상)에게 메시지를 방송합니다.
+
+## /viewreports
+Scripts.Player.ViewReport.Usage: 			사용법:
+Scripts.Player.ViewReport.Help.Close:			'/viewreport close <report #>' - 해당 ID의 리포트를 닫습니다.
+Scripts.Player.ViewReport.Help.Delete:			'/viewreport delete <report #>' - 해당 ID의 리포트를 삭제합니다.
+Scripts.Player.ViewReport.InvalidReport:		올바른 리포트가 아닙니다.
+Scripts.Player.ViewReport.UnknownCommand:		올바른 명령어가 아닙니다.
+Scripts.Player.ViewReport.ReportDeleted:		리포트 {0}이(가) 삭제되었습니다.
+Scripts.Player.ViewReport.NoPriv:			리포트를 수정할 권한이 없습니다.
+
+## Misc Commands
+### /ban (OLD)
+Scripts.GM.Ban.AAlreadyBanned:				이 계정은 이미 차단되어 있습니다.
+Scripts.GM.Ban.ABanned:					계정 {0}이(가) 차단되었습니다.
+Scripts.GM.Ban.BAlreadyBanned:				이 계정과 IP는 이미 차단되어 있습니다.
+Scripts.GM.Ban.BBanned:					계정 {0} 및 IP {1}이(가) 차단되었습니다.
+Scripts.GM.Ban.IAlreadyBanned:				이 IP는 이미 차단되어 있습니다.
+Scripts.GM.Ban.IBanned:					IP {0}이(가) 차단되었습니다.
+Scripts.GM.Ban.MustTarget:				대상을 선택해야 합니다!
+
+## /keepcomponent
+GMCommands.KeepComponents.Description:		성 구성요소 생성 명령어입니다!
+GMCommands.KeepComponents.Usage.Create.TID:	'/keepcomponent create <type> <keepid>' 성 구성요소를 생성합니다.
+GMCommands.KeepComponents.Usage.Create.T:	'/keepcomponent create <type>' 성 구성요소를 생성하고 가장 가까운 성에 연결합니다.
+GMCommands.KeepComponents.Usage.Skin:		'/keepcomponent skin <skin>' 스킨을 변경합니다.
+GMCommands.KeepComponents.Usage.Delete:		'/keepcomponent delete' 구성요소를 삭제합니다.
+GMCommands.KeepComponents.Create.KCCreated:	성 구성요소를 생성했습니다.
+GMCommands.KeepComponents.Skin.YChangeSkin:	현재 성 구성요소의 스킨을 변경했습니다.
+GMCommands.KeepComponents.Delete.YDeleteKC:	현재 구성요소를 삭제했습니다.
+
+### /minorelic
+GMCommands.MinoRelic.Description:			미노타우르스 렐릭 관련 명령어입니다
+GMCommands.MinoRelic.Usage.Create:			'/minorelic create <Name> <Model> <Group/Self/Realm> <SpellID> <Effect / 159 = red, 160 = white, 161 = gold>' 지정한 인수로 새 렐릭을 생성합니다;
+GMCommands.MinoRelic.Usage.MoveHere:		'/minorelic movehere' 렐릭을 플레이어의 x, y, z 위치로 이동하고 해당 좌표를 스폰 위치로 저장합니다;
+GMCommands.MinoRelic.Usage.Name:			'/minorelic name <Name>' 이름을 변경합니다;
+GMCommands.MinoRelic.Usage.Spell:			'/minorelic spell <SpellID>' 렐릭에 주문 ID를 지정합니다;
+GMCommands.MinoRelic.Usage.Model:			'/minorelic model <Model>' 모델을 변경합니다;
+GMCommands.MinoRelic.Usage.Effect:			'/minorelic effect <Effect / 159 = red, 160 = white, 161 = gold>' 플레이어가 렐릭을 집었을 때 받는 효과를 변경합니다;
+GMCommands.MinoRelic.Usage.Info:			'/minorelic info' 렐릭 정보를 조회합니다;
+GMCommands.MinoRelic.Usage.DeSpawn:			'/minorelic despawn' 렐릭을 디스폰합니다;
+GMCommands.MinoRelic.Usage.Remove:			'/minorelic remove' 월드와 데이터베이스에서 렐릭을 제거합니다;
+GMCommands.MinoRelic.Usage.XP:				'/minorelic xp <amount>' 렐릭에 지정한 양의 XP를 부여합니다;
+GMCommands.MinoRelic.Usage.ShowAll:			'/minorelic showall' 모든 렐릭을 표시합니다;
+GMCommands.MinoRelic.Usage.Spawn:			'/minorelic spawn <ID>' 해당 ID의 렐릭을 스폰합니다;
+GMCommands.MinoRelic.Info.RelicInfo:		렐릭 정보
+GMCommands.MinoRelic.Info.Name:				- 이름: {0}
+GMCommands.MinoRelic.Info.ID:				- ID: {0}
+GMCommands.MinoRelic.Info.CurrentXP:		- 현재 렐릭 XP: {0}
+GMCommands.MinoRelic.Info.Level:			- 레벨: {0}
+GMCommands.MinoRelic.Info.Effect:			- 효과: {0}
+GMCommands.MinoRelic.Info.PositionInfo:		위치 정보
+GMCommands.MinoRelic.Info.SpawnX:			- 스폰 X: {0}
+GMCommands.MinoRelic.Info.SpawnY:			- 스폰 Y: {0}
+GMCommands.MinoRelic.Info.SpawnZ:			- 스폰 Z: {0}
+GMCommands.MinoRelic.Info.SpawnHeading:		- 스폰 방향: {0}
+GMCommands.MinoRelic.Info.SpawnRegion:		- 스폰 지역: {0}
+GMCommands.MinoRelic.Info.SpellInfo:		주문 정보
+GMCommands.MinoRelic.Info.SpellID:			- 주문 ID: {0}
+GMCommands.MinoRelic.Info.SpellTarget:		- 주문 대상: {0}
+GMCommands.MinoRelic.Info.SpellName:		- 주문 이름: {0}
+GMCommands.MinoRelic.Info.SpellType:		- 주문 타입: {0}
+GMCommands.MinoRelic.Info.SpellDuration:	- 주문 지속시간: {0}초
+GMCommands.MinoRelic.ShowAll.Infos:			렐릭 정보
+GMCommands.MinoRelic.ShowAll.Count:			렐릭 수: {0}
+GMCommands.MinoRelic.Spawn.AlreadySpawned:	렐릭이 이미 스폰되어 있습니다
+
+## /zonepoint or /zp
+GMCommands.Zonepoint.Description:			현재 플레이어 위치에 존포인트를 추가합니다.
+GMCommands.Zonepoint.Usage:					/zonepoint add <id> <realm>
+GMCommands.Zonepoint.UsageClass:			/zonepoint add <id> <realm> <class>
+GMCommands.Zonepoint.ZonepointAdded:		존포인트를 추가했습니다: ID={0}, 렐름={1}, X={2}, Y={3}, Z={4}, 지역={5}
+
+## /speed
+GMCommands.Speed.Description:               선택한 대상의 기본 이동 속도를 변경합니다. 값을 생략하면 현재 속도를 확인합니다.
+GMCommands.Speed.Syntax:                    /speed [newSpeed]
+GMCommands.Speed.InvalidTarget:             올바른 대상을 선택하지 않았습니다.
+GMCommands.Speed.Your:                      당신의
+GMCommands.Speed.CurrentSpeed:              {0} 최대 속도는 {1}입니다.
+GMCommands.Speed.SpeedChanged:              {0} 최대 속도를 {1}(으)로 변경했습니다.
+
+## /weather
+GMCommands.Weather.Description:				현재 지역의 날씨를 설정합니다.
+GMCommands.Weather.Usage.Info:				'/weather info' - 현재 지역의 날씨 정보를 확인합니다.
+GMCommands.Weather.Usage.StartWithArgs:		'/weather start <line> <duration> <speed> <diffusion> <intensity>' - 현재 지역에 폭풍을 시작합니다.
+GMCommands.Weather.Usage.Start:				'/weather start' - 현재 지역에 무작위 폭풍을 시작합니다.
+GMCommands.Weather.Usage.Restart:			'/weather restart' - 현재 지역의 폭풍을 다시 시작합니다.
+GMCommands.Weather.Usage.Stop:				'/weather stop' - 현재 지역의 폭풍을 중지합니다.
+GMCommands.Weather.Restart.Success:			Weather (restart): 현재 지역의 날씨를 다시 시작합니다.
+GMCommands.Weather.Restart.Failed:			Weather (restart): 현재 지역의 날씨를 다시 시작할 수 없습니다.
+GMCommands.Weather.Stop.Success:			Weather (stop): 현재 지역의 날씨를 중지했습니다.
+GMCommands.Weather.Stop.Failed:				Weather (stop): 현재 지역의 날씨를 중지할 수 없습니다.
+GMCommands.Weather.Start.Failed:			Weather (start): 현재 지역의 날씨를 시작할 수 없습니다.
+GMCommands.Weather.Start.WrongArguments:	Weather (start): 인수가 올바르지 않습니다.
+GMCommands.Weather.Start.Success:			Weather (start): 현재 지역의 날씨를 시작했습니다.
+GMCommands.Weather.Info.NotRegistered:		Weather (info): 현재 지역에 등록된 날씨가 없습니다.
+GMCommands.Weather.Info.Stopped:			Weather (info): 현재 지역의 날씨가 중지된 상태입니다.
+GMCommands.Weather.Info.CurrentPosition:	Weather (info): 현재 위치 - {0} - {1}
+
+## /diag
+GMCommands.Diagnostics.Description:         서버 성능 진단 로그 출력을 켜거나 끕니다.
+GMCommands.Diagnostics.Syntax.Perf:         /diag perf <on|off> [duration] - 서버 성능 진단 로그를 켜거나 끕니다. duration은 선택 사항이며 분 단위입니다.
+GMCommands.Diagnostics.Syntax.Notify:       /diag notify <on|off> <interval> - GameEventMgr Notify 프로파일링을 켜거나 끕니다. interval은 통계를 모을 시간(밀리초)입니다.
+GMCommands.Diagnostics.Syntax.Tick:         /diag tick <on|off> [threshold] - 틱 프로파일링을 켜거나 끄고, 긴 틱 기준값을 밀리초 단위로 설정합니다.
+GMCommands.Diagnostics.Syntax.Object:       /diag object - ServiceObjectStore 배열에서 null이 아닌 서비스 객체 수를 집계합니다.
+GMCommands.Diagnostics.ServiceObjectCountScheduled: 다음 틱에 서비스 객체 수를 집계하도록 예약했습니다.
+GMCommands.Diagnostics.PerfLoggingOnForMinutes: 성능 진단 로그를 {0}분 동안 켰습니다.
+GMCommands.Diagnostics.PerfLoggingOn:       성능 진단 로그를 켰습니다.
+GMCommands.Diagnostics.PerfLoggingOff:      성능 진단 로그를 껐습니다.
+GMCommands.Diagnostics.InvalidInterval:     interval 인수가 올바르지 않습니다. 밀리초 단위의 양수를 입력하세요.
+GMCommands.Diagnostics.NotifyLoggingOn:     GameEventMgr Notify() 로그를 켰습니다.
+GMCommands.Diagnostics.NotifyLoggingOff:    GameEventMgr Notify() 로그를 껐습니다.
+GMCommands.Diagnostics.InvalidThreshold:    threshold 인수가 올바르지 않습니다. 밀리초 단위의 양수를 입력하세요.
+GMCommands.Diagnostics.TickProfilingOn:     틱 프로파일링을 켰습니다. 긴 틱 기준값은 {0}ms입니다.
+GMCommands.Diagnostics.TickProfilingOff:    틱 프로파일링을 껐습니다.
+
+## /translate
+GMCommands.Translate.Description:			'/translate add [Language] [TranslationId] [Text]'로 새 번역을 추가합니다.
+GMCommands.Translate.Help.Debug:			'/translate debug'로 내 LanguageMgr 디버그 모드를 켜거나 끕니다.
+GMCommands.Translate.Help.MemAdd:			번역 ID와 문장이 한 줄에 들어가지 않을 때 '/translate memadd [Language] [TranslationId]'로 임시 언어 객체를 만듭니다.
+GMCommands.Translate.Help.MemClear:			'/translate memclear'로 임시 언어 객체를 제거합니다.
+GMCommands.Translate.Help.MemSave:			'/translate memsave [Text]'로 임시 언어 객체에 문장을 넣고, 데이터베이스에 저장한 뒤 LanguageMgr에 등록합니다.
+GMCommands.Translate.Help.MemShow:			'/translate memshow'로 임시 언어 객체의 언어와 번역 ID를 확인합니다.
+GMCommands.Translate.Help.Refresh:			'/translate refresh [Language] [TranslationId] [Text]'로 기존 번역을 갱신합니다.
+GMCommands.Translate.Help.Select:			번역 ID와 문장이 한 줄에 들어가지 않을 때 '/translate select [Language] [TranslationId]'로 기존 번역을 선택해 임시로 보관합니다.
+GMCommands.Translate.Help.SelectClear:		'/translate selectclear'로 선택한 언어 객체를 임시 속성에서 제거합니다.
+GMCommands.Translate.Help.SelectSave:		'/translate selectsave [Text]'로 선택한 번역 문장을 갱신하고 데이터베이스에 저장합니다.
+GMCommands.Translate.Help.SelectShow:		'/translate selectshow'로 선택한 언어 객체의 언어, 번역 ID, 문장을 확인합니다.
+GMCommands.Translate.Help.Show:				'/translate show [Language] [TranslationId]'로 지정한 언어와 번역 ID의 번역 문장을 확인합니다.
+GMCommands.Translate.Usage.Add:				[언어 관리자] 사용법: '/translate add [Language] [TranslationId] [Text]'
+GMCommands.Translate.Usage.MemAdd:			[언어 관리자] 사용법: '/translate memadd [Language] [TranslationId]'
+GMCommands.Translate.Usage.MemSave:			[언어 관리자] 사용법: '/translate memsave [Text]'
+GMCommands.Translate.Usage.Refresh:			[언어 관리자] 사용법: '/translate refresh [Language] [TranslationId] [Text]'
+GMCommands.Translate.Usage.Select:			[언어 관리자] 사용법: '/translate select [Language] [TranslationId]'
+GMCommands.Translate.Usage.SelectSave:		[언어 관리자] 사용법: '/translate selectsave [Text]'
+GMCommands.Translate.Usage.Show:			[언어 관리자] 사용법: '/translate show [Language] [TranslationId]'
+GMCommands.Translate.Add.IdAlreadyInUse:	[언어 관리자] 해당 언어에서 이 번역 ID는 이미 사용 중입니다. (Language <{0}> - TranslationId <{1}>)
+GMCommands.Translate.Add.Success:			[언어 관리자] 번역을 추가했습니다. (Language <{0}> - TranslationId <{1}>)
+GMCommands.Translate.Debug.Mode:			[언어 관리자] 디버그 모드: {0}
+GMCommands.Translate.Debug.On:				켜짐
+GMCommands.Translate.Debug.Off:				꺼짐
+GMCommands.Translate.MemAdd.AlreadyExists:	[언어 관리자] 이미 다른 언어 객체가 있어 추가할 수 없습니다.
+GMCommands.Translate.MemAdd.CombinationInUse:	[언어 관리자] TranslationId <{0}> 및 Language <{1}> 조합은 이미 사용 중입니다.
+GMCommands.Translate.MemAdd.Success:		[언어 관리자] 언어 객체를 임시 속성에 추가했습니다. (Language <{0}> - TranslationId <{1}>)
+GMCommands.Translate.NoLanguageObject:		[언어 관리자] 언어 객체를 찾을 수 없습니다.
+GMCommands.Translate.MemClear.Success:		[언어 관리자] 언어 객체를 제거했습니다.
+GMCommands.Translate.MemSave.RegisterFailed:	[언어 관리자] 이미 다른 객체가 있어 LanguageMgr에 언어 객체를 등록할 수 없습니다.
+GMCommands.Translate.MemSave.Success:		[언어 관리자] 번역을 데이터베이스에 추가하고 LanguageMgr에 등록했습니다.
+GMCommands.Translate.MemShow.Info:			[언어 관리자] 언어 객체 정보: Language <{0}> - TranslationId <{1}>
+GMCommands.Translate.Refresh.NotFound:		[언어 관리자] TranslationId <{0}>을(를) 찾을 수 없습니다. (Language <{1}>)
+GMCommands.Translate.Refresh.Success:		[언어 관리자] 번역 ID <{0}> (언어 <{1}>)을(를) 데이터베이스에서 갱신했습니다.
+GMCommands.Translate.Select.AlreadySelected:	[언어 관리자] 이미 언어 객체를 선택했습니다. (언어 <{0}> - 번역 ID <{1}>)
+GMCommands.Translate.LanguageObjectNotFound:	[언어 관리자] 언어 객체를 찾을 수 없습니다. (언어 <{0}> - 번역 ID <{1}>)
+GMCommands.Translate.Select.Success:		[언어 관리자] 언어 객체를 찾아 임시 속성에 추가했습니다. (언어 <{0}> - 번역 ID <{1}>)
+GMCommands.Translate.NoLanguageObjectSelected:	[언어 관리자] 선택한 언어 객체가 없습니다.
+GMCommands.Translate.SelectClear.Success:	[언어 관리자] 임시 속성에서 언어 객체를 제거했습니다. (언어 <{0}> - 번역 ID <{1}>)
+GMCommands.Translate.SelectSave.Success:	[언어 관리자] 언어 객체를 변경하고 데이터베이스에 저장했습니다. (언어 <{0}> - 번역 ID <{1}> - 텍스트 <{2}>)
+GMCommands.Translate.SelectShow.Info:		[언어 관리자] 언어 객체 정보: 언어 <{0}> - 번역 ID <{1}> - 텍스트 <{2}>
+GMCommands.Translate.Show.Text:				[언어 관리자] {0}

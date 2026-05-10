@@ -2,6 +2,7 @@
 using DOL.AI.Brain;
 using DOL.GS.PacketHandler;
 using DOL.GS.Scripts.DOL.AI.Brain;
+using DOL.Language;
 
 namespace DOL.GS.Scripts
 {
@@ -66,7 +67,7 @@ namespace DOL.GS.Scripts
                     if (transformed) return;
                     foreach (GamePlayer player in Body.GetPlayersInRadius(400))
                     {
-                        player.Out.SendMessage("The lure dissapears and a scourgin jumps out at " + player.Name + ".",
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Mobs.BotonidSeedling.LureDisappears", player.Name),
                             eChatType.CT_Say,
                             eChatLoc.CL_ChatWindow);
                         Transform(transformed); // scourgin

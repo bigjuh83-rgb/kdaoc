@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -54,24 +54,32 @@ namespace DOL.GS.Quests.Midgard
 		protected const int minimumLevel = 50;
 		protected const int maximumLevel = 50;
 
+		private static string L(GamePlayer player, string key, params object[] args)
+		{
+			string language = player != null && player.Client != null && player.Client.Account != null
+				? player.Client.Account.Language
+				: ServerProperties.Properties.SERV_LANGUAGE;
+			return DOL.Language.LanguageMgr.GetTranslation(language, key, args);
+		}
+
 		private static GameNPC Masrim = null; // Start NPC
 		private static Oona Oona = null; // Mob to kill
 		private static GameNPC MorlinCaan = null; // Trainer for reward
 
 		private static DbItemTemplate oona_head = null; //ball of flame
 		private static DbItemTemplate sealed_pouch = null; //sealed pouch
-		private static DbItemTemplate HunterEpicBoots = null; //Call of the Hunt Boots 
-		private static DbItemTemplate HunterEpicHelm = null; //Call of the Hunt Coif 
-		private static DbItemTemplate HunterEpicGloves = null; //Call of the Hunt Gloves 
-		private static DbItemTemplate HunterEpicVest = null; //Call of the Hunt Hauberk 
-		private static DbItemTemplate HunterEpicLegs = null; //Call of the Hunt Legs 
-		private static DbItemTemplate HunterEpicArms = null; //Call of the Hunt Sleeves 
-		private static DbItemTemplate ShadowbladeEpicBoots = null; //Shadow Shrouded Boots 
-		private static DbItemTemplate ShadowbladeEpicHelm = null; //Shadow Shrouded Coif 
-		private static DbItemTemplate ShadowbladeEpicGloves = null; //Shadow Shrouded Gloves 
-		private static DbItemTemplate ShadowbladeEpicVest = null; //Shadow Shrouded Hauberk 
-		private static DbItemTemplate ShadowbladeEpicLegs = null; //Shadow Shrouded Legs 
-		private static DbItemTemplate ShadowbladeEpicArms = null; //Shadow Shrouded Sleeves         
+		private static DbItemTemplate HunterEpicBoots = null; //Call of the Hunt Boots
+		private static DbItemTemplate HunterEpicHelm = null; //Call of the Hunt Coif
+		private static DbItemTemplate HunterEpicGloves = null; //Call of the Hunt Gloves
+		private static DbItemTemplate HunterEpicVest = null; //Call of the Hunt Hauberk
+		private static DbItemTemplate HunterEpicLegs = null; //Call of the Hunt Legs
+		private static DbItemTemplate HunterEpicArms = null; //Call of the Hunt Sleeves
+		private static DbItemTemplate ShadowbladeEpicBoots = null; //Shadow Shrouded Boots
+		private static DbItemTemplate ShadowbladeEpicHelm = null; //Shadow Shrouded Coif
+		private static DbItemTemplate ShadowbladeEpicGloves = null; //Shadow Shrouded Gloves
+		private static DbItemTemplate ShadowbladeEpicVest = null; //Shadow Shrouded Hauberk
+		private static DbItemTemplate ShadowbladeEpicLegs = null; //Shadow Shrouded Legs
+		private static DbItemTemplate ShadowbladeEpicArms = null; //Shadow Shrouded Sleeves
 
 		// Constructors
 		public Rogue_50() : base()
@@ -95,7 +103,7 @@ namespace DOL.GS.Quests.Midgard
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -301,7 +309,7 @@ namespace DOL.GS.Quests.Midgard
 
 			}
 //end item
-			//Call of the Hunt Coif 
+			//Call of the Hunt Coif
 			HunterEpicHelm = GameServer.Database.FindObjectByKey<DbItemTemplate>("HunterEpicHelm");
 			if (HunterEpicHelm == null)
 			{
@@ -345,7 +353,7 @@ namespace DOL.GS.Quests.Midgard
 
 			}
 //end item
-			//Call of the Hunt Gloves 
+			//Call of the Hunt Gloves
 			HunterEpicGloves = GameServer.Database.FindObjectByKey<DbItemTemplate>("HunterEpicGloves");
 			if (HunterEpicGloves == null)
 			{
@@ -385,7 +393,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Call of the Hunt Hauberk 
+			//Call of the Hunt Hauberk
 			HunterEpicVest = GameServer.Database.FindObjectByKey<DbItemTemplate>("HunterEpicVest");
 			if (HunterEpicVest == null)
 			{
@@ -428,7 +436,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Call of the Hunt Legs 
+			//Call of the Hunt Legs
 			HunterEpicLegs = GameServer.Database.FindObjectByKey<DbItemTemplate>("HunterEpicLegs");
 			if (HunterEpicLegs == null)
 			{
@@ -471,7 +479,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Call of the Hunt Sleeves 
+			//Call of the Hunt Sleeves
 			HunterEpicArms = GameServer.Database.FindObjectByKey<DbItemTemplate>("HunterEpicArms");
 			if (HunterEpicArms == null)
 			{
@@ -514,7 +522,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Shadow Shrouded Boots 
+			//Shadow Shrouded Boots
 			ShadowbladeEpicBoots = GameServer.Database.FindObjectByKey<DbItemTemplate>("ShadowbladeEpicBoots");
 			if (ShadowbladeEpicBoots == null)
 			{
@@ -557,7 +565,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Shadow Shrouded Coif 
+			//Shadow Shrouded Coif
 			ShadowbladeEpicHelm = GameServer.Database.FindObjectByKey<DbItemTemplate>("ShadowbladeEpicHelm");
 			if (ShadowbladeEpicHelm == null)
 			{
@@ -600,7 +608,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Shadow Shrouded Gloves 
+			//Shadow Shrouded Gloves
 			ShadowbladeEpicGloves = GameServer.Database.FindObjectByKey<DbItemTemplate>("ShadowbladeEpicGloves");
 			if (ShadowbladeEpicGloves == null)
 			{
@@ -644,7 +652,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Shadow Shrouded Hauberk 
+			//Shadow Shrouded Hauberk
 			ShadowbladeEpicVest = GameServer.Database.FindObjectByKey<DbItemTemplate>("ShadowbladeEpicVest");
 			if (ShadowbladeEpicVest == null)
 			{
@@ -687,7 +695,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Shadow Shrouded Legs 
+			//Shadow Shrouded Legs
 			ShadowbladeEpicLegs = GameServer.Database.FindObjectByKey<DbItemTemplate>("ShadowbladeEpicLegs");
 			if (ShadowbladeEpicLegs == null)
 			{
@@ -730,7 +738,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Shadow Shrouded Sleeves 
+			//Shadow Shrouded Sleeves
 			ShadowbladeEpicArms = GameServer.Database.FindObjectByKey<DbItemTemplate>("ShadowbladeEpicArms");
 			if (ShadowbladeEpicArms == null)
 			{
@@ -816,7 +824,7 @@ namespace DOL.GS.Quests.Midgard
 
 		protected static void TalkToMasrim(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -835,19 +843,19 @@ namespace DOL.GS.Quests.Midgard
 					switch (quest.Step)
 					{
 						case 1:
-							Masrim.SayTo(player, "Seek out Oona in Raumarik and kill her! When you get into Raumarik, go west to the river and follow the river south until the river divides.");
+							Masrim.SayTo(player, L(player, "Quest.Epic.MidgardRogue50.Step1Reminder"));
 							break;
 						case 2:
-							Masrim.SayTo(player, "Hey, you are back! Please give me the head of Oona and visit "+MorlinCaan.Name+" and bring him the [sealed pouch]!");
+							Masrim.SayTo(player, L(player, "Quest.Epic.MidgardRogue50.Step2Reminder", MorlinCaan.Name));
 							break;
 						case 3:
-							Masrim.SayTo(player, $"Hello {player.Name}, have you visited "+MorlinCaan.Name+" already?");
+							Masrim.SayTo(player, L(player, "Quest.Epic.MidgardRogue50.Step3Reminder", player.Name, MorlinCaan.Name));
 							break;
 					}
 				}
 				else
 				{
-					Masrim.SayTo(player, "Midgard needs your [services]");
+					Masrim.SayTo(player, L(player, "Quest.Epic.MidgardRogue50.Intro"));
 				}
 			}
 				// The player whispered to the NPC
@@ -860,7 +868,8 @@ namespace DOL.GS.Quests.Midgard
 					switch (wArgs.Text)
 					{
 						case "services":
-							player.Out.SendQuestSubscribeCommand(Masrim, QuestMgr.GetIDForQuestType(typeof(Rogue_50)), "Will you help Masrim [Rogue Level 50 Epic]?");
+						case "도움":
+							player.Out.SendQuestSubscribeCommand(Masrim, QuestMgr.GetIDForQuestType(typeof(Rogue_50)), L(player, "Quest.Epic.MidgardRogue50.Subscribe"));
 							break;
 					}
 				}
@@ -869,16 +878,17 @@ namespace DOL.GS.Quests.Midgard
 					switch (wArgs.Text)
 					{
 						case "sealed pouch":
+						case "봉인된 주머니":
 							if (quest.Step == 2)
 							{
 								RemoveItem(player, oona_head);
-								Masrim.SayTo(player, "Take this sealed pouch to Morlin Caan in Jordheim for your reward!");
+								Masrim.SayTo(player, L(player, "Quest.Epic.MidgardRogue50.TakePouch"));
 								GiveItem(player, sealed_pouch);
 								quest.Step = 3;
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
@@ -889,7 +899,7 @@ namespace DOL.GS.Quests.Midgard
 				if (quest != null)
 					if (rArgs.Item.Id_nb == oona_head.Id_nb)
 					{
-						Masrim.SayTo(player, "Take this sealed pouch to Morlin Caan in Jordheim for your reward!");
+						Masrim.SayTo(player, L(player, "Quest.Epic.MidgardRogue50.TakePouch"));
 						GiveItem(player, sealed_pouch);
 						quest.Step = 3;
 					}
@@ -898,14 +908,14 @@ namespace DOL.GS.Quests.Midgard
 
 		protected static void TalkToMorlinCaan(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
 
 			if(Masrim.CanGiveQuest(typeof (Rogue_50), player)  <= 0)
 				return;
-			
+
 			//We also check if the player is already doing the quest
 			Rogue_50 quest = player.IsDoingQuest(typeof (Rogue_50)) as Rogue_50;
 
@@ -915,10 +925,10 @@ namespace DOL.GS.Quests.Midgard
 				{
 					if (quest.Step == 3)
 					{
-						MorlinCaan.SayTo(player, "Were you able to [fulfill] your given task?");
+						MorlinCaan.SayTo(player, L(player, "Quest.Epic.MidgardRogue50.FulfillReminder"));
 					}
 				}
-				
+
 			}
 			else if (e == GameLivingEvent.WhisperReceive)
 			{
@@ -932,17 +942,18 @@ namespace DOL.GS.Quests.Midgard
 					switch (wArgs.Text)
 					{
 						case "fulfill":
+						case "완수":
 							if (quest.Step == 3)
 							{
 								RemoveItem(player, sealed_pouch);
 								if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 									    eInventorySlot.LastBackpack))
 								{
-									MorlinCaan.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+									MorlinCaan.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 									quest.FinishQuest();
 								}
 								else
-									player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+									player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 							}
 							break;
 					}
@@ -957,11 +968,11 @@ namespace DOL.GS.Quests.Midgard
 						if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 							    eInventorySlot.LastBackpack))
 						{
-							MorlinCaan.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+							MorlinCaan.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 							quest.FinishQuest();
 						}
 						else
-							player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					}
 			}
 		}
@@ -1003,11 +1014,11 @@ namespace DOL.GS.Quests.Midgard
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, no go out there and finish your work!");
+				SendSystemMessage(player, L(player, "Quest.Epic.MidgardRogue50.AbortDecline"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -1037,7 +1048,7 @@ namespace DOL.GS.Quests.Midgard
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Our God forgives your laziness, just look out for stray lightning bolts.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(L(player, "Quest.Epic.MidgardRogue50.Decline"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -1045,14 +1056,14 @@ namespace DOL.GS.Quests.Midgard
 				if (!Masrim.GiveQuest(typeof (Rogue_50), player, 1))
 					return;
 
-				player.Out.SendMessage("Kill Oona in Raumarik!", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(L(player, "Quest.Epic.MidgardRogue50.Accept"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 			}
 		}
 
 		//Set quest name
 		public override string Name
 		{
-			get { return "War Concluded (Level 50 Rogue Epic)"; }
+			get { return L(m_questPlayer, "Quest.Epic.MidgardRogue50.Name"); }
 		}
 
 		// Define Steps
@@ -1063,11 +1074,11 @@ namespace DOL.GS.Quests.Midgard
 				switch (Step)
 				{
 					case 1:
-						return "Seek out Oona in Raumarik and kill her! When you get into Raumarik, go west to the river and follow the river south until the river divides.";
+						return L(m_questPlayer, "Quest.Epic.MidgardRogue50.Description1");
 					case 2:
-						return "Return to Masrim and give her Oona's Head!";
+						return L(m_questPlayer, "Quest.Epic.MidgardRogue50.Description2");
 					case 3:
-						return "Go to Morlin Caan in Jordheim and give him the Sealed Pouch for your reward!";
+						return L(m_questPlayer, "Quest.Epic.MidgardRogue50.Description3");
 				}
 				return base.Description;
 			}
@@ -1082,13 +1093,13 @@ namespace DOL.GS.Quests.Midgard
 
 			if (sender != m_questPlayer)
 				return;
-			
+
 			if (Step == 1 && e == GameLivingEvent.EnemyKilled)
 			{
 				EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
 				if (gArgs.Target.Name == Oona.Name)
 				{
-					m_questPlayer.Out.SendMessage("You collect Oona's Head", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					m_questPlayer.Out.SendMessage(L(m_questPlayer, "Quest.Epic.MidgardRogue50.CollectHead"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					GiveItem(player, oona_head);
 					Step = 2;
 				}
@@ -1099,7 +1110,7 @@ namespace DOL.GS.Quests.Midgard
 				if (gArgs.Target.Name == Masrim.Name && gArgs.Item.Id_nb == oona_head.Id_nb)
 				{
 					RemoveItem(Masrim, player, oona_head);
-					Masrim.SayTo(player, "Take this sealed pouch to Morlin Caan in Jordheim for your reward!");
+					Masrim.SayTo(player, L(player, "Quest.Epic.MidgardRogue50.TakePouch"));
 					GiveItem(player, sealed_pouch);
 					Step = 3;
 					return;
@@ -1115,11 +1126,11 @@ namespace DOL.GS.Quests.Midgard
 						    eInventorySlot.LastBackpack))
 					{
 						RemoveItem(MorlinCaan, player, sealed_pouch);
-						MorlinCaan.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+						MorlinCaan.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 						FinishQuest();
 					}
 					else
-						player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 				}
 			}
 		}
@@ -1157,24 +1168,24 @@ namespace DOL.GS.Quests.Midgard
 			}
 
 			m_questPlayer.GainExperience(eXPSource.Quest, 1937768448, true);
-			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");		
+			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");
 		}
 
 		#region Allakhazam Epic Source
 
 		/*
         *#25 talk to Masrim
-        *#26 seek out Loken in Raumarik Loc 47k, 25k, 4k, and kill him purp and 2 blue adds 
-        *#27 return to Masrim 
+        *#26 seek out Loken in Raumarik Loc 47k, 25k, 4k, and kill him purp and 2 blue adds
+        *#27 return to Masrim
         *#28 give her the ball of flame
         *#29 talk with Masrim about Loken�s demise
-        *#30 go to MorlinCaan in Jordheim 
+        *#30 go to MorlinCaan in Jordheim
         *#31 give her the sealed pouch
         *#32 you get your epic armor as a reward
         */
 
 		/*
-            *Call of the Hunt Boots 
+            *Call of the Hunt Boots
             *Call of the Hunt Coif
             *Call of the Hunt Gloves
             *Call of the Hunt Hauberk

@@ -3,6 +3,7 @@ using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -23,7 +24,7 @@ namespace DOL.GS
                     else
                         truc = ((source as GameSummonedPet).Owner as GamePlayer);
                     if (truc != null)
-                        truc.Out.SendMessage(Name + " is immune to any damage!", eChatType.CT_System, eChatLoc.CL_ChatWindow);
+                        truc.Out.SendMessage(LanguageMgr.GetTranslation(truc.Client.Account.Language, "NamedMobs.FallingIce.ImmuneToDamage", Name), eChatType.CT_System, eChatLoc.CL_ChatWindow);
 
                     base.TakeDamage(source, damageType, 0, 0);
                     return;
@@ -74,17 +75,17 @@ namespace DOL.AI.Brain
             AggroRange = 500;
             ThinkInterval = 500;
         }
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(String key, params object[] args)
         {
             foreach (GamePlayer player in Body.GetPlayersInRadius(2500))
             {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
         private bool Announcetext = false;
         private bool isDisabled = false;
         private bool CanCast = false;
-        
+
         public override void Think()
         {
             foreach(GamePlayer ppls in Body.GetPlayersInRadius(800))
@@ -97,7 +98,7 @@ namespace DOL.AI.Brain
                 if (ppls.IsWithinRadius(Body, 200))
                 {
 
-                        BroadcastMessage($"A terrifying cracking sound echoes in the caves! Falling ice slams into {ppls.Name}'s head!");
+                        BroadcastMessage("NamedMobs.FallingIce.SlamsHead", ppls.Name);
                         Announcetext = true;
                 }
             }

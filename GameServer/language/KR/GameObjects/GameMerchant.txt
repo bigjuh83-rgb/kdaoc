@@ -1,0 +1,33 @@
+﻿## Merchant NPC
+
+## Examine
+GameMerchant.GetExamineMessages.RightClick:		[오른쪽 클릭으로 상점 창 열기]
+GameMerchant.GetExamineMessages.YouExamine:		{0}을(를) 살펴봅니다. {1}은(는) {2}이며 상인입니다.
+
+## Interact
+GameMerchant.GetExamineMessages.BuyItemsFor:		{0}: "이곳에서 {1}(으)로 물건을 살 수 있습니다."
+GameMerchant.GetExamineMessages.Nothing:		아무것도 없음
+GameMerchant.OnPlayerSell.TooFarAway:			{0}이(가) 너무 멀리 있습니다!
+
+## Appraising
+GameMerchant.OnPlayerAppraise.Offers:			{0}이(가) {2}에 대해 {1}을(를) 제시합니다.
+
+## Buying
+GameMerchant.OnPlayerBuy.Bought:			{0}을(를) {1}에 구입했습니다.
+GameMerchant.OnPlayerBuy.Bought2:			{0}을(를) {1} {2}에 구입했습니다.
+GameMerchant.OnPlayerBuy.BoughtBP:			{0}을(를) BP {1}에 구입했습니다.
+GameMerchant.OnPlayerBuy.BoughtPieces:			{1} {0}개를 {2}에 구입했습니다.
+GameMerchant.OnPlayerBuy.BoughtPieces2:			{1} {0}개를 {2} {3}에 구입했습니다.
+GameMerchant.OnPlayerBuy.BoughtPiecesBP:		{1}을(를) BP {0}에 구입했습니다.
+GameMerchant.OnPlayerBuy.NotInventorySpace:		구입하기 위한 인벤토리 공간이 부족합니다.
+GameMerchant.OnPlayerBuy.YouNeed:			이것을 구입하려면 {0}이(가) 필요합니다.
+GameMerchant.OnPlayerBuy.YouNeed2:			이것을 구입하려면 {0} {1}이(가) 필요합니다.
+GameMerchant.OnPlayerBuy.YouNeedBP:			이것을 구입하려면 BP {0}이(가) 필요합니다.
+
+## Selling
+GameMerchant.OnPlayerSell.CantBeSold:			이 아이템은 판매할 수 없습니다.
+GameMerchant.OnPlayerSell.GivesYou:			{0}이(가) {2}의 대가로 {1}을(를) 줍니다.
+GameMerchant.OnPlayerSell.IsntInterested:		{0}은(는) {1}에 관심이 없습니다.
+
+## Withdrawing
+GameMerchant.OnPlayerWithdraw:		상인에게서 {0}을(를) 회수했습니다.

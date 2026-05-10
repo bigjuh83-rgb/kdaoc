@@ -8,7 +8,7 @@
 *Quest Version  : v1.0
 *
 *Changes:
-* 
+*
 */
 
 using System;
@@ -230,7 +230,7 @@ namespace DOL.GS.Quests.Hibernia
 
         protected static void TalkToTheresa(DOLEvent e, object sender, EventArgs args)
         {
-            //We get the player from the event arguments and check if he qualifies		
+            //We get the player from the event arguments and check if he qualifies
             GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
             if (player == null)
                 return;
@@ -249,26 +249,25 @@ namespace DOL.GS.Quests.Hibernia
                     {
                         case 1:
                             Theresa.SayTo(player,
-                                $"Greetings, {player.Name}, I don't know what to say. Thank you very much for helping me. I will give you some [information] about him now.");
+                                L(player, "Quest.Atlas.PowerOfNature.TheresaStep1", player.Name));
                             break;
                         case 2:
                             Theresa.SayTo(player,
-                                $"{player.Name}, exit the East Entrance to Lough Derg and move south to the little lake. I hope you will find my father there.");
+                                L(player, "Quest.Atlas.PowerOfNature.TheresaStep2", player.Name));
                             break;
                         case 3:
-                            Theresa.SayTo(player, $"Hello {player.Name}, you found my father? What did he [say]?");
+                            Theresa.SayTo(player, L(player, "Quest.Atlas.PowerOfNature.TheresaStep3", player.Name));
                             break;
                         case 4:
                             Theresa.SayTo(player,
-                                "Thank you so much, I've never met a person as kind as you. You helped me more than you realize, and I want to reward you with some silver. You told me something about [Power of Nature], what does that mean?");
+                                L(player, "Quest.Atlas.PowerOfNature.TheresaStep4"));
                             break;
                     }
                 }
                 else
                 {
                     Theresa.SayTo(player,
-                        $"Hello {player.CharacterClass.Name}. For many years there has been war in our areas and I am afraid that those days will come back. " +
-                        $"My father hasn't been to Tir na Nog since before the wars. I miss him dearly, and I hope he's doing well. Could you [help me] to find him?");
+                        L(player, "Quest.Atlas.PowerOfNature.TheresaIntro", player.CharacterClass.Name));
                 }
             }
             // The player whispered to the NPC
@@ -279,10 +278,11 @@ namespace DOL.GS.Quests.Hibernia
                 {
                     switch (wArgs.Text)
                     {
-                        case "help me":
+	                        case "help me":
+	                        case "도와":
                             player.Out.SendQuestSubscribeCommand(Theresa,
                                 QuestMgr.GetIDForQuestType(typeof(PowerOfNature)),
-                                "Will you help Theresa to find her father? [Memorial] Power of Nature");
+                                L(player, "Quest.Atlas.PowerOfNature.Subscribe"));
                             break;
                     }
                 }
@@ -290,22 +290,20 @@ namespace DOL.GS.Quests.Hibernia
                 {
                     switch (wArgs.Text)
                     {
-                        case "information":
+	                        case "information":
+	                        case "정보":
                             Theresa.SayTo(player,
-                                "Karl the fighter, the defender, the honorable. My father is an amazing person. " +
-                                "When I was younger, he always brought me things from his travels. " +
-                                "I still have them to this day and will never lose them! As I got older, the trips got longer and I started to miss him more. " +
-                                "However, my mother suffered even more than I. She fell sick and needed him... and now she is gone, and he has not been to Tir na Nog for several years. We all [needed him].");
+                                L(player, "Quest.Atlas.PowerOfNature.Information"));
                             break;
-                        case "needed him":
+	                        case "needed him":
+	                        case "필요했습니다":
                             Theresa.SayTo(player,
-                                "When I was a kid we used to walk to the little lake in Lough Derg and look at the trees and the bugs, sometimes for several hours. I loved it. " +
-                                "I always kept a [toy] with me on the way, which my father gave me from his travels. " +
-                                "It would be nice if you could go to this lake. Maybe he is there, that would be my greatest hope.");
+                                L(player, "Quest.Atlas.PowerOfNature.NeededHim"));
                             break;
-                        case "toy":
+	                        case "toy":
+	                        case "장난감":
                             Theresa.SayTo(player,
-                                "(She pauses for a moment) I want to give you this toy to take it with you on your way to the lake. If you meet him, give him this as a sign of love. I will never forget him!");
+                                L(player, "Quest.Atlas.PowerOfNature.Toy"));
                             if (quest.Step == 1 && player.Inventory.IsSlotsFree(1, eInventorySlot.FirstBackpack,
                                     eInventorySlot.LastBackpack))
                             {
@@ -315,40 +313,43 @@ namespace DOL.GS.Quests.Hibernia
                             else
                             {
                                 Theresa.SayTo(player,
-                                    "Oh you have too much in your inventory. Come back when you can hold this [toy].");
+                                    L(player, "Quest.Atlas.PowerOfNature.InventoryFull"));
                             }
 
                             break;
-                        case "say":
+	                        case "say":
+	                        case "말":
                             if (quest.Step == 3)
                             {
                                 Theresa.SayTo(player,
-                                    "I am so glad that I sent you. Knowing that he is still alive and healthy gives me peace and strength.");
+                                    L(player, "Quest.Atlas.PowerOfNature.Say"));
                             }
                             break;
-                        case "Power of Nature":
+	                        case "Power of Nature":
+	                        case "자연의 힘":
                             if (quest.Step == 4)
                             {
                                 Theresa.SayTo(player,
-                                    "I see now. The small lake in Lough Derg is the source of [natural powers]. Now I understand why we spent so much time there in my youth.");
+                                    L(player, "Quest.Atlas.PowerOfNature.PowerMeaning"));
                             }
                             break;
-                        case "natural powers":
+		                        case "natural powers":
+		                        case "자연의 힘의 근원":
                             if (quest.Step == 4)
                             {
                                 RemoveItem(player, magical_theresas_doll);
                                 Theresa.SayTo(player,
-                                "Father imbued this doll with magic, and I can feel his presence within it. I am confident he will return soon, and I can go with peace now. Thank you so much for bringing my father back to me, and to all of us in Tir na Nog. ");
+                                    L(player, "Quest.Atlas.PowerOfNature.NaturalPowers"));
                                 Theresa.Emote(eEmote.Cheer);
                                 new ECSGameTimer(Theresa, new ECSGameTimer.ECSTimerCallback(StartTheresaEffect), 2000);
                                 Theresa.SayTo(player,
-                                    "I can feel the power of nature!");
+                                    L(player, "Quest.Atlas.PowerOfNature.FeelPower"));
                                 quest.FinishQuest();
                             }
                             break;
                         case "abort":
                             player.Out.SendCustomDialog(
-                                "Do you really want to abort this quest, \nall items gained during quest will be lost?",
+                                DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"),
                                 new CustomDialogResponse(CheckPlayerAbortQuest));
                             break;
                     }
@@ -358,7 +359,7 @@ namespace DOL.GS.Quests.Hibernia
 
         protected static void TalkToKarl(DOLEvent e, object sender, EventArgs args)
         {
-            //We get the player from the event arguments and check if he qualifies		
+            //We get the player from the event arguments and check if he qualifies
             GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
             if (player == null)
                 return;
@@ -373,20 +374,19 @@ namespace DOL.GS.Quests.Hibernia
                     switch (quest.Step)
                     {
                         case 1:
-                            Karl.SayTo(player, "Hello Adventurer, I hope you have a great day.");
+                            Karl.SayTo(player, L(player, "Quest.Atlas.PowerOfNature.KarlGreeting"));
                             break;
                         case 2:
                             Karl.SayTo(player,
-                                $"Hello {player.CharacterClass.Name}, you are very brave to come here. This lake swarms with monsters and vermin, but I am happy for every visitor to [this place].");
+                                L(player, "Quest.Atlas.PowerOfNature.KarlStep2", player.CharacterClass.Name));
                             break;
                         case 3:
                             Karl.SayTo(player,
-                                $"{player.Name}, if you are ready then we can [begin] with the ceremony.");
+                                L(player, "Quest.Atlas.PowerOfNature.KarlStep3", player.Name));
                             break;
                         case 4:
                             Karl.SayTo(player,
-                                $"Okay, now bring this magical doll to my daughter in Tir na Nog and tell her about the Power of Nature." +
-                                $"I will come back soon and will stay by her side. \nThank you {player.Name}, that you visited me, I really appreciated that!");
+                                L(player, "Quest.Atlas.PowerOfNature.KarlStep4", player.Name));
                             break;
                     }
                 }
@@ -408,42 +408,43 @@ namespace DOL.GS.Quests.Hibernia
                 {
                     switch (wArgs.Text)
                     {
-                        case "this place":
+	                        case "this place":
+	                        case "이곳":
                             Karl.SayTo(player,
-                                "This place is very special to me, it's not just a retreat. Here I feel the nature that blossoms in all of Hibernia. " +
-                                "I wanted to bring this power and this life closer to everybody who comes here. " +
-                                "I wanted to show this to [my daughter] too, but she was too young to travel here and her mother used to worry.");
+                                L(player, "Quest.Atlas.PowerOfNature.ThisPlace"));
                             break;
-                        case "my daughter":
+	                        case "my daughter":
+	                        case "제 딸":
                             Karl.SayTo(player,
-                                $"That [doll] peeking out of your backpack, I remember it. I brought it back from a tour in Hadrian's Wall many years ago and gave it to my daughter. Why do you have it? (He eyes you suspiciously)");
+                                L(player, "Quest.Atlas.PowerOfNature.MyDaughter"));
                             break;
-                        case "doll":
+	                        case "doll":
+	                        case "인형":
                             Karl.SayTo(player,
-                                $"(You hand the doll to him and tell him of Theresa. Tears begin to form in his eyes) I am so sorry for all these years... I heard about my wife passing and it broke me. Theresa needed me more than ever, and I was not there. " +
-                                $"Please give me the doll. I will show her the [strength and aura] of all forces of nature, and give her proof that I'm still alive.");
+                                L(player, "Quest.Atlas.PowerOfNature.Doll"));
                             break;
-                        case "strength and aura":
+	                        case "strength and aura":
+	                        case "힘과 기운":
                             if (quest.Step == 2)
                             {
                                 RemoveItem(player, theresas_doll);
                                 Karl.SayTo(player,
-                                    $"Thank you {player.Name}, if you are ready then we can [begin] with the ceremony.");
+                                    L(player, "Quest.Atlas.PowerOfNature.StrengthAura", player.Name));
                                 quest.Step = 3;
                             }
 
                             break;
-                        case "begin":
+	                        case "begin":
+	                        case "시작":
                             if (quest.Step == 3)
                             {
                                 new ECSGameTimer(Karl, new ECSGameTimer.ECSTimerCallback(CreateEffect), 3000);
-                                
+
                                 new ECSGameTimer(Karl, new ECSGameTimer.ECSTimerCallback(timer => StartEffectPlayer(timer, player)), 1000);
                                 quest.Step = 4;
                                 GiveItem(player, magical_theresas_doll);
                                 Karl.SayTo(player,
-                                    $"Okay, now bring this magical doll to my daughter in Tir na Nog and tell her about the Power of Nature. " +
-                                    $"I will return soon and stay by her side. \nThank you {player.Name}, for visiting me. Truly!");
+                                    L(player, "Quest.Atlas.PowerOfNature.KarlStep4", player.Name));
                             }
 
                             break;
@@ -520,9 +521,9 @@ namespace DOL.GS.Quests.Hibernia
             }
 
             new ECSGameTimer(Karl, new ECSGameTimer.ECSTimerCallback(StartEffect), 1000);
-            
+
             new ECSGameTimer(Karl, new ECSGameTimer.ECSTimerCallback(StartEffect), 1000);
-            
+
             return 0;
         }
 
@@ -547,11 +548,11 @@ namespace DOL.GS.Quests.Hibernia
         private static int StartEffectPlayer(ECSGameTimer timer, GamePlayer player)
         {
             player.Out.SendSpellEffectAnimation(player, player, 5005, 0, false, 1);
-            
+
             RemoveEffectMob();
             return 0;
         }
-        
+
         private static void RemoveEffectMob()
         {
             foreach (GameNPC effect in Karl.GetNPCsInRadius(600))
@@ -595,7 +596,7 @@ namespace DOL.GS.Quests.Hibernia
             }
         }
         #endregion
-        
+
         public override bool CheckQuestQualification(GamePlayer player)
         {
             // if the player is already doing the quest his level is no longer of relevance
@@ -617,11 +618,11 @@ namespace DOL.GS.Quests.Hibernia
 
             if (response == 0x00)
             {
-                SendSystemMessage(player, "Good, now go out there and finish your work!");
+                SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
             }
             else
             {
-                SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+                SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
                 quest.AbortQuest();
             }
         }
@@ -652,7 +653,7 @@ namespace DOL.GS.Quests.Hibernia
             if (response == 0x00)
             {
                 Theresa.SayTo(player,
-                    $"Dont worry, thanks for listening to me, even that helped me a lot. Come back if you want to [help me].");
+                    L(player, "Quest.Atlas.PowerOfNature.Decline"));
             }
             else
             {
@@ -661,14 +662,14 @@ namespace DOL.GS.Quests.Hibernia
                     return;
 
                 Theresa.SayTo(player,
-                    $"Thank you very much, i don't know what to say. I will give you some [information] about him now.");
+                    L(player, "Quest.Atlas.PowerOfNature.Accept"));
             }
         }
 
         //Set quest name
         public override string Name
         {
-            get { return questTitle; }
+            get { return L(m_questPlayer, "Quest.Atlas.PowerOfNature.Name"); }
         }
 
         // Define Steps
@@ -679,13 +680,13 @@ namespace DOL.GS.Quests.Hibernia
                 switch (Step)
                 {
                     case 1:
-                        return "Continue speaking with Theresa and get more information about Karl.";
+                        return L(m_questPlayer, "Quest.Atlas.PowerOfNature.Description1");
                     case 2:
-                        return "Travel to the little lake in Lough Derg and search for Karl.";
+                        return L(m_questPlayer, "Quest.Atlas.PowerOfNature.Description2");
                     case 3:
-                        return "Speak with Karl and help him with the ceremony.";
+                        return L(m_questPlayer, "Quest.Atlas.PowerOfNature.Description3");
                     case 4:
-                        return "Return to Theresa with Karl's present.";
+                        return L(m_questPlayer, "Quest.Atlas.PowerOfNature.Description4");
                 }
 
                 return base.Description;
@@ -709,7 +710,7 @@ namespace DOL.GS.Quests.Hibernia
             /// <returns>The title description.</returns>
             public override string GetDescription(GamePlayer player)
             {
-                return "Protected by Nature";
+                return L(player, "Quest.Atlas.PowerOfNature.Title");
             }
 
             /// <summary>
@@ -720,7 +721,7 @@ namespace DOL.GS.Quests.Hibernia
             /// <returns>The title value.</returns>
             public override string GetValue(GamePlayer source, GamePlayer player)
             {
-                return "Protected by Nature";
+                return L(player, "Quest.Atlas.PowerOfNature.Title");
             }
 
             /// <summary>
@@ -768,9 +769,15 @@ namespace DOL.GS.Quests.Hibernia
         public override void FinishQuest()
         {
             m_questPlayer.GainExperience(eXPSource.Quest, 20, false);
-            m_questPlayer.AddMoney(Money.GetMoney(0, 0, 1, 32, Util.Random(50)), "You receive {0} as a reward.");
+            m_questPlayer.AddMoney(Money.GetMoney(0, 0, 1, 32, Util.Random(50)), L(m_questPlayer, "Quest.Atlas.PowerOfNature.MoneyReward"));
 
             base.FinishQuest(); //Defined in Quest, changes the state, stores in DB etc ...
+        }
+
+        private static string L(GamePlayer player, string key, params object[] args)
+        {
+            string language = player?.Client?.Account?.Language ?? DOL.Language.LanguageMgr.DefaultLanguage;
+            return DOL.Language.LanguageMgr.GetTranslation(language, key, args);
         }
     }
 }

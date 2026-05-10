@@ -1,4 +1,5 @@
 using DOL.GS.Keeps;
+using DOL.Language;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -100,7 +101,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 							if (!found)
 							{
-								client.Player.Out.SendMessage("You cannot teleport unless you are near a valid portal stone.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+								client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "WarmapShowRequestHandler.NearPortalStoneRequired"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 								return;
 							}
 						}
@@ -132,7 +133,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 									if (keep != null && keep is GameKeep)
 									{
 										FrontiersPortalStone stone = keep.TeleportStone;
-										if (stone != null) 
+										if (stone != null)
 										{
 											heading = stone.Heading;
 											z = stone.Z;

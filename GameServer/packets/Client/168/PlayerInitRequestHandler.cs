@@ -15,6 +15,11 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         private static readonly Logger Log = LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);
 
+        public static bool ShouldUseCustomTextWindowForStarterHelp(string language)
+        {
+            return string.Equals(language, "KR", StringComparison.OrdinalIgnoreCase);
+        }
+
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
             GamePlayer player = client.Player;
@@ -73,10 +78,10 @@ namespace DOL.GS.PacketHandler.Client.v168
             if (player.Level > 1 && ServerProperties.Properties.MOTD != string.Empty)
                 player.Out.SendMessage(ServerProperties.Properties.MOTD, eChatType.CT_System, eChatLoc.CL_SystemWindow);
             else if (player.Level == 1)
-                player.Out.SendStarterHelp();
+                SendStarterHelpToPlayer(player);
 
             if (ServerProperties.Properties.ENABLE_DEBUG)
-                player.Out.SendMessage("Server is running in DEBUG mode!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "PlayerInitRequestHandler.DebugMode"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
             if (player.PreviousLoginDate.AddMinutes(ServerProperties.Properties.NEAR_KEEP_RELOG_GRACE_PERIOD) < DateTime.Now)
                 CheckNearbyKeepAndMoveIfUnsafe(player);
@@ -133,6 +138,33 @@ namespace DOL.GS.PacketHandler.Client.v168
                 player.Client.HasSeenPatchNotes = true;
             }
 
+            static void SendStarterHelpToPlayer(GamePlayer player)
+            {
+                string language = player.Client.Account.Language;
+
+                if (!ShouldUseCustomTextWindowForStarterHelp(language))
+                {
+                    player.Out.SendStarterHelp();
+                    return;
+                }
+
+                player.Out.SendCustomTextWindow(LanguageMgr.GetTranslation(language, "PlayerInitRequestHandler.StarterHelp.Title"), BuildStarterHelpText(language));
+            }
+
+            static List<string> BuildStarterHelpText(string language)
+            {
+                return
+                [
+                    LanguageMgr.GetTranslation(language, "PlayerInitRequestHandler.StarterHelp.Welcome"),
+                    LanguageMgr.GetTranslation(language, "PlayerInitRequestHandler.StarterHelp.Intro"),
+                    " ",
+                    LanguageMgr.GetTranslation(language, "PlayerInitRequestHandler.StarterHelp.Commands"),
+                    LanguageMgr.GetTranslation(language, "PlayerInitRequestHandler.StarterHelp.Language"),
+                    LanguageMgr.GetTranslation(language, "PlayerInitRequestHandler.StarterHelp.Realm"),
+                    LanguageMgr.GetTranslation(language, "PlayerInitRequestHandler.StarterHelp.Keyboard")
+                ];
+            }
+
             static void CheckNearbyKeepAndMoveIfUnsafe(GamePlayer player)
             {
                 AbstractGameKeep keep = GameServer.KeepManager.GetClosestKeepToSpot(player.CurrentRegionID, player, WorldMgr.VISIBILITY_DISTANCE);
@@ -142,7 +174,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
                 if (GameServer.KeepManager.IsEnemy(keep, player) || keep.InCombat)
                 {
-                    player.Out.SendMessage("This area isn't currently secure and you are being transported to a safer location.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "PlayerInitRequestHandler.UnsafeAreaMove"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     player.MoveToBind();
                 }
             }
@@ -179,8 +211,8 @@ namespace DOL.GS.PacketHandler.Client.v168
                     if ((due.Days <= 0 || due.Days < ServerProperties.Properties.RENT_DUE_DAYS) && house.KeptMoney < HouseMgr.GetRentByModel(house.Model))
                     {
                         // Sending reminder as text window as the help window wasn't properly popping up on the client.
-                        List<string> message = [$"Rent for personal house {house.HouseNumber} due in {due.Days} days!"];
-                        player.Out.SendCustomTextWindow("Personal House Rent Reminder", message);
+                        List<string> message = [LanguageMgr.GetTranslation(player.Client.Account.Language, "House.Rent.PersonalReminder", house.HouseNumber, due.Days)];
+                        player.Out.SendCustomTextWindow(LanguageMgr.GetTranslation(player.Client.Account.Language, "House.Rent.PersonalReminderTitle"), message);
                     }
                 }
 
@@ -195,8 +227,8 @@ namespace DOL.GS.PacketHandler.Client.v168
                         if ((due.Days <= 0 || due.Days < ServerProperties.Properties.RENT_DUE_DAYS) && guildHouse.KeptMoney < HouseMgr.GetRentByModel(guildHouse.Model))
                         {
                             // Sending reminder as text window as the help window wasn't properly popping up on the client.
-                            List<string> message = [$"Rent for guild house {guildHouse.HouseNumber} due in {due.Days} days!"];
-                            player.Out.SendCustomTextWindow("Guild House Rent Reminder", message);
+                            List<string> message = [LanguageMgr.GetTranslation(player.Client.Account.Language, "House.Rent.GuildReminder", guildHouse.HouseNumber, due.Days)];
+                            player.Out.SendCustomTextWindow(LanguageMgr.GetTranslation(player.Client.Account.Language, "House.Rent.GuildReminderTitle"), message);
                         }
                     }
                 }
@@ -221,7 +253,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                 catch (Exception ex)
                 {
                     Log.Error($"{nameof(SendGuildMessagesToPlayer)} exception, missing guild ranks for guild: {player.Guild.Name}?", ex);
-                    player.Out.SendMessage("There was an error sending motd for your guild. Guild ranks may be missing or corrupted.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "PlayerInitRequestHandler.GuildMessage.Error"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                 }
             }
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DOL.AI.Brain;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -34,7 +35,7 @@ namespace DOL.GS.Spells
 			ShieldTripDisarmEffect shieldDisarm = Caster.EffectList.GetOfType<ShieldTripDisarmEffect>();
 			if (shieldDisarm != null)
 			{
-				MessageToCaster("You're disarmed and can't cast a spell", eChatType.CT_System);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Archery.DisarmedCannotCast"), eChatType.CT_System);
 				return false;
 			}
 
@@ -42,7 +43,7 @@ namespace DOL.GS.Spells
 			{
 				if (Spell.LifeDrainReturn == (int) eShotType.Critical && !Caster.IsStealthed)
 				{
-					MessageToCaster("You must be stealthed and wielding a bow to use this ability!", eChatType.CT_SpellResisted);
+					MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Archery.MustBeStealthedWithBow"), eChatType.CT_SpellResisted);
 					return false;
 				}
 
@@ -52,18 +53,18 @@ namespace DOL.GS.Spells
 			{
 				if (Spell.LifeDrainReturn == (int) eShotType.Critical)
 				{
-					MessageToCaster("You must be stealthed and wielding a bow to use this ability!", eChatType.CT_SpellResisted);
+					MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Archery.MustBeStealthedWithBow"), eChatType.CT_SpellResisted);
 					return false;
 				}
 
-				MessageToCaster("You must be wielding a bow to use this ability!", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Archery.MustWieldBow"), eChatType.CT_SpellResisted);
 				return false;
 			}
 		}
-		
+
 		public override void SendSpellMessages()
 		{
-			MessageToCaster("You prepare a " + Spell.Name, eChatType.CT_YouHit);
+			MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Archery.PrepareShot", Spell.Name), eChatType.CT_YouHit);
 		}
 
 		public override double CalculateToHitChance(GameLiving target)
@@ -107,7 +108,7 @@ namespace DOL.GS.Spells
 						if (target is GamePlayer)
 						{
 							player = target as GamePlayer;
-							player.Out.SendMessage("A shot penetrated your magic barrier!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Archery.ShotPenetratesBarrier"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 						}
 						ad.AttackResult = eAttackResult.HitUnstyled;
 						break;
@@ -115,7 +116,7 @@ namespace DOL.GS.Spells
 					case (int)eShotType.Power:
 					{
 						player = target as GamePlayer;
-						player.Out.SendMessage("A shot penetrated your magic barrier!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Archery.ShotPenetratesBarrier"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 						ad.AttackResult = eAttackResult.HitUnstyled;
 						bladeturn.End();
 						break;
@@ -126,12 +127,12 @@ namespace DOL.GS.Spells
 						if (Caster is GamePlayer)
 						{
 							player = Caster as GamePlayer;
-							player.Out.SendMessage("Your strike was absorbed by a magical barrier!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Archery.YourStrikeAbsorbed"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 						}
 						if (target is GamePlayer)
 						{
 							player = target as GamePlayer;
-							player.Out.SendMessage("The blow was absorbed by a magical barrier!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Archery.BlowAbsorbed"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 							ad.AttackResult = eAttackResult.Missed;
 							bladeturn.End();
 						}
@@ -241,7 +242,7 @@ namespace DOL.GS.Spells
 			#endregion
 			return (int)(Caster.MaxEndurance * (Spell.Power * .01));
 		}
-		
+
 		public override bool CasterIsAttacked(GameLiving attacker)
 		{
 			if (Spell.Uninterruptible)
@@ -263,7 +264,7 @@ namespace DOL.GS.Spells
 			}
 			return true;
 		}
-		
+
 		public override IList<string> DelveInfo
 		{
 			get
@@ -312,7 +313,7 @@ namespace DOL.GS.Spells
 		public override void CastSubSpells(GameLiving target)
 		{
 		}
-		
+
 		public Archery(GameLiving caster, Spell spell, SpellLine line) : base(caster, spell, line) { }
 	}
 }

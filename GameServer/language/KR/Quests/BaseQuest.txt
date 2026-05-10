@@ -1,0 +1,17 @@
+?# Quests
+BaseQuest.TeleportTo.Text1:			{0}이(가) {1}(으)로 순간이동 중입니다.
+
+## Quest Events
+AbstractQuest.FinishQuest.Completed:		{0} 퀘스트를 완료했습니다!
+AbstractQuest.AbortQuest:			퀘스트가 취소되었습니다!
+AbstractQuest.OnQuestAssigned.GetQuest:		{0} 퀘스트를 받았습니다.
+
+## Rewards
+RewardQuest.Notify:				보상을 선택해야 합니다!
+RewardQuest.OnQuestAssigned:			{0} 퀘스트를 획득했습니다.
+RewardQuest.Description:			퀘스트 목표 : {0} ({1}/{2})
+RewardQuest.InventoryFull.CompleteQuest:	인벤토리가 가득 찼습니다. 이 퀘스트를 완료하려면 빈 칸 {0}개가 필요합니다.
+DataQuest.AdvanceQuestStep.XPTurnedOff:		경험치 획득이 꺼져 있습니다. 이 퀘스트 단계를 완료하려면 경험치 획득을 켜야 합니다!
+DataQuest.AdvanceQuestStep.RPTurnedOff:		렐름 포인트 획득이 꺼져 있습니다. 이 퀘스트 단계를 완료하려면 렐름 포인트 획득을 켜야 합니다!
+DataQuest.AdvanceQuestStep.InventoryFull:	인벤토리 공간이 부족해 퀘스트를 진행할 수 없습니다. 빈 칸 {0}개가 필요합니다!
+DataQuest.StartQuest.BackpackFull:		가방이 가득 차서 이 퀘스트를 시작할 수 없습니다!

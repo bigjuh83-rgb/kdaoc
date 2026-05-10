@@ -6,8 +6,8 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&speedhack",
         ePrivLevel.Admin,
-        "Change speed hack detection parameters (non-persistent).",
-        "/speedhack <parameter> <value>")]
+        "AdminCommands.SpeedHack.Description",
+        "AdminCommands.SpeedHack.Syntax")]
     public class SpeedHackCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         private const BindingFlags BINDING_FLAGS = BindingFlags.Static | BindingFlags.Public | BindingFlags.IgnoreCase;
@@ -26,7 +26,7 @@ namespace DOL.GS.Commands
 
             if (propertyInfo == null)
             {
-                DisplayMessage(client, $"\"{propertyString}\" is not a valid property.");
+                DisplayMessage(client, T(client, "AdminCommands.SpeedHack.InvalidProperty", propertyString));
                 DisplayCurrentValues(client);
                 return;
             }
@@ -39,12 +39,12 @@ namespace DOL.GS.Commands
             }
             catch
             {
-                DisplayMessage(client, $"\"{newValue}\" is not a valid value for \"{propertyString}\".");
+                DisplayMessage(client, T(client, "AdminCommands.SpeedHack.InvalidValue", newValue, propertyString));
                 DisplayCurrentValues(client);
                 return;
             }
 
-            DisplayMessage(client, $"Set \"{propertyString}\" to \"{newValue}\".");
+            DisplayMessage(client, T(client, "AdminCommands.SpeedHack.ValueSet", propertyString, newValue));
 
             static void SetPropertyFromString(object target, PropertyInfo property, string stringValue)
             {
@@ -66,7 +66,7 @@ namespace DOL.GS.Commands
 
         private void DisplayCurrentValues(GameClient client)
         {
-            DisplayMessage(client, $"Available properties and current values:");
+            DisplayMessage(client, T(client, "AdminCommands.SpeedHack.CurrentValues"));
 
             foreach (PropertyInfo property in typeof(PlayerMovementMonitor).GetProperties(BINDING_FLAGS))
                 DisplayMessage(client, $"* {property.Name} = {property.GetValue(null)}");

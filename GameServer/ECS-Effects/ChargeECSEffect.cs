@@ -30,7 +30,7 @@ namespace DOL.GS
             if (OwnerPlayer != null)
             {
                 // "You begin to charge wildly!"
-                OwnerPlayer.Out.SendMessage($"You are now charging {OwnerPlayer.TargetObject?.Name}!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                OwnerPlayer.Out.SendMessage(LanguageMgr.GetTranslation(OwnerPlayer.Client, "Effects.ChargeEffect.StartChargingTarget", OwnerPlayer.TargetObject?.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 // "{0} begins charging wildly!"
                 Message.SystemToArea(OwnerPlayer, LanguageMgr.GetTranslation(OwnerPlayer.Client, "Effects.ChargeEffect.AreaStartCharge",OwnerPlayer.GetName(0, true)), eChatType.CT_System, OwnerPlayer);
             }
@@ -43,7 +43,7 @@ namespace DOL.GS
 
                     if (playerowner != null)
                     {
-                        playerowner.Out.SendMessage("The " + icb.Body.Name + " charges its prey!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+                        playerowner.Out.SendMessage(LanguageMgr.GetTranslation(playerowner.Client, "Effects.ChargeEffect.PetCharges", icb.Body.Name), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
                     }
                 }
             }
@@ -92,7 +92,7 @@ namespace DOL.GS
             {
                 //GamePlayer player = m_living as GamePlayer;
                 //player.Out.SendUpdateMaxSpeed();
-                
+
                 // "You no longer seem so crazy!"
                 OwnerPlayer.Out.SendMessage(LanguageMgr.GetTranslation(OwnerPlayer.Client, "Effects.ChargeEffect.EndCharge"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 // "{0} ceases their charge!"
@@ -107,7 +107,7 @@ namespace DOL.GS
 
                     if (playerowner != null)
                     {
-                        playerowner.Out.SendMessage("The " + icb.Body.Name + " ceases its charge!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+                        playerowner.Out.SendMessage(LanguageMgr.GetTranslation(playerowner.Client, "Effects.ChargeEffect.PetCeases", icb.Body.Name), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
                     }
                 }
             }

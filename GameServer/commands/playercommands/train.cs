@@ -13,9 +13,6 @@ namespace DOL.GS.Commands
         "e.g. /train Dual Wield 50")]
     public class TrainCommandHandler : AbstractCommandHandler, ICommandHandler
     {
-        private const string CANNOT_TRAIN_SPEC = "You can't train in this specialization again this level!";
-        private const string NOT_ENOUGH_POINTS = "You don't have that many specialization points left for this level.";
-
         public TrainCommandHandler() { }
 
         public void OnCommand(GameClient client, string[] args)
@@ -63,7 +60,7 @@ namespace DOL.GS.Commands
 
             if (spec == null)
             {
-                client.Out.SendMessage("The provided skill could not be found.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Train.SkillNotFound"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
@@ -80,13 +77,13 @@ namespace DOL.GS.Commands
 
             if (currentSpecLevel >= client.Player.BaseLevel)
             {
-                client.Out.SendMessage(CANNOT_TRAIN_SPEC, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Train.CannotTrainSpecAgain"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
 
             if (level <= currentSpecLevel)
             {
-                client.Out.SendMessage("You have already trained the skill to this amount!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Train.AlreadyTrainedToAmount"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
 
@@ -102,7 +99,7 @@ namespace DOL.GS.Commands
             {
                 if (spec.Level + specLevel >= client.Player.BaseLevel)
                 {
-                    client.Out.SendMessage(CANNOT_TRAIN_SPEC, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Train.CannotTrainSpecAgain"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     break;
                 }
 
@@ -118,7 +115,7 @@ namespace DOL.GS.Commands
                 }
                 else
                 {
-                    client.Out.SendMessage($"That specialization costs {spec.Level + 1} specialization points! {NOT_ENOUGH_POINTS}", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Train.NotEnoughPoints", spec.Level + 1), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     break;
                 }
             }
@@ -131,7 +128,7 @@ namespace DOL.GS.Commands
                     OnSpecTrained(client, spec);
                 }
                 else
-                    client.Out.SendMessage($"That specialization costs {spec.Level + 1} specialization points! {NOT_ENOUGH_POINTS}", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Train.NotEnoughPoints", spec.Level + 1), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             }
 
             return changed;
@@ -146,7 +143,7 @@ namespace DOL.GS.Commands
             if (client.Player.TargetObject is GameTrainer trainer && (trainer.CanTrain(client.Player) || trainer.CanTrainChampionLevels(client.Player)))
                 return true;
 
-            client.Out.SendMessage("You must select a valid trainer for your class.", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Train.ValidTrainerRequired"), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
             return false;
         }
 
@@ -168,7 +165,7 @@ namespace DOL.GS.Commands
             client.Out.SendCharStatsUpdate();
             client.Out.SendUpdatePlayerSkills(true);
             client.Out.SendTrainerWindow();
-            client.Out.SendMessage("Training complete!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Train.Complete"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
     }
 }

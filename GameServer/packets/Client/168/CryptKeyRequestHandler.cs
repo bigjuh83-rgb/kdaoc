@@ -19,8 +19,8 @@ namespace DOL.GS.PacketHandler.Client.v168
 				client.MinorRev = packet.ReadString(1);
 				if (rc4 == 1)
 				{
-					packet.Read(client.PacketProcessor.Encoding.SBox, 0, 256);
-					client.PacketProcessor.Encoding.EncryptionState = eEncryptionState.PseudoRC4Encrypted;
+					if (TryReadExact(packet, client.PacketProcessor.Encoding.SBox))
+						client.PacketProcessor.Encoding.EncryptionState = eEncryptionState.PseudoRC4Encrypted;
 				}
 				else
 				{
@@ -35,11 +35,18 @@ namespace DOL.GS.PacketHandler.Client.v168
 				{
 					if (Properties.CLIENT_ENABLE_ENCRYPTION_RC4)
 					{
-						var length = packet.ReadIntLowEndian();
-						var key = new byte[length];
-						packet.Read(key, 0, (int) length);
-						client.PacketProcessor.Encoding.SBox = key;
-						client.PacketProcessor.Encoding.EncryptionState = eEncryptionState.PseudoRC4Encrypted;
+						uint declaredLength = packet.ReadIntLowEndian();
+
+						if (declaredLength > 0 && declaredLength <= int.MaxValue && declaredLength <= packet.Length - packet.Position)
+						{
+							var key = new byte[(int) declaredLength];
+
+							if (TryReadExact(packet, key))
+							{
+								client.PacketProcessor.Encoding.SBox = key;
+								client.PacketProcessor.Encoding.EncryptionState = eEncryptionState.PseudoRC4Encrypted;
+							}
+						}
 					}
 					return;
 				}
@@ -59,6 +66,14 @@ namespace DOL.GS.PacketHandler.Client.v168
 				//Send the crypt key to the client
 				client.Out.SendVersionAndCryptKey();
 			}
+		}
+
+		private static bool TryReadExact(GSPacketIn packet, byte[] destination)
+		{
+			if (packet.Length - packet.Position < destination.Length)
+				return false;
+
+			return packet.Read(destination, 0, destination.Length) == destination.Length;
 		}
 	}
 }

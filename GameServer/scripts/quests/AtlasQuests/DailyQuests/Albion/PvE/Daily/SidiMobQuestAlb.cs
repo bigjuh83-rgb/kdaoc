@@ -145,7 +145,7 @@ namespace DOL.GS.DailyQuest.Albion
 
         protected static void TalkToJames(DOLEvent e, object sender, EventArgs args)
         {
-            //We get the player from the event arguments and check if he qualifies		
+            //We get the player from the event arguments and check if he qualifies
             GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
             if (player == null)
                 return;
@@ -167,15 +167,13 @@ namespace DOL.GS.DailyQuest.Albion
                                 "Please, enter Caer Sidi and slay some monsters. If you succeed come back for your reward.");
                             break;
                         case 2:
-                            James.SayTo(player, "Hello " + player.Name + ", did you [succeed]?");
+                            James.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[succeed]"));
                             break;
                     }
                 }
                 else
                 {
-                    James.SayTo(player, "Hello " + player.Name + ", I am James. " +
-                                         "The king is preparing to send forces into Caer Sidi to clear it out. \n" +
-                                         "We could use your help [clearing the way] into the front gate, if you're so inclined.");
+                    James.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DailyDungeonMonsterIntro", player.Name, "James", "Caer Sidi"));
                 }
             }
             // The player whispered to the NPC
@@ -187,9 +185,10 @@ namespace DOL.GS.DailyQuest.Albion
                     switch (wArgs.Text)
                     {
                         case "clearing the way":
+						case "길 정리":
                             player.Out.SendQuestSubscribeCommand(James,
                                 QuestMgr.GetIDForQuestType(typeof(SidiMobQuestAlb)),
-                                "Will you help James with " + questTitle + "");
+                                DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcWithQuest", "James", questTitle));
                             break;
                     }
                 }
@@ -200,7 +199,7 @@ namespace DOL.GS.DailyQuest.Albion
                         case "succeed":
                             if (quest.Step == 2)
                             {
-                                player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat,
+                                player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat,
                                     eChatLoc.CL_PopupWindow);
                                 quest.FinishQuest();
                             }
@@ -208,7 +207,7 @@ namespace DOL.GS.DailyQuest.Albion
                             break;
                         case "abort":
                             player.Out.SendCustomDialog(
-                                "Do you really want to abort this quest, \nall items gained during quest will be lost?",
+                                DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"),
                                 new CustomDialogResponse(CheckPlayerAbortQuest));
                             break;
                     }
@@ -241,11 +240,11 @@ namespace DOL.GS.DailyQuest.Albion
 
             if (response == 0x00)
             {
-                SendSystemMessage(player, "Good, now go out there and finish your work!");
+                SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
             }
             else
             {
-                SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+                SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
                 quest.AbortQuest();
             }
         }
@@ -275,7 +274,7 @@ namespace DOL.GS.DailyQuest.Albion
 
             if (response == 0x00)
             {
-                player.Out.SendMessage("Thank you for helping Albion.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelpingRealm", "Albion"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
             }
             else
             {
@@ -283,7 +282,7 @@ namespace DOL.GS.DailyQuest.Albion
                 if (!James.GiveQuest(typeof(SidiMobQuestAlb), player, 1))
                     return;
 
-                James.SayTo(player, "Thank you " + player.Name + ", be an enrichment for our realm!");
+                James.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EnrichmentRealm", player.Name));
             }
         }
 
@@ -301,10 +300,9 @@ namespace DOL.GS.DailyQuest.Albion
                 switch (Step)
                 {
                     case 1:
-                        return "Find a way to Caer Sidi and kill some monsters. \nKilled: Monsters in Caer Sidi (" +
-                               _deadSidiMob + " | "+ MAX_KILLGOAL +")";
+                        return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.DailyDungeonMonsterDescription", "Caer Sidi", _deadSidiMob, MAX_KILLGOAL);
                     case 2:
-                        return "Return to James in Caer Gothwaite for your Reward.";
+                        return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "James", "Caer Gothwaite");
                 }
 
                 return base.Description;
@@ -314,7 +312,7 @@ namespace DOL.GS.DailyQuest.Albion
         public override void Notify(DOLEvent e, object sender, EventArgs args)
         {
             GamePlayer player = sender as GamePlayer;
-            
+
             if (sender != m_questPlayer)
                 return;
 
@@ -322,9 +320,9 @@ namespace DOL.GS.DailyQuest.Albion
                 return;
 
             if (Step != 1 || e != GameLivingEvent.EnemyKilled) return;
-            
+
             EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
-			
+
             if (gArgs.Target is GameSummonedPet)
                 return;
             // check if a GameNPC died + if its in Caer sidi

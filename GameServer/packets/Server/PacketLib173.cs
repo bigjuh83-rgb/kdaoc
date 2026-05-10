@@ -576,17 +576,11 @@ namespace DOL.GS.PacketHandler
 				}
 				else
 				{
-					ReadOnlySpan<char> nameSpan = quest.Name;
-					ReadOnlySpan<char> descSpan = quest.Description;
+					ReadOnlySpan<char> nameSpan = TakeEncodedChunk(quest.Name == null ? [] : quest.Name.AsSpan(), byte.MaxValue);
+					ReadOnlySpan<char> descSpan = TakeEncodedChunk(quest.Description == null ? [] : quest.Description.AsSpan(), ushort.MaxValue);
 
-					if (nameSpan.Length > byte.MaxValue)
-						nameSpan = nameSpan[..byte.MaxValue];
-
-					if (descSpan.Length > ushort.MaxValue)
-						descSpan = descSpan[..ushort.MaxValue];
-
-					pak.WriteByte((byte) nameSpan.Length);
-					pak.WriteShortLowEndian((ushort) descSpan.Length);
+					pak.WriteByte((byte) GetEncodedByteCount(nameSpan));
+					pak.WriteShortLowEndian((ushort) GetEncodedByteCount(descSpan));
 					pak.WriteNonNullTerminatedString(nameSpan); //Write Quest Name without trailing 0
 					pak.WriteNonNullTerminatedString(descSpan); //Write Quest Description without trailing 0
 				}
@@ -596,12 +590,13 @@ namespace DOL.GS.PacketHandler
 
 		protected override void SendTaskInfo()
 		{
-			string name = BuildTaskString();
+			string taskName = BuildTaskString();
+			ReadOnlySpan<char> name = TakeEncodedChunk(taskName.AsSpan(), ushort.MaxValue);
 
 			using (var pak = PooledObjectFactory.GetForTick<GSTCPPacketOut>().Init(GetPacketCode(eServerPackets.QuestEntry)))
 			{
 				pak.WriteByte(0); //index
-				pak.WriteShortLowEndian((ushort)name.Length);
+				pak.WriteShortLowEndian((ushort) GetEncodedByteCount(name));
 				pak.WriteByte((byte)0);
 				pak.WriteNonNullTerminatedString(name); //Write Quest Name without trailing 0
 				pak.WriteNonNullTerminatedString(""); //Write Quest Description without trailing 0

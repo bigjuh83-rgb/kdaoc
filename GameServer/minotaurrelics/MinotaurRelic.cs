@@ -7,6 +7,7 @@ using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
 using DOL.GS.Spells;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -223,24 +224,24 @@ namespace DOL.GS
             {
                 if (npc.Model == 1583)
                 {
-                    player.Out.SendMessage("You cannot pickup " + GetName(0, false) + ". It is locked!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "MinotaurRelic.CantPickupLocked", GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return false;
                 }
             }
 
 			if (!player.IsAlive)
 			{
-				player.Out.SendMessage("You cannot pickup " + GetName(0, false) + ". You are dead!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "MinotaurRelic.CantPickupDead", GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return false;
 			}
 			if (this.Owner != null)
 			{
-				player.Out.SendMessage("This Relic is owned by someone else!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "MinotaurRelic.OwnedBySomeoneElse"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return false;
 			}
 			if (player.MinotaurRelic != null)
 			{
-				player.Out.SendMessage("You already have a Relic!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "MinotaurRelic.AlreadyHaveRelic"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return false;
 			}
 			if (player.Group != null)
@@ -249,7 +250,7 @@ namespace DOL.GS
 				{
 					if (pl.MinotaurRelic != null)
 					{
-						player.Out.SendMessage("Someone in your group already have a Relic!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "MinotaurRelic.GroupMemberHasRelic"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						return false;
 					}
 				}
@@ -446,7 +447,7 @@ namespace DOL.GS
 		protected void XPTimerCallBack(object state)
 		{
 			ApplyRelicEffect();
-			
+
 			if (XP - MinotaurRelicManager.XP_LOSS_PER_TICK < 0)
 				XP = 0;
 			else
@@ -613,7 +614,7 @@ namespace DOL.GS
 				{
 					if (pl.MinotaurRelic != null)
 					{
-						player.Out.SendMessage("Someone in your group already has a Relic!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "MinotaurRelic.GroupMemberHasRelic"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						PlayerLoosesRelic(player, false);
 						return;
 					}

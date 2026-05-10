@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -14,7 +15,7 @@ namespace DOL.GS.Commands
         // ~~~~~~~~~~~~~~~~~~~~  CONFIG  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-        //set this to true or false to display additional info about connecting, disconnecting, playing clients. 
+        //set this to true or false to display additional info about connecting, disconnecting, playing clients.
         private static bool showAddOnlineInfo = false;
 
         //set this to true or false to show the realms population (eG: Albion: 13 34% 12Tanks | 1 Caster ... )
@@ -53,7 +54,7 @@ namespace DOL.GS.Commands
         public void OnCommand(GameClient client, string[] args)
         {
             IList<string> textList = this.GetOnlineInfo(client.Account.PrivLevel >= (uint)ePrivLevel.GM);
-            client.Out.SendCustomTextWindow("Currently Online", textList);
+            client.Out.SendCustomTextWindow(LanguageMgr.GetTranslation(client.Account.Language, "OnlineCommand.WindowTitle"), textList);
             return;
         }
 
@@ -151,7 +152,7 @@ namespace DOL.GS.Commands
                     ++gms;
                     continue;
                 }
-                
+
                 if (c.Player.CurrentZone.IsOF && c.Account.PrivLevel == (uint)ePrivLevel.Player)
                     frontiers++;
 
@@ -317,7 +318,7 @@ namespace DOL.GS.Commands
                 }
                 #endregion
             }
-            
+
             #region overview and class-specific
             int entering = connecting + enterworld + charscreen;
             int leaving = disconnecting + linkdeath;
@@ -325,16 +326,16 @@ namespace DOL.GS.Commands
             int midTotal = midTanks + midCasters + midSupport + midStealthers;
             int hibTotal = hibTanks + hibCasters + hibSupport + hibStealthers;
             int total = entering + playing + leaving;
-            
+
             output.Add(string.Format("Currently online:  {0} \n\n Playing:  {1} | Frontiers:  {2} | Entering:  {3} | Leaving:  {4} | GMs:  {5}",
                 total, playing, frontiers, entering, leaving, gms));
-            
+
             if (showAddOnlineInfo == true)
             {
                 output.Add(string.Format("\n (Connecting:  {0} | CharScreen:  {1} | EnterWorld:  {2} | Playing:  {3} | GMs:  {4})",
                     connecting, enterworld, charscreen, playing, gms));
             }
-            
+
             if (showRealms == true)
             {
                 output.Add(string.Format("\nAlbion:  {4} ({5}%)\n  Melee:  {0} | Caster:  {1} \n  Support:  {2} | Stealther:  {3}",
@@ -344,7 +345,7 @@ namespace DOL.GS.Commands
                 output.Add(string.Format("\nHibernia:  {4} ({5}%)\n  Melee:  {0} | Caster:  {1} \n  Support:  {2} | Stealther:  {3}",
                     hibTanks, hibCasters, hibSupport, hibStealthers, hibTotal, (int)(hibTotal * 100 / total)));
             }
-            
+
             Zone zone = null;
             IList<GameClient> cls = new List<GameClient>();
             int albsinregion = 0;
@@ -425,7 +426,7 @@ namespace DOL.GS.Commands
             }
 
             #endregion
-            
+
             return output;
         }
     }

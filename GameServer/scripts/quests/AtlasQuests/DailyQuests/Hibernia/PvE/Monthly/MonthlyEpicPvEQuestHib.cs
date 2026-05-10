@@ -22,7 +22,7 @@ namespace DOL.GS.MonthlyQuest.Hibernia
 		private const string questTitle = "[Monthly] Annihilation of Malevolence";
 		private const int minimumLevel = 45;
 		private const int maximumLevel = 50;
-		
+
 		// Kill Goal
 		private const int MAX_KILLED = 1;
 		// Quest Counter
@@ -33,8 +33,8 @@ namespace DOL.GS.MonthlyQuest.Hibernia
 
 		private const string Balor_NAME = "Balor";
 		private const string Myrddraxis_NAME = "Myrddraxis";
-		
-		
+
+
 		// Constructors
 		public MonthlyEpicPvEQuestHib() : base()
 		{
@@ -60,13 +60,13 @@ namespace DOL.GS.MonthlyQuest.Hibernia
 				return minimumLevel;
 			}
 		}
-		
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -122,7 +122,7 @@ namespace DOL.GS.MonthlyQuest.Hibernia
 
 			GameEventMgr.AddHandler(Anthony, GameObjectEvent.Interact, new DOLEventHandler(TalkToAnthony));
 			GameEventMgr.AddHandler(Anthony, GameLivingEvent.WhisperReceive, new DOLEventHandler(TalkToAnthony));
-			
+
 			Anthony.AddQuestToGive(typeof (MonthlyEpicPvEQuestHib));
 
 			if (log.IsInfoEnabled)
@@ -147,7 +147,7 @@ namespace DOL.GS.MonthlyQuest.Hibernia
 
 		private static void TalkToAnthony(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -168,15 +168,13 @@ namespace DOL.GS.MonthlyQuest.Hibernia
 							Anthony.SayTo(player, player.Name + ", please find allies and kill the epic creatures in Tur Suil and Fomor!");
 							break;
 						case 2:
-							Anthony.SayTo(player, "Hello " + player.Name + ", did you [slay the creatures] and return for your reward?");
+							Anthony.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[slay the creatures] and return for your reward"));
 							break;
 					}
 				}
 				else
 				{
-					Anthony.SayTo(player, "Hello "+ player.Name +", I am Anthony. For several months the situation in Tur Suil and Fomor has changed. " +
-					                    "A place of mineral wealth and natural resources is now a place of violence and poisoning. \n\n"+
-					                    "Can you support Hibernia and [kill Balor and Myrddraxis] in Tur Suil and Fomor?");
+					Anthony.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyEpicIntro", player.Name, "Anthony", "Tur Suil and Fomor"));
 				}
 			}
 				// The player whispered to the NPC
@@ -188,7 +186,7 @@ namespace DOL.GS.MonthlyQuest.Hibernia
 					switch (wArgs.Text)
 					{
 						case "kill Balor and Myrddraxis":
-							player.Out.SendQuestSubscribeCommand(Anthony, QuestMgr.GetIDForQuestType(typeof(MonthlyEpicPvEQuestHib)), "Will you help Anthony "+questTitle+"?");
+							player.Out.SendQuestSubscribeCommand(Anthony, QuestMgr.GetIDForQuestType(typeof(MonthlyEpicPvEQuestHib)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "Anthony", questTitle));
 							break;
 					}
 				}
@@ -199,18 +197,18 @@ namespace DOL.GS.MonthlyQuest.Hibernia
 						case "slay the creatures":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -239,11 +237,11 @@ namespace DOL.GS.MonthlyQuest.Hibernia
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and slay those creatures!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueSlayCreatures"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -273,7 +271,7 @@ namespace DOL.GS.MonthlyQuest.Hibernia
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for your help.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -281,7 +279,7 @@ namespace DOL.GS.MonthlyQuest.Hibernia
 				if (!Anthony.GiveQuest(typeof (MonthlyEpicPvEQuestHib), player, 1))
 					return;
 
-				Anthony.SayTo(player, "Please, find the epic monsters in Tur Suil and Fomor and return for your reward.");
+				Anthony.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyEpicReminder", "Tur Suil and Fomor"));
 
 			}
 		}
@@ -300,11 +298,9 @@ namespace DOL.GS.MonthlyQuest.Hibernia
 				switch (Step)
 				{
 					case 1:
-						return "Make your way and defeat the epic creatures in Tur Suil as well as in Fomor! \n" +
-						       "Killed: " + Balor_NAME + " ("+ _balorKilled +" | " + MAX_KILLED + ") in Tur Suil\n" +
-						       "Killed: " + Myrddraxis_NAME + " ("+ _myrddraxisKilled +" | " + MAX_KILLED + ") in Fomor\n";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.MonthlyEpicDescription", "Tur Suil and Fomor", Balor_NAME, _balorKilled, MAX_KILLED, Myrddraxis_NAME, _myrddraxisKilled, MAX_KILLED);
 					case 2:
-						return "Return to Anthony for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpc", "Anthony");
 				}
 				return base.Description;
 			}
@@ -326,13 +322,13 @@ namespace DOL.GS.MonthlyQuest.Hibernia
 			if (gArgs.Target.Name.ToLower() == Balor_NAME.ToLower() && gArgs.Target is GameNPC && _balorKilled < MAX_KILLED)
 			{
 				_balorKilled = 1;
-				player.Out.SendMessage("[Monthly] You killed " + Balor_NAME + ": (" + _balorKilled + " | " + MAX_KILLED + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyNamedKilled", Balor_NAME, _balorKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 				player.Out.SendQuestUpdate(this);
 			}
 			else if (gArgs.Target.Name.ToLower() == Myrddraxis_NAME.ToLower() && gArgs.Target is GameNPC && _myrddraxisKilled < MAX_KILLED)
 			{
 				_myrddraxisKilled = 1;
-				player.Out.SendMessage("[Monthly] You killed " + Myrddraxis_NAME + ": (" + _myrddraxisKilled + " | " + MAX_KILLED + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyNamedKilled", Myrddraxis_NAME, _myrddraxisKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 				player.Out.SendQuestUpdate(this);
 			}
 
@@ -341,13 +337,13 @@ namespace DOL.GS.MonthlyQuest.Hibernia
 				Step = 2;
 			}
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "MonthlyEpicPvEQuestHib";
 			set { ; }
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			_balorKilled = GetCustomProperty(Balor_NAME) != null ? int.Parse(GetCustomProperty(Balor_NAME)) : 0;
@@ -374,7 +370,7 @@ namespace DOL.GS.MonthlyQuest.Hibernia
 			}
 			else
 			{
-				m_questPlayer.Out.SendMessage("Clear three slots of your inventory for your reward", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ClearInventorySlots", 3), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 	}

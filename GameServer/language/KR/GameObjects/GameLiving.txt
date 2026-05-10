@@ -1,0 +1,73 @@
+﻿# GameLiving
+
+## Pronouns
+GameLiving.Pronoun.Neutral.Objective:			그것
+GameLiving.Pronoun.Neutral.Possessive:			그것의
+GameLiving.Pronoun.Neutral.Subjective:			그것
+GameLiving.Pronoun.Male.Objective:			그
+GameLiving.Pronoun.Male.Possessive:			그의
+GameLiving.Pronoun.Male.Subjective:			그
+GameLiving.Pronoun.Female.Objective:			그녀
+GameLiving.Pronoun.Female.Possessive:			그녀의
+GameLiving.Pronoun.Female.Subjective:			그녀
+GamePlayer.Pronoun.Female.Objective:		그녀
+GamePlayer.Pronoun.Female.Possessive:		그녀의
+GamePlayer.Pronoun.Female.Subjective:		그녀
+GamePlayer.Pronoun.Male.Objective:			그
+GamePlayer.Pronoun.Male.Possessive:			그의
+GamePlayer.Pronoun.Male.Subjective:			그
+GameKeepGuard.GetPronoun.He:			그
+GameKeepGuard.GetPronoun.Her:			그녀
+GameKeepGuard.GetPronoun.Hers:			그녀의 것
+GameKeepGuard.GetPronoun.Him:			그
+GameKeepGuard.GetPronoun.His:			그의 것
+GameKeepGuard.GetPronoun.She:			그녀
+
+## Attack Data (Pet)
+GameLiving.AttackData.Fumbled:			{0}의 공격이 헛나갔습니다!
+GameLiving.AttackData.Misses:			{0}이(가) 당신의 {1}을(를) 공격했지만 빗나갔습니다!
+GameLiving.AttackData.Blocked:			{0}이(가) 당신의 {1}을(를) 공격했지만 막혔습니다!
+GameLiving.AttackData.Parried:			{0}이(가) 당신의 {1}을(를) 공격했지만 받아쳐졌습니다!
+GameLiving.AttackData.CriticallyHitsForDamage:	{0}이(가) 당신의 {1}에게 치명타를 입혀 추가로 {2} 피해를 줬습니다.
+GameLiving.AttackData.Evaded:			{0}이(가) 당신의 {1}을(를) 공격했지만 회피되었습니다!
+GameLiving.AttackData.HitsForDamage:		{0}이(가) 당신의 {1}에게 {2}{3} 피해를 입혔습니다.
+GameLiving.AttackData.YourCriticallyHits:	당신의 {0}이(가) {1}에게 치명타를 입혀 추가로 {2} 피해를 줬습니다!
+GameLiving.AttackData.YourHits:			당신의 {0}이(가) {1} {2} 후 {3}{4} 피해를 입혔습니다!
+GamePlayer.CommandNpcAttack.TooFarAwayForPet:		대상이 너무 멀어 펫으로 공격할 수 없습니다!
+
+## Attack Data (Attacker)
+GamePlayer.Attack.Blocked:					{0}이(가) 당신의 공격을 막았습니다!
+GamePlayer.Attack.Parried:					{0}이(가) 당신의 공격을 받아쳤습니다!
+GamePlayer.Attack.Evaded:					{0}이(가) 당신의 공격을 회피했습니다!
+GamePlayer.Attack.Missed:					{0}이(가) 공격했지만 빗나갔습니다!
+GamePlayer.Attack.HitsYou:					{0}이(가) 당신에게 {1}{2} 피해를 입혔습니다!
+GamePlayer.Attack.HitsYouCritical:			{0}이(가) 당신에게 치명타를 입혀 추가로 {1} 피해를 줬습니다!
+GamePlayer.Attack.HitsYour:					{0}이(가) 당신의 {1}에게 {2}{3} 피해를 입혔습니다!
+
+## Intercept (Other)
+GamePlayer.Attack.Intercepted:				{0}이(가) {1} 앞에 뛰어들어 공격을 대신 맞았습니다!
+GamePlayer.Attack.InterceptedHit:			{0}이(가) {1}{2}했지만 {3}에게 {4}{5} 피해를 입혔습니다!
+GamePlayer.Attack.InterceptHit:				{0}이(가) {1}{2}하여 {3}{4} 피해를 입혔습니다!
+
+## Pet Commands
+GamePlayer.CommandNpcGoTarget.MustSelectDestination:조종 중인 생물의 목적지를 선택해야 합니다.
+GamePlayer.CommandNpcAttack.KillTarget:			{0}에게 대상을 처치하라고 명령했습니다!
+GamePlayer.CommandNpcAttack.IsConfused:			당신의 {0}이(가) 혼란에 빠졌습니다!
+GamePlayer.CommandNpcAttack.FollowYou:			{0}에게 당신을 따르라고 명령했습니다!
+GamePlayer.CommandNpcAttack.Stay:				{0}에게 이 위치에 머무르라고 명령했습니다!
+GamePlayer.CommandNpcAttack.ComeHere:			{0}에게 당신에게 오라고 명령했습니다.
+GamePlayer.CommandNpcAttack.GoToTarget:			{0}에게 대상으로 가라고 명령했습니다.
+GamePlayer.CommandNpcAttack.Passive:			{0}에게 전투를 중단하라고 명령했습니다!
+GamePlayer.CommandNpcAttack.Aggressive:			{0}에게 모든 적을 공격하라고 명령했습니다!
+GamePlayer.CommandNpcAttack.Defensive:			{0}에게 당신을 방어하라고 명령했습니다!
+
+## Pet Control
+GamePlayer.SetControlledNpc.ReleaseTarget:		조종 중인 대상에 대한 지배를 해제했습니다.
+GamePlayer.SetControlledNpc.ReleaseTarget2:		{0}에 대한 지배를 잃었습니다.
+GamePlayer.GamePet.StartSpell.UnderControl:             {0}이(가) 이제 당신의 지배를 받습니다.
+GamePlayer.GamePet.Target.CantSeeTarget:                조종 중인 {0}이(가) {1} 대상을 볼 수 없습니다!
+GamePlayer.GamePet.Movement.TooFarAway:                 조종 중인 생물이 너무 멀리 있습니다!
+GamePlayer.GamePet.SpellEnd.YouLoseControl:             {0}에 대한 지배를 잃었습니다!
+GamePlayer.GamePet.SpellEnd.YouReleaseControl:          조종 중인 대상에 대한 지배를 해제했습니다.
+GameLiving.Engage.TargetAttackedRecently:	{0}은(는) 최근 공격받아 지금은 인게이지할 수 없습니다.
+GameLiving.Engage.ConcentrateBlocking:		공격을 막는 데 집중합니다!

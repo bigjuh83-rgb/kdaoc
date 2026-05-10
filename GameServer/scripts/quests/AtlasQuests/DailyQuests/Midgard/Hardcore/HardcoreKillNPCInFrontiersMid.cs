@@ -48,7 +48,7 @@ namespace DOL.GS.DailyQuest
 				return minimumLevel;
 			}
 		}
-		
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
@@ -134,7 +134,7 @@ namespace DOL.GS.DailyQuest
 
 		private static void TalkToSucci(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -152,18 +152,17 @@ namespace DOL.GS.DailyQuest
 					switch (oranges.Step)
 					{
 						case 1:
-							SucciMid.SayTo(player, "Exemplify bravery.");
+							SucciMid.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.ExemplifyBravery"));
 							break;
 						case 2:
-							SucciMid.SayTo(player, "" + player.Name + ". You have earned [another sunrise].");
+							SucciMid.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.EarnedAnotherSunrise", player.Name));
 							break;
 					}
 				}
 				else
 				{
-					SucciMid.SayTo(player, "One wonders if it is possible to be brave when one is afraid. \n" +
-					                       "Perhaps, that is the only time that [one can be brave].");
-					SucciMid.SayTo(player, " NOTE: This is a HARDCORE quest. If you die or join a group while doing this quest, it will be aborted automatically.");
+					SucciMid.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.BraveWhenAfraid"));
+					SucciMid.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.Warning"));
 				}
 			}
 				// The player whispered to the NPC
@@ -175,7 +174,8 @@ namespace DOL.GS.DailyQuest
 					switch (wArgs.Text.ToLower())
 					{
 						case "one can be brave":
-							player.Out.SendQuestSubscribeCommand(SucciMid, QuestMgr.GetIDForQuestType(typeof(HardcoreKillNPCInFrontiersMid)), "Will you undertake " + questTitle + "?");
+						case "용기를 낼 수 있습니다":
+							player.Out.SendQuestSubscribeCommand(SucciMid, QuestMgr.GetIDForQuestType(typeof(HardcoreKillNPCInFrontiersMid)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.SubscribePrompt", questTitle));
 							break;
 					}
 				}
@@ -184,20 +184,21 @@ namespace DOL.GS.DailyQuest
 					switch (wArgs.Text)
 					{
 						case "another sunrise":
+						case "또 하나의 일출":
 							if (oranges.Step == 2)
 							{
-								player.Out.SendMessage("Tell me, did you face your fears?", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.FaceFears"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								oranges.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("To face one's own demise is not for the faint of heart. Death has turned its back on you for today.", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.DeathRejected"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -221,11 +222,11 @@ namespace DOL.GS.DailyQuest
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "To face one's own demise is not for the faint of heart.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.DeathRejected"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ".");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuest", questTitle));
 				oranges.AbortQuest();
 			}
 		}
@@ -258,7 +259,7 @@ namespace DOL.GS.DailyQuest
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Watch your back.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.WatchYourBack"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -266,7 +267,7 @@ namespace DOL.GS.DailyQuest
 				if (!SucciMid.GiveQuest(typeof (HardcoreKillNPCInFrontiersMid), player, 1))
 					return;
 
-				SucciMid.SayTo(player, "Be careful, the line between bravery and foolishness can be a thin one.");
+				SucciMid.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Hardcore.BraveWarning"));
 
 			}
 		}
@@ -285,11 +286,11 @@ namespace DOL.GS.DailyQuest
 				switch (Step)
 				{
 					case -1:
-						return "Your deeds are done for today.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Hardcore.DoneToday");
 					case 1:
-						return "Kill 25 mobs in a frontier zone. \n Creatures Killed: ("+ FrontierMobsKilled +" | "+MAX_KillGoal+")";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Hardcore.KillNpcDescription", FrontierMobsKilled, MAX_KillGoal);
 					case 2:
-						return "Return to Succi in Svasud Faste for your grim reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Hardcore.ReturnToSucciMid");
 				}
 				return base.Description;
 			}
@@ -308,7 +309,7 @@ namespace DOL.GS.DailyQuest
 				FailQuest();
 				return;
 			}
-				
+
 
 			if (sender != m_questPlayer)
 				return;
@@ -321,7 +322,7 @@ namespace DOL.GS.DailyQuest
 
 			if (e != GameLivingEvent.EnemyKilled || Step != 1) return;
 			EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
-			
+
 			if (gArgs.Target is GameSummonedPet)
 				return;
 			if (!(player.GetConLevel(gArgs.Target) > -1) || !gArgs.Target.CurrentZone.IsRvR ||
@@ -345,9 +346,9 @@ namespace DOL.GS.DailyQuest
 				}
 			}
 			FrontierMobsKilled++;
-			player.Out.SendMessage("[Hardcore] Monster Killed: (" + FrontierMobsKilled + " | " + MAX_KillGoal + ")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HardcoreMonsterKilled", FrontierMobsKilled, MAX_KillGoal), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (FrontierMobsKilled >= MAX_KillGoal)
 			{
 				// FinishQuest or go back to npc
@@ -355,13 +356,13 @@ namespace DOL.GS.DailyQuest
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "HardcoreKillNPCInFrontiersMid";
 			set { ; }
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			FrontierMobsKilled = GetCustomProperty(QuestPropertyKey) != null ? int.Parse(GetCustomProperty(QuestPropertyKey)) : 0;
@@ -379,7 +380,7 @@ namespace DOL.GS.DailyQuest
 			AtlasROGManager.GenerateReward(m_questPlayer, 150);
 			FrontierMobsKilled = 0;
 			base.FinishQuest(); //Defined in Quest, changes the state, stores in DB etc ...
-			
+
 		}
 
 		private void FailQuest()

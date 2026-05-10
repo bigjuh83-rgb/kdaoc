@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -39,13 +39,13 @@ namespace DOL.GS.Commands
 
             if (client.Account.PrivLevel == (uint)ePrivLevel.Player && !DOL.GS.ServerProperties.Properties.ALLOW_CHANGE_LANGUAGE)
             {
-                DisplayMessage(client, "This server does not support changing languages.");
+                DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Language.Disabled"));
                 return;
             }
 
             if (args.Length < 2)
             {
-                DisplaySyntax(client);
+                DisplayLanguageSyntax(client);
                 return;
             }
 
@@ -64,19 +64,20 @@ namespace DOL.GS.Commands
                     {
                         if (args.Length < 3)
                         {
-                            DisplaySyntax(client, "set");
+                            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Language.SyntaxSet"));
                             return;
                         }
 
-                        if (!LanguageMgr.Languages.Contains(args[2].ToUpper()))
+                        string language = args[2].ToUpper();
+                        if (!LanguageMgr.Languages.Contains(language))
                         {
-                            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Language.LanguageNotSupported", args[2].ToUpper()));
+                            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Language.LanguageNotSupported", language));
                             return;
                         }
 
-                        client.Account.Language = args[2];
+                        client.Account.Language = language;
                         GameServer.Database.SaveObject(client.Account);
-                        DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Language.Set", args[2].ToUpper()));
+                        DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Language.Set", language));
                         return;
                     }
                 #endregion set
@@ -103,10 +104,17 @@ namespace DOL.GS.Commands
 
                 default:
                     {
-                        DisplaySyntax(client);
+                        DisplayLanguageSyntax(client);
                         return;
                     }
             }
+        }
+
+        private void DisplayLanguageSyntax(GameClient client)
+        {
+            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Language.SyntaxCurrent"));
+            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Language.SyntaxSet"));
+            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Language.SyntaxShow"));
         }
     }
 }

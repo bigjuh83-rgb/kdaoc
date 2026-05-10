@@ -1,10 +1,11 @@
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
     /// <summary>
     /// Buffs two stats at once, goes into specline bonus category
-    /// </summary>	
+    /// </summary>
     public abstract class DualStatBuff : SingleStatBuff
     {
         public override string ShortDescription => $"Increases {TargetPronoun} {PropertyToString(Property1)} and {PropertyToString(Property2)} by {Spell.Value}.";
@@ -24,7 +25,7 @@ namespace DOL.GS.Spells
         {
             if (target.HasAbility(Abilities.VampiirStrength) || target.HasAbility(Abilities.VampiirConstitution))
             {
-                MessageToCaster("Your target already has an effect of that type!", eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.TargetAlreadyHasEffectOfType"), eChatType.CT_Spell);
                 return;
             }
 
@@ -47,7 +48,7 @@ namespace DOL.GS.Spells
         {
             if (target.HasAbility(Abilities.VampiirDexterity) || target.HasAbility(Abilities.VampiirQuickness))
             {
-                MessageToCaster("Your target already has an effect of that type!", eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Spell.TargetAlreadyHasEffectOfType"), eChatType.CT_Spell);
                 return;
             }
 

@@ -1,4 +1,5 @@
 ﻿using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -15,11 +16,11 @@ namespace DOL.GS.Commands
 
             if (target == null)
             {
-                client.Out.SendMessage("This command requires a target.", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.CheckConColor.RequiresTarget"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                 return;
             }
 
-            client.Out.SendMessage($"{ConLevels.GetConColor(ConLevels.GetConLevel(player.EffectiveLevel, target.EffectiveLevel))}", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.CheckConColor.Result", ConLevels.GetConColor(ConLevels.GetConLevel(player.EffectiveLevel, target.EffectiveLevel))), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
         }
     }
 }

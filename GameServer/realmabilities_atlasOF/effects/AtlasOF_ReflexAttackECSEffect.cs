@@ -1,4 +1,5 @@
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Effects
 {
@@ -23,11 +24,11 @@ namespace DOL.GS.Effects
             {
                 if (t_player == OwnerPlayer)
                 {
-                    OwnerPlayer.Out.SendMessage("You begin automatically counter-attacking melee attacks!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                    OwnerPlayer.Out.SendMessage(LanguageMgr.GetTranslation(OwnerPlayer.Client.Account.Language, "AtlasOF.ReflexAttack.Begins"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
                 }
                 else
                 {
-                    t_player.Out.SendMessage(OwnerPlayer.Name + " starts automatically counter-attacking melee attacks!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                    t_player.Out.SendMessage(LanguageMgr.GetTranslation(t_player.Client.Account.Language, "AtlasOF.ReflexAttack.OtherBegins", OwnerPlayer.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
                 }
                 t_player.Out.SendSpellEffectAnimation(OwnerPlayer, OwnerPlayer, 7012, 0, false, 1);
             }
@@ -42,11 +43,11 @@ namespace DOL.GS.Effects
             {
                 if (t_player == OwnerPlayer)
                 {
-                    OwnerPlayer.Out.SendMessage("You stop automatically counter-attacking melee attacks!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                    OwnerPlayer.Out.SendMessage(LanguageMgr.GetTranslation(OwnerPlayer.Client.Account.Language, "AtlasOF.ReflexAttack.Ends"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
                 }
                 else
                 {
-                    t_player.Out.SendMessage(OwnerPlayer.Name + " stops automatically counter-attacking melee attacks!", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                    t_player.Out.SendMessage(LanguageMgr.GetTranslation(t_player.Client.Account.Language, "AtlasOF.ReflexAttack.OtherEnds", OwnerPlayer.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
                 }
             }
         }

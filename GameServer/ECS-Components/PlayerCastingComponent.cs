@@ -21,7 +21,7 @@ namespace DOL.GS
         {
             if (_playerOwner.effectListComponent.ContainsEffectForEffectType(eEffect.Volley))
             {
-                _playerOwner.Out.SendMessage("You can't cast spells while Volley is active!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                _playerOwner.Out.SendMessage(LanguageMgr.GetTranslation(_playerOwner.Client, "PlayerCastingComponent.CantCastWhileVolley"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
 
@@ -67,9 +67,9 @@ namespace DOL.GS
             if (focusSpell)
             {
                 if (moving)
-                    _playerOwner.Out.SendMessage("You move and interrupt your focus!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                    _playerOwner.Out.SendMessage(LanguageMgr.GetTranslation(_playerOwner.Client, "PlayerCastingComponent.MoveInterruptFocus"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                 else
-                    _playerOwner.Out.SendMessage($"You lose your focus on your spell.", eChatType.CT_SpellExpires, eChatLoc.CL_SystemWindow);
+                    _playerOwner.Out.SendMessage(LanguageMgr.GetTranslation(_playerOwner.Client, "PlayerCastingComponent.LoseFocus"), eChatType.CT_SpellExpires, eChatLoc.CL_SystemWindow);
             }
             else if (moving)
                 _playerOwner.Out.SendMessage(LanguageMgr.GetTranslation(_playerOwner.Client, "SpellHandler.CasterMove"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Effects
 {
@@ -67,9 +68,9 @@ namespace DOL.GS.Effects
 			ad.Damage -= absorb;
 			ad.CriticalDamage -= critic;
 			if (living is GamePlayer)
-				((GamePlayer)living).Out.SendMessage("Your Testudo Stance reduces the damage by " + (absorb+critic) + " points", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+				((GamePlayer)living).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)living).Client.Account.Language, "RealmAbility.TestudoEffect.ReduceDamage", absorb + critic), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 			if (ad.Attacker is GamePlayer)
-				((GamePlayer)ad.Attacker).Out.SendMessage(living.Name + "'s Testudo Stance reducec your damage by " + (absorb+critic) + " points", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+				((GamePlayer)ad.Attacker).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)ad.Attacker).Client.Account.Language, "RealmAbility.TestudoEffect.ReduceAttackerDamage", living.Name, absorb + critic), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 
 		}
 

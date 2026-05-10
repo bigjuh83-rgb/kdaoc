@@ -88,7 +88,7 @@ namespace DOL.GS
 					adds.RemoveFromWorld();
 			}
 			base.Die(killer);
-        }		
+        }
 	}
 }
 namespace DOL.AI.Brain
@@ -151,7 +151,7 @@ namespace DOL.AI.Brain
 					if (npc != null && npc.IsAlive && npc.Brain is BadbWraithBrain brain)
 					{
 						GameLiving target = Body.TargetObject as GameLiving;
-						if (!brain.HasAggro && target.IsAlive && target != null)
+						if (!brain.HasAggro && target != null && target.IsAlive)
 							brain.AddToAggroList(target, 10);
 					}
 				}

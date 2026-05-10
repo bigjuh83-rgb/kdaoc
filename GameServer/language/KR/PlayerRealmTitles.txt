@@ -1,0 +1,111 @@
+# Realm Rank Titles
+GamePlayer.RealmTitle.UnknownRealm:					알 수 없는 렐름
+
+## Starter
+GamePlayer.RealmTitle.Defender:						수호자
+GamePlayer.RealmTitle.Invader:						침입자
+
+## Albion
+### Male
+GamePlayer.RealmTitle.Albion.RR0.Male:				침입자
+GamePlayer.RealmTitle.Albion.RR1.Male:				가디언
+GamePlayer.RealmTitle.Albion.RR2.Male:				워더
+GamePlayer.RealmTitle.Albion.RR3.Male:				미르미돈
+GamePlayer.RealmTitle.Albion.RR4.Male:				그리폰 나이트
+GamePlayer.RealmTitle.Albion.RR5.Male:				이글 나이트
+GamePlayer.RealmTitle.Albion.RR6.Male:				피닉스 나이트
+GamePlayer.RealmTitle.Albion.RR7.Male:				알레리온 나이트
+GamePlayer.RealmTitle.Albion.RR8.Male:				유니콘 나이트
+GamePlayer.RealmTitle.Albion.RR9.Male:				라이온 나이트
+GamePlayer.RealmTitle.Albion.RR10.Male:				드래곤 나이트
+GamePlayer.RealmTitle.Albion.RR11.Male:				로드
+GamePlayer.RealmTitle.Albion.RR12.Male:				준남작
+GamePlayer.RealmTitle.Albion.RR13.Male:				남작
+GamePlayer.RealmTitle.Albion.RR14.Male:				대공
+
+### Female
+GamePlayer.RealmTitle.Albion.RR0.Female:			침입자
+GamePlayer.RealmTitle.Albion.RR1.Female:			가디언
+GamePlayer.RealmTitle.Albion.RR2.Female:			워더
+GamePlayer.RealmTitle.Albion.RR3.Female:			미르미돈
+GamePlayer.RealmTitle.Albion.RR4.Female:			그리폰 나이트
+GamePlayer.RealmTitle.Albion.RR5.Female:			이글 나이트
+GamePlayer.RealmTitle.Albion.RR6.Female:			피닉스 나이트
+GamePlayer.RealmTitle.Albion.RR7.Female:			알레리온 나이트
+GamePlayer.RealmTitle.Albion.RR8.Female:			유니콘 나이트
+GamePlayer.RealmTitle.Albion.RR9.Female:			라이온 나이트
+GamePlayer.RealmTitle.Albion.RR10.Female:			드래곤 나이트
+GamePlayer.RealmTitle.Albion.RR11.Female:			레이디
+GamePlayer.RealmTitle.Albion.RR12.Female:			준여남작
+GamePlayer.RealmTitle.Albion.RR13.Female:			여남작
+GamePlayer.RealmTitle.Albion.RR14.Female:			대공비
+
+## Midgard
+### Male
+GamePlayer.RealmTitle.Midgard.RR0.Male:				침입자
+GamePlayer.RealmTitle.Midgard.RR1.Male:				쉴트바크텐
+GamePlayer.RealmTitle.Midgard.RR2.Male:				이센 바크텐
+GamePlayer.RealmTitle.Midgard.RR3.Male:				플라멘 바크텐
+GamePlayer.RealmTitle.Midgard.RR4.Male:				엘딩 바크텐
+GamePlayer.RealmTitle.Midgard.RR5.Male:				스토르무르 바크텐
+GamePlayer.RealmTitle.Midgard.RR6.Male:				이센 헤라
+GamePlayer.RealmTitle.Midgard.RR7.Male:				플라멘 헤라
+GamePlayer.RealmTitle.Midgard.RR8.Male:				엘딩 헤라
+GamePlayer.RealmTitle.Midgard.RR9.Male:				스토르무르 헤라
+GamePlayer.RealmTitle.Midgard.RR10.Male:			에인헤랴르
+GamePlayer.RealmTitle.Midgard.RR11.Male:			헤라
+GamePlayer.RealmTitle.Midgard.RR12.Male:			헤르시르
+GamePlayer.RealmTitle.Midgard.RR13.Male:			비콩트
+GamePlayer.RealmTitle.Midgard.RR14.Male:			스토르 야를
+
+### Female
+GamePlayer.RealmTitle.Midgard.RR0.Female:			침입자
+GamePlayer.RealmTitle.Midgard.RR1.Female:			쉴트바크텐
+GamePlayer.RealmTitle.Midgard.RR2.Female:			이센 바크텐
+GamePlayer.RealmTitle.Midgard.RR3.Female:			플라멘 바크텐
+GamePlayer.RealmTitle.Midgard.RR4.Female:			엘딩 바크텐
+GamePlayer.RealmTitle.Midgard.RR5.Female:			스토르무르 바크텐
+GamePlayer.RealmTitle.Midgard.RR6.Female:			이센 프루
+GamePlayer.RealmTitle.Midgard.RR7.Female:			플라멘 프루
+GamePlayer.RealmTitle.Midgard.RR8.Female:			엘딩 프루
+GamePlayer.RealmTitle.Midgard.RR9.Female:			스토르무르 프루
+GamePlayer.RealmTitle.Midgard.RR10.Female:			에인헤랴르
+GamePlayer.RealmTitle.Midgard.RR11.Female:			프루
+GamePlayer.RealmTitle.Midgard.RR12.Female:			바론스프루
+GamePlayer.RealmTitle.Midgard.RR13.Female:			비콩테사
+GamePlayer.RealmTitle.Midgard.RR14.Female:			스토르 후르프루
+
+## Hibernia
+### Male
+GamePlayer.RealmTitle.Hibernia.RR0.Male:			수호자
+GamePlayer.RealmTitle.Hibernia.RR1.Male:			사반트
+GamePlayer.RealmTitle.Hibernia.RR2.Male:			코산토이르
+GamePlayer.RealmTitle.Hibernia.RR3.Male:			브레혼
+GamePlayer.RealmTitle.Hibernia.RR4.Male:			숲의 수호자
+GamePlayer.RealmTitle.Hibernia.RR5.Male:			열정의 레이븐
+GamePlayer.RealmTitle.Hibernia.RR6.Male:			은빛 손
+GamePlayer.RealmTitle.Hibernia.RR7.Male:			천둥의 사자
+GamePlayer.RealmTitle.Hibernia.RR8.Male:			황금빛 창
+GamePlayer.RealmTitle.Hibernia.RR9.Male:			티아르나
+GamePlayer.RealmTitle.Hibernia.RR10.Male:			에메랄드 리데레
+GamePlayer.RealmTitle.Hibernia.RR11.Male:			바룬
+GamePlayer.RealmTitle.Hibernia.RR12.Male:			아르드 티아르나
+GamePlayer.RealmTitle.Hibernia.RR13.Male:			키안
+GamePlayer.RealmTitle.Hibernia.RR14.Male:			아르드 디우크
+
+### Female
+GamePlayer.RealmTitle.Hibernia.RR0.Female:			수호자
+GamePlayer.RealmTitle.Hibernia.RR1.Female:			사반트
+GamePlayer.RealmTitle.Hibernia.RR2.Female:			코산토이르
+GamePlayer.RealmTitle.Hibernia.RR3.Female:			브레혼
+GamePlayer.RealmTitle.Hibernia.RR4.Female:			숲의 수호자
+GamePlayer.RealmTitle.Hibernia.RR5.Female:			열정의 레이븐
+GamePlayer.RealmTitle.Hibernia.RR6.Female:			은빛 손
+GamePlayer.RealmTitle.Hibernia.RR7.Female:			천둥의 사자
+GamePlayer.RealmTitle.Hibernia.RR8.Female:			황금빛 창
+GamePlayer.RealmTitle.Hibernia.RR9.Female:			반티아르나
+GamePlayer.RealmTitle.Hibernia.RR10.Female:			에메랄드 리데레
+GamePlayer.RealmTitle.Hibernia.RR11.Female:			반바룬
+GamePlayer.RealmTitle.Hibernia.RR12.Female:			아르드 반티아르나
+GamePlayer.RealmTitle.Hibernia.RR13.Female:			카스
+GamePlayer.RealmTitle.Hibernia.RR14.Female:			아르드 반디우크

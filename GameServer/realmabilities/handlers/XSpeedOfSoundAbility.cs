@@ -2,6 +2,7 @@ using System.Collections;
 using DOL.Database;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -18,14 +19,14 @@ namespace DOL.GS.RealmAbilities
 			GamePlayer player = living as GamePlayer;
 			/* if (player.IsSpeedWarped)
 			 {
-				 player.Out.SendMessage("You cannot use this ability while speed warped!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				 player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.SpeedOfSound.SpeedWarped"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				 return;
 			 }*/
 
 			if (player.TempProperties.GetProperty<bool>("Charging")
 				|| player.EffectList.CountOfType(typeof(SpeedOfSoundEffect), typeof(ArmsLengthEffect), typeof(ChargeEffect)) > 0)
 			{
-				player.Out.SendMessage("You already have an effect of that type!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Message.AlreadyEffect"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
 				return;
 			}
 

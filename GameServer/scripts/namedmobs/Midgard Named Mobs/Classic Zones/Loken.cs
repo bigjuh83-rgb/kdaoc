@@ -23,7 +23,7 @@ namespace DOL.GS
 			if (source is GamePlayer || source is GameSummonedPet)
 			{
 				Point3D spawn = new Point3D(SpawnPoint.X, SpawnPoint.Y, SpawnPoint.Z);
-				if (!source.IsWithinRadius(spawn, TetherRange))//dont take any dmg 
+				if (!source.IsWithinRadius(spawn, TetherRange))//dont take any dmg
 				{
 					if (damageType == eDamageType.Body || damageType == eDamageType.Cold || damageType == eDamageType.Energy || damageType == eDamageType.Heat
 						|| damageType == eDamageType.Matter || damageType == eDamageType.Spirit || damageType == eDamageType.Crush || damageType == eDamageType.Thrust
@@ -151,7 +151,7 @@ namespace DOL.AI.Brain
 				{
 					if (npc != null && npc.IsAlive && npc.Brain is LokenWolfBrain brian)
 					{
-						if (!brian.HasAggro && brian != null && target != null && target.IsAlive)
+						if (brian != null && !brian.HasAggro && target != null && target.IsAlive)
 							brian.AddToAggroList(target, 10);
 					}
 				}

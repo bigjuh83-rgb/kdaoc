@@ -120,7 +120,7 @@ namespace DOL.Network
 			WriteByte((byte) ((intValue >> 16) & 0xFF));
 			WriteByte((byte) ((intValue >> 24) & 0xFF));
 		}
-		
+
 		/// <summary>
 		/// Calculates the checksum for the internal buffer
 		/// </summary>
@@ -220,6 +220,43 @@ namespace DOL.Network
 			WriteIntLowEndian((uint) byteCount + 1);
 			WriteNonNullTerminatedString(chars);
 			WriteByte(0);
+		}
+
+		public void WritePascalStringUtf8(ReadOnlySpan<char> chars)
+		{
+			if (chars.IsEmpty)
+			{
+				WriteByte(0);
+				return;
+			}
+
+			int byteCount = Encoding.UTF8.GetByteCount(chars);
+
+			if (byteCount > byte.MaxValue)
+				throw new ArgumentException($"Pascal string exceeds maximum length of 255 bytes. Actual length: {byteCount} bytes", nameof(chars));
+
+			WriteByte((byte) byteCount);
+
+			if (byteCount <= 1024)
+			{
+				Span<byte> buffer = stackalloc byte[byteCount];
+				Encoding.UTF8.GetBytes(chars, buffer);
+				Write(buffer);
+			}
+			else
+			{
+				byte[] buffer = ArrayPool<byte>.Shared.Rent(byteCount);
+
+				try
+				{
+					int written = Encoding.UTF8.GetBytes(chars, buffer);
+					Write(new ReadOnlySpan<byte>(buffer, 0, written));
+				}
+				finally
+				{
+					ArrayPool<byte>.Shared.Return(buffer);
+				}
+			}
 		}
 
 		/// <summary>

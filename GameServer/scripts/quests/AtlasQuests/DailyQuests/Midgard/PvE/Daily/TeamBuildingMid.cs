@@ -27,7 +27,7 @@ namespace DOL.GS.DailyQuest.Midgard
 
 		// Kill Goal
 		private const int MAX_KILLED = 25;
-		
+
 		private static GameNPC Isaac = null; // Start NPC
 
 		private bool HasViking = false;
@@ -52,7 +52,7 @@ namespace DOL.GS.DailyQuest.Midgard
 		public TeamBuildingMid(GamePlayer questingPlayer, DbQuest dbQuest) : base(questingPlayer, dbQuest)
 		{
 		}
-		
+
 		public override int Level
 		{
 			get
@@ -67,7 +67,7 @@ namespace DOL.GS.DailyQuest.Midgard
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -145,7 +145,7 @@ namespace DOL.GS.DailyQuest.Midgard
 
 		private static void TalkToIsaac(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -163,18 +163,16 @@ namespace DOL.GS.DailyQuest.Midgard
 					switch (quest.Step)
 					{
 						case 1:
-							Isaac.SayTo(player, "Kill creatures in any RvR zone to help us clear more room for the armies to maneuver around.");
+							Isaac.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.RvRMonsterObjective"));
 							break;
 						case 2:
-							Isaac.SayTo(player, "Hello " + player.Name + ", did you [forge the bonds of unity]?");
+							Isaac.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[forge the bonds of unity]"));
 							break;
 					}
 				}
 				else
 				{
-					Isaac.SayTo(player, "Hello "+ player.Name +", I am Isaac. I help the king with logistics, and he's tasked me with getting things done around here. "+
-					                       "The king recently implemented a new unity initiative and he wants you to help out.\n"+
-					                       "What do you say, are you [feeling social]?");
+					Isaac.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.TeamBuildingIntro", player.Name, "Isaac"));
 				}
 			}
 				// The player whispered to the NPC
@@ -186,7 +184,7 @@ namespace DOL.GS.DailyQuest.Midgard
 					switch (wArgs.Text)
 					{
 						case "feeling social":
-							player.Out.SendQuestSubscribeCommand(Isaac, QuestMgr.GetIDForQuestType(typeof(TeamBuildingMid)), "Will you help Dean "+questTitle+"");
+							player.Out.SendQuestSubscribeCommand(Isaac, QuestMgr.GetIDForQuestType(typeof(TeamBuildingMid)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "Dean", questTitle));
 							break;
 					}
 				}
@@ -197,18 +195,18 @@ namespace DOL.GS.DailyQuest.Midgard
 						case "forge the bonds of unity":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("I can feel our realm growing more cohesive every day!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.TeamBuildingComplete"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -227,7 +225,7 @@ namespace DOL.GS.DailyQuest.Midgard
 
 			return true;
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			TeamBuildMobsKilled = GetCustomProperty(QuestPropertyKey) != null ? int.Parse(GetCustomProperty(QuestPropertyKey)) : 0;
@@ -248,11 +246,11 @@ namespace DOL.GS.DailyQuest.Midgard
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -282,7 +280,7 @@ namespace DOL.GS.DailyQuest.Midgard
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for helping our realm prosper.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.TeamBuildingThanks"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -290,7 +288,7 @@ namespace DOL.GS.DailyQuest.Midgard
 				if (!Isaac.GiveQuest(typeof (TeamBuildingMid), player, 1))
 					return;
 
-				Isaac.SayTo(player, "Killing creatures in any RvR zone will work. Thanks for your service!");
+				Isaac.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.RvRMonsterReminder"));
 
 			}
 		}
@@ -314,23 +312,21 @@ namespace DOL.GS.DailyQuest.Midgard
 						    && HasRogue
 						    && HasMystic)
 						{
-							return "The spirit of unity flows through you. \n" +
-							       "Kill orange con or higher mobs: \n" + 
-							       "Orange+ Con Mobs Killed: ("+ TeamBuildMobsKilled +" | "+MAX_KILLED+")";
+							return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingReadyDescription", TeamBuildMobsKilled, MAX_KILLED);
 						}
 						else
 						{
-							StringBuilder output = new StringBuilder("Kill orange con or higher mobs while in a group containing the following base classes:\n");
-							if (!HasViking) output.Append("Viking required\n");
-							if (!HasSeer) output.Append("Seer required\n");
-							if (!HasRogue) output.Append("Rogue required\n");
-							if (!HasMystic) output.Append("Mystic required\n");
-							output.Append("Orange+ Con Mobs Killed: ("+ TeamBuildMobsKilled +" | "+MAX_KILLED+")");
+							StringBuilder output = new StringBuilder(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingMissingHeader"));
+							if (!HasViking) output.Append(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingRequirement", DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingViking")));
+							if (!HasSeer) output.Append(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingRequirement", DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingSeer")));
+							if (!HasRogue) output.Append(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingRequirement", DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingRogue")));
+							if (!HasMystic) output.Append(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingRequirement", DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingMystic")));
+							output.Append(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingKills", TeamBuildMobsKilled, MAX_KILLED));
 							return output.ToString();
 						}
-						
+
 					case 2:
-						return "Return to Isaac in Svasud Faste for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "Isaac", "Svasud Faste");
 				}
 				return base.Description;
 			}
@@ -342,16 +338,16 @@ namespace DOL.GS.DailyQuest.Midgard
 
 			if (player?.IsDoingQuest(typeof(TeamBuildingMid)) == null)
 				return;
-			
+
 			if (sender != m_questPlayer)
 				return;
-			
+
 			if (e != GameLivingEvent.EnemyKilled || Step != 1) return;
 			EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
-			
+
 			if (gArgs.Target is GameSummonedPet)
 				return;
-				
+
 			if (player.Group != null)
 			{
 				foreach (var member in player.Group.GetMembersInTheGroup())
@@ -388,7 +384,7 @@ namespace DOL.GS.DailyQuest.Midgard
 				"[Group Daily] Monster killed: (" + TeamBuildMobsKilled + " | " + MAX_KILLED + ")",
 				eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (TeamBuildMobsKilled >= MAX_KILLED)
 			{
 				// FinishQuest or go back to npc
@@ -396,7 +392,7 @@ namespace DOL.GS.DailyQuest.Midgard
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "TeamBuildingMid";

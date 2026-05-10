@@ -1377,9 +1377,7 @@ namespace DOL.GS.PacketHandler
 				pak.Fill(0x00, 6); //data2&data3
 				pak.WriteByte(0x01);
 				pak.WriteByte(0x00);
-				if (inviteMessage.Length > 0)
-					pak.WriteString(inviteMessage, inviteMessage.Length);
-				pak.WriteByte(0x00);
+				WriteDialogMessage(pak, inviteMessage);
 				SendTCP(pak);
 			}
 
@@ -1396,9 +1394,7 @@ namespace DOL.GS.PacketHandler
 				pak.Fill(0x00, 6); //data2&data3
 				pak.WriteByte(0x01);
 				pak.WriteByte(0x00);
-				if (inviteMessage.Length > 0)
-					pak.WriteString(inviteMessage, inviteMessage.Length);
-				pak.WriteByte(0x00);
+				WriteDialogMessage(pak, inviteMessage);
 				SendTCP(pak);
 			}
 
@@ -1415,11 +1411,17 @@ namespace DOL.GS.PacketHandler
 				pak.Fill(0x00, 6); //data2&data3
 				pak.WriteByte(0x01);
 				pak.WriteByte(0x00);
-				if (inviteMessage.Length > 0)
-					pak.WriteString(inviteMessage, inviteMessage.Length);
-				pak.WriteByte(0x00);
+				WriteDialogMessage(pak, inviteMessage);
 				SendTCP(pak);
 			}
+		}
+
+		protected static void WriteDialogMessage(GSTCPPacketOut pak, string message)
+		{
+			if (!string.IsNullOrEmpty(message))
+				pak.WriteNonNullTerminatedString(message);
+
+			pak.WriteByte(0x00);
 		}
 
 		public virtual void SendQuestOfferWindow(GameNPC questNPC, GamePlayer player, RewardQuest quest)
@@ -1460,9 +1462,7 @@ namespace DOL.GS.PacketHandler
 				pak.WriteShort(0x00);
 				pak.WriteByte(0x01); // yes/no response
 				pak.WriteByte(0x01); // autowrap message
-				if (inviteMessage.Length > 0)
-					pak.WriteString(inviteMessage, inviteMessage.Length);
-				pak.WriteByte(0x00);
+				WriteDialogMessage(pak, inviteMessage);
 				SendTCP(pak);
 			}
 		}
@@ -1481,9 +1481,7 @@ namespace DOL.GS.PacketHandler
 				pak.WriteShort(0x00);
 				pak.WriteByte(0x01); // yes/no response
 				pak.WriteByte(0x01); // autowrap message
-				if (abortMessage.Length > 0)
-					pak.WriteString(abortMessage, abortMessage.Length);
-				pak.WriteByte(0x00);
+				WriteDialogMessage(pak, abortMessage);
 				SendTCP(pak);
 			}
 		}
@@ -1501,9 +1499,7 @@ namespace DOL.GS.PacketHandler
 				pak.WriteShort(data4); //data4
 				pak.WriteByte((byte) type);
 				pak.WriteByte((byte) (autoWrapText ? 0x01 : 0x00));
-				if (message.Length > 0)
-					pak.WriteString(message, message.Length);
-				pak.WriteByte(0x00);
+				WriteDialogMessage(pak, message);
 				SendTCP(pak);
 			}
 		}
@@ -1530,9 +1526,7 @@ namespace DOL.GS.PacketHandler
 				pak.WriteShort(0x00);
 				pak.WriteByte((byte) (callback == null ? 0x00 : 0x01)); //ok or yes/no response
 				pak.WriteByte((byte) (msg.Contains('\n') ? 0x00 : 0x01)); // autowrap text
-				if (msg.Length > 0)
-					pak.WriteString(msg, msg.Length);
-				pak.WriteByte(0x00);
+				WriteDialogMessage(pak, msg);
 				SendTCP(pak);
 			}
 		}
@@ -2398,12 +2392,9 @@ namespace DOL.GS.PacketHandler
 
 			using (var pak = PooledObjectFactory.GetForTick<GSTCPPacketOut>().Init(GetPacketCode(eServerPackets.DetailWindow)))
 			{
-				ReadOnlySpan<char> captionSpan = caption == null ? [] : caption;
+				ReadOnlySpan<char> captionSpan = TakeEncodedChunk(caption == null ? [] : caption.AsSpan(), byte.MaxValue);
 
-				if (captionSpan.Length > byte.MaxValue)
-					captionSpan = captionSpan[..byte.MaxValue];
-
-				pak.WritePascalString(captionSpan);
+				WriteCustomTextWindowString(pak, captionSpan);
 
 				WriteCustomTextWindowData(pak, text);
 
@@ -2418,12 +2409,12 @@ namespace DOL.GS.PacketHandler
 			IList<string> text = m_gameClient.Player.FormatStatistics();
 
 			text.Add(" ");
-			text.Add("Titles:");
+			text.Add(LanguageMgr.GetTranslation(m_gameClient, "PacketLib.PlayerTitles.Titles"));
 
 			foreach (IPlayerTitle title in m_gameClient.Player.Titles)
 				text.Add("- " + title.GetDescription(m_gameClient.Player));
 
-			SendCustomTextWindow("Player Statistics", text);
+			SendCustomTextWindow(LanguageMgr.GetTranslation(m_gameClient, "PacketLib.PlayerTitles.Caption"), text);
 		}
 
 		public virtual void SendPlayerTitleUpdate(GamePlayer player)
@@ -2457,13 +2448,9 @@ namespace DOL.GS.PacketHandler
 			using (var pak = PooledObjectFactory.GetForTick<GSTCPPacketOut>().Init(GetPacketCode(eServerPackets.TimerWindow)))
 			{
 				pak.WriteShort((ushort) seconds);
-				pak.WriteByte((byte) title.Length);
+				ReadOnlySpan<char> titleSpan = TakeEncodedChunk(title == null ? [] : title.AsSpan(), byte.MaxValue);
+				pak.WriteByte((byte) GetEncodedByteCount(titleSpan));
 				pak.WriteByte(1);
-
-				ReadOnlySpan<char> titleSpan = title == null ? [] : title;
-
-				if (titleSpan.Length > byte.MaxValue)
-					titleSpan = titleSpan[..byte.MaxValue];
 
 				pak.WriteString(titleSpan);
 
@@ -3858,17 +3845,11 @@ namespace DOL.GS.PacketHandler
 				}
 				else
 				{
-					ReadOnlySpan<char> nameSpan = quest.Name;
-					ReadOnlySpan<char> descSpan = quest.Description;
+					ReadOnlySpan<char> nameSpan = TakeEncodedChunk(quest.Name == null ? [] : quest.Name.AsSpan(), byte.MaxValue);
+					ReadOnlySpan<char> descSpan = TakeEncodedChunk(quest.Description == null ? [] : quest.Description.AsSpan(), byte.MaxValue);
 
-					if (nameSpan.Length > byte.MaxValue)
-						nameSpan = nameSpan[..byte.MaxValue];
-
-					if (descSpan.Length > byte.MaxValue)
-						descSpan = descSpan[..byte.MaxValue];
-
-					pak.WriteByte((byte) nameSpan.Length);
-					pak.WriteByte((byte) descSpan.Length);
+					pak.WriteByte((byte) GetEncodedByteCount(nameSpan));
+					pak.WriteByte((byte) GetEncodedByteCount(descSpan));
 					pak.WriteByte(0);
 					pak.WriteNonNullTerminatedString(nameSpan); //Write Quest Name without trailing 0
 					pak.WriteNonNullTerminatedString(descSpan); //Write Quest Description without trailing 0
@@ -4098,50 +4079,74 @@ namespace DOL.GS.PacketHandler
 		protected static void WriteCustomTextWindowData(GSTCPPacketOut pak, IList<string> text)
 		{
 			byte line = 0;
-			bool needBreak = false;
 
 			foreach (var listStr in text)
 			{
 				if (listStr != null)
 				{
-					if (pak.Position + 4 > MAX_PACKET_LENGTH) // line + pascalstringline(1) + trailingZero
-						return;
-
-					pak.WriteByte(++line);
 					ReadOnlySpan<char> str = listStr.AsSpan();
 
-					while (str.Length > byte.MaxValue)
+					do
 					{
-						ReadOnlySpan<char> s = str[..byte.MaxValue];
+						if (line >= 200 || pak.Position + 3 > MAX_PACKET_LENGTH)
+							return;
 
-						if (pak.Position + s.Length + 2 > MAX_PACKET_LENGTH)
-						{
-							needBreak = true;
-							break;
-						}
+						int availableBytes = (int) Math.Min(byte.MaxValue, MAX_PACKET_LENGTH - pak.Position - 3);
+						ReadOnlySpan<char> chunk = TakeEncodedChunk(str, availableBytes);
 
-						pak.WritePascalString(s);
-						str = str[byte.MaxValue..];
-
-						if (line >= 200 || pak.Position + Math.Min(byte.MaxValue, str.Length) + 2 >= MAX_PACKET_LENGTH)
-							// line + pascalstringline(1) + trailingZero
+						if (chunk.IsEmpty && !str.IsEmpty)
 							return;
 
 						pak.WriteByte(++line);
+						WriteCustomTextWindowString(pak, chunk);
+						str = str[chunk.Length..];
 					}
-
-					if (pak.Position + str.Length + 2 > MAX_PACKET_LENGTH) // str.Length + trailing zero
-					{
-						str = str[..(int) Math.Max(Math.Min(1, str.Length), MAX_PACKET_LENGTH - pak.Position - 2)];
-						needBreak = true;
-					}
-
-					pak.WritePascalString(str);
-
-					if (needBreak || line >= 200) // Check max packet length or max stings in window (0 - 199)
-						break;
+					while (!str.IsEmpty);
 				}
 			}
+		}
+
+		protected static void WriteCustomTextWindowString(GSTCPPacketOut pak, ReadOnlySpan<char> str)
+		{
+			pak.WritePascalString(str);
+		}
+
+		protected static int GetEncodedByteCount(ReadOnlySpan<char> str)
+		{
+			return BaseServer.DefaultEncoding.GetByteCount(str);
+		}
+
+		protected static ReadOnlySpan<char> TakeEncodedChunk(string str, int maxByteCount)
+		{
+			return TakeEncodedChunk(str == null ? [] : str.AsSpan(), maxByteCount);
+		}
+
+		protected static ReadOnlySpan<char> TakeEncodedChunk(ReadOnlySpan<char> str, int maxByteCount)
+		{
+			if (str.IsEmpty || maxByteCount <= 0)
+				return [];
+
+			int byteCount = 0;
+
+			for (int i = 0; i < str.Length; i++)
+			{
+				int charByteCount = BaseServer.DefaultEncoding.GetByteCount(str.Slice(i, 1));
+
+				if (byteCount + charByteCount > maxByteCount)
+				{
+					if (i == 0)
+						return [];
+
+					return str[..i];
+				}
+
+				byteCount += charByteCount;
+
+				if (byteCount == maxByteCount)
+					return str[..(i + 1)];
+			}
+
+			return str;
 		}
 
 		protected virtual void WriteHouseFurniture(GSTCPPacketOut pak, IndoorItem item, int index)

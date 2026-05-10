@@ -46,12 +46,12 @@ namespace DOL.GS.Spells
 
 			if (!ad.IsMeleeAttack && ad.AttackType != AttackData.eAttackType.Ranged)
 				return false;
-			
+
 			return true;
 		}
 
 		public virtual void OnDamageAbsorbed(AttackData ad, int DamageAmount) { }
-		
+
 		public override DbPlayerXEffect GetSavedEffect(GameSpellEffect e)
 		{
 			if (Spell.Pulse != 0 || Spell.Concentration != 0 || e.RemainingTime < 1)
@@ -149,13 +149,10 @@ namespace DOL.GS.Spells
 		// Check if Melee
 		public override bool MatchingDamageType(ref AttackData ad)
 		{
-			if (ad == null || (ad.AttackResult == eAttackResult.HitStyle && ad.AttackResult == eAttackResult.HitUnstyled))
+			if (ad == null)
 				return false;
 
-			if (ad.IsMeleeAttack && ad.AttackType == AttackData.eAttackType.Ranged)
-				return false;
-
-			return true;
+			return ad.AttackType == AttackData.eAttackType.Spell;
 		}
 
 		// For delve info.

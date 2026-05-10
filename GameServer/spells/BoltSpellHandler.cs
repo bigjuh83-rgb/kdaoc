@@ -1,4 +1,5 @@
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -77,8 +78,8 @@ namespace DOL.GS.Spells
             else
             {
                 ad.AttackResult = eAttackResult.Blocked;
-                MessageToLiving(ad.Target, $"You partially block {Caster.GetName(0, false)}'s spell!", eChatType.CT_Action);
-                MessageToCaster($"{ad.Target.GetName(0, true)} blocks!", eChatType.CT_YouHit);
+                MessageToLiving(ad.Target, LanguageMgr.GetTranslation((ad.Target as GamePlayer)?.Client.Account.Language, "BoltSpellHandler.PartialBlock", Caster.GetName(0, false)), eChatType.CT_Action);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "BoltSpellHandler.TargetBlocks", ad.Target.GetName(0, true)), eChatType.CT_YouHit);
             }
 
             return damage;
@@ -122,13 +123,13 @@ namespace DOL.GS.Spells
         {
             if (_combatBlock)
             {
-                MessageToCaster($"{target.Name} is in combat and your bolt misses!", eChatType.CT_YouHit);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "BoltSpellHandler.TargetInCombatMiss", target.Name), eChatType.CT_YouHit);
                 _combatBlock = false; // One spell handler can launch multiple bolts, so it needs to be reset (checked one at a time).
             }
             else
-                MessageToCaster($"You miss!", eChatType.CT_YouHit);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "BoltSpellHandler.YouMiss"), eChatType.CT_YouHit);
 
-            MessageToLiving(target, Caster.GetName(0, false) + " missed!", eChatType.CT_Action);
+            MessageToLiving(target, LanguageMgr.GetTranslation((target as GamePlayer)?.Client.Account.Language, "BoltSpellHandler.CasterMissed", Caster.GetName(0, false)), eChatType.CT_Action);
         }
 
         public void BaseStartSpell(GameLiving target)

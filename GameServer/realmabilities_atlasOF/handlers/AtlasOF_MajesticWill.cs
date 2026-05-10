@@ -8,7 +8,7 @@ namespace DOL.GS.RealmAbilities
     public class AtlasOF_MajesticWill : TimedRealmAbility
     {
         public AtlasOF_MajesticWill(DbAbility dba, int level) : base(dba, level) { }
-        
+
         int m_duration = 60000; // 30s
 
         public override int MaxLevel { get { return 3; } }
@@ -24,7 +24,7 @@ namespace DOL.GS.RealmAbilities
 
             ECSGameEffectFactory.Create(new(player, m_duration, Level, CreateSpell(living)), static (in i) => new AtlasOF_MajesticWillECSEffect(i));
         }
-        
+
         private SpellHandler CreateSpell(GameLiving owner)
         {
             DbSpell tmpSpell = new DbSpell();
@@ -44,7 +44,7 @@ namespace DOL.GS.RealmAbilities
             tmpSpell.CastTime = 0;
             tmpSpell.EffectGroup = 0; // stacks with other damage adds
             tmpSpell.Range = 0;
-            tmpSpell.Description = "Your targets chance of resisting your spells is reduced by 5% per level per level of this ability for 60 seconds.";
+            tmpSpell.Description = DOL.Language.LanguageMgr.GetTranslation(DOL.Language.LanguageMgr.DefaultLanguage, "RealmAbility.AtlasOF.MajesticWill.Description");
             SpellLine spellLine = GlobalSpellsLines.RealmSpellsSpellLine;
             return ScriptMgr.CreateSpellHandler(owner, new Spell(tmpSpell, 0) , spellLine) as SpellHandler;
         }
@@ -60,7 +60,7 @@ namespace DOL.GS.RealmAbilities
                 return delveInfoList;
             }
         }
-        
+
         public override void AddEffectsInfo(IList<string> list)
         {
             list.Add("Your targets chance of resisting your spells is reduced by 5% per level per level of this ability for 60 seconds.");

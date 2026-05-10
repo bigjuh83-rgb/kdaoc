@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Friends
 {
@@ -215,7 +216,7 @@ namespace DOL.GS.Friends
 			if (player == null)
 				throw new ArgumentNullException(nameof(player));
 
-			player.Out.SendCustomTextWindow("Friends (snapshot)", this[player]);
+			player.Out.SendCustomTextWindow(LanguageMgr.GetTranslation(player.Client.Account.Language, "FriendsManager.Snapshot.Title"), this[player]);
 		}
 
 		/// <summary>

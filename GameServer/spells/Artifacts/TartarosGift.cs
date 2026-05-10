@@ -1,4 +1,5 @@
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -24,40 +25,40 @@ namespace DOL.GS.Spells
 
             if (Caster.IsDiseased)
             {
-                MessageToCaster("You are diseased!", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.YouAreDiseased"), eChatType.CT_SpellResisted);
                 heal >>= 1;
             }
-            if (heal <= 0) return;            
+            if (heal <= 0) return;
             heal = Caster.ChangeHealth(Caster, eHealthChangeType.Spell, heal);
             if (heal > 0)
             {
-                MessageToCaster("You drain " + heal + " hit point" + (heal == 1 ? "." : "s."), eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.DrainLife", heal), eChatType.CT_Spell);
             }
             else
             {
-                MessageToCaster("You cannot absorb any more life.", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.CannotAbsorbLife"), eChatType.CT_SpellResisted);
             }
-            
+
             if (mana <=0) return;
             mana = Caster.ChangeMana(Caster,eManaChangeType.Spell,mana);
             if (mana > 0)
             {
-                MessageToCaster("You drain " + mana + " power point" + (mana == 1 ? "." : "s."), eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.DrainPower", mana), eChatType.CT_Spell);
             }
             else
             {
-                MessageToCaster("You cannot absorb any more power.", eChatType.CT_SpellResisted);
-            }     
-            
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.CannotAbsorbPower"), eChatType.CT_SpellResisted);
+            }
+
             if (endu <=0) return;
-            endu = Caster.ChangeEndurance(Caster,eEnduranceChangeType.Spell,endu);            
-            if (heal > 0)
+            endu = Caster.ChangeEndurance(Caster,eEnduranceChangeType.Spell,endu);
+            if (endu > 0)
             {
-                MessageToCaster("You drain " + endu + " endurance point" + (endu == 1 ? "." : "s."), eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.DrainEndurance", endu), eChatType.CT_Spell);
             }
             else
             {
-                MessageToCaster("You cannot absorb any more endurance.", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.CannotAbsorbEndurance"), eChatType.CT_SpellResisted);
             }
         }
 

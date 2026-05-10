@@ -413,7 +413,7 @@ namespace DOL.GS.Spells
                 if (target.IsWithinRadius(playerCaster, 2000))
                 {
                     if (playerCaster.Client.Account.PrivLevel > 1)
-                        MessageToCaster("Resist Chance=" + resistString + "; Roll=" + rollString, eChatType.CT_SpellResisted);
+                        MessageToCaster(LanguageMgr.GetTranslation(playerCaster.Client, "CharmSpellHandler.ResistDebug", resistString, rollString), eChatType.CT_SpellResisted);
 
                     if (resistResult <= spellResistChance)
                     {

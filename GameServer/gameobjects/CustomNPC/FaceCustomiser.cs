@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -19,6 +19,7 @@
 
 using System;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -58,11 +59,11 @@ namespace DOL.GS
 
 			if(player.CustomisationStep == 2)
 			{
-				SayTo(player, eChatLoc.CL_PopupWindow, player.CharacterClass.Name +", I have discovered a secret spell that will allow you to change your appearance. I can cast this spell upon you if you wish. All you must do is say the word and I will [change your appearance].");
+				SayTo(player, eChatLoc.CL_PopupWindow, LanguageMgr.GetTranslation(player.Client.Account.Language, "FaceCustomiser.Interact.Offer", player.CharacterClass.Name));
 			}
 			else if(player.CustomisationStep == 3)
 			{
-				SayTo(player, eChatLoc.CL_PopupWindow, "You have already been granted the ability to change your appearance. You must leave this world to make the changes. (Log out to change your appearance.)");
+				SayTo(player, eChatLoc.CL_PopupWindow, LanguageMgr.GetTranslation(player.Client.Account.Language, "FaceCustomiser.Interact.AlreadyGranted"));
 			}
 
 			return true;
@@ -78,20 +79,22 @@ namespace DOL.GS
 		{
 			if (!base.WhisperReceive(source, text))
 				return false;
-			
+
 			GamePlayer player = source as GamePlayer;
 			if (player == null)
 				return false;
 
-			if (player.CustomisationStep == 2 && text == "change your appearance")
+			string normalizedText = text.ToLowerInvariant();
+
+			if (player.CustomisationStep == 2 && (normalizedText == "change your appearance" || text == "외형 변경"))
 			{
-				foreach(GamePlayer players in this.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE)) 
+				foreach(GamePlayer players in this.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 				{
 					players.Out.SendSpellCastAnimation(this,EFFECT_ID,CAST_TIME);
 				}
 				new ECSGameTimer(player, new ECSGameTimer.ECSTimerCallback(EndCastCallback), CAST_TIME);
-			
-				SayTo(player, eChatLoc.CL_PopupWindow, "There it is done! Now, you must leave this world for a short time for the magic to work. (You must log out to change your appearance.)");
+
+				SayTo(player, eChatLoc.CL_PopupWindow, LanguageMgr.GetTranslation(player.Client.Account.Language, "FaceCustomiser.Whisper.DoneLogoutRequired"));
 				player.CustomisationStep = 3;
 			}
 			return true;
@@ -104,7 +107,7 @@ namespace DOL.GS
 		/// <returns>new delay in milliseconds</returns>
 		protected virtual int EndCastCallback(ECSGameTimer callingTimer)
 		{
-			foreach(GamePlayer players in this.GetPlayersInRadius( WorldMgr.VISIBILITY_DISTANCE)) 
+			foreach(GamePlayer players in this.GetPlayersInRadius( WorldMgr.VISIBILITY_DISTANCE))
 			{
 				players.Out.SendSpellEffectAnimation(this,this,EFFECT_ID,0,false,0x01);
 			}

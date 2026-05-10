@@ -1,0 +1,251 @@
+# Realm Abilities
+
+## Event Handler
+RealmAbility.AddReUseDelayInfo.Every:			레벨 {0}: 사용 주기: {1}
+RealmAbility..CheckPreconditions.BeInCombat:		이 능력을 사용하려면 최근 전투 중이어야 합니다!
+RealmAbility..CheckPreconditions.BeInGroup:		이 능력을 사용하려면 그룹에 속해 있어야 합니다!
+RealmAbility..CheckPreconditions.Combat:		최근 전투 중이었으므로 이 능력을 사용할 수 없습니다!
+RealmAbility..CheckPreconditions.Dead:			사망 상태에서는 이 능력을 사용할 수 없습니다!
+RealmAbility..CheckPreconditions.Mesmerized:		메즈 상태에서는 이 능력을 사용할 수 없습니다!
+RealmAbility..CheckPreconditions.Sitting:		앉은 상태에서는 이 능력을 사용할 수 없습니다!
+RealmAbility..CheckPreconditions.Stealthed:		은신 중에는 이 능력을 사용할 수 없습니다!
+RealmAbility..CheckPreconditions.Stunned:		기절 상태에서는 이 능력을 사용할 수 없습니다!
+RealmAbility.SendCasterSpellEffectAndCastMessage.Caster:{0}이(가) 주문을 시전합니다!
+RealmAbility.SendCasterSpellEffectAndCastMessage.You:	{0} 주문을 시전했습니다!
+RealmAbility.SendCastMessage.PlayerCasts:		{0}이(가) 주문을 시전합니다!
+RealmAbility.SendCastMessage.YouCast:			{0} 주문을 시전했습니다!
+
+## Adrenaline Rush
+AdrenalineRushAbility.AddEffectsInfo.Info1:
+AdrenalineRushAbility.AddEffectsInfo.Info2:
+AdrenalineRushAbility.AddEffectsInfo.Info3:
+AdrenalineRushAbility.AddEffectsInfo.Info4:
+AdrenalineRushAbility.AddEffectsInfo.Info5:
+GameLiving.CheckWeaponMagicalEffect.Protected:		대상은 마법 효과로 당신의 독으로부터 보호받고 있습니다.
+
+## Bedazzling Aura
+BedazzlingAuraAbility.AddEffectsInfo.Info1:
+BedazzlingAuraAbility.AddEffectsInfo.Info2:
+BedazzlingAuraAbility.AddEffectsInfo.Info3:
+BedazzlingAuraAbility.AddEffectsInfo.Info4:
+BedazzlingAuraAbility.AddEffectsInfo.Info5:
+
+## Concentration
+ConcentrationAbility.AddEffectsInfo.Info1:	레벨 1: 수치: 25%
+ConcentrationAbility.AddEffectsInfo.Info2:	레벨 2: 수치: 60%
+ConcentrationAbility.AddEffectsInfo.Info3:	레벨 3: 수치: 100%
+ConcentrationAbility.AddEffectsInfo.Info4:	대상: 자신
+ConcentrationAbility.AddEffectsInfo.Info5:	시전 시간: 즉시
+
+## Dashing Defense
+DashingDefenseAbility.AddEffectsInfo.Info1:
+DashingDefenseAbility.AddEffectsInfo.Info2:		대상: 자신
+DashingDefenseAbility.AddEffectsInfo.Info3:		시전 시간: 즉시
+DashingDefenseAbility.Execute.AlreadyEffect:		이미 그 유형의 효과를 가지고 있습니다!
+DashingDefenseAbility.Execute.MustInGroup:		이 능력을 사용하려면 그룹에 속해 있어야 합니다!
+
+## First Aid
+FirstAidAbility.AddEffectsInfo.Info1:			레벨 1: 수치: 생명력 300
+FirstAidAbility.AddEffectsInfo.Info2:			레벨 2: 수치: 생명력 600
+FirstAidAbility.AddEffectsInfo.Info3:			레벨 3: 수치: 생명력 900
+FirstAidAbility.AddEffectsInfo.Info4:			대상: 자신
+FirstAidAbility.AddEffectsInfo.Info5:			시전 시간: 즉시
+FirstAidAbility.AddEffectsInfo.Info6:
+FirstAidAbility.Execute.FullyHealed:			완전히 회복되었습니다.
+FirstAidAbility.Execute.AlreadyFullyHealed:		이미 생명력이 가득 찼습니다.
+FirstAidAbility.Execute.HealYourself:			자신의 생명력을 {0} 회복했습니다.
+
+## Juggernaut
+JuggernautAbility.AddEffectsInfo.Info1:
+JuggernautAbility.AddEffectsInfo.Info2:
+JuggernautAbility.AddEffectsInfo.Info3:
+JuggernautAbility.AddEffectsInfo.Info4:
+JuggernautAbility.AddEffectsInfo.Info5:
+
+## Mastery of Concentration
+MasteryofConcentrationAbility.AddEffectsInfo.Info1:
+MasteryofConcentrationAbility.AddEffectsInfo.Info2:
+MasteryofConcentrationAbility.AddEffectsInfo.Info3:
+MasteryofConcentrationAbility.AddEffectsInfo.Info4:
+MasteryofConcentrationAbility.AddEffectsInfo.Info5:
+
+## Mystic Crystal Lore
+MysticCrystalLoreAbility.AddEffectsInfo.Info1:	레벨 1: 수치: 25%
+MysticCrystalLoreAbility.AddEffectsInfo.Info2:	레벨 2: 수치: 60%
+MysticCrystalLoreAbility.AddEffectsInfo.Info3:	레벨 3: 수치: 100%
+MysticCrystalLoreAbility.AddEffectsInfo.Info4:	대상: 자신
+MysticCrystalLoreAbility.AddEffectsInfo.Info5:	시전 시간: 즉시
+MysticCrystalLoreAbility.AddEffectsInfo.Info6:
+
+## Negative Maelstrom
+NegativeMaelstromAbility.AddEffectsInfo.Info1:
+NegativeMaelstromAbility.AddEffectsInfo.Info2:
+NegativeMaelstromAbility.AddEffectsInfo.Info3:
+NegativeMaelstromAbility.AddEffectsInfo.Info4:
+NegativeMaelstromAbility.AddEffectsInfo.Info5:
+NegativeMaelstromAbility.AddEffectsInfo.Info6:
+NegativeMaelstromAbility.AddEffectsInfo.Info7:
+NegativeMaelstromAbility.AddEffectsInfo.Info8:
+NegativeMaelstromAbility.AddEffectsInfo.Info9:
+
+## Purge
+PurgeAbility.AddEffectsInfo.Info1:
+PurgeAbility.AddEffectsInfo.Info2:			대상: 자신
+PurgeAbility.AddEffectsInfo.Info3:			시전 시간: 즉시
+PurgeAbility.OnTick.PurgeActivate:			정화가 {0}초 후 활성화됩니다!
+PurgeAbility.RemoveNegativeEffects.FallFromYou:		모든 부정적 효과가 사라졌습니다.
+
+## RA Property Enhancer
+RAPropertyEnhancer.DelveInfo.Info1:		레벨 {0}: 수치: {1}{2}
+
+## RA Stat Enhancer
+RAStatEnhancer.DelveInfo.Info1:			레벨 {0}: 수치: {1}
+
+## Second Wind
+SecondWindAbility.AddEffectsInfo.Info1:
+SecondWindAbility.AddEffectsInfo.Info4:
+SecondWindAbility.AddEffectsInfo.Info5:
+
+## Selective Blindness
+GameLiving.AttackData.InvisibleToYou:		{0}은(는) 당신에게 보이지 않습니다!
+
+## Atlas Old Frontiers - Volley
+AtlasOF.Volley.AlreadyUsing:                 이미 발리를 사용 중입니다!
+AtlasOF.Volley.ArrowsRemaining:              발사할 화살이 {0}발 남았습니다!
+AtlasOF.Volley.CantUseInDungeons:            던전 안에서는 발리를 사용할 수 없습니다!
+AtlasOF.Volley.CantUseInEnemyBorderKeep:     적 국경 요새 안에서는 발리를 사용할 수 없습니다!
+AtlasOF.Volley.CantUseInEnemyPortalKeep:     적 포털 요새 안에서는 발리를 사용할 수 없습니다!
+AtlasOF.Volley.CantUseWithCriticalShot:      크리티컬 샷이 활성화된 동안에는 발리를 사용할 수 없습니다!
+AtlasOF.Volley.CantUseWithLongshot:          롱샷이 활성화된 동안에는 발리를 사용할 수 없습니다!
+AtlasOF.Volley.Finished:                     발리가 끝났습니다!
+AtlasOF.Volley.GroundTargetTooClose:         지면 대상이 너무 가까워 발리를 사용할 수 없습니다!
+AtlasOF.Volley.GroundTargetTooFar:           지면 대상이 너무 멀어 발리를 사용할 수 없습니다!
+AtlasOF.Volley.InterruptedAttacked:          공격을 받아 발리가 중단되었습니다!
+AtlasOF.Volley.InterruptedMove:              이동하여 발리가 중단되었습니다!
+AtlasOF.Volley.InterruptedWeapon:            활을 집어넣어 발리가 중단되었습니다!
+AtlasOF.Volley.NeedArrows:                   발리를 사용하려면 화살이 필요합니다!
+AtlasOF.Volley.NeedBow:                      발리를 사용하려면 활을 장착해야 합니다!
+AtlasOF.Volley.NeedGroundTarget:             발리를 사용하려면 지면 대상이 필요합니다!
+AtlasOF.Volley.PrepareShot:                  사격을 준비합니다. ({0}초)
+AtlasOF.Volley.PrepareVolley:                화살 세례를 퍼부을 준비를 합니다!
+AtlasOF.Volley.ReadyToShoot:                 발사 준비가 끝났습니다!
+AtlasOF.Volley.ShotArcs:                     화살이 하늘로 높이 날아갑니다!
+AtlasOF.Volley.ShotMissesAll:                화살이 모든 대상을 빗나갔습니다!
+AtlasOF.Volley.TooTired:                     너무 지쳐 더 이상 발리를 유지할 수 없습니다!
+RealmAbility.Charge.EnemyPlayersOnly:        차지는 적 플레이어에게만 사용할 수 있습니다.
+RealmAbility.DivineIntervention.AlreadyProtected: 이미 치유의 웅덩이로 보호받고 있습니다.
+AtlasOF.SiegeBolt.KeepDoorsAndSiegeOnly:     이 주문은 킵 문과 공성 무기에만 사용할 수 있습니다.
+AtlasOF.SiegeBolt.TargetOutOfRange:          대상이 사거리 밖에 있습니다.
+
+## Realm Ability Messages
+RealmAbility.Message.AlreadyEffect:		이미 그 유형의 효과를 가지고 있습니다!
+RealmAbility.Message.NeedTarget:		이 능력을 사용하려면 대상이 필요합니다!
+RealmAbility.Message.TargetTooFarAwayPeriod:		{0}이(가) 너무 멀리 있습니다.
+RealmAbility.Message.TargetTooFarAway:		{0}이(가) 너무 멀리 있습니다!
+RealmAbility.Message.CancelSpell:		주문을 취소했습니다!
+RealmAbility.Message.MustStandStill:		이 능력을 사용하려면 가만히 서 있어야 합니다!
+RealmAbility.Message.MustSetGroundTarget:		이 능력을 사용하려면 지면 대상을 지정해야 합니다!
+RealmAbility.Message.GroundTargetTooFar:		지면 대상이 너무 멀어 이 능력을 사용할 수 없습니다!
+RealmAbility.Message.AlreadyCastingAbility:		이미 능력을 시전 중입니다.
+RealmAbility.Message.NotInGroup:		그룹에 속해 있지 않습니다.
+RealmAbility.Message.MustHaveControlledPet:		이 능력을 사용하려면 조종 중인 펫이 있어야 합니다!
+RealmAbility.Message.MustSelectTarget:		이 능력을 사용하려면 대상을 선택해야 합니다!
+RealmAbility.Message.InvalidTarget:		잘못된 대상입니다!
+RealmAbility.Message.CannotAttackSelf:		자기 자신은 공격할 수 없습니다!
+RealmAbility.Message.TargetNotInView:		{0}이(가) 시야 안에 없습니다!
+RealmAbility.Message.TargetDead:		{0}은(는) 죽어 있습니다!
+RealmAbility.Message.CannotAttackRealmMember:		같은 렐름의 구성원은 공격할 수 없습니다!
+RealmAbility.Message.MustWaitRecast:		이 유형의 능력을 다시 사용하려면 {0}초 기다려야 합니다!
+RealmAbility.Message.CasterCastsSpell:		{0}이(가) 주문을 시전합니다!
+RealmAbility.Generic.CastSelf:			{0}을(를) 시전했습니다!
+RealmAbility.Message.CannotCurrentlyUseAbility:		지금은 이 능력을 사용할 수 없습니다
+RealmAbility.Message.NeedGroup:		이 능력을 사용하려면 그룹이 필요합니다!
+RealmAbility.Message.MustSelectEnemyTarget:		적 대상을 선택해야 합니다!
+RealmAbility.Damage.YouHitTheForDamage:		{0}을(를) 공격해 {1}의 피해를 입혔습니다.
+RealmAbility.Damage.YouHitForDamage:		{0}을(를) 공격해 {1}의 피해를 입혔습니다.
+RealmAbility.Damage.CasterHitsYouForDamage:		{0}이(가) 당신을 공격해 {1}의 피해를 입혔습니다.
+RealmAbility.Damage.YouHitForDamageExclamation:		{0}을(를) 공격해 {1}의 피해를 입혔습니다!
+RealmAbility.Damage.CasterHitsYouForDamageExclamation:		{0}이(가) 당신을 공격해 {1}의 피해를 입혔습니다!
+RealmAbility.Damage.YouHitForDamageResist:		{0}을(를) 공격해 {1}({2})의 피해를 입혔습니다!
+RealmAbility.Damage.YouHitForPointsDamage:		{0}을(를) 공격해 {1}의 피해를 입혔습니다!
+RealmAbility.Heal.TargetForHitPoints:		{0}의 생명력을 {1} 회복했습니다.
+RealmAbility.Heal.CasterHealsYouForHitPoints:		{0}이(가) 당신의 생명력을 {1} 회복했습니다.
+RealmAbility.Heal.FullyHealed:		완전히 회복되었습니다.
+RealmAbility.Heal.GroupFullyHealed:		그룹이 완전히 회복되었습니다!
+RealmAbility.Heal.YouFullyHealed:		완전히 회복되었습니다!
+RealmAbility.Heal.TargetForAmount:		{0}을(를) {1}만큼 회복했습니다!
+RealmAbility.Heal.CasterHealsYouForAmount:		{0}이(가) 당신을 {1}만큼 회복했습니다!
+RealmAbility.Heal.SelfForHitPoints:		자신의 생명력을 {0} 회복했습니다.
+RealmAbility.Ichor.ConstrictingBondsSelf:		속박의 기운이 몸을 휘감습니다!
+RealmAbility.Ichor.ConstrictingBondsOther:		{0}을(를) 속박의 기운이 휘감습니다!
+AtlasOF.Viper.Begins:		바이퍼의 독기가 혈관을 타고 끓어오릅니다.
+AtlasOF.Viper.Ends:		몸속의 바이퍼 독기가 사라집니다.
+AtlasOF.ReflexAttack.Begins:		근접 공격에 자동으로 반격하기 시작합니다!
+AtlasOF.ReflexAttack.OtherBegins:		{0}이(가) 근접 공격에 자동으로 반격하기 시작합니다!
+AtlasOF.ReflexAttack.Ends:		근접 공격 자동 반격을 멈춥니다!
+AtlasOF.ReflexAttack.OtherEnds:		{0}이(가) 근접 공격 자동 반격을 멈춥니다!
+RealmAbility.Power.Gain:		파워를 {0} 얻었습니다.
+RealmAbility.Power.Full:		파워가 가득 찼습니다.
+RealmAbility.TheEmptyMindEffect.ClearheadedLeaves:		맑은 정신 상태가 사라집니다.
+RealmAbility.ChargeEffect.BeginCharge:		맹렬하게 돌진하기 시작합니다!
+RealmAbility.ChargeEffect.PetCharges:		{0}이(가) 먹잇감을 향해 돌진합니다!
+RealmAbility.ChargeEffect.NoLongerCrazy:		더 이상 그렇게 광분한 것 같지 않습니다!
+RealmAbility.ChargeEffect.PetCeases:		{0}이(가) 돌진을 멈춥니다!
+RealmAbility.DivineInterventionEffect.GroupProtected:		당신의 그룹이 치유의 웅덩이로 보호받습니다!
+RealmAbility.DivineInterventionEffect.Protected:		치유의 웅덩이로 보호받고 있습니다!
+RealmAbility.DivineInterventionEffect.NoLongerProtected:		더 이상 치유의 웅덩이로 보호받지 않습니다!
+RealmAbility.DivineInterventionEffect.PetHealed:		당신의 {0}이(가) 치유의 웅덩이로 {1} 회복되었습니다!
+RealmAbility.DivineInterventionEffect.OwnerHealsPet:		당신의 치유의 웅덩이가 {1}의 {0}을(를) {2} 회복했습니다!
+RealmAbility.DivineInterventionEffect.PlayerHealed:		치유의 웅덩이로 {0} 회복되었습니다!
+RealmAbility.DivineInterventionEffect.OwnerHealsPlayer:		당신의 치유의 웅덩이가 {0}을(를) {1} 회복했습니다!
+RealmAbility.DashingDefenseEffect.GuardingCloser:		이제 {0}을(를) 보호하지만, 더 가까이 서 있어야 합니다.
+RealmAbility.DashingDefenseEffect.GuardedCloser:		{0}이(가) 이제 당신을 보호하지만, 더 가까이 서 있어야 합니다.
+RealmAbility.DashingDefenseEffect.Guarding:		이제 {0}을(를) 보호합니다.
+RealmAbility.DashingDefenseEffect.Guarded:		{0}이(가) 이제 당신을 보호합니다.
+RealmAbility.DashingDefenseEffect.NoLongerGuarding:		더 이상 {0}을(를) 보호하지 않습니다.
+RealmAbility.DashingDefenseEffect.NoLongerGuarded:		{0}이(가) 더 이상 당신을 보호하지 않습니다.
+RealmAbility.VanishEffect.HiddenSeconds:		앞으로 {0}초 동안 숨어 있습니다!
+RealmAbility.TrueshotEffect.Prepare:		트루샷을 준비합니다!
+RealmAbility.PerfectRecovery.TargetDeadRealmMember:		같은 렐름의 죽은 구성원을 대상으로 지정해야 합니다!
+RealmAbility.PerfectRecovery.TargetConsideringResurrection:		대상이 이미 부활을 고려하고 있습니다!
+RealmAbility.PerfectRecovery.TargetTooFar:		대상이 너무 멀어 이 능력을 사용할 수 없습니다!
+RealmAbility.PerfectRecovery.NoResurrectionPending:		현재 당신을 부활시키려는 사람이 없습니다.
+RealmAbility.PerfectRecovery.DeclineResurrection:		부활을 거절했습니다.
+RealmAbility.PerfectRecovery.ResurrectionExpired:		부활 주문이 만료되었습니다.
+RealmAbility.PerfectRecovery.ResurrectedBy:		{0}에 의해 부활했습니다!
+RealmAbility.PerfectRecovery.NotWorthRealmPoints:		당신이 부활시킨 플레이어는 사망 시 렐름 포인트 가치가 없었습니다.
+RealmAbility.PerfectRecovery.NoRealmPoints:		따라서 부활에 대한 렐름 포인트를 얻지 못합니다.
+RealmAbility.MarkOfPreyEffect.Begin:		무기가 뱀파이어의 힘을 끌어내기 시작합니다!
+RealmAbility.MarkOfPreyEffect.End:		무기가 원래대로 돌아옵니다.
+RealmAbility.MarkOfPreyEffect.ExtraDamage:		{0}을(를) 공격해 {1}의 추가 피해를 입혔습니다!
+RealmAbility.Juggernaut.CannotUseDead:		죽은 상태에서는 이 능력을 사용할 수 없습니다!
+RealmAbility.Juggernaut.CannotUseMesmerized:		메즈 상태에서는 이 능력을 사용할 수 없습니다!
+RealmAbility.Juggernaut.CannotUseStunned:		기절 상태에서는 이 능력을 사용할 수 없습니다!
+RealmAbility.Juggernaut.CannotUseSitting:		앉은 상태에서는 이 능력을 사용할 수 없습니다!
+RealmAbility.Juggernaut.PetTooFar:		펫이 너무 멀리 있습니다!
+RealmAbility.Juggernaut.PetAlreadyActive:		펫에게 이미 이 유형의 능력이 활성화되어 있습니다
+RealmAbility.ArrowSummoning.NotEnoughInventorySpace:		이 아이템을 놓을 인벤토리 공간이 부족합니다!
+RealmAbility.TestudoEffect.ReduceDamage:		테스투도 자세가 피해를 {0}만큼 줄였습니다
+RealmAbility.TestudoEffect.ReduceAttackerDamage:		{0}의 테스투도 자세가 당신의 피해를 {1}만큼 줄였습니다
+RealmAbility.MasteryOfConcentration.PerfectPoise:		{0}의 시전이 완벽한 침착함을 유지합니다!
+RealmAbility.MasteryOfConcentration.CastSelf:		{0}을(를) 시전했습니다!
+RealmAbility.MasteryOfConcentration.Steadier:		시전이 한층 안정됩니다!
+RealmAbility.MasteryOfConcentration.CastsSpell:		{0}이(가) 주문을 시전합니다!
+RealmAbility.ShadowShroud.AbsorbsSelf:		그림자 장막 능력이 {0} 피해를 흡수했습니다!
+RealmAbility.ShadowShroud.AbsorbsAttacker:	보호막이 당신의 공격 피해 {0}을(를) 흡수했습니다!
+RealmAbility.FuryOfNatureEffect.AdditionalDamage:		분노의 힘으로 {0}에게 {1}의 추가 피해를 입혔습니다
+RealmAbility.TheEmptyMind.ClearMind:		마음을 비우고 마법 피해에 더 강해졌습니다!
+RealmAbility.Epiphany.RestoresYou:		{0}이(가) 당신의 마나를 {1}, 지구력을 50% 회복했습니다.
+RealmAbility.Epiphany.RestoreTarget:		{0}의 마나를 {1}, 지구력을 50% 회복했습니다.
+RealmAbility.Epiphany.RestoreSelf:		자신의 마나를 {0}, 지구력을 50% 회복했습니다.
+RealmAbility.SoulQuench.ReturnsHitPoints:		소울 퀜치가 생명력 {0}을 돌려줍니다
+RealmAbility.NaturesWomb.AbsorbAttack:		{0}의 드루이드 힘이 당신의 공격을 흡수했습니다!
+RealmAbility.NaturesWomb.ConvertAttack:		드루이드 힘이 적의 공격을 전환해 당신을 {0} 회복했습니다!
+RealmAbility.ShieldOfImmunity.AbsorbsDamage:		면역의 방패가 피해 {0}을 흡수했습니다
+RealmAbility.ShieldOfImmunity.AbsorbsAttackerDamage:		{0}의 면역의 방패가 피해 {1}을 흡수했습니다
+RealmAbility.SelectiveBlindness.PlayersOnly:		플레이어에게만 사용할 수 있습니다!
+RealmAbility.SelectiveBlindness.EnemiesOnly:		적에게만 사용할 수 있습니다!
+RealmAbility.SelectiveBlindness.EnemiesOnlyPeriod:		적에게만 사용할 수 있습니다.
+RealmAbility.ChainLightning.MustTargetPlayer:		이 주문을 발동하려면 플레이어를 대상으로 지정해야 합니다!
+RealmAbility.SpeedOfSound.SpeedWarped:		스피드 워프 상태에서는 이 능력을 사용할 수 없습니다!
+RealmAbility.WrathOfChampions.Phaseshifted:		{0}은(는) 페이즈시프트 상태라 이 주문의 영향을 받을 수 없습니다!

@@ -1,6 +1,7 @@
 using System;
 
 using DOL.Events;
+using DOL.Language;
 
 namespace DOL.GS.Quests
 {
@@ -64,11 +65,11 @@ namespace DOL.GS.Quests
 
 		public override string Description
 		{
-			get
-			{
-				return "Kill " + m_total + " " + m_desc + ", you have killed " + m_current + ".";
+				get
+				{
+					return LanguageMgr.GetTranslation(MissionLanguage, "Mission.Kill.Description", m_total, m_desc, m_current);
+				}
 			}
-		}
 
 		public override long RewardRealmPoints
 		{

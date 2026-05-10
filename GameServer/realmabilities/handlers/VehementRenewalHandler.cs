@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -21,7 +22,7 @@ namespace DOL.GS.RealmAbilities
 			if (CheckPreconditions(living, DEAD | SITTING | MEZZED | STUNNED | NOTINGROUP)) return;
 
 			int heal = 0;
-			
+
 			if(ServerProperties.Properties.USE_NEW_ACTIVES_RAS_SCALING)
 			{
 				switch (Level)
@@ -50,7 +51,7 @@ namespace DOL.GS.RealmAbilities
 			{
 				if (player.Group == null)
 				{
-					player.Out.SendMessage("You are not in a group.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Message.NotInGroup"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return;
 				}
 
@@ -65,10 +66,10 @@ namespace DOL.GS.RealmAbilities
 					if (healed > 0)
 						used = true;
 
-					if (healed > 0) p.Out.SendMessage(player.Name + " heals your for " + healed + " hit points.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+					if (healed > 0) p.Out.SendMessage(LanguageMgr.GetTranslation(p.Client.Account.Language, "RealmAbility.Heal.CasterHealsYouForHitPoints", player.Name, healed), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 					if (heal > healed)
 					{
-						p.Out.SendMessage("You are fully healed.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+						p.Out.SendMessage(LanguageMgr.GetTranslation(p.Client.Account.Language, "RealmAbility.Heal.FullyHealed"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 					}
 				}
 			}

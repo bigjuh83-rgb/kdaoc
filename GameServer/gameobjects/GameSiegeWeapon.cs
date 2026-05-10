@@ -7,6 +7,7 @@ using DOL.GS.Commands;
 using DOL.GS.Effects;
 using DOL.GS.Keeps;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -178,13 +179,13 @@ namespace DOL.GS
 		{
 			get { return m_itemId; }
 			set { m_itemId = value; }
-		} 
+		}
 
 		/// <summary>
 		/// Base damage for this siege, used to calculate damage against specific targets
 		/// <summary>
 		private int m_baseDamage;
-	
+
 		public virtual int BaseDamage
 		{
 			get { return m_baseDamage; }
@@ -200,7 +201,7 @@ namespace DOL.GS
 		/// The maximum range a target/groundtarget must be below for this siege to fire
 		/// </summary>
 		public int MaxAttackRange;
-		
+
 
 		#endregion
 		#region public methode
@@ -208,17 +209,17 @@ namespace DOL.GS
 		{
 			if (Owner != null && Owner != player)
 			{
-				player.Out.SendMessage(GetName(0, true) + " is already under control.", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Siege.Control.AlreadyControlled", GetName(0, true)), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			if (player.SiegeWeapon != null && player.SiegeWeapon != this)
 			{
-				player.Out.SendMessage("You already have a siege weapon under your control.", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Siege.Control.AlreadyHave"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			if (IsMoving)
 			{
-				player.Out.SendMessage("You can't take control of a siege weapon while it is moving.", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Siege.Control.CantWhileMoving"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -226,7 +227,7 @@ namespace DOL.GS
 			Owner = player;
 			player.SiegeWeapon = this;
 			Owner.Out.SendSiegeWeaponInterface(this, SiegeWeaponTimer.TimeUntilElapsed / 100);
-			player.Out.SendMessage("You take control of " + GetName(0, false) + ".", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Siege.Control.Take", GetName(0, false)), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 			StartControlRangeCheck();
 			if ((CurrentState & GameSiegeWeapon.eState.Armed) != GameSiegeWeapon.eState.Armed)
 				Arm();
@@ -235,7 +236,7 @@ namespace DOL.GS
 		public virtual void ReleaseControl()
 		{
 			if (Owner == null) return;
-			Owner.Out.SendMessage("You are no longer controlling " + GetName(0, false) + ".", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+			Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Control.Release", GetName(0, false)), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 			Owner.Out.SendSiegeWeaponCloseInterface();
 			Owner.SiegeWeapon = null;
 			Owner = null;
@@ -255,35 +256,35 @@ namespace DOL.GS
 			if (!CanUse()) return;
 			if(SiegeWeaponTimer.IsAlive || this.IsMoving)
 			{
-				Owner.Out.SendMessage(GetName(0, true) +" isn't ready to be aimed yet!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Aim.NotReady", GetName(0, true)), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			if (Owner.TargetObject == null)
 			{
-				Owner.Out.SendMessage("You must have a target!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Target.Required"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
-			} 
+			}
 			if (!GameServer.ServerRules.IsAllowedToAttack(Owner, ((GameLiving)Owner.TargetObject), true))
 			{
-				Owner.Out.SendMessage("You cannot attack that!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Target.CannotAttack"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
-			} 
+			}
 
 			if (!Owner.TargetInView)
 			{
-				Owner.Out.SendMessage("Target is not in view!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Target.NotInView"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
-			} 
+			}
 
 			//Range Checks
 			if (MinAttackRange != -1 && this.GetDistanceTo(Owner.TargetObject) < MinAttackRange)
 			{
-				Owner.Out.SendMessage("The " + GetName(0, false) + "'s target location is too close!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Target.LocationTooClose", GetName(0, false)), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			if (MaxAttackRange != -1 && this.GetDistanceTo(Owner.TargetObject) > MaxAttackRange)
 			{
-				Owner.Out.SendMessage("The " + GetName(0, false) + "'s target is too far away to reach!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Target.TooFarForWeapon", GetName(0, false)), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -295,7 +296,7 @@ namespace DOL.GS
 			PreAction();
 			if (Owner != null)
 			{
-				Owner.Out.SendMessage(GetName(0, true) + " is turning to your target. (" + (GetActionDelay(SiegeTimer.eAction.Aiming) / 1000).ToString("N") + "s)", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Aim.Turning", GetName(0, true), (GetActionDelay(SiegeTimer.eAction.Aiming) / 1000).ToString("N")), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 
@@ -307,7 +308,7 @@ namespace DOL.GS
 			PreAction();
 			if (Owner != null)
 			{//You prepare the cauldron of boiling oil for firing. (15.0s until armed)
-				Owner.Out.SendMessage("You prepare " + GetName(0, false) + " for firing. (" + (GetActionDelay(SiegeTimer.eAction.Arming) / 1000).ToString("N") + "s until armed)", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Arm.Prepare", GetName(0, false), (GetActionDelay(SiegeTimer.eAction.Arming) / 1000).ToString("N")), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 
 		}
@@ -316,37 +317,37 @@ namespace DOL.GS
 			if (!CanUse()) return;
 			if (!EnableToMove) return;
 			if (Owner == null || !Owner.GroundTarget.IsValid) return;
-            if ( !this.IsWithinRadius( Owner.GroundTarget, 1000 ) )
+			if ( !this.IsWithinRadius( Owner.GroundTarget, 1000 ) )
 			{
-				Owner.Out.SendMessage("Ground target is too far away to move to!", eChatType.CT_System,
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Move.GroundTargetTooFar"), eChatType.CT_System,
 									  eChatLoc.CL_SystemWindow);
 				return;
 			}
-            
+
             if (!Owner.GroundTargetInView)
 			{
-				Owner.Out.SendMessage("Ground target is out of sight!", eChatType.CT_System,
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Move.GroundTargetOutOfSight"), eChatType.CT_System,
 									  eChatLoc.CL_SystemWindow);
 				return;
 			}
-   
+
 			if (Owner.GroundTarget.Z > this.Z + 100)
 			{
-				Owner.Out.SendMessage("Ground target too high!", eChatType.CT_System,
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Move.GroundTargetTooHigh"), eChatType.CT_System,
 					eChatLoc.CL_SystemWindow);
 				return;
 			}
-   
+
 			//let's check if we are trying to move too close to a door, if we are, don't move
 			foreach (GameDoorBase door in Owner.CurrentRegion.GetDoorsInRadius(Owner.GroundTarget, (ushort)(attackComponent.AttackRange - 50)))
 			{
 				if (door is GameKeepDoor)
 				{
-					Owner.Out.SendMessage("You can't move a ram that close to a door!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Move.RamTooCloseToDoor"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return;
 				}
 			}
-   
+
 			//unarmed & unaim siege weapon
 			CurrentState &= ~eState.Armed;
 			TargetObject = null;
@@ -369,7 +370,7 @@ namespace DOL.GS
 			CurrentState |= eState.Aimed;
 			if (Owner != null)
 			{
-				Owner.Out.SendMessage("Your " + Name + " is now aimed!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Aim.NowAimed", Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 		public void Armed()
@@ -378,7 +379,7 @@ namespace DOL.GS
 			CurrentState |= eState.Armed;
 			if (Owner != null)
 			{
-				Owner.Out.SendMessage("Your " + Name + " is now armed!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Arm.NowArmed", Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 		public virtual void Fire()
@@ -388,7 +389,7 @@ namespace DOL.GS
 			{
 				if (Owner != null)
 				{
-					Owner.Out.SendMessage("The " + Name + " is not ready to fire yet!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Fire.NotReady", Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				return;
 			}
@@ -400,19 +401,19 @@ namespace DOL.GS
 			//Range Checks
 			if (MinAttackRange != -1 && this.GetDistanceTo(GroundTarget) < MinAttackRange)
 			{
-				Owner.Out.SendMessage("Your target is too close to this siege weapon!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Fire.TargetTooClose"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			if (MaxAttackRange != -1 && this.GetDistanceTo(GroundTarget) > MaxAttackRange)
 			{
-				Owner.Out.SendMessage("Your target is too far away to this siege weapon!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Fire.TargetTooFar"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(MakeDelayedDamage), GetActionDelay(SiegeTimer.eAction.Fire));
 			BroadcastFireAnimation(GetActionDelay(SiegeTimer.eAction.Fire));
 			if (Owner != null)
-				Owner.Out.SendMessage("You fire " + GetName(0, false) + "!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Fire.Fire", GetName(0, false)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			Arm();
 		}
 
@@ -446,13 +447,13 @@ namespace DOL.GS
 			{
 				if (Owner.GetCraftingSkillValue(eCraftingSkill.WoodWorking) < 301)
 				{
-					Owner.Out.SendMessage("You must have woodworking skill to repair a siege weapon.", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+					Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Repair.NeedWoodworking"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 					return;
 				}
 			}
 			else
 			{
-				this.Owner.Out.SendMessage("The siegeweapon has decayed beyond repairs!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				this.Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Repair.DecayedBeyondRepair"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -484,7 +485,7 @@ namespace DOL.GS
 		{
 			if (Owner.GetCraftingSkillValue(eCraftingSkill.SiegeCrafting) == -1)
 			{
-				Owner.Out.SendMessage("You must be a Siege weapon crafter to salvage it.", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Salvage.NeedSiegeCrafting"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			Owner.SalvageSiegeWeapon(this);
@@ -518,7 +519,7 @@ namespace DOL.GS
 		{
 			if (action == SiegeTimer.eAction.Fire && GroundTarget.IsValid)
                 return (int)( ActionDelay[(int)action] + this.GetDistanceTo( GroundTarget ) );
-			
+
 			int delay = ActionDelay[(int)action];
 			//TODO: better to use a property here - discuss to implement one? dunnow if siegespeed is used at another place.
 			if (Owner != null && Owner.EffectList.CountOfType<BannerOfBesiegingEffect>() > 0)
@@ -538,27 +539,27 @@ namespace DOL.GS
 			Owner.Stealth(false);
 			if (Owner.IsIncapacitated)
 			{
-				this.Owner.Out.SendMessage("You can't use this siegeweapon now!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				this.Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Use.CantNow"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return false;
 			}
 			if (Health <= DecayedHp)
 			{
-				this.Owner.Out.SendMessage("The siegeweapon needs to be repaired!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				this.Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Use.NeedsRepair"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return false;
 			}
 			if (!this.IsWithinRadius(this.Owner, SIEGE_WEAPON_CONTROLE_DISTANCE))
 			{
-				Owner.Out.SendMessage("You are too far from your siege equipment to control it any longer!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Control.TooFar"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return false;
 			}
 
 			if (Owner.Realm != this.Realm)
 			{
-				Owner.Out.SendMessage($"This siege equipment is owned by an enemy realm!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Control.EnemyRealm"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return false;
 			}
-				
-			
+
+
 			return true;
 		}
 
@@ -807,7 +808,7 @@ namespace DOL.GS
 			}
 			if ((SiegeWeapon.CurrentState & GameSiegeWeapon.eState.Armed) != GameSiegeWeapon.eState.Armed)
 				SiegeWeapon.Arm();
-			
+
 			return 0;
 		}
 	}

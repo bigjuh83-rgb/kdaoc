@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using DOL.AI.Brain;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -80,10 +81,10 @@ namespace DOL.GS.Spells
                                 if (target.IsAlive && !GameServer.ServerRules.IsAllowedToAttack(Caster, player, true))
                                 {
                                     heal = target.ChangeHealth(target, eHealthChangeType.Spell, healvalue);
-                                    if (heal != 0) player.Out.SendMessage(m_caster.Name + " heal you for " + heal + " hit point!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                                    if (heal != 0) player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "Masterlevel.Warlord.HealsYou", m_caster.Name, heal), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                                 }
                             heal = m_caster.ChangeHealth(Caster, eHealthChangeType.Spell, (int)(-m_caster.Health * 90 / 100));
-                            if (heal != 0) MessageToCaster("You lose " + heal + " hit point" + (heal == 1 ? "." : "s."), eChatType.CT_Spell);
+                            if (heal != 0) MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "Masterlevel.Warlord.YouLoseHitPoints", heal), eChatType.CT_Spell);
 
                             SendEffectAnimation(target, 0, false, 1);
                         }
@@ -134,8 +135,8 @@ namespace DOL.GS.Spells
 
         public CriticalDamageBuff(GameLiving caster, Spell spell, SpellLine line) : base(caster, spell, line) { }
     }
-    #endregion  
-       
+    #endregion
+
     //ML6~     //shared timer 4
 
     //shared timer 3

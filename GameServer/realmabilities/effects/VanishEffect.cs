@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -61,7 +62,7 @@ namespace DOL.GS.RealmAbilities
 		{
 			if (m_countdown > 0)
 			{
-				((GamePlayer)Owner).Out.SendMessage("You are hidden for " + m_countdown + " more seconds!", eChatType.CT_SpellPulse, eChatLoc.CL_SystemWindow);
+				((GamePlayer)Owner).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)Owner).Client.Account.Language, "RealmAbility.VanishEffect.HiddenSeconds", m_countdown), eChatType.CT_SpellPulse, eChatLoc.CL_SystemWindow);
 				m_countdown--;
 				return 1000;
 			}

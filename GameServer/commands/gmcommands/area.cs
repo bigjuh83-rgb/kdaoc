@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -78,7 +78,14 @@ namespace DOL.GS.Commands
 							default: { DisplaySyntax(client); return; }
 						}
 						area.Sound = byte.Parse(args[6]);
-						area.Region = client.Player.CurrentRegionID;
+						var currentRegion = client.Player.CurrentRegion;
+						if (currentRegion == null)
+						{
+							DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Error", "Current region is not available."));
+							return;
+						}
+
+						area.Region = currentRegion.ID;
 						area.X = client.Player.X;
 						area.Y = client.Player.Y;
 						area.Z = client.Player.Z;
@@ -89,7 +96,7 @@ namespace DOL.GS.Commands
 
 						newArea.Sound = area.Sound;
 						newArea.CanBroadcast = area.CanBroadcast;
-						WorldMgr.GetRegion(client.Player.CurrentRegionID).AddArea(newArea);
+						currentRegion.AddArea(newArea);
 						GameServer.Database.AddObject(area);
 						DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Area.AreaCreated", area.Description, area.X, area.Z, area.Radius, area.CanBroadcast.ToString(), area.Sound));
 						break;
@@ -125,10 +132,10 @@ namespace DOL.GS.Commands
 									info.Add("Area Component: " + component);
 									info.Add(" ");
 								}
-								
+
 							}
 
-							
+
 						}
 
 						client.Out.SendCustomTextWindow("[ " + name + " ]", info);

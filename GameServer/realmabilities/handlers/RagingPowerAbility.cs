@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -21,7 +22,7 @@ namespace DOL.GS.RealmAbilities
 			if (CheckPreconditions(living, DEAD | SITTING | MEZZED | STUNNED)) return;
 
 			int heal = GetPowerHealAmount();
-			
+
 			int healed = living.ChangeMana(living, eManaChangeType.Spell, living.MaxMana * heal / 100);
 
 			SendCasterSpellEffectAndCastMessage(living, 7009, healed > 0);
@@ -29,10 +30,10 @@ namespace DOL.GS.RealmAbilities
 			GamePlayer player = living as GamePlayer;
 			if (player != null)
 			{
-				if (healed > 0) player.Out.SendMessage("You gain " + healed + " power.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+				if (healed > 0) player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Power.Gain", healed), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 				if (heal > healed)
 				{
-					player.Out.SendMessage("You have full power.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Power.Full"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 				}
 			}
 			if (healed > 0) DisableSkill(living);

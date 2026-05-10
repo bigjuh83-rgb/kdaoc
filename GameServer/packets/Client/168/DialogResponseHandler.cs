@@ -1,6 +1,7 @@
 using DOL.Events;
 using DOL.GS.Housing;
 using DOL.GS.Keeps;
+using DOL.Language;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -54,13 +55,13 @@ namespace DOL.GS.PacketHandler.Client.v168
 
                     if (response != 0x01)
                     {
-                        guildLeader?.Out.SendMessage($"{player.Name} declined your invite.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        guildLeader?.Out.SendMessage(LanguageMgr.GetTranslation(guildLeaderClient.Account.Language, "Dialog.Guild.InviteDeclined", player.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return;
                     }
 
                     if (player.Guild != null)
                     {
-                        player.Out.SendMessage("You are still in a guild, you'll have to leave it first.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Dialog.Guild.StillInGuild"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return;
                     }
 
@@ -70,7 +71,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                         return;
                     }
 
-                    player.Out.SendMessage("Player doing the invite is not in a guild!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Dialog.Guild.InviterNotInGuild"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return;
                 }
                 case eDialogCode.GuildLeave:
@@ -79,7 +80,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                     {
                         if (player.Guild == null)
                         {
-                            player.Out.SendMessage("You are not in a guild.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Dialog.Guild.NotInGuild"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
@@ -87,7 +88,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                     }
                     else
                     {
-                        player.Out.SendMessage("You decline to quit your guild.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Dialog.Guild.LeaveDeclined"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return;
                     }
 
@@ -127,7 +128,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
                     if (player.Group != null)
                     {
-                        player.Out.SendMessage("You are still in a group.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Dialog.Group.StillInGroup"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return;
                     }
 
@@ -136,7 +137,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
                     if (player.InCombatPvE)
                     {
-                        player.Out.SendMessage("You can't join a group while in combat!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Dialog.Group.CantJoinInCombat"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return;
                     }
 
@@ -147,7 +148,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
                         if (groupLeader.Group.MemberCount >= ServerProperties.Properties.GROUP_MAX_MEMBER)
                         {
-                            player.Out.SendMessage("The group is full.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Dialog.Group.Full"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
@@ -171,7 +172,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                     {
                         if (player.Guild == null)
                         {
-                            player.Out.SendMessage("You have to be a member of a guild, before you can use any of the commands!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Dialog.KeepClaim.MustBeInGuild"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
@@ -179,7 +180,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
                         if (keep == null)
                         {
-                            player.Out.SendMessage("You have to be near the keep to claim it.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                            player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Dialog.KeepClaim.MustBeNearKeep"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                             return;
                         }
 
@@ -225,9 +226,9 @@ namespace DOL.GS.PacketHandler.Client.v168
                     house.KeptMoney += currencyToUse;
                     house.SaveIntoDatabase();
                     player.SaveIntoDatabase();
-                    player.Out.SendMessage($"You deposit {Money.GetString(currencyToUse)} in the lockbox.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                    player.Out.SendMessage($"The lockbox now has {Money.GetString(house.KeptMoney)} in it. The weekly payment is {Money.GetString(HouseMgr.GetRentByModel(house.Model))}.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                    player.Out.SendMessage($"The house is now prepaid for the next {house.KeptMoney / HouseMgr.GetRentByModel(house.Model)} payments.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Housing.Lockbox.Deposit", Money.GetString(currencyToUse)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Housing.Lockbox.Balance", Money.GetString(house.KeptMoney), Money.GetString(HouseMgr.GetRentByModel(house.Model))), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Housing.Lockbox.Prepaid", house.KeptMoney / HouseMgr.GetRentByModel(house.Model)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     player.TempProperties.RemoveProperty(HousingConstants.MoneyForHouseRent);
                     return;
                 }

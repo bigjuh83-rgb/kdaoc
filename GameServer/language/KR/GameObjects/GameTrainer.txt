@@ -1,0 +1,254 @@
+﻿# Game Trainer
+
+## Examine
+GameTrainer.GetExamineMessages.YouTarget:	[{0}]을(를) 대상으로 선택했습니다.
+GameTrainer.GetExamineMessages.RightClick:	[오른쪽 클릭으로 훈련 창 열기]
+GameTrainer.GetExamineMessages.YouExamine:	{0}을(를) 살펴봅니다. {1}은(는) {2}이며 {3} 클래스 구성원을 훈련합니다.
+
+## Advanced Class
+GameTrainer.PromotePlayer.Says:			    {0}: "{1}"
+GameTrainer.PromotePlayer.Accepted:		    {0}에 받아들여졌습니다!
+GameTrainer.PromotePlayer.Upgraded:		    {0} 클래스로 승급했습니다!
+
+## Respec
+GameTrainer.Interact.Respecialize:		    {0}: "{1}, 원한다면 지금까지 받은 훈련을 되돌리고 다시 훈련할 수 있게 해드릴 수 있습니다. 이렇게 하면 기술을 [재전문화]할 수 있습니다. 관심이 있다면 말만 해주세요."
+GameTrainer.Interact.CaseRespecialize:		재전문화
+GameTrainer.CheckAbilityToUseItem.Text1:	더 이상 {0}을(를) 사용할 능력이 없습니다.
+GameTrainer.ReceiveItem.RespecFull:		    좋은 {0}이군요! /respec all을 사용할 수 있는 전체 재전문화를 추가했습니다.
+GameTrainer.ReceiveItem.RespecRealm:		감사합니다. /respec realm을 사용할 수 있는 렐름 재전문화를 추가했습니다.
+GameTrainer.ReceiveItem.RespecSingle:		감사합니다. /respec <라인명>을 사용할 수 있는 단일 전문화 재설정을 추가했습니다.
+GameTrainer.Interact.RegainPoints:		    전문화 포인트 {0}점을 되찾았습니다!
+GamePlayer.RemoveAbility.YouLose:				{0} 능력을 잃었습니다!
+GamePlayer.RemoveSpecialization.YouLose:		{0} 기술을 잃었습니다!
+GamePlayer.RemoveSpellLine.YouLose:				{0} 주문 계열을 잃었습니다!
+
+## Training
+GameTrainer.Train.WouldYouLikeTo:		    훈련을 받으시겠습니까?
+GameTrainer.Train.SeekElsewhere:		    훈련을 받으려면 다른 곳을 찾아야 합니다.
+GameTrainer.AddGift.NotEnoughSpace:		    선물을 받을 인벤토리 공간이 부족합니다. 공간을 비워주세요.
+GamePlayer.GainExperience.TalkToTrainer:		자세한 내용은 트레이너와 대화하세요.
+StarterTrainer.SeekTrainingElsewhere:		{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? {1}"
+StarterTrainer.PracticeWeapon:				{0}: "[연습용 무기]가 필요하십니까?"
+StarterTrainer.TrainingShield:				{0}: "[훈련용 방패]가 필요하십니까?"
+StarterTrainer.PracticeBranch:				{0}: "[연습용 가지]가 필요하십니까?"
+StarterTrainer.PracticeStaff:				{0}: "[연습용 지팡이]가 필요하십니까?"
+StarterTrainer.ClassInfoUnavailable:		{0}: "아직 이 클래스에 대해 더 알려드릴 수 없습니다."
+StarterTrainer.ClassUnavailable:			{0}: "{1}의 길은 당신의 종족이 선택할 수 없습니다. 다른 길을 선택하세요."
+AcolyteTrainer.ClassInfo.Cleric:			교회의 치유자이자 수호자, 믿음의 인도자로 섬기고자 하는군요. 알비온 교회는 당신 같은 재능을 환영할 것입니다. 언젠가 당신의 헌신이 다른 이들을 우리 수도회로 이끌지도 모르지요.
+AcolyteTrainer.ClassInfo.Friar:			알비온 수호단에 합류한다면 형제단 이상의 공동체를 만나게 될 것입니다. 쿼터스태프에 능하고 상처를 치유할 줄 아는 이들은 군대에서 늘 필요로 하는 인재입니다.
+AlbionTrainer.JoinDefendPrompt:			{0}: "[{1}]에 들어와 {2}(으)로서 우리 렐름을 지키겠습니까?"
+AlbionTrainer.JoinAcademyWizard:			{0}: "[{1}]에 들어와 위저드로서 원소의 힘을 불러내겠습니까?"
+AlbionTrainer.JoinAcademySorcerer:		{0}: "[{1}]에 들어와 소서러로서 당신의 힘을 보태겠습니까?"
+AlbionTrainer.JoinAcademyMinstrel:		{0}: "[{1}]에 들어와 민스트럴로서 알비온 전역에 우리의 노래를 울리겠습니까?"
+AlbionTrainer.JoinGuildCabalist:			{0}: "[{1}]에 들어와 카발리스트가 되겠습니까? 당신의 피조물은 우리에게 맞서는 자들의 심장에 공포를 심어줄 것입니다!"
+AlbionTrainer.JoinGuildMercenary:		{0}: "[{1}]에 들어와 머서너리로서 당신의 운명을 개척하겠습니까?"
+AlbionTrainer.JoinGuildInfiltrator:		{0}: "우리를 찾으러 멀리도 왔군요! [{1}]에 들어와 밤의 단검, 인필트레이터가 되겠습니까?"
+AlbionTrainer.JoinIronFist:				{0}: "[{1}]에 들어와 영광스러운 알비온을 위해 싸우겠습니까?"
+AlbionTrainer.JoinChurchCleric:			{0}: "[{1}]에 들어와 클레릭의 길을 걷겠습니까?"
+AlbionTrainer.ReaverPrompt:				{0}: "조상들이 섬기던 옛 신을 모시기 위해 [아라운 사원]에 들어가려는 것입니까?"
+AlbionTrainer.PaladinPrompt:				{0}: "교회가 젊은 전사인 당신을 부르고 있습니다! 그 부름에 응해 [알비온 교회에 입문]하고, 영원히 팔라딘의 길을 걷겠습니까?"
+AlbionTrainer.HereticPrompt:				{0}: "[아라운 사원 입문]을 하고 헤러틱으로서 우리 렐름을 지키겠습니까?"
+AlbionTrainer.HereticWelcome:				아라운 사원에 온 것을 환영합니다, {0}님.
+AlbionTrainer.TheurgistPrompt:				{0}: "[알비온 수호대 입단]을 하고 시어지스트로서 창조의 마법을 다루겠습니까?"
+AlbionTrainer.TheurgistWelcome:			우리 렐름을 해치려는 자들로부터 끝까지 지켜내리라 믿습니다! 그 임무에 보탬이 되도록 수호대의 선물을 드리니, 잘 사용하십시오!
+AlbionTrainer.ArmsmanPrompt:				{0}: "[알비온 수호대 입단]을 하고 암즈맨으로서 우리 렐름을 지키겠습니까?"
+AlbionTrainer.MercenaryPrompt:				{0}: "[그림자 길드 입단]을 하고 머서너리로서 당신의 운명을 개척하겠습니까?"
+AlbionTrainer.PaladinChooseWeapon:			{0}: "좋습니다! 무기를 선택하면 알비온 교회 입문이 완료됩니다. [베기], [타격], [찌르기], [양손] 무기 중 하나를 고르세요."
+AlbionTrainer.ArmsmanChooseWeapon:			{0}: "좋습니다. 무기를 선택하면 우리와 함께하게 됩니다. [베기], [타격], [찌르기], [폴암] 중 무엇을 고르시겠습니까?"
+AlbionTrainer.MercenaryChooseWeapon:		{0}: "좋습니다. 무기를 선택하면 우리와 함께하게 됩니다. [베기], [타격], [찌르기] 중 무엇을 고르시겠습니까?"
+AlbionTrainer.PaladinWelcome.Sword:			입문자의 검입니다. 알비온 교회에 온 것을 환영합니다.
+AlbionTrainer.PaladinWelcome.Mace:			입문자의 메이스입니다. 알비온 교회에 온 것을 환영합니다.
+AlbionTrainer.PaladinWelcome.Rapier:		입문자의 레이피어입니다. 알비온 교회에 온 것을 환영합니다.
+AlbionTrainer.PaladinWelcome.GreatSword:	입문자의 대검입니다. 알비온 교회에 온 것을 환영합니다.
+AlbionTrainer.ArmsmanWelcome.Sword:			입문자의 검입니다. 알비온 수호대에 온 것을 환영합니다.
+AlbionTrainer.ArmsmanWelcome.Mace:			입문자의 메이스입니다. 알비온 수호대에 온 것을 환영합니다.
+AlbionTrainer.ArmsmanWelcome.Rapier:		입문자의 레이피어입니다. 알비온 수호대에 온 것을 환영합니다.
+AlbionTrainer.ArmsmanWelcome.Pike:			입문자의 파이크입니다. 알비온 수호대에 온 것을 환영합니다.
+AlbionTrainer.MercenaryWelcome.Sword:		입문자의 검입니다. 그림자 길드에 온 것을 환영합니다.
+AlbionTrainer.MercenaryWelcome.Mace:		입문자의 메이스입니다. 그림자 길드에 온 것을 환영합니다.
+AlbionTrainer.MercenaryWelcome.Rapier:		입문자의 레이피어입니다. 그림자 길드에 온 것을 환영합니다.
+AlbionTrainer.RoguePaths:					{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? [인필트레이터], [민스트럴], [스카우트]"
+AlbionTrainer.Rogue.Info.Infiltrator:		{0}: "그 길은 결코 쉽지 않습니다. 인필트레이터는 매일 특수한 기술을 써야 하지요. 그림자 길드는 잠입, 은신, 변장, 기습, 첩보로 명성을 쌓았습니다. 의심할 여지 없이 알비온에 없어서는 안 될 전력입니다."
+AlbionTrainer.Rogue.Info.Minstrel:			{0}: "아, 알비온의 승리를 노래하는 길이군요! 카멜롯의 빛을 영원히 지키는 이들을 찬양하는 길입니다. 많은 이들이 아카데미에서 기술을 익히고 이 렐름을 지키러 나섰습니다. 그들의 마법 노래가 없었다면 지금 이 자리에 없을 이들도 많았을 것입니다."
+AlbionTrainer.Rogue.Info.Scout:				{0}: "아, 알비온 수호대에 들어가려는 것이군요? 로그에게 아주 좋은 선택입니다. 스카우트의 활 솜씨는 모든 적이 두려워하며, 알비온에 수많은 승리를 안겨 주었습니다."
+AlbionTrainer.CabalistPrompt:				{0}: "[그림자 길드 입단]을 하고 카발리스트가 되겠습니까? 당신의 피조물은 우리에게 맞서는 자들의 심장에 공포를 심어줄 것입니다!"
+AlbionTrainer.CabalistWelcome:				길드에 온 것을 환영합니다! 배울 것은 많지만, 당신의 미래에는 큰 가능성이 보이는군요. 길드 무기인 집중의 지팡이도 함께 받으십시오!
+AlbionTrainer.ClericPrompt:					{0}: "[알비온 교회에 입문]하여 클레릭의 길을 걷겠습니까?"
+AlbionTrainer.ClericWelcome:				환영합니다, 내 아이여! 빛의 길을 걷고, 사랑하는 교회의 말씀을 널리 외치며, 믿음 없는 자들을 이 땅에서 몰아내십시오! 모든 신입 교인에게 주는 표준 선물인 입문자의 메이스입니다.
+AlbionTrainer.InfiltratorPrompt:			{0}: "우리를 찾으러 멀리도 왔군요! [그림자 길드 입단]을 하고 밤의 단검, 인필트레이터가 되겠습니까?"
+AlbionTrainer.InfiltratorWelcome:			그림자 길드의 인필트레이터가 되었습니다.
+AlbionTrainer.MinstrelPrompt:				{0}: "[아카데미 입단]을 하고 민스트럴로서 알비온 전역에 우리의 노래를 울리겠습니까?"
+AlbionTrainer.MinstrelWelcome:				환영합니다! 당당히 서서 옛 노래를 부르십시오. 모두가 우리의 이름을 알게 될 것입니다!
+AlbionTrainer.WizardPrompt:					{0}: "[아카데미 입단]을 하고 위저드로서 원소의 힘을 불러내겠습니까?"
+AlbionTrainer.WizardWelcome:				길드에 온 것을 환영합니다! 배울 것은 많지만, 당신의 미래에는 큰 가능성이 보이는군요. 길드 무기인 집중의 지팡이도 함께 받으십시오!
+AlbionTrainer.SorcererPrompt:				{0}: "[아카데미 입단]을 하고 소서러로서 당신의 힘을 보태겠습니까?"
+AlbionTrainer.SorcererWelcome:				이제 당신도 우리의 그림자입니다! 앞으로도 우리 안에 당신의 자리가 있을 것입니다. 길드 무기인 집중의 지팡이도 함께 받으십시오!
+AlbionTrainer.ScoutPrompt:					{0}: "[알비온 수호대 입단]을 하고 스카우트로서 우리 렐름을 지키겠습니까?"
+AlbionTrainer.ScoutWelcome:					젊은 전사여, 환영합니다! 알비온 군에서 보내는 시간이 값진 시간이 되길 바랍니다. 사냥꾼의 장궁을 받으십시오. 활은 당신의 길드 무기이니 언제나 지니고 다니십시오.
+AlbionTrainer.MaulerPrompt:					{0}: "[철권 사원 입문]을 하고 영광스러운 알비온을 위해 싸우겠습니까?"
+AlbionTrainer.MaulerWelcome:				젊은 마울러여, 환영합니다. 알비온에서의 시간이 보람 있기를 바랍니다.
+AlbionTrainer.ReaverWelcome:				아라운 사원에 온 것을 환영합니다, {0}님.
+AlbionTrainer.Fighter.Info.Armsman:			{0}: "아, 암즈맨을 생각하는군요? 훌륭하고 든든한 전사들입니다. 그들의 전투 실력은 알비온에 큰 힘이 되지요. 암즈맨이 되려면 알비온 수호대에 입단해야 합니다."
+AlbionTrainer.Fighter.Info.Mercenary:		{0}: "머서너리가 되고 싶다는 말입니까? 본성은 로그에 가깝지만 전장에서는 탄탄한 전사입니다. 적의 공격을 빠르게 피하는 능력 덕분에 그림자 길드에서 매우 귀중한 전력으로 여깁니다."
+AlbionTrainer.Fighter.Info.Paladin:			{0}: "믿음의 수호자가 되고 싶은 모양이군요? 수많은 팔라딘이 전사들을 이끌고 전장에 나서 승리를 이끌었습니다. 그들의 끝없는 희생은 알비온 교회가 오랜 세월 굳건히 남을 것임을 증명합니다!"
+AlbionTrainer.Mage.Info.Cabalist:			{0}: "어둠에 가까운 마법을 받아들이려는 것이군요? 무생물에서 골렘을 불러내는 카발리스트는 알비온에 큰 자산입니다. 더 큰 힘을 갈망하는 이들이기에 이 기술을 가르치는 자는 많지 않습니다. 이 길을 따르려면 그림자 길드를 찾아가야 합니다."
+AlbionTrainer.Mage.Info.Sorcerer:			{0}: "실용적인 마법에 훈련을 집중하고 싶은 모양이군요. 소서러는 적을 교란하고, 무력화하고, 피해를 주는 주문으로 아카데미에서 가치를 증명합니다. 시간이 지나면 당신을 따르는 야수까지 불러낼 수 있을 것입니다."
+AlbionTrainer.Elementalist.Info.Theurgist:	{0}: "마법 부여의 기술을 배우고 싶은 것이군요? 알비온 수호대는 전투 중 군대를 지키고 함께 싸울 피조물을 만들고 움직이는 이 기술에 크게 의지합니다."
+AlbionTrainer.Elementalist.Info.Wizard:		{0}: "불, 얼음, 대지, 공기의 네 원소를 빚어 막강한 주문으로 만드는 길을 택하려는군요. 지금도 아카데미에서 잘 훈련받은 많은 위저드가 적들에게 파괴의 비를 쏟아붓고 있습니다."
+AlbionTrainer.Disciple.Info.Necromancer:	{0}: "네크로맨서가 되고 싶은 겁니까? 네크로맨서는 언데드 하수인을 소환할 수 있습니다."
+AlbionTrainer.NecromancerPrompt:			젊은 디사이플이여, 아라운의 힘을 받아 그의 [네크로맨서]로 섬기고자 찾아온 것입니까?
+AlbionTrainer.NecromancerInfo:				네크로맨서는 지하세계의 군주 아라운을 섬기는 천옷 차림의 사제입니다. 어둠의 주인에게 충성을 바친 대가로 알비온에서도 독특한 주문과 전투 능력을 얻습니다. 다른 캐스터와 달리 네크로맨서는 아라운의 어둠 마법을 불러 무시무시한 하수인으로 변하기 전까지는 무력합니다. 그 하수인은 영적인 그림자에게 조종됩니다. 그림자 상태의 네크로맨서는 반투명한 유령처럼 떠다니며, 하수인이 어둠의 명령을 수행하는 동안 근접 공격이나 주문으로 상처 입지 않습니다. 하수인이 전투 중 죽거나 해제되면 네크로맨서는 살아 있는 필멸자의 모습으로 돌아오지만, 체력은 매우 적게 남습니다. 네크로맨서는 적에게 상처를 입히고, 그 고통으로 힘을 끌어올리거나 하수인의 생명을 회복합니다. 아라운 경에게 몸을 바쳐 [아라운 사원 입문]을 하겠습니까?
+AlbionTrainer.NecromancerWelcome:			아라운 경께서 당신을 사원에 받아들이셨습니다. 그분의 선물을 받으십시오. 잘 사용하십시오, 디사이플.
+AlbionTrainer.AcolytePaths:					{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? [클레릭], [헤러틱], [프라이어]"
+AlbionTrainer.DisciplePaths:				{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? [네크로맨서]"
+AlbionTrainer.FighterPaths:					{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? [암즈맨], [팔라딘], [머서너리]"
+AlbionTrainer.MagePaths:					{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? [카발리스트], [소서러]"
+AlbionTrainer.ElementalistPaths:			{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? [시어지스트], [위저드]"
+GamePlayer.AddAbility.YouLearn:				{0} 능력을 배웠습니다!
+GamePlayer.AddSpecialisation.YouLearn:		{0} 기술을 배웠습니다!
+GamePlayer.AddSpellLine.YouLearn:			{0} 주문 목록을 배웠습니다!
+GamePlayer.AddToWorld.SpecsPointsIncorrect:		전문화 포인트 합계가 올바르지 않았습니다. 수정했으니 다시 훈련하세요.
+GamePlayer.OnSkillTrained.TrainsInVarious:		{0}이(가) 다양한 전문화를 훈련합니다.
+GamePlayer.OnSkillTrained.YouHave:				이번 레벨에서 전문화 포인트가 {0}점 남았습니다.
+GamePlayer.OnSkillTrained.YouSpend:				{0}포인트를 사용하여 {1} 전문화를 더 올렸습니다.
+GamePlayer.RefreshSpec.YouLearn:				{0} 전투 스타일을 배웠습니다!
+
+## Albion
+### Friar
+FriarTrainer.Interact.Text2:
+FriarTrainer.Interact.Text3:
+FriarTrainer.Interact.Text4:
+FriarTrainer.ReceiveItem.Text1:
+FriarTrainer.Interact.Text1:				{0}: "[알비온 수호단에 입문]하여 프라이어로서 우리 렐름을 지키겠습니까?"
+FriarTrainer.WhisperReceive.Text1:			우리는 당신을 동등한 형제로 맞이합니다! 이제 초심자의 로브를 지급하겠습니다. 늘 착용하며 믿음을 되새기십시오. 하급 사제 칭호에 오르면 제게 돌아오세요. 그때 다음 도움이 필요한지 보겠습니다.
+FriarTrainer.WhisperReceiveCase.Text1:		알비온 수호단에 입문
+
+## Hibernia
+### Animist
+AnimistTrainer.Interact.Text1:				{0}: "[친화의 길]이 당신이 걷고자 하는 길입니까?"
+AnimistTrainer.Interact.Text2:
+AnimistTrainer.Interact.Text3:
+AnimistTrainer.Interact.Text4:
+AnimistTrainer.WhisperReceive.Text1:		이제 당신은 애니미스트입니다, {0}. 친화의 길에 온 것을 환영합니다.
+AnimistTrainer.WhisperReceiveCase.Text1:	친화의 길
+
+### Enchanter
+EnchanterTrainer.Interact.Text1:			{0}: 인챈터로 훈련받고 정수의 길을 따르겠습니까? [인챈터]의 삶은 위험한 만큼 보람도 크며, 당신이 원한다면 열려 있습니다.
+EnchanterTrainer.Interact.Text2:			{0}: 배우는 속도가 빠르군요, {1}. 하지만 서두르지는 마세요. 배울 것은 늘 더 있습니다.
+EnchanterTrainer.Interact.Text3:
+EnchanterTrainer.Interact.Text4:
+EnchanterTrainer.WhisperReceive.Text1:		환영합니다, {0}. 오늘부터 당신은 인챈터로 불릴 것입니다. 자, {0}. 이 선물이 당신의 길에 도움이 되길 바랍니다.
+EnchanterTrainer.WhisperReceiveCase.Text1:	인챈터
+
+### Hero
+HeroTrainer.Interact.Text1:				    {0}: [히어로]의 삶을 원합니까? 집중의 길을 걷고자 합니까?
+HeroTrainer.Interact.Text2:				    {0}: 훈련은 강하고 건강한 히어로를 만듭니다! 계속 정진하세요, {1}!
+HeroTrainer.Interact.Text3:
+HeroTrainer.Interact.Text4:
+HeroTrainer.WhisperReceive.Text1:			그렇다면 환영합니다, {0}. 가서 당신의 행동으로 우리를 빛내십시오. 선물을 하나 드리겠습니다. 떨어뜨리지 않도록 조심하세요, 히어로.
+HeroTrainer.WhisperReceiveCase.Text1:		히어로
+
+### Mauler (Hib)
+MaulerHibTrainer.Interact.Text1:			{0}: [철권 사원에 입문]하여 영광스러운 하이버니아를 위해 싸우겠습니까?
+MaulerHibTrainer.Interact.Text2:
+MaulerHibTrainer.Interact.Text3:
+MaulerHibTrainer.Interact.Text4:
+MaulerHibTrainer.ReceiveItem.Text1:
+MaulerHibTrainer.WhisperReceive.Text1:		젊은 마울러여, 환영합니다. 하이버니아에서의 시간이 값진 시간이 되길 바랍니다. [지팡이]로 싸우겠습니까, 아니면 [주먹]으로 싸우겠습니까?
+MaulerHibTrainer.WhisperReceive.Text2:		라레쉬의 선물을 받았습니다.
+MaulerHibTrainer.WhisperReceiveCase.Text1:	철권 사원에 입문
+MaulerHibTrainer.WhisperReceiveCase.Text2:	지팡이
+MaulerHibTrainer.WhisperReceiveCase.Text3:	주먹
+
+### Mentalist
+MentalistTrainer.Interact.Text1:			{0}: [멘탈리스트]로 훈련받고 조화의 길을 걷겠습니까?
+MentalistTrainer.Interact.Text2:			{0}: 우리의 길은 험난합니다, {1}. 저는 기술만 가르칠 수 있습니다. 지식과 지혜는 스스로 얻어야 합니다.
+MentalistTrainer.Interact.Text3:
+MentalistTrainer.Interact.Text4:
+MentalistTrainer.WhisperReceive.Text1:		잘 오셨습니다, {0}. 험한 길이지만 당신은 고난에 낯선 사람이 아니군요. 환영합니다, 멘탈리스트. 이것을 받으세요. 멘탈리스트로서의 첫 전투에 도움이 될 것입니다.
+MentalistTrainer.WhisperReceiveCase.Text1:	멘탈리스트
+
+### Blademaster
+BlademasterTrainer.Interact.TrainMore:		{0}: 더 배우고 싶습니까, {1}? 앞으로 오세요. 훈련을 시작하겠습니다!
+BlademasterTrainer.Interact.PromotionPrompt: {0}: {1}, 조화의 길을 선택하고 [블레이드마스터]의 삶을 걷겠습니까?
+BlademasterTrainer.Promote.Welcome:			좋습니다, {0}님. 기꺼이 당신의 훈련을 맡겠습니다. 축하합니다. 오늘부터 당신은 블레이드마스터입니다. 길에 도움이 될 선물을 받으십시오.
+
+### Eldritch
+EldritchTrainer.Interact.TrainMore:			{0}: 이 지식을 깊이 새기세요, {1}. 언젠가 제가 더 이상 아침에 일어나지 못하는 날, 당신이 제 자리를 대신해야 할지도 모릅니다.
+EldritchTrainer.Interact.PromotionPrompt:	{0}: 반갑습니다, {1}. 집중의 길을 선택했고 [엘드리치]로 훈련받고자 한다고 들었습니다.
+EldritchTrainer.Promote.Welcome:			지식은 제가 줄 수 있지만, 지혜는 스스로 찾아야 합니다. 환영합니다, {0}님. 환영의 선물이니 받으십시오. 현명하게 사용하세요.
+
+### Vampiir
+VampiirTrainer.Interact.TrainMore:			{0}: 더 배우고 싶습니까, {1}? 앞으로 오세요. 훈련을 시작하겠습니다!
+VampiirTrainer.Interact.PromotionPrompt:	{0}: {1}, 친화의 길을 선택하고 [뱀피르]의 삶을 걷겠습니까?
+VampiirTrainer.Promote.Welcome:				좋습니다, {0}님. 기꺼이 당신의 훈련을 맡겠습니다. 축하합니다. 오늘부터 당신은 뱀피르입니다. 길에 도움이 될 선물을 받으십시오.
+HiberniaTrainer.GuardianPaths:				{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? [히어로], [챔피언], [블레이드마스터]"
+HiberniaTrainer.NaturalistPaths:			{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? [바드], [드루이드], [워든]"
+HiberniaTrainer.StalkerPaths:				{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? [레인저], [나이트셰이드]"
+HiberniaTrainer.ForesterPaths:				{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? [애니미스트], [발리워커]"
+HiberniaTrainer.MagicianPaths:				{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? [엘드리치], [인챈터], [멘탈리스트]"
+HiberniaTrainer.Champion.Trained:			{0}: "{1}님, 훈련에 관심을 보이니 반갑군요. 성장하고 배울 여지는 언제나 있습니다!"
+HiberniaTrainer.Champion.Prompt:			{0}: "챔피언은 정수의 길을 따릅니다. 지금 [챔피언]이 되기로 선택한다면, 우리의 방식과 우리가 따르는 길을 훈련시켜 드리겠습니다."
+HiberniaTrainer.Champion.Welcome:			환영합니다, {0}님. 당신이 훌륭한 챔피언이 될 수 있는지 지켜보겠습니다. 이 선물을 받으십시오, {0}님. 진정한 챔피언으로 성장하는 데 도움이 될 것입니다.
+HiberniaTrainer.Druid.Trained:				{0}: "젊은 드루이드여, 제가 아는 모든 것을 전해드리겠습니다."
+HiberniaTrainer.Druid.Prompt:				{0}: "조화의 길을 걸으며 [드루이드]의 방식을 배우겠습니까?"
+HiberniaTrainer.Druid.Welcome:				드루이드의 길은 당신에게 잘 어울립니다, {0}님. 환영합니다. 이것을 받으십시오, {0}님. 이제 당신은 드루이드입니다. 우리의 방식을 지킨다면 멀리 나아갈 수 있을 것입니다.
+HiberniaTrainer.Nightshade.Trained:			{0}: "{1}님, 훈련하러 오셨습니까? 앞으로 나오십시오!"
+HiberniaTrainer.Nightshade.Prompt:			{0}: "충분히 생각해 보셨으리라 믿습니다. 정수의 길을 따라 [나이트셰이드]로 훈련받고 싶다면 지금 말하십시오."
+HiberniaTrainer.Nightshade.Welcome:			나이트셰이드로 살아가겠다는 선택을 미쳤다고 여길 이들도 있겠지요. 모두에게 맞는 길은 아니지만, 당신에게는 어울릴 것 같습니다, {0}님. 여정에 도움이 되도록 제가 작은 선물을 드리겠습니다.
+HiberniaTrainer.Ranger.Trained:				{0}: "우리의 방식을 더 배우고 싶습니까? 좋습니다."
+HiberniaTrainer.Ranger.Prompt:				{0}: "알다시피 [레인저]의 길은 모두에게 맞지 않습니다. 정말 이 선택이 확실합니까?"
+HiberniaTrainer.Ranger.Welcome:				좋습니다. 이제 레인저의 길이 당신 앞에 놓였습니다. 조심히 걸으십시오, 친구여. {0}님, 이 길을 조금 더 수월하게 걷도록 이것을 받으십시오.
+HiberniaTrainer.Valewalker.Trained:			{0}: "훈련은 강하고 건강한 히어로를 만듭니다! 계속 정진하세요, {1}님!"
+HiberniaTrainer.Valewalker.Prompt:			{0}: "[친화의 길]을 따라 발리워커로 걷겠습니까?"
+HiberniaTrainer.Valewalker.Welcome:			그렇다면 친화의 길에 온 것을 환영합니다. 선물을 드리겠습니다. 환영의 표시로 생각하십시오. 환영합니다, {0}님.
+
+## Midgard
+### Bonedancer
+BonedancerTrainer.Interact.Text1:			{0}: [보드가르 가문에 입문]하여 본댄서로서 우리 렐름을 지키겠습니까?
+BonedancerTrainer.Interact.Text2:
+BonedancerTrainer.Interact.Text3:
+BonedancerTrainer.Interact.Text4:
+BonedancerTrainer.ReceiveItem.Text1:
+BonedancerTrainer.WhisperReceive.Text1:		젊은 전사여, 환영합니다! 미드가르드 군에서 보내는 시간이 값진 시간이 되길 바랍니다!
+BonedancerTrainer.WhisperReceiveCase.Text1:	보드가르 가문에 입문
+
+### Spiritmaster
+SpiritmasterTrainer.Interact.Text1:			{0}: [헬 가문에 입문]하여 스피릿마스터로서 우리 렐름을 지키겠습니까?
+SpiritmasterTrainer.Interact.Text2:
+SpiritmasterTrainer.Interact.Text3:
+SpiritmasterTrainer.Interact.Text4:
+SpiritmasterTrainer.ReceiveItem.Text1:
+SpiritmasterTrainer.WhisperReceive.Text1:	젊은 스피릿마스터여, 환영합니다! 미드가르드 군에서 보내는 시간이 값진 시간이 되길 바랍니다!
+SpiritmasterTrainer.WhisperReceiveCase.Text1:헬 가문에 입문
+
+### Generic Midgard promotion
+MidgardTrainer.JoinHousePrompt:			{0}: "[{1}]에 들어와 {2}(으)로서 우리 렐름을 지키겠습니까?"
+MidgardTrainer.JoinTemplePrompt:			{0}: "[{1}]에 들어와 영광스러운 미드가르드를 위해 싸우겠습니까?"
+MidgardTrainer.WelcomeArmy:				젊은 {0}이여, 환영합니다! 미드가르드 군에서 보내는 시간이 값진 시간이 되길 바랍니다!
+MidgardTrainer.WelcomeMauler:			젊은 마울러여, 환영합니다. 미드가르드에서의 시간이 값진 시간이 되길 바랍니다.
+MidgardTrainer.SeerPaths:					{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? [샤먼], [힐러]"
+MidgardTrainer.RoguePaths:					{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? [헌터], [쉐도우블레이드]"
+MidgardTrainer.MysticPaths:					{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? [룬마스터], [스피릿마스터]"
+MidgardTrainer.VikingPaths:					{0}: "이제 다른 곳에서 훈련을 이어가야 합니다. 어떤 길을 따르시겠습니까? [워리어], [버서커], [스칼드], [세인]"
+
+## Unused
+### Bainshee
+BainsheeTrainer.Interact.Text1:				{0}: [밴시]로 훈련받고 친화의 길을 걷겠습니까?
+BainsheeTrainer.Interact.Text2:				{0}: 우리의 길은 험난합니다, {1}. 저는 기술만 가르칠 수 있습니다. 지식과 지혜는 스스로 얻어야 합니다.
+BainsheeTrainer.Interact.Text3:
+BainsheeTrainer.Interact.Text4:
+BainsheeTrainer.WhisperReceive.Text1:		잘 오셨습니다, {0}. 험한 길이지만 당신은 고난에 낯선 사람이 아니군요. 환영합니다, 밴시. 이것을 받으세요. 밴시로서의 첫 전투에 도움이 될 것입니다.
+BainsheeTrainer.WhisperReceiveCase.Text1:	밴시
+
+### Valkyrie
+ValkyrieTrainer.Interact.Text1:				{0}: [오딘 가문에 입문]하여 발키리로서 우리 렐름을 지키겠습니까?
+ValkyrieTrainer.Interact.Text2:
+ValkyrieTrainer.Interact.Text3:
+ValkyrieTrainer.Interact.Text4:
+ValkyrieTrainer.ReceiveItem.Text1:
+ValkyrieTrainer.WhisperReceive.Text1:		젊은 발키리여, 환영합니다! 미드가르드 군에서 보내는 시간이 값진 시간이 되길 바랍니다! [검]으로 싸우겠습니까, 아니면 [창]으로 싸우겠습니까?
+ValkyrieTrainer.WhisperReceive.Text2:		오딘의 선물을 받았습니다.
+ValkyrieTrainer.WhisperReceiveCase.Text1:	오딘 가문에 입문
+ValkyrieTrainer.WhisperReceiveCase.Text2:	검
+ValkyrieTrainer.WhisperReceiveCase.Text3:	창

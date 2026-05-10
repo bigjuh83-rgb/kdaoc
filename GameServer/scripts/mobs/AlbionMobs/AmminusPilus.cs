@@ -2,6 +2,7 @@
 using DOL.AI.Brain;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -44,12 +45,12 @@ namespace DOL.GS
         {
 			foreach(GameNPC npc in GetNPCsInRadius(5000))
             {
-				if (npc.IsAlive && npc != null && npc.Brain is PilusFuryBrain)
+				if (npc != null && npc.IsAlive && npc.Brain is PilusFuryBrain)
 					npc.RemoveFromWorld();
             }
 			foreach (GameNPC npc in GetNPCsInRadius(5000))
 			{
-				if (npc.IsAlive && npc != null && npc.Brain is PilusAddBrain)
+				if (npc != null && npc.IsAlive && npc.Brain is PilusAddBrain)
 					npc.RemoveFromWorld();
 			}
 			base.Die(killer);
@@ -84,10 +85,11 @@ namespace DOL.AI.Brain
 		}
 		private bool SpawnAdds = false;
 		private bool RemoveAdds = false;
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(string key, params object[] args)
 		{
 			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
 				player.Out.SendMessage(message, eChatType.CT_Say, eChatLoc.CL_ChatWindow);
 			}
 		}
@@ -99,7 +101,7 @@ namespace DOL.AI.Brain
 				{
 					foreach (GameNPC npc in Body.GetNPCsInRadius(5000))
 					{
-						if (npc.IsAlive && npc != null && npc.Brain is PilusAddBrain)
+						if (npc != null && npc.IsAlive && npc.Brain is PilusAddBrain)
 							npc.RemoveFromWorld();
 					}
 					RemoveAdds = true;
@@ -111,7 +113,7 @@ namespace DOL.AI.Brain
 				RemoveAdds = false;
 				if (!SpawnAdds)
 				{
-					BroadcastMessage("The Amminus pilus says, \"I require assistance!\"");
+					BroadcastMessage("Mobs.AmminusPilus.RequireAssistance");
 					SpawnPilusAdds();
 					SpawnAdds = true;
 				}
@@ -120,7 +122,7 @@ namespace DOL.AI.Brain
 					if (npc != null && npc.IsAlive && npc.Brain is PilusAddBrain brain)
 					{
 						GameLiving target = Body.TargetObject as GameLiving;
-						if (!brain.HasAggro && target.IsAlive && target != null)
+						if (!brain.HasAggro && target != null && target.IsAlive)
 							brain.AddToAggroList(target, 10);
 					}
 				}

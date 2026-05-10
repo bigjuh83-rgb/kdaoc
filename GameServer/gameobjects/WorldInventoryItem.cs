@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -61,7 +62,7 @@ namespace DOL.GS
 
                 return null;
             }
-            
+
             return CreateUniqueFromTemplate(template);
         }
 
@@ -132,7 +133,7 @@ namespace DOL.GS
             foreach (GamePlayer player in Owners.OfType<GamePlayer>())
             {
                 if (player.ObjectState is eObjectState.Active)
-                    player.Out.SendMessage($"You may now pick up {Name}!", eChatType.CT_Loot, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "WorldInventoryItem.MayPickUp", Name), eChatType.CT_Loot, eChatLoc.CL_SystemWindow);
             }
 
             _pickupTimer.Stop();

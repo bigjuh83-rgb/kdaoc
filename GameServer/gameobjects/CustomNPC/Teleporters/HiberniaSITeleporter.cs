@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -25,6 +25,7 @@ using System.Collections;
 using DOL.GS.Spells;
 using System.Reflection;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -51,13 +52,13 @@ namespace DOL.GS
 			VisibleActiveWeaponSlots = 34;
 			return base.AddToWorld();
 		}
-		
-		private String[] m_destination = { 
+
+		private String[] m_destination = {
 			"Grove of Domnann",
 			"Droighaid",
 			"Aalid Feie",
 			"Necht" };
-		
+
 		/// <summary>
 		/// Display the teleport indicator around this teleporters feet
 		/// </summary>
@@ -68,7 +69,7 @@ namespace DOL.GS
 				return true;
 			}
 		}
-		
+
 		/// <summary>
 		/// Player right-clicked the teleporter.
 		/// </summary>
@@ -83,7 +84,7 @@ namespace DOL.GS
 			foreach (AbstractArea area in player.CurrentAreas)
 				playerAreaList.Add(area.Description);
 
-			SayTo(player, "Greetings. Where can I send you?");
+			SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "SITeleporter.Interact.Prompt"));
 			foreach (String destination in m_destination)
 				if (!playerAreaList.Contains(destination))
 					player.Out.SendMessage(String.Format("[{0}]", destination),
@@ -122,7 +123,7 @@ namespace DOL.GS
 					return;
 			}
 
-			SayTo(player, "Have a safe journey!");
+			SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "Teleporter.SafeJourney"));
 			base.OnDestinationPicked(player, destination);
 		}
 

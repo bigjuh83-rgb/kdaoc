@@ -22,7 +22,7 @@ namespace DOL.GS.DailyQuest.Albion
 
 		// Kill Goal
 		private const int MAX_KILLED = 25;
-		
+
 		private static GameNPC Hector = null; // Start NPC
 
 		private bool HasFighter = false;
@@ -47,7 +47,7 @@ namespace DOL.GS.DailyQuest.Albion
 		public TeamBuildingAlb(GamePlayer questingPlayer, DbQuest dbQuest) : base(questingPlayer, dbQuest)
 		{
 		}
-		
+
 		public override int Level
 		{
 			get
@@ -62,7 +62,7 @@ namespace DOL.GS.DailyQuest.Albion
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -140,7 +140,7 @@ namespace DOL.GS.DailyQuest.Albion
 
 		protected static void TalkToHector(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -158,18 +158,16 @@ namespace DOL.GS.DailyQuest.Albion
 					switch (quest.Step)
 					{
 						case 1:
-							Hector.SayTo(player, "Kill creatures in any RvR zone to help us clear more room for the armies to maneuver around.");
+							Hector.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.RvRMonsterObjective"));
 							break;
 						case 2:
-							Hector.SayTo(player, "Hello " + player.Name + ", did you [forge the bonds of unity]?");
+							Hector.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[forge the bonds of unity]"));
 							break;
 					}
 				}
 				else
 				{
-					Hector.SayTo(player, "Hello "+ player.Name +", I am Hector. I help the king with logistics, and he's tasked me with getting things done around here. "+
-					                       "The king recently implemented a new unity initiative and he wants you to help out.\n"+
-					                       "What do you say, are you [feeling social]?");
+					Hector.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.TeamBuildingIntro", player.Name, "Hector"));
 				}
 			}
 				// The player whispered to the NPC
@@ -181,7 +179,7 @@ namespace DOL.GS.DailyQuest.Albion
 					switch (wArgs.Text)
 					{
 						case "feeling social":
-							player.Out.SendQuestSubscribeCommand(Hector, QuestMgr.GetIDForQuestType(typeof(TeamBuildingAlb)), "Will you help Hector "+questTitle+"");
+							player.Out.SendQuestSubscribeCommand(Hector, QuestMgr.GetIDForQuestType(typeof(TeamBuildingAlb)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "Hector", questTitle));
 							break;
 					}
 				}
@@ -192,18 +190,18 @@ namespace DOL.GS.DailyQuest.Albion
 						case "forge the bonds of unity":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("I can feel our realm growing more cohesive every day!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.TeamBuildingComplete"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -222,7 +220,7 @@ namespace DOL.GS.DailyQuest.Albion
 
 			return true;
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			TeamBuildMobsKilled = GetCustomProperty(QuestPropertyKey) != null ? int.Parse(GetCustomProperty(QuestPropertyKey)) : 0;
@@ -243,11 +241,11 @@ namespace DOL.GS.DailyQuest.Albion
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -277,7 +275,7 @@ namespace DOL.GS.DailyQuest.Albion
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for helping our realm prosper.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.TeamBuildingThanks"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -285,7 +283,7 @@ namespace DOL.GS.DailyQuest.Albion
 				if (!Hector.GiveQuest(typeof (TeamBuildingAlb), player, 1))
 					return;
 
-				Hector.SayTo(player, "Killing creatures in any RvR zone will work. Thanks for your service!");
+				Hector.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.RvRMonsterReminder"));
 
 			}
 		}
@@ -309,23 +307,21 @@ namespace DOL.GS.DailyQuest.Albion
 						    && HasRogue
 						    && HasMageElemDisc)
 						{
-							return "The spirit of unity flows through you. \n" +
-							       "Kill orange con or higher mobs: \n" + 
-							       "Orange+ Con Mobs Killed: ("+ TeamBuildMobsKilled +" | "+MAX_KILLED+")";
+							return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingReadyDescription", TeamBuildMobsKilled, MAX_KILLED);
 						}
 						else
 						{
-							StringBuilder output = new StringBuilder("Kill orange con or higher mobs while in a group containing the following base classes:\n");
-							if (!HasFighter) output.Append("Fighter required\n");
-							if (!HasAcolyte) output.Append("Acolyte required\n");
-							if (!HasRogue) output.Append("Rogue required\n");
-							if (!HasMageElemDisc) output.Append("Mage/Elementalist/Disciple required\n");
-							output.Append("Orange+ Con Mobs Killed: ("+ TeamBuildMobsKilled +" | "+MAX_KILLED+")");
+							StringBuilder output = new StringBuilder(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingMissingHeader"));
+							if (!HasFighter) output.Append(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingRequirement", DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingFighter")));
+							if (!HasAcolyte) output.Append(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingRequirement", DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingAcolyte")));
+							if (!HasRogue) output.Append(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingRequirement", DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingRogue")));
+							if (!HasMageElemDisc) output.Append(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingRequirement", DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingMageElemDisc")));
+							output.Append(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.TeamBuildingKills", TeamBuildMobsKilled, MAX_KILLED));
 							return output.ToString();
 						}
-						
+
 					case 2:
-						return "Return to Hector in Castle Sauvage for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "Hector", "Castle Sauvage");
 				}
 				return base.Description;
 			}
@@ -337,17 +333,17 @@ namespace DOL.GS.DailyQuest.Albion
 
 			if (player?.IsDoingQuest(typeof(TeamBuildingAlb)) == null)
 				return;
-			
+
 			if (sender != m_questPlayer)
 				return;
 
 			if (e != GameLivingEvent.EnemyKilled || Step != 1) return;
-			
+
 			EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
-			
+
 			if (gArgs.Target is GameSummonedPet)
 				return;
-			
+
 			if (player.Group != null)
 			{
 				foreach (var member in player.Group.GetMembersInTheGroup())
@@ -380,13 +376,13 @@ namespace DOL.GS.DailyQuest.Albion
 
 			if (!(player.GetConLevel(gArgs.Target) >= 1) || player.Group == null || !HasFighter || !HasAcolyte ||
 			    !HasRogue || !HasMageElemDisc) return;
-			
+
 			TeamBuildMobsKilled++;
 			player.Out.SendMessage(
 				"[Group Daily] Monster killed: (" + TeamBuildMobsKilled + " | " + MAX_KILLED + ")",
 				eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (TeamBuildMobsKilled >= MAX_KILLED)
 			{
 				// FinishQuest or go back to npc
@@ -394,7 +390,7 @@ namespace DOL.GS.DailyQuest.Albion
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "TeamBuildingAlb";

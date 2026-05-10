@@ -4,6 +4,7 @@ using DOL.Events;
 using DOL.GS.PacketHandler;
 using DOL.GS.PacketHandler.Client.v168;
 using DOL.GS.PlayerTitles;
+using DOL.Language;
 using DOL.Logging;
 
 namespace DOL.GS
@@ -62,7 +63,7 @@ namespace DOL.GS.Commands
 
             if (client.Player.HCFlag)
             {
-                client.Out.SendMessage("Your Hardcore flag is ON! Death will result in the character deletion.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Hardcore.AlreadyOn"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                 return;
             }
 
@@ -77,11 +78,11 @@ namespace DOL.GS.Commands
 
             if (client.Player.Level != 1)
             {
-                client.Out.SendMessage("You must be level 1 to activate Hardcore.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Hardcore.RequireLevelOne"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                 return;
             }
 
-            client.Out.SendCustomDialog("Do you really want to activate the Hardcore flag? Death will be permanent.", new CustomDialogResponse(HardcoreResponseHandler));
+            client.Out.SendCustomDialog(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Hardcore.Confirm"), new CustomDialogResponse(HardcoreResponseHandler));
         }
 
         protected virtual void HardcoreResponseHandler(GamePlayer player, byte response)
@@ -90,17 +91,17 @@ namespace DOL.GS.Commands
             {
                 if (player.Level > 1)
                 {
-                    player.Out.SendMessage("You must be level 1 to activate Hardcore.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Hardcore.RequireLevelOne"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                     return;
                 }
 
                 player.Emote(eEmote.StagFrenzy);
                 player.HCFlag = true;
-                player.Out.SendMessage("Your HARDCORE flag is ON. Your character will be deleted at death.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Hardcore.Enabled"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                 player.CurrentTitle = new HardCoreTitle();
             }
             else
-                player.Out.SendMessage("Use the command again if you change your mind.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Hardcore.Cancelled"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
         }
     }
 }
@@ -121,7 +122,7 @@ namespace DOL.GS.PlayerTitles
 
         public override void OnTitleGained(GamePlayer player)
         {
-            player.Out.SendMessage("You have gained the Hardcore title!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Hardcore.TitleGained"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
         }
 
         public override bool IsSuitable(GamePlayer player)

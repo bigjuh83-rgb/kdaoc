@@ -8,7 +8,7 @@
 *Quest Version  : v1.0
 *
 *Changes:
-* 
+*
 */
 
 using System;
@@ -33,20 +33,20 @@ namespace DOL.GS.Quests.Hibernia
 		private const int maximumLevel = 50;
 
 		private static GameNPC OtaYrling = null; // Start NPC + Finish NPC
-		private static GameNPC Jaklyr = null; // 
-		private static GameNPC Longbeard = null; // 
-		private static GameNPC Styr = null; // 
-		
+		private static GameNPC Jaklyr = null; //
+		private static GameNPC Longbeard = null; //
+		private static GameNPC Styr = null; //
+
 		private static GameNPC AncestralKeeper = null; //Mob to Kill
-		
+
 		private static readonly GameLocation keeperLocation = new("Ancestral Keeper", 151, 363016, 310849, 3933);
-		
+
 		private static AbstractArea keeperArea;
 
 		private static DbItemTemplate beaded_resisting_stone;
 		private static DbItemTemplate stone_pendant;
 		private static DbItemTemplate quest_pendant;
-		
+
 		// Constructors
 		public AncestralSecrets() : base()
 		{
@@ -64,6 +64,19 @@ namespace DOL.GS.Quests.Hibernia
 		{
 		}
 
+		private static string L(GamePlayer player, string key, params object[] args)
+		{
+			return DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+		}
+
+		private string Q(string key, params object[] args)
+		{
+			string language = m_questPlayer != null && m_questPlayer.Client != null && m_questPlayer.Client.Account != null
+				? m_questPlayer.Client.Account.Language
+				: ServerProperties.Properties.SERV_LANGUAGE;
+			return DOL.Language.LanguageMgr.GetTranslation(language, key, args);
+		}
+
 		public override int Level =>
 			// Quest Level
 			minimumLevel;
@@ -75,7 +88,7 @@ namespace DOL.GS.Quests.Hibernia
 				return;
 
 			#region defineNPCs
-			
+
 			 var npcs = WorldMgr.GetNPCsByName("Ota Yrling", eRealm.Midgard);
 
         if (npcs.Length > 0)
@@ -234,7 +247,7 @@ namespace DOL.GS.Quests.Hibernia
 		        quest_pendant.Description = "A lightly decorated pendant with slight rusted spots.";
 		        if (SAVE_INTO_DATABASE) GameServer.Database.AddObject(quest_pendant);
 	        }
-	        
+
 	        stone_pendant = GameServer.Database.FindObjectByKey<DbItemTemplate>("stone_pendant");
 	        if (stone_pendant == null)
 	        {
@@ -264,16 +277,22 @@ namespace DOL.GS.Quests.Hibernia
 
 			const int radius = 1000;
 			var region = WorldMgr.GetRegion(keeperLocation.RegionID);
+			if (region == null)
+			{
+				log.Error("Could not find region " + keeperLocation.RegionID + " when trying to create " + questTitle + " keeper area.");
+				return;
+			}
+
 			keeperArea = new Area.Circle("cursed crystals", keeperLocation.X, keeperLocation.Y, keeperLocation.Z,
 				radius);
 			keeperArea.CanBroadcast = false;
 			keeperArea.DisplayMessage = false;
 			region.AddArea(keeperArea);
 			keeperArea.RegisterPlayerEnter(PlayerEnterKeeperArea);
-			
+
 			GameEventMgr.AddHandler(GamePlayerEvent.AcceptQuest, new DOLEventHandler(SubscribeQuest));
 			GameEventMgr.AddHandler(GamePlayerEvent.DeclineQuest, new DOLEventHandler(SubscribeQuest));
-			
+
 			GameEventMgr.AddHandler(OtaYrling, GameObjectEvent.Interact, TalkToOtaYrling);
 			GameEventMgr.AddHandler(OtaYrling, GameLivingEvent.WhisperReceive, TalkToOtaYrling);
 
@@ -282,10 +301,10 @@ namespace DOL.GS.Quests.Hibernia
 
 			GameEventMgr.AddHandler(Longbeard, GameObjectEvent.Interact, TalkToLongbeard);
 			GameEventMgr.AddHandler(Longbeard, GameLivingEvent.WhisperReceive, TalkToLongbeard);
-			
+
 			GameEventMgr.AddHandler(Styr, GameObjectEvent.Interact, TalkToStyr);
 			GameEventMgr.AddHandler(Styr, GameLivingEvent.WhisperReceive, TalkToStyr);
-			
+
 			/* Now we bring to Ota Yrling the possibility to give this quest to players */
 			OtaYrling?.AddQuestToGive(typeof (AncestralSecrets));
 
@@ -299,14 +318,14 @@ namespace DOL.GS.Quests.Hibernia
 			//if not loaded, don't worry
 			if (OtaYrling == null)
 				return;
-			
+
 			// remove handlers
 			keeperArea.UnRegisterPlayerEnter(PlayerEnterKeeperArea);
-			WorldMgr.GetRegion(keeperLocation.RegionID).RemoveArea(keeperArea);
-			
+			WorldMgr.GetRegion(keeperLocation.RegionID)?.RemoveArea(keeperArea);
+
 			GameEventMgr.RemoveHandler(GamePlayerEvent.AcceptQuest, new DOLEventHandler(SubscribeQuest));
 			GameEventMgr.RemoveHandler(GamePlayerEvent.DeclineQuest, new DOLEventHandler(SubscribeQuest));
-			
+
 			GameEventMgr.RemoveHandler(OtaYrling, GameObjectEvent.Interact, TalkToOtaYrling);
 			GameEventMgr.RemoveHandler(OtaYrling, GameLivingEvent.WhisperReceive, TalkToOtaYrling);
 
@@ -315,10 +334,10 @@ namespace DOL.GS.Quests.Hibernia
 
 			GameEventMgr.RemoveHandler(Longbeard, GameObjectEvent.Interact, TalkToLongbeard);
 			GameEventMgr.RemoveHandler(Longbeard, GameLivingEvent.WhisperReceive, TalkToLongbeard);
-			
+
 			GameEventMgr.RemoveHandler(Styr, GameObjectEvent.Interact, TalkToStyr);
 			GameEventMgr.RemoveHandler(Styr, GameLivingEvent.WhisperReceive, TalkToStyr);
-			
+
 			/* Now we remove to Ota Yrling the possibility to give this quest to players */
 			OtaYrling.RemoveQuestToGive(typeof (AncestralSecrets));
 		}
@@ -354,13 +373,13 @@ namespace DOL.GS.Quests.Hibernia
 			AncestralKeeper.AddToWorld();
 
 			AncestralKeeper.StartAttack(player);
-			
+
 			GameEventMgr.AddHandler(AncestralKeeper, GameLivingEvent.Dying, AncestralKeeperDying);
 		}
 		private void AncestralKeeperDying(DOLEvent e, object sender, EventArgs arguments)
 		{
 			var args = (DyingEventArgs) arguments;
-        
+
 			var player = args.Killer as GamePlayer;
 
 			if (args.Killer is GameSummonedPet pet)
@@ -403,7 +422,7 @@ namespace DOL.GS.Quests.Hibernia
 			{
 				AdvanceAfterKill(player);
 			}
-        
+
 			GameEventMgr.RemoveHandler(AncestralKeeper, GameLivingEvent.Dying, AncestralKeeperDying);
 			AncestralKeeper.Delete();
 		}
@@ -412,11 +431,11 @@ namespace DOL.GS.Quests.Hibernia
 			var quest = player.IsDoingQuest(typeof(AncestralSecrets)) as AncestralSecrets;
 			if (quest is not {Step: 4}) return;
 			RemoveItem(player, quest_pendant);
-			SendMessage(player,"You feel the curse lift and the pendant turn into a powerful chain.", 0, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			SendMessage(player, L(player, "Quest.Midgard.AncestralSecrets.CurseLifted"), 0, eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			GiveItem(player, stone_pendant);
 			quest.Step = 5;
 		}
-		
+
 		private static void PlayerEnterKeeperArea(DOLEvent e, object sender, EventArgs args)
 		{
 			var aargs = args as AreaEventArgs;
@@ -428,7 +447,7 @@ namespace DOL.GS.Quests.Hibernia
 			var quest = player.IsDoingQuest(typeof(AncestralSecrets)) as AncestralSecrets;
 
 			if (quest is not {Step: 4}) return;
-			
+
 			var existingCopy = WorldMgr.GetNPCsByName("Ancestral Keeper", eRealm.None);
 
 			if (existingCopy.Length > 0) return;
@@ -439,10 +458,9 @@ namespace DOL.GS.Quests.Hibernia
 			{
 				try
 				{
-					// player near ancestral keeper           
-					SendSystemMessage(player,
-						"The Crystal Breaks and The Ancestral Keeper comes alive!");
-					player.Out.SendMessage("Ancestral Keeper ambushes you!", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+					// player near ancestral keeper
+					SendSystemMessage(player, L(player, "Quest.Midgard.AncestralSecrets.CrystalBreaks"));
+					player.Out.SendMessage(L(player, "Quest.Midgard.AncestralSecrets.AncestralKeeperAmbush"), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 					quest.CreateAncestralKeeper(player);
 				}
 				finally
@@ -460,7 +478,7 @@ namespace DOL.GS.Quests.Hibernia
 
 		protected static void TalkToOtaYrling(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -478,12 +496,11 @@ namespace DOL.GS.Quests.Hibernia
 					switch (quest.Step)
 					{
 						case 1:
-							OtaYrling.SayTo(player, "Once densely populated by dwarves, this changed with the [impact] of a meteorite. " +
-							                        "Wide areas were devastated and forests were set on fire. Even today, the wounds of this event are still clearly visible.");
+							OtaYrling.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Ota.Step1"));
 							break;
 						case 2:
-							OtaYrling.SayTo(player, "Hey "+player.Name+", don't listen to Longbeard and his friend Styr, they came from Dellingstad and fled.");
-							
+							OtaYrling.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Ota.Step2", player.Name));
+
 							int random = Util.Random(0, 3);
 							var message = string.Empty;
 							switch (random)
@@ -492,49 +509,46 @@ namespace DOL.GS.Quests.Hibernia
 									Longbeard.Emote(eEmote.Laugh);
 									Longbeard.TurnTo(player);
 									Styr.Emote(eEmote.Laugh);
-									message = "Longbeard yells, \"Haha, another idiot trying to help Ota Yrling\".";
+									message = L(player, "Quest.Midgard.AncestralSecrets.Longbeard.TauntOta");
 									break;
-								case 1: 
+								case 1:
 									Longbeard.Emote(eEmote.Rofl);
 									Longbeard.TurnTo(player);
 									Styr.Emote(eEmote.Laugh);
-									message = $"Longbeard yells, \"Haha, Styr look at this \"{player.CharacterClass.Name}\"";
+									message = L(player, "Quest.Midgard.AncestralSecrets.Longbeard.TauntStyr", player.CharacterClass.Name);
 									break;
-								case 2: 
+								case 2:
 									Longbeard.Emote(eEmote.Laugh);
 									Styr.TurnTo(player);
 									Styr.Emote(eEmote.Rofl);
-									message = $"Styr yells, \"Haha, Longbeard look at this \"{player.CharacterClass.Name}\"";
+									message = L(player, "Quest.Midgard.AncestralSecrets.Styr.TauntLongbeard", player.CharacterClass.Name);
 									break;
-								case 3: 
+								case 3:
 									Longbeard.Emote(eEmote.Laugh);
 									Styr.TurnTo(player);
 									Styr.Emote(eEmote.Laugh);
-									message = "Styr yells, \"Haha, another idiot trying to help Ota Yrling\".";
+									message = L(player, "Quest.Midgard.AncestralSecrets.Styr.TauntOta");
 									break;
 							}
 							SendMessage(player, message, 0,eChatType.CT_Say, eChatLoc.CL_ChatWindow);
 							break;
 						case 3:
-							OtaYrling.SayTo(player, "Hey "+player.Name+", please visit Jaklyr in Bjarken and tell him that I sent you, he will understand.");
+							OtaYrling.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Ota.Step3", player.Name));
 							break;
 						case 4:
-							OtaYrling.SayTo(player, "Greetings, thank you for your courage, I am with you mentally. Jaklyr might told you how you find the Delling Crater, right?");
+							OtaYrling.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Ota.Step4"));
 							break;
 						case 5:
-							OtaYrling.SayTo(player, "God dag my friend, I am happy that you did it, please bring this magical pendant to Jaklyr in Bjarken.");
+							OtaYrling.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Ota.Step5"));
 							break;
 						case 6:
-							OtaYrling.SayTo(player, "Many Years have passed and you made it, not only me but all of Midgard thanks you! You deserved your [reward]!");
+							OtaYrling.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Ota.Step6"));
 							break;
 					}
 				}
 				else
 				{
-					OtaYrling.SayTo(player, "Hello " + player.Name +
-					                        ", I need to talk to you, do you have a moment?\n" +
-					                        "Many Dwarfs can't work in the Delling Crater anymore. " +
-					                        "I heard that there is a creature which kills everything that comes close to it. It is like a [Curse].");
+					OtaYrling.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Ota.Intro", player.Name));
 				}
 			}
 				// The player whispered to the NPC
@@ -545,8 +559,9 @@ namespace DOL.GS.Quests.Hibernia
 				{
 					switch (wArgs.Text)
 					{
-						case "Curse":
-							player.Out.SendQuestSubscribeCommand(OtaYrling, QuestMgr.GetIDForQuestType(typeof(AncestralSecrets)), "Will you help Ota Yrling find [Ancestral Secrets]?");
+							case "Curse":
+							case "저주":
+							player.Out.SendQuestSubscribeCommand(OtaYrling, QuestMgr.GetIDForQuestType(typeof(AncestralSecrets)), L(player, "Quest.Midgard.AncestralSecrets.Subscribe"));
 							break;
 					}
 				}
@@ -554,30 +569,33 @@ namespace DOL.GS.Quests.Hibernia
 				{
 					switch (wArgs.Text)
 					{
-						case "impact":
-							OtaYrling.SayTo(player, player.Name+", we need your help finding [secrets] in the Delling Crater.");
+							case "impact":
+							case "충돌":
+							OtaYrling.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Ota.Impact", player.Name));
 							break;
-						case "secrets":
+							case "secrets":
+							case "비밀":
 							if (quest.Step == 1)
 							{
-								OtaYrling.SayTo(player, "Please visit Jaklyr in Bjarken and tell him that I se... Oh no Longbeard and his friend Styr...");
-								Longbeard.Yell("Haha, you need help from this "+player.CharacterClass.Name+" Ota Yrling?");
+								OtaYrling.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Ota.Secrets"));
+								Longbeard.Yell(L(player, "Quest.Midgard.AncestralSecrets.Longbeard.YellNeedHelp", player.CharacterClass.Name));
 								Longbeard.Emote(eEmote.Laugh);
 								Styr.Emote(eEmote.Laugh);
 								quest.Step = 2;
 							}
 							break;
-						case "reward":
+							case "reward":
+							case "보상":
 							if (quest.Step == 6)
 							{
-								Longbeard.Yell("Hey "+player.Name+", thank you for your help in Delling Crater!");
+								Longbeard.Yell(L(player, "Quest.Midgard.AncestralSecrets.Longbeard.RewardThanks", player.Name));
 								Longbeard.Emote(eEmote.Clap);
 								Styr.Emote(eEmote.Cheer);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
@@ -590,15 +608,15 @@ namespace DOL.GS.Quests.Hibernia
 					{
 						if (quest.Step == 6)
 						{
-							OtaYrling.SayTo(player, "Many Years have passed and you made it, not only me but all of Midgard thanks you! You have deserved your [reward]!");
+							OtaYrling.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Ota.ReceiveStonePendant"));
 						}
 					}
 			}
 		}
-		
+
 		protected static void TalkToJaklyr(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -616,23 +634,21 @@ namespace DOL.GS.Quests.Hibernia
 					switch (quest.Step)
 					{
 						case 1:
-							Jaklyr.SayTo(player, "Hello Adventurer, great to see more people in our town. Can I help you?");
+							Jaklyr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Jaklyr.Step1"));
 							break;
 						case 2:
-							Jaklyr.SayTo(player, "Hey "+player.CharacterClass.Name+", did you hear about two dwarfs who fled from Dellingstad and living now in Aegirhamn? " +
-							                     "Ota Yrling said that they are annoying.");
+							Jaklyr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Jaklyr.Step2", player.CharacterClass.Name));
 							break;
 						case 3:
-							Jaklyr.SayTo(player, "Hey "+player.CharacterClass.Name+", how can I help you? Did someone [sent] you?");
+							Jaklyr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Jaklyr.Step3", player.CharacterClass.Name));
 							break;
 						case 4:
-							Jaklyr.SayTo(player, "I wish you all the strength you need for your adventure!");
+							Jaklyr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Jaklyr.Step4Wish"));
 							Jaklyr.SayTo(player,
-								"Please head to the Caldera in Delling Crater. Follow the road west and at the crossroads go north towards Delling Crater. " +
-								"Search for Ancestral Keeper in the crater and kill it.");
+								L(player, "Quest.Midgard.AncestralSecrets.Jaklyr.Step4Directions"));
 							break;
 						case 5:
-							Jaklyr.SayTo(player, "You did it! Outstanding my friend! Please hand me the [pendant]!");
+							Jaklyr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Jaklyr.Step5"));
 							break;
 						case 6:
 							Jaklyr.SayTo(player, "");
@@ -658,39 +674,38 @@ namespace DOL.GS.Quests.Hibernia
 				{
 					switch (wArgs.Text)
 					{
-						case "sent":
-							Jaklyr.SayTo(player, "Oh, Ota Yrling sent you, I know why...\n" +
-							                     "After the meteorite impact, complications arose that did not exist before. The dwarves of Dellingstad were once friendly and helpful. " +
-							                     "Now you have to kill elemental creatures to be accepted. I heard of a creature named Ancestral Keeper. Times are dark at [Delling Crater]. " +
-							                     "I want you to set out and pursue this.");
+							case "sent":
+							case "보냈습니까":
+							Jaklyr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Jaklyr.Sent"));
 							break;
-						case "Delling Crater":
+							case "Delling Crater":
+							case "델링 분화구":
 							if (quest.Step == 3)
 							{
 								if (player.Inventory.IsSlotsFree(1, eInventorySlot.FirstBackpack,
 									    eInventorySlot.LastBackpack))
 								{
-									Jaklyr.SayTo(player, "Head to the Caldera in Delling Crater. Follow the road west and at the crossroads go north towards Delling Crater. " +
-									                     "Search for Ancestral Keeper in the crater and kill it. " +
-									                     "Take this pendant with you as lucky charm!");
+									Jaklyr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Jaklyr.DellingCrater"));
 									GiveItem(player, quest_pendant);
 									quest.Step = 4;
 								}
 								else
 								{
-									Jaklyr.SayTo(player, "Please make room in your inventory for a lucky charm!");
+									Jaklyr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Jaklyr.InventoryFull"));
 								}
 							}
 							break;
-						case "pendant":
+							case "pendant":
+							case "펜던트":
 							RemoveItem(player, stone_pendant);
-							Jaklyr.SayTo(player, "I knew it, the Ancestral Keeper has lost its magic and is now [trapped] in this pendant.");
+							Jaklyr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Jaklyr.Pendant"));
 							Jaklyr.Emote(eEmote.Cheer);
 							break;
-						case "trapped":
+							case "trapped":
+							case "갇혀":
 							if (quest.Step == 5)
 							{
-								Jaklyr.SayTo(player, "Take it back and return to Ota Yrling in Aegirhamn. Bring her the pendant as a gift!");
+								Jaklyr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Jaklyr.Trapped"));
 								GiveItem(player, stone_pendant);
 								quest.Step = 6;
 							}
@@ -706,16 +721,16 @@ namespace DOL.GS.Quests.Hibernia
 					{
 						if (quest.Step == 5)
 						{
-							Jaklyr.SayTo(player, "I knew it, the Ancestral Keeper has lost its magic and is now [trapped] in this pendant.");
+							Jaklyr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Jaklyr.Pendant"));
 							Jaklyr.Emote(eEmote.Cheer);
 						}
 					}
 			}
 		}
-		
+
 		protected static void TalkToLongbeard(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -733,28 +748,28 @@ namespace DOL.GS.Quests.Hibernia
 					switch (quest.Step)
 					{
 						case 1:
-							Longbeard.SayTo(player, "Yes, I am a Dwarf from Dellingstad, do you have a problem with that?");
+							Longbeard.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Longbeard.Step1"));
 							break;
 						case 2:
-							Longbeard.SayTo(player, "You are kidding me right? Nobody came back, just [don't try] it kid.");
+							Longbeard.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Longbeard.Step2"));
 							break;
 						case 3:
-							Longbeard.SayTo(player, "Hey "+player.CharacterClass.Name+", have you visited Jaklyr in Bjarken yet? I thought you want to go to Delling Crater.");
+							Longbeard.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Longbeard.Step3", player.CharacterClass.Name));
 							break;
 						case 4:
-							Longbeard.SayTo(player, "I wish you good luck my friend! It's not an easy mission.");
+							Longbeard.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Longbeard.Step4"));
 							break;
 						case 5:
-							Longbeard.SayTo(player, "Wow, I really never thought that you will do it. That's great my friend! Does Jaklyr know about it yet?");
+							Longbeard.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Longbeard.Step5"));
 							break;
 						case 6:
-							Longbeard.SayTo(player, "Congratulations "+player.Name+", you will get your recognition!");
+							Longbeard.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Longbeard.Step6", player.Name));
 							break;
 					}
 				}
 				else
 				{
-					Longbeard.SayTo(player, "Hey, do you have a boar pelt? I would buy it.");
+					Longbeard.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Longbeard.Intro"));
 				}
 			}
 			// The player whispered to the NPC
@@ -771,20 +786,20 @@ namespace DOL.GS.Quests.Hibernia
 				{
 					switch (wArgs.Text)
 					{
-						case "don't try":
-							Longbeard.SayTo(player, "You'll never come back alive. " +
-							                        "There has been a curse since [the crater] has formed.");
+							case "don't try":
+							case "시도하지 마":
+							Longbeard.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Longbeard.DontTry"));
 							break;
-						case "the crater":
-							Longbeard.SayTo(player, "Yeah a crater, many years ago a meteorite fell from the sky. It's right next to Dellingstad, that's why its called Delling Crater." +
-							                        "Everyone in Dellingstad started to get weird. They hardly ate anymore and they began hunting certain creatures. Styr and I fled." +
-							                        "If you are intelligent enough, then you shouldn't accept this [challenge].");
+							case "the crater":
+							case "분화구":
+							Longbeard.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Longbeard.TheCrater"));
 							Longbeard.Emote(eEmote.Induct);
 							break;
-						case "challenge":
+							case "challenge":
+							case "도전":
 							if (quest.Step == 2)
 							{
-								Longbeard.SayTo(player, "Okay Adventurer, I warned you, but if you need help, then visit Jaklyr in Bjarken, he knows as much as I do about this event.\nHa det!");
+								Longbeard.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Longbeard.Challenge"));
 								Longbeard.Emote(eEmote.Wave);
 								quest.Step = 3;
 							}
@@ -797,14 +812,14 @@ namespace DOL.GS.Quests.Hibernia
 				ReceiveItemEventArgs rArgs = (ReceiveItemEventArgs) args;
 				if (quest != null)
 				{
-					
+
 				}
 			}
 		}
-		
+
 		protected static void TalkToStyr(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -822,29 +837,29 @@ namespace DOL.GS.Quests.Hibernia
 					switch (quest.Step)
 					{
 						case 1:
-							Styr.SayTo(player, "Hey Adventurer, I am Styr and you?");
+							Styr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Styr.Step1"));
 							break;
 						case 2:
-							Styr.SayTo(player, "Do you really think that this mission is easy?");
+							Styr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Styr.Step2"));
 							break;
 						case 3:
-							Styr.SayTo(player, "Jaklyr will indeed help you, but it will be difficult!");
+							Styr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Styr.Step3"));
 							break;
 						case 4:
-							Styr.SayTo(player, "Good luck my friend, you will need it for this mission.");
+							Styr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Styr.Step4"));
 							break;
 						case 5:
-							Styr.SayTo(player, "Wait, you did it? Does Jaklyr knows about it already?");
+							Styr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Styr.Step5"));
 							break;
 						case 6:
-							Styr.SayTo(player, "I'm sorry for my laughter, you are great!");
+							Styr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Styr.Step6"));
 							break;
-						
+
 					}
 				}
 				else
 				{
-					Styr.SayTo(player, "Greetings, sometimes I need my walk at the port.");
+					Styr.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Styr.Intro"));
 				}
 			}
 			// The player whispered to the NPC
@@ -871,7 +886,7 @@ namespace DOL.GS.Quests.Hibernia
 
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -893,11 +908,11 @@ namespace DOL.GS.Quests.Hibernia
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortCancelled"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -927,7 +942,7 @@ namespace DOL.GS.Quests.Hibernia
 
 			if (response == 0x00)
 			{
-				OtaYrling.SayTo(player, "Please come back, if you want to help me!");
+				OtaYrling.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Ota.Decline"));
 			}
 			else
 			{
@@ -935,10 +950,9 @@ namespace DOL.GS.Quests.Hibernia
 				if (!OtaYrling.GiveQuest(typeof (AncestralSecrets), player, 1))
 					return;
 			}
-			OtaYrling.SayTo(player, "Thanks "+player.Name+", finally someone helps me!");
-			OtaYrling.SayTo(player, "Once densely populated by dwarves, this changed with the [impact] of a meteorite. " +
-			                        "Wide areas were devastated and forests were set on fire. Even today, the wounds of this event are clearly visible.");
-			
+			OtaYrling.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Ota.Accepted", player.Name));
+			OtaYrling.SayTo(player, L(player, "Quest.Midgard.AncestralSecrets.Ota.Step1Accepted"));
+
 		}
 
 		//Set quest name
@@ -955,18 +969,17 @@ namespace DOL.GS.Quests.Hibernia
 				switch (Step)
 				{
 					case 1:
-						return "Speak to Ota Yrling in Aegirhamn.";
+						return Q("Quest.Midgard.AncestralSecrets.Description.Step1");
 					case 2:
-						return "Face the statements from Longbeard and Styr in Aegirhamn.";
+						return Q("Quest.Midgard.AncestralSecrets.Description.Step2");
 					case 3:
-						return "Speak to Jaklyr in Bjarken.";
+						return Q("Quest.Midgard.AncestralSecrets.Description.Step3");
 					case 4:
-						return "Head to the Caldera in Delling Crater. Follow the road west and at the crossroads go north towards Delling Crater." +
-						       "Search for Ancestral Keeper in the crater and kill it.";
+						return Q("Quest.Midgard.AncestralSecrets.Description.Step4");
 					case 5:
-						return "Return the Stone Pendant to Jaklyr in Bjarken.";
+						return Q("Quest.Midgard.AncestralSecrets.Description.Step5");
 					case 6:
-						return "Return to Ota Yrling in Aegirhamn.";
+						return Q("Quest.Midgard.AncestralSecrets.Description.Step6");
 				}
 				return base.Description;
 			}
@@ -990,14 +1003,14 @@ namespace DOL.GS.Quests.Hibernia
 						(m_questPlayer.ExperienceForNextLevel - m_questPlayer.ExperienceForCurrentLevel) / 2, false);
 				RemoveItem(m_questPlayer, stone_pendant);
 				GiveItem(m_questPlayer, beaded_resisting_stone);
-				m_questPlayer.AddMoney(Money.GetMoney(0, 0, 121, 41, Util.Random(50)), "You receive {0} as a reward.");
+				m_questPlayer.AddMoney(Money.GetMoney(0, 0, 121, 41, Util.Random(50)), Q("Quest.Common.MoneyReward"));
 
 
 				base.FinishQuest(); //Defined in Quest, changes the state, stores in DB etc ...
-			} 
+			}
 			else
 			{
-				m_questPlayer.Out.SendMessage("You do not have enough free space in your inventory!",
+				m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"),
 					eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 			}
 		}

@@ -1,0 +1,1114 @@
+# Player Commands
+
+## Error
+AllCommands.Error.NoCommand:                        그런 명령어는 없습니다 ({0}).
+
+## General
+AllCommands.Command.SyntaxDesc:                           이 명령어는 다음 형식을 사용하세요:
+
+## Notes
+AllCommands.Header.Note.Divider:                    --- 참고: ---
+AllCommands.Header.Note.Dashes:                     --------------
+
+## /advice
+PLCommands.Advice.Syntax.AdvChannel:                    '/adv <메시지>' - 조언 채널에 메시지를 보냅니다.
+PLCommands.Advice.Syntax.Advice:                        '/advice' - 접속 중인 모든 조언자를 표시합니다.
+PLCommands.Advice.List.TheFollowing:                    다음 플레이어가 조언자로 표시되어 있습니다:
+PLCommands.Advice.List.Wait:	                        /advice로 다시 말하려면 {0}초 기다려야 합니다
+PLCommands.Advice.List.Result:                          {0}) {1}, 레벨 {2} {3} (플레이 시간 {4}일 {5}시간 {6}분)
+PLCommands.Advice.List.1AdvisorOn:			            조언자 1명이 접속 중입니다!
+PLCommands.Advice.List.AdvisorsOn:			            조언자 {0}명이 접속 중입니다!
+
+## /trade
+PLCommands.Trade.List.Wait:	                            /trade로 다시 말하려면 {0}초 기다려야 합니다
+
+## /lfg
+PLCommands.LFG.List.Wait:	                            /lfg로 다시 말하려면 {0}초 기다려야 합니다
+
+
+## /advisor
+PLCommands.Advisor.Syntax.Advisor:                      '/advisor' - 새 플레이어의 질문에 답할 의사가 있음을 나타내도록 캐릭터를 조언자(<ADV>)로 표시합니다.
+PLCommands.Advisor.Syntax.SendAdvisor:                  '/advisor <조언자이름> <메시지>' - 조언자에게 질문을 직접 보냅니다.
+PLCommands.Advisor.Msg.OffFlag:				            조언자 표시가 꺼졌습니다.
+PLCommands.Advisor.Msg.OnFlag:				            조언자 표시(<ADV>)가 켜졌습니다. 조언자 시스템은 플레이어가 각자 책임지고 사용합니다. 새 플레이어의 기본 질문에 답하고 싶은 플레이어만 이 표시를 켜주세요. 끄려면 언제든지 '/advisor'를 다시 입력하세요.
+PLCommands.Advisor.Err.NoMessage:                       이 조언자와 대화하려면 메시지를 포함해야 합니다! '/advisor <조언자이름> <메시지>'를 사용하세요.
+PLCommands.Advisor.Err.MinimumReqs:                     아직 조언자가 될 조건을 충족하지 못했습니다. 클래스 조언자는 50레벨 상태에서 플레이 시간이 15시간 이상이어야 합니다. 제작 조언자는 주 제작 기술이 전설 등급이고, '/setwho craft'가 켜져 있으며, 전체 플레이 시간이 최소 15시간이어야 합니다.
+
+## /afk
+PLCommands.AFK.Syntax.AFK:              '/afk' - 자리비움 표시를 켜거나 끄고, '/send'를 보낸 플레이어에게 자동으로 보낼 메시지를 설정할 수 있습니다. 예: '/afk 잠시 자리비움'
+PLCommands.AFK.Syntax.MessageAFK:       '/afk <메시지>' - 자신을 자리비움으로 표시하고, '/send'를 보낸 플레이어에게 자동으로 보낼 메시지를 붙입니다.
+PLCommands.AFK.Msg.Off:				자리비움 표시가 꺼졌습니다.
+PLCommands.AFK.Msg.On:					자리비움 표시가 켜졌습니다.
+
+## /anonymous
+PLCommands.Anonymous.Syntax.Anon:                   '/anonymous' 또는 '/anon' - 플레이어 검색('/who' 등)에서 자신을 숨기는 익명 모드를 켜거나 끕니다.
+PLCommands.Anonymous.Err.Disabled:			익명 모드는 현재 비활성화되어 있습니다.
+PLCommands.Anonymous.Msg.Off:				더 이상 익명 상태가 아닙니다.
+PLCommands.Anonymous.Msg.On:				이제 익명 상태입니다.
+
+## /appeal
+Scripts.Players.Appeal.NeedMoreDetail:			문의가 접수되지 않았습니다. 더 자세한 내용을 적어 다시 제출하세요.
+Scripts.Players.Appeal.AlreadyActiveAppeal:		이미 진행 중인 문의가 있습니다. 새 문의를 제출하기 전에 서버 스태프가 현재 문의를 처리할 때까지 기다려주세요.
+Scripts.Players.Appeal.DoNotHaveAppeal:			취소할 문의가 없거나 이미 종료되었습니다.
+Scripts.Players.Appeal.StaffClosedYourAppeal:	{0} [운영팀]이(가) 당신의 문의를 종료했습니다.
+Scripts.Players.Appeal.PleaseBePatient:			최대한 빠르게 처리 중이니 잠시 기다려주세요.
+Scripts.Players.Appeal.IfYouLogOut:				진행 중인 문의가 있는 상태로 로그아웃하면 저장되며, 다시 로그인할 때 자동으로 복원됩니다. (캐릭터를 바꿔도 적용됩니다)
+Scripts.Players.Appeal.ToCancelYourAppeal:		문의를 취소하려면 /checkappeal cancel을 사용하세요.
+Scripts.Players.Appeal.CriticalMessage:			긴급 문의는 빠른 주의가 필요할 수 있습니다!
+Scripts.Players.Appeal.YouAreMuted:				현재 채팅 제한 상태라 문의를 제출할 수 없습니다.
+Scripts.Players.Appeal.AppealSubmitted:			문의가 성공적으로 접수되었습니다. /checkappeal로 상태를 확인하세요.
+Scripts.Players.Appeal.StaffChangedStatus:		{0} [운영팀]이(가) 문의 상태를 {1}(으)로 변경했습니다.
+Scripts.Players.Appeal.CanceledYourAppeal:		문의를 취소했습니다.
+Scripts.Players.Appeal.LoginMessage:			캐릭터 끼임 등 게임 내 서버 스태프의 도움이 필요하면 /appeal을 사용하세요.
+Scripts.Players.Appeal.YouHavePendingAppeal:	대기열에 처리 대기 중인 문의가 있습니다. /checkappeal로 상태를 보거나 취소하세요.
+Scripts.Players.Appeal.CurrentStaffAvailable:	현재 대응 가능한 스태프는 {0}명이며, 대기 중인 문의는 {1}건입니다.
+Scripts.Players.Appeal.SystemDisabled:			문의 시스템은 현재 비활성화되어 있습니다.
+Scripts.Players.Appeal.QueueCount:				대기 중인 문의가 {0}건 있습니다.
+
+## /assist
+#Scripts.Players.Assist.CantAssistYourself:		You can't assist yourself.
+#Scripts.Players.Assist.DoesntHaveTarget:	 	doesn't currently have a target.
+#Scripts.Players.Assist.DontSee:				You don't see {0} around here!
+#Scripts.Players.Assist.NoTarget:				You have no target.
+#Scripts.Players.Assist.NotValid:				Target is not valid.
+Scripts.Players.Assist.DoesntHaveTarget:		{0}은(는) 현재 대상이 없습니다.
+Scripts.Players.Assist.MemberNotFound:			이 근처에는 그런 이름의 사람이 없습니다.
+Scripts.Players.Assist.NoRealmMember:			{0}은(는) 당신의 렐름 구성원이 아닙니다!
+Scripts.Players.Assist.NotValid:				{0}은(는) 유효한 지원 대상이 아닙니다!
+Scripts.Players.Assist.SelectMember:			지원할 렐름 구성원을 선택해야 합니다.
+Scripts.Players.Assist.YouAssist:				{0}을(를) 지원합니다.
+
+## /ck
+Scripts.Players.CK.NotInBattleground:			이 명령어는 배틀그라운드 안에서만 사용할 수 있습니다.
+
+## /dismisspet
+Scripts.Players.DismissPet.Dismissed:			동행 펫을 해제했습니다.
+Scripts.Players.DismissPet.NoPet:				소환 중인 동행 펫이 없습니다.
+
+## /transfercorpse
+Scripts.Players.TransferCorpse.Disabled:			이 명령어는 현재 비활성화되어 있습니다!
+Scripts.Players.TransferCorpse.MustBeDeadSameRegion:	이 명령어는 사망 상태이며 해당 킵과 같은 지역에 있을 때만 사용할 수 있습니다!
+Scripts.Players.TransferCorpse.MustBeInFrontiers:	이 명령어는 프론티어에서 사망했을 때만 사용할 수 있습니다!
+Scripts.Players.TransferCorpse.MustBeRealmDeath:	렐름을 위해 싸우다 사망했을 때만 이 명령어를 사용할 수 있습니다!
+Scripts.Players.TransferCorpse.OncePerDeath:		한 번 사망할 때마다 이 명령어는 한 번만 사용할 수 있습니다!
+Scripts.Players.TransferCorpse.ValidKeepName:		유효한 킵 이름을 입력해야 합니다!
+Scripts.Players.TransferCorpse.RealmMustOwnKeep:	이 명령어를 사용하려면 당신의 렐름이 해당 킵을 소유하고 있어야 합니다!
+Scripts.Players.TransferCorpse.SummonerInactive:	이 킵의 시체 소환사가 죽었거나 비활성 상태입니다!
+Scripts.Players.TransferCorpse.SameZoneRequired:	요청한 킵과 같은 존에 있어야 합니다!
+
+## /autoloot
+Scripts.Players.Autoloot.Off:				자동 루팅이 꺼졌습니다. 이제 주변에 떨어진 물건을 자동으로 줍지 않습니다.
+Scripts.Players.Autoloot.On:				자동 루팅이 켜졌습니다. 이제 주변에 떨어진 물건을 자동으로 줍습니다.
+
+## /autosplit
+Scripts.Players.Autosplit.Coins:			리더가 동전 자동 분배를 전환했습니다
+Scripts.Players.Autosplit.InGroup:			이 명령어를 사용하려면 그룹에 속해 있어야 합니다.
+Scripts.Players.Autosplit.Leader:			이 명령어를 사용하려면 그룹 리더여야 합니다.
+Scripts.Players.Autosplit.Loot:				리더가 전리품 자동 분배를 전환했습니다
+Scripts.Players.Autosplit.Off:				리더가 자동 분배를 껐습니다.
+Scripts.Players.Autosplit.On:				리더가 자동 분배를 켰습니다.
+Scripts.Players.Autosplit.Self:				{0}이(가) 자동 분배 설정을 전환했습니다
+
+## /groupsort
+Scripts.Players.Groupsort.InGroup:			이 명령어를 사용하려면 그룹에 속해 있어야 합니다.
+Scripts.Players.Groupsort.Leader:			이 명령어를 사용하려면 그룹 리더여야 합니다.
+
+## /battlegroup
+Scripts.Players.Battlegroup.Usage:			사용법: /bg <내용>
+Scripts.Players.Battlegroup.UsageInvite:		사용법: /bg invite <플레이어이름>
+Scripts.Players.Battlegroup.Help.Count:			/bg count - 배틀그룹 구성원 수를 표시합니다
+Scripts.Players.Battlegroup.Help.Credit:		/bg credit - 최근 10분 안에 완료된 배틀그룹 마스터 레벨 인카운터 크레딧을 표시합니다.
+Scripts.Players.Battlegroup.Help.GrantCredit:		/bg grantcredit (마스터레벨) (플레이어이름) - 배틀그룹 리더가 완료된 마스터 레벨 단계의 크레딧을 부여합니다.
+Scripts.Players.Battlegroup.Help.GroupClass:		/bg groupclass - 배틀그룹 내 각 그룹의 클래스 구성을 표시합니다.
+Scripts.Players.Battlegroup.Help.Solo:		    /bg solo - 배틀그룹 내 솔로 플레이어의 클래스 구성을 표시합니다.
+Scripts.Players.Battlegroup.Help.Groups:		/bg groups - 배틀그룹 구성원을 그룹별로 표시합니다
+Scripts.Players.Battlegroup.Help.Help:			/bg help - 모든 배틀그룹 명령어를 표시합니다
+Scripts.Players.Battlegroup.Help.Invite:		/bg invite [플레이어이름] - 지정한 플레이어를 배틀그룹에 초대합니다
+Scripts.Players.Battlegroup.Help.JoinPrivate:		/bg join [중재자이름] [비밀번호] - 비밀번호가 설정된 비공개 배틀그룹에 참가합니다
+Scripts.Players.Battlegroup.Help.JoinPublic:		/bg join [중재자이름] - 중재자 이름으로 공개 배틀그룹에 참가합니다
+Scripts.Players.Battlegroup.Help.Leader:		/bg promote <이름> - 다른 구성원을 배틀그룹 중재자로 지정하거나 해제합니다
+Scripts.Players.Battlegroup.Help.MakeLeader:	/bg makeleader <이름> - 배틀그룹 소유권을 지정한 플레이어에게 넘깁니다
+Scripts.Players.Battlegroup.Help.Leave:			/bg leave - 배틀그룹에서 나갑니다
+Scripts.Players.Battlegroup.Help.Listen:		/bg listen - 중재자와 리더만 말할 수 있는 듣기 모드로 전환합니다
+Scripts.Players.Battlegroup.Help.Loot:			/bg loot (normal/treasurer) - 배틀그룹 전리품 방식을 일반 또는 재무관으로 설정합니다
+Scripts.Players.Battlegroup.Help.LootLevel:		/bg lootlevel (레벨) - 배틀그룹 전리품 레벨을 설정합니다
+Scripts.Players.Battlegroup.Help.RecordStart:	/bg recordstart [최대주사위] - 지정한 최대값 이하의 배틀그룹 주사위 기록을 시작합니다
+Scripts.Players.Battlegroup.Help.RecordStop:	/bg recordstop - 배틀그룹 주사위 기록을 중지합니다
+Scripts.Players.Battlegroup.Help.ShowRolls:		/bg showrolls - 최근 배틀그룹 주사위 결과를 표시합니다
+Scripts.Players.Battlegroup.Help.PasswordClear:		/bg password clear - 현재 비밀번호를 삭제합니다. 중재자 전용
+Scripts.Players.Battlegroup.Help.PasswordDisplay:	/bg password - 현재 배틀그룹 비밀번호를 표시합니다. 중재자 전용
+Scripts.Players.Battlegroup.Help.PasswordNew:		/bg password [새비밀번호]
+Scripts.Players.Battlegroup.Help.Private:		/bg private - 배틀그룹을 초대 또는 비밀번호 전용으로 설정합니다
+Scripts.Players.Battlegroup.Help.Public:		/bg public - 누구나 /bg join으로 참가할 수 있는 공개 배틀그룹으로 설정합니다
+Scripts.Players.Battlegroup.Help.Remove:		/bg remove [플레이어이름] - 지정한 플레이어를 배틀그룹에서 내보냅니다
+Scripts.Players.Battlegroup.Help.Status:		/bg status - 배틀그룹 구성원 수를 표시합니다
+Scripts.Players.Battlegroup.Help.Treasurer:		/bg treasurer (플레이어이름) - 배틀그룹 재무관을 설정합니다
+Scripts.Players.Battlegroup.Help.Usage:			/bg 사용법:
+Scripts.Players.Battlegroup.Help.Who:			/bg who - 배틀그룹의 모든 구성원을 표시합니다
+Scripts.Players.Battlegroup.InBattleGroup:		이 명령어를 사용하려면 배틀그룹에 속해 있어야 합니다.
+Scripts.Players.Battlegroup.InviteYourself:		자기 자신을 배틀그룹에 초대할 수 없습니다.
+Scripts.Players.Battlegroup.Joined:			배틀그룹에 참가했습니다.
+Scripts.Players.Battlegroup.JoinBattleGroup:		{0}의 배틀그룹에 참가하시겠습니까?
+Scripts.Players.Battlegroup.MemberJoined:		{0}이(가) 배틀그룹에 참가했습니다.
+Scripts.Players.Battlegroup.LeaderCommand:		이 명령어를 사용하려면 배틀그룹 리더여야 합니다.
+Scripts.Players.Battlegroup.LeaderInvite:		플레이어를 배틀그룹에 초대하려면 리더여야 합니다.
+Scripts.Players.Battlegroup.ListenMode:			배틀그룹 듣기 모드가 전환되었습니다
+Scripts.Players.Battlegroup.Moderator:			{0}이(가) 중재자가 되었습니다.
+Scripts.Players.Battlegroup.RemoveModerator:	{0}은(는) 더 이상 중재자가 아닙니다.
+Scripts.Players.Battlegroup.NewLeader:			{0}이(가) 배틀그룹의 새 리더입니다.
+Scripts.Players.Battlegroup.NoPlayer:			그 이름의 플레이어가 없습니다.
+Scripts.Players.Battlegroup.NotBattleGroupLeader:	이 플레이어는 배틀그룹 리더가 아닙니다.
+Scripts.Players.Battlegroup.NotBattleGroupMember:	이 플레이어는 배틀그룹 구성원이 아닙니다.
+Scripts.Players.Battlegroup.NotPublic:			이 배틀그룹은 공개 상태가 아닙니다.
+Scripts.Players.Battlegroup.OnlyModerator:		이 배틀그룹에서는 중재자만 말할 수 있습니다.
+Scripts.Players.Battlegroup.OwnBattleGroup:		자신의 배틀그룹에는 참가할 수 없습니다.
+Scripts.Players.Battlegroup.Password:			배틀그룹 비밀번호: {0}.
+Scripts.Players.Battlegroup.PasswordChanged:		배틀그룹 비밀번호를 {0}(으)로 변경했습니다.
+Scripts.Players.Battlegroup.PlayerInBattlegroup:	{0}은(는) 이미 배틀그룹에 있습니다.
+Scripts.Players.Battlegroup.AlreadyInBattlegroup:	이미 배틀그룹에 속해 있습니다.
+Scripts.Players.Battlegroup.Private:			배틀그룹이 비공개로 변경되었습니다.
+Scripts.Players.Battlegroup.Public:			배틀그룹이 공개로 변경되었습니다.
+Scripts.Players.Battlegroup.BattlegroupCount:		현재 배틀그룹 구성원은 {0}명입니다.
+Scripts.Players.Battlegroup.BattleGroupLootNormal:	배틀그룹 전리품 방식이 일반으로 설정되었습니다.
+Scripts.Players.Battlegroup.BattlegroupLootThresholdOff:배틀그룹 루팅 레벨이 현재 꺼져 있습니다.
+Scripts.Players.Battlegroup.BattlegroupLootThresholdOn:	배틀그룹 루팅 레벨은 현재 {0}입니다.
+Scripts.Players.Battlegroup.BattleGroupLootTreasurer:	배틀그룹 전리품 방식이 회계 담당자에게 가도록 설정되었습니다.
+Scripts.Players.Battlegroup.BattlegroupStatus:		현재 배틀그룹 상태는 {0}입니다.
+Scripts.Players.Battlegroup.BattlegroupTreasurerIs:	배틀그룹 회계 담당자가 {0}(으)로 변경되었습니다.
+Scripts.Players.Battlegroup.BattlegroupTreasurerIsYou:	당신이 배틀그룹 회계 담당자가 되었습니다.
+Scripts.Players.Battlegroup.BattlegroupTreasurerOff:	현재 배틀그룹에는 회계 담당자가 없습니다.
+Scripts.Players.Battlegroup.BattlegroupTreasurerOn:	배틀그룹 회계 담당자를 {0}(으)로 변경했습니다.
+Scripts.Players.Battlegroup.RollRecordingStarted:	{0}이(가) 주사위 기록을 시작했습니다. 지금 /random {1}을 입력해 이 아이템에 주사위를 굴리세요.
+Scripts.Players.Battlegroup.RollRecordingStopped:	{0}이(가) 주사위 기록을 중지했습니다. /bg showrolls로 결과를 확인하세요.
+Scripts.Players.Battlegroup.RollsBeingRecorded:	주사위 기록 중입니다. 잠시 기다려 주세요.
+Scripts.Players.Battlegroup.NoRollsRecorded:		아직 기록된 주사위가 없습니다.
+Scripts.Players.Battlegroup.LastRollResultsTitle:	최근 주사위 결과
+Scripts.Players.Battlegroup.RollResultLine:		{0}) {1}: {2}
+
+## /bind
+GamePlayer.Bind.Bound:						        이 위치에 바인드되었습니다.
+GamePlayer.Bind.CantBindDead:				        사망 상태에서는 바인드할 수 없습니다!
+GamePlayer.Bind.CantHere:					        여기서는 바인드할 수 없습니다!
+GamePlayer.Bind.LastBindPoint:				        마지막 바인드 지점: {0}.
+GamePlayer.Bind.MustWait:					        다시 바인드하려면 {0}초 기다려야 합니다!
+
+## /bonuses
+PlayerBonusesListRequestHandler.HandlePacket.Bonuses:	보너스 (스냅샷)
+PlayerBonusesListRequestHandler.HandlePacket.Magic:		마법 보너스: {0}%
+PlayerBonusesListRequestHandler.HandlePacket.Melee:		근접 보너스: {0}%
+PlayerBonusesListRequestHandler.HandlePacket.Outpost:	전초기지 보너스
+PlayerBonusesListRequestHandler.HandlePacket.Realm:		렐름 랭크 보너스
+PlayerBonusesListRequestHandler.HandlePacket.Relic:		렐릭 보너스
+PlayerBonusesListRequestHandler.HandlePacket.Resist:	저항
+PlayerBonusesListRequestHandler.HandlePacket.Special:	특수 아이템 보너스
+PlayerBonusesListRequestHandler.HandlePacket.Specs:		모든 전문화 +{0}
+
+## /boot
+Scripts.Players.Boot.InHouseError:			이 명령어를 사용하려면 자신의 집 안에 있어야 합니다!
+Scripts.Players.Boot.NoHouseError:			소유한 집이 없습니다!
+Scripts.Players.Boot.NoOneOnline:			강퇴할 수 있는 해당 이름의 접속자가 없습니다!
+Scripts.Players.Boot.YouRemoved:			{0}에 의해 집에서 내보내졌습니다!
+
+## /bountyrent
+#Scripts.Players.Bountyrent.InHouseError:		       You have to be in your house to use this command!
+#Scripts.Players.Bountyrent.NoHouseError:		       You don't own a house!
+Scripts.Players.Bountyrent.AlreadyMaxMoney:            이 집의 금고에는 이미 최대 금액이 들어 있습니다!
+Scripts.Players.Bountyrent.CmdUsage:                   현재 현상금 점수 1점은 동화 {0}닢으로 환산됩니다. /bountyrent personal/guild <금액>으로 납부하세요.
+Scripts.Players.Bountyrent.CorrectFormat:              올바른 형식은 /bountyrent personal | guild <금액>입니다
+Scripts.Players.Bountyrent.NotAHouseGuildLeader:       이 집은 당신이 길드마스터인 길드의 소유가 아닙니다!
+#Apo: please replace "NotEnoughBp" with the correct english message
+Scripts.Players.Bountyrent.NotEnoughBp:                현상금 점수가 부족합니다!
+#Apo: please replace "NotEnoughGuildBp" with the correct english message
+Scripts.Players.Bountyrent.NotEnoughGuildBp:           길드 현상금 점수가 부족합니다!
+Scripts.Players.Bountyrent.NoPayRentPerm:              여기서 /bountyrent를 사용할 권한이 없습니다!
+Scripts.Players.Bountyrent.RangeOfAHouse:		       /bountyrent 명령어를 사용하려면 집 근처에 있어야 합니다.
+Scripts.Players.Bountyrent.ToManyMoney:                금고에 들어갈 수 있는 금액을 초과했습니다! 납부가 취소되었습니다.
+Scripts.Players.Bountyrent.YouSpend:                   개인 현상금 점수 {0}점을 사용해 금화 {1}닢 상당의 임대료를 냈습니다.
+Scripts.Players.Bountyrent.YouSpendGuild:              길드 현상금 점수 {0}점을 사용해 금화 {1}닢 상당의 임대료를 냈습니다.
+
+## /rent
+#Scripts.Players.Rent.InHouseError:		               You have to be in your house to use this command!
+#Scripts.Players.Rent.NoHouseError:		       You don't own a house!
+Scripts.Players.Rent.AlreadyMaxMoney:            이 집의 금고에는 이미 최대 금액이 들어 있습니다!
+Scripts.Players.Rent.CmdUsage:                   임대료를 내려면 /rent personal/guild <금화>를 사용하세요.
+Scripts.Players.Rent.CorrectFormat:              올바른 형식은 /rent personal | guild <금화>입니다
+Scripts.Players.Rent.NotAHouseGuildLeader:       이 집은 당신의 길드 소유가 아닙니다!
+Scripts.Players.Rent.NotEnoughMoney:                금화가 부족합니다!
+Scripts.Players.Rent.NotEnoughGuildMoney:           길드 금화가 부족합니다!
+Scripts.Players.Rent.NoPayRentPerm:              여기서 /rent를 사용할 권한이 없습니다!
+Scripts.Players.Rent.NoHouse:		            소유한 집이 없습니다!
+Scripts.Players.Rent.NoGuildHouse:		            당신의 길드는 집을 소유하고 있지 않습니다!
+Scripts.Players.Rent.TooMuchMoney:                금고에 들어갈 수 있는 금액을 초과했습니다!
+Scripts.Players.Rent.YouSpend:                   개인 금화 {0}을(를) 사용해 임대료를 냈습니다.
+Scripts.Players.Rent.YouSpendGuild:              길드 금화 {0}을(를) 사용해 임대료를 냈습니다.
+
+## /broadcast
+Scripts.Players.Broadcast.NoHere:			여기서는 방송할 수 없습니다.
+Scripts.Players.Broadcast.NoText:			방송할 내용을 입력해야 합니다...
+Scripts.Players.Broadcast.Muted:			음소거 상태라 방송할 수 없습니다.
+Scripts.Players.Battlegroup.NoBattleGroup:	배틀그룹에 속해 있지 않습니다.
+Scripts.Players.Chatgroup.NoChatGroup:		채팅 그룹에 속해 있지 않습니다.
+Scripts.Players.Speech.SlowDown:			천천히 말하세요! 한 단어씩 생각하고 입력하세요!
+
+## /train
+Scripts.Players.Train.SkillNotFound:        해당 스킬을 찾을 수 없습니다.
+Scripts.Players.Train.CannotTrainSpecAgain: 이번 레벨에서는 이 전문화를 더 훈련할 수 없습니다!
+Scripts.Players.Train.AlreadyTrainedToAmount: 이미 그 수치까지 훈련했습니다!
+Scripts.Players.Train.NotEnoughPoints:      해당 전문화에는 전문화 포인트 {0}점이 필요합니다! 이번 레벨에 남은 전문화 포인트가 부족합니다.
+Scripts.Players.Train.ValidTrainerRequired: 자신의 클래스에 맞는 트레이너를 선택해야 합니다.
+Scripts.Players.Train.Complete:             훈련이 완료되었습니다!
+
+## /task
+Scripts.Players.Task.WindowTitle:           과업 (스냅샷)
+Scripts.Players.Task.YouAreOn:              현재 과업: {0}
+Scripts.Players.Task.WhatToDo:              해야 할 일: {0}
+Scripts.Players.Task.ExpiresAt:             과업 만료 시간: {0}
+Scripts.Players.Task.DoneCount:             지금까지 {1}개 중 {0}개의 과업을 완료했습니다.
+Scripts.Players.Task.NoMoreAtLevel:         현재 레벨에서는 더 이상 과업을 수행할 수 없습니다.
+Scripts.Players.Task.NoPending:             현재 진행 중인 과업이 없습니다.
+
+## /level
+Scripts.Players.Level.TrainerRequired:      이 명령어를 사용하려면 트레이너 근처에 있어야 합니다.
+Scripts.Players.Level.ClassCannotUse:       이 클래스는 /level 명령어를 사용할 수 없습니다.
+Scripts.Players.Level.RequirementMissing:   계정에 레벨 {0} 캐릭터가 없습니다!
+Scripts.Players.Level.TargetOnly:           /level은 레벨 {0}까지만 올릴 수 있습니다.
+Scripts.Players.Level.Rewarded:             레벨 {0}에 도달할 만큼의 경험치를 받았습니다. 레벨을 올리려면 트레이너를 오른쪽 클릭하세요!
+Scripts.Players.Level.Disabled:             이 서버에서는 /level 명령어를 사용할 수 없습니다.
+
+## /whisper
+PlayerCommands.Whisper.SlowDown:            조금 천천히 말하세요! 한 단어씩 생각하고 말해 보세요!
+PlayerCommands.Whisper.SelectTarget:        속삭일 대상을 선택하세요!
+PlayerCommands.Whisper.NoSelf:              음... 자기 자신에게 속삭일 수는 없습니다!
+
+## /craftmacro
+PlayerCommands.CraftMacro.UseSet:           사용법: /craft set <#>
+PlayerCommands.CraftMacro.QueueSetItems:    제작 대기열을 {0}개로 설정했습니다.
+PlayerCommands.CraftMacro.QueueReset:       제작 대기열을 1개로 초기화하고 선택한 아이템을 해제했습니다.
+PlayerCommands.CraftMacro.QueueSet:         제작 대기열을 {0}개로 설정했습니다.
+PlayerCommands.CraftMacro.TargetMerchant:   상인을 대상으로 선택해야 합니다.
+PlayerCommands.CraftMacro.NoRecipe:         선택된 제작법이 없습니다. 먼저 아이템 제작을 시작하세요.
+PlayerCommands.CraftMacro.UseBuyTo:         사용법: /craft buyto <#>
+PlayerCommands.CraftMacro.BoughtItems:      {1} {0}개 제작에 필요한 재료를 구매했습니다.
+
+## /repair
+PlayerCommands.Repair.FullHealth:           해당 구성요소는 이미 최대 내구도입니다!
+PlayerCommands.Repair.RazedTower:           파괴된 타워는 수리할 수 없습니다!
+PlayerCommands.Repair.SiegeDecayed:         이 공성 장비는 너무 낡아 더 이상 수리할 수 없습니다!
+PlayerCommands.Repair.EndCurrentAction:     수리하기 전에 현재 행동을 먼저 끝내야 합니다!
+PlayerCommands.Repair.WhileMoving:          이동 중에는 수리할 수 없습니다.
+PlayerCommands.Repair.WhileDead:            죽은 상태에서는 수리할 수 없습니다.
+PlayerCommands.Repair.WhileSitting:         앉은 상태에서는 수리할 수 없습니다.
+PlayerCommands.Repair.WhileInCombat:        전투 중에는 수리할 수 없습니다.
+PlayerCommands.Repair.ObjectUnderAttack:    공격받는 대상은 수리할 수 없습니다.
+PlayerCommands.Repair.TooFar:               수리하려는 구성요소와 너무 멀리 떨어져 있습니다.
+PlayerCommands.Repair.NeedWood:             나무가 {0}유닛 더 필요합니다!
+PlayerCommands.Repair.NeedWoodworking:      수리하려면 목공 스킬이 필요합니다.
+PlayerCommands.Repair.Timer:                수리 중: {0}
+PlayerCommands.Repair.SiegeSuccess:         공성 장비를 15% 수리했습니다!
+PlayerCommands.Repair.ComponentSuccess:     구성요소를 5% 수리했습니다!
+PlayerCommands.Repair.Failed:               구성요소 수리에 실패했습니다!
+
+## /safety
+PlayerCommands.Safety.Off:                  안전 플래그가 꺼졌습니다. 이제 비동맹 플레이어를 공격할 수 있고, 공격받을 수도 있습니다.
+PlayerCommands.Safety.Info1:                안전 플래그는 캐릭터가 전투에 참여하지 않도록 보호합니다.
+PlayerCommands.Safety.Info2:                레벨 10 미만일 때 지정된 지역에서 비동맹 플레이어와의 전투를 막아 줍니다.
+PlayerCommands.Safety.Info3:                이 지역에서 PvP 전투에 참여하려면 /safety off를 입력하세요. 한 번 끄면 다시 켤 수 없습니다!
+PlayerCommands.Safety.AlreadyOff:           안전 플래그는 이미 꺼져 있습니다.
+
+## Common command messages
+PlayerCommands.Common.NoPermission:         그 작업을 할 권한이 없습니다.
+PlayerCommands.Common.SlowDown:             조금 천천히 하세요!
+
+## /friend
+PlayerCommands.Friend.NotFoundOrCannotAdd:  해당 이름의 플레이어가 없거나 이 플레이어를 추가할 수 없습니다.
+PlayerCommands.Friend.NameNotUnique:        캐릭터 이름이 유일하지 않습니다.
+PlayerCommands.Friend.TypeFullNameToRemove: 목록에서 {0}을(를) 제거하려면 전체 이름을 입력하세요.
+PlayerCommands.Friend.NoSelf:               자기 자신은 추가할 수 없습니다!
+PlayerCommands.Friend.Removed:              {0}을(를) 친구 목록에서 제거했습니다!
+PlayerCommands.Friend.Added:                {0}을(를) 친구 목록에 추가했습니다!
+
+## /classrog
+PlayerCommands.ClassRog.CurrentCap:         현재 상한: {0}
+PlayerCommands.ClassRog.InputTooHigh:       입력값이 너무 높습니다. 상한 {0}(으)로 적용합니다.
+PlayerCommands.ClassRog.InputTooLow:        입력값은 0 이상이어야 합니다. 현재 상한: {0}
+PlayerCommands.ClassRog.Updated:            이제 클래스 외 ROG를 {0}% 확률로 받습니다.
+
+## /knock /house
+PlayerCommands.Knock.Other:                 {0}님이 문을 두드리고 있습니다.
+PlayerCommands.Knock.Self:                  문을 두드립니다.
+PlayerCommands.GroundAssist.Disabled:       이 서버에서는 /groundassist 명령어를 사용할 수 없습니다.
+PlayerCommands.HousePoints.NeedHouse:       이 명령어를 사용하려면 주택 안에 있어야 합니다!
+PlayerCommands.HouseFace.NoHouse:           주택을 찾을 수 없습니다.
+PlayerCommands.HouseFace.FaceHouse:         {0}번 주택을 바라봅니다.
+
+## /random /roll
+PlayerCommands.Random.Help:                 무작위로 뽑을 최대 숫자를 입력해야 합니다!
+PlayerCommands.Random.LowNumber:            최대 숫자는 1보다 커야 합니다!
+PlayerCommands.Random.ResultSelf:           1에서 {0} 사이의 무작위 숫자를 뽑았습니다: {1}
+PlayerCommands.Random.ResultOther:          {0}님이 1에서 {1} 사이의 무작위 숫자를 뽑았습니다: {2}
+PlayerCommands.Roll.Help:                   굴릴 주사위 개수를 입력해야 합니다!
+PlayerCommands.Roll.WrongNumber:            주사위 개수는 1에서 {0} 사이여야 합니다!
+PlayerCommands.Roll.ResultSelf:             주사위 {0}개를 굴려 {1}이(가) 나왔습니다.
+PlayerCommands.Roll.ResultOther:            {0}님이 주사위 {1}개를 굴려 {2}이(가) 나왔습니다.
+
+## /setwho /noqueue /stuck /summon
+PlayerCommands.SetWho.Specify:              class 또는 trade 중 무엇으로 바꿀지 지정해야 합니다.
+PlayerCommands.SetWho.NeedProfession:       /who 메시지에 표시할 제작 직업이 필요합니다.
+PlayerCommands.SetWho.HideCraftTitle:       이제 /who에 제작 칭호가 표시되지 않습니다.
+PlayerCommands.SetWho.ShowCraftTitle:       이제 /who에 제작 칭호가 표시됩니다.
+PlayerCommands.NoQueue.Enabled:             이제 큐 기능을 사용합니다! 큐 기능을 끄려면 '/noqueue'를 사용하세요.
+PlayerCommands.NoQueue.Disabled:            더 이상 큐 기능을 사용하지 않습니다! 큐 기능을 켜려면 '/noqueue'를 사용하세요.
+PlayerCommands.Stuck.NoSafePosition:        안전한 위치를 찾을 수 없습니다. 대신 바인드 스톤을 사용하세요.
+PlayerCommands.Summon.BadFormat:            명령어 형식이 올바르지 않습니다.
+
+## /spacing
+PlayerCommands.Spacing.OnlyBonedancers:     본댄서만 이 명령어를 사용할 수 있습니다!
+PlayerCommands.Spacing.Commands:            간격 명령어:
+PlayerCommands.Spacing.NormalHelp:          '/spacing normal' 미니언 사이를 일반 간격으로 둡니다.
+PlayerCommands.Spacing.BigHelp:             '/spacing big' 미니언 사이를 더 넓게 둡니다.
+PlayerCommands.Spacing.HugeHelp:            '/spacing huge' 미니언 사이를 매우 넓게 둡니다.
+PlayerCommands.Spacing.NoCommander:         커맨더가 없습니다!
+PlayerCommands.Spacing.NoMinions:           미니언이 없습니다!
+PlayerCommands.Spacing.Unrecognized:        알 수 없는 인자입니다: {0}
+
+## /house
+PlayerCommands.House.HelpGmInfo:            GM: info - 근처 주택 정보를 표시합니다.
+PlayerCommands.House.HelpAdminModel:        Admin: model <1 - 12> - 주택 모델을 변경합니다.
+PlayerCommands.House.HelpAdminRestart:      Admin: restart - 주택 관리자를 재시작합니다.
+PlayerCommands.House.HelpAdminAddHookpoints: Admin: addhookpoints - 누락된 훅포인트 추가를 허용합니다.
+PlayerCommands.House.HelpAdminRemove:       Admin: remove <YES> - 이 주택을 제거합니다!
+PlayerCommands.House.NoHouseOwned:          소유한 주택이 없습니다.
+PlayerCommands.House.AddHookpointsOff:      훅포인트 추가가 꺼졌습니다!
+PlayerCommands.House.AddHookpointsOn:       훅포인트 추가가 켜졌습니다!
+PlayerCommands.House.StandCloser:           주택에 더 가까이 서야 합니다!
+PlayerCommands.House.ValidModels:           올바른 주택 모델은 1 - 12입니다!
+PlayerCommands.House.ModelChanged:          주택 모델을 {0}(으)로 변경했습니다!
+PlayerCommands.House.ConfirmRemove:         제거하려면 'YES'로 확인해야 합니다.
+PlayerCommands.House.Removed:               주택을 제거했습니다!
+PlayerCommands.XFire.On:                    XFire 플래그가 켜졌습니다. XFire가 설치되어 있다면 캐릭터 정보가 XFire 서비스로 전송됩니다. 전송을 끄려면 '/xfire off'를 사용하세요.
+PlayerCommands.XFire.Off:                   XFire 플래그가 꺼졌습니다. 더 이상 캐릭터 정보가 XFire 서비스로 전송되지 않습니다.
+Scripts.Players.Groupsort.SwitchUsage:      사용법: '/groupsort switch <#> <#>' - 두 그룹원의 위치를 바꿉니다.
+Scripts.Players.Groupsort.CannotSwitchLeader: 그룹장은 바꿀 수 없습니다. 대신 /makeleader를 사용하세요.
+Scripts.Players.Respec.BoughtSingleLine:    단일 라인 리스펙을 구매했습니다!
+Scripts.Players.Respec.RegainSpecPoints:    전문화 포인트 {0}점을 되돌려 받았습니다!
+Scripts.Players.Respec.RegainRealmSpecPoints: 렐름 전문화 포인트 {0}점을 되돌려 받았습니다!
+Scripts.Player.Guild.NotAllianceMember:     당신의 길드는 동맹에 속해 있지 않습니다!
+
+## /targetstats /targeteffects
+Scripts.Players.Target.Invalid:             대상이 없거나 올바르지 않은 대상을 선택했습니다.
+Scripts.Players.Target.CannotUseOnPlayer:   이 명령어는 다른 플레이어에게 사용할 수 없습니다.
+
+## /backupstyle
+Scripts.Players.BackupStyle.Disabled:       이 명령어는 이 서버에서 비활성화되어 있습니다.
+Scripts.Players.BackupStyle.NextStyle:      다음에 사용하는 스타일이 자동 백업 스타일로 설정됩니다.
+Scripts.Players.BackupStyle.NextAnytimeStyle: 다음에 사용하는 애니타임 스타일이 자동 백업 스타일로 설정됩니다.
+Scripts.Players.BackupStyle.Cleared:        더 이상 자동 백업 스타일을 사용하지 않습니다.
+
+## /search
+Scripts.Players.QuestCommand.CantDoHere:    여기서는 할 수 없습니다!
+
+## /sell
+Scripts.Players.Sell.TargetMerchantRequired: 상인을 대상으로 선택해야 합니다.
+Scripts.Players.Sell.Usage:                 사용법: /sell <가방>, /sell <가방1-가방2>, /sell all
+
+## /say
+Scripts.Players.Say.NoText:				말할 내용을 입력해야 합니다...
+Scripts.Players.Say.Muted:				음소거 상태라 말할 수 없습니다.
+
+## /yell
+Scripts.Players.Yell.Muted:				음소거 상태라 외칠 수 없습니다.
+Scripts.Players.Yell.HelpSelf:				도움을 요청해 외칩니다!
+Scripts.Players.Yell.HelpFrom:				{0}이(가) {1}쪽에서 도움을 요청해 외칩니다!
+Scripts.Common.Direction.North:			북쪽
+Scripts.Common.Direction.NorthEast:		북동쪽
+Scripts.Common.Direction.East:				동쪽
+Scripts.Common.Direction.SouthEast:		남동쪽
+Scripts.Common.Direction.South:			남쪽
+Scripts.Common.Direction.SouthWest:		남서쪽
+Scripts.Common.Direction.West:				서쪽
+Scripts.Common.Direction.NorthWest:		북서쪽
+
+## /xp
+Scripts.Players.XP.On:					XP 플래그가 켜졌습니다. 경험치를 획득합니다. 경험치 획득을 중지하려면 '/xp off'를 사용하세요.
+Scripts.Players.XP.Off:					XP 플래그가 꺼졌습니다. 더 이상 경험치를 획득하지 않습니다. 다시 획득하려면 '/xp on'을 사용하세요.
+Scripts.Players.XPStats.On:				자세한 경험치 획득 통계를 표시합니다. 중지하려면 '/xpstats off'를 사용하세요.
+Scripts.Players.XPStats.Off:				더 이상 자세한 경험치 획득 통계를 표시하지 않습니다. 다시 보려면 '/xpstats on'을 사용하세요.
+Scripts.Players.XPStats.Verbose:			상세 경험치 획득 통계를 표시합니다. 중지하려면 '/xpstats off'를 사용하세요.
+
+## /combatstats
+Scripts.Players.CombatStats.On:			자세한 전투 통계를 표시합니다. 중지하려면 '/combatstats off'를 사용하세요.
+Scripts.Players.CombatStats.Off:			더 이상 자세한 전투 통계를 표시하지 않습니다. 다시 보려면 '/combatstats on'을 사용하세요.
+
+## /cloak
+Scripts.Players.Cloak.AlreadyVisible:		망토가 이미 보이는 상태입니다.
+Scripts.Players.Cloak.AlreadyInvisible:		망토가 이미 숨겨진 상태입니다.
+
+## /sprint
+Scripts.Players.Sprint.NoAbility:			질주 능력이 없습니다.
+
+## /settitle
+Scripts.Players.SetTitle.Forced:			현재 칭호는 변경할 수 없습니다.
+
+## /cancelstyle
+Scripts.Players.Cancelstyle.Set:			스타일 취소가 {0}(으)로 설정되었습니다.
+Scripts.Players.Cancelstyle.On:				ON
+Scripts.Players.Cancelstyle.Off:			OFF
+
+## /chatgroup
+Scripts.Players.Chatgroup.Usage:			사용법: /c <내용>
+Scripts.Players.Chatgroup.UsageInvite:			사용법: /cg invite <플레이어이름>"
+Scripts.Players.Chatgroup.Help.Help:			/cg help - 모든 채팅그룹 명령어를 표시합니다
+Scripts.Players.Chatgroup.Help.Invite:			/cg invite [플레이어이름] - 지정한 플레이어를 채팅그룹에 초대합니다
+Scripts.Players.Chatgroup.Help.JoinPrivate:		/cg join [중재자 이름] [비밀번호] - 비밀번호가 설정된 비공개 채팅그룹에 참가합니다
+Scripts.Players.Chatgroup.Help.JoinPublic:		/cg join [중재자 이름] - 중재자 이름으로 공개 채팅그룹에 참가합니다
+Scripts.Players.Chatgroup.Help.Leader:			/cg leader <이름> - 다른 구성원을 채팅그룹 리더로 지정합니다
+Scripts.Players.Chatgroup.Help.Leave:			/cg leave - 채팅그룹에서 나갑니다
+Scripts.Players.Chatgroup.Help.Listen:			/cg listen - 중재자와 리더만 말할 수 있는 듣기 모드로 전환합니다
+Scripts.Players.Chatgroup.Help.PasswordClear:		/cg password clear - 현재 비밀번호를 삭제합니다. 중재자 전용
+Scripts.Players.Chatgroup.Help.PasswordDisplay:		/cg password - 현재 채팅그룹 비밀번호를 표시합니다. 중재자 전용
+Scripts.Players.Chatgroup.Help.PasswordNew:		/cg password [새비밀번호]
+Scripts.Players.Chatgroup.Help.Private:			/cg private - 채팅그룹을 초대 또는 비밀번호 전용으로 설정합니다
+Scripts.Players.Chatgroup.Help.Public:			/cg public - 누구나 /cg join으로 참가할 수 있는 공개 채팅그룹으로 설정합니다
+Scripts.Players.Chatgroup.Help.Remove:			/cg remove [플레이어이름] - 지정한 플레이어를 채팅그룹에서 내보냅니다
+Scripts.Players.Chatgroup.Help.Usage:			/cg 사용법:
+Scripts.Players.Chatgroup.Help.Who:			/cg who - 채팅그룹의 모든 구성원을 표시합니다
+Scripts.Players.Chatgroup.InChatGroup:			이 명령어를 사용하려면 채팅그룹에 속해 있어야 합니다.
+Scripts.Players.Chatgroup.InviteYourself:		자기 자신을 채팅그룹에 초대할 수 없습니다.
+Scripts.Players.Chatgroup.Joined:			채팅그룹에 참가했습니다.
+Scripts.Players.Chatgroup.JoinChatGroup:		{0}의 채팅그룹에 참가하시겠습니까?
+Scripts.Players.Chatgroup.MemberJoined:			{0}이(가) 채팅그룹에 참가했습니다.
+Scripts.Players.Chatgroup.LeaderCommand:		이 명령어를 사용하려면 채팅그룹 리더여야 합니다.
+Scripts.Players.Chatgroup.LeaderInvite:			플레이어를 채팅그룹에 초대하려면 리더여야 합니다.
+Scripts.Players.Chatgroup.ListenMode:			채팅그룹 듣기 모드가 전환되었습니다
+Scripts.Players.Chatgroup.Moderator:			{0}이(가) 중재자가 되었습니다.
+Scripts.Players.Chatgroup.NoPlayer:			그 이름의 플레이어가 없습니다.
+Scripts.Players.Chatgroup.NotChatGroupLeader:		이 플레이어는 채팅그룹 리더가 아닙니다.
+Scripts.Players.Chatgroup.NotChatGroupMember:		이 플레이어는 채팅그룹 구성원이 아닙니다.
+Scripts.Players.Chatgroup.NotPublic:			이 채팅그룹은 공개 상태가 아닙니다.
+Scripts.Players.Chatgroup.OnlyModerator:		이 채팅그룹에서는 중재자만 말할 수 있습니다.
+Scripts.Players.Chatgroup.OwnChatGroup:			자신의 채팅그룹에는 참가할 수 없습니다.
+Scripts.Players.Chatgroup.Password:			이 채팅그룹의 현재 비밀번호는 {0}입니다.
+Scripts.Players.Chatgroup.PasswordUnset:			이 채팅그룹의 비밀번호는 현재 설정되어 있지 않습니다.
+Scripts.Players.Chatgroup.PasswordChanged:		이 채팅그룹의 비밀번호가 {0}(으)로 설정되었습니다.
+Scripts.Players.Chatgroup.PasswordClear:		이 채팅그룹의 비밀번호가 삭제되었습니다.
+Scripts.Players.Chatgroup.PlayerInChatgroup:		{0}은(는) 이미 채팅그룹에 있습니다.
+Scripts.Players.Chatgroup.Left:				채팅그룹에서 나갔습니다.
+Scripts.Players.Chatgroup.MemberLeft:			{0}이(가) 채팅그룹을 나갔습니다.
+Scripts.Players.Chatgroup.Private:			이제 비공개 채팅그룹입니다.
+Scripts.Players.Chatgroup.PrivateAlready:			이미 비공개 채팅그룹입니다.
+Scripts.Players.Chatgroup.Public:			이제 공개 채팅그룹입니다.
+Scripts.Players.Chatgroup.PublicAlready:			이미 공개 채팅그룹입니다.
+
+## /cmdhelp
+Scripts.Players.Cmdhelp.NoCommand:			명령어 {0}은(는) 존재하지 않습니다.
+Scripts.Players.Cmdhelp.PlvlCommands:		plvl {0}에서 사용 가능한 명령어
+Scripts.Players.Cmdhelp.Usage:				사용법:
+
+## /disband
+Scripts.Players.Disband.Disbanded:			{0}이(가) 그룹에서 제외되었습니다.
+Scripts.Players.Disband.NoPlayer:			그룹에 그런 이름의 플레이어가 없습니다.
+Scripts.Players.Disband.NotInGroup:			그룹에 속해 있지 않습니다.
+Scripts.Players.Disband.NotLeader:			당신은 그룹 리더가 아닙니다.
+Scripts.Players.Disband.NoYourself:			그런 방식으로 자기 자신을 제외할 수 없습니다.
+
+## /dismount
+Scripts.Players.Dismount:				탈것에 타고 있지 않습니다!
+GamePlayer.IsOnHorse.DismountSteed:			        말에서 내리려고 합니다.
+
+## /duel
+Scripts.Players.Duel.ChallengesYou:			{0}이(가) 결투를 신청했습니다! 시작하려면 /duel accept, 거절하려면 /duel decline을 입력하세요.
+Scripts.Players.Duel.DuelOptions:			/duel 옵션은 challenge/decline/cancel/surrender/accept 입니다
+Scripts.Players.Duel.EnemyRealm:			적 렐름 플레이어와는 결투할 수 없습니다.
+Scripts.Players.Duel.NeedTarget:			결투하려면 대상을 선택해야 합니다!
+Scripts.Players.Duel.ConsideringDuel:			현재 고려 중인 결투가 없습니다.
+Scripts.Players.Duel.NotInDuel:				결투 중이 아닙니다!
+Scripts.Players.Duel.PlayerVsPlayer:			{0}이(가) {1}에게 항복했습니다!
+Scripts.Players.Duel.SafeZone:				이곳은 안전 지대라 결투할 수 없습니다!
+Scripts.Players.Duel.TargetAccept:			{0}이(가) 결투를 수락했습니다. 전투를 시작하세요!
+Scripts.Players.Duel.TargetAlreadyChallenging:		{0}은(는) 이미 누군가에게 결투를 신청 중입니다.
+Scripts.Players.Duel.TargetAlreadyConsidering:		{0}은(는) 이미 결투를 고려 중입니다.
+Scripts.Players.Duel.TargetCancel:			{0}이(가) 결투 초대를 취소했습니다.
+Scripts.Players.Duel.TargetDeclines:			{0}이(가) 결투 초대를 거절했습니다.
+Scripts.Players.Duel.TargetHealth:			대상의 생명력이 가득 차 있어야 합니다.
+Scripts.Players.Duel.TargetInCombat:			{0}은(는) 전투 중입니다.
+Scripts.Players.Duel.TargetInDuel:			{0}은(는) 이미 결투 중입니다.
+Scripts.Players.Duel.TargetInGroup:			{0}은(는) 그룹에 속해 있습니다.
+Scripts.Players.Duel.TargetSurrender:			{0}이(가) 당신에게 항복했습니다!
+Scripts.Players.Duel.YouAccept:				결투를 수락했습니다! 전투를 시작하세요!
+Scripts.Players.Duel.YouAlreadyChallenging:		이미 {0}에게 결투를 신청 중입니다. 다른 사람에게 신청하기 전에 먼저 취소하세요.
+Scripts.Players.Duel.YouAlreadyConsidering:		이미 {0}와의 결투를 고려 중입니다. 다른 사람에게 신청하기 전에 먼저 거절하세요.
+Scripts.Players.Duel.YouCancel:				결투 초대를 취소했습니다.
+Scripts.Players.Duel.YouChallenge:			{0}에게 결투를 신청했습니다!
+Scripts.Players.Duel.YouDecline:			{0}의 결투 초대를 거절했습니다.
+Scripts.Players.Duel.YouHaventChallenged:		아직 누구에게도 결투를 신청하지 않았습니다.
+Scripts.Players.Duel.YouHealth:				생명력이 가득 차 있어야 합니다.
+Scripts.Players.Duel.YouInCombat:			전투 중입니다.
+Scripts.Players.Duel.YouInDuel:				이미 결투 중입니다.
+Scripts.Players.Duel.YouInGroup:			그룹에 속해 있습니다.
+Scripts.Players.Duel.YouSurrender:			{0}에게 항복했습니다!
+GamePlayer.Die.DuelDefeated:					{0}이(가) 결투에서 {1}에게 패배했습니다!
+GamePlayer.Duel.Die.KillerWinsDuel:				        {0}이(가) 결투에서 승리했습니다!
+GamePlayer.DuelStop.DuelEnds:					결투가 끝났습니다!
+GamePlayer.Release.CantReleaseDuel:				결투 사망 상태에서는 릴리즈를 변경할 수 없습니다!
+
+## /freelevel
+PLCommands.FreeLevel.AboveMaximumLevel:	            무료 레벨을 받을 수 있는 최대 허용 레벨을 넘었습니다.
+PLCommands.FreeLevel.EligibleFreeLevel:	            무료 레벨을 받을 수 있습니다! 트레이너를 클릭해 받으세요. 버리려면 '/freelevel decline'을 입력하세요.
+GamePlayer.OnLevelUp.FreeLevelEligible:		무료 레벨을 받을 수 있습니다! 트레이너를 클릭해 받으세요. 버리려면 /freelevel decline을 입력하세요.
+PlayerInitRequestHandler.FreeLevel:			            무료 레벨을 받을 수 있습니다! 트레이너를 클릭해 받으세요. 버리려면 /freelevel decline을 입력하세요.
+PLCommands.FreeLevel.FreeLevelIn:	                {0}일 {1}시간 {2}분 후 무료 레벨을 받을 수 있습니다.
+PLCommands.FreeLevel.FreeLevelIn2:	                다음 레벨 이후, 그리고 {0}일 {1}시간 {2}분 후 무료 레벨을 받을 수 있습니다.
+PLCommands.FreeLevel.FreeLevelSoon:	                다음 레벨에 도달하면 무료 레벨을 받을 수 있습니다.
+PLCommands.FreeLevel.NoFreeLevel:	                받을 수 있는 무료 레벨이 없습니다!
+PLCommands.FreeLevel.Removed:		                무료 레벨이 제거되었습니다. 다음 무료 레벨 타이머가 초기화되었습니다.
+
+## /gc (Guild)
+Scripts.Player.Guild.Help.GuildACancel:			'/gc acancel' - 동맹 초대를 취소합니다
+Scripts.Player.Guild.Help.GuildAAccept:			'/gc aaccept' - 동맹 초대를 수락합니다
+Scripts.Player.Guild.Help.GuildAccept:			'/gc accept' - 길드 초대를 수락합니다
+Scripts.Player.Guild.Help.GuildADecline:		'/gc adecline' - 동맹 초대를 거절합니다
+Scripts.Player.Guild.Help.GuildAInvite:			'/gc ainvite' - 다른 길드를 동맹에 초대합니다
+Scripts.Player.Guild.Help.GuildALeave:			'/gc aleave' - 길드를 동맹에서 탈퇴시킵니다
+Scripts.Player.Guild.Help.GuildAlli:			'/gc alliance' - 동맹 정보를 표시합니다
+Scripts.Player.Guild.Help.GuildAMotd:			'/gc amotd <내용>' - 동맹 공지 메시지를 설정합니다
+Scripts.Player.Guild.Help.GuildARemove:			'/gc aremove' - 길드 전체를 동맹에서 제거합니다
+Scripts.Player.Guild.Help.GuildALeader:			'/gc aleader' - 다른 길드를 동맹장으로 승격합니다
+Scripts.Player.Guild.Help.GuildARemoveAlli:		'/gc aremove alliance [번호]' - 목록 번호에 해당하는 길드를 동맹에서 제거합니다
+Scripts.Player.Guild.Help.GuildAutoRemove:		'/gc autoremove <플레이어이름>' - 해당 플레이어를 자동 제거 대상으로 지정합니다
+Scripts.Player.Guild.Help.GuildAutoRemoveAcc:		'/gc autoremove account <플레이어이름>' - 해당 계정의 캐릭터들을 자동 제거 대상으로 지정합니다
+Scripts.Player.Guild.Help.GuildBannerSummon:		'/gc summon' - 보유 중인 길드 배너를 소환합니다
+Scripts.Player.Guild.Help.GuildBuff:			'/gc buff <crafting, rps, xp>' - 길드 버프를 설정합니다
+Scripts.Player.Guild.Help.GuildBuyBanner:		'/gc buybanner' - 포인트를 사용해 길드 배너를 구매합니다
+Scripts.Player.Guild.Help.GuildCancel:			'/gc cancel <옵션> [값]' - 이전에 요청한 길드 명령을 취소합니다
+Scripts.Player.Guild.Help.GuildClaim:			'/gc claim' - 성을 점령합니다
+Scripts.Player.Guild.Help.GuildDecline:			'/gc decline' - 길드 가입 초대를 거절합니다
+Scripts.Player.Guild.Help.GuildDemote:			'/gc demote [이름] <랭크번호>' - 플레이어를 더 낮은 길드 랭크로 강등합니다
+Scripts.Player.Guild.Help.GuildDeposit:			'/gc deposit <금액>' - 길드 은행에 돈을 입금합니다
+Scripts.Player.Guild.Help.GuildDues:			'/gc dues <금액>' - 길드 세율을 설정합니다. {0}-{1}%, 0은 끔
+Scripts.Player.Guild.Help.GuildEdit:			'/gc edit' - 길드 랭크 편집 옵션 목록을 표시합니다
+Scripts.Player.Guild.Help.GuildEditACHear:		'/gc edit <랭크번호> achear <y/n>' - 해당 랭크의 동맹 채팅 듣기 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditACSpeak:		'/gc edit <랭크번호> acspeak <y/n>' - 해당 랭크의 동맹 채팅 말하기 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditAlli:		'/gc edit <랭크번호> alli <y/n>' - 해당 랭크의 동맹 가입/탈퇴 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditClaim:		'/gc edit <랭크번호> claim <y/n>' - 해당 랭크의 성 점령 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditDues:		'/gc edit <랭크번호> dues <y/n>' - 해당 랭크의 길드 세율 변경 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditEmblem:		'/gc edit <랭크번호> emblem <y/n>' - 해당 랭크의 길드 문장 착용 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditGCHear:		'/gc edit <랭크번호> gchear <y/n>' - 해당 랭크의 길드 채팅 듣기 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditGCSpeak:		'/gc edit <랭크번호> gcspeak <y/n>' - 해당 랭크의 길드 채팅 말하기 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditInvite:		'/gc edit <랭크번호> invite <y/n>' - 해당 랭크의 길드 초대 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditOCHear:		'/gc edit <랭크번호> ochear <y/n>' - 해당 랭크의 장교 채팅 듣기 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditOCSpeak:		'/gc edit <랭크번호> ocspeak <y/n>' - 해당 랭크의 장교 채팅 말하기 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditPromote:		'/gc edit <랭크번호> promote <y/n>' - 해당 랭크의 승급/강등 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditRankLevel:		'/gc edit <랭크번호> ranklevel <레벨>' - 랭크 계층을 설정합니다
+Scripts.Player.Guild.Help.GuildEditRelease:		'/gc edit <랭크번호> release <y/n>' - 해당 랭크의 점령 해제 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditRemove:		'/gc edit <랭크번호> remove <y/n>' - 해당 랭크의 길드원 제거 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditTitle:		'/gc edit <랭크번호> title <내용>' - 해당 랭크의 칭호를 설정합니다
+Scripts.Player.Guild.Help.GuildEditUpgrade:		'/gc edit <랭크번호> upgrade <y/n>' - 해당 랭크의 업그레이드 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditView:		'/gc edit <랭크번호> view <y/n>' - 해당 랭크의 /gc info 보기 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEditWithdraw:		'/gc edit <랭크번호> withdraw <y/n>' - 해당 랭크의 길드 은행 출금 권한을 설정합니다
+Scripts.Player.Guild.Help.GuildEmail:			'/gc email <contact@guildpage.com>' - /gc info와 Herald에 표시할 연락 이메일을 설정합니다
+Scripts.Player.Guild.Help.GuildEmblem:			'/gc emblem' - 길드 문장을 설정합니다
+Scripts.Player.Guild.Help.GuildForm:			'/gc form <이름>' - 그룹 구성원으로 새 길드를 창설합니다
+Scripts.Player.Guild.Help.GuildGMAddPlayer:		'/gc addplayer <플레이어> to <길드>' - 플레이어를 길드에 추가합니다
+Scripts.Player.Guild.Help.GuildGMCommands:		게임 마스터 명령어:
+Scripts.Player.Guild.Help.GuildGMCreate:		'/gc create <이름>' - 대상 플레이어를 리더로 새 길드를 만듭니다
+Scripts.Player.Guild.Help.GuildGMPurge:			'/gc purge <이름>' - 길드를 완전히 삭제합니다
+Scripts.Player.Guild.Help.GuildGMRemovePlayer:		'/gc removeplayer <플레이어> from <길드>' - 플레이어를 길드에서 제거합니다
+Scripts.Player.Guild.Help.GuildGMRename:		'/gc rename <기존이름> to <새이름>' - 길드 이름을 변경합니다
+Scripts.Player.Guild.Help.GuildInfo:			'/gc info' - 길드 정보를 표시합니다
+Scripts.Player.Guild.Help.GuildInvite:			'/gc invite [이름]' - 대상 플레이어를 길드에 초대합니다
+Scripts.Player.Guild.Help.GuildLeader:			'/gc leader [이름]' - 후임 길드 리더를 설정합니다
+Scripts.Player.Guild.Help.GuildList:			'/gc list' - 같은 렐름의 모든 길드를 표시합니다
+Scripts.Player.Guild.Help.GuildMotd:			'/gc motd <내용>' - 길드 공지 메시지를 설정합니다
+Scripts.Player.Guild.Help.GuildNoteSelf:		'/gc noteself <메모>' - 길드에 표시할 자신의 메모를 설정합니다
+Scripts.Player.Guild.Help.GuildOMotd:			'/gc omotd <내용>' - 장교 공지 메시지를 설정합니다
+Scripts.Player.Guild.Help.GuildPromote:			'/gc promote [이름] <랭크번호>' - 플레이어를 더 높은 길드 랭크로 승급합니다
+Scripts.Player.Guild.Help.GuildQuit:			'/gc quit' - 길드를 탈퇴합니다
+Scripts.Player.Guild.Help.GuildRanks:			'/gc ranks' - 길드 랭크 정보를 표시합니다
+Scripts.Player.Guild.Help.GuildRemAccount:		'/gc removeaccount <계정이름>' - 해당 계정의 모든 캐릭터를 길드에서 제거합니다
+Scripts.Player.Guild.Help.GuildRemove:			'/gc remove <플레이어이름>' - 플레이어를 길드에서 제거합니다
+Scripts.Player.Guild.Help.GuildUsage:			사용법:
+Scripts.Player.Guild.Help.GuildWebpage:			'/gc webpage <the.guildpage.com>' - /gc info와 Herald에 표시할 길드 웹페이지를 설정합니다
+Scripts.Player.Guild.Help.GuildWho:			'/gc who' - 길드원을 표시합니다
+Scripts.Player.Guild.Help.GuildWithdraw:	'/gc withdraw <금액>' - 길드 은행에서 돈을 출금합니다
+Scripts.Player.Guild.AccountRemoved:			{0}이(가) {1}을(를) 길드에서 제거했습니다.
+Scripts.Player.Guild.ActiveBuff:			이미 활성화된 길드 버프가 있습니다. 만료될 때까지 기다려야 합니다.
+Scripts.Player.Guild.XPBuffActive:              이미 경험치 보너스가 활성화되어 있습니다.
+Scripts.Player.Guild.RPBuffActive:              이미 렐름 포인트 보너스가 활성화되어 있습니다.
+Scripts.Player.Guild.BPBuffActive:              이미 현상금 점수 보너스가 활성화되어 있습니다.
+Scripts.Player.Guild.CraftBuffActive:           이미 제작 보너스가 활성화되어 있습니다.
+Scripts.Player.Guild.AllianceAlreadyOther:		해당 길드는 이미 다른 동맹에 속해 있습니다.
+Scripts.Player.Guild.AllianceAnsCancel:			동맹 제안이 취소되었습니다.
+Scripts.Player.Guild.AllianceDeclined:			동맹 제안을 거절했습니다.
+Scripts.Player.Guild.AllianceDeclinedOther:		동맹 제안이 거절되었습니다.
+Scripts.Player.Guild.AllianceDisabled:			이 서버에서는 동맹이 비활성화되어 있습니다.
+Scripts.Player.Guild.AllianceIndexNotVal:		동맹 번호가 올바른 숫자가 아닙니다.
+Scripts.Player.Guild.AllianceInfo:			{0} 동맹 정보:
+Scripts.Player.Guild.AllianceInvite:			길드를 동맹에 초대했습니다.
+Scripts.Player.Guild.AllianceInvited:			{0}의 동맹에 초대받았습니다.
+Scripts.Player.Guild.AllianceLeader:			동맹장 {0}
+Scripts.Player.Guild.AllianceMax:			동맹 길드 수가 이미 최대라 해당 길드를 초대할 수 없습니다.
+Scripts.Player.Guild.AllianceMember:			{0} - {1}
+Scripts.Player.Guild.AllianceMembers:			동맹 구성 길드:
+Scripts.Player.Guild.AllianceMemNotSel:			같은 동맹의 플레이어를 선택해야 합니다.
+Scripts.Player.Guild.AllianceNoGMSelected:		초대하려는 길드의 길드마스터를 선택해야 합니다.
+Scripts.Player.Guild.AllianceNoLeader:			동맹장이 없습니다
+Scripts.Player.Guild.AllianceNotLeader:			동맹에서 길드를 제거하려면 먼저 동맹장 길드여야 합니다.
+Scripts.Player.Guild.AllianceNotMember:			그 작업을 하려면 동맹에 속해 있어야 합니다.
+Scripts.Player.Guild.AlreadyInGuildName:		{0}은(는) 이미 길드에 속해 있습니다.
+Scripts.Player.Guild.AlreadyInGuild:			이미 길드에 속해 있습니다.
+Scripts.Player.Guild.AMotdSet:				동맹 공지를 설정했습니다.
+Scripts.Player.Guild.BannerAlready:			길드가 이미 배너를 보유하고 있습니다.
+Scripts.Player.Guild.BannerBought:			현상금 점수 {0}점을 사용해 길드 배너를 구매했습니다.
+Scripts.Player.Guild.BannerGroupSummoned:		그룹의 누군가가 이미 길드 배너를 소환했습니다.
+Scripts.Player.Guild.BannerGuildSummoned:		길드의 누군가가 이미 길드 배너를 소환했습니다.
+Scripts.Player.Guild.BannerNoGroup:			배너를 소환하려면 그룹에 속해 있어야 합니다.
+Scripts.Player.Guild.BannerNone:			길드가 길드 배너를 보유하고 있지 않습니다.
+Scripts.Player.Guild.BannerNotAfford:			길드 배너를 구매하려면 현상금 점수 50,000점이 필요합니다!
+Scripts.Player.Guild.BannerSummoned:			길드 배너를 소환했습니다.
+Scripts.Player.Guild.BannerUnsummoned:			길드 배너 소환을 해제했습니다.
+Scripts.Player.Guild.BannerNotRvR:			길드 배너를 소환하려면 RvR 지역에 있어야 합니다!
+Scripts.Player.Guild.BuffActivated:			[길드 버프] {0}이(가) 길드 공적 점수 1000점을 사용해 길드 버프를 활성화했습니다!
+Scripts.Player.Guild.BuffBountyPoints:			길드가 24시간 동안 현상금 점수 5% 보너스를 받습니다!
+Scripts.Player.Guild.BuffBPActivated:			[길드 버프] 길드가 24시간 동안 현상금 점수 보너스를 받습니다!
+Scripts.Player.Guild.BuffMPActivated:			[길드 버프] 길드가 24시간 동안 공적 점수 보너스를 받습니다!
+Scripts.Player.Guild.BuffRealmPoints:			길드가 24시간 동안 렐름 포인트 5% 보너스를 받습니다!
+Scripts.Player.Guild.ClaimNotNear:			성을 점령하려면 성 근처에 있어야 합니다.
+Scripts.Player.Guild.ConfirmLeave:			정말 {0}에서 탈퇴하시겠습니까?
+Scripts.Player.Guild.DemotedHigherThanPlayer:		자신보다 낮은 랭크로만 강등할 수 있습니다.
+Scripts.Player.Guild.DemotedOther:			{0}이(가) {1}의 길드 랭크를 {2}번 ({3})(으)로 설정했습니다.
+Scripts.Player.Guild.DemotedSelf:			{0}의 길드 랭크를 {1}번 ({2})(으)로 설정했습니다.
+Scripts.Player.Guild.DepositAmount:			{0}을(를) 길드 은행에 입금했습니다.
+Scripts.Player.Guild.DepositsAmount:		{0}이(가) {1}을(를) 길드 은행에 입금했습니다.
+Scripts.Player.Guild.DepositFull:			길드 은행이 가득 찬 것 같습니다.
+Scripts.Player.Guild.DepositInvalid:		올바르지 않은 입금 금액입니다.
+Scripts.Player.Guild.DepositTooMuch:		그렇게 할 만큼 돈이 부족합니다!
+Scripts.Player.Guild.DuesOff:				길드 세금이 현재 꺼져 있습니다.
+Scripts.Player.Guild.DuesOn:				길드 세금이 현재 {0}%로 설정되어 있습니다.
+Scripts.Player.Guild.DuesOnCapped:			길드 세금은 {0}%보다 높을 수 없습니다.
+Scripts.Player.Guild.DuesOnForced:			서버 설정에 따라 길드 세금이 {0}%로 고정되어 있습니다.
+Scripts.Player.Guild.EmailSet:				길드 이메일을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.EmblemAlready:			길드가 이미 문장을 보유하고 있지만 {0}의 큰 비용을 내고 변경할 수 있습니다. 진행하려면 문장 NPC를 다시 선택하세요.
+Scripts.Player.Guild.EmblemNeedGold:			길드 문장을 다시 설정하려면 {0}이(가) 필요합니다.
+Scripts.Player.Guild.EmblemNeedNPC:			유효한 문장 NPC 근처에 있어야 합니다.
+Scripts.Player.Guild.EmblemNPCNotSelected:		유효한 문장 NPC 근처에 있어야 합니다.
+Scripts.Player.Guild.EmblemRedo:			{0}을(를) 내고 길드 문장을 다시 설정하시겠습니까?
+Scripts.Player.Guild.FormNoGroup:			길드를 창설하려면 그룹에 속해 있어야 합니다.
+Scripts.Player.Guild.FormNoMembers:			길드를 창설하려면 그룹에 {0}명의 구성원이 필요합니다.
+Scripts.Player.Guild.GuildCreated:			{0} 길드가 창설되었습니다. {1}이(가) 리더입니다.
+Scripts.Player.Guild.GuildExists:			이미 존재하는 이름이라 길드를 만들 수 없습니다.
+Scripts.Player.Guild.GuildForceLeave:			{0}에 의해 {1}에서 제거되었습니다.
+Scripts.Player.Guild.GuildLeave:			길드에서 탈퇴했습니다.
+Scripts.Player.Guild.GuildLevelReq:			이 명령어를 사용하기에는 길드 레벨이 부족합니다.
+Scripts.Player.Guild.GuildNotExist:			해당 길드는 존재하지 않습니다.
+Scripts.Player.Guild.Help.GuildNotExist:	해당 길드는 존재하지 않습니다.
+Scripts.Player.Guild.InfoaMotd:				동맹 공지: {0}
+Scripts.Player.Guild.InCombat:				전투 중에는 배너 소환을 해제할 수 없습니다!
+Scripts.Player.Guild.InfoAMotd:				동맹 공지: {0}
+Scripts.Player.Guild.InfoCEmail:			연락 이메일: {0}
+Scripts.Player.Guild.InfoGDuesBank:			세금: {0} 길드 은행: 동화 {1}닢
+Scripts.Player.Guild.InfoGuild:				{0} 길드 정보:
+Scripts.Player.Guild.InfoGuildLevel:			길드 레벨: {0}
+Scripts.Player.Guild.InfoMotd:				공지: {0}
+Scripts.Player.Guild.InfoOMotd:				장교 공지: {0}
+Scripts.Player.Guild.InfoRPBPMP:			렐름 포인트: {0} 현상금 점수: {1} 공적 점수: {2}
+Scripts.Player.Guild.InfoWebpage:			웹페이지: {0}
+Scripts.Player.Guild.InvalidLetters:			입력한 문자 중 사용할 수 없는 문자가 있습니다.
+Scripts.Player.Guild.InvalidRank:			올바른 랭크가 아닙니다.
+Scripts.Player.Guild.InviteDead:			사망한 플레이어는 길드에 초대할 수 없습니다.
+Scripts.Player.Guild.InviteNoSelected:			플레이어를 선택해야 합니다.
+Scripts.Player.Guild.InviteNoSelf:			자기 자신은 초대할 수 없습니다.
+Scripts.Player.Guild.InviteNotThis:			이 구성원은 초대할 수 없습니다.
+Scripts.Player.Guild.InviteRecieved:			{0}이(가) 길드 가입을 초대했습니다.
+Scripts.Player.Guild.InviteSent:			{0}을(를) 길드에 초대했습니다.
+Scripts.Player.Guild.Keep:				현재 길드가 {0}을(를) 점령 중입니다.
+Scripts.Player.Guild.LevelUp:				[길드] 길드가 {0}레벨로 성장했습니다!
+Scripts.Player.Guild.LoginsOff:				더 이상 길드원 로그인 알림을 받지 않습니다. 다시 받으려면 /gc logins를 입력하세요.
+Scripts.Player.Guild.LoginsOn:				다시 길드원 로그인 알림을 받습니다. 중지하려면 /gc logins를 입력하세요.
+Scripts.Player.Guild.MadeLeader:			이제 {0}의 리더입니다.
+Scripts.Player.Guild.MadeLeaderOther:			{0}이(가) {1}의 리더가 되었습니다.
+Scripts.Player.Guild.MemberLogin:			{0}이(가) 게임에 접속했습니다.
+Scripts.Player.Guild.MemberLogoff:			{0}이(가) 게임에서 접속을 종료했습니다.
+Scripts.Player.Guild.MemberRemoved:			{1}이(가) 길드에서 제거되었습니다.
+Scripts.Player.Guild.MeritPointReq:			길드 공적 점수가 부족합니다.
+Scripts.Player.Guild.MotdSet:				길드 공지를 설정했습니다.
+Scripts.Player.Guild.NoKeep:				이 명령어를 사용하려면 점령한 성이 있어야 합니다.
+Scripts.Player.Guild.NoPlayerSelected:			플레이어를 선택해야 합니다.
+Scripts.Player.Guild.NoPlayersInAcc:			이 계정의 캐릭터는 길드에 없습니다.
+Scripts.Player.Guild.NoPrivileges:			이 명령어를 사용할 길드 권한이 부족합니다.
+Scripts.Player.Guild.NoteSet:				길드 메모를 설정했습니다: {0}
+Scripts.Player.Guild.NotInYourGuild:			해당 플레이어는 당신의 길드원이 아닙니다.
+Scripts.Player.Guild.NotMember:				길드 명령어를 사용하려면 먼저 길드에 속해 있어야 합니다.
+Scripts.Player.Guild.OMotdSet:				장교 공지를 설정했습니다.
+Scripts.Player.Guild.PlayerNotFound:			게임 내에서 해당 플레이어를 찾을 수 없습니다.
+Scripts.Player.Guild.PromotedOther:			{0}이(가) {1}의 길드 랭크를 {2}번 ({3})(으)로 설정했습니다.
+Scripts.Player.Guild.PromotedSelf:			{0}의 길드 랭크를 {1}번 ({2})(으)로 설정했습니다.
+Scripts.Player.Guild.PromoteHigherThanPlayer:		자신보다 낮은 랭크로만 승급할 수 있습니다.
+Scripts.Player.Guild.PromoteHaveToUseDemote:	promote 명령으로는 이 플레이어의 길드 랭크를 낮출 수 없습니다. /demote <랭크레벨> <플레이어>를 사용하세요.
+Scripts.Player.Guild.Purged:				{0}이(가) 완전히 삭제되었습니다.
+Scripts.Player.Guild.RankACHearSet:			랭크 {1}의 동맹 채팅 듣기 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankACSpeakSet:			랭크 {1}의 동맹 채팅 말하기 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankAlliSet:			랭크 {1}의 동맹 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankBuffSet:			랭크 {1}의 버프 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankClaimSet:			랭크 {1}의 점령 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankDuesSet:			랭크 {1}의 세금 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankEmblemSet:			랭크 {1}의 문장 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankGCHearSet:			랭크 {1}의 길드 채팅 듣기 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankGCSpeakSet:			랭크 {1}의 길드 채팅 말하기 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankInviteSet:			랭크 {1}의 초대 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankLevelSet:			랭크 레벨을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankOCHearSet:			랭크 {1}의 장교 채팅 듣기 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankOCSpeakSet:			랭크 {1}의 장교 채팅 말하기 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankPromoteSet:			랭크 {1}의 승급 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankReleaseSet:			랭크 {1}의 해제 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankRemoveSet:				랭크 {1}의 제거 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankTitleSet:				랭크 칭호를 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankUpgradeSet:			랭크 {1}의 업그레이드 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankViewSet:				랭크 {1}의 보기 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.RankWithdrawSet:			랭크 {1}의 출금 권한을 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.ThirdArgNotNum:			세 번째 인자는 숫자여야 합니다.
+Scripts.Player.Guild.UnableToCreate:			{0} 길드를 만들 수 없습니다.
+Scripts.Player.Guild.UnableToCreateLead:		{1}을(를) 리더로 하여 {0} 길드를 만들 수 없습니다.
+Scripts.Player.Guild.UnknownCommand:			{0}은(는) 올바른 명령어가 아닙니다:
+Scripts.Player.Guild.UpgradeNoLevel:			업그레이드 목표 레벨을 지정해야 합니다.
+Scripts.Player.Guild.UpgradeScndArg:			두 번째 인자는 숫자여야 합니다.
+Scripts.Player.Guild.WebpageSet:				길드 웹페이지를 {0}(으)로 설정했습니다.
+Scripts.Player.Guild.WithdrawAmount:			{0}을(를) 길드 은행에서 출금했습니다.
+Scripts.Player.Guild.WithdrawsAmount:			{0}이(가) {1}을(를) 길드 은행에서 출금했습니다.
+Scripts.Player.Guild.WithdrawInvalid:			올바르지 않은 출금 금액입니다.
+Scripts.Player.Guild.WithdrawTooMuch:			길드 은행에서 그만큼 출금할 수 없습니다.
+
+## /language
+Scripts.Players.Language.Current:			현재 언어는 {0}입니다.
+Scripts.Players.Language.Set:				서버 표시 언어를 {0}(으)로 변경했습니다.
+Scripts.Players.Language.AvailableLanguages: 사용 가능한 언어: {0}
+Scripts.Players.Language.LanguageNotSupported: 지원하지 않는 언어입니다: {0}
+Scripts.Players.Language.Disabled:         이 서버에서는 언어 변경을 지원하지 않습니다.
+Scripts.Players.Language.SyntaxCurrent:   /language current - 현재 언어를 표시합니다.
+Scripts.Players.Language.SyntaxSet:       /language set <언어> - 표시 언어를 변경합니다. 예: /language set KR
+Scripts.Players.Language.SyntaxShow:      /language show - 사용 가능한 모든 언어를 표시합니다.
+
+## /pray
+GamePlayer.Pray.AlreadyPraying:					이미 기도 중입니다!
+GamePlayer.Pray.Begin:							기도를 시작합니다!
+GamePlayer.Pray.CantPrayNow:					지금은 기도할 수 없습니다!
+GamePlayer.Pray.GainBack:						무덤에서 기도하여 경험치를 되찾았습니다!
+GamePlayer.Pray.MustGetCloser:				기도하려면 무덤에 더 가까이 가서 앉아야 합니다!
+GamePlayer.Pray.MustStandingStill:			기도하려면 가만히 서 있어야 합니다.
+GamePlayer.Pray.NeedTarget:					기도할 무덤을 대상으로 선택해야 합니다!
+GamePlayer.Pray.SelectGrave:				기도할 자신의 무덤을 선택하세요!
+GamePlayer.Pray.CantPrayRiding:				탈것에 탄 상태에서는 기도할 수 없습니다!
+
+## /quit
+GamePlayer.Quit.CantQuitCrafting:			제작 중에는 종료할 수 없습니다.
+GamePlayer.Quit.CantQuitDead:				사망 상태라 지금은 종료할 수 없습니다. 시체를 해제하려면 '/release'를 입력하세요.
+GamePlayer.Quit.CantQuitInInstance:			인스턴스 안에서는 종료할 수 없습니다!
+GamePlayer.Quit.CantQuitMount:				종료하려면 먼저 탈것에서 내려야 합니다.
+GamePlayer.Quit.CantQuitStanding:			        종료하려면 가만히 서 있어야 합니다.
+GamePlayer.Quit.RecentlyInCombat:			        최근 전투 중이었으므로 종료하려면 더 기다려야 합니다.
+GamePlayer.Quit.YouWillQuit1:				{0}초 후 종료됩니다.
+GamePlayer.Quit.YouWillQuit2:				{0}초 동안 앉아 있으면 종료됩니다. 종료하지 않으려면 '/stand'를 입력하거나 이동하세요.
+GamePlayer.Sit.NoLongerWaitingQuit:			        더 이상 종료 대기 중이 아닙니다.
+
+## /range
+Scripts.Players.Range.InvalidObject:			이 명령어는 오브젝트에만 작동합니다.
+Scripts.Players.Range.NeedTarget:			대상까지 거리: 유효한 대상이 설정되어 있지 않습니다.
+Scripts.Players.Range.NotVisible:			 (대상이 보이지 않음)
+Scripts.Players.Range.Result:				대상까지 거리: {0} 유닛. {1}
+
+## /realm
+Scripts.Players.Realm.AlbKeeps:            알비온 전초기지
+Scripts.Players.Realm.DarknessFalls:      다크니스 폴즈
+Scripts.Players.Realm.HibKeeps:            하이버니아 전초기지
+Scripts.Players.Realm.MidKeeps:            미드가르드 전초기지
+Scripts.Players.Realm.Title:            렐름 상태
+Scripts.Players.Realm.UseRelicCommand:      렐릭 정보는 '/relic'을 사용하세요
+Scripts.Players.Realm.DarknessFallsGrace:  {0}은(는) 앞으로 {1}분 {2}초 동안 다크니스 폴스에 입장할 수 있습니다
+Scripts.Common.Realm.Albion:               알비온
+Scripts.Common.Realm.Midgard:              미드가르드
+Scripts.Common.Realm.Hibernia:             하이버니아
+Scripts.Common.Realm.None:                 중립
+Scripts.Common.Realm.All:                  모든 렐름
+Scripts.Common.Direction.South:            남쪽
+Scripts.Common.Direction.SouthWest:        남서쪽
+Scripts.Common.Direction.West:             서쪽
+Scripts.Common.Direction.NorthWest:        북서쪽
+Scripts.Common.Direction.North:            북쪽
+Scripts.Common.Direction.NorthEast:        북동쪽
+Scripts.Common.Direction.East:             동쪽
+Scripts.Common.Direction.SouthEast:        남동쪽
+Scripts.Players.Where.UnknownPerson:       죄송합니다. 그런 사람은 모릅니다.
+Scripts.Players.Where.Result:              {0}은(는) {1}에 있습니다.
+Scripts.Players.CheckAppeal.MovedToDiscord:/appeal 시스템은 Discord로 이동했습니다. 긴급한 문제는 Discord의 #appeal 채널을 이용하세요.
+Scripts.Players.CheckConColor.RequiresTarget:이 명령어는 대상이 필요합니다.
+Scripts.Players.CheckConColor.Result:      {0}
+
+## /release
+GamePlayer.Release.SurroundingChange:			주변 환경이 갑자기 바뀝니다!
+GamePlayer.Release.LostConstitution:			체력을 일부 잃었습니다. 힐러에게 가서 회복하세요!
+GamePlayer.Release.NoLongerReleaseAuto:			더 이상 자동 릴리즈하지 않습니다. ({0}초 남음)
+GamePlayer.Release.NoValidBindpoint:			유효한 바인드 지점이 없습니다! 대신 이곳에서 릴리즈합니다!
+GamePlayer.Release.ReturnToPray:				경험치를 되찾으려면 무덤으로 돌아가 /pray 하세요.
+GamePlayer.Release.WillReleaseAuto:				{0}초 후 자동으로 릴리즈됩니다!
+GamePlayer.Release.WillReleaseAutoCity:			{0}초 후 고향 도시로 자동 릴리즈됩니다!
+GamePlayer.Release.WillReleaseIn:				{0}초 후 자동 릴리즈됩니다.
+GamePlayer.Release.YouRelease:					시체를 떠나 부활 지점으로 이동합니다.
+GamePlayer.Release.ReleaseToPortalKeep: 		{0}초 후 가장 가까운 국경 또는 포탈 킵으로 릴리즈됩니다!
+GamePlayer.Release.ReleaseToHouse:				{0}초 후 자신의 집으로 릴리즈됩니다!
+System.ReleaseTimer:						릴리즈 대기 시간
+
+## /relic
+Scripts.Players.Relic.AlbRelics:         알비온 렐릭
+Scripts.Players.Relic.HibRelics:         하이버니아 렐릭
+Scripts.Players.Relic.MidRelics:         미드가르드 렐릭
+Scripts.Players.Relic.Power:            파워
+Scripts.Players.Relic.Strength:            힘
+Scripts.Players.Relic.Title:            렐릭 상태
+Scripts.Players.Relic.UseRealmCommand:      렐름 정보는 '/realm'을 사용하세요.
+Scripts.Players.Relic.StatusLine:          {0}: {1}{2} | {3}일 전
+
+## /send
+PLCommands.SendMessage.Syntax.Send:                     '/send <대상이름> <메시지>' - 대상 플레이어에게 개인 메시지를 보냅니다.
+
+## /setwho
+PLCommands.SetWho.Err.CraftAdvisor:             다른 레벨 또는 플레이 시간 조건을 충족하지 못했기 때문에, 조언자 표시가 켜진 동안에는 제작 칭호를 끌 수 없습니다.
+
+## Misc
+Scripts.Player.Guild.InCombat:				전투 중에는 배너 소환을 해제할 수 없습니다!
+
+## /invite, /makeleader
+Scripts.Players.Group.NotLeader:                 그룹장이 아닙니다.
+Scripts.Players.Group.NotInGroup:                현재 그룹에 속해 있지 않습니다.
+Scripts.Players.Group.InvalidTarget:             유효한 플레이어 대상을 선택하지 않았습니다.
+Scripts.Players.Group.NoPlayerOnline:            해당 이름의 온라인 플레이어를 찾을 수 없습니다.
+Scripts.Players.Group.MultiplePlayersMatch:      해당 이름과 일치하는 온라인 플레이어가 여러 명입니다.
+Scripts.Players.Group.CantInviteSelf:            자신을 초대할 수 없습니다.
+Scripts.Players.Group.TargetAlreadyGrouped:      대상 플레이어는 아직 그룹에 속해 있습니다.
+Scripts.Players.Group.GMAddedTarget:             (GM) {0}님을 그룹에 추가했습니다.
+Scripts.Players.Group.GMAddedYou:                GM {0}님이 당신을 그룹에 추가했습니다.
+Scripts.Players.Group.InvitedTarget:             {0}님을 그룹에 초대했습니다.
+Scripts.Players.Group.InviteDialog:              {0}님이 당신을 그룹에 초대했습니다. 참가하시겠습니까?
+Scripts.Players.Group.InvitedBy:                 {0}님이 당신을 그룹에 초대했습니다.
+Scripts.Players.Group.NoPlayerInGroup:           그룹 안에서 해당 이름의 플레이어를 찾을 수 없습니다.
+Scripts.Players.Group.AlreadyLeader:             이미 그룹장입니다.
+
+## /email
+Scripts.Players.Email.Usage:                     사용법: /email <주소>
+Scripts.Players.Email.Invalid:                   유효한 이메일 주소를 입력하세요.
+Scripts.Players.Email.Updated:                   연락용 이메일 주소를 {0}(으)로 설정했습니다. 감사합니다!
+Scripts.Players.Email.ErrorUsage:                오류 - 사용법: /email <주소>
+
+## /password
+Scripts.Players.Password.Usage:                  사용법: /password <현재_비밀번호> <새_비밀번호>
+Scripts.Players.Password.Confirm:                비밀번호를 다음 값으로 변경하시겠습니까?\n{0}
+Scripts.Players.Password.Incorrect:              현재 비밀번호가 올바르지 않습니다.
+Scripts.Players.Password.Changed:                비밀번호가 변경되었습니다.
+
+## /played
+Scripts.Players.Played.ThisLevel:                현재 레벨에서 플레이한 시간: {0}일 {1}시간 {2}분.
+Scripts.Players.Played.Total:                    총 플레이 시간: {0}일 {1}시간 {2}분.
+
+## /faceloc, /facegloc, /gtrange
+Scripts.Players.FaceLoc.CantUseNow:             지금은 이 명령어를 사용할 수 없습니다!
+Scripts.Players.FaceLoc.EnterXY:                X와 Y 좌표를 입력하세요.
+Scripts.Players.FaceLoc.EnterValidXY:           올바른 X와 Y 좌표를 입력하세요.
+Scripts.Players.GroundTargetRange.NeedTarget:   대상까지 거리: 지면 대상이 설정되어 있지 않습니다.
+Scripts.Players.GroundTargetRange.Result:       대상까지 거리: {0} 유닛.
+
+## /emote
+Scripts.Players.Emote.CantDead:                 사망 상태에서는 감정표현을 할 수 없습니다!
+Scripts.Players.Emote.NeedText:                 감정표현으로 보낼 내용을 입력하세요.
+Scripts.Players.Emote.Muted:                    채팅 제한 상태라 감정표현을 할 수 없습니다!
+Scripts.Players.Emote.StrangeMotions:           <{0}님이 알 수 없는 몸짓을 합니다.>
+
+## /rp, /roleplay
+Scripts.Players.RP.RequireLevel:                이 명령어는 40레벨 이상부터 사용할 수 있습니다.
+Scripts.Players.RP.On:                          RP 획득이 켜졌습니다. 렐름 포인트를 획득합니다. 획득을 멈추려면 '/rp off'를 사용하세요.
+Scripts.Players.RP.Off:                         RP 획득이 꺼졌습니다. 더 이상 렐름 포인트를 획득하지 않습니다. 다시 켜려면 '/rp on'을 사용하세요.
+Scripts.Players.Roleplay.On:                    롤플레이 표시가 켜졌습니다. 끄려면 '/roleplay off'를 사용하세요.
+Scripts.Players.Roleplay.Off:                   롤플레이 표시가 꺼졌습니다. 다시 켜려면 '/roleplay on'을 사용하세요.
+
+## /hardcore
+Scripts.Players.Hardcore.AlreadyOn:             하드코어 표시가 이미 켜져 있습니다! 사망하면 캐릭터가 삭제됩니다.
+Scripts.Players.Hardcore.RequireLevelOne:       하드코어는 1레벨에서만 활성화할 수 있습니다.
+Scripts.Players.Hardcore.Confirm:               정말 하드코어를 활성화하시겠습니까? 사망하면 되돌릴 수 없습니다.
+Scripts.Players.Hardcore.Enabled:               하드코어가 켜졌습니다. 사망하면 캐릭터가 삭제됩니다.
+Scripts.Players.Hardcore.Cancelled:             마음이 바뀌면 명령어를 다시 사용하세요.
+Scripts.Players.Hardcore.TitleGained:           하드코어 칭호를 획득했습니다!
+
+## /report
+Scripts.Players.Report.Disabled:                이 서버에서는 버그 신고가 비활성화되어 있습니다!
+Scripts.Players.Report.Muted:                   채팅 제한 상태라 버그 신고를 제출할 수 없습니다.
+Scripts.Players.Report.QueueFull:               신고가 너무 많습니다. GM에게 문의하거나 정리될 때까지 기다려 주세요.
+Scripts.Players.Report.Submitted:               신고가 접수되었습니다. 버그 신고가 아닌 내용은 무시될 수 있습니다!
+Scripts.Players.Report.EmailHint:               /email 명령어로 계정 이메일을 등록하면 버그 신고를 스태프에게 이메일로 보낼 수 있습니다.
+
+## /salvage
+Scripts.Players.Salvage.InvalidBagRange:        잘못된 가방 번호입니다. 첫 번째 번호가 마지막 번호보다 클 수 없습니다.
+Scripts.Players.Salvage.InvalidFirstBag:        첫 번째 가방 번호가 잘못되었습니다. 1에서 5 사이여야 합니다.
+Scripts.Players.Salvage.InvalidLastBag:         마지막 가방 번호가 잘못되었습니다. 1에서 5 사이여야 합니다.
+Scripts.Players.Salvage.InvalidBag:             가방 번호가 잘못되었습니다. 1에서 5 사이여야 합니다.
+Scripts.Players.Salvage.InvalidQualityFilter:   품질 필터가 잘못되었습니다. 숫자 형식으로 "Qxx"를 사용하세요.
+Scripts.Players.Salvage.QualityTooHigh:         품질 필터가 잘못되었습니다. 품질은 100보다 클 수 없습니다.
+
+## /api, /target, /ignore, /checkappeal
+Scripts.Common.Hidden:                          숨김
+Scripts.Common.Shown:                           표시
+Scripts.Players.API.SpecializationDetails:      API 전문화 정보: {0}
+Scripts.Players.Target.NotSeen:                 이 근처에서 {0}님을 볼 수 없습니다!
+Scripts.Players.Target.YouTarget:               {0}님을 대상으로 선택했습니다.
+Scripts.Players.Target.GMYouTarget:             [GM] {0}님을 대상으로 선택했습니다.
+Scripts.Players.Target.UsageGM:                 /target <플레이어/몹이름>
+Scripts.Players.Target.Usage:                   /target <플레이어이름>
+Scripts.Players.Ignore.WindowTitle:             차단 목록 (현재)
+Scripts.Players.Ignore.NameNotUnique:           캐릭터 이름이 고유하지 않습니다.
+Scripts.Players.Ignore.CantAddSelf:             자신을 차단 목록에 추가할 수 없습니다!
+Scripts.Players.CheckAppeal.WindowTitle:        내 문의
+Scripts.Players.CheckAppeal.SummaryLine:        [플레이어]: {0}, [상태]: {1}, [내용]: {2}, [시간]: {3}.
+
+## /formation
+Scripts.Players.Formation.OnlyBonedancer:       본댄서만 이 명령어를 사용할 수 있습니다!
+Scripts.Players.Formation.Commands:             진형 명령어:
+Scripts.Players.Formation.Triangle:             '/formation triangle' 펫을 삼각 진형으로 배치합니다.
+Scripts.Players.Formation.Line:                 '/formation line' 펫을 일렬 진형으로 배치합니다.
+Scripts.Players.Formation.Protect:              '/formation protect' 펫이 지휘관을 둘러싸 보호하도록 배치합니다.
+Scripts.Players.Formation.NoCommander:          지휘관이 없습니다!
+Scripts.Players.Formation.NoMinions:            부하 펫이 없습니다!
+Scripts.Players.Formation.Unrecognized:         알 수 없는 인자입니다: {0}
+
+## emotes and chat channels
+Scripts.Players.Emotes.CantDead:                사망 상태에서는 할 수 없습니다!
+Scripts.Players.Emotes.Busy:                    지금은 바빠서 할 수 없습니다!
+Scripts.Players.Emotes.TargetNotSeen:           이 근처에서 대상을 볼 수 없습니다.
+Scripts.Players.Broadcast.Muted:                채팅 제한 상태라 방송할 수 없습니다.
+Scripts.Players.GuildChat.NotInGuild:           플레이어 길드에 속해 있지 않습니다.
+Scripts.Players.GuildChat.NoGuildSpeakPermission:길드 채널에서 말할 권한이 없습니다.
+Scripts.Players.GuildChat.NoOfficerSpeakPermission:오피서 채널에서 말할 권한이 없습니다.
+Scripts.Players.GuildChat.NotInAlliance:        길드가 어떤 얼라이언스에도 속해 있지 않습니다.
+Scripts.Players.GuildChat.NoAllianceSpeakPermission:얼라이언스 채널에서 말할 권한이 없습니다.
+Scripts.Players.GuildChat.Muted:                채팅 제한 상태라 이 채널에서 말할 수 없습니다.
+
+## /lastname
+Scripts.Players.LastName.Requirement:           성을 등록하려면 {0}레벨이거나 주 제작 기술이 {1} 이상이어야 합니다!
+Scripts.Players.LastName.Cost:                  성을 변경하려면 {0}이(가) 필요합니다!
+Scripts.Players.LastName.NeedRegistrar:         성을 설정하려면 이름 등록 NPC를 선택해야 합니다!
+Scripts.Players.LastName.TooFar:                {0}님과 상호작용하기에는 너무 멀리 있습니다.
+Scripts.Players.LastName.ConfirmClear:          성을 지우시겠습니까?
+Scripts.Players.LastName.TooLong:               성은 {0}자를 넘을 수 없습니다!
+Scripts.Players.LastName.MustStartUppercase:    성은 유효한 대문자로 시작해야 합니다!
+Scripts.Players.LastName.InvalidCharacters:     성은 유효한 문자로만 구성되어야 합니다!
+Scripts.Players.LastName.NotLegal:              {0}은(는) 사용할 수 없는 성입니다! 다른 성을 선택하세요.
+Scripts.Players.LastName.ConfirmSet:            성을 다음 값으로 설정하시겠습니까?\n{0}
+Scripts.Players.LastName.DeclineSet:            {0}을(를) 성으로 사용하지 않기로 했습니다.
+Scripts.Players.LastName.DeclineClear:          성을 지우지 않기로 했습니다.
+Scripts.Players.LastName.Set:                   성이 {0}(으)로 설정되었습니다!
+Scripts.Players.LastName.Cleared:               성이 지워졌습니다!
+
+## /housefriend
+Scripts.Players.HouseFriend.NeedHouse:          이 명령어는 자신의 집 안에서만 사용할 수 있습니다.
+Scripts.Players.HouseFriend.Added:              {0}님을 추가했습니다.
+Scripts.Players.HouseFriend.AddedAccount:       {0}님의 계정을 추가했습니다.
+Scripts.Players.HouseFriend.GuildNotFound:      해당 이름의 길드를 찾을 수 없습니다. 긴 이름은 "My Guild"처럼 따옴표로 묶어 주세요.
+Scripts.Players.HouseFriend.AddedEverybody:     모두를 추가했습니다!
+Scripts.Players.HouseFriend.CantUseOnSelf:      자신에게는 이 명령어를 사용할 수 없습니다.
+
+## /rearrange
+Scripts.Players.Rearrange.EmptySlot:            지정한 원본 슬롯({0})이 비어 있습니다.
+Scripts.Players.Rearrange.InvalidSlots:         잘못된 캐릭터 슬롯: {0}
+Scripts.Players.Rearrange.DifferentRealm:       다른 렐름의 슬롯으로는 옮길 수 없습니다! (원본 렐름 = {0}, 대상 렐름 = {1})
+Scripts.Players.Rearrange.SlotChanged:          {0}님의 캐릭터 슬롯이 변경되었습니다. (이전 슬롯 = {1}, 새 슬롯 = {2})
+Scripts.Players.Rearrange.EmptySlotLabel:       빈 슬롯
+Scripts.Players.Rearrange.WindowTitle:          캐릭터 슬롯
+
+## /battlegroup
+Scripts.Players.Battlegroup.LootUsage:          /bg loot normal 또는 /bg loot treasurer를 사용하세요.
+Scripts.Players.Battlegroup.PlayerNotInBattlegroup:이 플레이어는 당신의 배틀그룹에 속해 있지 않습니다.
+Scripts.Players.Battlegroup.RecordStartUsage:   유효한 최대 주사위 값을 지정해야 합니다. (예: /bg recordstart 1000)
+
+## /gc guild
+Scripts.Player.Guild.RequestError:              길드 요청을 처리하는 중 문제가 발생했습니다. 다시 시도해 주세요.
+Scripts.Player.Guild.DeclinesForm:              길드 창설을 거절했습니다
+Scripts.Player.Guild.AgreesForm:                길드 창설에 동의했습니다
+Scripts.Player.Guild.CurrentMeritBonus:         현재 메리트 보너스: {0}
+Scripts.Player.Guild.BannerStatus:              배너: {0}
+Scripts.Player.Guild.BannerLost:                배너를 적에게 빼앗겼습니다
+Scripts.Player.Guild.BannerAvailable:           배너를 구매할 수 있습니다
+Scripts.Player.Guild.BannersDisabled:           이 서버에서는 길드 배너가 비활성화되어 있습니다.
+Scripts.Player.Guild.BannerWaitMinutes:         길드 배너를 적에게 빼앗겼습니다. 새 배너를 구매하려면 {0}분 기다려야 합니다.
+Scripts.Player.Guild.BannerWaitHours:           길드 배너를 적에게 빼앗겼습니다. 새 배너를 구매하려면 {0}시간 기다려야 합니다.
+Scripts.Player.Guild.ConfirmBannerBuy:          길드 바운티 포인트 {0}점을 사용해 길드 배너를 구매하시겠습니까?
+Scripts.Player.Guild.ConfirmBuffBuy:            메리트 포인트 1000점을 사용해 길드 {0} 버프를 활성화하시겠습니까?
+Scripts.Player.Guild.BuffNotAvailable:          이 버프 유형은 사용할 수 없습니다.
+Scripts.Player.Guild.BuffNotImplemented:        이 버프 유형은 아직 구현되지 않았습니다.
+Scripts.Player.Guild.AvailableBuffs:            사용 가능한 버프:
+Scripts.Player.Guild.AvailableBuffLine:         {0}: {1}%
+Scripts.Player.Guild.BuffBonusActive:           길드가 24시간 동안 {0} 보너스를 받습니다!
+Scripts.Player.Guild.BuffName.None:             없음
+Scripts.Player.Guild.BuffName.RP:               렐름 포인트
+Scripts.Player.Guild.BuffName.BP:               바운티 포인트
+Scripts.Player.Guild.BuffName.CraftingHaste:    제작 속도
+Scripts.Player.Guild.BuffName.XP:               경험치
+Scripts.Player.Guild.BuffName.ArtifactXP:       아티팩트 경험치
+Scripts.Player.Guild.BuffName.MasterLevelXP:    마스터 레벨 경험치
+Scripts.Player.Guild.NeedRegistrar:             이 명령어를 사용하려면 길드 등록 NPC 근처에 있어야 합니다!
+Scripts.Player.Guild.OnlyGroupLeaderCreate:     그룹장만 길드를 만들 수 있습니다.
+Scripts.Player.Guild.SameRealmRequired:         길드를 만들려면 모든 그룹원이 같은 렐름이어야 합니다.
+Scripts.Player.Guild.NameTooLong:               길드 이름이 너무 깁니다.
+Scripts.Player.Guild.CreateCost:                길드를 만들려면 1골드가 필요합니다.
+Scripts.Player.Guild.ConfirmCreate:             {1}님을 길드장으로 하여 {0} 길드를 만드시겠습니까?
+Scripts.Player.Guild.NoPlayerFound:             해당 이름의 플레이어를 찾을 수 없습니다!
+Scripts.Player.Guild.TargetOrNameRequired:      플레이어를 대상으로 선택하거나 플레이어 이름을 입력해야 합니다!
+Scripts.Player.Guild.PromotionPlayerNotFound:   승급 처리 중 오류가 발생했습니다. 플레이어를 찾을 수 없습니다!
+Scripts.Player.Guild.NewRankRange:              새 랭크 변경 오류! 길드 랭크는 0-9 사이여야 합니다.
+Scripts.Player.Guild.NewRankError:              새 랭크 변경 중 오류가 발생했습니다!
+Scripts.Player.Guild.TotalMembersOnline:        온라인 길드원 수:        {0}
+Scripts.Player.Guild.NotSameAlliance:           같은 얼라이언스에 속해 있지 않습니다.
+Scripts.Player.Guild.NotAllianceLeader:         얼라이언스 리더가 아닙니다.
+Scripts.Player.Guild.NewAllianceLeader:         {0} 길드가 새로운 얼라이언스 리더가 되었습니다.
+Scripts.Player.Guild.KeepUpgradeDisabled:       현재 킵 업그레이드는 비활성화되어 있습니다!
+Scripts.Player.Guild.NoteSelfUsage:             자신의 노트를 설정하려면 '/gc noteself <노트>'를 사용하세요.
+Scripts.Player.Guild.NoteTargetRequired:        대상 길드원을 지정해야 합니다.
+Scripts.Player.Guild.NoGuildMemberFound:        해당 이름의 길드원을 찾을 수 없습니다.
+Scripts.Player.Guild.NoteSetFor:                {0}님의 노트를 설정했습니다.
+Scripts.Player.Guild.BannerPutAway:             {0}님이 길드 배너를 회수했습니다!
+Scripts.Player.Guild.BannerSummonedOther:       {0}님이 길드 배너를 소환했습니다!
+Scripts.Player.Guild.NotCarryingBanner:         들고 있는 배너가 없습니다!
+Scripts.Player.Guild.RankName:                  랭크: {0} 이름: {1}
+Scripts.Player.Guild.RankAllianceChat:          동맹 채팅 듣기: {0} 말하기: {1}
+Scripts.Player.Guild.RankOfficerChat:           장교 채팅 듣기: {0} 말하기: {1}
+Scripts.Player.Guild.RankGuildChat:             길드 채팅 듣기: {0} 말하기: {1}
+Scripts.Player.Guild.RankEmblemPromote:         문장: {0} 승급: {1}
+Scripts.Player.Guild.RankRemoveView:            제거: {0} 보기: {1}
+Scripts.Player.Guild.RankDuesWithdraw:          세금: {0} 출금: {1}
+Scripts.Player.Guild.ListGuild:                 {0}  {1}명
+Scripts.Player.Guild.WhoAllianceLine:           {0}) {1} <{2}> 레벨 {3} {4} - {5}
+Scripts.Player.Guild.WhoRankTitleLine:          {0}) {1} <{2}> 레벨 {3} {4} - {5}
+Scripts.Player.Guild.WhoRankLevelLine:          {0}) {1} <{2}> 레벨 {3} {4} - {5}
+Scripts.Player.Guild.Help.GuildEditBuff:        '/gc edit <랭크번호> buff <y/n>'
+
+## /respec
+Scripts.Players.Respec.TargetTrainer:           아무 트레이너를 대상으로 선택한 뒤 사용하세요:
+Scripts.Players.Respec.HelpAll:                 /respec ALL - 모든 스킬을 리스펙합니다
+Scripts.Players.Respec.HelpLine:                /respec <라인 이름> - 단일 스킬 라인을 리스펙합니다
+Scripts.Players.Respec.HelpRealm:               /respec REALM - 렐름 어빌리티를 리스펙합니다
+Scripts.Players.Respec.NoneAvailable:           사용 가능한 리스펙이 없습니다.
+Scripts.Players.Respec.BuyHint:                 단일 라인 리스펙을 구매하려면 /respec buy를 사용하세요.
+Scripts.Players.Respec.FullAvailable:           전체 스킬 리스펙이 {0}회 남아 있습니다.
+Scripts.Players.Respec.UseAll:                  아무 트레이너를 대상으로 선택하고 /respec ALL을 사용하세요
+Scripts.Players.Respec.LineAvailable:           단일 라인 리스펙이 {0}회 남아 있습니다.
+Scripts.Players.Respec.UseLine:                 아무 트레이너를 대상으로 선택하고 /respec <라인 이름>을 사용하세요
+Scripts.Players.Respec.RealmAvailable:          렐름 스킬 리스펙이 {0}회 남아 있습니다.
+Scripts.Players.Respec.UseRealm:                아무 트레이너를 대상으로 선택하고 /respec REALM을 사용하세요
+Scripts.Players.Respec.DolAvailable:            DOL 전체 스킬 리스펙이 {0}회 남아 있습니다.
+Scripts.Players.Respec.UseAllLower:             아무 트레이너를 대상으로 선택하고 /respec all을 사용하세요
+Scripts.Players.Respec.MustSpeakTrainer:        리스펙하려면 트레이너와 대화 중이어야 합니다.
+Scripts.Players.Respec.NoFull:                  사용 가능한 전체 스킬 리스펙이 없습니다.
+Scripts.Players.Respec.NoRealm:                 사용 가능한 렐름 스킬 리스펙이 없습니다.
+Scripts.Players.Respec.NoLine:                  사용 가능한 단일 라인 리스펙이 없습니다.
+Scripts.Players.Respec.LineNotFound:            '{0}' 이름의 라인을 찾을 수 없습니다.
+Scripts.Players.Respec.LineLevelTooLow:         {0} 라인의 레벨이 2보다 낮습니다.
+Scripts.Players.Respec.Caution:                 주의: 모든 리스펙 변경은 되돌릴 수 없습니다. 신중하게 진행하세요!
+
+## /time
+Scripts.Players.Time.AdminUsage:                관리자 사용법: /time <속도> (24가 기본, 숫자가 높을수록 하루가 빨라짐) <시간> (1 - 1000) - 새 하루 길이와 시작 시간으로 초기화합니다.
+Scripts.Players.Time.Current:                   현재 시간은 {0}:{1}:{2} {3}입니다
+Scripts.Players.Time.Night:                     야간 여부: {0}

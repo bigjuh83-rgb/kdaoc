@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -77,13 +78,13 @@ namespace DOL.GS
             if (m_levelMultipliers.Count <= 0)
                 response = "Sorry, no level multipliers are defined so I cannot accept seals at this time.";
             else if (m_BPMultipliers.Count > 0 && m_RPMultipliers.Count > 0)
-                response = "Hand me Dreaded Seals and I'll give you Bounty and Realm points!";
+                response = LanguageMgr.GetTranslation(player.Client.Account.Language, "DreadedSealCollector.HandSealsForBpAndRp");
             else if (m_BPMultipliers.Count > 0)
-                response = "Hand me Dreaded Seals and I'll give you Bounty points!";
+                response = LanguageMgr.GetTranslation(player.Client.Account.Language, "DreadedSealCollector.HandSealsForBp");
             else if (m_RPMultipliers.Count > 0)
-                response = "Hand me Dreaded Seals and I'll give you Realm points!";
+                response = LanguageMgr.GetTranslation(player.Client.Account.Language, "DreadedSealCollector.HandSealsForRp");
             else
-                response = "Sorry, no dreaded seal types are defined so I cannot accept seals at this time.";
+                response = LanguageMgr.GetTranslation(player.Client.Account.Language, "DreadedSealCollector.NoSealTypesDefined");
             player.Out.SendMessage(response, eChatType.CT_Say, eChatLoc.CL_ChatWindow);
 
             return true;
@@ -95,14 +96,13 @@ namespace DOL.GS
             {
                 if (GetDistanceTo(player) > WorldMgr.INTERACT_DISTANCE)
                 {
-                    ((GamePlayer)source).Out.SendMessage("You are too far away to give anything to me "
-                    + player.Name + ". Come a little closer.", eChatType.CT_Say, eChatLoc.CL_ChatWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "DreadedSealCollector.TooFarAway", player.Name), eChatType.CT_Say, eChatLoc.CL_ChatWindow);
                     return false;
                 }
 
                 if (m_levelMultipliers.Count < 1)
                 {
-                    ((GamePlayer)source).Out.SendMessage("Sorry, no level multipliers are defined so I cannot accept seals at this time.",
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "DreadedSealCollector.NoLevelMultipliers"),
                         eChatType.CT_Say, eChatLoc.CL_ChatWindow);
                     return false;
                 }
@@ -112,7 +112,7 @@ namespace DOL.GS
 
                 if (bpMultiplier < 1 && rpMultiplier < 1)
                 {
-                    ((GamePlayer)source).Out.SendMessage("Sorry, I cannot accept items of that type.",
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "DreadedSealCollector.CannotAcceptItemType"),
                         eChatType.CT_Say, eChatLoc.CL_ChatWindow);
                     return false;
                 }
@@ -134,8 +134,7 @@ namespace DOL.GS
 
                     if (levelMultiplier <= 0)
                     {
-                        ((GamePlayer)source).Out.SendMessage("You are too young yet to make use of these items "
-                        + player.Name + ". Come back in " + (nextLevel - player.Level) + " levels.", eChatType.CT_Say, eChatLoc.CL_ChatWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "DreadedSealCollector.TooYoung", player.Name, nextLevel - player.Level), eChatType.CT_Say, eChatLoc.CL_ChatWindow);
 
                         return false;
                     }

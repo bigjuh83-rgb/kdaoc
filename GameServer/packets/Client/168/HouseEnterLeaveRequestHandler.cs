@@ -28,7 +28,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                 {
                     if (!player.IsWithinRadius(house, 1000) || (player.CurrentRegionID != house.RegionID))
                     {
-                        ChatUtil.SendSystemMessage(player, string.Format($"You are too far away to enter house {house.HouseNumber}."));
+                        ChatUtil.SendSystemMessage(player, "HouseEnterLeave.TooFarAway", house.HouseNumber);
                         return;
                     }
 
@@ -38,7 +38,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                         house.Enter(player);
                     }
                     else
-                        ChatUtil.SendSystemMessage(player, string.Format($"You can't enter house {house.HouseNumber}."));
+                        ChatUtil.SendSystemMessage(player, "HouseEnterLeave.CantEnter", house.HouseNumber);
 
                     break;
                 }

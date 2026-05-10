@@ -17,7 +17,7 @@ namespace DOL.GS.ServerRules
 	{
 		public override string RulesDescription()
 		{
-			return "standard PvP server rules";
+			return LanguageMgr.GetTranslation(LanguageMgr.DefaultLanguage, "ServerRules.PvP.Description");
 		}
 
 		//release city
@@ -39,9 +39,9 @@ namespace DOL.GS.ServerRules
 			if (player.Client.IsPlaying == false) return;
 
 			if (player.Level < m_safetyLevel && player.SafetyFlag)
-				player.Out.SendMessage("Your temporary invulnerability timer has expired, but your /safety flag is still on.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "ServerRules.PvP.InvulnerabilityExpiredSafetyOn"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			else
-				player.Out.SendMessage("Your temporary invulnerability timer has expired.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "ServerRules.PvP.InvulnerabilityExpired"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
 			return;
 		}
@@ -151,7 +151,7 @@ namespace DOL.GS.ServerRules
 			// can't attack self
 			if (attacker == defender)
 			{
-				if (quiet == false) MessageToLiving(attacker, "You can't attack yourself!");
+				if (quiet == false) MessageToLivingTranslated(attacker, "ServerRules.Attack.Self");
 				return false;
 			}
 
@@ -163,7 +163,7 @@ namespace DOL.GS.ServerRules
 				//check group
 				if (playerAttacker.Group != null && playerAttacker.Group.IsInTheGroup(playerDefender))
 				{
-					if (!quiet) MessageToLiving(playerAttacker, "You can't attack your group members.");
+					if (!quiet) MessageToLivingTranslated(playerAttacker, "ServerRules.Attack.GroupMember");
 					return false;
 				}
 
@@ -172,7 +172,7 @@ namespace DOL.GS.ServerRules
 					//check guild
 					if (playerAttacker.Guild != null && playerAttacker.Guild == playerDefender.Guild)
 					{
-						if (!quiet) MessageToLiving(playerAttacker, "You can't attack your guild members.");
+						if (!quiet) MessageToLivingTranslated(playerAttacker, "ServerRules.Attack.GuildMember");
 						return false;
 					}
 
@@ -181,7 +181,7 @@ namespace DOL.GS.ServerRules
 
 				    if (mybattlegroup != null && mybattlegroup.IsInTheBattleGroup(playerDefender))
 				    {
-				       if (!quiet) MessageToLiving(playerAttacker, "You can't attack a member of your battlegroup.");
+				       if (!quiet) MessageToLivingTranslated(playerAttacker, "ServerRules.Attack.BattlegroupMember");
 				       return false;
 				    }
 
@@ -191,7 +191,7 @@ namespace DOL.GS.ServerRules
 						foreach (int reg in m_safeRegions)
 							if (playerAttacker.CurrentRegionID == reg)
 							{
-								if (quiet == false) MessageToLiving(playerAttacker, "You're currently in a safe zone, you can't attack other players here.");
+								if (quiet == false) MessageToLivingTranslated(playerAttacker, "ServerRules.Attack.SafeZone");
 								return false;
 							}
 					}
@@ -200,7 +200,7 @@ namespace DOL.GS.ServerRules
 					// Players with safety flag can not attack other players
 					if (playerAttacker.Level < m_safetyLevel && playerAttacker.SafetyFlag)
 					{
-						if (quiet == false) MessageToLiving(attacker, "Your PvP safety flag is ON.");
+						if (quiet == false) MessageToLivingTranslated(attacker, "ServerRules.PvP.SafetyFlagOn");
 						return false;
 					}
 
@@ -219,7 +219,7 @@ namespace DOL.GS.ServerRules
 						if (unsafeRegion == false)
 						{
 							//"PLAYER has his safety flag on and is in a safe area, you can't attack him here."
-							if (quiet == false) MessageToLiving(attacker, playerDefender.Name + " has " + playerDefender.GetPronoun(1, false) + " safety flag on and is in a safe area, you can't attack " + playerDefender.GetPronoun(2, false) + " here.");
+							if (quiet == false) MessageToLivingTranslated(attacker, "ServerRules.PvP.TargetSafetyFlagOn", playerDefender.Name);
 							return false;
 						}
 					}
@@ -238,7 +238,7 @@ namespace DOL.GS.ServerRules
 			// "friendly" NPCs can't attack "friendly" players
 			if (defender is GameNPC && defender.Realm != 0 && attacker.Realm != 0 && defender is GameKeepGuard == false && defender is GameFont == false)
 			{
-				if (quiet == false) MessageToLiving(attacker, "You can't attack a friendly NPC!");
+				if (quiet == false) MessageToLivingTranslated(attacker, "ServerRules.Attack.FriendlyNpc");
 				return false;
 			}
 			// "friendly" NPCs can't be attacked by "friendly" players
@@ -262,7 +262,7 @@ namespace DOL.GS.ServerRules
 			if (defender is GameKeepGuard && attacker is GamePlayer
 				&& GameServer.KeepManager.IsEnemy(defender as GameKeepGuard, attacker as GamePlayer) == false)
 			{
-				if (quiet == false) MessageToLiving(attacker, "You can't attack a friendly NPC!");
+				if (quiet == false) MessageToLivingTranslated(attacker, "ServerRules.Attack.FriendlyNpc");
 				return false;
 			}
 
@@ -279,7 +279,7 @@ namespace DOL.GS.ServerRules
 
 		public override bool IsSameRealm(GameLiving source, GameLiving target, bool quiet)
 		{
-			if (source == null || target == null) 
+			if (source == null || target == null)
 				return false;
 
 			// if controlled NPC - do checks for owner instead
@@ -349,7 +349,7 @@ namespace DOL.GS.ServerRules
 			if (source is GamePlayer && target is GameNPC && target.Realm != 0)
 				return true;
 
-			if (quiet == false) MessageToLiving(source, target.GetName(0, true) + " is not a member of your realm!");
+			if (quiet == false) MessageToLivingTranslated(source, "ServerRules.Realm.NotMember", target.GetName(0, true));
 			return false;
 		}
 
@@ -380,12 +380,12 @@ namespace DOL.GS.ServerRules
 
 		/// <summary>
 		/// Gets the server type color handling scheme
-		/// 
-		/// ColorHandling: this byte tells the client how to handle color for PC and NPC names (over the head) 
-		/// 0: standard way, other realm PC appear red, our realm NPC appear light green 
-		/// 1: standard PvP way, all PC appear red, all NPC appear with their level color 
+		///
+		/// ColorHandling: this byte tells the client how to handle color for PC and NPC names (over the head)
+		/// 0: standard way, other realm PC appear red, our realm NPC appear light green
+		/// 1: standard PvP way, all PC appear red, all NPC appear with their level color
 		/// 2: Same realm livings are friendly, other realm livings are enemy; nearest friend/enemy buttons work
-		/// 3: standard PvE way, all PC friendly, realm 0 NPC enemy rest NPC appear light green 
+		/// 3: standard PvE way, all PC friendly, realm 0 NPC enemy rest NPC appear light green
 		/// 4: All NPC are enemy, all players are friendly; nearest friend button selects self, nearest enemy don't work at all
 		/// </summary>
 		/// <param name="client">The client asking for color handling</param>

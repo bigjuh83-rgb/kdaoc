@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -651,7 +652,7 @@ namespace DOL.GS
             if (m_player.IsAlive)
                 return true;
 
-            m_player.Out.SendMessage("You can't change your inventory when dead!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Change.Dead"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             m_player.Out.SendInventorySlotsUpdate(null);
             return false;
         }
@@ -663,7 +664,7 @@ namespace DOL.GS
 
             // Don't let player move active horse to a horse bag, which will disable all bags!
             if (fromSlot == eInventorySlot.Horse)
-                m_player.Out.SendMessage("You can't move your active horse into a saddlebag!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Horse.ActiveToSaddlebag"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             else if (m_player.Client.Account.PrivLevel != 1 || (m_player.CanUseHorseInventorySlot((int) fromSlot) && m_player.CanUseHorseInventorySlot((int) toSlot)))
                 return true;
 
@@ -705,7 +706,7 @@ namespace DOL.GS
             if (slot is > eInventorySlot.MaxEquipable or (>= eInventorySlot.FirstBackpack and <= eInventorySlot.LastBackpack) or eInventorySlot.HorseArmor or eInventorySlot.HorseBarding)
                 return true;
 
-            m_player.Out.SendMessage("You cannot equip an item from another realm!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Equip.OtherRealm"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             return false;
         }
 
@@ -723,7 +724,7 @@ namespace DOL.GS
                     return true;
             }
 
-            m_player.Out.SendMessage("Your class cannot use this item!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Equip.ClassCannotUse"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             return false;
         }
 
@@ -738,13 +739,13 @@ namespace DOL.GS
                 {
                     if ((eInventorySlot) item.Item_Type is not eInventorySlot.Mythical)
                     {
-                        m_player.Out.SendMessage($"{item.GetName(0, true)} can't go there!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
                     if (item.Type_Damage > m_player.ChampionLevel)
                     {
-                        m_player.Out.SendMessage($"You can't use {item.GetName(0, true)}, you should increase your champion level.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.NeedChampionLevel", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -754,7 +755,7 @@ namespace DOL.GS
                 {
                     if ((eInventorySlot) item.Item_Type is not eInventorySlot.HorseBarding)
                     {
-                        m_player.Out.SendMessage($"You can't put {item.GetName(0, true)} in your active barding slot!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantPutActiveBarding", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -764,7 +765,7 @@ namespace DOL.GS
                 {
                     if ((eInventorySlot) item.Item_Type is not eInventorySlot.HorseArmor)
                     {
-                        m_player.Out.SendMessage($"You can't put {item.GetName(0, true)} in your active horse armor slot!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantPutActiveHorseArmor", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -774,7 +775,7 @@ namespace DOL.GS
                 {
                     if ((eInventorySlot) item.Item_Type is not eInventorySlot.Horse)
                     {
-                        m_player.Out.SendMessage($"You can't put {item.GetName(0, true)} in your active mount slot!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantPutActiveMount", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -785,12 +786,12 @@ namespace DOL.GS
                     if ((eObjectType) item.Object_Type is eObjectType.Shield ||
                         ((eInventorySlot) item.Item_Type is not eInventorySlot.RightHandWeapon and not eInventorySlot.LeftHandWeapon))
                     {
-                        m_player.Out.SendMessage($"{item.GetName(0, true)} can't go there!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
                     else if (!m_player.HasAbilityToUseItem(item.Template))
                     {
-                        m_player.Out.SendMessage("You have no skill in using this weapon type!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Equip.NoWeaponSkill"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -801,12 +802,12 @@ namespace DOL.GS
                     if ((eObjectType) item.Object_Type is eObjectType.Shield ||
                         ((eInventorySlot) item.Item_Type is not eInventorySlot.RightHandWeapon and not eInventorySlot.LeftHandWeapon and not eInventorySlot.TwoHandWeapon && (eObjectType) item.Object_Type is not eObjectType.Instrument))
                     {
-                        m_player.Out.SendMessage($"{item.GetName(0, true)} can't go there!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
                     else if (!m_player.HasAbilityToUseItem(item.Template))
                     {
-                        m_player.Out.SendMessage("You have no skill in using this weapon type!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Equip.NoWeaponSkill"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -817,12 +818,12 @@ namespace DOL.GS
                     if ((eInventorySlot) item.Item_Type != slot ||
                         ((eObjectType) item.Object_Type is not eObjectType.Shield && !m_player.attackComponent.CanUseLefthandedWeapon))
                     {
-                        m_player.Out.SendMessage($"{item.GetName(0, true)} can't go there!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
                     else if (!m_player.HasAbilityToUseItem(item.Template))
                     {
-                        m_player.Out.SendMessage("You have no skill in using this weapon type!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Equip.NoWeaponSkill"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -832,12 +833,12 @@ namespace DOL.GS
                 {
                     if ((eInventorySlot) item.Item_Type != slot && (eObjectType) item.Object_Type is not eObjectType.Instrument)
                     {
-                        m_player.Out.SendMessage($"{item.GetName(0, true)} can't go there!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
                     else if (!m_player.HasAbilityToUseItem(item.Template))
                     {
-                        m_player.Out.SendMessage("You have no skill in using this weapon type!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Equip.NoWeaponSkill"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -852,12 +853,12 @@ namespace DOL.GS
                 {
                     if ((eInventorySlot) item.Item_Type != slot)
                     {
-                        m_player.Out.SendMessage($"{item.GetName(0, true)} can't go there!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
                     else if (!m_player.HasAbilityToUseItem(item.Template))
                     {
-                        m_player.Out.SendMessage("You have no skill in wearing this armor type!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Equip.NoArmorSkill"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -870,7 +871,7 @@ namespace DOL.GS
                 {
                     if ((eInventorySlot) item.Item_Type != slot)
                     {
-                        m_player.Out.SendMessage($"{item.GetName(0, true)} can't go there!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -881,7 +882,7 @@ namespace DOL.GS
                 {
                     if (item.Item_Type is not Slot.RIGHTWRIST and not Slot.LEFTWRIST)
                     {
-                        m_player.Out.SendMessage($"{item.GetName(0, true)} can't go there!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -892,7 +893,7 @@ namespace DOL.GS
                 {
                     if (item.Item_Type is not Slot.LEFTRING and not Slot.RIGHTRING)
                     {
-                        m_player.Out.SendMessage($"{item.GetName(0, true)} can't go there!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -905,7 +906,7 @@ namespace DOL.GS
                 {
                     if ((eObjectType) item.Object_Type is not eObjectType.Arrow and not eObjectType.Bolt)
                     {
-                        m_player.Out.SendMessage($"You can't put your {item.Name} in your quiver!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantPutQuiver", item.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 

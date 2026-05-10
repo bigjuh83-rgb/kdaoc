@@ -1,5 +1,6 @@
 using DOL.GS.Effects;
 using DOL.GS.PlayerClass;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -8,8 +9,8 @@ namespace DOL.GS.Spells
     /// </summary>
     [SpellHandler(eSpellType.MaddeningScalars)]
     public class MaddeningScalars : OffensiveProcSpellHandler
-    {   	
-   		public override void OnEffectStart(GameSpellEffect effect)
+    {
+		public override void OnEffectStart(GameSpellEffect effect)
 		{
             base.OnEffectStart(effect);
             if(effect.Owner is GamePlayer)
@@ -24,28 +25,28 @@ namespace DOL.GS.Spells
                         Effect.SpellHandler.Spell.SpellType.Equals("AtlantisTabletMorph") ||
                         Effect.SpellHandler.Spell.SpellType.Equals("AlvarusMorph"))
                     {
-                        player.Out.SendMessage("You already have an active morph!", DOL.GS.PacketHandler.eChatType.CT_SpellResisted, DOL.GS.PacketHandler.eChatLoc.CL_ChatWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "Artifacts.ActiveMorph"), DOL.GS.PacketHandler.eChatType.CT_SpellResisted, DOL.GS.PacketHandler.eChatLoc.CL_ChatWindow);
                         return;
                     }
                 }
 	            if(player.CharacterClass is not ClassDisciple && (ushort)Spell.LifeDrainReturn > 0)
                     player.Model = (ushort)Spell.LifeDrainReturn; // 102 official model
-	   			player.Out.SendUpdatePlayer();
-   			}
-   		}
-   		
-  		public override int OnEffectExpires(GameSpellEffect effect, bool noMessages)
+				player.Out.SendUpdatePlayer();
+			}
+		}
+
+		public override int OnEffectExpires(GameSpellEffect effect, bool noMessages)
 		{
-  			if(effect.Owner is GamePlayer)
+			if(effect.Owner is GamePlayer)
             {
 	            GamePlayer player = effect.Owner as GamePlayer;
-  				if(player.CharacterClass is not ClassDisciple)
+				if(player.CharacterClass is not ClassDisciple)
                     player.Model = player.CreationModel;
-    			player.Out.SendUpdatePlayer();
-    		}	
-    		return base.OnEffectExpires(effect,noMessages);
-  		}
-        
+			player.Out.SendUpdatePlayer();
+		}
+		return base.OnEffectExpires(effect,noMessages);
+		}
+
         public MaddeningScalars(GameLiving caster, Spell spell, SpellLine line) : base(caster, spell, line) { }
     }
 }

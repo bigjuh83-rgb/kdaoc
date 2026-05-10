@@ -5,6 +5,7 @@ using DOL.Database;
 using DOL.GS.Housing;
 using DOL.GS.Keeps;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -15,38 +16,27 @@ namespace DOL.GS
 	public class AllRealmsTeleporter : GameTeleporter
 	{
 		private static new readonly Logging.Logger log = Logging.LoggerManager.Create(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-		
+
 		/// <summary>
 		/// Display teleport destinations for passed realm
 		/// </summary>
 		/// <param name="destRealm">Realm to display destinations for</param>
-		public String DisplayTeleportDestinations(eRealm destRealm)
+		public String DisplayTeleportDestinations(eRealm destRealm, string language)
 		{
-			StringBuilder sRet = new StringBuilder("");
-
 			switch (destRealm)
 			{
 				case eRealm.Albion:
-					sRet.Append("Would you like to teleport to?\n[Camelot]\n[Albion Frontiers] or [Battlegrounds]\n[Albion Darkness Falls]\n");
-					sRet.Append("[Albion Mainland]\n[Albion Dungeons]\n[Albion Shrouded Isles]\n[Albion Oceanus]\n");
-					sRet.Append("[Housing]\n[Hibernia] or [Midgard]");
-					break;
+					return LanguageMgr.GetTranslation(language, "AllRealmsTeleporter.Menu.Albion");
 				case eRealm.Midgard:
-					sRet.Append("Would you like to teleport to?\n[Jordheim]\n[Midgard Frontiers] or [Battlegrounds]\n[Midgard Darkness Falls]\n");
-					sRet.Append("[Midgard Mainland]\n[Midgard Dungeons]\n[Midgard Shrouded Isles]\n[Midgard Oceanus]\n");
-					sRet.Append("[Housing]\n[Albion] or [Hibernia]");
-					break;
+					return LanguageMgr.GetTranslation(language, "AllRealmsTeleporter.Menu.Midgard");
 				case eRealm.Hibernia:
-					sRet.Append("Would you like to teleport to?\n[Tir na Nog]\n[Hibernia Frontiers] or [Battlegrounds]\n[Hibernia Darkness Falls]\n");
-					sRet.Append("[Hibernia Mainland]\n[Hibernia Dungeons]\n[Hibernia Shrouded Isles]\n[Hibernia Oceanus]\n");
-					sRet.Append("[Housing]\n[Albion] or [Midgard]");
-					break;
+					return LanguageMgr.GetTranslation(language, "AllRealmsTeleporter.Menu.Hibernia");
 				default:
 					log.Warn(String.Format("DisplayTeleportDestinations does not handle player realm [{0}]", destRealm.ToString()));
 					break;
 			}
 
-			return sRet.ToString();
+			return string.Empty;
 		}
 
 		/// <summary>
@@ -56,7 +46,7 @@ namespace DOL.GS
 		/// <returns></returns>
 		public override bool Interact(GamePlayer player)
 		{
-			String intro = DisplayTeleportDestinations(player.Realm);
+			String intro = DisplayTeleportDestinations(player.Realm, player.Client.Account.Language);
 			if (intro != null)
 				SayTo(player, intro);
 
@@ -81,109 +71,184 @@ namespace DOL.GS
 			eRealm realmTarget = player.Realm;
 
 			StringBuilder sRet = new StringBuilder();
+				text = text switch
+				{
+					"알비온" => "Albion",
+					"미드가드" => "Midgard",
+					"하이버니아" => "Hibernia",
+					"알비온 프론티어" => "Albion Frontiers",
+					"미드가드 프론티어" => "Midgard Frontiers",
+					"하이버니아 프론티어" => "Hibernia Frontiers",
+					"알비온 아그라몬" => "Albion Agramon",
+					"미드가드 아그라몬" => "Midgard Agramon",
+					"하이버니아 아그라몬" => "Hibernia Agramon",
+					"전장" => "Battlegrounds",
+					"알비온 다크니스 폴스" => "Albion Darkness Falls",
+					"미드가드 다크니스 폴스" => "Midgard Darkness Falls",
+					"하이버니아 다크니스 폴스" => "Hibernia Darkness Falls",
+					"알비온 본토" => "Albion Mainland",
+					"미드가드 본토" => "Midgard Mainland",
+					"하이버니아 본토" => "Hibernia Mainland",
+					"알비온 던전" => "Albion Dungeons",
+					"미드가드 던전" => "Midgard Dungeons",
+					"하이버니아 던전" => "Hibernia Dungeons",
+					"알비온 슈라우디드 아일스" => "Albion Shrouded Isles",
+					"미드가드 슈라우디드 아일스" => "Midgard Shrouded Isles",
+					"하이버니아 슈라우디드 아일스" => "Hibernia Shrouded Isles",
+					"알비온 오세아누스" => "Albion Oceanus",
+					"미드가드 오세아누스" => "Midgard Oceanus",
+					"하이버니아 오세아누스" => "Hibernia Oceanus",
+						"주택" => "Housing",
+						"입구" => "Entrance",
+					"개인 주택" => "Personal",
+					"길드 주택" => "Guild",
+					"귀환 위치" => "Hearth",
+					"카멜롯" => "Camelot",
+					"요르드하임" => "Jordheim",
+					"티르 나 노그" => "Tir na Nog",
+					"소바쥬 숲" => "Forest Sauvage",
+					"소바쥬 성" => "Castle Sauvage",
+					"스노도니아 요새" => "Snowdonia Fortress",
+					"업플란드" => "Uppland",
+					"스바수드 파스테" => "Svasud Faste",
+					"빈드사울 파스테" => "Vindsaul Faste",
+					"크루아찬 협곡" => "Cruachan Gorge",
+					"드루임 리겐" => "Druim Ligen",
+					"드루임 케인" => "Druim Cain",
+					"코츠월드 마을" => "Cotswold Village",
+					"프리드웬 성채" => "Prydwen Keep",
+					"케어 울프위치" => "Caer Ulfwych",
+					"캄파코렌틴 기지" => "Campacorentin Station",
+					"아드리바드 은거지" => "Adribard's Retreat",
+					"콘월 기지" => "Cornwall Station",
+					"스완턴 성채" => "Swanton Keep",
+					"라이오네스" => "Lyonesse",
+					"다트무어" => "Dartmoor",
+					"인코뉴 납골당" => "Inconnu Crypt",
+					"미트라 무덤" => "Tomb of Mithra",
+					"켈토이 포구" => "Keltoi Fogou",
+					"테폭 광산" => "Tepok's Mine",
+					"카르도바 지하묘지" => "Catacombs of Cardova",
+					"스톤헨지 고분" => "Stonehenge Barrows",
+					"크론돈" => "Krondon",
+					"아발론 시티" => "Avalon City",
+					"케어 시디" => "Caer Sidi",
+					"케어 고스웨이트" => "Caer Gothwaite",
+					"위어리얼 마을" => "Wearyall Village",
+					"귄텔 요새" => "Fort Gwyntell",
+					"케어 디오겔" => "Caer Diogel",
+					"물란" => "Mularn",
+					"벨돈 요새" => "Fort Veldon",
+					"아우들리텐" => "Audliten",
+					"후긴펠" => "Huginfell",
+					"아틀라 요새" => "Fort Atla",
+					"그나 파스테" => "Gna Faste",
+					"라우마리크" => "Raumarik",
+					"말모후스" => "Malmohus",
+					"코볼드 지하도시" => "Kobold Undercity",
+					"니스의 소굴" => "Nisse's Lair",
+					"저주받은 무덤" => "Cursed Tomb",
+					"벤도 동굴" => "Vendo Caverns",
+					"바룰브함" => "Varulvhamn",
+					"스핀델할라" => "Spindelhalla",
+					"이아른비디우르의 소굴" => "Iarnvidiur's Lair",
+					"트롤하임" => "Trollheim",
+					"투스카렌 빙하" => "Tuscaren Glacier",
+					"에기르함" => "Aegirhamn",
+					"비야르켄" => "Bjarken",
+					"하갈" => "Hagall",
+					"크나르" => "Knarr",
+					"마그 멜" => "Mag Mell",
+					"티르 나 므베오" => "Tir na mBeo",
+					"아르다" => "Ardagh",
+					"호스" => "Howth",
+					"콘라" => "Connla",
+					"이니스 카르사이그" => "Innis Carthaig",
+					"저주받은 숲" => "Cursed Forest",
+					"시어로 언덕" => "Sheeroe Hills",
+					"샤르 미궁" => "Shar Labyrinth",
+					"뮤어 무덤" => "Muire Tomb",
+					"스프래곤 소굴" => "Spraggon Den",
+					"코알린스 동굴" => "Koalinth Caverns",
+					"트레이브 카일테" => "Treibh Caillte",
+					"코러스케이팅 광산" => "Coruscating Mine",
+					"투르 수일" => "Tur Suil",
+					"포모르" => "Fomor",
+					"갈라도리아" => "Galladoria",
+					"돔난" => "Domnann",
+					"드로하이드" => "Droighaid",
+					"알리드 페이" => "Aalid Feie",
+					"네흐트" => "Necht",
+					_ => text
+				};
 
 			switch (text.ToUpper())
 			{
 				// Realm specific menus
 				case "ALBION":
-					SayTo(player, DisplayTeleportDestinations(eRealm.Albion));
+					SayTo(player, DisplayTeleportDestinations(eRealm.Albion, player.Client.Account.Language));
 					return true;
 				case "MIDGARD":
-					SayTo(player, DisplayTeleportDestinations(eRealm.Midgard));
+					SayTo(player, DisplayTeleportDestinations(eRealm.Midgard, player.Client.Account.Language));
 					return true;
 				case "HIBERNIA":
-					SayTo(player, DisplayTeleportDestinations(eRealm.Hibernia));
+					SayTo(player, DisplayTeleportDestinations(eRealm.Hibernia, player.Client.Account.Language));
 					return true;
 
 				case "ALBION FRONTIERS":
-					sRet.Append("Where in the frontiers would you like to go?\n[Forest Sauvage]\n[Castle Sauvage]\n[Snowdonia Fortress]\n");
-					sRet.Append("[Albion Agramon]");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.AlbionFrontiers"));
 					return true;
 				case "ALBION MAINLAND":
-					sRet.Append("Where in Albion would you like to go?\n");
+					sRet.Append(LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.AlbionMainland.Header"));
 					if (!ServerProperties.Properties.DISABLE_TUTORIAL && player.Level <= 15)
 						sRet.Append("[Holtham] (Levels 1-9)\n");
-					sRet.Append("[Cotswold Village] (Levels 10-14)\n[Prydwen Keep] (Levels 15-19)\n");
-					sRet.Append("[Caer Ulfwych] (Levels 20-24)\n[Campacorentin Station] (Levels 25-29)\n[Adribard's Retreat] (Levels 30-34)\n");
-					sRet.Append("[Cornwall Station] (Levels 35+)\n[Swanton Keep] (Levels 35+)\n[Lyonesse] (Levels 45+)\n[Dartmoor] (Levels 45+) \n");
-					sRet.Append("[Inconnu Crypt]");
+					sRet.Append(LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.AlbionMainland.Body"));
 					SayTo(player, sRet.ToString());
 					return true;
 				case "ALBION DUNGEONS":
-					sRet.Append("Which dungeon would you like to teleport to?\n");
-					sRet.Append("[Tomb of Mithra] (Levels 10-18)\n[Keltoi Fogou] (Levels 18-26)\n[Tepok's Mine] (Levels 26-34)\n");
-					sRet.Append("[Catacombs of Cardova] (Levels 34-42)\n[Stonehenge Barrows] (Levels 42-50)\n");
-					sRet.Append("[Krondon] (Levels 50+)\n[Avalon City] (Epic)\n[Caer Sidi] (Epic)");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.AlbionDungeons"));
 					return true;
 				case "ALBION SHROUDED ISLES":
-					sRet.Append("Where in Avalon would you like to go?\n");
-					sRet.Append("[Caer Gothwaite]\n[Wearyall Village]\n[Fort Gwyntell]\n[Caer Diogel]");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.AlbionShroudedIsles"));
 					return true;
 
 				case "MIDGARD FRONTIERS":
-					sRet.Append("Where in the frontiers would you like to go?\n[Uppland]\n[Svasud Faste]\n[Vindsaul Faste]\n");
-					sRet.Append("[Midgard Agramon]");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.MidgardFrontiers"));
 					return true;
 				case "MIDGARD MAINLAND":
-					sRet.Append("Where in Midgard would you like to go?\n");
+					sRet.Append(LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.MidgardMainland.Header"));
 					if (!ServerProperties.Properties.DISABLE_TUTORIAL && player.Level <= 15)
 						sRet.Append("[Hafheim] (Levels 1-9)\n");
-					sRet.Append("[Mularn] (Levels 10-14)\n[Fort Veldon] (Levels 15-19)\n");
-					sRet.Append("[Audliten] (Levels 20-24)\n[Huginfell] (Levels 25-29)\n[Fort Atla] (Levels 30-34)\n");
-					sRet.Append("[Gna Faste] (Levels 35+)\n[Vindsaul Faste] (Levels 35+)\n[Raumarik] (Levels 45+)\n[Malmohus] (Levels 45+)\n");
-					sRet.Append("[Kobold Undercity]");
+					sRet.Append(LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.MidgardMainland.Body"));
 					SayTo(player, sRet.ToString());
 					return true;
 				case "MIDGARD DUNGEONS":
-					sRet.Append("Which dungeon would you like to teleport to?\n");
-					sRet.Append("[Nisse's Lair] (Levels 10-18)\n[Cursed Tomb] (Levels 18-26)\n[Vendo Caverns] (Levels 26-34)\n");
-					sRet.Append("[Varulvhamn] (Levels 34-42)\n[Spindelhalla ] (Levels 42-50),\n");
-					sRet.Append("[Iarnvidiur's Lair] (Levels 50+)\n[Trollheim] (Epic)\n[Tuscaren Glacier] (Epic)");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.MidgardDungeons"));
 					return true;
 				case "MIDGARD SHROUDED ISLES":
-					sRet.Append("Where in Aegir would you like to go?\n");
-					sRet.Append("[Aegirhamn]\n[Bjarken]\n[Hagall]\n[Knarr]");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.MidgardShroudedIsles"));
 					return true;
 
 				case "HIBERNIA FRONTIERS":
-					sRet.Append("Where in the frontiers would you like to go?\n[Cruachan Gorge]\n[Druim Ligen]\n[Druim Cain]\n");
-					sRet.Append("[Hibernia Agramon]");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.HiberniaFrontiers"));
 					return true;
 				case "HIBERNIA MAINLAND":
-					sRet.Append("Where in Hibernia would you like to go?\n");
+					sRet.Append(LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.HiberniaMainland.Header"));
 					if (!ServerProperties.Properties.DISABLE_TUTORIAL && player.Level <= 15)
 						sRet.Append("[Fintain] (Levels 1-9)\n");
-					sRet.Append("[Mag Mell] (Levels 10-14)\n[Tir na mBeo] (Levels 15-19)\n");
-					sRet.Append("[Ardagh] (Levels 20-24)\n[Howth] (Levels 25-29)\n[Connla] (Levels 30-34)\n");
-					sRet.Append("[Innis Carthaig] (Levels 35+)\n[Druim Cain] (Levels 35+)\n[Cursed Forest] (Levels 45+)\n[Sheeroe Hills] (Levels 45+)\n");
-					sRet.Append("[Shar Labyrinth]");
+					sRet.Append(LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.HiberniaMainland.Body"));
 					SayTo(player, sRet.ToString());
 					return true;
 				case "HIBERNIA DUNGEONS":
-					sRet.Append("Which dungeon would you like to teleport to?\n");
-					sRet.Append("[Muire Tomb] (Levels 10-18)\n[Spraggon Den] (Levels 18-26)\n[Koalinth Caverns] (Levels 26-34)\n");
-					sRet.Append("[Treibh Caillte] (Levels 34-42)\n[Coruscating Mine] (Levels 42-50)\n");
-					sRet.Append("[Tur Suil] (Levels 50+)\n[Fomor] (Epic)\n[Galladoria] (Epic)");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.HiberniaDungeons"));
 					return true;
 
 				case "HIBERNIA SHROUDED ISLES":
-					sRet.Append("Where in Hy Brasil would you like to go?\n");
-					sRet.Append("[Domnann]\n[Droighaid]\n[Aalid Feie]\n[Necht]");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.HiberniaShroudedIsles"));
 					return true;
 
 				case "HOUSING":
-					sRet.Append("\nI can send you to:\n Your [personal] house, if you have one,\n");
-					sRet.Append("The housing [entrance],\nYour [guild] house,\nor your [Hearth] bind.");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Menu.Housing"));
 					return true;
 
 				// DF locations
@@ -216,16 +281,16 @@ namespace DOL.GS
 
 				// Albion destinations
 				case "CAMELOT":
-					SayTo(player, "The great city awaits!");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.GreatCityAwaits"));
 					realmTarget = eRealm.Albion;
 					break;
 				case "ALBION OCEANUS":
 					if (player.Client.Account.PrivLevel < ServerProperties.Properties.ATLANTIS_TELEPORT_PLVL)
 					{
-						SayTo(player, "I'm sorry, but you are not authorized to enter Atlantis at this time.");
+						SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.AtlantisUnauthorized"));
 						return true;
 					}
-					SayTo(player, "You will soon arrive in the Haven of Oceanus.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.OceanusArrival"));
 					realmTarget = eRealm.Albion;
 					text = "Oceanus";
 					break;
@@ -234,7 +299,7 @@ namespace DOL.GS
 				case "DIOGEL":
 				case "GWYNTELL":
 				case "WEARYALL":
-					SayTo(player, "The Shrouded Isles await you.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.ShroudedIslesAwait"));
 					realmTarget = eRealm.Albion;
 					break;
 				// Mainland destinations
@@ -257,23 +322,16 @@ namespace DOL.GS
 				case "KRONDON":
 				case "AVALON CITY":
 				case "CAER SIDI":
-					sRet.Append("You shall soon arrive in ");
-					sRet.Append(text);
-					sRet.Append(".");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.ArriveIn", text));
 					realmTarget = eRealm.Albion;
 					break;
 				case "FOREST SAUVAGE":
-					SayTo(player, "Now to the Frontiers for the glory of the realm!");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.ToFrontiers"));
 					realmTarget = eRealm.Albion;
 					break;
 				case "CASTLE SAUVAGE":
 				case "SNOWDONIA FORTRESS":
-					sRet.Append(text);
-					sRet.Append(" is what you seek, and ");
-					sRet.Append(text);
-					sRet.Append(" is what you shall find.");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.SeekAndFind", text));
 					realmTarget = eRealm.Albion;
 					break;
 				case "INCONNU CRYPT":
@@ -288,9 +346,9 @@ namespace DOL.GS
 					break;
 				case "HOLTHAM":
 					if (ServerProperties.Properties.DISABLE_TUTORIAL)
-						SayTo(player, "Sorry, this place is not available for now !");
+						SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.PlaceUnavailableNow"));
 					else if (player.Level > 15)
-						SayTo(player, "Sorry, you are far too experienced to enjoy this place !");
+						SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.TooExperienced"));
 					else
 					{
 						realmTarget = eRealm.Albion;
@@ -300,16 +358,16 @@ namespace DOL.GS
 
 				// Midgard
 				case "JORDHEIM":
-					SayTo(player, "The great city awaits!");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.GreatCityAwaits"));
 					realmTarget = eRealm.Midgard;
 					break;
 				case "MIDGARD OCEANUS":
 					if (player.Client.Account.PrivLevel < ServerProperties.Properties.ATLANTIS_TELEPORT_PLVL)
 					{
-						SayTo(player, "I'm sorry, but you are not authorized to enter Atlantis at this time.");
+						SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.AtlantisUnauthorized"));
 						return true;
 					}
-					SayTo(player, "You will soon arrive in the Haven of Oceanus.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.OceanusArrival"));
 					realmTarget = eRealm.Midgard;
 					text = "Oceanus";
 					break;
@@ -318,7 +376,7 @@ namespace DOL.GS
 				case "BJARKEN":
 				case "HAGALL":
 				case "KNARR":
-					SayTo(player, "The Shrouded Isles await you.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.ShroudedIslesAwait"));
 					realmTarget = eRealm.Midgard;
 					break;
 				// Mainland destinations
@@ -340,10 +398,7 @@ namespace DOL.GS
 				case "IARNVIDIUR'S LAIR":
 				case "TROLLHEIM":
 				case "TUSCAREN GLACIER":
-					sRet.Append("You shall soon arrive in ");
-					sRet.Append(text);
-					sRet.Append(".");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.ArriveIn", text));
 					realmTarget = eRealm.Midgard;
 					break;
 				case "KOBOLD UNDERCITY":
@@ -357,23 +412,19 @@ namespace DOL.GS
 					realmTarget = eRealm.Midgard;
 					break;
 				case "UPPLAND":
-					SayTo(player, "Now to the Frontiers for the glory of the realm!");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.ToFrontiers"));
 					realmTarget = eRealm.Midgard;
 					break;
 				case "SVASUD FASTE":
 				case "VINDSAUL FASTE":
-					sRet.Append(text);
-					sRet.Append(" is what you seek, and ");
-					sRet.Append(text);
-					sRet.Append(" is what you shall find.");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.SeekAndFind", text));
 					realmTarget = eRealm.Midgard;
 					break;
 				case "HAFHEIM":
 					if (ServerProperties.Properties.DISABLE_TUTORIAL)
-						SayTo(player, "Sorry, this place is not available for now !");
+						SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.PlaceUnavailableNow"));
 					else if (player.Level > 15)
-						SayTo(player, "Sorry, you are far too experienced to enjoy this place !");
+						SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.TooExperienced"));
 					else
 					{
 						realmTarget = eRealm.Midgard;
@@ -383,16 +434,16 @@ namespace DOL.GS
 
 				// Hibernia
 				case "TIR NA NOG":
-					SayTo(player, "The great city awaits!");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.GreatCityAwaits"));
 					realmTarget = eRealm.Hibernia;
 					break;
 				case "HIBERNIA OCEANUS":
 					if (player.Client.Account.PrivLevel < ServerProperties.Properties.ATLANTIS_TELEPORT_PLVL)
 					{
-						SayTo(player, "I'm sorry, but you are not authorized to enter Atlantis at this time.");
+						SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.AtlantisUnauthorized"));
 						return true;
 					}
-					SayTo(player, "You will soon arrive in the Haven of Oceanus.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.OceanusArrival"));
 					realmTarget = eRealm.Hibernia;
 					text = "Oceanus";
 					break;
@@ -401,7 +452,7 @@ namespace DOL.GS
 				case "NECHT":
 				case "AALID FEIE":
 				case "DROIGHAID":
-					SayTo(player, "The Shrouded Isles await you.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.ShroudedIslesAwait"));
 					realmTarget = eRealm.Hibernia;
 					break;
 				// Mainland locations
@@ -423,23 +474,16 @@ namespace DOL.GS
 				case "TUR SUIL":
 				case "FOMOR":
 				case "GALLADORIA":
-					sRet.Append("You shall soon arrive in ");
-					sRet.Append(text);
-					sRet.Append(".");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.ArriveIn", text));
 					realmTarget = eRealm.Hibernia;
 					break;
 				case "CRUACHAN GORGE":
-					SayTo(player, "Now to the Frontiers for the glory of the realm!");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.ToFrontiers"));
 					realmTarget = eRealm.Hibernia;
 					break;
 				case "DRUIM CAIN":
 				case "DRUIM LIGEN":
-					sRet.Append(text);
-					sRet.Append(" is what you seek, and ");
-					sRet.Append(text);
-					sRet.Append(" is what you shall find.");
-					SayTo(player, sRet.ToString());
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.SeekAndFind", text));
 					realmTarget = eRealm.Hibernia;
 					break;
 				case "SHAR LABYRINTH":
@@ -454,9 +498,9 @@ namespace DOL.GS
 					break;
 				case "FINTAIN":
 					if (ServerProperties.Properties.DISABLE_TUTORIAL)
-						SayTo(player, "Sorry, this place is not available for now !");
+						SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.PlaceUnavailableNow"));
 					else if (player.Level > 15)
-						SayTo(player, "Sorry, you are far too experienced to enjoy this place !");
+						SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.TooExperienced"));
 					else
 					{
 						text = "Fintain";
@@ -472,10 +516,11 @@ namespace DOL.GS
 						return true;
 					}
 
-					SayTo(player, "I will teleport you to the appropriate battleground for your level and Realm Rank. If you exceed the Realm Rank for a battleground, you will not teleport. Please gain more experience to go to the next battleground.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.BattlegroundInfo"));
 					break;
 				case "ENTRANCE":
 				case "PERSONAL":
+				case "GUILD":
 				case "HEARTH":
 					realmTarget = player.Realm;
 					break;
@@ -485,16 +530,41 @@ namespace DOL.GS
 
 			// Find the teleport location in the database.
 			DbTeleport port = GetTeleportLocation(player, text, realmTarget);
-			if (port != null)
+			if (port == null)
+			{
+				SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Response.UnsupportedDestination"));
+			}
+			else if (IsDestinationAvailable(player, port))
+			{
 				OnTeleportSpell(player, port);
-			else
-				SayTo(player, "This destination is not yet supported.");
+			}
 
 			return true;
 		}
 
+		private static bool IsDestinationAvailable(GamePlayer player, DbTeleport destination)
+		{
+			Region region = WorldMgr.GetRegion((ushort)destination.RegionID);
+
+			if (region != null && !region.IsDisabled)
+				return true;
+
+			player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "GameTeleporter.DestinationUnavailable"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+			return false;
+		}
+
 		protected DbTeleport GetTeleportLocation(GamePlayer player, string text, eRealm realm)
 		{
+			text = text switch
+			{
+				"주택" => "housing",
+				"입구" => "entrance",
+				"개인 주택" => "personal",
+				"길드 주택" => "guild",
+				"귀환 위치" => "hearth",
+				_ => text
+			};
+
 			// Battlegrounds are specials, as the teleport location depends on
 			// the level of the player, so let's deal with that first.
 			if (text.ToLower() == "battlegrounds")
@@ -522,7 +592,7 @@ namespace DOL.GS
 					{
 						if (player.Client.Account.PrivLevel > (uint)ePrivLevel.Player)
 						{
-							player.Out.SendMessage("No portal keep found.", eChatType.CT_Items, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "GameTeleporter.NoPortalKeepFound"), eChatType.CT_Items, eChatLoc.CL_SystemWindow);
 						}
 						return null;
 					}
@@ -561,7 +631,7 @@ namespace DOL.GS
 				// Check if player has set a house bind
 				if (!(player.BindHouseRegion > 0))
 				{
-					SayTo(player, "Sorry, you haven't set any house bind point yet.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Hearth.NoBindPoint"));
 					return null;
 				}
 
@@ -571,8 +641,7 @@ namespace DOL.GS
 					BindHouseYpos, 700);
 				if (houses.Count == 0)
 				{
-					SayTo(player, "I'm afraid I can't teleport you to your hearth since the house at your " +
-						"house bind location has been torn down.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Hearth.HouseRemoved"));
 					return null;
 				}
 
@@ -592,16 +661,14 @@ namespace DOL.GS
 
 				if (!hasBindstone)
 				{
-					SayTo(player, "I'm sorry to tell that the bindstone of your current house bind location " +
-						"has been removed, so I'm not able to teleport you there.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Hearth.BindstoneRemoved"));
 					return null;
 				}
 
 				// Check if the player has the permission to bind at the house bind stone
 				if (!targetHouse.CanBindInHouse(player))
 				{
-					SayTo(player, "You're no longer allowed to bind at the house bindstone you've previously " +
-						"chosen, hence I'm not allowed to teleport you there.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "AllRealmsTeleporter.Hearth.NoBindPermission"));
 					return null;
 				}
 

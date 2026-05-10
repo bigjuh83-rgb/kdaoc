@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -55,24 +55,32 @@ namespace DOL.GS.Quests.Midgard
 		protected const int minimumLevel = 50;
 		protected const int maximumLevel = 50;
 
+		private static string L(GamePlayer player, string key, params object[] args)
+		{
+			string language = player != null && player.Client != null && player.Client.Account != null
+				? player.Client.Account.Language
+				: ServerProperties.Properties.SERV_LANGUAGE;
+			return DOL.Language.LanguageMgr.GetTranslation(language, key, args);
+		}
+
 		private static GameNPC Inaksha = null; // Start NPC
 		private static Loken Loken = null; // Mob to kill
 		private static GameNPC Miri = null; // Trainer for reward
 
 		private static DbItemTemplate ball_of_flame = null; //ball of flame
 		private static DbItemTemplate sealed_pouch = null; //sealed pouch
-		private static DbItemTemplate HealerEpicBoots = null; //Valhalla Touched Boots 
-		private static DbItemTemplate HealerEpicHelm = null; //Valhalla Touched Coif 
-		private static DbItemTemplate HealerEpicGloves = null; //Valhalla Touched Gloves 
-		private static DbItemTemplate HealerEpicVest = null; //Valhalla Touched Hauberk 
-		private static DbItemTemplate HealerEpicLegs = null; //Valhalla Touched Legs 
-		private static DbItemTemplate HealerEpicArms = null; //Valhalla Touched Sleeves 
-		private static DbItemTemplate ShamanEpicBoots = null; //Subterranean Boots 
-		private static DbItemTemplate ShamanEpicHelm = null; //Subterranean Coif 
-		private static DbItemTemplate ShamanEpicGloves = null; //Subterranean Gloves 
-		private static DbItemTemplate ShamanEpicVest = null; //Subterranean Hauberk 
-		private static DbItemTemplate ShamanEpicLegs = null; //Subterranean Legs 
-		private static DbItemTemplate ShamanEpicArms = null; //Subterranean Sleeves         
+		private static DbItemTemplate HealerEpicBoots = null; //Valhalla Touched Boots
+		private static DbItemTemplate HealerEpicHelm = null; //Valhalla Touched Coif
+		private static DbItemTemplate HealerEpicGloves = null; //Valhalla Touched Gloves
+		private static DbItemTemplate HealerEpicVest = null; //Valhalla Touched Hauberk
+		private static DbItemTemplate HealerEpicLegs = null; //Valhalla Touched Legs
+		private static DbItemTemplate HealerEpicArms = null; //Valhalla Touched Sleeves
+		private static DbItemTemplate ShamanEpicBoots = null; //Subterranean Boots
+		private static DbItemTemplate ShamanEpicHelm = null; //Subterranean Coif
+		private static DbItemTemplate ShamanEpicGloves = null; //Subterranean Gloves
+		private static DbItemTemplate ShamanEpicVest = null; //Subterranean Hauberk
+		private static DbItemTemplate ShamanEpicLegs = null; //Subterranean Legs
+		private static DbItemTemplate ShamanEpicArms = null; //Subterranean Sleeves
 
 		// Constructors
 		public Seer_50() : base()
@@ -96,7 +104,7 @@ namespace DOL.GS.Quests.Midgard
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -303,7 +311,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 			}
 //end item
-			//Valhalla Touched Coif 
+			//Valhalla Touched Coif
 			HealerEpicHelm = GameServer.Database.FindObjectByKey<DbItemTemplate>("HealerEpicHelm");
 			if (HealerEpicHelm == null)
 			{
@@ -347,7 +355,7 @@ namespace DOL.GS.Quests.Midgard
 
 			}
 //end item
-			//Valhalla Touched Gloves 
+			//Valhalla Touched Gloves
 			HealerEpicGloves = GameServer.Database.FindObjectByKey<DbItemTemplate>("HealerEpicGloves");
 			if (HealerEpicGloves == null)
 			{
@@ -390,7 +398,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Valhalla Touched Hauberk 
+			//Valhalla Touched Hauberk
 			HealerEpicVest = GameServer.Database.FindObjectByKey<DbItemTemplate>("HealerEpicVest");
 			if (HealerEpicVest == null)
 			{
@@ -433,7 +441,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Valhalla Touched Legs 
+			//Valhalla Touched Legs
 			HealerEpicLegs = GameServer.Database.FindObjectByKey<DbItemTemplate>("HealerEpicLegs");
 			if (HealerEpicLegs == null)
 			{
@@ -476,7 +484,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Valhalla Touched Sleeves 
+			//Valhalla Touched Sleeves
 			HealerEpicArms = GameServer.Database.FindObjectByKey<DbItemTemplate>("HealerEpicArms");
 			if (HealerEpicArms == null)
 			{
@@ -519,7 +527,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Subterranean Boots 
+			//Subterranean Boots
 			ShamanEpicBoots = GameServer.Database.FindObjectByKey<DbItemTemplate>("ShamanEpicBoots");
 			if (ShamanEpicBoots == null)
 			{
@@ -559,7 +567,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Subterranean Coif 
+			//Subterranean Coif
 			ShamanEpicHelm = GameServer.Database.FindObjectByKey<DbItemTemplate>("ShamanEpicHelm");
 			if (ShamanEpicHelm == null)
 			{
@@ -602,7 +610,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Subterranean Gloves 
+			//Subterranean Gloves
 			ShamanEpicGloves = GameServer.Database.FindObjectByKey<DbItemTemplate>("ShamanEpicGloves");
 			if (ShamanEpicGloves == null)
 			{
@@ -645,7 +653,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Subterranean Hauberk 
+			//Subterranean Hauberk
 			ShamanEpicVest = GameServer.Database.FindObjectByKey<DbItemTemplate>("ShamanEpicVest");
 			if (ShamanEpicVest == null)
 			{
@@ -688,7 +696,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Subterranean Legs 
+			//Subterranean Legs
 			ShamanEpicLegs = GameServer.Database.FindObjectByKey<DbItemTemplate>("ShamanEpicLegs");
 			if (ShamanEpicLegs == null)
 			{
@@ -731,7 +739,7 @@ namespace DOL.GS.Quests.Midgard
 				}
 
 			}
-			//Subterranean Sleeves 
+			//Subterranean Sleeves
 			ShamanEpicArms = GameServer.Database.FindObjectByKey<DbItemTemplate>("ShamanEpicArms");
 			if (ShamanEpicArms == null)
 			{
@@ -816,7 +824,7 @@ namespace DOL.GS.Quests.Midgard
 
 		protected static void TalkToInaksha(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -835,20 +843,20 @@ namespace DOL.GS.Quests.Midgard
 					switch (quest.Step)
 					{
 						case 1:
-							Inaksha.SayTo(player, $"Hey {player.Name}, please travel to Raumarik and find Loken!");
+							Inaksha.SayTo(player, L(player, "Quest.Epic.Seer50.Step1Reminder", player.Name));
 							break;
 						case 2:
-							Inaksha.SayTo(player, $"Welcome back {player.Name}, do you [have something] for me?");
+							Inaksha.SayTo(player, L(player, "Quest.Epic.Seer50.Step2Reminder", player.Name));
 							break;
 						case 3:
-							Inaksha.SayTo(player, $"Hey {player.Name}, please visit Miri in Jordheim and bring her the [sealed pouch]!");
+							Inaksha.SayTo(player, L(player, "Quest.Epic.Seer50.Step3Reminder", player.Name));
 							break;
 					}
-					
+
 				}
 				else
 				{
-					Inaksha.SayTo(player, "Midgard needs your [services].");
+					Inaksha.SayTo(player, L(player, "Quest.Epic.Seer50.Intro"));
 				}
 			}
 				// The player whispered to the NPC
@@ -861,7 +869,8 @@ namespace DOL.GS.Quests.Midgard
 					switch (wArgs.Text)
 					{
 						case "services":
-							player.Out.SendQuestSubscribeCommand(Inaksha, QuestMgr.GetIDForQuestType(typeof(Seer_50)), "Will you help Inaksha [Seer Level 50 Epic]?");
+						case "도움":
+							player.Out.SendQuestSubscribeCommand(Inaksha, QuestMgr.GetIDForQuestType(typeof(Seer_50)), L(player, "Quest.Epic.Seer50.Subscribe"));
 							break;
 					}
 				}
@@ -870,23 +879,25 @@ namespace DOL.GS.Quests.Midgard
 					switch (wArgs.Text)
 					{
 						case "have something":
+						case "줄 물건":
 							if (quest.Step == 2)
 							{
 								RemoveItem(player, ball_of_flame);
 								quest.Step = 3;
-								Inaksha.SayTo(player, "Great! Please visit Miri in Jordheim now and bring her the [sealed pouch].");
+								Inaksha.SayTo(player, L(player, "Quest.Epic.Seer50.VisitMiri"));
 							}
 							break;
 						case "sealed pouch":
+						case "봉인된 주머니":
 							if (quest.Step == 3)
 							{
-								Inaksha.SayTo(player, "Take this sealed pouch to Miri in Jordheim for your reward!");
+								Inaksha.SayTo(player, L(player, "Quest.Epic.Seer50.TakePouch"));
 								GiveItem(Inaksha, player, sealed_pouch);
 								quest.Step = 4;
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
@@ -900,7 +911,7 @@ namespace DOL.GS.Quests.Midgard
 					if (rArgs.Item.Id_nb == ball_of_flame.Id_nb && quest.Step >= 2)
 					{
 						RemoveItem(player, ball_of_flame);
-						Inaksha.SayTo(player, "Great! Please visit Miri in Jordheim now and bring her the [sealed pouch].");
+						Inaksha.SayTo(player, L(player, "Quest.Epic.Seer50.VisitMiri"));
 						quest.Step = 3;
 					}
 				}
@@ -910,7 +921,7 @@ namespace DOL.GS.Quests.Midgard
 
 		protected static void TalkToMiri(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -927,12 +938,12 @@ namespace DOL.GS.Quests.Midgard
 				{
 					if (quest.Step == 4)
 					{
-						Miri.SayTo(player, "Were you able to [fulfill] your given task?");
+						Miri.SayTo(player, L(player, "Quest.Epic.Seer50.FulfillReminder"));
 					}
 				}
 				else
 				{
-					Miri.SayTo(player, "Danica and I need your help to seek out Loken in Raumarik and to kill him!");
+					Miri.SayTo(player, L(player, "Quest.Epic.Seer50.MiriIntro"));
 				}
 			}
 			else if (e == GameLivingEvent.WhisperReceive)
@@ -947,17 +958,18 @@ namespace DOL.GS.Quests.Midgard
 					switch (wArgs.Text)
 					{
 						case "fulfill":
+						case "완수":
 							if (quest.Step == 4)
 							{
 								RemoveItem(player, sealed_pouch);
 								if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 									    eInventorySlot.LastBackpack))
 								{
-									Miri.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+									Miri.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 									quest.FinishQuest();
 								}
 								else
-									player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+									player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 							}
 							break;
 					}
@@ -972,11 +984,11 @@ namespace DOL.GS.Quests.Midgard
 						if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 							    eInventorySlot.LastBackpack))
 						{
-							Miri.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+							Miri.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 							quest.FinishQuest();
 						}
 						else
-							player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					}
 			}
 
@@ -1019,11 +1031,11 @@ namespace DOL.GS.Quests.Midgard
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, no go out there and finish your work!");
+				SendSystemMessage(player, L(player, "Quest.Epic.Seer50.AbortDecline"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -1053,7 +1065,7 @@ namespace DOL.GS.Quests.Midgard
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Our God forgives your laziness, just look out for stray lightning bolts.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(L(player, "Quest.Epic.Seer50.Decline"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -1061,14 +1073,14 @@ namespace DOL.GS.Quests.Midgard
 				if (!Inaksha.GiveQuest(typeof (Seer_50), player, 1))
 					return;
 
-				player.Out.SendMessage("Good now go kill him!", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(L(player, "Quest.Epic.Seer50.Accept"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 			}
 		}
 
 		//Set quest name
 		public override string Name
 		{
-			get { return "The Desire of a God (Level 50 Seer Epic)"; }
+			get { return L(m_questPlayer, "Quest.Epic.Seer50.Name"); }
 		}
 
 		// Define Steps
@@ -1079,13 +1091,13 @@ namespace DOL.GS.Quests.Midgard
 				switch (Step)
 				{
 					case 1:
-						return "Seek out Loken in Raumarik and kill him!";
+						return L(m_questPlayer, "Quest.Epic.Seer50.Description1");
 					case 2:
-						return "Return to Inaksha and give her the Ball of Flame!";
+						return L(m_questPlayer, "Quest.Epic.Seer50.Description2");
 					case 3:
-						return "Talk with Inaksha about Loken's demise!";
+						return L(m_questPlayer, "Quest.Epic.Seer50.Description3");
 					case 4:
-						return "Go to Miri in Jordheim and give her the Sealed Pouch for your reward!";
+						return L(m_questPlayer, "Quest.Epic.Seer50.Description4");
 				}
 				return base.Description;
 			}
@@ -1100,13 +1112,13 @@ namespace DOL.GS.Quests.Midgard
 
 			if (sender != m_questPlayer)
 				return;
-			
+
 			if (Step == 1 && e == GameLivingEvent.EnemyKilled)
 			{
 				EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
 				if (gArgs.Target.Name == Loken.Name)
 				{
-					m_questPlayer.Out.SendMessage("You get a ball of flame", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					m_questPlayer.Out.SendMessage(L(m_questPlayer, "Quest.Epic.Seer50.GetFlame"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					GiveItem(player, ball_of_flame);
 					Step = 2;
 				}
@@ -1117,7 +1129,7 @@ namespace DOL.GS.Quests.Midgard
 				GiveItemEventArgs gArgs = (GiveItemEventArgs) args;
 				if (gArgs.Target.Name == Inaksha.Name && gArgs.Item.Id_nb == ball_of_flame.Id_nb)
 				{
-					Inaksha.SayTo(player, "Great! Please visit Miri in Jordheim now and bring her the [sealed pouch].");
+					Inaksha.SayTo(player, L(player, "Quest.Epic.Seer50.VisitMiri"));
 					Step = 3;
 				}
 			}
@@ -1130,11 +1142,11 @@ namespace DOL.GS.Quests.Midgard
 					if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 						    eInventorySlot.LastBackpack))
 					{
-						Miri.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+						Miri.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 						FinishQuest();
 					}
 					else
-						player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 				}
 			}
 		}
@@ -1173,24 +1185,24 @@ namespace DOL.GS.Quests.Midgard
 			}
 
 			m_questPlayer.GainExperience(eXPSource.Quest, 1937768448, true);
-			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");		
+			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");
 		}
 
 		#region Allakhazam Epic Source
 
 		/*
         *#25 talk to Inaksha
-        *#26 seek out Loken in Raumarik Loc 47k, 25k, 4k, and kill him purp and 2 blue adds 
-        *#27 return to Inaksha 
+        *#26 seek out Loken in Raumarik Loc 47k, 25k, 4k, and kill him purp and 2 blue adds
+        *#27 return to Inaksha
         *#28 give her the ball of flame
         *#29 talk with Inaksha about Loken�s demise
-        *#30 go to Miri in Jordheim 
+        *#30 go to Miri in Jordheim
         *#31 give her the sealed pouch
         *#32 you get your epic armor as a reward
         */
 
 		/*
-            *Valhalla Touched Boots 
+            *Valhalla Touched Boots
             *Valhalla Touched Coif
             *Valhalla Touched Gloves
             *Valhalla Touched Hauberk

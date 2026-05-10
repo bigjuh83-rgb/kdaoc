@@ -1,6 +1,7 @@
 using System.Collections;
 using DOL.GS.Keeps;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -46,7 +47,7 @@ namespace DOL.GS
 				}
 			}*/
 		}
-		
+
 		public int AttackRadius;
 
 		private GameNPC tempLOSSkyChecker;
@@ -57,10 +58,10 @@ namespace DOL.GS
 			if (!CanUse()) return;
 			if(SiegeWeaponTimer.IsAlive || this.IsMoving)
 			{
-				Owner.Out.SendMessage(GetName(0, true) +" isn't ready to be aimed yet!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Aim.NotReady", GetName(0, true)), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
 			}
-			
+
 			Point3D newGroundTarget = null;
 
 			if (Owner.TargetObject != null)
@@ -70,19 +71,19 @@ namespace DOL.GS
 
 			if (newGroundTarget == null)
 			{
-				Owner.Out.SendMessage("You must have a target!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Target.Required"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			//Range Checks
 			if (MinAttackRange != -1 && this.GetDistanceTo(newGroundTarget) < MinAttackRange)
 			{
-				Owner.Out.SendMessage("The " + GetName(0, false) + "'s target location is too close!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Target.LocationTooClose", GetName(0, false)), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			if (MaxAttackRange != -1 && this.GetDistanceTo(newGroundTarget) > MaxAttackRange)
 			{
-				Owner.Out.SendMessage("The " + GetName(0, false) + "'s target is too far away to reach!", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Target.TooFarForWeapon", GetName(0, false)), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -93,7 +94,7 @@ namespace DOL.GS
 			PreAction();
 			if (Owner != null)
 			{
-				Owner.Out.SendMessage(GetName(0, true) + " is turning to your target. (" + (GetActionDelay(SiegeTimer.eAction.Aiming) / 1000).ToString("N") + "s)", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Aim.Turning", GetName(0, true), (GetActionDelay(SiegeTimer.eAction.Aiming) / 1000).ToString("N")), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 
@@ -136,7 +137,7 @@ namespace DOL.GS
 					list.Add(npc);
 				}
 			}
-			
+
 			if (!list.Contains(this.TargetObject))
 			{
 				list.Add(this.TargetObject);
@@ -165,16 +166,16 @@ namespace DOL.GS
 				ad.AttackResult = eAttackResult.HitUnstyled;
 				ad.Damage = damageAmount;
 				ad.DamageType = MeleeDamageType;
-				
+
 
 				if(Owner != null)
 				{
 					ad.Attacker = Owner;
 					living.TakeDamage(Owner, eDamageType.Crush, damageAmount, 0);
 					living.OnAttackedByEnemy(ad);
-	
+
 					Owner.OnAttackEnemy(ad);
-					Owner.Out.SendMessage("The " + this.Name + " hits " + living.Name + " for " + damageAmount + " damage!", eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+					Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Hit.Damage", this.Name, living.Name, damageAmount), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
 				}
 				else
 				{
@@ -202,7 +203,7 @@ namespace DOL.GS
 				return BaseDamage;
 		}
 
-		
+
 		public override bool ReceiveItem(GameLiving source, DOL.Database.DbInventoryItem item)
 		{
 			//todo check if bullet

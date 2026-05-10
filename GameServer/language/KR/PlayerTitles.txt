@@ -1,0 +1,620 @@
+﻿# Titles
+PlayerClass.GetTitle.none:		            없음
+
+## Title Handler
+GamePlayer.CurrentTitle.TitleCleared:			칭호가 해제되었습니다.
+
+## Achievement-based Titles
+
+### Keeps/Relics Claimed
+Titles.Claim.Frontier.FrontierChallenger:	프론티어 도전자
+Titles.Claim.Frontier.FrontierVindicator:	프론티어 응징자
+Titles.Claim.Stronghold.StrongholdChief:	성채 지휘관
+Titles.Claim.Stronghold.StrongholdSoldier:	성채 병사
+
+### RvR Deathblows
+Titles.Deathblows.BattleEnforcer:			전장의 집행자
+Titles.Deathblows.BattleMaster:				전장의 달인
+
+### RvR/PvE Kills
+Titles.Kills.Albion.BaneOfAlbion:			알비온의 파멸
+Titles.Kills.Albion.ScourgeOfAlbion:		알비온의 재앙
+Titles.Kills.All.MasterAssassine:			마스터 암살자
+Titles.Kills.All.MasterEnforcer:			마스터 집행자
+Titles.Kills.All.MasterSoldier:				마스터 병사
+Titles.Kills.Demon.DemonBane:				악마의 파멸
+Titles.Kills.Demon.DemonScourge:			악마의 재앙
+Titles.Kills.Demon.DemonSlayer:				악마 사냥꾼
+Titles.Kills.Demon.DreadVanquisher:			공포의 정복자
+Titles.Kills.Dragon.DragonFoe:				드래곤의 적
+Titles.Kills.Dragon.DragonScourge:			드래곤의 재앙
+Titles.Kills.Dragon.DragonSlayer:			드래곤 슬레이어
+Titles.Kills.Epic.EpicChallenger:			에픽 도전자
+Titles.Kills.Epic.EpicVictor:				에픽 승리자
+Titles.Kills.Hibernia.BaneOfHibernia:		하이버니아의 파멸
+Titles.Kills.Hibernia.ScourgeOfHibernia:	하이버니아의 재앙
+Titles.Kills.Midgard.BaneOfMidgard:			미드가드의 파멸
+Titles.Kills.Midgard.ScourgeOfMidgard:		미드가드의 재앙
+
+### Solo Kills
+Titles.Solokills.DuelMaster:				결투의 달인
+Titles.Solokills.LoneEnforcer:				고독한 집행자
+
+### Time Played
+Titles.Time.Account.ElderTitle:				원로
+Titles.Time.Character.Veteran:				베테랑
+
+## Level-based Titles
+Titles.Level.Level20Info:				    레벨 20+
+Titles.Level.Level20:					    레벨 {0}
+
+## Privilege Level Titles
+Titles.PrivLevel.Administrator:				관리자
+Titles.PrivLevel.Gamemaster:				게임마스터
+
+## Champion Level Titles
+Titles.CL.Level1:					        탐구자
+Titles.CL.Level2:					        집행자
+Titles.CL.Level3:					        선봉 기수
+Titles.CL.Level4:					        빛의 인도자
+Titles.CL.Level5:					        국왕의 챔피언
+Titles.CL.Level6:					        국왕의 사절
+Titles.CL.Level7:					        미노타우르의 후원자
+Titles.CL.Level8:					        선지자
+Titles.CL.Level9:					        검투사
+Titles.CL.Level10:					        라비린스의 존재
+
+## Master Level Titles
+Titles.ML.Line1:					        베인로드
+Titles.ML.Line2:					        배틀마스터
+Titles.ML.Line3:					        컨보커
+Titles.ML.Line4:					        퍼펙터
+Titles.ML.Line5:					        소저너
+Titles.ML.Line6:					        스파이마스터
+Titles.ML.Line7:					        스톰로드
+Titles.ML.Line8:					        워로드
+
+## Class Titles
+
+#### Mauler
+PlayerClass.Mauler.GetTitle.50:		        마스터 마울러
+PlayerClass.Mauler.GetTitle.45:		        싸움꾼
+PlayerClass.Mauler.GetTitle.40:		        철권
+PlayerClass.Mauler.GetTitle.35:		        격투가
+PlayerClass.Mauler.GetTitle.30:		        십수
+PlayerClass.Mauler.GetTitle.25:		        공격자
+PlayerClass.Mauler.GetTitle.20:		        권투가
+PlayerClass.Mauler.GetTitle.15:		        오조
+PlayerClass.Mauler.GetTitle.10:		        돌손바닥
+PlayerClass.Mauler.GetTitle.5:		        입문 마울러
+
+### Albion
+#### Armsman
+PlayerClass.Armsman.GetTitle.50:	장군
+PlayerClass.Armsman.GetTitle.45:	대장
+PlayerClass.Armsman.GetTitle.40:	백인대장
+PlayerClass.Armsman.GetTitle.35:	부관
+PlayerClass.Armsman.GetTitle.30:	하사
+PlayerClass.Armsman.GetTitle.25:	군단병
+PlayerClass.Armsman.GetTitle.20:	병사
+PlayerClass.Armsman.GetTitle.15:	보병
+PlayerClass.Armsman.GetTitle.10:	보병 병사
+PlayerClass.Armsman.GetTitle.5:		신병
+
+#### Cabalist
+PlayerClass.Cabalist.GetTitle.50:	최고 카발리스트
+PlayerClass.Cabalist.GetTitle.45:	마스터 주입술사
+PlayerClass.Cabalist.GetTitle.40:	마스터 영혼술사
+PlayerClass.Cabalist.GetTitle.35:	생명 부여자
+PlayerClass.Cabalist.GetTitle.30:	영혼술사
+PlayerClass.Cabalist.GetTitle.25:	베테랑 카발리스트
+PlayerClass.Cabalist.GetTitle.20:	창조자
+PlayerClass.Cabalist.GetTitle.15:	주입술사
+PlayerClass.Cabalist.GetTitle.10:	숙련 카발리스트
+PlayerClass.Cabalist.GetTitle.5:	견습 카발리스트
+
+#### Cleric
+PlayerClass.Cleric.GetTitle.50:		대사제
+PlayerClass.Cleric.GetTitle.45:		추기경
+PlayerClass.Cleric.GetTitle.40:		주교
+PlayerClass.Cleric.GetTitle.35:		수도원장
+PlayerClass.Cleric.GetTitle.30:		성직자
+PlayerClass.Cleric.GetTitle.25:		부제
+PlayerClass.Cleric.GetTitle.20:		고위 성직자
+PlayerClass.Cleric.GetTitle.15:		보좌 신부
+PlayerClass.Cleric.GetTitle.10:		수련자
+PlayerClass.Cleric.GetTitle.5:		입문자
+
+#### Friar
+PlayerClass.Friar.GetTitle.50:		수석 종군사제
+PlayerClass.Friar.GetTitle.45:		마스터 심문관
+PlayerClass.Friar.GetTitle.40:		상급 종군사제
+PlayerClass.Friar.GetTitle.35:		심문관
+PlayerClass.Friar.GetTitle.30:		종군사제
+PlayerClass.Friar.GetTitle.25:		열광자
+PlayerClass.Friar.GetTitle.20:		광신도
+PlayerClass.Friar.GetTitle.15:		열성 신도
+PlayerClass.Friar.GetTitle.10:		하급 종군사제
+PlayerClass.Friar.GetTitle.5:		프라이어 수련자
+
+#### Heretic
+PlayerClass.Heretic.GetTitle.50:	아라운의 재생술사
+PlayerClass.Heretic.GetTitle.45:	아라운의 사제
+PlayerClass.Heretic.GetTitle.40:	아라운의 사도
+PlayerClass.Heretic.GetTitle.35:	아라운의 종
+PlayerClass.Heretic.GetTitle.30:	아라운의 옹호자
+PlayerClass.Heretic.GetTitle.25:	아라운의 헌신자
+PlayerClass.Heretic.GetTitle.20:	개종자
+PlayerClass.Heretic.GetTitle.15:	입문자
+PlayerClass.Heretic.GetTitle.10:	견습생
+PlayerClass.Heretic.GetTitle.5:		지원자
+
+#### Infiltrator
+PlayerClass.Infiltrator.GetTitle.50:	마스터 인필트레이터
+PlayerClass.Infiltrator.GetTitle.45:	인필트레이터
+PlayerClass.Infiltrator.GetTitle.40:	검은 손
+PlayerClass.Infiltrator.GetTitle.35:	마스터 첩자
+PlayerClass.Infiltrator.GetTitle.30:	암살자
+PlayerClass.Infiltrator.GetTitle.25:	붉은 손
+PlayerClass.Infiltrator.GetTitle.20:	첩자
+PlayerClass.Infiltrator.GetTitle.15:	푸른 손
+PlayerClass.Infiltrator.GetTitle.10:	잠복자
+PlayerClass.Infiltrator.GetTitle.5:	하얀 손
+
+#### Mercenary
+PlayerClass.Mercenary.GetTitle.50:	마스터 머서너리
+PlayerClass.Mercenary.GetTitle.45:	마스터 전사
+PlayerClass.Mercenary.GetTitle.40:	전사
+PlayerClass.Mercenary.GetTitle.35:	베테랑
+PlayerClass.Mercenary.GetTitle.30:	악한
+PlayerClass.Mercenary.GetTitle.25:	용병
+PlayerClass.Mercenary.GetTitle.20:	모험 검객
+PlayerClass.Mercenary.GetTitle.15:	에스칼라다르
+PlayerClass.Mercenary.GetTitle.10:	권투가
+PlayerClass.Mercenary.GetTitle.5:	강한 팔
+
+#### Minstrel
+PlayerClass.Minstrel.GetTitle.50:	거장
+PlayerClass.Minstrel.GetTitle.45:	마스터 독주자
+PlayerClass.Minstrel.GetTitle.40:	독주자
+PlayerClass.Minstrel.GetTitle.35:	비가 시인
+PlayerClass.Minstrel.GetTitle.30:	광시곡 연주자
+PlayerClass.Minstrel.GetTitle.25:	음유시인
+PlayerClass.Minstrel.GetTitle.20:	작사가
+PlayerClass.Minstrel.GetTitle.15:	시구 장인
+PlayerClass.Minstrel.GetTitle.10:	소네트 시인
+PlayerClass.Minstrel.GetTitle.5:	발라드 가수
+
+#### Necromancer
+PlayerClass.Necromancer.GetTitle.50:	마스터 재생술사
+PlayerClass.Necromancer.GetTitle.45:	죽음의 인도자
+PlayerClass.Necromancer.GetTitle.40:	재생술사
+PlayerClass.Necromancer.GetTitle.35:	죽음의 추구자
+PlayerClass.Necromancer.GetTitle.30:	아라운의 사제
+PlayerClass.Necromancer.GetTitle.25:	죽음의 추적자
+PlayerClass.Necromancer.GetTitle.20:	아라운의 숙련자
+PlayerClass.Necromancer.GetTitle.15:	소환사
+PlayerClass.Necromancer.GetTitle.10:	아라운의 종
+PlayerClass.Necromancer.GetTitle.5:	견습 네크로맨서
+
+#### Paladin
+PlayerClass.Paladin.GetTitle.50:	템플러
+PlayerClass.Paladin.GetTitle.45:	챔피언
+PlayerClass.Paladin.GetTitle.40:	심판관
+PlayerClass.Paladin.GetTitle.35:	십자군
+PlayerClass.Paladin.GetTitle.30:	후원자
+PlayerClass.Paladin.GetTitle.25:	가디언
+PlayerClass.Paladin.GetTitle.20:	수비자
+PlayerClass.Paladin.GetTitle.15:	보호자
+PlayerClass.Paladin.GetTitle.10:	신참
+PlayerClass.Paladin.GetTitle.5:		초심자
+
+#### Reaver
+PlayerClass.Reaver.GetTitle.50:		암흑 기사
+PlayerClass.Reaver.GetTitle.45:		아라운의 영웅
+PlayerClass.Reaver.GetTitle.40:		아라운의 수호자
+PlayerClass.Reaver.GetTitle.35:		지하세계 기사
+PlayerClass.Reaver.GetTitle.30:		아라운의 방어자
+PlayerClass.Reaver.GetTitle.25:		회색 기사
+PlayerClass.Reaver.GetTitle.20:		영혼의 보호자
+PlayerClass.Reaver.GetTitle.15:		아라운의 보호자
+PlayerClass.Reaver.GetTitle.10:		아라운의 강한 팔
+PlayerClass.Reaver.GetTitle.5:		암흑 종자
+
+#### Scout
+PlayerClass.Scout.GetTitle.50:		마스터 스카우트
+PlayerClass.Scout.GetTitle.45:		레인저
+PlayerClass.Scout.GetTitle.40:		파수꾼
+PlayerClass.Scout.GetTitle.35:		매의 눈
+PlayerClass.Scout.GetTitle.30:		길잡이
+PlayerClass.Scout.GetTitle.25:		정찰병
+PlayerClass.Scout.GetTitle.20:		감시자
+PlayerClass.Scout.GetTitle.15:		추적자
+PlayerClass.Scout.GetTitle.10:		궁수
+PlayerClass.Scout.GetTitle.5:		견습 스카우트
+
+#### Sorcerer
+PlayerClass.Sorcerer.GetTitle.50:	수석 소서러
+PlayerClass.Sorcerer.GetTitle.45:	소서러
+PlayerClass.Sorcerer.GetTitle.40:	수수께끼의 존재
+PlayerClass.Sorcerer.GetTitle.35:	매혹자
+PlayerClass.Sorcerer.GetTitle.30:	저주술사
+PlayerClass.Sorcerer.GetTitle.25:	혼란술사
+PlayerClass.Sorcerer.GetTitle.20:	유혹자
+PlayerClass.Sorcerer.GetTitle.15:	혼미술사
+PlayerClass.Sorcerer.GetTitle.10:	숙련 소서러
+PlayerClass.Sorcerer.GetTitle.5:	견습 소서러
+
+#### Theurgist
+PlayerClass.Theurgist.GetTitle.50:	마스터 써지스트
+PlayerClass.Theurgist.GetTitle.45:	마스터 소환사
+PlayerClass.Theurgist.GetTitle.40:	전투 공학자
+PlayerClass.Theurgist.GetTitle.35:	수석 공학자
+PlayerClass.Theurgist.GetTitle.30:	수석 소환사
+PlayerClass.Theurgist.GetTitle.25:	공학자
+PlayerClass.Theurgist.GetTitle.20:	공병
+PlayerClass.Theurgist.GetTitle.15:	소환사
+PlayerClass.Theurgist.GetTitle.10:	숙련 써지스트
+PlayerClass.Theurgist.GetTitle.5:	써지스트 신병
+
+#### Wizard
+PlayerClass.Wizard.GetTitle.50:		수석 마구스
+PlayerClass.Wizard.GetTitle.45:		마스터 주문 결속자
+PlayerClass.Wizard.GetTitle.40:		마스터 엘리멘탈리스트
+PlayerClass.Wizard.GetTitle.35:		기적술사
+PlayerClass.Wizard.GetTitle.30:		호출자
+PlayerClass.Wizard.GetTitle.25:		마구스
+PlayerClass.Wizard.GetTitle.20:		주문 결속자
+PlayerClass.Wizard.GetTitle.15:		엘리멘탈리스트
+PlayerClass.Wizard.GetTitle.10:		숙련 위저드
+PlayerClass.Wizard.GetTitle.5:		견습 위저드
+
+### Midgard
+#### Berserker
+PlayerClass.Berserker.GetTitle.50:	모디의 손
+PlayerClass.Berserker.GetTitle.45:	광란의 리버
+PlayerClass.Berserker.GetTitle.40:	광란의 마울러
+PlayerClass.Berserker.GetTitle.35:	광란의 약탈자
+PlayerClass.Berserker.GetTitle.30:	곰의 리버
+PlayerClass.Berserker.GetTitle.25:	곰의 마울러
+PlayerClass.Berserker.GetTitle.20:	곰의 약탈자
+PlayerClass.Berserker.GetTitle.15:	곰의 열성자
+PlayerClass.Berserker.GetTitle.10:	곰의 탐구자
+PlayerClass.Berserker.GetTitle.5:	곰의 입문자
+
+#### Bonedancer
+PlayerClass.Bonedancer.GetTitle.50:	부족장
+PlayerClass.Bonedancer.GetTitle.45:	보드가르의 열성자
+PlayerClass.Bonedancer.GetTitle.40:	뼈 마법사
+PlayerClass.Bonedancer.GetTitle.35:	부족 원로
+PlayerClass.Bonedancer.GetTitle.30:	보드가르의 종
+PlayerClass.Bonedancer.GetTitle.25:	뼈 탐색자
+PlayerClass.Bonedancer.GetTitle.20:	보드가르의 견습생
+PlayerClass.Bonedancer.GetTitle.15:	부족 미스틱
+PlayerClass.Bonedancer.GetTitle.10:	뼈 수집가
+PlayerClass.Bonedancer.GetTitle.5:	보드가르의 입문자
+
+#### Healer
+PlayerClass.Healer.GetTitle.50:		에이르의 손
+PlayerClass.Healer.GetTitle.45:		에이르의 예언자
+PlayerClass.Healer.GetTitle.40:		치유의 점술가
+PlayerClass.Healer.GetTitle.35:		예언자
+PlayerClass.Healer.GetTitle.30:		새벽의 손
+PlayerClass.Healer.GetTitle.25:		에이르의 시어
+PlayerClass.Healer.GetTitle.20:		현자
+PlayerClass.Healer.GetTitle.15:		숙련 힐러
+PlayerClass.Healer.GetTitle.10:		수련자
+PlayerClass.Healer.GetTitle.5:		치유 견습생
+
+#### Hunter
+PlayerClass.Hunter.GetTitle.50:		스카디의 손
+PlayerClass.Hunter.GetTitle.45:		사냥의 군주
+PlayerClass.Hunter.GetTitle.40:		사냥감의 달인
+PlayerClass.Hunter.GetTitle.35:		마스터 사냥꾼
+PlayerClass.Hunter.GetTitle.30:		숙련 길잡이
+PlayerClass.Hunter.GetTitle.25:		스카디의 길잡이
+PlayerClass.Hunter.GetTitle.20:		사냥감 추적자
+PlayerClass.Hunter.GetTitle.15:		숙련자
+PlayerClass.Hunter.GetTitle.10:		그림자의 탐구자
+PlayerClass.Hunter.GetTitle.5:		입문 사냥꾼
+
+#### Runemaster
+PlayerClass.Runemaster.GetTitle.50:	오딘의 손
+PlayerClass.Runemaster.GetTitle.45:	룬 현자
+PlayerClass.Runemaster.GetTitle.40:	룬 숙련자
+PlayerClass.Runemaster.GetTitle.35:	룬술사
+PlayerClass.Runemaster.GetTitle.30:	원로 룬 조각가
+PlayerClass.Runemaster.GetTitle.25:	오딘의 룬 조각가
+PlayerClass.Runemaster.GetTitle.20:	돌의 이야기꾼
+PlayerClass.Runemaster.GetTitle.15:	룬 조각가
+PlayerClass.Runemaster.GetTitle.10:	룬 수련자
+PlayerClass.Runemaster.GetTitle.5:	룬 견습생
+
+#### Savage
+PlayerClass.Savage.GetTitle.50:		켈고르의 주먹
+PlayerClass.Savage.GetTitle.45:		부족의 전설
+PlayerClass.Savage.GetTitle.40:		켈고르의 보호자
+PlayerClass.Savage.GetTitle.35:		부족 전사
+PlayerClass.Savage.GetTitle.30:		부족 야인
+PlayerClass.Savage.GetTitle.25:		켈고르의 방어자
+PlayerClass.Savage.GetTitle.20:		부족 방어자
+PlayerClass.Savage.GetTitle.15:		켈고르의 종
+PlayerClass.Savage.GetTitle.10:		켈고르의 견습생
+PlayerClass.Savage.GetTitle.5:		켈고르의 입문자
+
+#### Shadowblade
+PlayerClass.Shadowblade.GetTitle.50:	로키의 손
+PlayerClass.Shadowblade.GetTitle.45:	장난의 군주
+PlayerClass.Shadowblade.GetTitle.40:	그림자의 달인
+PlayerClass.Shadowblade.GetTitle.35:	기만의 달인
+PlayerClass.Shadowblade.GetTitle.30:	숙련 잠복자
+PlayerClass.Shadowblade.GetTitle.25:	로키의 밤검
+PlayerClass.Shadowblade.GetTitle.20:	그림자 잠복자
+PlayerClass.Shadowblade.GetTitle.15:	기만자
+PlayerClass.Shadowblade.GetTitle.10:	어둠의 탐구자
+PlayerClass.Shadowblade.GetTitle.5:	입문 추적자
+
+#### Shaman
+PlayerClass.Shaman.GetTitle.50:		이미르의 손
+PlayerClass.Shaman.GetTitle.45:		이미르의 예언자
+PlayerClass.Shaman.GetTitle.40:		샤먼 선지자
+PlayerClass.Shaman.GetTitle.35:		이미르의 감시자
+PlayerClass.Shaman.GetTitle.30:		태고의 존재
+PlayerClass.Shaman.GetTitle.25:		이미르의 선지자
+PlayerClass.Shaman.GetTitle.20:		주술 치료사
+PlayerClass.Shaman.GetTitle.15:		숙련자
+PlayerClass.Shaman.GetTitle.10:		수련자
+PlayerClass.Shaman.GetTitle.5:		샤먼 견습생
+
+#### Skald
+PlayerClass.Skald.GetTitle.50:		브라기의 손
+PlayerClass.Skald.GetTitle.45:		옛 노래의 군주
+PlayerClass.Skald.GetTitle.40:		사가의 군주
+PlayerClass.Skald.GetTitle.35:		마스터 이야기꾼
+PlayerClass.Skald.GetTitle.30:		숙련 찬가 직조자
+PlayerClass.Skald.GetTitle.25:		사가 직조자
+PlayerClass.Skald.GetTitle.20:		노래 직조자
+PlayerClass.Skald.GetTitle.15:		전투 성가대
+PlayerClass.Skald.GetTitle.10:		성가대
+PlayerClass.Skald.GetTitle.5:		입문 성가대
+
+#### Spiritmaster
+PlayerClass.Spiritmaster.GetTitle.50:	헬의 손
+PlayerClass.Spiritmaster.GetTitle.45:	영혼 현자
+PlayerClass.Spiritmaster.GetTitle.40:	영혼 숙련자
+PlayerClass.Spiritmaster.GetTitle.35:	영혼술사
+PlayerClass.Spiritmaster.GetTitle.30:	원로 소환사
+PlayerClass.Spiritmaster.GetTitle.25:	헬의 영혼술사
+PlayerClass.Spiritmaster.GetTitle.20:	소환사
+PlayerClass.Spiritmaster.GetTitle.15:	숙련자
+PlayerClass.Spiritmaster.GetTitle.10:	수련자
+PlayerClass.Spiritmaster.GetTitle.5:	영혼술 견습생
+
+#### Thane
+PlayerClass.Thane.GetTitle.50:		토르의 손
+PlayerClass.Thane.GetTitle.45:		폭풍우의 군주
+PlayerClass.Thane.GetTitle.40:		폭풍의 군주
+PlayerClass.Thane.GetTitle.35:		토르의 천둥
+PlayerClass.Thane.GetTitle.30:		전장의 충돌자
+PlayerClass.Thane.GetTitle.25:		토르의 망치
+PlayerClass.Thane.GetTitle.20:		열성자
+PlayerClass.Thane.GetTitle.15:		폭풍 소환자
+PlayerClass.Thane.GetTitle.10:		폭풍 망치
+PlayerClass.Thane.GetTitle.5:		폭풍 입문자
+
+#### Valkyrie
+PlayerClass.Valkyrie.GetTitle.50:	오딘의 발키리
+PlayerClass.Valkyrie.GetTitle.45:	오딘의 방패 처녀
+PlayerClass.Valkyrie.GetTitle.40:	오딘이 선택한 자
+PlayerClass.Valkyrie.GetTitle.35:	발할라의 보호자
+PlayerClass.Valkyrie.GetTitle.30:	발할라가 선택한 자
+PlayerClass.Valkyrie.GetTitle.25:	방패 처녀
+PlayerClass.Valkyrie.GetTitle.20:	미드가드의 보호자
+PlayerClass.Valkyrie.GetTitle.15:	미드가드의 종
+PlayerClass.Valkyrie.GetTitle.10:	시녀
+PlayerClass.Valkyrie.GetTitle.5:	견습 시녀
+
+#### Warlock
+PlayerClass.Warlock.GetTitle.50:	헬의 워록
+PlayerClass.Warlock.GetTitle.45:	헬의 소환술사
+PlayerClass.Warlock.GetTitle.40:	헬이 선택한 자
+PlayerClass.Warlock.GetTitle.35:	헬의 종
+PlayerClass.Warlock.GetTitle.30:	워록 옹호자
+PlayerClass.Warlock.GetTitle.25:	워록 보호자
+PlayerClass.Warlock.GetTitle.20:	미드가드의 소환술사
+PlayerClass.Warlock.GetTitle.15:	헬의 입문자
+PlayerClass.Warlock.GetTitle.10:	소환술사
+PlayerClass.Warlock.GetTitle.5:		견습 소환술사
+
+#### Warrior
+PlayerClass.Warrior.GetTitle.50:	티르의 손
+PlayerClass.Warrior.GetTitle.45:	워로드
+PlayerClass.Warrior.GetTitle.40:	전쟁광
+PlayerClass.Warrior.GetTitle.35:	약탈자
+PlayerClass.Warrior.GetTitle.30:	정예 척후병
+PlayerClass.Warrior.GetTitle.25:	티르의 미르미돈
+PlayerClass.Warrior.GetTitle.20:	베테랑
+PlayerClass.Warrior.GetTitle.15:	보병
+PlayerClass.Warrior.GetTitle.10:	의용 파이터
+PlayerClass.Warrior.GetTitle.5:		입문 파이터
+
+### Hibernia
+#### Animist
+PlayerClass.Animist.GetTitle.50:	가이아의 힘
+PlayerClass.Animist.GetTitle.45:	수목의 챔피언
+PlayerClass.Animist.GetTitle.40:	수목 마법사
+PlayerClass.Animist.GetTitle.35:	숲의 마법사
+PlayerClass.Animist.GetTitle.30:	가이아의 종
+PlayerClass.Animist.GetTitle.25:	수목 숙련자
+PlayerClass.Animist.GetTitle.20:	식물의 친구
+PlayerClass.Animist.GetTitle.15:	가이아의 친구
+PlayerClass.Animist.GetTitle.10:	수목 견습생
+PlayerClass.Animist.GetTitle.5:		숲의 입문자
+
+#### Bainshee
+PlayerClass.Bainshee.GetTitle.50:	영체 전사
+PlayerClass.Bainshee.GetTitle.45:	영체 수호자
+PlayerClass.Bainshee.GetTitle.40:	망령 배회자
+PlayerClass.Bainshee.GetTitle.35:	망령 추적자
+PlayerClass.Bainshee.GetTitle.30:	천상의 절규자
+PlayerClass.Bainshee.GetTitle.25:	천상의 통곡자
+PlayerClass.Bainshee.GetTitle.20:	환영 수확자
+PlayerClass.Bainshee.GetTitle.15:	환영 숙련자
+PlayerClass.Bainshee.GetTitle.10:	망령 견습생
+PlayerClass.Bainshee.GetTitle.5:	망령 입문자
+
+#### Bard
+PlayerClass.Bard.GetTitle.50:		마스터 가객
+PlayerClass.Bard.GetTitle.45:		주문가수
+PlayerClass.Bard.GetTitle.40:		가객
+PlayerClass.Bard.GetTitle.35:		음유시인
+PlayerClass.Bard.GetTitle.30:		공연자
+PlayerClass.Bard.GetTitle.25:		선율가
+PlayerClass.Bard.GetTitle.20:		합창가
+PlayerClass.Bard.GetTitle.15:		찬가 가수
+PlayerClass.Bard.GetTitle.10:		보컬리스트
+PlayerClass.Bard.GetTitle.5:		성가대
+
+#### Blademaster
+PlayerClass.Blademaster.GetTitle.50:	검의 노래
+PlayerClass.Blademaster.GetTitle.45:	무장 기사
+PlayerClass.Blademaster.GetTitle.40:	결투가
+PlayerClass.Blademaster.GetTitle.35:	검무가
+PlayerClass.Blademaster.GetTitle.30:	자경단원
+PlayerClass.Blademaster.GetTitle.25:	용감한 자
+PlayerClass.Blademaster.GetTitle.20:	검의 직조자
+PlayerClass.Blademaster.GetTitle.15:	사브르 검객
+PlayerClass.Blademaster.GetTitle.10:	기교가
+PlayerClass.Blademaster.GetTitle.5:	    검술 입문자
+
+#### Champion
+PlayerClass.Champion.GetTitle.50:	아르콘
+PlayerClass.Champion.GetTitle.45:	영웅
+PlayerClass.Champion.GetTitle.40:	집정관
+PlayerClass.Champion.GetTitle.35:	신동
+PlayerClass.Champion.GetTitle.30:	수비자
+PlayerClass.Champion.GetTitle.25:	준장
+PlayerClass.Champion.GetTitle.20:	용맹한 자
+PlayerClass.Champion.GetTitle.15:	방어 투사
+PlayerClass.Champion.GetTitle.10:	돌격자
+PlayerClass.Champion.GetTitle.5:	시종
+
+#### Druid
+PlayerClass.Druid.GetTitle.50:		숲의 사제
+PlayerClass.Druid.GetTitle.45:		숲의 수호자
+PlayerClass.Druid.GetTitle.40:		마스터 오베이트
+PlayerClass.Druid.GetTitle.35:		숲의 예언자
+PlayerClass.Druid.GetTitle.30:		숲의 보호자
+PlayerClass.Druid.GetTitle.25:		숲의 치유사
+PlayerClass.Druid.GetTitle.20:		오베이트
+PlayerClass.Druid.GetTitle.15:		견습 드루이드
+PlayerClass.Druid.GetTitle.10:		학생
+PlayerClass.Druid.GetTitle.5:		수련자
+
+#### Eldritch
+PlayerClass.Eldritch.GetTitle.50:	수석 마술사
+PlayerClass.Eldritch.GetTitle.45:	마술사
+PlayerClass.Eldritch.GetTitle.40:	힘의 직조자
+PlayerClass.Eldritch.GetTitle.35:	마스터
+PlayerClass.Eldritch.GetTitle.30:	구현자
+PlayerClass.Eldritch.GetTitle.25:	숙련자
+PlayerClass.Eldritch.GetTitle.20:	마기우스
+PlayerClass.Eldritch.GetTitle.15:	소환술사
+PlayerClass.Eldritch.GetTitle.10:	환기술사
+PlayerClass.Eldritch.GetTitle.5:	주문 읊는 자
+
+#### Enchanter
+PlayerClass.Enchanter.GetTitle.50:	에테르술사
+PlayerClass.Enchanter.GetTitle.45:	지배자
+PlayerClass.Enchanter.GetTitle.40:	유혹자
+PlayerClass.Enchanter.GetTitle.35:	환영
+PlayerClass.Enchanter.GetTitle.30:	매혹술사
+PlayerClass.Enchanter.GetTitle.25:	유혹술사
+PlayerClass.Enchanter.GetTitle.20:	현혹자
+PlayerClass.Enchanter.GetTitle.15:	환혹술사
+PlayerClass.Enchanter.GetTitle.10:	환영술사
+PlayerClass.Enchanter.GetTitle.5:	매력술사
+
+#### Hero
+PlayerClass.Hero.GetTitle.50:		세라프
+PlayerClass.Hero.GetTitle.45:		귀감
+PlayerClass.Hero.GetTitle.40:		용맹한 자
+PlayerClass.Hero.GetTitle.35:		저명인
+PlayerClass.Hero.GetTitle.30:		검투사
+PlayerClass.Hero.GetTitle.25:		충직한 자
+PlayerClass.Hero.GetTitle.20:		수하
+PlayerClass.Hero.GetTitle.15:		심복
+PlayerClass.Hero.GetTitle.10:		종복
+PlayerClass.Hero.GetTitle.5:		수행원
+
+#### Mentalist
+PlayerClass.Mentalist.GetTitle.50:	성계술사
+PlayerClass.Mentalist.GetTitle.45:	정신 직조자
+PlayerClass.Mentalist.GetTitle.40:	비전 인도자
+PlayerClass.Mentalist.GetTitle.35:	지배자
+PlayerClass.Mentalist.GetTitle.30:	예지자
+PlayerClass.Mentalist.GetTitle.25:	소환사
+PlayerClass.Mentalist.GetTitle.20:	선지자
+PlayerClass.Mentalist.GetTitle.15:	생각의 방랑자
+PlayerClass.Mentalist.GetTitle.10:	숙련자
+PlayerClass.Mentalist.GetTitle.5:	멘탈리스트 견습생
+
+#### Nightshade
+PlayerClass.Nightshade.GetTitle.50:	그늘의 달인
+PlayerClass.Nightshade.GetTitle.45:	그림자 시전자
+PlayerClass.Nightshade.GetTitle.40:	그림자 방랑자
+PlayerClass.Nightshade.GetTitle.35:	그림자
+PlayerClass.Nightshade.GetTitle.30:	밤의 파수꾼
+PlayerClass.Nightshade.GetTitle.25:	어둠의 파수꾼
+PlayerClass.Nightshade.GetTitle.20:	어둠의 칼날
+PlayerClass.Nightshade.GetTitle.15:	어둠의 그늘
+PlayerClass.Nightshade.GetTitle.10:	밤의 방랑자
+PlayerClass.Nightshade.GetTitle.5:	장난꾼
+
+#### Ranger
+PlayerClass.Ranger.GetTitle.50:		마스터 레인저
+PlayerClass.Ranger.GetTitle.45:		마스터 명사수
+PlayerClass.Ranger.GetTitle.40:		마스터 궁수
+PlayerClass.Ranger.GetTitle.35:		장인
+PlayerClass.Ranger.GetTitle.30:		명사수
+PlayerClass.Ranger.GetTitle.25:		배회자
+PlayerClass.Ranger.GetTitle.20:		추적자
+PlayerClass.Ranger.GetTitle.15:		궁수
+PlayerClass.Ranger.GetTitle.10:		잠복자
+PlayerClass.Ranger.GetTitle.5:		야생인
+
+#### Valewalker
+PlayerClass.Valewalker.GetTitle.50:	계곡의 수호자
+PlayerClass.Valewalker.GetTitle.45:	낫의 달인
+PlayerClass.Valewalker.GetTitle.40:	계곡의 전사
+PlayerClass.Valewalker.GetTitle.35:	계곡의 수확자
+PlayerClass.Valewalker.GetTitle.30:	능선 방랑자
+PlayerClass.Valewalker.GetTitle.25:	숲의 친구
+PlayerClass.Valewalker.GetTitle.20:	수확자
+PlayerClass.Valewalker.GetTitle.15:	숲의 방랑자
+PlayerClass.Valewalker.GetTitle.10:	낫을 든 자
+PlayerClass.Valewalker.GetTitle.5:	숲의 견습생
+
+#### Vampiir
+PlayerClass.Vampiir.GetTitle.50:	뱀피르 전사
+PlayerClass.Vampiir.GetTitle.45:	뱀피르 수호자
+PlayerClass.Vampiir.GetTitle.40:	뱀피르 사냥꾼
+PlayerClass.Vampiir.GetTitle.35:	뱀피르 추적자
+PlayerClass.Vampiir.GetTitle.30:	뱀피르 배회자
+PlayerClass.Vampiir.GetTitle.25:	뱀피르 탐구자
+PlayerClass.Vampiir.GetTitle.20:	뱀피르 보호자
+PlayerClass.Vampiir.GetTitle.15:	뱀피르 숙련자
+PlayerClass.Vampiir.GetTitle.10:	뱀피르 견습생
+PlayerClass.Vampiir.GetTitle.5:		뱀피르 입문자
+
+#### Warden
+PlayerClass.Warden.GetTitle.50:		마스터 포레스터
+PlayerClass.Warden.GetTitle.45:		마스터 사냥꾼
+PlayerClass.Warden.GetTitle.40:		마스터 숲지기
+PlayerClass.Warden.GetTitle.35:		포레스터
+PlayerClass.Warden.GetTitle.30:		보존자
+PlayerClass.Warden.GetTitle.25:		보호자
+PlayerClass.Warden.GetTitle.20:		사냥꾼
+PlayerClass.Warden.GetTitle.15:		가디언
+PlayerClass.Warden.GetTitle.10:		숲지기
+PlayerClass.Warden.GetTitle.5:		감시자

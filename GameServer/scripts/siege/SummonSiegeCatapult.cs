@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using DOL.GS.Keeps;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -13,17 +14,17 @@ namespace DOL.GS.Spells
         {
             if (!Caster.CurrentZone.IsOF || Caster.CurrentRegion.IsDungeon)
             {
-			    MessageToCaster("You cannot use siege weapons here!", PacketHandler.eChatType.CT_SpellResisted);
+			    MessageToCaster(T("Siege.Summon.CannotUseHere"), PacketHandler.eChatType.CT_SpellResisted);
 			    return false;
 		    }
-            
+
             foreach (AbstractArea area in Caster.CurrentAreas)
             {
 	            if (area is KeepArea)
 	            {
 		            if (((KeepArea)area).Keep.IsPortalKeep)
 		            {
-			            MessageToCaster("You cannot use siege weapons here (PK)!", PacketHandler.eChatType.CT_SpellResisted);
+			            MessageToCaster(T("Siege.Summon.CannotUsePortalKeep"), PacketHandler.eChatType.CT_SpellResisted);
 			            return false;
 		            }
 	            }
@@ -35,24 +36,24 @@ namespace DOL.GS.Spells
 			{
 				if (npc is GameSiegeCatapult)
 				{
-					MessageToCaster("You are too close to another trebuchet or catapult and cannot summon here!", PacketHandler.eChatType.CT_SpellResisted);
+					MessageToCaster(T("Siege.Summon.TooCloseTrebuchetCatapult"), PacketHandler.eChatType.CT_SpellResisted);
                     return false;
 				}
 			}
 
             return base.StartSpell(target);
         }
-        
+
 	    public override void ApplyEffectOnTarget(GameLiving target)
         {
-	        
+
 	        if (!Caster.CurrentZone.IsOF || Caster.CurrentRegion.IsDungeon){
-		        MessageToCaster("You cannot use siege weapons here!", PacketHandler.eChatType.CT_SpellResisted);
+		        MessageToCaster(T("Siege.Summon.CannotUseHere"), PacketHandler.eChatType.CT_SpellResisted);
 		        return;
 	        }
-	        
+
             base.ApplyEffectOnTarget(target);
-            
+
             GameSiegeCatapult cat = new GameSiegeCatapult();
             cat.X = Caster.X;
             cat.Y = Caster.Y;
@@ -66,17 +67,22 @@ namespace DOL.GS.Spells
             cat.AddToWorld();
             if(Caster is GamePlayer player)
                 cat.TakeControl(player);
-            
+
         }
 
         public override bool CheckBeginCast(GameLiving selectedTarget)
         {
 	        if (!Caster.CurrentZone.IsOF || Caster.CurrentRegion.IsDungeon){
-		        MessageToCaster("You cannot use siege weapons here!", PacketHandler.eChatType.CT_SpellResisted);
+		        MessageToCaster(T("Siege.Summon.CannotUseHere"), PacketHandler.eChatType.CT_SpellResisted);
 		        return false;
 	        }
 
             return base.CheckBeginCast(selectedTarget);
+        }
+
+        private string T(string key, params object[] args)
+        {
+            return LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, key, args);
         }
 
         public override IList<string> DelveInfo

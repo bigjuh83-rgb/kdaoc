@@ -3,6 +3,7 @@ using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
 using DOL.GS.PropertyCalc;
 using DOL.GS.Spells;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -125,7 +126,7 @@ namespace DOL.GS
             int effectiveValue = (int) (value * effectiveness);
 
             if (owner is GamePlayer player && player.UseDetailedCombatLog)
-                player.Out.SendMessage($"BonusCategory: {bonusCategory} | Property: {property}\nValue: {value:0.##} | Effectiveness: {effectiveness:0.##} | EffectiveValue: {effectiveValue}", eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "GamePlayer.Effect.Detailed.PropertyBonus", bonusCategory, property, value, effectiveness, effectiveValue), eChatType.CT_ResistsChanged, eChatLoc.CL_SystemWindow);
 
             GetPropertyIndexer(owner, bonusCategory)[property] += effectiveValue;
         }

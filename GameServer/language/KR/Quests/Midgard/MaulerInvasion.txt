@@ -1,0 +1,24 @@
+Mid.MaulerInvasion.EnemyKilled:		검은 마울러 새끼곰
+Mid.MaulerInvasion.NPCKreimhilde:	바이킹 크라임힐데
+Mid.MaulerInvasion.OfferQuest:		바이킹 크라임힐데를 도와 검은 마울러 새끼곰 개체 수를 줄이시겠습니까? [레벨 1-4]
+Mid.MaulerInvasion.QuestTitle:		마울러 침입
+Mid.MaulerInvasion.Step1:		[1단계] 물란의 바이킹 크라임힐데를 위해 검은 마울러 새끼곰 가죽 두 장을 구하세요. 새끼곰들은 크라임힐데 북서쪽 들판, 남동쪽 숲, 서쪽 들판에서 찾을 수 있습니다.
+Mid.MaulerInvasion.Step2:		[2단계] 두 번째 검은 마울러 새끼곰 가죽을 구하세요. 새끼곰들은 크라임힐데 북서쪽 들판, 남동쪽 숲, 서쪽 들판에서 찾을 수 있습니다.
+Mid.MaulerInvasion.Step3:		[3단계] 물란의 바이킹 크라임힐데에게 돌아가세요
+Mid.MaulerInvasion.Step4:		[4단계] 검은 마울러 새끼곰 가죽 한 장을 바이킹 크라임힐데에게 건네세요.
+Mid.MaulerInvasion.Step5:		[5단계] 두 번째 검은 마울러 새끼곰 가죽을 바이킹 크라임힐데에게 건네세요.
+Mid.MaulerInvasion.Talk1:		잘 만났습니다, 젊은 모험가여. 잘 지내는 것 같아 기쁘군요. 요즘 물란 주변에 [약간의 문제]가 있었는데, 어린 신참들에게 너무 큰 영향을 주지 않았기를 바랍니다.
+Mid.MaulerInvasion.Talk2:		비밀을 지킬 수 있다고 믿겠습니다, 친구여. 최근 검은 마울러 새끼곰들 때문에 골치가 아픕니다. 무엇이 씌었는지는 모르겠지만, 밤이면 마을로 몰래 들어와 [온갖] 문제를 일으킵니다.
+Mid.MaulerInvasion.Talk3:		놈들은 Danica의 집에 들어가 상자들을 뒤졌습니다. Lyna와 Raelyan은 아침에 현관 앞에서 곰 배설물을 발견했다고 제게 보고했고, 주점 주인 Nognar는 밖에서 으르렁거리는 소리를 듣고 손님들이 술집 안으로 뛰어 들어왔다고 털어놓았습니다. 상황이 점점 [걷잡을 수 없게] 되고 있습니다!
+Mid.MaulerInvasion.Talk4:		새끼곰들이 마을에 들어오지 못하게 더 많은 경비병을 보내 달라고 요르드하임에 전갈을 보냈지만, 프론티어의 혼란과 코볼드 지하도시 문제 때문에 우리 병력은 이미 한계까지 흩어져 있습니다. 다행히 요르드하임의 지도자들이 모험가를 [고용할 수 있도록] 돈을 보내왔습니다.
+Mid.MaulerInvasion.Talk5:		맞습니다. 검은 마울러 새끼곰 몇 마리를 없애는 데 동의한다면 보수를 드리겠습니다. 개체 수를 조금 줄이면 물란까지 내려올 가능성도 줄어들 겁니다. 제 [제안]을 생각해 보고 도울 생각이 있으면 알려 주세요.
+Mid.MaulerInvasion.Talk6:		괜찮습니다. 다음에 뵙죠.
+Mid.MaulerInvasion.Talk7:		후회하지 않을 겁니다! 아직 보지 못했다면, 검은 마울러 새끼곰들은 몇 군데에서 찾을 수 있습니다. 이곳 북서쪽, 주점 주인 Nognar의 술집을 지나 있는 들판에 몇 마리가 있습니다. 남동쪽 숲과 서쪽 들판에서도 찾을 수 있습니다. 새끼곰 두 마리의 가죽을 가져오면 값을 치르겠습니다.
+Mid.MaulerInvasion.Talk8:		돌아왔군요. 검은 마울러 새끼곰들과 마주치고도 살아남은 것을 보니 반갑습니다. 제게 줄 가죽이 있습니까?
+Mid.MaulerInvasion.Talk9:		훌륭합니다! 하지만 제가 건 현상금을 받으려면 가죽 두 장이 필요합니다. 두 번째 검은 마울러 가죽도 있습니까?
+Mid.MaulerInvasion.Talk10:		훌륭합니다! 이 가죽들을 요르드하임에 보내 물란에 실제로 문제가 있다는 증거로 삼겠습니다. 어떤 용감한 모험가가 구해 왔는지 알 수 있도록 당신의 이름도 함께 보내겠습니다. 약속한 돈입니다. 현명하게 쓰세요!
+Mid.MaulerInvasion.Whisper1:		약간의 문제
+Mid.MaulerInvasion.Whisper2:		온갖
+Mid.MaulerInvasion.Whisper3:		걷잡을 수 없게
+Mid.MaulerInvasion.Whisper4:		고용할 수 있도록
+Mid.MaulerInvasion.Whisper5:		제안

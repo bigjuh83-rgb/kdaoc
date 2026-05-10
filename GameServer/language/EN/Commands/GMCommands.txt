@@ -25,7 +25,7 @@ GMCommands.Area.Usage.Create:				/area create <name> <type(circle|square|safe|bi
 GMCommands.Area.AreaCreated:				Area created - Description: {0}, X={1}, Y={2}, Z={3}, Radius={4}, Broadcast={5}, Sound={6}.
 
 ## /ban
-GMCommands.Ban.Description:					Usage of /ban command: 
+GMCommands.Ban.Description:					Usage of /ban command:
 GMCommands.Ban.Usage.IP:					'/ban ip <account or player name> <reason>' - Ban the specified IP address.
 GMCommands.Ban.Usage.Account:				'/ban account <player name> <reason>' - Ban the specified account.
 GMCommands.Ban.Usage.Both:					'/ban both <player name> <reason>' - Ban the specified account and its associated IP address.
@@ -54,6 +54,9 @@ GMCommands.Cast.Spell.Inexistent:         Spell inexistent. Id={0}
 GMCommands.Crafting.Description:			Change the crafting level of your target
 GMCommands.Crafting.Usage.Add:				'/crafting add <craftingSkillID> <startLevel>' To add a new crating skill to your target
 GMCommands.Crafting.Usage.Change:			'/crafting change <craftingSkillID> <amount>' To increase or decrease the crafting skill level of your target
+GMCommands.Crafting.Usage.SalvageAdd:		/crafting salvageadd <SalvageYieldID (0 for next free)> <MaterialId_nb> <Count> [Realm] [PackageID]
+GMCommands.Crafting.Usage.SalvageUpdate:	/crafting salvageupdate <SalvageYieldID> <MaterialId_nb> <Count> <Realm> [PackageID]
+GMCommands.Crafting.Usage.SalvageInfo:		/crafting salvageinfo <SalvageYieldID>
 GMCommands.Crafting.Usage.List:				'/crafting list' To have the list of all crafting skill with their id
 GMCommands.Crafting.SkillDescription:		Crafting Skill ID description:
 GMCommands.Crafting.NoPlayerTarget:			You must target a player to use this command.
@@ -63,6 +66,25 @@ GMCommands.Crafting.AlreadyHaveSkill:		{0} already have the crafting skill {1}.
 GMCommands.Crafting.NotHaveSkillAddIt:		{0} does not have the crafting skill {1}, add it first.
 GMCommands.Crafting.SkillChanged:			Crafting skill {0} correctly changed.
 GMCommands.Crafting.NowHasSkillPoints:		{0} now has {1} in {2}.
+GMCommands.Crafting.SalvageYieldNotFound:	SalvageYield ID not found!
+GMCommands.Crafting.NotFound:				Not Found!
+GMCommands.Crafting.Unused:					Unused
+GMCommands.Crafting.Calculated:				Calculated
+GMCommands.Crafting.Realm.Any:				Any
+GMCommands.Crafting.SalvageInfo.ID:			SalvageYield ID: {0}
+GMCommands.Crafting.SalvageInfo.ObjectType:	     ObjectType: {0}
+GMCommands.Crafting.SalvageInfo.SalvageLevel:	   SalvageLevel: {0}
+GMCommands.Crafting.SalvageInfo.Material:	       Material: {0} ({1})
+GMCommands.Crafting.SalvageInfo.Count:	          Count: {0}
+GMCommands.Crafting.SalvageInfo.Realm:	          Realm: {0}
+GMCommands.Crafting.SalvageInfo.PackageID:	      PackageID: {0}
+GMCommands.Crafting.SalvageInfo.WindowTitle:	SalvageYield ID {0}
+GMCommands.Crafting.MaterialNotFound:			Material id_nb {0} not found!
+GMCommands.Crafting.SalvageYieldAlreadyExists:	This SalvageYield ID already exists, use salvageupdate to change it.
+GMCommands.Crafting.SalvageYieldCreated:		Created SalvageYield ID: {0}, Material: {1}, Count: {2}, Realm: {3}, PackageID: {4}
+GMCommands.Crafting.SalvageIdNotFound:		SalvageID not found!
+GMCommands.Crafting.SalvageYieldLegacyCannotUpdate:	This SalvageYield ID is used for legacy salvage support and can not be updated.
+GMCommands.Crafting.SalvageYieldUpdated:		Updated SalvageYield ID: {0}, Material: {1}, Count: {2}, Realm: {3}, PackageID: {4}
 
 ## /debug
 GMCommands.Debug.Description:				Activate or deactivate debug
@@ -92,8 +114,8 @@ GMCommands.Door.Guild:					'/door guild <guild>' change door guild
 GMCommands.Door.Info:					'/door info' show informations
 GMCommands.Door.Heal:					'/door heal' set door health to max
 GMCommands.Door.Kill:					'/door kill' set door health to 0 (door open)
-GMCommands.Door.Locked:					'/door locked' lock the door - you can code items to unlock it 
-GMCommands.Door.Unlocked:				'/door unlocked' unlock the door - you can code items to lock it 
+GMCommands.Door.Locked:					'/door locked' lock the door - you can code items to unlock it
+GMCommands.Door.Unlocked:				'/door unlocked' unlock the door - you can code items to lock it
 GMCommands.Door.Update:					'/door update' update door in the database you GM xyz coords
 GMCommands.Door.Delete:					'/door delete' delete the target door
 GMCommands.Door.Add:					'/door add' add a door
@@ -114,6 +136,13 @@ GMCommands.Faction.Create.BAMustBeNumber:	The baseAggro must be a number.
 GMCommands.Faction.Create.NewCreated:		New faction created
 GMCommands.Faction.Assign.MustSelectMob:	You must select a mob first.
 GMCommands.Faction.Assign.MobHasJoinedFact:	The mob {0} has joined the faction of {1}.
+GMCommands.Faction.Relations.Header:        Relations for #{0}: {1} ({2}):
+GMCommands.Faction.Relations.FriendsHeader:  Is friend with:
+GMCommands.Faction.Relations.EnemiesHeader:  Is hostile with:
+GMCommands.Faction.Relations.Hardcoded:     [hardcoded]
+GMCommands.Faction.Relations.NotReciprocal: [not reciprocal]
+GMCommands.Faction.Relations.Line:          #{0}: {1} ({2}){3}
+GMCommands.Faction.Select.Selected:         Selected faction #{0}: {1} ({2})
 
 ## /gmappeal
 Scripts.Players.Appeal.UseGMappeal:				Use /gmappeal to assist players with their appeal.
@@ -129,7 +158,7 @@ Scripts.Players.Appeal.NoAppealsinQueue:		There are no Appeals currently in queu
 Scripts.Players.Appeal.CantFindAppeal:			Could not find an appeal under that offline player's name, make sure spelling is correct.
 Scripts.Players.Appeal.NameNotUnique:			Character name is not unique.
 Scripts.Players.Appeal.PlayerNotFound:			{0} is not in the game.
-Scripts.Players.Appeal.RandMessage0:			Howdy {0}, thanks for waiting.  How may I help you? 
+Scripts.Players.Appeal.RandMessage0:			Howdy {0}, thanks for waiting.  How may I help you?
 Scripts.Players.Appeal.RandMessage1:			Hiya {0}, what can I do for you today?
 Scripts.Players.Appeal.RandMessage2:			Greetings {0}!  I'm here to assist.  How can I be of service?
 Scripts.Players.Appeal.RandMessage3:			Hi {0}, I understand you need some help, what can I do for you today?
@@ -169,6 +198,7 @@ GMCommands.Item.Usage.Extension:			'/item extension <ExtensionID> [slot #]' - Ch
 GMCommands.Item.Usage.Color:				'/item color <ColorID> [slot #]' - Change item color
 GMCommands.Item.Usage.Effect:				'/item effect <EffectID> [slot #]' - Change item effect
 GMCommands.Item.Usage.Name:					'/item name <NameID> [slot #]' - Change item name
+GMCommands.Item.Usage.Description:			'/item description <Description> <slot>' - Set the description of this item
 GMCommands.Item.Usage.CrafterName:			'/item craftername <CrafterNameID> [slot #]' - Change item crafter name
 GMCommands.Item.Usage.Type:					'/item type <TypeID> [slot #]' - Change item type
 GMCommands.Item.Usage.Object:				'/item object <ObjectID> [slot #]' - Change object type
@@ -197,12 +227,29 @@ GMCommands.Item.Usage.Spell:				'/item spell <Charges> <MaxCharges> <SpellID> [s
 GMCommands.Item.Usage.Spell1:				'/item spell1 <Charges> <MaxCharges> <SpellID> [slot #]' - Change item spell charges #1
 GMCommands.Item.Usage.Proc:					'/item proc <SpellID> [slot #]' - Change item proc #0
 GMCommands.Item.Usage.Proc1:				'/item proc1 <SpellID> [slot #]' - Change item proc #1
+GMCommands.Item.Usage.ProcChance:			'/item procchance <chance>'
 GMCommands.Item.Usage.Poison:				'/item poison <Charges> <MaxCharges> <SpellID> [slot #]' - Change item poison
 GMCommands.Item.Usage.Realm:				'/item realm <num> [slot #]' - Change items realm
+GMCommands.Item.Usage.ClassType:			'/item classtype <ClassType> <slot>' - Set this items ClassType
+GMCommands.Item.Usage.PackageID:			'/item packageid <PackageID> <slot>' - Set this items PackageID
+GMCommands.Item.Usage.LevelRequired:		'/item levelrequired <level> <slot>' - Set the required level needed to use spells and procs on this item
+GMCommands.Item.Usage.BonusLevel:			'/item bonuslevel <level> <slot>' - Set the level required for item bonuses to effect player
+GMCommands.Item.Usage.Flags:				'/item flags <flags> <slot>' - Set the flags for this item
+GMCommands.Item.Usage.Classes:				'/item classes <csv_allowed_classes> <slot>' - Set and replace the Allowed Classes field (0 for everybody)
+GMCommands.Item.Usage.SalvageID:			'/item salvageid <SalvageYield ID> <slot>' - Set the SalvageYieldID for this item
+GMCommands.Item.Usage.SalvageInfo:			'/item salvageinfo <SalvageYield ID> <slot>' - Show the salvage yield for this item
+GMCommands.Item.Usage.Update:				'/item update <slot>' - Changes to this item will also be made to the ItemTemplate and can be saved in the DB.
+GMCommands.Item.Usage.Save:					'/item save <TemplateID> [slot #]' - Create a new template or save an existing one
+GMCommands.Item.Usage.AddUnique:			'/item addunique <id_nb> <slot>' - Save item as an unique one
+GMCommands.Item.Usage.SaveUnique:			'/item saveunique <id_nb> <slot>' - Update a unique item
 GMCommands.Item.Usage.SaveTemplate:			'/item savetemplate <TemplateID> [slot #]' - Create a new template
 GMCommands.Item.Usage.TemplateID:			'/item templateid <TemplateID> [slot #]' - Change an items template ID
 GMCommands.Item.Usage.FindID:				'/item findid <part_of_id>'
 GMCommands.Item.Usage.FindName:				'/item findname <part_of_name>'
+GMCommands.Item.Usage.Load:					'/item load <id_nb>' - Load an item from the DB and replace or add item to the ItemTemplate cache
+GMCommands.Item.Usage.LoadPackage:			'/item loadpackage <packageid> | **all**' - Load all the items in a package from the DB and replace or add to the ItemTemplate cache. **all** is loading all items [! SLOW !]
+GMCommands.Item.Usage.LoadSpells:			'/item loadspells' - Read each item spell from the database and update the global spell list
+GMCommands.Item.Blank.Name:					(blank item)
 GMCommands.Item.Blank.ItemCreated:			Blank item created in first free backpack slot.
 GMCommands.Item.Blank.CreationError:		Error in item creation.
 GMCommands.Item.Scroll.NotFound:			Scroll page {0} for artifact {1} could not be found.
@@ -219,6 +266,35 @@ GMCommands.Item.mBonus.NonSetBonusType:		Not set bonus type!
 GMCommands.Item.mBonus.NotSetBonusValue:	Not set bonus value!
 GMCommands.Item.mBonus.UnknownBonusNumber:	Unknown bonus number: {0}
 GMCommands.Item.SaveTemplate.ItemSaved:		The ItemTemplate {0} was successfully saved.
+GMCommands.Item.SaveUnique.NotItemUnique:	This is not an ItemUnique. To create a new ItemUnique use addunique.
+GMCommands.Item.Save.NeedNewID:				You need to provide a new id_nb for this item.
+GMCommands.Item.Save.NeedNewIDForUniqueTemplate:	You need to provide a new id_nb to save this ItemUnique as an ItemTemplate. Use saveunique to save this ItemUnique.
+GMCommands.Item.Save.AddedTemplate:			Added New Item Template: {0}
+GMCommands.Item.Save.AddTemplateError:		Error adding template: {0}
+GMCommands.Item.Save.AddedUnique:			Added New ItemUnique: {0} ({1})
+GMCommands.Item.Save.AddUniqueError:		Error adding unique: {0}
+GMCommands.Item.Save.UpdatedInventoryItem:	Updated Inventory Item: {0}
+GMCommands.Item.Save.SourceTemplateUpdated:	++ Source ItemTemplate Updated!
+GMCommands.Item.SalvageInfo.SpecifiedNotFound:	SalvageYield ID {0} specified but not found!
+GMCommands.Item.SalvageInfo.CalculatedValuesNew:	Calculated Values (USE_NEW_SALVAGE = True)
+GMCommands.Item.SalvageInfo.CalculatedValuesLegacy:	Calculated Values (USE_NEW_SALVAGE = False)
+GMCommands.Item.SalvageInfo.UsingID:		Using SalvageYield ID: {0}
+GMCommands.Item.SalvageInfo.MaterialNotFound:	Not Found! ({0})
+GMCommands.Item.SalvageInfo.ID:				SalvageYield ID: {0}
+GMCommands.Item.SalvageInfo.ObjectType:		ObjectType: {0}
+GMCommands.Item.SalvageInfo.SalvageLevel:	SalvageLevel: {0}
+GMCommands.Item.SalvageInfo.Material:		Material: {0}
+GMCommands.Item.SalvageInfo.Count:			Count: {0}
+GMCommands.Item.SalvageInfo.Realm:			Realm: {0}
+GMCommands.Item.SalvageInfo.Realm.Any:		Any
+GMCommands.Item.SalvageInfo.PackageID:		PackageID: {0}
+GMCommands.Item.SalvageInfo.WindowTitle:	Salvage info for {0}
+GMCommands.Item.Load.UpdatedOrAdded:			Item {0} updated or added to ItemTemplate cache.
+GMCommands.Item.Load.NotFound:				Item {0} not found.
+GMCommands.Item.Load.CountUpdatedOrAdded:	{0} items updated or added to the ItemTemplate cache.
+GMCommands.Item.LoadPackage.NoItemsFound:	No items found for package {0}.
+GMCommands.Item.UpdateAllowed.ItemTemplateOnly:	This command is only applicable for items based on an ItemTemplate.
+GMCommands.Item.LoadSpells.UpdatedOrAdded:	Spell ID {0} added / updated in the global spell list
 GMCommands.Item.FindID.MatchingIDsForX:		Matching ID's for {0} count {1}.
 GMCommands.Item.FindName.MatchingNamesForX:	Matching Names for {0} count {1}.
 
@@ -253,7 +329,7 @@ GMCommands.Jump.NothingPushed:				No locations in stack - you need to use '/jump
 GMCommands.Offlinejump.Description:         Teleports a character to a specific location while offline
 GMCommands.Offlinejump.Usage.Jail:			'/offlinejump <PlayerName> to jail' - Teleports a player to jail
 GMCommands.Offlinejump.Usage.Capital:		'/offlinejump <PlayerName> to capital' - Teleports a player to their Realm's Capital
-		
+
 ## /keep
 GMCommands.Keep.Description:				Various keep creation commands!
 GMCommands.Keep.Usage.FastCreate:			'/keep fastcreate <type> <id> <name>' To create a keep with base template
@@ -265,6 +341,8 @@ GMCommands.Keep.Usage.Name:					'/keep name <Name>' To change name
 GMCommands.Keep.Usage.KeepID:				'/keep keepid <keepID>' To assign keepid to keep
 GMCommands.Keep.Usage.Level:				'/keep level <level>' To change level of keep
 GMCommands.Keep.Usage.BaseLevel:			'/keep baselevel <level>' To change base level of keep
+GMCommands.Keep.Usage.Move:				'/keep move {[x,y,z,h] [amount]}' admin only
+GMCommands.Keep.Usage.SkinType:			'/keep skintype [0 = any, 1 = old, 2 = new]' To force keep to use old or new skins
 # GMCommands.Keep.Usage.MoveHere:			'/keep movehere' To move keep to player position
 # GMCommands.Keep.Usage.AddComponent:		'/keep addcomponent <compx> <compy> <comphead> <skin> <height>' To add component to current keep
 GMCommands.Keep.Usage.Save:					'/keep save' To save keep into DB
@@ -275,6 +353,9 @@ GMCommands.Keep.Usage.Radius:				'/keep radius <newRadius (set to 0 for default)
 GMCommands.Keep.FastCreate.TypeOfKeep:		Type of keep:
 GMCommands.Keep.FastCreate.CompCreated:		CompID={0}; KeepID={1}
 GMCommands.Keep.FastCreate.KeepCreated:		You have created a keep.
+GMCommands.Keep.FastCreate.InvalidParameters:	Invalid parameter for Keep Type, Keep ID, or Keep Name
+GMCommands.Keep.FastCreate.KeepIDMustBeUnusedLessThan256:	KeepID must be unused and less than 256.
+GMCommands.Keep.FastCreate.WrongType:		Wrong type of keep
 GMCommands.Keep.TowerCreate.InvalidKeepID:	Invalid entry for KeepID!
 GMCommands.Keep.TowerCreate.KeepIDExists:	KeepID {0} already exists!
 GMCommands.Keep.TowerCreate.WrongKeepID:	Wrong KeepID ({0}): a tower KeepID must be higher than 255!
@@ -284,12 +365,18 @@ GMCommands.Keep.Remove.YourNotInAKeepArea:	You're not in a keep area!
 GMCommands.Keep.Remove.KeepUnloaded:		Keep Unloaded!
 GMCommands.Keep.Remove.MustCreateKeepFirst:	You must create a keep first.
 GMCommands.Keep.Remove.YouChangeKeepName:	You change the name of the current keep to {0}.
+GMCommands.Keep.KeepID.Changed:			You change the id of the current keep to {0}.
 GMCommands.Keep.Level.YouChangeKeepLevel:	You change the level of the current keep to {0}.
 GMCommands.Keep.BaseLevel.YouChangeBaseLev:	You change the base level of the current keep to {0}.
 GMCommands.Keep.Realm.YouChangeKeepRealm:	You change the realm of the current keep to {0}.
 GMCommands.Keep.Radius.YouChangeKeepRadius:	You change the radius of the current keep to {0}.
 GMCommands.Keep.Save.KeepSavedInDatabase:	Keep saved in database.
 GMCommands.Keep.AddTeleport.StoneAdded:		Teleport Stone added!
+GMCommands.Keep.AddBanner.BannerAdded:		Banner added!
+GMCommands.Keep.Move.Usage:				/keep move [direction] [amount]
+GMCommands.Keep.Move.Moved:				Keep moved.  Don't forget to '/keep save' your changes.
+GMCommands.Keep.SkinType.Usage:			/keep skintype [0 = any, 1 = old, 2 = new]
+GMCommands.Keep.SkinType.Changed:			Keep skin type changed to {0}. Don't forget to '/keep save' your changes.
 
 ## /keepguard
 GMCommands.KeepGuard.Description:			Various keep guard commands!
@@ -302,6 +389,10 @@ GMCommands.KeepGuard.Usage.Path.Add:		'/keepguard path add'.
 GMCommands.KeepGuard.Usage.Path.Save:		'/keepguard path save'.
 GMCommands.KeepGuard.Create.NoKCompTarget:	You need to target a keep component to create a patrol!
 GMCommands.KeepGuard.Create.GuardAdded:		Guard added!
+GMCommands.KeepGuard.Create.PatrolNameRequired: You need to provide a name for this patrol.
+GMCommands.KeepGuard.Create.KeepTypeRequired: You need to provide the type of keep this patrol works with.
+GMCommands.KeepGuard.Create.InvalidKeepType: Type of keep specified was not valid.
+GMCommands.KeepGuard.Create.PatrolCreatedForKeepType: Patrol created for Keep Type {0}
 GMCommands.KeepGuard.Position.PAlreadyAss:	You already have a position assigned for height {0}, remove first!
 GMCommands.KeepGuard.Position.GuardPAdded:	Guard position added
 GMCommands.KeepGuard.Position.TargetGuard:	Target a Guard first!
@@ -312,6 +403,12 @@ GMCommands.KeepGuard.Path.NoValidSpLimit:	No valid speedlimit '{0}'!
 GMCommands.KeepGuard.Path.PPAdded:			PathPoint added. Current PathLength = {0}.
 GMCommands.KeepGuard.Path.TargPatrolGuard:	Target a patrol guard first!
 GMCommands.KeepGuard.Path.Saved:			Path saved
+GMCommands.KeepGuard.Path.PatrolGroupsInitialized: Patrol groups initialized!
+
+## /setsalvage
+GMCommands.SetSalvage.Syntax:               /setsalvage - the item to modify must be in the last backpack slot. The item is saved and updated automatically.
+GMCommands.SetSalvage.ItemCannotBeConfigured: This item can't be configured.
+GMCommands.SetSalvage.PriceChanged:         {0} price changed from {1} to {2}!
 
 ## /kick
 GMCommands.Kick.Description:				Kicks the player offline of whom you select.
@@ -358,7 +455,65 @@ GMCommands.Merchant.Articles.Delete.DeletingListTemp:	Deleting articles list tem
 GMCommands.Merchant.Articles.Delete.ListDeleted:		Merchant articles list deleted.
 GMCommands.Merchant.Type.Changed:			Merchant type changed to {0}.
 
+## /path
+GMCommands.Path.CreateStarted:			Path creation started! You can add new path points with '/path add' now.
+GMCommands.Path.NoPathCreateFirst:			No path has been created yet. Use /path create first.
+GMCommands.Path.NoPathCreateOrLoadFirst:	No path has been created yet. Use /path create or /path load first.
+GMCommands.Path.InvalidSpeedLimit:			Invalid speed limit '{0}'.
+GMCommands.Path.InvalidWaitTime:			Invalid wait time '{0}'.
+GMCommands.Path.PathPointAdded:				Path point added. Current path length is {0}.
+GMCommands.Path.AllPointsSpeedSet:			All path points have been set to speed {0}.
+GMCommands.Path.SelectMobFirst:				You need to select a mob first.
+GMCommands.Path.NpcTravelPath:				{0} was told to travel the path.
+GMCommands.Path.NpcWalkToSpawn:				{0} was told to walk to spawn.
+GMCommands.Path.Usage.Type:					Usage: /path type <pathtype>
+GMCommands.Path.CurrentType:				Current path type is '{0}'.
+GMCommands.Path.PossibleTypes:				Possible path type values are:
+GMCommands.Path.TypeMustBeOneOf:			PathType must be one of the following:
+GMCommands.Path.TypeSet:					Current path type set to '{0}'.
+GMCommands.Path.Usage.Load:					Usage: /path load <pathname>
+GMCommands.Path.NotFound:					Path '{0}' was not found.
+GMCommands.Path.Loaded:						Path '{0}' loaded.
+GMCommands.Path.Usage.Save:					Usage: /path save <pathname>
+GMCommands.Path.SavedAs:					Path saved as '{0}'.
+GMCommands.Path.Usage.AssignTaxiRoute:		Usage: /path assigntaxiroute <destination>
+GMCommands.Path.SelectStableMaster:			You must select a stable master to assign a taxi route.
+GMCommands.Path.StableMasterMissingTicket:	The stable master has no {0}.
+GMCommands.Path.TaxiRouteSet:				Taxi route set to path '{0}'.
+GMCommands.Path.VisualizationToggled:		Toggling path visualization for {0} ({1}).
+
 ## /mob
+
+## /object
+GMCommands.Object.Info.BlankName:			(blank name)
+GMCommands.Object.Info.OID:					OID: {0}
+GMCommands.Object.Info.Type:				Type: {0}
+GMCommands.Object.Info.Name:				Name: {0}
+GMCommands.Object.Info.Model:				Model: {0}
+GMCommands.Object.Info.Emblem:				Emblem: {0}
+GMCommands.Object.Info.Realm:				Realm: {0}
+GMCommands.Object.Info.Owner:				Owner: {0}
+GMCommands.Object.Info.OwnerID:				OwnerID: {0}
+GMCommands.Object.Info.RespawnInterval:		RespawnInterval (seconds): {0}
+GMCommands.Object.Info.Count:				Count: {0}
+GMCommands.Object.Info.Location:			Location: X= {0} ,Y= {1} ,Z= {2}
+GMCommands.Object.Created:					Obj created: OID={0}
+GMCommands.Object.CreatedWithSpaces:		Object created: OID = {0}
+GMCommands.Object.ModelChanged:				Object model changed to: {0}
+GMCommands.Object.HighestModelReached:		Highest object model reached!
+GMCommands.Object.ModelCannotBeZero:		Object model cannot be 0!
+GMCommands.Object.EmblemChanged:			Object emblem changed to: {0}
+GMCommands.Object.RealmChanged:				Object realm changed to: {0}
+GMCommands.Object.NameChanged:				Object name changed to: {0}
+GMCommands.Object.NameRemoved:				Object name removed
+GMCommands.Object.CreateInstanceError:		There was an error creating an instance of {0}!
+GMCommands.Object.SavedToDatabase:			Object saved to Database
+GMCommands.Object.RemovedFromClientsAndDatabase:	Object removed from Clients and Database
+GMCommands.Object.TargetSetToNearest:		Target set to nearest object!
+GMCommands.Object.NoObjectsInRange:			No objects in {0} unit range!
+GMCommands.Object.RespawnIntervalSet:		Object RespawnInterval set to {0} seconds.
+GMCommands.Object.DataQuestsLoaded:			{0} Data Quests loaded for this object.
+GMCommands.Object.RefreshQuestsError:		Error refreshing quests.
 
 ## /mute
 GMCommands.Mute.Err.NoSpeakChannel:                   You have been muted and are not allowed to speak in this channel.
@@ -424,7 +579,7 @@ GMCommands.MinoRelic.Info.SpawnY:			- Spawn Y: {0}
 GMCommands.MinoRelic.Info.SpawnZ:			- Spawn Z: {0}
 GMCommands.MinoRelic.Info.SpawnHeading:		- Spawn Heading: {0}
 GMCommands.MinoRelic.Info.SpawnRegion:		- Spawn Region: {0}
-GMCommands.MinoRelic.Info.SpellInfo:		Spell Informations	
+GMCommands.MinoRelic.Info.SpellInfo:		Spell Informations
 GMCommands.MinoRelic.Info.SpellID:			- Spell ID: {0}
 GMCommands.MinoRelic.Info.SpellTarget:		- Spell Target: {0}
 GMCommands.MinoRelic.Info.SpellName:		- Spell Name: {0}
@@ -439,3 +594,90 @@ GMCommands.Zonepoint.Description:			Adds a zonepoint to the game at the current 
 GMCommands.Zonepoint.Usage:					/zonepoint add <id> <realm>
 GMCommands.Zonepoint.UsageClass:			/zonepoint add <id> <realm> <class>
 GMCommands.Zonepoint.ZonepointAdded:		Zonepoint added: ID={0}, Realm={1}, X={2}, Y={3}, Z={4}, Region={5}
+
+## /speed
+GMCommands.Speed.Description:               Change the selected target's base speed. Omit the parameter to view the current speed.
+GMCommands.Speed.Syntax:                    /speed [newSpeed]
+GMCommands.Speed.InvalidTarget:             You have not selected a valid target.
+GMCommands.Speed.Your:                      Your
+GMCommands.Speed.CurrentSpeed:              {0} maximum speed is {1}
+GMCommands.Speed.SpeedChanged:              {0} maximum speed is now {1}
+
+## /weather
+GMCommands.Weather.Description:				Sets the weather for the current region
+GMCommands.Weather.Usage.Info:				'/weather info' for information about the current weather in this region
+GMCommands.Weather.Usage.StartWithArgs:		'/weather start <line> <duration> <speed> <diffusion> <intensity>' to start a storm in this region
+GMCommands.Weather.Usage.Start:				'/weather start' to start a random storm in this region
+GMCommands.Weather.Usage.Restart:			'/weather restart' to restart the storm in this region
+GMCommands.Weather.Usage.Stop:				'/weather stop' to stop the storm in this region
+GMCommands.Weather.Restart.Success:			Weather (restart): Restarting Weather in this region!
+GMCommands.Weather.Restart.Failed:			Weather (restart): Weather could not be restarted in this region!
+GMCommands.Weather.Stop.Success:			Weather (stop): Weather was Stopped in this Region!
+GMCommands.Weather.Stop.Failed:				Weather (stop): Weather could not be Stopped in this Region!
+GMCommands.Weather.Start.Failed:			Weather (start): Weather could not be started in this Region!
+GMCommands.Weather.Start.WrongArguments:	Weather (start): Wrong Arguments...
+GMCommands.Weather.Start.Success:			Weather (start): The Weather has been started for this region!
+GMCommands.Weather.Info.NotRegistered:		Weather (info): No Weather Registered for current Region...
+GMCommands.Weather.Info.Stopped:			Weather (info): Weather is stopped for current Region...
+GMCommands.Weather.Info.CurrentPosition:	Weather (info): Current Position - {0} - {1}
+
+## /diag
+GMCommands.Diagnostics.Description:         Toggle server logging of performance diagnostics.
+GMCommands.Diagnostics.Syntax.Perf:         /diag perf <on|off> [duration] to toggle performance diagnostics logging on the server with an optional duration in minutes.
+GMCommands.Diagnostics.Syntax.Notify:       /diag notify <on|off> <interval> to toggle GameEventMgr Notify profiling. Interval is the number of milliseconds used to accumulate stats.
+GMCommands.Diagnostics.Syntax.Tick:         /diag tick <on|off> [threshold] to toggle tick profiling and optionally set the long tick threshold in milliseconds.
+GMCommands.Diagnostics.Syntax.Object:       /diag object to count non-null service objects in ServiceObjectStore arrays.
+GMCommands.Diagnostics.ServiceObjectCountScheduled: Service object count scheduled for next tick.
+GMCommands.Diagnostics.PerfLoggingOnForMinutes: Performance diagnostics logging turned on for {0} minutes.
+GMCommands.Diagnostics.PerfLoggingOn:       Performance diagnostics logging turned on.
+GMCommands.Diagnostics.PerfLoggingOff:      Performance diagnostics logging turned off.
+GMCommands.Diagnostics.InvalidInterval:     Invalid interval argument. Please specify a positive value in milliseconds.
+GMCommands.Diagnostics.NotifyLoggingOn:     GameEventMgr Notify() logging turned on.
+GMCommands.Diagnostics.NotifyLoggingOff:    GameEventMgr Notify() logging turned off.
+GMCommands.Diagnostics.InvalidThreshold:    Invalid threshold argument. Please specify a positive value in milliseconds.
+GMCommands.Diagnostics.TickProfilingOn:     Tick profiling turned on. Long tick threshold is set to {0}ms.
+GMCommands.Diagnostics.TickProfilingOff:    Tick profiling turned off.
+
+## /translate
+GMCommands.Translate.Description:			Use '/translate add [Language] [TranslationId] [Text]' to add a new translation.
+GMCommands.Translate.Help.Debug:			Use '/translate debug' to toggle LanguageMgr debug mode for your account.
+GMCommands.Translate.Help.MemAdd:			Use '/translate memadd [Language] [TranslationId]' to create a temporary language object when the translation id and text do not fit in one chat line.
+GMCommands.Translate.Help.MemClear:			Use '/translate memclear' to remove the temporary language object.
+GMCommands.Translate.Help.MemSave:			Use '/translate memsave [Text]' to add text to the temporary language object, save it to the database, and register it in LanguageMgr.
+GMCommands.Translate.Help.MemShow:			Use '/translate memshow' to show the language and translation id of your temporary language object.
+GMCommands.Translate.Help.Refresh:			Use '/translate refresh [Language] [TranslationId] [Text]' to update an existing translation.
+GMCommands.Translate.Help.Select:			Use '/translate select [Language] [TranslationId]' to select an existing translation and store it temporarily when the translation id and text do not fit in one chat line.
+GMCommands.Translate.Help.SelectClear:		Use '/translate selectclear' to clear the selected language object from your temporary properties.
+GMCommands.Translate.Help.SelectSave:		Use '/translate selectsave [Text]' to update the selected translation text and save it to the database.
+GMCommands.Translate.Help.SelectShow:		Use '/translate selectshow' to show the language, translation id, and text of your selected language object.
+GMCommands.Translate.Help.Show:				Use '/translate show [Language] [TranslationId]' to show the translated text for the given language and translation id.
+GMCommands.Translate.Usage.Add:				[Language-Manager] Usage: '/translate add [Language] [TranslationId] [Text]'
+GMCommands.Translate.Usage.MemAdd:			[Language-Manager] Usage: '/translate memadd [Language] [TranslationId]'
+GMCommands.Translate.Usage.MemSave:			[Language-Manager] Usage: '/translate memsave [Text]'
+GMCommands.Translate.Usage.Refresh:			[Language-Manager] Usage: '/translate refresh [Language] [TranslationId] [Text]'
+GMCommands.Translate.Usage.Select:			[Language-Manager] Usage: '/translate select [Language] [TranslationId]'
+GMCommands.Translate.Usage.SelectSave:		[Language-Manager] Usage: '/translate selectsave [Text]'
+GMCommands.Translate.Usage.Show:			[Language-Manager] Usage: '/translate show [Language] [TranslationId]'
+GMCommands.Translate.Add.IdAlreadyInUse:	[Language-Manager] This translation id is already in use for the given language. (Language <{0}> - TranslationId <{1}>)
+GMCommands.Translate.Add.Success:			[Language-Manager] Translation successfully added. (Language <{0}> - TranslationId <{1}>)
+GMCommands.Translate.Debug.Mode:			[Language-Manager] Debug mode: {0}
+GMCommands.Translate.Debug.On:				ON
+GMCommands.Translate.Debug.Off:				OFF
+GMCommands.Translate.MemAdd.AlreadyExists:	[Language-Manager] Can't add a language object because one already exists.
+GMCommands.Translate.MemAdd.CombinationInUse:	[Language-Manager] TranslationId <{0}> and Language <{1}> are already in use.
+GMCommands.Translate.MemAdd.Success:		[Language-Manager] Language object added to your temporary properties. (Language <{0}> - TranslationId <{1}>)
+GMCommands.Translate.NoLanguageObject:		[Language-Manager] No language object found.
+GMCommands.Translate.MemClear.Success:		[Language-Manager] Language object removed.
+GMCommands.Translate.MemSave.RegisterFailed:	[Language-Manager] Can't register the language object in LanguageMgr because one already exists.
+GMCommands.Translate.MemSave.Success:		[Language-Manager] Translation added to the database and registered in LanguageMgr.
+GMCommands.Translate.MemShow.Info:			[Language-Manager] Language object info: Language <{0}> - TranslationId <{1}>
+GMCommands.Translate.Refresh.NotFound:		[Language-Manager] Can't find TranslationId <{0}>. (Language <{1}>)
+GMCommands.Translate.Refresh.Success:		[Language-Manager] TranslationId <{0}> (Language <{1}>) updated in the database.
+GMCommands.Translate.Select.AlreadySelected:	[Language-Manager] You already have a language object selected. (Language <{0}> - TranslationId <{1}>)
+GMCommands.Translate.LanguageObjectNotFound:	[Language-Manager] Can't find language object. (Language <{0}> - TranslationId <{1}>)
+GMCommands.Translate.Select.Success:		[Language-Manager] Language object found and added to your temporary properties. (Language <{0}> - TranslationId <{1}>)
+GMCommands.Translate.NoLanguageObjectSelected:	[Language-Manager] No language object selected.
+GMCommands.Translate.SelectClear.Success:	[Language-Manager] Language object removed from your temporary properties. (Language <{0}> - TranslationId <{1}>)
+GMCommands.Translate.SelectSave.Success:	[Language-Manager] Language object changed and saved in the database. (Language <{0}> - TranslationId <{1}> - Text <{2}>)
+GMCommands.Translate.SelectShow.Info:		[Language-Manager] Language object info: Language <{0}> - TranslationId <{1}> - Text <{2}>
+GMCommands.Translate.Show.Text:				[Language-Manager] {0}

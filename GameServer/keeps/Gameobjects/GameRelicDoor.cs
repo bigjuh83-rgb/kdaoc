@@ -1,5 +1,6 @@
 using System.Collections;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Keeps
 {
@@ -61,13 +62,13 @@ namespace DOL.GS.Keeps
 
             if (player.IsMezzed)
             {
-                player.Out.SendMessage("You are mesmerized!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Door.Interact.Mesmerized"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
 
             if (player.IsStunned)
             {
-                player.Out.SendMessage("You are stunned!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Door.Interact.Stunned"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return false;
             }
 
@@ -91,21 +92,21 @@ namespace DOL.GS.Keeps
             /*
              * You select the Keep Gate. It belongs to your realm.
              * You target [the Keep Gate]
-             * 
+             *
              * You select the Keep Gate. It belongs to an enemy realm and can be attacked!
              * You target [the Keep Gate]
-             * 
+             *
              * You select the Postern Door. It belongs to an enemy realm!
              * You target [the Postern Door]
              */
 
             IList list = base.GetExamineMessages(player);
-            string text = "You select the " + Name + ".";
+            string text = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameKeepDoor.Examine.Select", Name);
             if (this.Realm == player.Realm)
-                text = text + " It belongs to your realm.";
+                text = text + " " + LanguageMgr.GetTranslation(player.Client.Account.Language, "GameKeepDoor.Examine.YourRealm");
             else
             {
-                text = text + " It belongs to an enemy realm!";
+                text = text + " " + LanguageMgr.GetTranslation(player.Client.Account.Language, "GameKeepDoor.Examine.EnemyRealm");
             }
             list.Add(text);
             return list;

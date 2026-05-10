@@ -46,7 +46,7 @@ namespace DOL.GS.Spells
                     if (Caster.GroundTarget.Z - Caster.Z > 200)
                     {
                         if (playerCaster != null)
-                            MessageToCaster("Cannot summon a turret this high near a keep!", eChatType.CT_SpellResisted);
+                            MessageToCaster(LanguageMgr.GetTranslation(playerCaster.Client, "SummonAnimistFnF.CheckBeginCast.TooHighNearKeep"), eChatType.CT_SpellResisted);
 
                         return false;
                     }

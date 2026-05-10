@@ -248,7 +248,7 @@ namespace DOL.GS.Appeal
             }
 
             MessageToAllStaff($"Staff member {staffName} has changed the status of {player.Name}'s appeal to {status}.");
-            player.Out.SendMessage("[Appeals]: " + LanguageMgr.GetTranslation(player.Client, "Scripts.Players.Appeal.StaffChangedStatus", staffName, status), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "Appeal.Prefix") + " " + LanguageMgr.GetTranslation(player.Client, "Scripts.Players.Appeal.StaffChangedStatus", staffName, status), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
         }
 
         public static void CloseAppealOnline(string staffName, GamePlayer player, DbAppeal appeal)
@@ -325,7 +325,7 @@ namespace DOL.GS.Appeal
         public static void OnPlayerEnter(GamePlayer player)
         {
             if ((ePrivLevel) player.Client.Account.PrivLevel > ePrivLevel.Player && Count > 0)
-                player.Out.SendMessage($"[Appeals]: There are {Count} appeals in the queue.", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+                player.Out.SendMessage($"[Appeals]: {LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Appeal.QueueCount", Count)}", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
 
             DbAppeal appeal = GetAppealByAccountName(player.Client.Account.Name);
 

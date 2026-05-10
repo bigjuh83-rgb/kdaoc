@@ -1,5 +1,6 @@
 using DOL.GS.PacketHandler;
 using DOL.GS.Spells;
+using DOL.Language;
 
 namespace DOL.GS.Effects
 {
@@ -19,12 +20,12 @@ namespace DOL.GS.Effects
         public override void OnStartEffect()
         {
             base.OnStartEffect();
-            if(OwnerPlayer != null) OwnerPlayer.Out.SendMessage("The blood of the viper surges in your veins.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+            if(OwnerPlayer != null) OwnerPlayer.Out.SendMessage(LanguageMgr.GetTranslation(OwnerPlayer.Client.Account.Language, "AtlasOF.Viper.Begins"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
         }
 
         public override void OnStopEffect()
         {
-            if(OwnerPlayer != null) OwnerPlayer.Out.SendMessage("The blood of the viper fades from within.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+            if(OwnerPlayer != null) OwnerPlayer.Out.SendMessage(LanguageMgr.GetTranslation(OwnerPlayer.Client.Account.Language, "AtlasOF.Viper.Ends"), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
             base.OnStopEffect();
         }
     }

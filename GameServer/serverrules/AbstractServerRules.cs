@@ -210,7 +210,7 @@ namespace DOL.GS.ServerRules
                 if ((account == null || account.PrivLevel == 1) && client.Socket?.RemoteEndPoint != null)
                 {
                     GameClient otherClient = ClientService.Instance.GetClientWithSameIp(client);
-                    
+
                     if (otherClient != null)
                     {
                         client.Out.SendLoginDenied(eLoginError.ServiceNotAvailable);
@@ -298,7 +298,7 @@ namespace DOL.GS.ServerRules
             if (player.ObjectState != GameObject.eObjectState.Active) return;
             if (player.Client.IsPlaying == false) return;
 
-            player.Out.SendMessage("Your temporary invulnerability timer has expired.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "ServerRules.PvP.InvulnerabilityExpired"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
             return;
         }
@@ -353,7 +353,7 @@ namespace DOL.GS.ServerRules
             if (playerDefender != null && (playerDefender.Client.ClientState == GameClient.eClientState.WorldEnter || playerDefender.IsInvulnerableToAttack))
             {
                 if (!quiet)
-                    MessageToLiving(attacker, defender.Name + " is entering the game and is temporarily immune to PvP attacks!");
+                    MessageToLivingTranslated(attacker, "ServerRules.Attack.TargetEnteringGame", defender.Name);
                 return false;
             }
 
@@ -362,14 +362,14 @@ namespace DOL.GS.ServerRules
                 // Attacker immunity
                 if (playerAttacker.IsInvulnerableToAttack)
                 {
-                    if (quiet == false) MessageToLiving(attacker, "You can't attack players until your PvP invulnerability timer wears off!");
+                    if (quiet == false) MessageToLivingTranslated(attacker, "ServerRules.Attack.AttackerInvulnerablePlayers");
                     return false;
                 }
 
                 // Defender immunity
                 if (playerDefender.IsInvulnerableToAttack)
                 {
-                    if (quiet == false) MessageToLiving(attacker, defender.Name + " is temporarily immune to PvP attacks!");
+                    if (quiet == false) MessageToLivingTranslated(attacker, "ServerRules.Attack.TargetInvulnerable", defender.Name);
                     return false;
                 }
             }
@@ -386,7 +386,7 @@ namespace DOL.GS.ServerRules
             {
                 if ((defender is GameNPC) && (playerAttacker.IsInvulnerableToAttack))
                 {
-                    if (quiet == false) MessageToLiving(attacker, "You can't attack until your PvP invulnerability timer wears off!");
+                    if (quiet == false) MessageToLivingTranslated(attacker, "ServerRules.Attack.AttackerInvulnerable");
                     return false;
                 }
             }
@@ -412,7 +412,7 @@ namespace DOL.GS.ServerRules
             // 		if (quiet == false) MessageToLiving(attacker, "You can't attack someone in a safe area!");
             // 		return false;
             // 	}
-            // }		
+            // }
 
             // //safe area support for attacker
             // var attackerAreas = attacker.CurrentAreas.ToList();
@@ -458,7 +458,7 @@ namespace DOL.GS.ServerRules
             if (defender.ControlledBrain?.Body is NecromancerPet)
             {
                 if (!quiet)
-                    MessageToLiving(attacker, "You can't attack a shadowed necromancer!");
+                    MessageToLivingTranslated(attacker, "ServerRules.Attack.ShadowedNecromancer");
                 return false;
             }
 
@@ -469,7 +469,7 @@ namespace DOL.GS.ServerRules
         {
             if (source.IsAlive == false)
             {
-                MessageToLiving(source, "Hmmmm...you can't " + communicationType + " while dead!");
+                MessageToLivingTranslated(source, "ServerRules.Speak.WhileDead", communicationType);
                 return false;
             }
             return true;
@@ -729,7 +729,7 @@ namespace DOL.GS.ServerRules
                             case eRealm.Hibernia: abilityCheck = Abilities.Weapon_Blunt; break;
                             case eRealm.Midgard: abilityCheck = Abilities.Weapon_Hammers; break;
                             default: break;
-                        } 
+                        }
                     else abilityCheck = Abilities.Weapon_Crushing;
                     break;
                 case eObjectType.SlashingWeapon:
@@ -782,7 +782,7 @@ namespace DOL.GS.ServerRules
                             case eRealm.Midgard: abilityCheck = Abilities.Weapon_Swords; break;
                             default: break;
                         }
-                    else abilityCheck = Abilities.Weapon_Swords; 
+                    else abilityCheck = Abilities.Weapon_Swords;
                     break;
                 case eObjectType.Hammer:
                     if (ServerProperties.Properties.ALLOW_CROSS_REALM_ITEMS)
@@ -793,7 +793,7 @@ namespace DOL.GS.ServerRules
                             case eRealm.Hibernia: abilityCheck = Abilities.Weapon_Blunt; break;
                             default: break;
                         }
-                    else abilityCheck = Abilities.Weapon_Hammers; 
+                    else abilityCheck = Abilities.Weapon_Hammers;
                     break;
                 case eObjectType.LeftAxe:
                 case eObjectType.Axe:
@@ -805,7 +805,7 @@ namespace DOL.GS.ServerRules
                             case eRealm.Midgard: abilityCheck = Abilities.Weapon_Axes; break;
                             default: break;
                         }
-                    else abilityCheck = Abilities.Weapon_Axes; 
+                    else abilityCheck = Abilities.Weapon_Axes;
                     break;
                 case eObjectType.Spear:
                     if (ServerProperties.Properties.ALLOW_CROSS_REALM_ITEMS)
@@ -816,7 +816,7 @@ namespace DOL.GS.ServerRules
                             case eRealm.Midgard: abilityCheck = Abilities.Weapon_Spears; break;
                             default: break;
                         }
-                    else abilityCheck = Abilities.Weapon_Spears; 
+                    else abilityCheck = Abilities.Weapon_Spears;
                     break;
                 case eObjectType.CompositeBow:
                     otherCheck = new string[] { Abilities.Weapon_CompositeBows, Abilities.Weapon_Archery };
@@ -837,7 +837,7 @@ namespace DOL.GS.ServerRules
                             case eRealm.Midgard: abilityCheck = Abilities.Weapon_Swords; break;
                             default: break;
                         }
-                    else abilityCheck = Abilities.Weapon_Blades; 
+                    else abilityCheck = Abilities.Weapon_Blades;
                     break;
                 case eObjectType.Blunt:
                     if (ServerProperties.Properties.ALLOW_CROSS_REALM_ITEMS)
@@ -1312,7 +1312,7 @@ namespace DOL.GS.ServerRules
 
                 /*
                 * http://www.camelotherald.com/more/110.shtml
-                * 
+                *
                 * All group experience is divided evenly amongst group members, if they are in the same level range. What's a level range? One color range.
                 * If everyone in the group cons yellow to each other (or high blue, or low orange), experience will be shared out exactly evenly, with no leftover points.
                 * How can you determine a color range? Simple - Level divided by ten plus one. So, to a level 40 player (40/10 + 1), 36-40 is yellow, 31-35 is blue,
@@ -1332,7 +1332,7 @@ namespace DOL.GS.ServerRules
                     return 0;
 
                 if (playerToAward.XPLogState is eXPLogState.Verbose && memberCount > 1)
-                    playerToAward.Out.SendMessage($"Base XP divided among {memberCount} members", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    playerToAward.Out.SendMessage(LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.XPLog.BaseDivided", memberCount), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
                 ConColor conColorThreshold;
 
@@ -1389,7 +1389,7 @@ namespace DOL.GS.ServerRules
                     level = playerToAward.Level;
 
                 if (playerToAward.XPLogState is eXPLogState.Verbose)
-                    playerToAward.Out.SendMessage($"Base XP set to match the one of a level {level} NPC", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    playerToAward.Out.SendMessage(LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.XPLog.BaseLevelMatched", level), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
                 // If level is still 0 here, something might have gone wrong or the player's level is very low.
                 return (long) Math.Ceiling((double) killedNpc.GetExperienceValueForLevel(level) / memberCount);
@@ -1399,7 +1399,7 @@ namespace DOL.GS.ServerRules
             {
                 /*
                     * http://support.darkageofcamelot.com/kb/article.php?id=438
-                    * 
+                    *
                     * Experience clamps have been raised from 1.1x a same level kill to 1.25x a same level kill.
                     * This change has two effects: it will allow lower level players in a group to gain more experience faster (15% faster),
                     * and it will also let higher level players (the 35-50s who tend to hit this clamp more often) to gain experience faster.
@@ -1462,7 +1462,7 @@ namespace DOL.GS.ServerRules
 
                 System.Globalization.NumberFormatInfo format = System.Globalization.NumberFormatInfo.InvariantInfo;
 
-                playerToAward.Out.SendMessage($"Base XP: {baseXpReward.ToString("N0", format)} | Solo Cap : {xpCap.ToString("N0", format)} | %Cap: {(double) baseXpReward / xpCap * 100:0.##}%", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                playerToAward.Out.SendMessage(LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.XPLog.BaseStats", baseXpReward.ToString("N0", format), xpCap.ToString("N0", format), (double) baseXpReward / xpCap * 100), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
                 if (playerToAward.XPLogState is eXPLogState.Verbose)
                 {
@@ -1474,26 +1474,26 @@ namespace DOL.GS.ServerRules
                     double bafPercent = (double) bafBonus / baseXpReward * 100.0;
                     double outpostPercent = (double) outpostBonus / baseXpReward * 100.0;
 
-                    playerToAward.Out.SendMessage($"XP needed: {xpNeededForLevel.ToString("N0", format)} | {levelPercent:0.##}% done with current level", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                    playerToAward.Out.SendMessage($"# of kills needed to level at this rate: {(double) (playerToAward.ExperienceForNextLevel - playerToAward.Experience) / totalReward:0.##}", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    playerToAward.Out.SendMessage(LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.XPLog.Needed", xpNeededForLevel.ToString("N0", format), levelPercent), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    playerToAward.Out.SendMessage(LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.XPLog.KillsNeeded", (double) (playerToAward.ExperienceForNextLevel - playerToAward.Experience) / totalReward), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
                     if (modifiedByDamage && damagePercent < 1.0)
-                        playerToAward.Out.SendMessage($"Damage inflicted: {damagePercent * 100:0.##}%", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        playerToAward.Out.SendMessage(LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.XPLog.DamageInflicted", damagePercent * 100), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
                     if (campBonus > 0)
-                        playerToAward.Out.SendMessage($"Camp: {campBonus.ToString("N0", format)} | {campPercent:0.##}% bonus", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        playerToAward.Out.SendMessage(LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.XPLog.CampBonus", campBonus.ToString("N0", format), campPercent), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
                     if (groupBonus > 0)
-                        playerToAward.Out.SendMessage($"Group: {groupBonus.ToString("N0", format)} | {groupPercent:0.##}% bonus", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        playerToAward.Out.SendMessage(LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.XPLog.GroupBonus", groupBonus.ToString("N0", format), groupPercent), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
                     if (guildBonus > 0)
-                        playerToAward.Out.SendMessage($"Guild: {guildBonus.ToString("N0", format)} | {guildPercent:0.##}% bonus", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        playerToAward.Out.SendMessage(LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.XPLog.GuildBonus", guildBonus.ToString("N0", format), guildPercent), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
                     if (bafPercent > 0)
-                        playerToAward.Out.SendMessage($"BaF: {bafBonus.ToString("N0", format)} | {bafPercent:0.##}% bonus", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        playerToAward.Out.SendMessage(LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.XPLog.BafBonus", bafBonus.ToString("N0", format), bafPercent), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
                     if (outpostBonus > 0)
-                        playerToAward.Out.SendMessage($"Outpost: {outpostBonus.ToString("N0", format)} | {outpostPercent:0.##}% bonus", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        playerToAward.Out.SendMessage(LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.XPLog.OutpostBonus", outpostBonus.ToString("N0", format), outpostPercent), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 }
             }
         }
@@ -1852,7 +1852,7 @@ namespace DOL.GS.ServerRules
 
                 if (money > 0)
                 {
-                    playerToAward.AddMoney(money, "You receive {0}");
+                    playerToAward.AddMoney(money, LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.Reward.ReceiveMoney", "{0}"));
                     InventoryLogging.LogInventoryAction(killedPlayer, playerToAward, eInventoryActionType.Other, money);
                 }
             }
@@ -1865,8 +1865,8 @@ namespace DOL.GS.ServerRules
 
             void SendNotWorthRewardMessage()
             {
-                playerToAward.Out.SendMessage($"{killedPlayer.Name} has been killed recently and is worth no realm points!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-                playerToAward.Out.SendMessage($"{killedPlayer.Name} has been killed recently and is worth no experience!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                playerToAward.Out.SendMessage(LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.Reward.NotWorthRealmPoints", killedPlayer.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                playerToAward.Out.SendMessage(LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.Reward.NotWorthExperience", killedPlayer.Name), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
             }
         }
 
@@ -2029,7 +2029,7 @@ namespace DOL.GS.ServerRules
             List<string> stat = new List<string>();
 
             int total = 0;
-            
+
             #region Players Killed
             //only show if there is a kill [by Suncheck]
             if ((player.KillsAlbionPlayers + player.KillsMidgardPlayers + player.KillsHiberniaPlayers) > 0)
@@ -2058,11 +2058,11 @@ namespace DOL.GS.ServerRules
                     stat.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "PlayerStatistic.Kill.TotalPlayers") + ": " + total.ToString("N0"));
                     stat.Add(" ");
                 }
-                
-                
+
+
             }
             #endregion
-            
+
             #region Players Deathblows
             //only show if there is a kill [by Suncheck]
             if ((player.KillsAlbionDeathBlows + player.KillsMidgardDeathBlows + player.KillsHiberniaDeathBlows) > 0)
@@ -2390,7 +2390,7 @@ namespace DOL.GS.ServerRules
                 }
                 default:
                 {
-                    player.Out.SendMessage("Unknown merchant type.", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "AbstractServerRules.UnknownMerchantType"), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
 
                     if (log.IsErrorEnabled)
                         log.Error($"Unknown merchant type {merchantType}");
@@ -2669,6 +2669,12 @@ namespace DOL.GS.ServerRules
         {
             if (living is GamePlayer)
                 ((GamePlayer)living).Out.SendMessage(message, type, loc);
+        }
+
+        public virtual void MessageToLivingTranslated(GameLiving living, string translationId, params object[] args)
+        {
+            if (living is GamePlayer player)
+                MessageToLiving(player, LanguageMgr.GetTranslation(player.Client.Account.Language, translationId, args));
         }
         #endregion
     }

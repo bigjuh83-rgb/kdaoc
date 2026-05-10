@@ -1,0 +1,65 @@
+# Race Names
+
+GamePlayer.PlayerRace.Unknown:					알 수 없음
+
+## Albion
+### Male
+GamePlayer.PlayerRace.Male.Briton:				브리튼
+GamePlayer.PlayerRace.Male.Avalonian:			아발로니안
+GamePlayer.PlayerRace.Male.Highlander:			하이랜더
+GamePlayer.PlayerRace.Male.Saracen:				사라센
+GamePlayer.PlayerRace.Male.Inconnu:				인코뉴
+GamePlayer.PlayerRace.Male.HalfOgre:			하프 오우거
+
+### Female
+GamePlayer.PlayerRace.Female.Briton:				브리튼
+GamePlayer.PlayerRace.Female.Avalonian:			아발로니안
+GamePlayer.PlayerRace.Female.Highlander:			하이랜더
+GamePlayer.PlayerRace.Female.Saracen:				사라센
+GamePlayer.PlayerRace.Female.Inconnu:				인코뉴
+GamePlayer.PlayerRace.Female.HalfOgre:			하프 오우거
+
+## Hibernia
+### Male
+GamePlayer.PlayerRace.Male.Celt:				켈트
+GamePlayer.PlayerRace.Male.Firbolg:				피르볼그
+GamePlayer.PlayerRace.Male.Elf:				엘프
+GamePlayer.PlayerRace.Male.Lurikeen:			루리킨
+GamePlayer.PlayerRace.Male.Sylvan:				실반
+GamePlayer.PlayerRace.Male.Shar:				샤
+
+### Female
+GamePlayer.PlayerRace.Female.Celt:				켈트
+GamePlayer.PlayerRace.Female.Firbolg:				피르볼그
+GamePlayer.PlayerRace.Female.Elf:				엘프
+GamePlayer.PlayerRace.Female.Lurikeen:			루리킨
+GamePlayer.PlayerRace.Female.Sylvan:				실반
+GamePlayer.PlayerRace.Female.Shar:				샤
+
+## Midgard
+### Male
+GamePlayer.PlayerRace.Male.Norseman:			노스맨
+GamePlayer.PlayerRace.Male.Troll:				트롤
+GamePlayer.PlayerRace.Male.Dwarf:				드워프
+GamePlayer.PlayerRace.Male.Kobold:				코볼드
+GamePlayer.PlayerRace.Male.Valkyn:				발킨
+GamePlayer.PlayerRace.Male.Frostalf:			프로스트알프
+
+### Female
+GamePlayer.PlayerRace.Female.Norseman:			노스맨
+GamePlayer.PlayerRace.Female.Troll:				트롤
+GamePlayer.PlayerRace.Female.Dwarf:				드워프
+GamePlayer.PlayerRace.Female.Kobold:				코볼드
+GamePlayer.PlayerRace.Female.Valkyn:				발킨
+GamePlayer.PlayerRace.Female.Frostalf:			프로스트알프
+
+## Minotaur
+### Male
+GamePlayer.PlayerRace.Male.Korazh:				코라즈
+GamePlayer.PlayerRace.Male.Deifang:			데이팡
+GamePlayer.PlayerRace.Male.Graoch:				그라오크
+
+### Female
+GamePlayer.PlayerRace.Female.Korazh:				코라즈
+GamePlayer.PlayerRace.Female.Deifang:			데이팡
+GamePlayer.PlayerRace.Female.Graoch:				그라오크

@@ -8,7 +8,7 @@
 *Quest Version  : v1.0
 *
 *Changes:
-* 
+*
 */
 
 using System;
@@ -36,11 +36,11 @@ namespace DOL.GS.Quests.Hibernia
 		private static GameNPC Kredril = null; // step 2
 		private static HiberniaSITeleporter Emolia = null; // step 3
 		private static GameNPC Jandros = null; // step 4 + 6
-		
+
 		private static GameNPC Feairna_Athar = null; //Mob to Kill
-		
+
 		private static readonly GameLocation treantLocation = new("Feairna-Athar", 181, 288348, 319950, 2328);
-		
+
 		private static AbstractArea treantArea;
 
 		private static DbItemTemplate paidrean_necklace;
@@ -62,6 +62,19 @@ namespace DOL.GS.Quests.Hibernia
 		{
 		}
 
+		private static string L(GamePlayer player, string key, params object[] args)
+		{
+			return DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+		}
+
+		private string Q(string key, params object[] args)
+		{
+			string language = m_questPlayer != null && m_questPlayer.Client != null && m_questPlayer.Client.Account != null
+				? m_questPlayer.Client.Account.Language
+				: ServerProperties.Properties.SERV_LANGUAGE;
+			return DOL.Language.LanguageMgr.GetTranslation(language, key, args);
+		}
+
 		public override int Level =>
 			// Quest Level
 			minimumLevel;
@@ -73,7 +86,7 @@ namespace DOL.GS.Quests.Hibernia
 				return;
 
 			#region defineNPCs
-			
+
 			 var npcs = WorldMgr.GetNPCsByName("Terod", eRealm.Hibernia);
 
         if (npcs.Length > 0)
@@ -237,16 +250,22 @@ namespace DOL.GS.Quests.Hibernia
 
 			const int radius = 1500;
 			var region = WorldMgr.GetRegion(treantLocation.RegionID);
+			if (region == null)
+			{
+				log.Error("Could not find region " + treantLocation.RegionID + " when trying to create " + questTitle + " treant area.");
+				return;
+			}
+
 			treantArea = new Area.Circle("accursed piece of forest", treantLocation.X, treantLocation.Y, treantLocation.Z,
 				radius);
 			treantArea.CanBroadcast = false;
 			treantArea.DisplayMessage = false;
 			region.AddArea(treantArea);
 			treantArea.RegisterPlayerEnter(PlayerEnterTreantArea);
-			
+
 			GameEventMgr.AddHandler(GamePlayerEvent.AcceptQuest, new DOLEventHandler(SubscribeQuest));
 			GameEventMgr.AddHandler(GamePlayerEvent.DeclineQuest, new DOLEventHandler(SubscribeQuest));
-			
+
 			GameEventMgr.AddHandler(Terod, GameObjectEvent.Interact, TalkToTerod);
 			GameEventMgr.AddHandler(Terod, GameLivingEvent.WhisperReceive, TalkToTerod);
 
@@ -255,10 +274,10 @@ namespace DOL.GS.Quests.Hibernia
 
 			GameEventMgr.AddHandler(Emolia, GameObjectEvent.Interact, TalkToEmolia);
 			GameEventMgr.AddHandler(Emolia, GameLivingEvent.WhisperReceive, TalkToEmolia);
-			
+
 			GameEventMgr.AddHandler(Jandros, GameObjectEvent.Interact, TalkToJandros);
 			GameEventMgr.AddHandler(Jandros, GameLivingEvent.WhisperReceive, TalkToJandros);
-			
+
 			/* Now we bring to Terod the possibility to give this quest to players */
 			Terod?.AddQuestToGive(typeof (TheLostSeed));
 
@@ -272,14 +291,14 @@ namespace DOL.GS.Quests.Hibernia
 			//if not loaded, don't worry
 			if (Terod == null)
 				return;
-			
+
 			// remove handlers
 			treantArea.UnRegisterPlayerEnter(PlayerEnterTreantArea);
-			WorldMgr.GetRegion(treantLocation.RegionID).RemoveArea(treantArea);
-			
+			WorldMgr.GetRegion(treantLocation.RegionID)?.RemoveArea(treantArea);
+
 			GameEventMgr.RemoveHandler(GamePlayerEvent.AcceptQuest, new DOLEventHandler(SubscribeQuest));
 			GameEventMgr.RemoveHandler(GamePlayerEvent.DeclineQuest, new DOLEventHandler(SubscribeQuest));
-			
+
 			GameEventMgr.RemoveHandler(Terod, GameObjectEvent.Interact, TalkToTerod);
 			GameEventMgr.RemoveHandler(Terod, GameLivingEvent.WhisperReceive, TalkToTerod);
 
@@ -288,10 +307,10 @@ namespace DOL.GS.Quests.Hibernia
 
 			GameEventMgr.RemoveHandler(Emolia, GameObjectEvent.Interact, TalkToEmolia);
 			GameEventMgr.RemoveHandler(Emolia, GameLivingEvent.WhisperReceive, TalkToEmolia);
-			
+
 			GameEventMgr.RemoveHandler(Jandros, GameObjectEvent.Interact, TalkToJandros);
 			GameEventMgr.RemoveHandler(Jandros, GameLivingEvent.WhisperReceive, TalkToJandros);
-			
+
 			/* Now we remove to Terod the possibility to give this quest to players */
 			Terod.RemoveQuestToGive(typeof (TheLostSeed));
 		}
@@ -328,18 +347,18 @@ namespace DOL.GS.Quests.Hibernia
 			Feairna_Athar.AddToWorld();
 
 			Feairna_Athar.StartAttack(player);
-			
+
 			GameEventMgr.AddHandler(Feairna_Athar,GameLivingEvent.Dying, FaeiarnaAtharDying);
 		}
 		private void FaeiarnaAtharDying(DOLEvent e, object sender, EventArgs arguments)
 		{
 			var args = (DyingEventArgs) arguments;
-        
+
 			var player = args.Killer as GamePlayer;
-        
+
 			if (player == null)
 				return;
-        
+
 			if (player.Group != null)
 			{
 				foreach (var gpl in player.Group.GetPlayersInTheGroup())
@@ -351,7 +370,7 @@ namespace DOL.GS.Quests.Hibernia
 			{
 				AdvanceAfterKill(player);
 			}
-        
+
 			GameEventMgr.RemoveHandler(Feairna_Athar, GameLivingEvent.Dying, FaeiarnaAtharDying);
 			Feairna_Athar.Delete();
 		}
@@ -361,7 +380,7 @@ namespace DOL.GS.Quests.Hibernia
 			if (quest is not {Step: 5}) return;
 			if (!player.Inventory.IsSlotsFree(1, eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack))
 				player.Out.SendMessage(
-					"You dont have enough room for " + glowing_red_jewel.Name + " and drops on the ground.",
+					L(player, "Quest.Hibernia.TheLostSeed.NoRoomForJewel", glowing_red_jewel.Name),
 					eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 			GiveItem(player, glowing_red_jewel);
 			quest.Step = 6;
@@ -387,10 +406,9 @@ namespace DOL.GS.Quests.Hibernia
 			{
 				try
 				{
-					// player near demon           
-					SendSystemMessage(player,
-					"You feel a quiet rustling in the leaves overhead.");
-					player.Out.SendMessage("Feairna-Athar ambushes you!", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+					// player near demon
+					SendSystemMessage(player, L(player, "Quest.Hibernia.TheLostSeed.LeavesRustle"));
+					player.Out.SendMessage(L(player, "Quest.Hibernia.TheLostSeed.FeairnaAtharAmbush"), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 					quest.CreateFeairnaAthar(player);
 				}
 				finally
@@ -408,7 +426,7 @@ namespace DOL.GS.Quests.Hibernia
 
 		protected static void TalkToTerod(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -426,35 +444,31 @@ namespace DOL.GS.Quests.Hibernia
 					switch (quest.Step)
 					{
 						case 1:
-							Terod.SayTo(player, "I am very glad that you decided to help us! The [treant] in Cothrom Gorge is brutal and very aggressive. I heard it likes to torture everything that stands in its way.");
+							Terod.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Terod.Step1"));
 							break;
 						case 2:
-							Terod.SayTo(player, "Kredril has studied this treant for years, he will know much more about it. Seek for him in the outskirts of Droighaid, he will be able to help you.");
+							Terod.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Terod.Step2"));
 							break;
 						case 3:
-							Terod.SayTo(player, "Greetings "+player.CharacterClass.Name+", Kredril told me that you are on your way to visit Jandros, is that right? " +
-							                    "Emolia can be found next to Droighaid's Bindstone, she will be able to help with your journey to Aalid Feie.");
+							Terod.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Terod.Step3", player.CharacterClass.Name));
 							break;
 						case 4:
-							Terod.SayTo(player, "Hello "+player.Name+", have you visited Jandros yet? " +
-							                    "You can find Jandros in one of those big trees in Aalid Feie.");
+							Terod.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Terod.Step4", player.Name));
 							break;
 						case 5:
-							Terod.SayTo(player, "Jandros has told me that you defeated the treant Feairna-Athar. We all stand behind and thank you for your courage!");
+							Terod.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Terod.Step5"));
 							break;
 						case 6:
-							Terod.SayTo(player, "I dont know what to say, you are outstanding! Bring this Glowing Red Jewel to Jandros, he knows what to do.");
+							Terod.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Terod.Step6"));
 							break;
 						case 7:
-							Terod.SayTo(player, "Welcome back hero of Hibernia, I think it's time for your [reward]!");
+							Terod.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Terod.Step7"));
 							break;
 					}
 				}
 				else
 				{
-					Terod.SayTo(player, "Hello " + player.Name +
-					                       ", do you have a moment to listen to my story?\n" +
-					                       "A cursed treant rages in Cothrom Gorge and is threatening our realm. I have a good feeling ..could you be the one finally able to [help us]?");
+					Terod.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Terod.Intro", player.Name));
 				}
 			}
 				// The player whispered to the NPC
@@ -465,13 +479,14 @@ namespace DOL.GS.Quests.Hibernia
 				{
 					switch (wArgs.Text)
 					{
-						case "help us":
-							Terod.SayTo(player, "Some friends and I have been looking for strong fighters and magicians to help us for a few days now. " +
-							                    "It's about the [Lost Seed].");
+							case "help us":
+							case "도와줄":
+							Terod.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Terod.HelpUs"));
 							break;
-						
-						case "Lost Seed":
-							player.Out.SendQuestSubscribeCommand(Terod, QuestMgr.GetIDForQuestType(typeof(TheLostSeed)), "Will you help Terod find [The Lost Seed]?");
+
+							case "Lost Seed":
+							case "잃어버린 씨앗":
+							player.Out.SendQuestSubscribeCommand(Terod, QuestMgr.GetIDForQuestType(typeof(TheLostSeed)), L(player, "Quest.Hibernia.TheLostSeed.Subscribe"));
 							break;
 					}
 				}
@@ -479,21 +494,23 @@ namespace DOL.GS.Quests.Hibernia
 				{
 					switch (wArgs.Text)
 					{
-						case "treant":
+							case "treant":
+							case "트리언트":
 							if (quest.Step == 1)
 							{
-								Terod.SayTo(player, "Kredril knows much more about this treant, go find him outside of Droighaid.");
+								Terod.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Terod.Treant"));
 								quest.Step = 2;
 							}
 							break;
-						case "reward":
+							case "reward":
+							case "보상":
 							if (quest.Step == 7)
 							{
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
@@ -503,14 +520,14 @@ namespace DOL.GS.Quests.Hibernia
 				ReceiveItemEventArgs rArgs = (ReceiveItemEventArgs) args;
 				if (quest != null)
 				{
-					
+
 				}
 			}
 		}
-		
+
 		protected static void TalkToKredril(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -528,32 +545,31 @@ namespace DOL.GS.Quests.Hibernia
 					switch (quest.Step)
 					{
 						case 1:
-							Kredril.SayTo(player, "Hello Adventurer, have you heard about the Lost Seed? " +
-							                      "Find Terod in Droighaid, he will tell you more about it.");
+							Kredril.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Kredril.Step1"));
 							break;
 						case 2:
-							Kredril.SayTo(player, "Hey "+player.CharacterClass.Name+", has Terod told you about [the Lost Seed]?");
+							Kredril.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Kredril.Step2", player.CharacterClass.Name));
 							break;
 						case 3:
-							Kredril.SayTo(player, "Hey "+player.Name+", you can find Emolia around Droighaid's Bindstone. She will teleport you to Aalid Feie.");
+							Kredril.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Kredril.Step3", player.Name));
 							break;
 						case 4:
-							Kredril.SayTo(player, player.Name+" have you visited Jandros yet? You can find him in one of those big trees.");
+							Kredril.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Kredril.Step4", player.Name));
 							break;
 						case 5:
-							Kredril.SayTo(player, "Jandros has told Terod and I that you faced the treant Feairna-Athar. Thank you for your help and courage!");
+							Kredril.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Kredril.Step5"));
 							break;
 						case 6:
-							Kredril.SayTo(player, "Outstanding! Now everyone can sleep well again! Bring this Glowing Red Jewel to Jandros, he will tell you what to do next.");
+							Kredril.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Kredril.Step6"));
 							break;
 						case 7:
-							Kredril.SayTo(player, "Hey "+player.Name+", go tell Terod about it. I think he will want to thank you in a special way.");
+							Kredril.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Kredril.Step7", player.Name));
 							break;
 					}
 				}
 				else
 				{
-					Kredril.SayTo(player, "Hey "+player.Name+", today is a beautiful day, I hope for you too.");
+					Kredril.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Kredril.Intro", player.Name));
 				}
 			}
 			// The player whispered to the NPC
@@ -570,15 +586,14 @@ namespace DOL.GS.Quests.Hibernia
 				{
 					switch (wArgs.Text)
 					{
-						case "the Lost Seed":
-							Kredril.SayTo(player, "Farmers of Hibernia found seeds in Cothrom Gorge, which were cursed. A Few seeds got destroyed, but one was lost. " +
-							                      "Please visit [Jandros] in Aalid Feie, he might know where the farmers found those seeds.");
+							case "the Lost Seed":
+							case "잃어버린 씨앗":
+							Kredril.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Kredril.TheLostSeed"));
 							break;
 						case "Jandros":
 							if (quest.Step == 2)
 							{
-								Kredril.SayTo(player, "Go to Emolia in Droighaid, she will teleport you to Aalid Feie. " +
-								                      "You can find Jandros in one of those big trees. Tell him that I sent you, he will understand.");
+								Kredril.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Kredril.Jandros"));
 								quest.Step = 3;
 							}
 							break;
@@ -590,14 +605,14 @@ namespace DOL.GS.Quests.Hibernia
 				ReceiveItemEventArgs rArgs = (ReceiveItemEventArgs) args;
 				if (quest != null)
 				{
-					
+
 				}
 			}
 		}
-		
+
 		protected static void TalkToEmolia(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -619,25 +634,25 @@ namespace DOL.GS.Quests.Hibernia
 						case 2:
 							break;
 						case 3:
-							Emolia.Say("Hello Adventurer, Jandros awaits you.");
+							Emolia.Say(L(player, "Quest.Hibernia.TheLostSeed.Emolia.Step3"));
 							break;
 						case 4:
-							Emolia.Say("Hello Adventurer, you can find Jandros in a big tree in Aalid Feie.");
+							Emolia.Say(L(player, "Quest.Hibernia.TheLostSeed.Emolia.Step4"));
 							break;
 						case 5:
-							Emolia.Say("Hello Adventurer, I wish you good luck finding the treant in Cothrom Gorge.");
+							Emolia.Say(L(player, "Quest.Hibernia.TheLostSeed.Emolia.Step5"));
 							break;
 						case 6:
-							Emolia.Say("Hello Adventurer, I can send you whenever you need.");
+							Emolia.Say(L(player, "Quest.Hibernia.TheLostSeed.Emolia.Step6"));
 							break;
 						case 7:
-							Emolia.Say("Hello Adventurer, thank you for your help in Cothrom Gorge.");
+							Emolia.Say(L(player, "Quest.Hibernia.TheLostSeed.Emolia.Step7"));
 							break;
 					}
 				}
 				else
 				{
-					
+
 				}
 			}
 			// The player whispered to the NPC
@@ -648,7 +663,7 @@ namespace DOL.GS.Quests.Hibernia
 				{
 					switch (wArgs.Text)
 					{
-						
+
 					}
 				}
 				else
@@ -669,14 +684,14 @@ namespace DOL.GS.Quests.Hibernia
 				ReceiveItemEventArgs rArgs = (ReceiveItemEventArgs) args;
 				if (quest != null)
 				{
-					
+
 				}
 			}
 		}
-		
+
 		protected static void TalkToJandros(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -694,33 +709,31 @@ namespace DOL.GS.Quests.Hibernia
 					switch (quest.Step)
 					{
 						case 1:
-							Jandros.SayTo(player, "Hello "+player.CharacterClass.Name+", I saw you in Aalid Feie for a few times. Have you visited Droighaid yet? " +
-							                      "It's a beautiful place, my friends Kredril and Terod live there.");
+							Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.Step1", player.CharacterClass.Name));
 							break;
 						case 2:
-							Jandros.SayTo(player, "Hey "+player.CharacterClass.Name+", I am sorry for seeming so distracted. We found a track for the Lost Seed.");
+							Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.Step2", player.CharacterClass.Name));
 							break;
 						case 3:
-							Jandros.SayTo(player, "Hello "+player.Name+", has Emolia sent you? I wasn't expecting you anytime soon.");
+							Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.Step3", player.Name));
 							break;
 						case 4:
-							Jandros.SayTo(player, "Greetings "+player.Name+", I am glad that you are here, has [Kredril] sent you?");
+							Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.Step4", player.Name));
 							break;
 						case 5:
-							Jandros.SayTo(player, "Hey "+player.Name+", follow the path north towards Cothrom Gorge. " +
-							                      "Once in the forest, head West. There, you will find the Treant Feairna-Athar. Kill him and bring me proof.");
+							Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.Step5", player.Name));
 							break;
 						case 6:
-							Jandros.SayTo(player, player.Name+" you are crazy. I know that you will do it! Please hand me [the Jewel].");
+							Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.Step6", player.Name));
 							break;
 						case 7:
-							Jandros.SayTo(player, "Hey "+player.Name+", have you visited Terod in Droighaid yet? Please do it, he needs to know about it.");
+							Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.Step7", player.Name));
 							break;
 					}
 				}
 				else
 				{
-					Jandros.SayTo(player, "Hey "+player.Name+", I wish it rained way more often in Aalid Feie. I love the sound and feel.");
+					Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.Intro", player.Name));
 				}
 			}
 			// The player whispered to the NPC
@@ -731,7 +744,7 @@ namespace DOL.GS.Quests.Hibernia
 				{
 					switch (wArgs.Text)
 					{
-						
+
 					}
 				}
 				else
@@ -739,30 +752,30 @@ namespace DOL.GS.Quests.Hibernia
 					switch (wArgs.Text)
 					{
 						case "Kredril":
-							Jandros.SayTo(player, "Thank you for your courage and help, indeed we need fighter and magicians to help us finding [the Lost Seed].");
+							Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.Kredril"));
 							break;
-						case "the Lost Seed":
-							Jandros.SayTo(player, "I think Kredril has already told you about the farmers that found some cursed magical seeds. Many [died] because of them.");
+							case "the Lost Seed":
+							case "잃어버린 씨앗":
+							Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.TheLostSeed"));
 							break;
-						case "died":
+							case "died":
+							case "죽었습니다":
 							Jandros.Emote(eEmote.Cry);
-							Jandros.SayTo(player, "Some rangers went near the location where the farmers died and reported that something strange " +
-							                      "is happening at this location. They saw a treant and named it [Feairna-Athar]. " +
-							                      "I think it has to do with the Lost Seed!");
+							Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.Died"));
 							break;
 						case "Feairna-Athar":
 							if (quest.Step == 4)
 							{
-								Jandros.SayTo(player, "Follow the path North towards Cothrom Gorge. " +
-								                      "Once in the forest, head West. There, you will find the Treant Feairna-Athar. Kill him and bring me proof.");
+								Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.FeairnaAthar"));
 								quest.Step = 5;
 							}
 							break;
-						case "the Jewel":
+							case "the Jewel":
+							case "보석":
 							if (quest.Step == 6)
 							{
 								RemoveItem(player, glowing_red_jewel);
-								Jandros.SayTo(player, "Please go back to Droighaid and tell Terod about it!");
+								Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.ReturnToTerod"));
 								quest.Step = 7;
 							}
 							break;
@@ -777,15 +790,14 @@ namespace DOL.GS.Quests.Hibernia
 					{
 						if (quest.Step == 6)
 						{
-							Jandros.SayTo(player,
-								"Thanks " + player.Name + ", please go back to Droighaid and tell Terod about it!");
+							Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.ReceiveJewel", player.Name));
 							Jandros.Emote(eEmote.Smile);
 							quest.Step = 7;
 						}
 					}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -807,11 +819,11 @@ namespace DOL.GS.Quests.Hibernia
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortCancelled"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -841,7 +853,7 @@ namespace DOL.GS.Quests.Hibernia
 
 			if (response == 0x00)
 			{
-				Terod.SayTo(player, "Please come back, if you changed your mind!");
+				Terod.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ComeBackIfChangedMind"));
 			}
 			else
 			{
@@ -849,8 +861,8 @@ namespace DOL.GS.Quests.Hibernia
 				if (!Terod.GiveQuest(typeof (TheLostSeed), player, 1))
 					return;
 			}
-			Terod.SayTo(player, "Thanks, let's talk more about the Lost Seed!");
-			Terod.SayTo(player, "I am very glad that you decided to help us! The [treant] in Cothrom Gorge is brutal and very aggressive. I heard it likes to torture everything that stands in its way.");
+			Terod.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Terod.Accepted"));
+			Terod.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Terod.Step1"));
 		}
 
 		//Set quest name
@@ -867,20 +879,19 @@ namespace DOL.GS.Quests.Hibernia
 				switch (Step)
 				{
 					case 1:
-						return "Speak with Terod in Droighaid.";
+						return Q("Quest.Hibernia.TheLostSeed.Description.Step1");
 					case 2:
-						return "Speak with Kredril in Droighaid and tell him more about the Lost Seed.";
+						return Q("Quest.Hibernia.TheLostSeed.Description.Step2");
 					case 3:
-						return "Go to Emolia and port yourself to Aalid Feie.";
+						return Q("Quest.Hibernia.TheLostSeed.Description.Step3");
 					case 4:
-						return "Speak with Jandros in Aalid Feie and ask him about the Lost Seed.";
+						return Q("Quest.Hibernia.TheLostSeed.Description.Step4");
 					case 5:
-						return "Follow the path north towards Cothrom Gorge. " +
-						       "Once in the forest, head West. There, you will find the Treant Feairna-Athar. Kill him and bring me the jewel.";
+						return Q("Quest.Hibernia.TheLostSeed.Description.Step5");
 					case 6:
-						return "Return the Glowing Red Jewel to Jandros in Aalid Feie.";
+						return Q("Quest.Hibernia.TheLostSeed.Description.Step6");
 					case 7:
-						return "Speak with Terod in Droighaid for your reward.";
+						return Q("Quest.Hibernia.TheLostSeed.Description.Step7");
 				}
 				return base.Description;
 			}
@@ -903,14 +914,14 @@ namespace DOL.GS.Quests.Hibernia
 						(m_questPlayer.ExperienceForNextLevel - m_questPlayer.ExperienceForCurrentLevel) / 2, false);
 				RemoveItem(m_questPlayer, glowing_red_jewel);
 				GiveItem(m_questPlayer, paidrean_necklace);
-				m_questPlayer.AddMoney(Money.GetMoney(0, 0, 121, 41, Util.Random(50)), "You receive {0} as a reward.");
+				m_questPlayer.AddMoney(Money.GetMoney(0, 0, 121, 41, Util.Random(50)), Q("Quest.Common.MoneyReward"));
 
 
 				base.FinishQuest(); //Defined in Quest, changes the state, stores in DB etc ...
-			} 
+			}
 			else
 			{
-				m_questPlayer.Out.SendMessage("You do not have enough free space in your inventory!",
+				m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"),
 					eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 			}
 		}

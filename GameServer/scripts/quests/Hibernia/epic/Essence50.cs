@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -25,12 +25,12 @@
 *Quest Classes  : Enchanter, Bard, Champion, Nighthsade(Path of Essence)
 *Quest Version  : v1
 *
-*Done: 
+*Done:
 *
-*Bonuses to epic items 
+*Bonuses to epic items
 *
 *ToDo:
-*   
+*
 *   Add correct Text
 *   Find Helm ModelID for epics..
 */
@@ -55,35 +55,43 @@ namespace DOL.GS.Quests.Hibernia
 		protected const int minimumLevel = 50;
 		protected const int maximumLevel = 50;
 
-		private static GameNPC Brigit = null; // Start NPC        
+		private static string L(GamePlayer player, string key, params object[] args)
+		{
+			string language = player != null && player.Client != null && player.Client.Account != null
+				? player.Client.Account.Language
+				: ServerProperties.Properties.SERV_LANGUAGE;
+			return DOL.Language.LanguageMgr.GetTranslation(language, key, args);
+		}
+
+		private static GameNPC Brigit = null; // Start NPC
 		private static GhostOfCaithor Caithor = null; // Mob to kill
 
 		private static DbItemTemplate Moonstone = null; //ball of flame
 
-		private static DbItemTemplate ChampionEpicBoots = null; //Mist Shrouded Boots 
-		private static DbItemTemplate ChampionEpicHelm = null; //Mist Shrouded Coif 
-		private static DbItemTemplate ChampionEpicGloves = null; //Mist Shrouded Gloves 
-		private static DbItemTemplate ChampionEpicVest = null; //Mist Shrouded Hauberk 
-		private static DbItemTemplate ChampionEpicLegs = null; //Mist Shrouded Legs 
-		private static DbItemTemplate ChampionEpicArms = null; //Mist Shrouded Sleeves 
-		private static DbItemTemplate BardEpicBoots = null; //Shadow Shrouded Boots 
-		private static DbItemTemplate BardEpicHelm = null; //Shadow Shrouded Coif 
-		private static DbItemTemplate BardEpicGloves = null; //Shadow Shrouded Gloves 
-		private static DbItemTemplate BardEpicVest = null; //Shadow Shrouded Hauberk 
-		private static DbItemTemplate BardEpicLegs = null; //Shadow Shrouded Legs 
-		private static DbItemTemplate BardEpicArms = null; //Shadow Shrouded Sleeves 
-		private static DbItemTemplate EnchanterEpicBoots = null; //Valhalla Touched Boots 
-		private static DbItemTemplate EnchanterEpicHelm = null; //Valhalla Touched Coif 
-		private static DbItemTemplate EnchanterEpicGloves = null; //Valhalla Touched Gloves 
-		private static DbItemTemplate EnchanterEpicVest = null; //Valhalla Touched Hauberk 
-		private static DbItemTemplate EnchanterEpicLegs = null; //Valhalla Touched Legs 
-		private static DbItemTemplate EnchanterEpicArms = null; //Valhalla Touched Sleeves 
-		private static DbItemTemplate NightshadeEpicBoots = null; //Subterranean Boots 
-		private static DbItemTemplate NightshadeEpicHelm = null; //Subterranean Coif 
-		private static DbItemTemplate NightshadeEpicGloves = null; //Subterranean Gloves 
-		private static DbItemTemplate NightshadeEpicVest = null; //Subterranean Hauberk 
-		private static DbItemTemplate NightshadeEpicLegs = null; //Subterranean Legs 
-		private static DbItemTemplate NightshadeEpicArms = null; //Subterranean Sleeves         
+		private static DbItemTemplate ChampionEpicBoots = null; //Mist Shrouded Boots
+		private static DbItemTemplate ChampionEpicHelm = null; //Mist Shrouded Coif
+		private static DbItemTemplate ChampionEpicGloves = null; //Mist Shrouded Gloves
+		private static DbItemTemplate ChampionEpicVest = null; //Mist Shrouded Hauberk
+		private static DbItemTemplate ChampionEpicLegs = null; //Mist Shrouded Legs
+		private static DbItemTemplate ChampionEpicArms = null; //Mist Shrouded Sleeves
+		private static DbItemTemplate BardEpicBoots = null; //Shadow Shrouded Boots
+		private static DbItemTemplate BardEpicHelm = null; //Shadow Shrouded Coif
+		private static DbItemTemplate BardEpicGloves = null; //Shadow Shrouded Gloves
+		private static DbItemTemplate BardEpicVest = null; //Shadow Shrouded Hauberk
+		private static DbItemTemplate BardEpicLegs = null; //Shadow Shrouded Legs
+		private static DbItemTemplate BardEpicArms = null; //Shadow Shrouded Sleeves
+		private static DbItemTemplate EnchanterEpicBoots = null; //Valhalla Touched Boots
+		private static DbItemTemplate EnchanterEpicHelm = null; //Valhalla Touched Coif
+		private static DbItemTemplate EnchanterEpicGloves = null; //Valhalla Touched Gloves
+		private static DbItemTemplate EnchanterEpicVest = null; //Valhalla Touched Hauberk
+		private static DbItemTemplate EnchanterEpicLegs = null; //Valhalla Touched Legs
+		private static DbItemTemplate EnchanterEpicArms = null; //Valhalla Touched Sleeves
+		private static DbItemTemplate NightshadeEpicBoots = null; //Subterranean Boots
+		private static DbItemTemplate NightshadeEpicHelm = null; //Subterranean Coif
+		private static DbItemTemplate NightshadeEpicGloves = null; //Subterranean Gloves
+		private static DbItemTemplate NightshadeEpicVest = null; //Subterranean Hauberk
+		private static DbItemTemplate NightshadeEpicLegs = null; //Subterranean Legs
+		private static DbItemTemplate NightshadeEpicArms = null; //Subterranean Sleeves
 
 		// Constructors
 		public Essence_50() : base()
@@ -107,7 +115,7 @@ namespace DOL.GS.Quests.Hibernia
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region NPC Declarations
 
@@ -211,7 +219,7 @@ namespace DOL.GS.Quests.Hibernia
 				}
 
 			}
-// end item			
+// end item
 			BardEpicBoots = GameServer.Database.FindObjectByKey<DbItemTemplate>("BardEpicBoots");
 			if (BardEpicBoots == null)
 			{
@@ -255,7 +263,7 @@ namespace DOL.GS.Quests.Hibernia
 
 			}
 //end item
-			//Moonsung Coif 
+			//Moonsung Coif
 			BardEpicHelm = GameServer.Database.FindObjectByKey<DbItemTemplate>("BardEpicHelm");
 			if (BardEpicHelm == null)
 			{
@@ -300,7 +308,7 @@ namespace DOL.GS.Quests.Hibernia
 
 			}
 //end item
-			//Moonsung Gloves 
+			//Moonsung Gloves
 			BardEpicGloves = GameServer.Database.FindObjectByKey<DbItemTemplate>("BardEpicGloves");
 			if (BardEpicGloves == null)
 			{
@@ -343,7 +351,7 @@ namespace DOL.GS.Quests.Hibernia
 				}
 
 			}
-			//Moonsung Hauberk 
+			//Moonsung Hauberk
 			BardEpicVest = GameServer.Database.FindObjectByKey<DbItemTemplate>("BardEpicVest");
 			if (BardEpicVest == null)
 			{
@@ -386,7 +394,7 @@ namespace DOL.GS.Quests.Hibernia
 				}
 
 			}
-			//Moonsung Legs 
+			//Moonsung Legs
 			BardEpicLegs = GameServer.Database.FindObjectByKey<DbItemTemplate>("BardEpicLegs");
 			if (BardEpicLegs == null)
 			{
@@ -429,7 +437,7 @@ namespace DOL.GS.Quests.Hibernia
 				}
 
 			}
-			//Moonsung Sleeves 
+			//Moonsung Sleeves
 			BardEpicArms = GameServer.Database.FindObjectByKey<DbItemTemplate>("BardEpicArms");
 			if (BardEpicArms == null)
 			{
@@ -516,7 +524,7 @@ namespace DOL.GS.Quests.Hibernia
 
 			}
 //end item
-			//Moonglow Coif 
+			//Moonglow Coif
 			ChampionEpicHelm = GameServer.Database.FindObjectByKey<DbItemTemplate>("ChampionEpicHelm");
 			if (ChampionEpicHelm == null)
 			{
@@ -560,7 +568,7 @@ namespace DOL.GS.Quests.Hibernia
 
 			}
 //end item
-			//Moonglow Gloves 
+			//Moonglow Gloves
 			ChampionEpicGloves = GameServer.Database.FindObjectByKey<DbItemTemplate>("ChampionEpicGloves");
 			if (ChampionEpicGloves == null)
 			{
@@ -603,7 +611,7 @@ namespace DOL.GS.Quests.Hibernia
 				}
 
 			}
-			//Moonglow Hauberk 
+			//Moonglow Hauberk
 			ChampionEpicVest = GameServer.Database.FindObjectByKey<DbItemTemplate>("ChampionEpicVest");
 			if (ChampionEpicVest == null)
 			{
@@ -646,7 +654,7 @@ namespace DOL.GS.Quests.Hibernia
 				}
 
 			}
-			//Moonglow Legs 
+			//Moonglow Legs
 			ChampionEpicLegs = GameServer.Database.FindObjectByKey<DbItemTemplate>("ChampionEpicLegs");
 			if (ChampionEpicLegs == null)
 			{
@@ -689,7 +697,7 @@ namespace DOL.GS.Quests.Hibernia
 				}
 
 			}
-			//Moonglow Sleeves 
+			//Moonglow Sleeves
 			ChampionEpicArms = GameServer.Database.FindObjectByKey<DbItemTemplate>("ChampionEpicArms");
 			if (ChampionEpicArms == null)
 			{
@@ -775,7 +783,7 @@ namespace DOL.GS.Quests.Hibernia
 
 			}
 //end item
-			//Moonlit Coif 
+			//Moonlit Coif
 			NightshadeEpicHelm = GameServer.Database.FindObjectByKey<DbItemTemplate>("NightshadeEpicHelm");
 			if (NightshadeEpicHelm == null)
 			{
@@ -819,7 +827,7 @@ namespace DOL.GS.Quests.Hibernia
 
 			}
 //end item
-			//Moonlit Gloves 
+			//Moonlit Gloves
 			NightshadeEpicGloves = GameServer.Database.FindObjectByKey<DbItemTemplate>("NightshadeEpicGloves");
 			if (NightshadeEpicGloves == null)
 			{
@@ -862,7 +870,7 @@ namespace DOL.GS.Quests.Hibernia
 				}
 
 			}
-			//Moonlit Hauberk 
+			//Moonlit Hauberk
 			NightshadeEpicVest = GameServer.Database.FindObjectByKey<DbItemTemplate>("NightshadeEpicVest");
 			if (NightshadeEpicVest == null)
 			{
@@ -902,7 +910,7 @@ namespace DOL.GS.Quests.Hibernia
 				}
 
 			}
-			//Moonlit Legs 
+			//Moonlit Legs
 			NightshadeEpicLegs = GameServer.Database.FindObjectByKey<DbItemTemplate>("NightshadeEpicLegs");
 			if (NightshadeEpicLegs == null)
 			{
@@ -945,7 +953,7 @@ namespace DOL.GS.Quests.Hibernia
 				}
 
 			}
-			//Moonlit Sleeves 
+			//Moonlit Sleeves
 			NightshadeEpicArms = GameServer.Database.FindObjectByKey<DbItemTemplate>("NightshadeEpicArms");
 			if (NightshadeEpicArms == null)
 			{
@@ -1031,7 +1039,7 @@ namespace DOL.GS.Quests.Hibernia
 
 			}
 //end item
-			//Moonspun Coif 
+			//Moonspun Coif
 			EnchanterEpicHelm = GameServer.Database.FindObjectByKey<DbItemTemplate>("EnchanterEpicHelm");
 			if (EnchanterEpicHelm == null)
 			{
@@ -1075,7 +1083,7 @@ namespace DOL.GS.Quests.Hibernia
 
 			}
 //end item
-			//Moonspun Gloves 
+			//Moonspun Gloves
 			EnchanterEpicGloves = GameServer.Database.FindObjectByKey<DbItemTemplate>("EnchanterEpicGloves");
 			if (EnchanterEpicGloves == null)
 			{
@@ -1118,7 +1126,7 @@ namespace DOL.GS.Quests.Hibernia
 				}
 
 			}
-			//Moonspun Hauberk 
+			//Moonspun Hauberk
 			EnchanterEpicVest = GameServer.Database.FindObjectByKey<DbItemTemplate>("EnchanterEpicVest");
 			if (EnchanterEpicVest == null)
 			{
@@ -1158,7 +1166,7 @@ namespace DOL.GS.Quests.Hibernia
 				}
 
 			}
-			//Moonspun Legs 
+			//Moonspun Legs
 			EnchanterEpicLegs = GameServer.Database.FindObjectByKey<DbItemTemplate>("EnchanterEpicLegs");
 			if (EnchanterEpicLegs == null)
 			{
@@ -1201,7 +1209,7 @@ namespace DOL.GS.Quests.Hibernia
 				}
 
 			}
-			//Moonspun Sleeves 
+			//Moonspun Sleeves
 			EnchanterEpicArms = GameServer.Database.FindObjectByKey<DbItemTemplate>("EnchanterEpicArms");
 			if (EnchanterEpicArms == null)
 			{
@@ -1282,7 +1290,7 @@ namespace DOL.GS.Quests.Hibernia
 
 		protected static void TalkToBrigit(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -1300,18 +1308,17 @@ namespace DOL.GS.Quests.Hibernia
 					switch (quest.Step)
 					{
 						case 1:
-							Brigit.SayTo(player, "Seek out Far Dorocha in Cursed Forest and kill them to spawn Giant Caithor! " +
-							                     "After you kill Giant Caithor seek out real Caithor and kill him!");
+							Brigit.SayTo(player, L(player, "Quest.Epic.Essence50.Step1Reminder"));
 							break;
 						case 2:
-							Brigit.SayTo(player, "Were you able to [fulfill] your given task?");
+							Brigit.SayTo(player, L(player, "Quest.Epic.Essence50.Step2Reminder"));
 							break;
 					}
-					
+
 				}
 				else
 				{
-					Brigit.SayTo(player, "Hibernia needs your [services]");
+					Brigit.SayTo(player, L(player, "Quest.Epic.Essence50.Intro"));
 				}
 			}
 
@@ -1325,7 +1332,8 @@ namespace DOL.GS.Quests.Hibernia
 					switch (wArgs.Text)
 					{
 						case "services":
-							player.Out.SendQuestSubscribeCommand(Brigit, QuestMgr.GetIDForQuestType(typeof(Essence_50)), "Will you help Brigit [Path of Essence Level 50 Epic]?");
+						case "도움":
+							player.Out.SendQuestSubscribeCommand(Brigit, QuestMgr.GetIDForQuestType(typeof(Essence_50)), L(player, "Quest.Epic.Essence50.Subscribe"));
 							break;
 					}
 				}
@@ -1334,21 +1342,22 @@ namespace DOL.GS.Quests.Hibernia
 					switch (wArgs.Text)
 					{
 						case "fulfill":
+						case "완수":
 							if (quest.Step == 2)
 							{
 								RemoveItem(player, Moonstone);
 								if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 									    eInventorySlot.LastBackpack))
 								{
-									Brigit.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+									Brigit.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 									quest.FinishQuest();
 								}
 								else
-									player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+									player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
@@ -1362,11 +1371,11 @@ namespace DOL.GS.Quests.Hibernia
 						if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 							    eInventorySlot.LastBackpack))
 						{
-							Brigit.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+							Brigit.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 							quest.FinishQuest();
 						}
 						else
-							player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					}
 			}
 
@@ -1411,11 +1420,11 @@ namespace DOL.GS.Quests.Hibernia
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, no go out there and finish your work!");
+				SendSystemMessage(player, L(player, "Quest.Epic.Essence50.AbortDecline"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -1445,21 +1454,21 @@ namespace DOL.GS.Quests.Hibernia
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Our God forgives your laziness, just look out for stray lightning bolts.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(L(player, "Quest.Epic.Essence50.Decline"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
 				//Check if we can add the quest!
 				if (!Brigit.GiveQuest(typeof (Essence_50), player, 1))
 					return;
-				player.Out.SendMessage("Please kill Caithor in Cursed Forest!", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(L(player, "Quest.Epic.Essence50.Accept"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 			}
 		}
 
 		//Set quest name
 		public override string Name
 		{
-			get { return "The Moonstone Twin (Level 50 Path of Essence Epic)"; }
+			get { return L(m_questPlayer, "Quest.Epic.Essence50.Name"); }
 		}
 
 		// Define Steps
@@ -1470,9 +1479,9 @@ namespace DOL.GS.Quests.Hibernia
 				switch (Step)
 				{
 					case 1:
-						return "Seek out Far Dorocha in Cursed Forest and kill them to spawn Giant Caithor! After you kill Giant Caithor seek out real Caithor and kill him!";
+						return L(m_questPlayer, "Quest.Epic.Essence50.Description1");
 					case 2:
-						return "Return to Brigit and give her the Moonstone!";
+						return L(m_questPlayer, "Quest.Epic.Essence50.Description2");
 				}
 				return base.Description;
 			}
@@ -1487,13 +1496,13 @@ namespace DOL.GS.Quests.Hibernia
 
 			if (sender != m_questPlayer)
 				return;
-			
+
 			if (Step == 1 && e == GameLivingEvent.EnemyKilled)
 			{
 				EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
 				if (gArgs.Target is Caithor)
 				{
-					m_questPlayer.Out.SendMessage("You collect the Moonstone from Caithor", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					m_questPlayer.Out.SendMessage(L(m_questPlayer, "Quest.Epic.Essence50.CollectMoonstone"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					GiveItem(player, Moonstone);
 					Step = 2;
 					return;
@@ -1508,11 +1517,11 @@ namespace DOL.GS.Quests.Hibernia
 					if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 						eInventorySlot.LastBackpack))
 					{
-						Brigit.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+						Brigit.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 						FinishQuest();
 					}
 					else
-						player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 				}
 			}
 		}
@@ -1568,24 +1577,24 @@ namespace DOL.GS.Quests.Hibernia
 			}
 
 			m_questPlayer.GainExperience(eXPSource.Quest, 1937768448, true);
-			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");		
+			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");
 		}
 
 		#region Allakhazam Epic Source
 
 		/*
         *#25 talk to Brigit
-        *#26 seek out Loken in Raumarik Loc 47k, 25k, 4k, and kill him purp and 2 blue adds 
-        *#27 return to Brigit 
+        *#26 seek out Loken in Raumarik Loc 47k, 25k, 4k, and kill him purp and 2 blue adds
+        *#27 return to Brigit
         *#28 give her the ball of flame
         *#29 talk with Brigit about Loken�s demise
-        *#30 go to MorlinCaan in Jordheim 
+        *#30 go to MorlinCaan in Jordheim
         *#31 give her the sealed pouch
         *#32 you get your epic armor as a reward
         */
 
 		/*
-            *Moonsung Boots 
+            *Moonsung Boots
             *Moonsung Coif
             *Moonsung Gloves
             *Moonsung Hauberk

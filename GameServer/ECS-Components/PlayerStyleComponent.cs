@@ -76,7 +76,7 @@ namespace DOL.GS
             // If the player no longer access to the style.
             if (AutomaticBackupStyle != null && _playerOwner.GetBaseSpecLevel(AutomaticBackupStyle.Spec) < AutomaticBackupStyle.SpecLevelRequirement)
             {
-                _playerOwner.Out.SendMessage($"{AutomaticBackupStyle.Name} is no longer a valid backup style for your spec level and has been cleared.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                _playerOwner.Out.SendMessage(LanguageMgr.GetTranslation(_playerOwner.Client, "PlayerStyleComponent.BackupStyleCleared", AutomaticBackupStyle.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 AutomaticBackupStyle = null;
             }
 

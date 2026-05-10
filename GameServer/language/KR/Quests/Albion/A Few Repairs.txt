@@ -1,0 +1,45 @@
+﻿
+
+Quests.Albion.AFewRepairs.Title:							몇 가지 수리
+Quests.Albion.AFewRepairs.Description.Step1:				브라이스 야를리와 계속 대화하십시오.
+Quests.Albion.AFewRepairs.Description.Step2:				무너진 탑 너머 북쪽 숲 가장자리에 고목 너도밤나무들이 있습니다. 몇 그루를 처치해 필요한 목재를 모으십시오.
+Quests.Albion.AFewRepairs.Description.Step3:				고목 너도밤나무를 한 그루 더 처치하십시오. 야를리 농장 북쪽 숲에서 찾을 수 있습니다.
+Quests.Albion.AFewRepairs.Description.Step4:				고목 목재를 패트릭 야를리에게 가져가십시오. 그는 서부 콘월의 울타리 근처에 있습니다.
+Quests.Albion.AFewRepairs.Description.Step5:				남은 고목 목재를 패트릭 야를리에게 주십시오.
+Quests.Albion.AFewRepairs.Description.Step6:				패트릭 야를리에게 {0}에 대해 물어보십시오.
+Quests.Albion.AFewRepairs.Description.Step7:				야를리 농장 동쪽 언덕에서 황무지 부기를 찾아 처치하고 이빨을 모으십시오.
+Quests.Albion.AFewRepairs.Description.Step8:				부기 이빨을 가지고 패트릭 야를리에게 돌아가십시오.
+Quests.Albion.AFewRepairs.Notify.ReceiveElderWood:			고목 너도밤나무에게서 고목 목재를 얻었습니다! \n일지가 갱신되었습니다.
+Quests.Albion.AFewRepairs.Notify.ReceiveBoogeyTeeth:		황무지 부기에게서 부기 이빨을 얻었습니다! \n일지가 갱신되었습니다.
+Quests.Albion.AFewRepairs.Notify.Step4:						이 정도면 되겠군요. 혹시 목재를 더 구해 왔습니까?
+Quests.Albion.AFewRepairs.Notify.Step5:						목재는 이만하면 충분합니다. 이 일을 마치려면 한 가지가 더 필요합니다. 이 {0}도 도와줄 수 있습니까?
+Quests.Albion.AFewRepairs.Notify.Step8:						곧바로 수리를 시작하겠습니다. 훌륭히 해낸 일에 대한 보상입니다.
+Quests.Albion.AFewRepairs.FinishQuest.AwardedMoney:			은화 81닢과 약간의 동화를 받았습니다!
+Quests.Albion.AFewRepairs.AbortQuest.Ok:					좋습니다. 이제 나가서 맡은 일을 마무리하십시오!
+Quests.Albion.AFewRepairs.AbortQuest.No:					퀘스트 {0}을(를) 중단합니다. 원한다면 다시 시작할 수 있습니다.
+Quests.Albion.AFewRepairs.AcceptQuest.Ok:					훌륭합니다. 무너진 탑 너머 북쪽 숲 가장자리에 {0}들이 있습니다. 몇 그루를 베어 내면 이 일에 충분한 목재가 나올 겁니다.
+Quests.Albion.AFewRepairs.AcceptQuest.No:					아쉽군요. 마음이 바뀌면 다시 와 주십시오!
+Quests.Albion.AFewRepairs.BriceYarley.Const0:				고목 너도밤나무
+Quests.Albion.AFewRepairs.BriceYarley.Const1:				문제
+Quests.Albion.AFewRepairs.BriceYarley.Const2:				기예를 익히는 일
+Quests.Albion.AFewRepairs.BriceYarley.Const3:				황무지 부기들
+Quests.Albion.AFewRepairs.BriceYarley.Const4:				이 울타리를 유지
+Quests.Albion.AFewRepairs.BriceYarley.Const5:				물자 모으기
+Quests.Albion.AFewRepairs.BriceYarley.Const6:				중단
+Quests.Albion.AFewRepairs.BriceYarley.Step1:				무너진 탑 너머 북쪽 숲 가장자리에 {0}들이 있습니다. 몇 그루를 베어 내면 이 일에 충분한 목재가 나올 겁니다.
+Quests.Albion.AFewRepairs.BriceYarley.Start:				콘월에 온 것을 환영합니다, {0}. 우리 가족에게 약간의 문제가 있어, 당신이 도와준다면 정말 고맙겠습니다.
+Quests.Albion.AFewRepairs.BriceYarley.Problem:				우리 야를리 가족은 알비온 전역의 시장에 내다 팔 거대한 루터를 기릅니다. 카멜롯의 예 머그에서 우리 소시지를 먹어 본 적이 있을지도 모르겠군요. 아무튼 이곳 장사는 꽤 잘되고 일하는 시간도 그리 나쁘지 않습니다. 만족스러운 삶이지요. 다만 마법이나 검술 같은 {0}에는 시간을 많이 내기 어렵습니다.
+Quests.Albion.AFewRepairs.BriceYarley.MasteringTheArts:		언데드와 온갖 불쾌한 짐승들이 있는 던전에서 지척인 곳에 가축을 기르다 보면, 짐작하듯이 문제가 생기기 마련입니다. 우리는 우리 루터를 진심으로 싫어하는 듯한 {0}을 늘 경계하고 있습니다. 물론 우리 짐승들도 싸움에서는 제법 버티지만, 이틀에 한 번씩 돼지를 치료하지 않아도 될 만큼 이 주변에는 할 일이 많습니다.
+Quests.Albion.AFewRepairs.BriceYarley.MoorBoogeys:			그 해충들을 없애 보려 했지만 언제나 더 나타나는 것 같습니다. 루터는 안에 두고 부기들은 밖에 두려고 우리는 {0}하고 있습니다.
+Quests.Albion.AFewRepairs.BriceYarley.MaintainThisFence:	이 낡은 울타리는 수리가 필요한데, 지금은 목재가 조금 부족합니다. 우리 울타리에 쓸 {0}에 관심이 있습니까?
+Quests.Albion.AFewRepairs.BriceYarley.Gathering:			야를리 가족의 수리 일을 도와주시겠습니까? [35-37레벨]
+Quests.Albion.AFewRepairs.BriceYarley.Abort:				정말 이 퀘스트를 중단하시겠습니까? 퀘스트 중에 얻은 모든 아이템이 사라집니다.
+Quests.Albion.AFewRepairs.BriceYarley.ElderBeech:			목재를 내 형제 패트릭에게 가져가십시오. 동쪽 울타리 근처에서 찾을 수 있을 겁니다. 당신이 돌아올 거라고 미리 알려 두겠습니다.
+Quests.Albion.AFewRepairs.PatrickYarley.Const1:				마지막 심부름
+Quests.Albion.AFewRepairs.PatrickYarley.Const2:				완료
+Quests.Albion.AFewRepairs.PatrickYarley.Step4:				빠르군요. 내 형제가 부탁한 목재를 가져왔습니까? 지금 제게 주십시오.
+Quests.Albion.AFewRepairs.PatrickYarley.Step5:				혹시 목재를 더 구해 왔습니까?
+Quests.Albion.AFewRepairs.PatrickYarley.Step6:				목재는 이만하면 충분합니다. 이 일을 마치려면 한 가지가 더 필요합니다. 이 {0}도 도와줄 수 있습니까?
+Quests.Albion.AFewRepairs.PatrickYarley.Step7:				부기 이빨은 가져왔습니까?
+Quests.Albion.AFewRepairs.PatrickYarley.LastErrand:			마지막으로 필요한 것은 판자를 고정할 물건입니다. 아이러니하게도 이런 못을 구하기 가장 좋은 곳은 우리가 이 울타리로 막으려는 바로 그놈들입니다. 놈들의 긴 이빨이 고목 목재를 고정하는 훌륭한 못이 되더군요. 황무지 부기 한 마리만 처치해도 이번 일에 충분할 겁니다. 그 이빨을 가지고 돌아오면 임무가 {0}됩니다.
+Quests.Albion.AFewRepairs.PatrickYarley.Complete:			황무지 부기들은 동쪽 언덕을 배회하고 있을 겁니다.

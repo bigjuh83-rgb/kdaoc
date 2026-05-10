@@ -57,7 +57,7 @@ namespace DOL.GS
 			get{return m_battlegroupMembers;}
 			set{m_battlegroupMembers=value;}
 		}
-		
+
 		public List<GamePlayer> Moderators
 		{
 			get{return m_battlegroupModerators;}
@@ -91,7 +91,7 @@ namespace DOL.GS
 		/// <param name="player">GamePlayer to be added to the group</param>
 		/// <param name="leader"></param>
 		/// <returns>true if added successfully</returns>
-		public virtual bool AddBattlePlayer(GamePlayer player,bool leader) 
+		public virtual bool AddBattlePlayer(GamePlayer player,bool leader)
 		{
 			if (player == null) return false;
 			lock (_battlegroupMembersLock)
@@ -99,10 +99,10 @@ namespace DOL.GS
 				if (m_battlegroupMembers.Contains(player))
 					return false;
 				player.TempProperties.SetProperty(BATTLEGROUP_PROPERTY, this);
-                player.Out.SendMessage("You join the battle group.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Battlegroup.Joined"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				foreach(GamePlayer member in Members.Keys)
 				{
-                    member.Out.SendMessage(player.Name + " has joined the battle group.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    member.Out.SendMessage(LanguageMgr.GetTranslation(member.Client.Account.Language, "Scripts.Players.Battlegroup.MemberJoined", player.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				m_battlegroupMembers.Add(player,leader);
 
@@ -123,26 +123,26 @@ namespace DOL.GS
         {
             return battlegroupLootType;
         }
-        
+
         public bool IsRecordingRolls()
         {
 	        return recordingRolls;
         }
-        
+
         public int GetRecordingThreshold()
         {
 	        return rollRecordThreshold;
         }
-        
+
         public void StartRecordingRolls(int maxRoll = 1000)
 		{
 	        recordingRolls = true;
 	        rollRecordThreshold = maxRoll;
 	        m_battlegroupRolls = new Dictionary<GamePlayer, int>();
-	        
+
 	        foreach (GamePlayer ply in Members.Keys)
 	        {
-		        ply.Out.SendMessage($"{Leader.Name} has initiated the recording. Use /random {maxRoll} now to roll for this item.",eChatType.CT_BattleGroupLeader, eChatLoc.CL_ChatWindow);
+		        ply.Out.SendMessage(LanguageMgr.GetTranslation(ply.Client.Account.Language, "Scripts.Players.Battlegroup.RollRecordingStarted", Leader.Name, maxRoll),eChatType.CT_BattleGroupLeader, eChatLoc.CL_ChatWindow);
 	        }
 		}
 
@@ -151,10 +151,10 @@ namespace DOL.GS
 	        recordingRolls = false;
 	        foreach (GamePlayer ply in Members.Keys)
 	        {
-		        ply.Out.SendMessage($"{Leader.Name} stopped the recording. Use /bg showrolls to display the results.",eChatType.CT_BattleGroupLeader, eChatLoc.CL_ChatWindow);
+		        ply.Out.SendMessage(LanguageMgr.GetTranslation(ply.Client.Account.Language, "Scripts.Players.Battlegroup.RollRecordingStopped", Leader.Name),eChatType.CT_BattleGroupLeader, eChatLoc.CL_ChatWindow);
 	        }
         }
-        
+
         public void AddRoll(GamePlayer player, int roll)
 		{
 	        if(!recordingRolls)
@@ -172,32 +172,32 @@ namespace DOL.GS
         {
 	        if (recordingRolls)
 	        {
-		        player.Client.Out.SendMessage("Rolls are being recorded. Please wait.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+		        player.Client.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Battlegroup.RollsBeingRecorded"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 		        return;
 	        }
 
 	        if (m_battlegroupRolls == null || m_battlegroupRolls.Count == 0)
 	        {
-		        player.Client.Out.SendMessage("No rolls have been recorded yet.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+		        player.Client.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Battlegroup.NoRollsRecorded"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 		        return;
 	        }
-	        
+
 	        var output = new List<string>();
 
 	        var sorted = new List<KeyValuePair<GamePlayer, int>>();
 
 	        sorted = m_battlegroupRolls.ToList();
 	        sorted.Sort((pair1, pair2) => pair2.Value.CompareTo(pair1.Value));
-	        
+
 
 	        var i = 1;
 	        foreach (var value in sorted)
 	        {
-		        output.Add($"{i}) {value.Key.Name} rolled {value.Value}");
+		        output.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Battlegroup.RollResultLine", i, value.Key.Name, value.Value));
 		        i++;
 	        }
-	        
-	        player.Out.SendCustomTextWindow("LAST ROLL RESULTS", output);
+
+	        player.Out.SendCustomTextWindow(LanguageMgr.GetTranslation(player.Client.Account.Language, "Scripts.Players.Battlegroup.LastRollResultsTitle"), output);
 
         }
 
@@ -239,7 +239,7 @@ namespace DOL.GS
 
             return false;
         }
-        
+
         public bool IsBGModerator(GamePlayer living)
         {
 	        if (m_battlegroupModerators != null && living != null)
@@ -359,10 +359,10 @@ namespace DOL.GS
 				m_battlegroupMembers.Remove(player);
 				player.TempProperties.RemoveProperty(BATTLEGROUP_PROPERTY);
 				player.isInBG = false; //Xarik: Player is no more in the BG
-                player.Out.SendMessage("You leave the battle group.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "BattleGroup.YouLeave"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				foreach(GamePlayer member in Members.Keys)
 				{
-                    member.Out.SendMessage(player.Name + " has left the battle group.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    member.Out.SendMessage(LanguageMgr.GetTranslation(member.Client, "BattleGroup.MemberLeft", player.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				}
 				if (m_battlegroupMembers.Count == 1)
 				{

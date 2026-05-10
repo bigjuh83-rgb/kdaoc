@@ -26,7 +26,7 @@ namespace DOL.GS.DailyQuest.Albion
 
 		// Capture Goal
 		private const int MAX_CAPTURED = 1;
-		
+
 		private static GameNPC PazzAlb = null; // Start NPC
 
 		private int _isCaptured = 0;
@@ -47,7 +47,7 @@ namespace DOL.GS.DailyQuest.Albion
 		public CaleKeepCaptureAlb(GamePlayer questingPlayer, DbQuest dbQuest) : base(questingPlayer, dbQuest)
 		{
 		}
-		
+
 		public override int Level
 		{
 			get
@@ -62,7 +62,7 @@ namespace DOL.GS.DailyQuest.Albion
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 			GameNPC[] npcs = WorldMgr.GetNPCsByName("Pazz", eRealm.Albion);
@@ -142,7 +142,7 @@ namespace DOL.GS.DailyQuest.Albion
 
 		private static void TalkToHaszan(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -160,17 +160,16 @@ namespace DOL.GS.DailyQuest.Albion
 					switch (quest.Step)
 					{
 						case 1:
-							PazzAlb.SayTo(player, "Find an enemy occupied keep and capture it. If you succeed come back for your reward.");
+							PazzAlb.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.CaptureKeepObjective"));
 							break;
 						case 2:
-							PazzAlb.SayTo(player, "Hello " + player.Name + ", did you [capture] a keep?");
+							PazzAlb.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.CaptureKeepPrompt", player.Name));
 							break;
 					}
 				}
 				else
 				{
-					PazzAlb.SayTo(player, "Look "+ player.Name +", I'll cut to the chase. " +
-					                      "We need the central keep back because I left some... contraband in the basement that I'd really like to reclaim before its found by the guards. Can you [help a skeleton] out?");
+					PazzAlb.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.BGKeepIntro", player.Name));
 				}
 			}
 				// The player whispered to the NPC
@@ -182,7 +181,7 @@ namespace DOL.GS.DailyQuest.Albion
 					switch (wArgs.Text)
 					{
 						case "help a skeleton":
-							player.Out.SendQuestSubscribeCommand(PazzAlb, QuestMgr.GetIDForQuestType(typeof(CaleKeepCaptureAlb)), "Will you help Pazz with "+questTitle+"");
+							player.Out.SendQuestSubscribeCommand(PazzAlb, QuestMgr.GetIDForQuestType(typeof(CaleKeepCaptureAlb)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcWithQuest", "Pazz", questTitle));
 							break;
 					}
 				}
@@ -191,20 +190,21 @@ namespace DOL.GS.DailyQuest.Albion
 					switch (wArgs.Text)
 					{
 						case "capture":
+						case "점령":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -233,11 +233,11 @@ namespace DOL.GS.DailyQuest.Albion
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -267,7 +267,7 @@ namespace DOL.GS.DailyQuest.Albion
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for helping me out.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -275,7 +275,7 @@ namespace DOL.GS.DailyQuest.Albion
 				if (!PazzAlb.GiveQuest(typeof (CaleKeepCaptureAlb), player, 1))
 					return;
 
-				PazzAlb.SayTo(player, "Thank you "+player.Name+", be an enrichment for our realm!");
+				PazzAlb.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EnrichmentRealm", player.Name));
 
 			}
 		}
@@ -294,9 +294,9 @@ namespace DOL.GS.DailyQuest.Albion
 				switch (Step)
 				{
 					case 1:
-						return "Go to the battlefield and conquer a keep. \nCaptured: Keep ("+ _isCaptured +" | 1)";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.KeepCaptureDescription", _isCaptured, 1);
 					case 2:
-						return "Return to Pazz in Caledonia Portal Keep for your reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToPazz", "Caledonia Portal Keep");
 				}
 				return base.Description;
 			}
@@ -308,15 +308,15 @@ namespace DOL.GS.DailyQuest.Albion
 
 			if (player?.IsDoingQuest(typeof(CaleKeepCaptureAlb)) == null)
 				return;
-			
+
 			if (sender != m_questPlayer)
 				return;
 
 			if (Step != 1 || e != GamePlayerEvent.CapturedKeepsChanged) return;
 			_isCaptured = 1;
-			player.Out.SendMessage("[Daily] Captured Keep: ("+_isCaptured+" | "+MAX_CAPTURED+")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DailyCapturedKeep", _isCaptured, MAX_CAPTURED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (_isCaptured >= MAX_CAPTURED)
 			{
 				// FinishQuest or go back to Dean
@@ -324,21 +324,21 @@ namespace DOL.GS.DailyQuest.Albion
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "CaleKeepCaptureAlb";
 			set { ; }
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
-			
+
 		}
 
 		public override void SaveQuestParameters()
 		{
-			
+
 		}
 
 		public override void AbortQuest()
@@ -359,7 +359,7 @@ namespace DOL.GS.DailyQuest.Albion
 			}
 			else
 			{
-				m_questPlayer.Out.SendMessage("Clear one slot of your inventory for your reward", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ClearInventorySlots", 1), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 			}
 		}
 	}

@@ -445,11 +445,11 @@ namespace DOL.GS
 
                 if (minutes == 0)
                 {
-                    delve.Add(String.Format("Can use item every: {0} sec", seconds));
+                    delve.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "DetailDisplayHandler.WritePotionInfo.UseItemEverySeconds", seconds));
                 }
                 else
                 {
-                    delve.Add(String.Format("Can use item every: {0}:{1:00} min", minutes, seconds));
+                    delve.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "DetailDisplayHandler.WritePotionInfo.UseItemEveryMinutes", minutes, seconds));
                 }
 
                 // delve.Add(String.Format("Can use item every: {0:00}:{1:00}", minutes, seconds));
@@ -463,11 +463,11 @@ namespace DOL.GS
 
                     if (minutes == 0)
                     {
-                        delve.Add(String.Format("Can use again in: {0} sec", seconds));
+                        delve.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "DetailDisplayHandler.WritePotionInfo.UseAgainSeconds", seconds));
                     }
                     else
                     {
-                        delve.Add(String.Format("Can use again in: {0}:{1:00} min", minutes, seconds));
+                        delve.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "DetailDisplayHandler.WritePotionInfo.UseAgainMinutes", minutes, seconds));
                     }
                 }
             }
@@ -544,17 +544,17 @@ namespace DOL.GS
 
             oldCount = output.Count;
 
-            WriteFocusLine(output, Bonus1Type, Bonus1);
-            WriteFocusLine(output, Bonus2Type, Bonus2);
-            WriteFocusLine(output, Bonus3Type, Bonus3);
-            WriteFocusLine(output, Bonus4Type, Bonus4);
-            WriteFocusLine(output, Bonus5Type, Bonus5);
-            WriteFocusLine(output, Bonus6Type, Bonus6);
-            WriteFocusLine(output, Bonus7Type, Bonus7);
-            WriteFocusLine(output, Bonus8Type, Bonus8);
-            WriteFocusLine(output, Bonus9Type, Bonus9);
-            WriteFocusLine(output, Bonus10Type, Bonus10);
-            WriteFocusLine(output, ExtraBonusType, ExtraBonus);
+            WriteFocusLine(output, client, Bonus1Type, Bonus1);
+            WriteFocusLine(output, client, Bonus2Type, Bonus2);
+            WriteFocusLine(output, client, Bonus3Type, Bonus3);
+            WriteFocusLine(output, client, Bonus4Type, Bonus4);
+            WriteFocusLine(output, client, Bonus5Type, Bonus5);
+            WriteFocusLine(output, client, Bonus6Type, Bonus6);
+            WriteFocusLine(output, client, Bonus7Type, Bonus7);
+            WriteFocusLine(output, client, Bonus8Type, Bonus8);
+            WriteFocusLine(output, client, Bonus9Type, Bonus9);
+            WriteFocusLine(output, client, Bonus10Type, Bonus10);
+            WriteFocusLine(output, client, ExtraBonusType, ExtraBonus);
 
             if (output.Count > oldCount)
             {
@@ -611,19 +611,19 @@ namespace DOL.GS
                             }
                             else
                             {
-                                output.Add("-" + procSpell.Name + " (Spell Handler Not Implemented)");
+                                output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.SpellHandlerNotImplemented", procSpell.Name));
                             }
 
                             output.Add(spellNote);
                         }
                         else
                         {
-                            output.Add("- Spell Not Found: " + ProcSpellID);
+                            output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.SpellNotFound", ProcSpellID));
                         }
                     }
                     else
                     {
-                        output.Add("- Item_Effects Spell Line Missing");
+                        output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.ItemEffectsSpellLineMissing"));
                     }
 
                     output.Add(" ");
@@ -658,19 +658,19 @@ namespace DOL.GS
                             }
                             else
                             {
-                                output.Add("-" + procSpell.Name + " (Spell Handler Not Implemented)");
+                                output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.SpellHandlerNotImplemented", procSpell.Name));
                             }
 
                             output.Add(spellNote);
                         }
                         else
                         {
-                            output.Add("- Spell Not Found: " + ProcSpellID1);
+                            output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.SpellNotFound", ProcSpellID1));
                         }
                     }
                     else
                     {
-                        output.Add("- Item_Effects Spell Line Missing");
+                        output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.ItemEffectsSpellLineMissing"));
                     }
 
                     output.Add(" ");
@@ -699,16 +699,16 @@ namespace DOL.GS
 
                                 output.AddRange(spellHandler.DelveInfo);
                                 output.Add(" ");
-                                output.Add("- This spell is cast when the item is used.");
+                                output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.CastWhenItemUsed"));
                             }
                             else
                             {
-                                output.Add("- Item_Effects Spell Line Missing");
+                                output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.ItemEffectsSpellLineMissing"));
                             }
                         }
                         else
                         {
-                            output.Add("- Spell Not Found: " + SpellID);
+                            output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.SpellNotFound", SpellID));
                         }
                     }
 
@@ -738,16 +738,16 @@ namespace DOL.GS
 
                                 output.AddRange(spellHandler.DelveInfo);
                                 output.Add(" ");
-                                output.Add("- This spell is cast when the item is used.");
+                                output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.CastWhenItemUsed"));
                             }
                             else
                             {
-                                output.Add("- Item_Effects Spell Line Missing");
+                                output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.ItemEffectsSpellLineMissing"));
                             }
                         }
                         else
                         {
-                            output.Add("- Spell Not Found: " + SpellID1);
+                            output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.SpellNotFound", SpellID1));
                         }
                     }
 
@@ -784,7 +784,7 @@ namespace DOL.GS
                                     }
                                     else
                                     {
-                                        output.Add("-" + spl.Name + "(Not implemented yet)");
+                                        output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.SpellHandlerNotImplemented", spl.Name));
                                     }
                                     output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.StrikeEnemy"));
                                     return;
@@ -825,7 +825,7 @@ namespace DOL.GS
                                 }
                                 else
                                 {
-                                    output.Add("-" + spl.Name + "(Not implemented yet)");
+                                    output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.SpellHandlerNotImplemented", spl.Name));
                                 }
                                 output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.UsedItem"));
                                 output.Add(" ");
@@ -844,10 +844,10 @@ namespace DOL.GS
                     }
                 }
                 #endregion
-                
-                output.Add("Total utility: " + String.Format("{0:0.00}", GetTotalUtility()));
+
+                output.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.TotalUtility", String.Format("{0:0.00}", GetTotalUtility())));
                 output.Add(" ");
-                
+
             }
         }
 
@@ -937,12 +937,12 @@ namespace DOL.GS
             }
         }
 
-        protected virtual void WriteFocusLine(List<string> list, int focusCat, int focusLevel)
+        protected virtual void WriteFocusLine(List<string> list, GameClient client, int focusCat, int focusLevel)
         {
             if (SkillBase.CheckPropertyType((eProperty)focusCat, ePropertyType.Focus))
             {
                 //- Body Magic: 4 lvls
-                list.Add(string.Format("- {0}: {1} lvls", SkillBase.GetPropertyName((eProperty)focusCat), focusLevel));
+                list.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteFocusLine.FocusLevel", SkillBase.GetPropertyName((eProperty)focusCat), focusLevel));
             }
         }
 
@@ -996,7 +996,7 @@ namespace DOL.GS
                             }
                             else
                             {
-                                list.Add("-" + spl.Name + " (Not implemented yet)");
+                                list.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WriteMagicalBonuses.SpellHandlerNotImplemented", spl.Name));
                             }
                             break;
                         }
@@ -1039,11 +1039,11 @@ namespace DOL.GS
 
                                 if (minutes == 0)
                                 {
-                                    list.Add(String.Format("Can use item every: {0} sec", seconds));
+                                    list.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WritePotionInfo.UseItemEverySeconds", seconds));
                                 }
                                 else
                                 {
-                                    list.Add(String.Format("Can use item every: {0}:{1:00} min", minutes, seconds));
+                                    list.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WritePotionInfo.UseItemEveryMinutes", minutes, seconds));
                                 }
                             }
 
@@ -1081,11 +1081,11 @@ namespace DOL.GS
 
                 if (minutes == 0)
                 {
-                    list.Add(String.Format("Can use item every: {0} sec", seconds));
+                    list.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WritePotionInfo.UseItemEverySeconds", seconds));
                 }
                 else
                 {
-                    list.Add(String.Format("Can use item every: {0}:{1:00} min", minutes, seconds));
+                    list.Add(LanguageMgr.GetTranslation(client.Account.Language, "DetailDisplayHandler.WritePotionInfo.UseItemEveryMinutes", minutes, seconds));
                 }
             }
             list.Add(" ");
@@ -1106,7 +1106,7 @@ namespace DOL.GS
                         {
                             if (spl.ID == id)
                             {
-                                
+
                                 WritePotionSpellsInfos(list, client, spl, potionLine);
                                 list.Add(" ");
 
@@ -1229,7 +1229,7 @@ namespace DOL.GS
 
             delve.Add(LanguageMgr.GetTranslation(player.Client.Account.Language,
                                                  "DetailDisplayHandler.WriteClassicWeaponInfos.DamageType",
-                                                 (Type_Damage == 0 ? "None" : GlobalConstants.WeaponDamageTypeToName(Type_Damage))));
+                                                 (Type_Damage == 0 ? LanguageMgr.GetTranslation(player.Client.Account.Language, "DetailDisplayHandler.HandlePacket.None") : GlobalConstants.WeaponDamageTypeToName(Type_Damage, player.Client.Account.Language))));
 
             delve.Add(" ");
 
@@ -1237,7 +1237,7 @@ namespace DOL.GS
 
             if (itemDPS != 0)
             {
-                delve.Add("- " + effectiveDPS.ToString("0.0") + " DPS");
+                delve.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "DetailDisplayHandler.WriteClassicWeaponInfos.EffectiveDPS", effectiveDPS.ToString("0.0")));
             }
         }
 
@@ -1322,8 +1322,8 @@ namespace DOL.GS
             }
             delve.Add("");
             delve.Add("        Level: " + Level);
-            delve.Add("       Object: " + GlobalConstants.ObjectTypeToName(Object_Type) + " (" + Object_Type + ")");
-            delve.Add("         Type: " + GlobalConstants.SlotToName(Item_Type) + " (" + Item_Type + ")");
+            delve.Add("       Object: " + GlobalConstants.ObjectTypeToName(Object_Type, client.Account.Language) + " (" + Object_Type + ")");
+            delve.Add("         Type: " + GlobalConstants.SlotToName(Item_Type, client.Account.Language) + " (" + Item_Type + ")");
             delve.Add("");
             delve.Add("        Model: " + Model);
             delve.Add("    Extension: " + Extension);
@@ -1340,10 +1340,10 @@ namespace DOL.GS
             if (GlobalConstants.IsWeapon(Object_Type))
             {
                 delve.Add("");
-                delve.Add("         Hand: " + GlobalConstants.ItemHandToName(Hand) + " (" + Hand + ")");
+                delve.Add("         Hand: " + GlobalConstants.ItemHandToName(Hand, client.Account.Language) + " (" + Hand + ")");
                 delve.Add("Damage/Second: " + (DPS_AF / 10.0f));
                 delve.Add("        Speed: " + (SPD_ABS / 10.0f));
-                delve.Add("  Damage type: " + GlobalConstants.WeaponDamageTypeToName(Type_Damage) + " (" + Type_Damage + ")");
+                delve.Add("  Damage type: " + GlobalConstants.WeaponDamageTypeToName(Type_Damage, client.Account.Language) + " (" + Type_Damage + ")");
                 delve.Add("        Bonus: " + Bonus);
             }
             else if (GlobalConstants.IsArmor(Object_Type))
@@ -1358,22 +1358,22 @@ namespace DOL.GS
                 delve.Add("");
                 delve.Add("Damage/Second: " + (DPS_AF / 10.0f));
                 delve.Add("        Speed: " + (SPD_ABS / 10.0f));
-                delve.Add("  Shield type: " + GlobalConstants.ShieldTypeToName(Type_Damage) + " (" + Type_Damage + ")");
+                delve.Add("  Shield type: " + GlobalConstants.ShieldTypeToName(Type_Damage, client.Account.Language) + " (" + Type_Damage + ")");
                 delve.Add("        Bonus: " + Bonus);
             }
             else if (Object_Type == (int)eObjectType.Arrow || Object_Type == (int)eObjectType.Bolt)
             {
                 delve.Add("");
                 delve.Add(" Ammunition #: " + DPS_AF);
-                delve.Add("       Damage: " + GlobalConstants.AmmunitionTypeToDamageName(SPD_ABS));
-                delve.Add("        Range: " + GlobalConstants.AmmunitionTypeToRangeName(SPD_ABS));
-                delve.Add("     Accuracy: " + GlobalConstants.AmmunitionTypeToAccuracyName(SPD_ABS));
+                delve.Add("       Damage: " + GlobalConstants.AmmunitionTypeToDamageName(SPD_ABS, client.Account.Language));
+                delve.Add("        Range: " + GlobalConstants.AmmunitionTypeToRangeName(SPD_ABS, client.Account.Language));
+                delve.Add("     Accuracy: " + GlobalConstants.AmmunitionTypeToAccuracyName(SPD_ABS, client.Account.Language));
                 delve.Add("        Bonus: " + Bonus);
             }
             else if (Object_Type == (int)eObjectType.Instrument)
             {
                 delve.Add("");
-                delve.Add("   Instrument: " + GlobalConstants.InstrumentTypeToName(DPS_AF));
+                delve.Add("   Instrument: " + GlobalConstants.InstrumentTypeToName(DPS_AF, client.Account.Language));
             }
 
             if (OwnerLot != 0)

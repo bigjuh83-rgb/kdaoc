@@ -113,7 +113,7 @@ namespace DOL.AI.Brain
 
         public void SpawnBeliathan()
         {
-            BroadcastMessage("The tunnels rumble and shake..");
+            BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Beliathan.TunnelsRumble"));
             Beliathan Add = new Beliathan();
             Add.X = Body.X;
             Add.Y = Body.Y;

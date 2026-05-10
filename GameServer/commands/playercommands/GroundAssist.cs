@@ -10,8 +10,8 @@ namespace DOL.GS.Commands
 		{
 			if (IsSpammingCommand(client.Player, "groundassist"))
 				return;
-			DisplayMessage(client, "/groundassist is disabled on this server.");
-			
+			DisplayMessage(client, T(client, "PlayerCommands.GroundAssist.Disabled"));
+
 			// GameLiving target = client.Player.TargetObject as GameLiving;
 			// if (args.Length > 1)
 			// {

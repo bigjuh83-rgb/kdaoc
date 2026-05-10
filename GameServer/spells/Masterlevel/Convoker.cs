@@ -7,6 +7,7 @@ using DOL.GS;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
 using DOL.GS.PlayerClass;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -314,7 +315,7 @@ namespace DOL.GS.Spells
 				}
 				else
 				{
-					MessageToCaster("Your area target is out of range.  Set a closer ground position.", eChatType.CT_SpellResisted);
+					MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Masterlevel.Convoker.AreaTargetOutOfRange"), eChatType.CT_SpellResisted);
 					effect.Cancel(false);
 				}
 			}
@@ -346,7 +347,7 @@ namespace DOL.GS.Spells
 			if (player == null) return;
 			if (e == GamePlayerEvent.Moving)
 			{
-				MessageToCaster("Your concentration fades", eChatType.CT_SpellExpires);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Masterlevel.Convoker.ConcentrationFades"), eChatType.CT_SpellExpires);
 				OnEffectExpires(m_effect, true);
 				return;
 			}
@@ -359,7 +360,7 @@ namespace DOL.GS.Spells
 			if (kWarder == null) return;
 			if (e == GameLivingEvent.Dying)
 			{
-				MessageToCaster("Your Battle Warder has fallen!", eChatType.CT_SpellExpires);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Masterlevel.Convoker.BattleWarderFallen"), eChatType.CT_SpellExpires);
 				OnEffectExpires(m_effect, true);
 				return;
 			}
@@ -369,7 +370,7 @@ namespace DOL.GS.Spells
 			if (!base.CheckBeginCast(selectedTarget)) return false;
 			if (!(m_caster.GroundTarget.IsValid && m_caster.GroundTargetInView))
 			{
-				MessageToCaster("Your area target is out of range.  Set a closer ground position.", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Masterlevel.Convoker.AreaTargetOutOfRange"), eChatType.CT_SpellResisted);
 				return false;
 			}
 			return true;
@@ -478,7 +479,7 @@ namespace DOL.GS.Spells
 			{
 				if (log.IsWarnEnabled)
 					log.WarnFormat("NPC template {0} not found! Spell: {1}", Spell.LifeDrainReturn, Spell.ToString());
-				MessageToCaster("NPC template " + Spell.LifeDrainReturn + " not found!", eChatType.CT_System);
+				MessageToCaster(LanguageMgr.GetTranslation(player.Client.Account.Language, "Masterlevel.Convoker.NpcTemplateNotFound", Spell.LifeDrainReturn), eChatType.CT_System);
 				return;
 			}
 
@@ -550,7 +551,7 @@ namespace DOL.GS.Spells
 			{
 				if (jg != null)
 				{
-					MessageToCaster("Your Pet already has an ability of this type active", eChatType.CT_SpellResisted);
+					MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Masterlevel.Convoker.PetAbilityAlreadyActive"), eChatType.CT_SpellResisted);
 					return;
 				}
 			}
@@ -562,7 +563,7 @@ namespace DOL.GS.Spells
 				NecromancerPet necroPet = target as NecromancerPet;
 				if (necroPet == null || necroPet.Owner == m_player)
 				{ // Caster is a Nekro and his Target is his Own Pet
-					MessageToCaster("You cant use this ability on your own Pet", eChatType.CT_SpellResisted);
+					MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Masterlevel.Convoker.CannotUseOnOwnPet"), eChatType.CT_SpellResisted);
 					return;
 				}
 			}
@@ -607,7 +608,7 @@ namespace DOL.GS.Spells
 		GameNPC summoned = null;
 		ECSGameTimer m_growTimer;
 		private const int C_GROWTIMER = 2000;
-		
+
 		public Convoker10SpellHandler(GameLiving caster, Spell spell, SpellLine line) : base(caster, spell, line) { }
 
 		public override bool CheckBeginCast(GameLiving selectedTarget)
@@ -639,7 +640,7 @@ namespace DOL.GS.Spells
 			{
 				if (log.IsWarnEnabled)
 					log.WarnFormat("NPC template {0} not found! Spell: {1}", Spell.LifeDrainReturn, Spell.ToString());
-				MessageToCaster("NPC template " + Spell.LifeDrainReturn + " not found!", eChatType.CT_System);
+				MessageToCaster(LanguageMgr.GetTranslation(player.Client.Account.Language, "Masterlevel.Convoker.NpcTemplateNotFound", Spell.LifeDrainReturn), eChatType.CT_System);
 				return;
 			}
 			GameSpellEffect effect = CreateSpellEffect(target, CasterEffectiveness);
@@ -666,7 +667,7 @@ namespace DOL.GS.Spells
 			effect.Start(summoned);
 			m_growTimer = new ECSGameTimer((GameObject)m_caster, new ECSGameTimer.ECSTimerCallback(TitanGrows), C_GROWTIMER);
 		}
-		
+
 		// Make titan growing, and activate it on completition
 		private int TitanGrows(ECSGameTimer timer)
 		{
@@ -683,7 +684,7 @@ namespace DOL.GS.Spells
 			}
 			return 0;
 		}
-		
+
 		private bool CheckCastLocation()
 		{
 			x = Caster.X;
@@ -693,13 +694,13 @@ namespace DOL.GS.Spells
 			{
 				if (!Caster.GroundTarget.IsValid)
 				{
-					MessageToCaster("You must set a groundtarget!", eChatType.CT_SpellResisted);
+					MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Masterlevel.Convoker.MustSetGroundTarget"), eChatType.CT_SpellResisted);
 					return false;
 				}
 
 				if (!Caster.GroundTargetInView)
 				{
-					MessageToCaster("Your area target is not in view.", eChatType.CT_SpellResisted);
+					MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "Masterlevel.Convoker.AreaTargetNotInView"), eChatType.CT_SpellResisted);
 					return false;
 				}
 

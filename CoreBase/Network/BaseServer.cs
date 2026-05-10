@@ -14,7 +14,7 @@ namespace DOL.Network
     {
         private static readonly Logging.Logger log = Logging.LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public static readonly Encoding DefaultEncoding = CodePagesEncodingProvider.Instance.GetEncoding(1252);
+        public static readonly Encoding DefaultEncoding = CodePagesEncodingProvider.Instance.GetEncoding(949);
 
         [ThreadStatic]
         private static Encoder _encoder;

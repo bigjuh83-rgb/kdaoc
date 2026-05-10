@@ -1,18 +1,18 @@
 /*
  * Created by StephenxPimentel / HellFire
  * This NPC features:
- * 
+ *
  * -In-Game customiseable Free Realm Ranks (You can change the amount in-game)
  * -Option to allow GM's to change the free RR or not. (True = Yes, False = No)
  * -This NPC will not give more than the free realmrank!
  * For example, say you have 50 realmpoints already, and the free realmrank is RR2
  * The NPC will give RR2 - 50 (free RR - players realmpoints / RP Rate) to still give an equal
  * Realmrank 2L0.
- * 
+ *
  * Also this NPC will log ALL changes to the free realmranks in GM Actions Log.
- * 
- * 
- * ANY CHANGES TO THIS SCRIPT THAT WILL BENEFIT THE COMMUNITY SHOULD BE RELEASED 
+ *
+ *
+ * ANY CHANGES TO THIS SCRIPT THAT WILL BENEFIT THE COMMUNITY SHOULD BE RELEASED
  * TO THE PUBLIC, VIA DOLSERVER.NET USER FILES SECTION!
  */
 using System;
@@ -29,6 +29,7 @@ using DOL.GS.Quests;
 using System.Collections.Generic;
 using System.Reflection;
 using DOL.GS.Housing;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -67,11 +68,11 @@ namespace DOL.GS
 
             if (freeRR > 0)
             {
-                player.Out.SendMessage("Greetings, " + player.Name + ", during the alpha test I can give you free [Realmrank " + freeRR + "]!", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantRRNPC.Interact.FreeRealmRank", player.Name, freeRR), eChatType.CT_System, eChatLoc.CL_PopupWindow);
             }
             if (freeRR == 0)
             {
-                player.Out.SendMessage("I'm sorry, " + player.Name + " I've been told not to grant free realmranks anymore!", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantRRNPC.Interact.Disabled", player.Name), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
             }
 
             #endregion
@@ -79,7 +80,7 @@ namespace DOL.GS
 
             if (player.Client.Account.PrivLevel == 2 && AllowGMChangeAmount == true)
             {
-                player.Out.SendMessage("What would you like the Free Realmrank to be? \n" +
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantRRNPC.Admin.Menu") +
                 "[disable]\n" +
                 "[2L0]\n" +
                 "[3L0]\n" +
@@ -96,7 +97,7 @@ namespace DOL.GS
             }
             if (player.Client.Account.PrivLevel == 3)
             {
-                player.Out.SendMessage("What would you like the Free Realmrank to be? \n" +
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantRRNPC.Admin.Menu") +
                 "[disable]\n" +
                 "[2L0]\n" +
                 "[3L0]\n" +
@@ -144,7 +145,8 @@ namespace DOL.GS
             switch (str)
             {
                 #region Give Free Realmranks
-                case "Realmrank 2":
+	                case "Realmrank 2":
+	                case "렐름 랭크 2":
                     {
                         if (player.RealmPoints < RR2 && freeRR == 2)
                         {
@@ -152,7 +154,8 @@ namespace DOL.GS
                         }
                     }
                     break;
-                case "Realmrank 3":
+	                case "Realmrank 3":
+	                case "렐름 랭크 3":
                     {
                         if (player.RealmPoints < RR3 && freeRR == 3)
                         {
@@ -160,7 +163,8 @@ namespace DOL.GS
                         }
                     }
                     break;
-                case "Realmrank 4":
+	                case "Realmrank 4":
+	                case "렐름 랭크 4":
                     {
                         if (player.RealmPoints < RR4 && freeRR == 4)
                         {
@@ -168,7 +172,8 @@ namespace DOL.GS
                         }
                     }
                     break;
-                case "Realmrank 5":
+	                case "Realmrank 5":
+	                case "렐름 랭크 5":
                     {
                         if (player.RealmPoints < RR5 && freeRR == 5)
                         {
@@ -176,7 +181,8 @@ namespace DOL.GS
                         }
                     }
                     break;
-                case "Realmrank 6":
+	                case "Realmrank 6":
+	                case "렐름 랭크 6":
                     {
                         if (player.RealmPoints < RR6 && freeRR == 6)
                         {
@@ -184,7 +190,8 @@ namespace DOL.GS
                         }
                     }
                     break;
-                case "Realmrank 7":
+	                case "Realmrank 7":
+	                case "렐름 랭크 7":
                     {
                         if (player.RealmPoints < RR7 && freeRR == 7)
                         {
@@ -192,7 +199,8 @@ namespace DOL.GS
                         }
                     }
                     break;
-                case "Realmrank 8":
+	                case "Realmrank 8":
+	                case "렐름 랭크 8":
                     {
                         if (player.RealmPoints < RR8 && freeRR == 8)
                         {
@@ -200,7 +208,8 @@ namespace DOL.GS
                         }
                     }
                     break;
-                case "Realmrank 9":
+	                case "Realmrank 9":
+	                case "렐름 랭크 9":
                     {
                         if (player.RealmPoints < RR9 && freeRR == 9)
                         {
@@ -208,7 +217,8 @@ namespace DOL.GS
                         }
                     }
                     break;
-                case "Realmrank 10":
+	                case "Realmrank 10":
+	                case "렐름 랭크 10":
                     {
                         if (player.RealmPoints < RR10 && freeRR == 10)
                         {
@@ -216,7 +226,8 @@ namespace DOL.GS
                         }
                     }
                     break;
-                case "Realmrank 11":
+	                case "Realmrank 11":
+	                case "렐름 랭크 11":
                     {
                         if (player.RealmPoints < RR11 && freeRR == 11)
                         {
@@ -224,7 +235,8 @@ namespace DOL.GS
                         }
                     }
                     break;
-                case "Realmrank 12":
+	                case "Realmrank 12":
+	                case "렐름 랭크 12":
                     {
                         if (player.RealmPoints < RR12 && freeRR == 12)
                         {
@@ -232,7 +244,8 @@ namespace DOL.GS
                         }
                     }
                     break;
-                case "Realmrank 13":
+	                case "Realmrank 13":
+	                case "렐름 랭크 13":
                     {
                         if (player.RealmPoints < RR13 && freeRR == 13)
                         {
@@ -429,5 +442,3 @@ namespace DOL.GS
         }
     }
 }
-
-

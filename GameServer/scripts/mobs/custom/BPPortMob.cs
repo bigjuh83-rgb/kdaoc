@@ -5,6 +5,7 @@ using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
 using DOL.GS.Spells;
 using DOL.GS.API;
+using DOL.Language;
 
 namespace DOL.GS.Scripts
 {
@@ -67,7 +68,7 @@ namespace DOL.GS.Scripts
             foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE)) //3600 units
             {
                 player.ReceiveItem(this, "ML1token");// Adds an item into player inventory
-                player.Out.SendMessage("An item has appeared in your inventory!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Mobs.BPPortMob.ItemAppeared"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 player.GainBountyPoints((this.Level * 5));// grants BP at Server BP rate * 5 * level of mob
                 player.MoveTo(90, 51597, 38366, 10858, 3281);// Moved player to specified location
             }

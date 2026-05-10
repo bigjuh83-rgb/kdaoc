@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -46,7 +47,7 @@ namespace DOL.GS.RealmAbilities
 		private void DamageTarget(GameLiving target, GameLiving caster)
 		{
 			int damage = 300;
-			(caster as GamePlayer)?.Out.SendMessage($"You hit {target.Name} for {damage} points of damage!", eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+			(caster as GamePlayer)?.Out.SendMessage(LanguageMgr.GetTranslation((caster as GamePlayer).Client.Account.Language, "RealmAbility.Damage.YouHitForPointsDamage", target.Name, damage), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
 			target.Stealth(false);
 			AttackData ad = new AttackData();
 			ad.AttackResult = eAttackResult.HitUnstyled;

@@ -36,6 +36,12 @@ namespace DOL.GS
         {
             List<(int, double)> result = new(_intervals.Count);
 
+            if (_writeIndex == 0)
+            {
+                AddZeroAverages(result);
+                return result;
+            }
+
             // Fast-path: We are on the game loop, run directly.
             if (SynchronizationContext.Current == GameLoopThreadPool.Context)
             {
@@ -71,6 +77,12 @@ namespace DOL.GS
                     ticks.Add(tick);
             }
 
+            if (ticks.Count < 2)
+            {
+                AddZeroAverages(result);
+                return;
+            }
+
             int startIndex = 0;
 
             // Count ticks per interval and calculate averages.
@@ -100,6 +112,12 @@ namespace DOL.GS
                 double average = (tickCount - 1) / (actualInterval / 1000.0);
                 result.Add((interval, average));
             }
+        }
+
+        private void AddZeroAverages(List<(int, double)> result)
+        {
+            foreach (int interval in _intervals)
+                result.Add((interval, 0));
         }
     }
 }

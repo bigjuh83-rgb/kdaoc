@@ -83,12 +83,12 @@ namespace DOL.GS.Keeps
 				attacker = ((source as GameNPC).Brain as IControlledBrain).Owner as GamePlayer;
 			}
 
-			if ((attacker != null && IsWithinRadius(attacker, distance) == false) || IsWithinRadius(source, distance) == false)
-			{
-				if (attacker != null)
-					attacker.Out.SendMessage(this.Name + " can't be attacked from this distance.", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
-				return;
-			}
+				if ((attacker != null && IsWithinRadius(attacker, distance) == false) || IsWithinRadius(source, distance) == false)
+				{
+					if (attacker != null)
+						attacker.Out.SendMessage(LanguageMgr.GetTranslation(attacker.Client.Account.Language, "Keep.FighterRK.CantAttackDistance", Name), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+					return;
+				}
 			base.TakeDamage(source, damageType, damageAmount, criticalAmount);
 		}
     }

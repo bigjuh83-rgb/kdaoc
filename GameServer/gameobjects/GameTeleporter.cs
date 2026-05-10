@@ -5,6 +5,7 @@ using DOL.GS.Housing;
 using DOL.GS.Keeps;
 using DOL.GS.PacketHandler;
 using DOL.GS.Spells;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -27,7 +28,7 @@ namespace DOL.GS
         }
 
         /// <summary>
-        /// The destination realm. 
+        /// The destination realm.
         /// </summary>
         protected virtual eRealm DestinationRealm
         {
@@ -71,6 +72,61 @@ namespace DOL.GS
 
 		protected virtual bool GetTeleportLocation(GamePlayer player, string text)
 		{
+			text = text switch
+			{
+					"주택" => "housing",
+					"슈라우디드 아일스" => "shrouded isles",
+					"마을" => "towns",
+					"입구" => "Entrance",
+					"개인 주택" => "personal",
+					"길드 주택" => "guild",
+					"귀환 위치" => "hearth",
+					"소바쥬 성" => "Castle Sauvage",
+					"스노도니아 요새" => "Snowdonia Fortress",
+					"아발론 습지" => "Avalon Marsh",
+					"고스웨이트 항구" => "Gothwaite Harbor",
+					"카멜롯" => "Camelot",
+					"고스웨이트" => "Gothwaite",
+					"위어리얼 마을" => "Wearyall Village",
+					"귄텔 요새" => "Gwyntell",
+					"케어 디오겔" => "Caer Diogel",
+					"코츠월드 마을" => "Cotswold Village",
+					"프리드웬 성채" => "Prydwen Keep",
+					"케어 울프위치" => "Caer Ulfwych",
+					"캄파코렌틴 기지" => "Campacorentin Station",
+					"아드리바드 은거지" => "Adribard's Retreat",
+					"야를리 농장" => "Yarley's Farm",
+					"스바수드 파스테" => "Svasud Faste",
+					"빈드사울 파스테" => "Vindsaul Faste",
+					"고타르" => "Gotar",
+					"에기르함" => "Aegirhamn",
+					"요르드하임" => "Jordheim",
+					"비야르켄" => "Bjarken",
+					"하갈" => "Hagall",
+					"크나르" => "Knarr",
+					"물란" => "Mularn",
+					"벨돈 요새" => "Fort Veldon",
+					"아우들리텐" => "Audliten",
+					"후긴펠" => "Huginfell",
+					"아틀라 요새" => "Fort Atla",
+					"웨스트 스코나" => "West Skona",
+					"드루임 리겐" => "Druim Ligen",
+					"드루임 케인" => "Druim Cain",
+					"섀넌 하구" => "Shannon Estuary",
+					"돔난" => "Domnann",
+					"티르 나 노그" => "Tir na Nog",
+					"드로하이드" => "Droighaid",
+					"알리드 페이" => "Aalid Feie",
+					"네흐트" => "Necht",
+					"마그 멜" => "Mag Mell",
+					"티르 나 므베오" => "Tir na mBeo",
+					"아르다" => "Ardagh",
+					"호스" => "Howth",
+					"콘라" => "Connla",
+					"이니스 카르사이그" => "Innis Carthaig",
+					_ => text
+				};
+
 			// Battlegrounds are specials, as the teleport location depends on
 			// the level of the player, so let's deal with that first.
 			if (text.ToLower() == "battlegrounds")
@@ -99,7 +155,7 @@ namespace DOL.GS
 					{
 						if (player.Client.Account.PrivLevel > (uint)ePrivLevel.Player)
 						{
-							player.Out.SendMessage("No portal keep found.", eChatType.CT_Items, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "GameTeleporter.NoPortalKeepFound"), eChatType.CT_Items, eChatLoc.CL_SystemWindow);
 						}
 						return true;
 					}
@@ -141,7 +197,7 @@ namespace DOL.GS
 				// Check if player has set a house bind
 				if (!(player.BindHouseRegion > 0))
 				{
-					SayTo(player, "Sorry, you haven't set any house bind point yet.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.NoHouseBindPoint"));
 					return false;
 				}
 
@@ -151,8 +207,7 @@ namespace DOL.GS
 					BindHouseYpos, 700);
 				if (houses.Count == 0)
 				{
-					SayTo(player, "I'm afraid I can't teleport you to your hearth since the house at your " + 
-						"house bind location has been torn down.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.HouseBindHouseTornDown"));
 					return false;
 				}
 
@@ -172,16 +227,14 @@ namespace DOL.GS
 
 				if (!hasBindstone)
 				{
-					SayTo(player, "I'm sorry to tell that the bindstone of your current house bind location " + 
-						"has been removed, so I'm not able to teleport you there.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.HouseBindstoneRemoved"));
 					return false;
 				}
 
 				// Check if the player has the permission to bind at the house bind stone
 				if (!targetHouse.CanBindInHouse(player))
 				{
-					SayTo(player, "You're no longer allowed to bind at the house bindstone you've previously " + 
-						"chosen, hence I'm not allowed to teleport you there.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client, "GameTeleporter.HouseBindNoPermission"));
 					return false;
 				}
 
@@ -252,7 +305,7 @@ namespace DOL.GS
 
 			if (region == null || region.IsDisabled)
 			{
-				player.Out.SendMessage("This destination is not available.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "GameTeleporter.DestinationUnavailable"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -291,14 +344,14 @@ namespace DOL.GS
 			// Spell not found in the database, fall back on default procedure.
 
 			if (player.Client.Account.PrivLevel > 1)
-				player.Out.SendMessage("Uni-Portal spell not found.",
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "GameTeleporter.UniPortalSpellNotFound"),
 					eChatType.CT_Items, eChatLoc.CL_SystemWindow);
-			
+
 			this.OnTeleport(player, destination);
 		}
 
 		/// <summary>
-		/// Teleport the player to the designated coordinates. 
+		/// Teleport the player to the designated coordinates.
 		/// </summary>
 		/// <param name="player"></param>
 		/// <param name="destination"></param>

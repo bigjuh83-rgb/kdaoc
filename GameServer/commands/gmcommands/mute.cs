@@ -1,5 +1,6 @@
 using System;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -33,7 +34,7 @@ namespace DOL.GS.Commands
 				}
 				catch
 				{
-					DisplayMessage(client, "Invalid client ID");
+					DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Mute.InvalidClientID"));
 				}
 			}
 			else
@@ -43,13 +44,13 @@ namespace DOL.GS.Commands
 
 			if (playerClient == null)
 			{
-				DisplayMessage(client, "No player found for '" + args[1] + "'");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Mute.NoPlayerFound", args[1]));
 				return;
 			}
 
 			if (client.Account.PrivLevel < playerClient.Account.PrivLevel)
 			{
-				DisplayMessage(client, "Your privlevel is not high enough to mute this player.");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Mute.PrivLevelTooLow"));
 				return;
 			}
 
@@ -81,7 +82,7 @@ namespace DOL.GS.Commands
 				{
 					if (playerClient.Account.IsMuted)
 					{
-						DisplayMessage(client, "This player has an allchars mute which must be removed first.");
+						DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Mute.AllCharsMuteMustBeRemoved"));
 						return;
 					}
 
@@ -91,23 +92,23 @@ namespace DOL.GS.Commands
 
 			if (playerClient.Player.IsMuted)
 			{
-				playerClient.Player.Out.SendMessage("You have been muted from public channels by staff member " + client.Player.Name + "!", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
-				client.Player.Out.SendMessage("You have muted player " + playerClient.Player.Name + " from public channels!", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+				playerClient.Player.Out.SendMessage(LanguageMgr.GetTranslation(playerClient.Account.Language, "GMCommands.Mute.YouHaveBeenMuted", client.Player.Name), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+				client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Mute.YouMutedPlayer", playerClient.Player.Name), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
 				if (mutedAccount)
 				{
-					playerClient.Player.Out.SendMessage("This mute has been placed on all characters for this account.", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
-					client.Player.Out.SendMessage("This action was done to the players account.", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+					playerClient.Player.Out.SendMessage(LanguageMgr.GetTranslation(playerClient.Account.Language, "GMCommands.Mute.AccountMutePlaced"), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+					client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Mute.ActionDoneToAccount"), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
 				}
 
 				log.Warn(client.Player.Name + " muted " + playerClient.Player.Name);
 			}
 			else
 			{
-				playerClient.Player.Out.SendMessage("You have been unmuted from public channels by staff member " + client.Player.Name + "!", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
-				client.Player.Out.SendMessage("You have unmuted player " + playerClient.Player.Name + " from public channels!", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+				playerClient.Player.Out.SendMessage(LanguageMgr.GetTranslation(playerClient.Account.Language, "GMCommands.Mute.YouHaveBeenUnmuted", client.Player.Name), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+				client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Mute.YouUnmutedPlayer", playerClient.Player.Name), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
 				if (mutedAccount)
 				{
-					client.Player.Out.SendMessage("This action was done to the players account.", eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+					client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Mute.ActionDoneToAccount"), eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
 				}
 
 				log.Warn(client.Player.Name + " un-muted " + playerClient.Player.Name);

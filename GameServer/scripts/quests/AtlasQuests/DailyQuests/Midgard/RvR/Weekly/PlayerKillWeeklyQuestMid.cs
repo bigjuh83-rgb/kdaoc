@@ -26,7 +26,7 @@ namespace DOL.GS.WeeklyQuests.Midgard
 		private static GameNPC ReyMid = null; // Start NPC
 
 		private int PlayersKilled = 0;
-		
+
 		// Kill Goal
 		private int MAX_KILLING_GOAL = 100;
 		// prevent grey killing
@@ -57,7 +57,7 @@ namespace DOL.GS.WeeklyQuests.Midgard
 				return minimumLevel;
 			}
 		}
-		
+
 		[ScriptLoadedEvent]
 		public static void ScriptLoaded(DOLEvent e, object sender, EventArgs args)
 		{
@@ -143,7 +143,7 @@ namespace DOL.GS.WeeklyQuests.Midgard
 
 		private static void TalkToRey(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -161,18 +161,16 @@ namespace DOL.GS.WeeklyQuests.Midgard
 					switch (quest.Step)
 					{
 						case 1:
-							ReyMid.SayTo(player, "You will find suitable players in the frontiers or in battlegrounds.");
+							ReyMid.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.SuitablePlayersFrontiersOrBattlegrounds"));
 							break;
 						case 2:
-							ReyMid.SayTo(player, "Hello " + player.Name + ", did you [demolish some skulls]?");
+							ReyMid.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[demolish some skulls]"));
 							break;
 					}
 				}
 				else
 				{
-					ReyMid.SayTo(player, "Uh oh, "+ player.Name +". "+
-					                     "Fen put in a bulk order this time. There's no way I can collect this many bones in a week. \n" +
-					                     "I need your help with this, are you up for some [bone harvesting]?");
+					ReyMid.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ReyWeeklyPlayerKillIntro", player.Name));
 				}
 			}
 				// The player whispered to the NPC
@@ -184,7 +182,7 @@ namespace DOL.GS.WeeklyQuests.Midgard
 					switch (wArgs.Text)
 					{
 						case "bone harvesting":
-							player.Out.SendQuestSubscribeCommand(ReyMid, QuestMgr.GetIDForQuestType(typeof(PlayerKillWeeklyQuestMid)), "Will you undertake " + questTitle + "?");
+							player.Out.SendQuestSubscribeCommand(ReyMid, QuestMgr.GetIDForQuestType(typeof(PlayerKillWeeklyQuestMid)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.SubscribePrompt", questTitle));
 							break;
 					}
 				}
@@ -195,18 +193,18 @@ namespace DOL.GS.WeeklyQuests.Midgard
 						case "demolish some skulls":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -235,11 +233,11 @@ namespace DOL.GS.WeeklyQuests.Midgard
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and shed some blood!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueBloodshed"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -269,7 +267,7 @@ namespace DOL.GS.WeeklyQuests.Midgard
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for helping me.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -277,7 +275,7 @@ namespace DOL.GS.WeeklyQuests.Midgard
 				if (!ReyMid.GiveQuest(typeof (PlayerKillWeeklyQuestMid), player, 1))
 					return;
 
-				ReyMid.SayTo(player, "You will find suitable players in the frontiers or in battlegrounds.");
+				ReyMid.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.SuitablePlayersFrontiersOrBattlegrounds"));
 
 			}
 		}
@@ -296,9 +294,9 @@ namespace DOL.GS.WeeklyQuests.Midgard
 				switch (Step)
 				{
 					case 1:
-						return "You will find suitable players in the frontiers or in battlegrounds. \nPlayers Killed: ("+ PlayersKilled +" | "+ MAX_KILLING_GOAL +")";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.FrontierOrBattlegroundPlayersKilled", PlayersKilled, MAX_KILLING_GOAL);
 					case 2:
-						return "Return to Rey in Svasud Faste for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "Rey", "Svasud Faste");
 				}
 				return base.Description;
 			}
@@ -320,22 +318,22 @@ namespace DOL.GS.WeeklyQuests.Midgard
 			if (gArgs.Target.Realm == 0 || gArgs.Target.Realm == player.Realm || gArgs.Target is not GamePlayer ||
 			    !(player.GetConLevel(gArgs.Target) > MIN_PLAYER_CON)) return;
 			PlayersKilled++;
-			player.Out.SendMessage("[Weekly] Enemy Killed: ("+PlayersKilled+" | "+MAX_KILLING_GOAL+")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyEnemyKilled", PlayersKilled, MAX_KILLING_GOAL), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (PlayersKilled >= MAX_KILLING_GOAL)
 			{
 				// FinishQuest or go back to Rey
 				Step = 2;
 			}
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "PlayerKillWeeklyQuestMid";
 			set { ; }
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			PlayersKilled = GetCustomProperty(QuestPropertyKey) != null ? int.Parse(GetCustomProperty(QuestPropertyKey)) : 0;
@@ -349,21 +347,21 @@ namespace DOL.GS.WeeklyQuests.Midgard
 		public override void FinishQuest()
 		{
 			int reward = ServerProperties.Properties.WEEKLY_RVR_REWARD;
-			
+
 			m_questPlayer.ForceGainExperience( (m_questPlayer.ExperienceForNextLevel - m_questPlayer.ExperienceForCurrentLevel)/5);
 			m_questPlayer.AddMoney(Money.GetMoney(0,0,m_questPlayer.Level * 5,32,Util.Random(50)), "You receive {0} as a reward.");
 			AtlasROGManager.GenerateReward(m_questPlayer, 1500);
 			AtlasROGManager.GenerateJewel(m_questPlayer, (byte)(m_questPlayer.Level + 1), m_questPlayer.Level + Util.Random(10, 20));
 			PlayersKilled = 0;
-			
+
 			if (reward > 0)
 			{
-				m_questPlayer.Out.SendMessage($"You have been rewarded {reward} Realmpoints for finishing Weekly Quest.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+				m_questPlayer.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.RealmPointReward", reward, "Weekly"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 				m_questPlayer.GainRealmPoints(reward, false);
 				m_questPlayer.Out.SendUpdatePlayer();
 			}
 			base.FinishQuest(); //Defined in Quest, changes the state, stores in DB etc ...
-			
+
 		}
 	}
 }

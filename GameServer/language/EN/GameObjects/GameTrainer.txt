@@ -27,9 +27,86 @@ GameTrainer.Train.WouldYouLikeTo:		    Would you like to do some training?
 GameTrainer.Train.SeekElsewhere:		    You must seek elsewhere for your training.
 GameTrainer.AddGift.NotEnoughSpace:		    Not Space inventory space to receive your gift. Please make room.
 GamePlayer.GainExperience.TalkToTrainer:		Talk to your trainer for more information.
-GamePlayer.AddAbility.YouLearn:				You learn the {0} ability!	
-GamePlayer.AddSpecialisation.YouLearn:		You learn the {0} skill!		
-GamePlayer.AddSpellLine.YouLearn:			You learn the {0} spell list!		
+StarterTrainer.SeekTrainingElsewhere:		{0} says, "You must now seek your training elsewhere. Which path would you like to follow? {1}?"
+StarterTrainer.PracticeWeapon:				{0} says, "Do you require a [practice weapon]?"
+StarterTrainer.TrainingShield:				{0} says, "Do you require a [training shield]?"
+StarterTrainer.PracticeBranch:				{0} says, "Do you require a [practice branch]?"
+StarterTrainer.PracticeStaff:				{0} says, "Do you require a [practice staff]?"
+StarterTrainer.ClassInfoUnavailable:		{0} says, "I cannot tell you more about this class yet."
+StarterTrainer.ClassUnavailable:			{0} says, "The path of a {1} is not available to your race. Please choose another."
+AcolyteTrainer.ClassInfo.Cleric:			So, you wish to serve the Church as healer, defender and leader of our faith. The Church of Albion will welcome one of your skill. Perhaps in time, your commitment will lead others to join our order.
+AcolyteTrainer.ClassInfo.Friar:			As a member of the brotherhood, you will find more than a community if you join the Defenders of Albion. Deadly with a quarterstaff and skilled at healing wounds, the army is always in need of recruits like you.
+AlbionTrainer.JoinDefendPrompt:			{0} says, "Do you desire to [{1}] and defend our realm as a {2}?"
+AlbionTrainer.JoinAcademyWizard:			{0} says, "Do you desire to [{1}] and summon the power of the elements as a Wizard?"
+AlbionTrainer.JoinAcademySorcerer:		{0} says, "Is it your wish to [{1}] and lend us your power as a Sorcerer?"
+AlbionTrainer.JoinAcademyMinstrel:		{0} says, "Do you desire to [{1}] and sing our song throughout Albion as a Minstrel?"
+AlbionTrainer.JoinGuildCabalist:			{0} says, "Do you desire to [{1}] and become a Cabalist? Your constructs would put fear into the hearts of all who oppose us!"
+AlbionTrainer.JoinGuildMercenary:		{0} says, "Do you wish to [{1}] and seek your fortune as a Mercenary?"
+AlbionTrainer.JoinGuildInfiltrator:		{0} says, "You have come far to find us! Is it your wish to [{1}] and become our dagger of the night? An Infiltrator!"
+AlbionTrainer.JoinIronFist:				{0} says, "Do you desire to [{1}] and fight for the glorious realm of Albion?"
+AlbionTrainer.JoinChurchCleric:			{0} says, "Do you desire to [{1}] and walk the path of a Cleric?"
+AlbionTrainer.ReaverPrompt:				{0} says, "Have you come to seek admittance into the [Temple of Arawn] and worship the old god your ancestors worshipped?"
+AlbionTrainer.PaladinPrompt:				{0} says, "The church has called out to you, young warrior! Will you hear its calling and [join the Church of Albion], walking the path of a Paladin forever?"
+AlbionTrainer.HereticPrompt:				{0} says, "Do you desire to [join the Temple of Arawn] and defend our realm as a Heretic?"
+AlbionTrainer.HereticWelcome:				Welcome to the Temple of Arawn, {0}.
+AlbionTrainer.TheurgistPrompt:				{0} says, "Do you desire to [join the Defenders of Albion] and feel the magic of creation as a Theurgist?"
+AlbionTrainer.TheurgistWelcome:			I know you shall do your best to guard the realm from those that would harm it! To help you with this task, here is a gift from the Defenders! Use it well!
+AlbionTrainer.ArmsmanPrompt:				{0} says, "Do you desire to [join the Defenders of Albion] and defend our realm as an Armsman?"
+AlbionTrainer.MercenaryPrompt:				{0} says, "Do you wish to [join the Guild of Shadows] and seek your fortune as a Mercenary?"
+AlbionTrainer.PaladinChooseWeapon:			{0} says, "Very well then! Choose your weapon, and your initiation into the Church of Albion will be complete. You may wield [slashing], [crushing], [thrusting] or [two handed] weapons."
+AlbionTrainer.ArmsmanChooseWeapon:			{0} says, "Very well. Choose a weapon, and you shall become one of us. Which would you have, [slashing], [crushing], [thrusting] or [polearms]?"
+AlbionTrainer.MercenaryChooseWeapon:		{0} says, "Very well. Choose a weapon, and you shall become one of us. Which would you have, [slashing], [crushing], or [thrusting]?"
+AlbionTrainer.PaladinWelcome.Sword:			Here is your Sword of the Initiate. Welcome to the Church of Albion.
+AlbionTrainer.PaladinWelcome.Mace:			Here is your Mace of the Initiate. Welcome to the Church of Albion.
+AlbionTrainer.PaladinWelcome.Rapier:		Here is your Rapier of the Initiate. Welcome to the Church of Albion.
+AlbionTrainer.PaladinWelcome.GreatSword:	Here is your Great Sword of the Initiate. Welcome to the Church of Albion.
+AlbionTrainer.ArmsmanWelcome.Sword:			Here is your Sword of the Initiate. Welcome to the Defenders of Albion.
+AlbionTrainer.ArmsmanWelcome.Mace:			Here is your Mace of the Initiate. Welcome to the Defenders of Albion.
+AlbionTrainer.ArmsmanWelcome.Rapier:		Here is your Rapier of the Initiate. Welcome to the Defenders of Albion.
+AlbionTrainer.ArmsmanWelcome.Pike:			Here is your Pike of the Initiate. Welcome to the Defenders of Albion.
+AlbionTrainer.MercenaryWelcome.Sword:		Here is your Sword of the Initiate. Welcome to the Guild of Shadows.
+AlbionTrainer.MercenaryWelcome.Mace:		Here is your Mace of the Initiate. Welcome to the Guild of Shadows.
+AlbionTrainer.MercenaryWelcome.Rapier:		Here is your Rapier of the Initiate. Welcome to the Guild of Shadows.
+AlbionTrainer.RoguePaths:					{0} says, "You must now seek your training elsewhere. Which path would you like to follow? [Infiltrator], [Minstrel], or [Scout]?"
+AlbionTrainer.Rogue.Info.Infiltrator:		{0} says, "You seek a tough life if you go that path. The life of an Infiltrator involves daily use of special skills. The Guild of Shadows made its fortune by sneaking, hiding, disguising, backstabbing, and spying on the enemy. Without question, they are an invaluable asset to Albion."
+AlbionTrainer.Rogue.Info.Minstrel:			{0} says, "Ah! To sing the victories of Albion! To praise those who fight to keep Camelot's light eternal. Many have studied within the Academy and gone forth to defend this realm. Without their magical songs, many would not be here today."
+AlbionTrainer.Rogue.Info.Scout:				{0} says, "Ah! You wish to join the Defenders of Albion? That is a fine choice for a Rogue. A Scout's accuracy with a bow is feared by all our enemies and has won Albion many battles."
+AlbionTrainer.CabalistPrompt:				{0} says, "Do you desire to [join the Guild of Shadows] and become a Cabalist? Your constructs would put fear into the hearts of all who oppose us!"
+AlbionTrainer.CabalistWelcome:				Welcome to our guild! You have much to learn, but I see greatness in your future! Here too is your guild weapon, a Staff of Focus!
+AlbionTrainer.ClericPrompt:					{0} says, "Do you desire to [join the Church of Albion] and walk the path of a Cleric?"
+AlbionTrainer.ClericWelcome:				Welcome my child! Walk the path of light, shout to all the words of our beloved church and rid the land of the faithless! Here is your Mace of the Initiate. It is our standard gift to all new members.
+AlbionTrainer.InfiltratorPrompt:			{0} says, "You have come far to find us! Is it your wish to [join the Guild of Shadows] and become our dagger of the night? An Infiltrator!"
+AlbionTrainer.InfiltratorWelcome:			You joined the Guild of Shadows as an Infiltrator.
+AlbionTrainer.MinstrelPrompt:				{0} says, "Do you desire to [join the Academy] and sing our song throughout Albion as a Minstrel?"
+AlbionTrainer.MinstrelWelcome:				Welcome! Stand proud and sing the tales of old so that all may know of our name!
+AlbionTrainer.WizardPrompt:					{0} says, "Do you desire to [join the Academy] and summon the power of the elements as a Wizard?"
+AlbionTrainer.WizardWelcome:				Welcome to our guild! You have much to learn, but I see greatness in your future! Here too is your guild weapon, a Staff of Focus!
+AlbionTrainer.SorcererPrompt:				{0} says, "Is it your wish to [join the Academy] and lend us your power as a Sorcerer?"
+AlbionTrainer.SorcererWelcome:				You are now part of our shadow! You shall forever have a place among us! Here too is your guild weapon, a Staff of Focus!
+AlbionTrainer.ScoutPrompt:					{0} says, "Do you desire to [join the Defenders of Albion] and defend our realm as a Scout?"
+AlbionTrainer.ScoutWelcome:					Welcome young warrior! May your time in Albion's army be rewarding! Here is your Huntsman's Longbow. The bow is your guild weapon! Be sure to carry it with you always.
+AlbionTrainer.MaulerPrompt:					{0} says, "Do you desire to [join the Temple of the Iron Fist] and fight for the glorious realm of Albion?"
+AlbionTrainer.MaulerWelcome:				Welcome young Mauler. May your time in Albion be rewarding.
+AlbionTrainer.ReaverWelcome:				Welcome to the Temple of Arawn, {0}.
+AlbionTrainer.Fighter.Info.Armsman:			{0} says, "Ah! An Armsman, is it? Good, solid fighters they are. Their prowess is a great asset to Albion. To become an Armsman, you must enlist with the Defenders of Albion."
+AlbionTrainer.Fighter.Info.Mercenary:		{0} says, "You wish to become a Mercenary, do you? Roguish by nature and solid warriors in battle, their ability to quickly evade enemy attacks has made them a valuable asset to the Guild of Shadows."
+AlbionTrainer.Fighter.Info.Paladin:			{0} says, "You wish to be a defender of the faith, I take it? Many a Paladin has led our fighters into battle with victory close behind. Their never-ending sacrifice proves that the Church of Albion will endure for centuries!"
+AlbionTrainer.Mage.Info.Cabalist:			{0} says, "So, you seek to embrace the darker side of magic? A Cabalist who can summon golems from inanimate matter is a true asset to Albion. Because they thirst for greater power, few will teach this skill; those who wish to follow this path must seek out the Guild of Shadows."
+AlbionTrainer.Mage.Info.Sorcerer:			{0} says, "So you wish to focus your training on pragmatic magic. Sorcerers prove their worth to the Academy with spells that disrupt, disable, and damage their enemies. In time, you may even conjure beasts to do your bidding."
+AlbionTrainer.Elementalist.Info.Theurgist:	{0} says, "You wish to study magical enchantments, do you? The Defenders of Albion rely immensely on the art of building and animating creatures that can fight and protect the army in battle."
+AlbionTrainer.Elementalist.Info.Wizard:		{0} says, "I see you wish to specialize in molding the four elements of fire, ice, earth, and air into spells of immense power. Even now, many well-trained Wizards of the Academy rain destruction upon our enemies."
+AlbionTrainer.Disciple.Info.Necromancer:	{0} says, "So you want to become a Necromancer? As a Necromancer you can summon undead creatures."
+AlbionTrainer.NecromancerPrompt:			Hail, young Disciple. Have you come seeking to imbue yourself with the power of Arawn and serve as one of his [Necromancers]?
+AlbionTrainer.NecromancerInfo:				The Necromancer is a cloth-wearing priest of Arawn, lord of the underworld. Due to their allegiance to the dark master, they are granted spellcasting and combat prowess that is unique in Albion. Unlike other casters, a Necromancer is powerless until calling upon Arawn's dark magic to become a fearsome servant controlled by an ethereal shade. As a shade, the Necromancer appears as a translucent ghost that cannot be wounded by melee or spells while the servant carries out dark commands. When the servant is slain or released in combat, the Necromancer returns to mortal form alive, but with very little health. Necromancers wound their enemies, and the pain they inflict brings them a surge of power or restores life to their servant. Do you wish to dedicate yourself to Lord Arawn and [join the Temple of Arawn]?
+AlbionTrainer.NecromancerWelcome:			Lord Arawn has accepted you into his Temple. Here is his gift to you. Use it well, Disciple.
+AlbionTrainer.AcolytePaths:					{0} says, "You must now seek your training elsewhere. Which path would you like to follow? [Cleric], [Heretic], or [Friar]?"
+AlbionTrainer.DisciplePaths:				{0} says, "You must now seek your training elsewhere. Which path would you like to follow? [Necromancer]?"
+AlbionTrainer.FighterPaths:					{0} says, "You must now seek your training elsewhere. Which path would you like to follow? [Armsman], [Paladin], or [Mercenary]?"
+AlbionTrainer.MagePaths:					{0} says, "You must now seek your training elsewhere. Which path would you like to follow? [Cabalist] or [Sorcerer]?"
+AlbionTrainer.ElementalistPaths:			{0} says, "You must now seek your training elsewhere. Which path would you like to follow? [Theurgist] or [Wizard]?"
+GamePlayer.AddAbility.YouLearn:				You learn the {0} ability!
+GamePlayer.AddSpecialisation.YouLearn:		You learn the {0} skill!
+GamePlayer.AddSpellLine.YouLearn:			You learn the {0} spell list!
 GamePlayer.AddToWorld.SpecsPointsIncorrect:		Your Specs points total was incorrect. Now corrected, please train again.
 GamePlayer.OnSkillTrained.TrainsInVarious:		{0} trains in various specializations.
 GamePlayer.OnSkillTrained.YouHave:				You have {0} specialization points left this level.
@@ -39,10 +116,10 @@ GamePlayer.RefreshSpec.YouLearn:				You learn the {0} combat style!
 ## Albion
 ### Friar
 FriarTrainer.Interact.Text1:				{0} says, "Do you desire to [join the Defenders of Albion] and defend our realm as a Friar?"
-FriarTrainer.Interact.Text2:				
-FriarTrainer.Interact.Text3:				
-FriarTrainer.Interact.Text4:				
-FriarTrainer.ReceiveItem.Text1:				
+FriarTrainer.Interact.Text2:
+FriarTrainer.Interact.Text3:
+FriarTrainer.Interact.Text4:
+FriarTrainer.ReceiveItem.Text1:
 FriarTrainer.WhisperReceive.Text1:			We welcome you into our society as an equal! We are at your disposal. We will now issue your Robes of the Novice. Wear them always and let it serve to remind you of your faith. When you have reached the title of Lesser Chaplain, return them to me. We shall then see if you require another.
 FriarTrainer.WhisperReceiveCase.Text1:		join the defenders of albion
 
@@ -73,10 +150,10 @@ HeroTrainer.WhisperReceiveCase.Text1:		hero
 
 ### Mauler (Hib)
 MaulerHibTrainer.Interact.Text1:			{0} says, "Do you desire to [join the Temple of the Iron Fist] and fight for the glorious realm of Hibernia?"
-MaulerHibTrainer.Interact.Text2:			
-MaulerHibTrainer.Interact.Text3:			
-MaulerHibTrainer.Interact.Text4:			
-MaulerHibTrainer.ReceiveItem.Text1:			
+MaulerHibTrainer.Interact.Text2:
+MaulerHibTrainer.Interact.Text3:
+MaulerHibTrainer.Interact.Text4:
+MaulerHibTrainer.ReceiveItem.Text1:
 MaulerHibTrainer.WhisperReceive.Text1:		Welcome young Mauler. May your time in Hibernia be rewarding. Would you prefer to fight with a [staff] or with [fist]?
 MaulerHibTrainer.WhisperReceive.Text2:		You get a gift by Laresh.
 MaulerHibTrainer.WhisperReceiveCase.Text1:	join the temple of the iron fist
@@ -91,24 +168,69 @@ MentalistTrainer.Interact.Text4:
 MentalistTrainer.WhisperReceive.Text1:		Well met then, {0}. It is a hard road, but I see hardness is no stranger to you. Welcome, Mentalist, welcome. Here, take this. It will aid you in your first encounters as a Mentalist.
 MentalistTrainer.WhisperReceiveCase.Text1:	mentalist
 
+### Blademaster
+BlademasterTrainer.Interact.TrainMore:		{0} says, "Do you wish to learn some more, {1}? Step up and receive your training!"
+BlademasterTrainer.Interact.PromotionPrompt: {0} says, "{1}, do you choose the Path of Harmony, and life as a [Blademaster]?"
+BlademasterTrainer.Promote.Welcome:			Very well, {0}. I gladly take your training into my hands. Congratulations, from this day forth, you are a Blademaster. Here, take this gift to aid you.
+
+### Eldritch
+EldritchTrainer.Interact.TrainMore:			{0} says, "Drink up this knowledge, {1}, and remember it, for there shall be a day when I no longer rise in the morning, and you may be required to take my place."
+EldritchTrainer.Interact.PromotionPrompt:	{0} says, "Greetings, {1}. It is my understanding that you have chosen the Path of Focus, and wish to train as an [Eldritch]."
+EldritchTrainer.Promote.Welcome:			I can give you the gift of knowledge, but wisdom you must seek on your own. I welcome you, {0}. Here, take this welcoming gift. Use it wisely.
+
+### Vampiir
+VampiirTrainer.Interact.TrainMore:			{0} says, "Do you wish to learn some more, {1}? Step up and receive your training!"
+VampiirTrainer.Interact.PromotionPrompt:	{0} says, "{1}, do you choose the Path of Affinity, and life as a [Vampiir]?"
+VampiirTrainer.Promote.Welcome:				Very well, {0}. I gladly take your training into my hands. Congratulations, from this day forth, you are a Vampiir. Here, take this gift to aid you.
+HiberniaTrainer.GuardianPaths:				{0} says, "You must now seek your training elsewhere. Which path would you like to follow? [Hero], [Champion] or [Blademaster]?"
+HiberniaTrainer.NaturalistPaths:			{0} says, "You must now seek your training elsewhere. Which path would you like to follow? [Bard], [Druid] or [Warden]?"
+HiberniaTrainer.StalkerPaths:				{0} says, "You must now seek your training elsewhere. Which path would you like to follow? [Ranger] or [Nightshade]?"
+HiberniaTrainer.ForesterPaths:				{0} says, "You must now seek your training elsewhere. Which path would you like to follow? [Animist] or [Valewalker]?"
+HiberniaTrainer.MagicianPaths:				{0} says, "You must now seek your training elsewhere. Which path would you like to follow? [Eldritch], [Enchanter] or [Mentalist]?"
+HiberniaTrainer.Champion.Trained:			{0} says, "I'm glad to see you taking an interest in your training, {1}. There is always room to grow and learn!"
+HiberniaTrainer.Champion.Prompt:			{0} says, "Champions follow the Path of Essence. Choose now to become a [Champion], and I will train you in our ways, and the ways of the Path we follow."
+HiberniaTrainer.Champion.Welcome:			Welcome {0}. Let us see if you will become a worthy Champion. Take this gift, {0}. It is to aid you while you grow into a true Champion.
+HiberniaTrainer.Druid.Trained:				{0} says, "I shall impart all that I know, young Druid."
+HiberniaTrainer.Druid.Prompt:				{0} says, "Do you wish to walk the Path of Harmony and learn the ways of the [Druid]?"
+HiberniaTrainer.Druid.Welcome:				The path of the Druid suits you, {0}. Welcome. Take this, {0}. You are a Druid now. Stick to our ways, and you shall go far.
+HiberniaTrainer.Nightshade.Trained:			{0} says, "Here for a bit of training, {1}? Step up and get it!"
+HiberniaTrainer.Nightshade.Prompt:			{0} says, "You have thought this through, I'm sure. Tell me now if you wish to train as a [Nightshade] and follow the Path of Essence."
+HiberniaTrainer.Nightshade.Welcome:			Some would think you mad, choosing to walk through life as a Nightshade. It is not meant for everyone, but I think it will suit you, {0}. Here, from me, a small gift to aid you in your journeys.
+HiberniaTrainer.Ranger.Trained:				{0} says, "You wish to learn more of our ways? Fine then."
+HiberniaTrainer.Ranger.Prompt:				{0} says, "You know, the way of a [Ranger] is not for everyone. Are you sure this is your choice?"
+HiberniaTrainer.Ranger.Welcome:				Good then. Your path as a Ranger is before you. Walk it with care, friend. Take these, {0}, to help make walking the path a bit easier.
+HiberniaTrainer.Valewalker.Trained:			{0} says, "Training makes for a strong, healthy Hero! Keep up the good work, {1}!"
+HiberniaTrainer.Valewalker.Prompt:			{0} says, "You wish to follow the [Path of Affinity] and walk as a Valewalker?"
+HiberniaTrainer.Valewalker.Welcome:			Welcome, then, to the Path of Affinity. Here is a gift. Consider it a welcoming gesture. Welcome, {0}.
+
 ## Midgard
 ### Bonedancer
 BonedancerTrainer.Interact.Text1:			{0} says, "Do you desire to [join the House of Bodgar] and defend our realm as a Bonedancer?"
-BonedancerTrainer.Interact.Text2:			
-BonedancerTrainer.Interact.Text3:		
-BonedancerTrainer.Interact.Text4:		
-BonedancerTrainer.ReceiveItem.Text1:		
+BonedancerTrainer.Interact.Text2:
+BonedancerTrainer.Interact.Text3:
+BonedancerTrainer.Interact.Text4:
+BonedancerTrainer.ReceiveItem.Text1:
 BonedancerTrainer.WhisperReceive.Text1:		Welcome young warrior! May your time in Midgard army be rewarding!
 BonedancerTrainer.WhisperReceiveCase.Text1:	join the house of bodgar
 
 ### Spiritmaster
-SpiritmasterTrainer.Interact.Text1:			{0} says, "Do you desire to [join the House of Hel] and defend our realm as a Spiritmaster?"	
-SpiritmasterTrainer.Interact.Text2:				
-SpiritmasterTrainer.Interact.Text3:				
-SpiritmasterTrainer.Interact.Text4:				
-SpiritmasterTrainer.ReceiveItem.Text1:			
-SpiritmasterTrainer.WhisperReceive.Text1:	Welcome young Spiritmaster! May your time in Midgard army be rewarding!	
+SpiritmasterTrainer.Interact.Text1:			{0} says, "Do you desire to [join the House of Hel] and defend our realm as a Spiritmaster?"
+SpiritmasterTrainer.Interact.Text2:
+SpiritmasterTrainer.Interact.Text3:
+SpiritmasterTrainer.Interact.Text4:
+SpiritmasterTrainer.ReceiveItem.Text1:
+SpiritmasterTrainer.WhisperReceive.Text1:	Welcome young Spiritmaster! May your time in Midgard army be rewarding!
 SpiritmasterTrainer.WhisperReceiveCase.Text1:join the house of hel
+
+### Generic Midgard promotion
+MidgardTrainer.JoinHousePrompt:			{0} says, "Do you desire to [{1}] and defend our realm as a {2}?"
+MidgardTrainer.JoinTemplePrompt:			{0} says, "Do you desire to [{1}] and fight for the glorious realm of Midgard?"
+MidgardTrainer.WelcomeArmy:				Welcome young {0}! May your time in the Midgard army be rewarding!
+MidgardTrainer.WelcomeMauler:			Welcome young Mauler. May your time in Midgard be rewarding.
+MidgardTrainer.SeerPaths:					{0} says, "You must now seek your training elsewhere. Which path would you like to follow? [Shaman] or [Healer]?"
+MidgardTrainer.RoguePaths:					{0} says, "You must now seek your training elsewhere. Which path would you like to follow? [Hunter] or [Shadowblade]?"
+MidgardTrainer.MysticPaths:					{0} says, "You must now seek your training elsewhere. Which path would you like to follow? [Runemaster] or [Spiritmaster]?"
+MidgardTrainer.VikingPaths:					{0} says, "You must now seek your training elsewhere. Which path would you like to follow? [Warrior], [Berserker], [Skald] or [Thane]?"
 
 ## Unused
 ### Bainshee
@@ -121,10 +243,10 @@ BainsheeTrainer.WhisperReceiveCase.Text1:	bainshee
 
 ### Valkyrie
 ValkyrieTrainer.Interact.Text1:				{0} says, "Do you desire to [join the House of Odin] and defend our realm as a Valkyrie?"
-ValkyrieTrainer.Interact.Text2:				
-ValkyrieTrainer.Interact.Text3:				
-ValkyrieTrainer.Interact.Text4:				
-ValkyrieTrainer.ReceiveItem.Text1:			
+ValkyrieTrainer.Interact.Text2:
+ValkyrieTrainer.Interact.Text3:
+ValkyrieTrainer.Interact.Text4:
+ValkyrieTrainer.ReceiveItem.Text1:
 ValkyrieTrainer.WhisperReceive.Text1:		Welcome young Valkyrie! May your time in Midgard army be rewarding! Would you prefer to fight with a [sword] or with a [spear]?
 ValkyrieTrainer.WhisperReceive.Text2:		You get a gift by Odin.
 ValkyrieTrainer.WhisperReceiveCase.Text1:	join the house of odin

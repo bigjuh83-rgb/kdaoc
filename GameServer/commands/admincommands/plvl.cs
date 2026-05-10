@@ -39,6 +39,11 @@ namespace DOL.GS.Commands
 		"AdminCommands.Plvl.Usage.AcctSingle")]
 	public class PlvlCommand : AbstractCommandHandler, ICommandHandler
 	{
+		private static bool RequiresSelfPlvlPermission(string privilegeLevel, bool targetIsCommandIssuer)
+		{
+			return targetIsCommandIssuer && (privilegeLevel == "1" || privilegeLevel == "2");
+		}
+
 		public void OnCommand(GameClient client, string[] args)
 		{
 			if (args.Length < 2)
@@ -243,8 +248,8 @@ namespace DOL.GS.Commands
 						return;
 					}
 					break;
-				} 
-			
+				}
+
 				#endregion Remove
 
 				#region Remove Account
@@ -344,15 +349,15 @@ namespace DOL.GS.Commands
 						{
 							target = ClientService.Instance.GetPlayerByExactName(args[2]);
 
-							if (target == null) 
+							if (target == null)
 							{
 								// Message: "No player is online with the name '{0}'. Please make sure that you entered the whole player's name and they are online."
 								ChatUtil.SendErrorMessage(client, "AdminCommands.Plvl.Err.NoPlayerExists", args[2]);
 								return;
 							}
 						}
-						// If plvl specified is Player or GM and no target is specified
-						if (args[1] == "1" || args[1] == "2" && client.Player == target && target == null)
+						// If the issuer lowers their own plvl to Player or GM, make sure they can grant themselves '/plvl' again.
+						if (RequiresSelfPlvlPermission(args[1], client.Player == target))
 						{
 							// If player's account doesn't have 'plvl' permission
 							if (SinglePermission.HasPermission(client.Player, "plvl") == false)
@@ -362,7 +367,7 @@ namespace DOL.GS.Commands
 								return;
 							}
 						}
-						
+
 						if (target != null)
 						{
 							target.Client.Account.PrivLevel = plvl;
@@ -429,13 +434,13 @@ namespace DOL.GS.Commands
 						// Message: "----- Additional Info -----"
 						info.Add(LanguageMgr.GetTranslation(client.Account.Language, "Dialog.Header.Content.MoreInfo"));
 						info.Add(" ");
-			
+
 						client.Out.SendCustomTextWindow("Using the '/plvl' Command Type", info);
-						
+
 						return;
 					}
 				#endregion Command
-				
+
 			}
 		}
 	}

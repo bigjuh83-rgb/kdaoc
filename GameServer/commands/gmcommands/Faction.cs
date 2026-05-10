@@ -192,12 +192,12 @@ namespace DOL.GS.Commands
                         return;
                     }
 
-                    client.Player.Out.SendMessage($"Relations for #{selectedFaction.Id}: {selectedFaction.Name } ({selectedFaction._baseAggroLevel}):", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+                    client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Faction.Relations.Header", selectedFaction.Id, selectedFaction.Name, selectedFaction._baseAggroLevel), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
                     HashSet<Faction> otherFactions = selectedFaction.FriendFactions;
 
                     if (otherFactions.Count > 0)
                     {
-                        client.Player.Out.SendMessage($" Is friend with:", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+                        client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Faction.Relations.FriendsHeader"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 
                         foreach (Faction otherFaction in otherFactions)
                             SendOtherFactionInfo(client, otherFaction, IsHardcoded(selectedFaction.Id, otherFaction.Id, true), otherFaction.FriendFactions.Contains(selectedFaction));
@@ -207,7 +207,7 @@ namespace DOL.GS.Commands
 
                     if (otherFactions.Count > 0)
                     {
-                        client.Player.Out.SendMessage($" Is hostile with:", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+                        client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Faction.Relations.EnemiesHeader"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 
                         foreach (Faction otherFaction in selectedFaction.EnemyFactions)
                             SendOtherFactionInfo(client, otherFaction, IsHardcoded(selectedFaction.Id, otherFaction.Id, false), otherFaction.EnemyFactions.Contains(selectedFaction));
@@ -227,13 +227,13 @@ namespace DOL.GS.Commands
                             extraInfo = "  ";
 
                             if (hardcoded)
-                                extraInfo += "[hardcoded]";
+                                extraInfo += LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Faction.Relations.Hardcoded");
 
                             if (!reciprocal)
-                                extraInfo += "[not reciprocal]";
+                                extraInfo += LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Faction.Relations.NotReciprocal");
                         }
 
-                        client.Out.SendMessage($"  #{otherFaction.Id}: {otherFaction.Name } ({otherFaction._baseAggroLevel}){extraInfo}", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+                        client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Faction.Relations.Line", otherFaction.Id, otherFaction.Name, otherFaction._baseAggroLevel, extraInfo), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
                     }
 
                     break;
@@ -274,7 +274,7 @@ namespace DOL.GS.Commands
                     }
 
                     client.Player.TempProperties.SetProperty(TEMP_FACTION_LAST, faction);
-                    client.Player.Out.SendMessage($"Selected faction #{faction.Id}: {faction.Name } ({faction._baseAggroLevel})", eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+                    client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Faction.Select.Selected", faction.Id, faction.Name, faction._baseAggroLevel), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
                     break;
                 }
                 default:

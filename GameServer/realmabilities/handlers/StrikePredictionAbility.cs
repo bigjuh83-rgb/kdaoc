@@ -4,6 +4,7 @@ using DOL.GS;
 using DOL.GS.PacketHandler;
 using DOL.GS.Effects;
 using DOL.Database;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -19,9 +20,9 @@ namespace DOL.GS.RealmAbilities
             GamePlayer player = living as GamePlayer;
 			if (player.EffectList.CountOfType<StrikePredictionEffect>() > 0)
             {
-                player.Out.SendMessage("You already have an effect of that type!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Message.AlreadyEffect"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
             }
-			
+
 			if(ServerProperties.Properties.USE_NEW_ACTIVES_RAS_SCALING)
 			{
 	            switch (Level)
@@ -32,7 +33,7 @@ namespace DOL.GS.RealmAbilities
 	                case 4: m_value = 15; break;
 	                case 5: m_value = 20; break;
 	                default: return;
-	            }				
+	            }
 			}
 			else
 			{
@@ -44,7 +45,7 @@ namespace DOL.GS.RealmAbilities
 	                default: return;
 	            }
 			}
-			
+
             DisableSkill(living);
             ArrayList targets = new ArrayList();
             if (player.Group == null)

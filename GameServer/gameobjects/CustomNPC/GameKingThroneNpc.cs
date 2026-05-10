@@ -56,12 +56,12 @@ namespace DOL.GS
 
 				if ( cllevel )
 				{
-					player.Out.SendMessage( "You reached champion level " + player.ChampionLevel + "!", eChatType.CT_System, eChatLoc.CL_PopupWindow );
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "KingNPC.ChampionLevelReached", player.ChampionLevel), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 				}
 
 				if (player.ChampionLevel >= 5)
 				{
-					player.Out.SendMessage("I can [respecialize] your champion skills if you so desire.", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "KingNPC.CanRespecializeChampionSkills"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 				}
 
 			}
@@ -77,7 +77,7 @@ namespace DOL.GS
 			GamePlayer player = source as GamePlayer;
 			if (player == null) return false;
 
-			if (str == "Champions" && player.Level == 50)
+			if ((str == "Champions" || str == "챔피언") && player.Level == 50)
 			{
 				if (player.Champion == true)
 				{
@@ -93,11 +93,13 @@ namespace DOL.GS
 				return true;
 			}
 
-			if (str.ToLower() == "respecialize" && player.Champion && player.ChampionLevel >= 5)
+			string normalizedText = str.ToLowerInvariant();
+
+			if ((normalizedText == "respecialize" || str == "챔피언 스킬 초기화") && player.Champion && player.ChampionLevel >= 5)
 			{
 				player.RespecChampionSkills();
 				player.SaveIntoDatabase();
-				player.Out.SendMessage("I have reset your champion skills!", eChatType.CT_Important, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "KingNPC.ChampionSkillsReset"), eChatType.CT_Important, eChatLoc.CL_PopupWindow);
 			}
 
 			return true;
@@ -127,10 +129,11 @@ namespace DOL.GS
 			{
 				//level respec for players
 				case "respecialize":
+				case "챔피언 스킬 초기화":
 					if (player.Champion && player.ChampionLevel >= 5)
 					{
 						player.RespecChampionSkills();
-						player.Out.SendMessage("I have reset your Champion skills!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "KingNPC.ChampionSkillsReset"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
 					}
 					break;

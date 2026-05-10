@@ -6,6 +6,7 @@ using DOL.GS;
 using DOL.GS.PacketHandler;
 using DOL.Database;
 using DOL.GS.Effects;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -77,7 +78,7 @@ namespace DOL.GS
                     }
                     else
                     {
-                        m_player.Out.SendMessage("Someone in your group already has a guild banner active!", eChatType.CT_Loot, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "GuildBanner.GroupAlreadyHasBanner"), eChatType.CT_Loot, eChatLoc.CL_SystemWindow);
                     }
                 }
                 else
@@ -91,7 +92,7 @@ namespace DOL.GS
             }
             else if (m_player.Client.Account.PrivLevel == (int)ePrivLevel.Player)
             {
-                m_player.Out.SendMessage("You have left the group and your guild banner disappears!", eChatType.CT_Loot, eChatLoc.CL_SystemWindow);
+                m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "GuildBanner.LeftGroupBannerDisappears"), eChatType.CT_Loot, eChatLoc.CL_SystemWindow);
                 m_player.GuildBanner = null;
                 if (m_timer != null)
                 {
@@ -165,7 +166,7 @@ namespace DOL.GS
         {
 			Stop();
 			m_player.GuildBanner = null;
-			m_player.Guild.SendMessageToGuildMembers(string.Format("{0} has put away the guild banner!", m_player.Name), eChatType.CT_Guild, eChatLoc.CL_SystemWindow);
+			m_player.Guild.SendMessageToGuildMembers(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "GuildBanner.PutAway", m_player.Name), eChatType.CT_Guild, eChatLoc.CL_SystemWindow);
 			m_player = null;
         }
 
@@ -186,7 +187,7 @@ namespace DOL.GS
 			}
 
 			Stop();
-			m_player.Guild.SendMessageToGuildMembers(m_player.Name + " has dropped the guild banner!", eChatType.CT_Guild, eChatLoc.CL_SystemWindow);
+			m_player.Guild.SendMessageToGuildMembers(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "GuildBanner.Dropped", m_player.Name), eChatType.CT_Guild, eChatLoc.CL_SystemWindow);
 
 			gameItem = new WorldInventoryItem(m_item);
 			Point2D point = m_player.GetPointFromHeading(m_player.Heading, 30);

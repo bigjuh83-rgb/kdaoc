@@ -1,5 +1,6 @@
 using System;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -33,7 +34,7 @@ namespace DOL.GS.Commands
                 }
                 catch
                 {
-                    client.Out.SendMessage("ADMIN Usage: /time <speed> (24 is normal, higher numbers make faster days) <time> (1 - 1000) - Reset days with new length, starting at the given time.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Time.AdminUsage"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 }
             }
 
@@ -55,8 +56,8 @@ namespace DOL.GS.Commands
                 else if (hour == 0)
                     hour = 12;
 
-                client.Out.SendMessage($"It is {hour}:{minute:00}:{seconds:00} {(pm ? "pm" : "am")}", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                client.Out.SendMessage($"Night time: {client.Player.CurrentRegion.IsNightTime}", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Time.Current", hour, minute.ToString("00"), seconds.ToString("00"), pm ? "pm" : "am"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Time.Night", client.Player.CurrentRegion.IsNightTime), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             }
         }
     }

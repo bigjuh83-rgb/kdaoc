@@ -6,6 +6,7 @@ using System.Text;
 using DOL.Database;
 using DOL.Events;
 using DOL.GS.ServerProperties;
+using DOL.Language;
 
 namespace DOL.GS.Keeps
 {
@@ -132,7 +133,7 @@ namespace DOL.GS.Keeps
 
 			if (player.Client.Account.PrivLevel > 1)
 			{
-				list.Add(Name + " with a Z of " + Z.ToString());
+				list.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "GameKeepComponent.Examine.Z", Name, Z));
 			}
 
 			return list;
@@ -334,7 +335,7 @@ namespace DOL.GS.Keeps
 						else
 						{
 							/* Why move the object?  We should notify the server admin of the duplicate and let them figure out what is causing it in their DB.
-							* Otherwise, we're assuming the former position/component combination wasn't valid, and that's an error that should be reported in any case.						
+							* Otherwise, we're assuming the former position/component combination wasn't valid, and that's an error that should be reported in any case.
 							//move the object
 							switch (position.ClassType)
 							{
@@ -507,8 +508,9 @@ namespace DOL.GS.Keeps
 			{
 				if (IsRaized == false)
 				{
-					Notify(KeepEvent.TowerRaized, Keep, new KeepEventArgs(Keep, killer.Realm));
-					PlayerMgr.BroadcastRaize(Keep, killer.Realm);
+					eRealm killerRealm = killer?.Realm ?? eRealm.None;
+					Notify(KeepEvent.TowerRaized, Keep, new KeepEventArgs(Keep, killerRealm));
+					PlayerMgr.BroadcastRaize(Keep, killerRealm);
 					IsRaized = true;
 
 					foreach (var guard in Keep.Guards.Values)
@@ -658,7 +660,7 @@ namespace DOL.GS.Keeps
 		{
 			if (Keep == null)
 			{
-				return "Keep is null!";
+				return LanguageMgr.GetTranslation(LanguageMgr.DefaultLanguage, "GameKeepComponent.KeepNull");
 			}
 
 			return new StringBuilder(base.ToString())

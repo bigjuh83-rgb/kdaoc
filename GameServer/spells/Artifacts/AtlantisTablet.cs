@@ -1,5 +1,6 @@
 using DOL.GS.Effects;
 using DOL.GS.PlayerClass;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -25,7 +26,7 @@ namespace DOL.GS.Spells
                         Effect.SpellHandler.Spell.SpellType.Equals("MaddeningScalars") ||
                         Effect.SpellHandler.Spell.SpellType.Equals("AlvarusMorph"))
                     {
-                        player.Out.SendMessage("You already have an active morph!", PacketHandler.eChatType.CT_SpellResisted, PacketHandler.eChatLoc.CL_ChatWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "Artifacts.ActiveMorph"), PacketHandler.eChatType.CT_SpellResisted, PacketHandler.eChatLoc.CL_ChatWindow);
                         return;
                     }
                 }

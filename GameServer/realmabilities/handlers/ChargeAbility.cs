@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -32,13 +33,13 @@ namespace DOL.GS.RealmAbilities
 				if (effect != null && effect.SpellHandler.Spell.Value != 99)
                 {
 					GamePlayer player = living as GamePlayer;
-                    if (player != null) player.Out.SendMessage("You may not use this ability while snared!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    if (player != null) player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Skill.Ability.CannotUseSnared"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return true;
                 }
 			}
 			return base.CheckPreconditions(living, bitmask);
 		}
-		
+
 		public override void Execute(GameLiving living)
 		{
 			if (living == null) return;
@@ -46,7 +47,7 @@ namespace DOL.GS.RealmAbilities
 			if (living.TargetObject == null || living.TargetObject is not GamePlayer ||
 			    (living.TargetObject is GamePlayer enemy && enemy.Realm == living.Realm))
 			{
-				if(living is GamePlayer p)p.Out.SendMessage($"You can only charge enemy players.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				if(living is GamePlayer p)p.Out.SendMessage(LanguageMgr.GetTranslation(p.Client.Account.Language, "RealmAbility.Charge.EnemyPlayersOnly"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
@@ -75,7 +76,7 @@ namespace DOL.GS.RealmAbilities
 					case 4: return 180;
 					case 5: return 90;
 					default: return 600;
-				}				
+				}
 			}
 			else
 			{
@@ -98,7 +99,7 @@ namespace DOL.GS.RealmAbilities
 		{
 			w.AddKeyValuePair("Charge: ", "Target does not consume endurance while sprinting for the duration.");
 		}
-		
+
 		public override void AddEffectsInfo(IList<string> list)
 		{
 			list.Add("Target: Self");

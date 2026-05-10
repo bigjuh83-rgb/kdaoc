@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using DOL.Database;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -40,12 +41,12 @@ namespace DOL.GS
 			if (!base.Interact(player) || player == null)
 				return false;
 
-			
-			SayTo(player, $"Hello {player.CharacterClass.Name}, you can come to me if you lost your Personal Bind Recall Stone.\n");
+
+			SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "RoyalTreasuryClerk.Interact.Intro", player.CharacterClass.Name));
 
 			if (player.Inventory.CountItemTemplate("Personal_Bind_Recall_Stone", eInventorySlot.Min_Inv, eInventorySlot.Max_Inv) == 0)
 			{
-				SayTo(player, "It looks like you need my service.  Do you need [another] Personal Bind Recall Stone?");
+				SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "RoyalTreasuryClerk.Interact.NeedAnotherStone"));
 			}
 
 			return true;
@@ -64,11 +65,13 @@ namespace DOL.GS
 
 			GamePlayer player = source as GamePlayer;
 
-			if (text.ToLower() == "another")
+			string normalizedText = text.ToLowerInvariant();
+
+			if (normalizedText == "another" || text == "다시 받기")
 			{
 				if (player.Inventory.CountItemTemplate("Personal_Bind_Recall_Stone", eInventorySlot.Min_Inv, eInventorySlot.Max_Inv) == 0)
 				{
-					SayTo(player, "Very well then, here's your Personal Bind Recall Stone, may it serve you well.");
+					SayTo(player, LanguageMgr.GetTranslation(player.Client.Account.Language, "RoyalTreasuryClerk.Whisper.GiveStone"));
 					player.ReceiveItem(this, "Personal_Bind_Recall_Stone");
 				}
 				return true;

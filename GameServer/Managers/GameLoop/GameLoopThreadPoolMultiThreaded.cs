@@ -17,7 +17,7 @@ namespace DOL.GS
         // Lower values -> larger chunks, better for uniform workloads.
         // 2.5 is a good balance found through empirical testing.
         private const double WORK_SPLIT_BIAS_FACTOR = 2.5;
-        private const int MAX_DEGREE_OF_PARALLELISM = 128;
+        public const int MAX_DEGREE_OF_PARALLELISM = 128;
 
         // Thread pool configuration and state.
         private bool _running;

@@ -1,0 +1,398 @@
+﻿# Game Objects
+GamePlayer.UseSlot.IllegalSourceObject:			잘못된 원본 오브젝트입니다. {0}을(를) 준비했습니다.
+
+## Examine
+GameObject.Target.YouTarget.Object:                 [{0}]을(를) 대상으로 선택했습니다.
+GameObject.GetExamineMessages.YouTarget:	        [{0}]을(를) 대상으로 선택했습니다.
+
+## Object Articles
+GameObject.GetName.Article1:				{0}
+GameObject.GetName.Article2:				{0}
+GameObject.GetName.Article3:				{0}
+GameObject.GetName.Article4:				{0}
+GameObject.GetName.Article5:				{0}
+GameObject.GetName.Article6:				{0}
+GameObject.GetPronoun.Pronoun1:				그것
+GameObject.GetPronoun.Pronoun2:				그것
+GameObject.GetPronoun.Pronoun3:				그것의
+GameObject.GetPronoun.Pronoun4:				그것의
+GameObject.GetPronoun.Pronoun5:				그것
+GameObject.GetPronoun.Pronoun6:				그것
+
+## Item Articles
+GameStaticItem.GetName.Article1:			{0}
+GameStaticItem.GetName.Article2:			{0}
+
+## Interact
+Behaviour.DestroyItemAction.Destroyed:		{0}이(가) 파괴되었습니다.
+Behaviour.DropItemAction.DropsFrontYou:		{0}이(가) 당신 앞에 떨어집니다.
+GameLiving.AttackData.GainEndurancePoints:	지구력 {0}점을 얻었습니다.
+GameLiving.AttackData.GainPowerPoints:		파워 {0}점을 얻었습니다.
+
+## Item Equip
+GamePlayer.OnItemEquipped.Increased:		{0}이(가) 증가했습니다.
+GamePlayer.OnItemEquipped.Magic:			{0}의 마력이 당신에게 흐릅니다.
+GamePlayer.OnItemEquipped.WieldBothHands:	{0}을(를) 양손에 장비했습니다.
+GamePlayer.OnItemEquipped.WieldLeftHand:	{0}을(를) 왼손에 장비했습니다.
+GamePlayer.OnItemEquipped.WieldRightHand:	{0}을(를) 오른손에 장비했습니다.
+GamePlayer.OnItemUnequipped.BothHandsFree:	{0}을(를) 집어넣었습니다. 이제 양손이 비었습니다.
+GamePlayer.OnItemUnequipped.Decreased:		{0}이(가) 감소했습니다.
+GamePlayer.OnItemUnequipped.LeftHandFree:	왼손에서 {0}을(를) 집어넣었습니다.
+GamePlayer.OnItemUnequipped.RightHandFree:	오른손에서 {0}을(를) 집어넣었습니다.
+
+## Item Use
+GamePlayer.UseSlot.NotEnouthPower:				이 아이템의 주문을 사용하기에는 힘이 부족합니다.
+GamePlayer.UseSlot.OutOfCharges:				{0}의 충전 횟수가 모두 소진되었습니다.
+GamePlayer.UseSlot.MustWaitBeforeUse:			다른 물약을 사용하려면 {0}초 더 기다려야 합니다!
+GamePlayer.UseSlot.CantUseState:			    현재 상태에서는 {0}을(를) 사용할 수 없습니다.
+GamePlayer.UseSlot.CantUseAttacking:			공격 중에는 {0}을(를) 사용할 수 없습니다!
+GamePlayer.UseSlot.Used:			            {0}을(를) 사용했습니다.
+GamePlayer.UseSlot.CantUseCast:				{0}을(를) 사용하려면 현재 행동을 먼저 끝내야 합니다!
+GamePlayer.UseSlot.AttemptToUse:				{0}을(를) 사용하려고 합니다.
+GamePlayer.UseSlot.CantUseFromBackpack:		이 아이템은 가방에서 바로 사용할 수 없습니다. 먼저 장비하세요!
+GamePlayer.UseSlot.CantUseInCombat:				전투 중에는 이 아이템을 사용할 수 없습니다!
+GamePlayer.UseSlot.ItemSitting:				앉은 상태에서는 아이템을 사용할 수 없습니다!
+GamePlayer.UseSlot.PotionEffectNotImplemented:	물약 효과 ID {0}은(는) 아직 구현되지 않았습니다.
+GamePlayer.UseSlot.PotionEffectLineNotFound:	물약 효과 라인을 찾을 수 없습니다.
+GamePlayer.UseSlot.PotionEffectSpellNotFound:	물약 효과 주문 ID {0}을(를) 찾을 수 없습니다.
+GamePlayer.UseSlot.CantDischargeState:		현재 상태에서는 어떤 물건도 발동할 수 없습니다.
+GamePlayer.UseSlot.MustWaitBeforeDischargeItem:	{1}을(를) 발동하려면 {0}초 더 기다려야 합니다!
+GamePlayer.UseSlot.MustWaitBeforeDischargeObject:	다른 물건을 발동하려면 {0}초 더 기다려야 합니다!
+GamePlayer.UseSlot.MaxBuffChargeEffects:		버프 차지 효과는 두 개까지만 사용할 수 있습니다.
+GamePlayer.UseSlot.ChargeEffectNotImplemented:	차지 효과 ID {0}은(는) 아직 구현되지 않았습니다.
+GamePlayer.UseSlot.ChargeEffectNotFound:		차지 효과 ID {0}을(를) 찾을 수 없습니다.
+GamePlayer.UseSlot.AlreadyCasting:			이미 주문을 시전 중입니다.
+GamePlayer.UseSlot.YouUse:				{0}을(를) 사용합니다.
+GamePlayer.Saddlebag.RequiresChampionLevel:	이 안장 가방은 챔피언 레벨 {0}이 필요합니다!
+GamePlayer.Saddlebag.Activated:			안장 가방을 활성화했습니다!
+GamePlayer.Saddlebag.ActivationError:		안장 가방을 활성화하는 중 오류가 발생했습니다!
+GamePlayer.Saddlebag.AlreadyActivated:		이미 이 안장 가방을 활성화했습니다!
+GamePlayer.HorseInventory.NeedHorseEquipped:	말을 장비해야 합니다.
+GamePlayer.HorseInventory.MustBeOnHorse:		이 인벤토리를 사용하려면 말에 타고 있어야 합니다.
+GamePlayer.HorseInventory.MustBeChampion:		이 인벤토리를 사용하려면 챔피언이어야 합니다.
+GamePlayer.HorseInventory.CantUse:			이 인벤토리는 사용할 수 없습니다.
+GameObject.Casting.CastsASpell:				{0}이(가) 주문을 시전합니다!
+GameLiving.StartWeaponMagicalEffect.NotPowerful:	이 아이템의 주문을 사용하기에는 힘이 부족합니다.
+GamePlayer.Spell.NotEnoughPowerful:			이 아이템의 주문을 사용하기에는 힘이 부족합니다.
+
+## Condition
+GamePlayer.Attack.CouldRepair:				{0}은(는) 수리하면 좋겠습니다.
+GamePlayer.Attack.NeedRepair:				{0}은(는) 수리가 필요합니다.
+GamePlayer.Attack.NeedRepairDire:			{0}은(는) 긴급히 수리가 필요합니다.
+
+## Item Bonuses
+### Stats
+GamePlayer.ItemBonusName.Bonus1:			힘
+GamePlayer.ItemBonusName.Bonus2:			민첩
+GamePlayer.ItemBonusName.Bonus3:			체력
+GamePlayer.ItemBonusName.Bonus4:			순발력
+GamePlayer.ItemBonusName.Bonus5:			지능
+GamePlayer.ItemBonusName.Bonus6:			신앙
+GamePlayer.ItemBonusName.Bonus7:			공감
+GamePlayer.ItemBonusName.Bonus8:			매력
+GamePlayer.ItemBonusName.Bonus9:			파워
+GamePlayer.ItemBonusName.Bonus10:			생명력
+
+### Resists
+GamePlayer.ItemBonusName.Bonus11:			육체 저항
+GamePlayer.ItemBonusName.Bonus12:			냉기 저항
+GamePlayer.ItemBonusName.Bonus13:			타격 저항
+GamePlayer.ItemBonusName.Bonus14:			에너지 저항
+GamePlayer.ItemBonusName.Bonus15:			열기 저항
+GamePlayer.ItemBonusName.Bonus16:			물질 저항
+GamePlayer.ItemBonusName.Bonus17:			베기 저항
+GamePlayer.ItemBonusName.Bonus18:			영혼 저항
+GamePlayer.ItemBonusName.Bonus19:			찌르기 저항
+
+## Player Gravestone
+GameGravestone.GameGravestone.Grave:			{0}의 무덤
+
+## Tooltip Details
+DetailDisplayHandler.GetShortItemInfo.CrafterName:	    제작자 : {0}
+DetailDisplayHandler.GetShortItemInfo.NoDrop:		    버릴 수 없음.
+DetailDisplayHandler.GetShortItemInfo.NoSell:		    판매 불가.
+DetailDisplayHandler.GetShortItemInfo.NoTrade:		    거래 불가.
+DetailDisplayHandler.HandlePacket.Any:			        모두
+DetailDisplayHandler.HandlePacket.Back:			        (후방)
+DetailDisplayHandler.HandlePacket.BonusLevel:		    보너스 레벨: {0}
+DetailDisplayHandler.HandlePacket.CannotDestroyed:	    파괴할 수 없습니다.
+DetailDisplayHandler.HandlePacket.CannotDropped:	    버리거나 은행에 넣을 수 없습니다.
+DetailDisplayHandler.HandlePacket.CannotSold:		    상인에게 판매할 수 없습니다.
+DetailDisplayHandler.HandlePacket.CannotTraded:		    다른 플레이어와 거래할 수 없습니다.
+DetailDisplayHandler.HandlePacket.ChatItem:		        [채팅] {0}/아이템: "{1}"
+DetailDisplayHandler.HandlePacket.CrafterName:		    제작자 : {0}
+DetailDisplayHandler.HandlePacket.Damage:		        피해:
+DetailDisplayHandler.HandlePacket.Defense:		        방어:
+DetailDisplayHandler.HandlePacket.Devastating:		    압도적
+DetailDisplayHandler.HandlePacket.DontBelongGuild:	    플레이어 길드에 속해 있지 않습니다.
+DetailDisplayHandler.HandlePacket.FatigueCost:		    피로도 비용:
+DetailDisplayHandler.HandlePacket.FollowupStyle:	    후속 스타일: {0}
+DetailDisplayHandler.HandlePacket.Front:		        (전방)
+DetailDisplayHandler.HandlePacket.GuildItem:		    [길드] {0}/아이템: "{1}"
+DetailDisplayHandler.HandlePacket.High:			        높음
+DetailDisplayHandler.HandlePacket.HighBonus:		    높은 보너스
+DetailDisplayHandler.HandlePacket.HighPenalty:		    높은 페널티
+DetailDisplayHandler.HandlePacket.Item:			        {0}/아이템: "{1}"
+DetailDisplayHandler.HandlePacket.LevName:		        레벨   이름
+DetailDisplayHandler.HandlePacket.Low:			        낮음
+DetailDisplayHandler.HandlePacket.LowBonus:		        낮은 보너스
+DetailDisplayHandler.HandlePacket.LowPenalty:		    낮은 페널티
+DetailDisplayHandler.HandlePacket.Medium:		        보통
+DetailDisplayHandler.HandlePacket.MediumBonus:		    보통 보너스
+DetailDisplayHandler.HandlePacket.MediumPenalty:	    보통 페널티
+DetailDisplayHandler.HandlePacket.MustBeInChatGroup:	채팅그룹에 속해 있어야 합니다.
+DetailDisplayHandler.HandlePacket.MustBeInBattleGroup:	배틀그룹에 속해 있어야 합니다.
+DetailDisplayHandler.HandlePacket.NoBonus:		        보너스 없음
+DetailDisplayHandler.HandlePacket.NoGroup:		        그룹에 속해 있지 않습니다.
+DetailDisplayHandler.HandlePacket.NoInformation:	    특별한 정보가 없습니다!
+DetailDisplayHandler.HandlePacket.None:		            없음
+DetailDisplayHandler.HandlePacket.NoPermissionToSpeak:	길드 채널에서 말할 권한이 없습니다.
+DetailDisplayHandler.HandlePacket.OnlyModerator:	    이 채팅그룹에서는 중재자만 말할 수 있습니다.
+DetailDisplayHandler.HandlePacket.Opening:		        발동 조건:
+DetailDisplayHandler.HandlePacket.OpeningStyle:		    시작 스타일:
+DetailDisplayHandler.HandlePacket.Or:			        또는 {0}
+DetailDisplayHandler.HandlePacket.Positional:		    위치 조건
+DetailDisplayHandler.HandlePacket.Side:			        (측면)
+DetailDisplayHandler.HandlePacket.TargetBlocks:		    대상이 막음
+DetailDisplayHandler.HandlePacket.TargetEffect:		    대상 효과:
+DetailDisplayHandler.HandlePacket.TargetEvades:		    대상이 회피
+DetailDisplayHandler.HandlePacket.TargetFumbles:	    대상이 헛침
+DetailDisplayHandler.HandlePacket.TargetHits:		    대상이 적중
+DetailDisplayHandler.HandlePacket.TargetMisses:		    대상이 빗맞힘
+DetailDisplayHandler.HandlePacket.TargetParrys:		    대상이 받아침
+DetailDisplayHandler.HandlePacket.TargetStyle:		    대상 스타일
+DetailDisplayHandler.HandlePacket.ToHit:		        명중:
+DetailDisplayHandler.HandlePacket.VeryHigh:		        매우 높음
+DetailDisplayHandler.HandlePacket.VeryHighBonus:	    매우 높은 보너스
+DetailDisplayHandler.HandlePacket.VeryHighPenalty:	    매우 높은 페널티
+DetailDisplayHandler.HandlePacket.VeryLow:		        매우 낮음
+DetailDisplayHandler.HandlePacket.VeryLowBonus:		    매우 낮은 보너스
+DetailDisplayHandler.HandlePacket.VeryLowPenalty:	    매우 낮은 페널티
+DetailDisplayHandler.HandlePacket.VeryStrange:		    아이템을 인식할 수 없습니다.
+DetailDisplayHandler.HandlePacket.WeaponType:		    무기 유형: {0}
+DetailDisplayHandler.HandlePacket.YouBlock:		        당신이 막음
+DetailDisplayHandler.HandlePacket.YouEvade:		        당신이 회피
+DetailDisplayHandler.HandlePacket.YouFumble:		    당신이 헛침
+DetailDisplayHandler.HandlePacket.YouHit:		        당신이 적중
+DetailDisplayHandler.HandlePacket.YouMiss:		        당신이 빗맞힘
+DetailDisplayHandler.HandlePacket.YouParry:		        당신이 받아침
+DetailDisplayHandler.WriteBonusLine.Points:		        점
+DetailDisplayHandler.WriteBonusLine.PowerPool:		    파워 풀의 %.
+DetailDisplayHandler.WriteClassicArmorInfos.Absorption:	- 흡수율 {0}%
+DetailDisplayHandler.WriteClassicArmorInfos.ArmorMod:	방어구 보정:
+DetailDisplayHandler.WriteClassicArmorInfos.BaseFactor:	- 기본 방어 계수 {0}
+DetailDisplayHandler.WriteClassicArmorInfos.ClampFact:	- 제한 방어 계수 {0}
+DetailDisplayHandler.WriteClassicArmorInfos.Condition:	- 내구 상태 {0}%
+DetailDisplayHandler.WriteClassicArmorInfos.EffArmor:	유효 방어력:
+DetailDisplayHandler.WriteClassicArmorInfos.Factor:	    - 방어 계수 {0}
+DetailDisplayHandler.WriteClassicArmorInfos.Quality:	- 품질 {0}%
+DetailDisplayHandler.WriteClassicShieldInfos.BaseDPS:	- 기본 DPS {0}
+DetailDisplayHandler.WriteClassicShieldInfos.ClampDPS:	- 제한 DPS {0}
+DetailDisplayHandler.WriteClassicShieldInfos.DamageMod:	피해 보정 (방패 스타일 사용 시):
+DetailDisplayHandler.WriteClassicShieldInfos.Large: 	- 방패 크기 : 대형
+DetailDisplayHandler.WriteClassicShieldInfos.Medium:	- 방패 크기 : 중형
+DetailDisplayHandler.WriteClassicShieldInfos.Small:	    - 방패 크기 : 소형
+DetailDisplayHandler.WriteClassicShieldInfos.SPD:	    - 방패 속도 {0}
+DetailDisplayHandler.WriteClassicWeaponInfos.BaseDPS:	- 기본 DPS {0}
+DetailDisplayHandler.WriteClassicWeaponInfos.ClampDPS:	- 제한 DPS {0}
+DetailDisplayHandler.WriteClassicWeaponInfos.Condition:	- 내구 상태 {0}%
+DetailDisplayHandler.WriteClassicWeaponInfos.DamageMod:	피해 보정:
+DetailDisplayHandler.WriteClassicWeaponInfos.DamageType:- 피해 유형: {0}
+DetailDisplayHandler.WriteClassicWeaponInfos.EffDamage:	유효 피해:
+DetailDisplayHandler.WriteClassicWeaponInfos.EffectiveDPS:- DPS {0}
+DetailDisplayHandler.WriteClassicWeaponInfos.Quality:	- 품질 {0}%
+DetailDisplayHandler.WriteClassicWeaponInfos.SPD:	    - 무기 속도 {0}
+DetailDisplayHandler.WriteMagicalBonuses.ChargedMagic:	충전된 마법 능력:
+DetailDisplayHandler.WriteMagicalBonuses.Charges:	    - 충전 {0}회
+DetailDisplayHandler.WriteMagicalBonuses.FocusBonus:	집중 보너스:
+DetailDisplayHandler.WriteMagicalBonuses.Level:		    - 레벨 {0}
+DetailDisplayHandler.WriteMagicalBonuses.LevelRequired:	필요 레벨
+DetailDisplayHandler.WriteMagicalBonuses.LevelRequired2:필요 레벨: {0}레벨
+DetailDisplayHandler.WriteMagicalBonuses.MagicAbility:	마법 능력:
+DetailDisplayHandler.WriteMagicalBonuses.MagicBonus:	마법 보너스:
+DetailDisplayHandler.WriteMagicalBonuses.MaxCharges:	- 최대 {0}
+DetailDisplayHandler.WriteMagicalBonuses.CastWhenItemUsed:- 이 아이템을 사용할 때 주문이 시전됩니다.
+DetailDisplayHandler.WriteMagicalBonuses.ItemEffectsSpellLineMissing:- 아이템 효과 주문 라인을 찾을 수 없습니다.
+DetailDisplayHandler.WriteMagicalBonuses.SpellHandlerNotImplemented:- {0} (아직 구현되지 않음)
+DetailDisplayHandler.WriteMagicalBonuses.SpellNotFound:- 주문을 찾을 수 없음: {0}
+DetailDisplayHandler.WriteMagicalBonuses.StrikeArmor:	- 적이 이 방어구를 공격할 때 일정 확률로 주문이 시전됩니다.
+DetailDisplayHandler.WriteMagicalBonuses.StrikeEnemy:	- 이 무기로 적을 공격할 때 일정 확률로 주문이 시전됩니다.
+DetailDisplayHandler.WriteMagicalBonuses.TotalUtility:	총 유틸리티: {0}
+DetailDisplayHandler.WriteMagicalBonuses.UsedItem:	    - 이 아이템을 사용할 때 일정 확률로 주문이 시전됩니다.
+DetailDisplayHandler.WriteMagicalBonuses.UseItem1:	    아이템 사용 주기: {0}
+DetailDisplayHandler.WriteMagicalBonuses.UseItem2:	    아이템 사용 주기: 3:00분.
+DetailDisplayHandler.WriteMagicalBonuses.UseItem3:	    다시 사용 가능: {0} 후.
+DetailDisplayHandler.WritePoisonInfo.Charges:		    - 충전 {0}회
+DetailDisplayHandler.WritePoisonInfo.Level:		        - 레벨 {0}
+DetailDisplayHandler.WritePoisonInfo.LevelRequired:	    필요 레벨:
+DetailDisplayHandler.WritePoisonInfo.MaxCharges:	    - 최대 {0}
+DetailDisplayHandler.WritePoisonInfo.ProcAbility:	    공격 발동 능력:
+DetailDisplayHandler.WriteFocusLine.FocusLevel:- {0}: {1}레벨
+DetailDisplayHandler.WritePotionInfo.ChargedMagic:	    충전된 마법 능력:
+DetailDisplayHandler.WritePotionInfo.Charges:		    - 충전 {0}회
+DetailDisplayHandler.WritePotionInfo.Level:		        - 레벨 {0}
+DetailDisplayHandler.WritePotionInfo.LevelRequired:	    필요 레벨:
+DetailDisplayHandler.WritePotionInfo.MaxCharges:	    - 최대 {0}
+DetailDisplayHandler.WritePotionInfo.NoUseInCombat:	    전투 중에는 사용할 수 없음
+DetailDisplayHandler.WritePotionInfo.UseItem2:		    아이템 사용 주기: 1:00분
+DetailDisplayHandler.WritePotionInfo.UseItem3:		    다시 사용 가능: {0} 후
+DetailDisplayHandler.WritePotionInfo.UseItemEverySeconds:	아이템 사용 주기: {0}초
+DetailDisplayHandler.WritePotionInfo.UseItemEveryMinutes:	아이템 사용 주기: {0}:{1:00}분
+DetailDisplayHandler.WritePotionInfo.UseAgainSeconds:		다시 사용 가능: {0}초 후
+DetailDisplayHandler.WritePotionInfo.UseAgainMinutes:		다시 사용 가능: {0}:{1:00}분 후
+DetailDisplayHandler.WritePotionInfo.Type:		        유형 : {0}
+DetailDisplayHandler.WritePotionInfo.Value:		        수치 : {0}
+DetailDisplayHandler.WritePotionInfo.Target:	        대상 : {0}
+DetailDisplayHandler.WritePotionInfo.Range:		        사거리 : {0}
+DetailDisplayHandler.WriteUsableClasses.UsableBy:	    사용 가능 클래스:
+
+## Global Constant Names
+GlobalConstants.Stat.STR:					힘
+GlobalConstants.Stat.DEX:					민첩
+GlobalConstants.Stat.CON:					체력
+GlobalConstants.Stat.QUI:					순발력
+GlobalConstants.Stat.INT:					지능
+GlobalConstants.Stat.PIE:					신앙
+GlobalConstants.Stat.EMP:					공감
+GlobalConstants.Stat.CHR:					매력
+GlobalConstants.InstrumentType.Drum:			드럼
+GlobalConstants.InstrumentType.Lute:			류트
+GlobalConstants.InstrumentType.Flute:			플루트
+GlobalConstants.InstrumentType.Harp:			하프
+GlobalConstants.AmmunitionDamage.light:			가벼움
+GlobalConstants.AmmunitionDamage.medium:		보통
+GlobalConstants.AmmunitionDamage.heavy:			무거움
+GlobalConstants.AmmunitionDamage.X-heavy:		매우 무거움
+GlobalConstants.AmmunitionRange.short:			짧음
+GlobalConstants.AmmunitionRange.medium:			보통
+GlobalConstants.AmmunitionRange.long:			김
+GlobalConstants.AmmunitionRange.X-long:			매우 김
+GlobalConstants.AmmunitionAccuracy.reduced:		낮음
+GlobalConstants.AmmunitionAccuracy.normal:		보통
+GlobalConstants.AmmunitionAccuracy.improved:	향상
+GlobalConstants.AmmunitionAccuracy.enhanced:	강화
+GlobalConstants.ShieldType.Small:				소형
+GlobalConstants.ShieldType.Medium:				중형
+GlobalConstants.ShieldType.Large:				대형
+GlobalConstants.WeaponDamageType.Elemental:		원소
+GlobalConstants.WeaponDamageType.Crush:			타격
+GlobalConstants.WeaponDamageType.Slash:			베기
+GlobalConstants.WeaponDamageType.Thrust:		찌르기
+GlobalConstants.WeaponDamageType.Body:			육체
+GlobalConstants.WeaponDamageType.Cold:			냉기
+GlobalConstants.WeaponDamageType.Energy:		에너지
+GlobalConstants.WeaponDamageType.Heat:			열기
+GlobalConstants.WeaponDamageType.Matter:		물질
+GlobalConstants.WeaponDamageType.Spirit:		영혼
+GlobalConstants.ItemHand.twohanded:				양손
+GlobalConstants.ItemHand.lefthand:				왼손
+GlobalConstants.ItemHand.both:					양손/한손
+GlobalConstants.DamageType.Body:				육체
+GlobalConstants.DamageType.Cold:				냉기
+GlobalConstants.DamageType.Crush:				타격
+GlobalConstants.DamageType.Energy:				에너지
+GlobalConstants.DamageType.Falling:				추락
+GlobalConstants.DamageType.Heat:				열기
+GlobalConstants.DamageType.Matter:				물질
+GlobalConstants.DamageType.Natural:				자연
+GlobalConstants.DamageType.Slash:				베기
+GlobalConstants.DamageType.Spirit:				영혼
+GlobalConstants.DamageType.Thrust:				찌르기
+GlobalConstants.Realm.None:						없음
+GlobalConstants.Realm.Albion:					알비온
+GlobalConstants.Realm.Midgard:					미드가드
+GlobalConstants.Realm.Hibernia:					히베르니아
+GlobalConstants.Realm.Door:						문
+GlobalConstants.Property.Strength:				힘
+GlobalConstants.Property.Dexterity:				민첩
+GlobalConstants.Property.Constitution:			체력
+GlobalConstants.Property.Quickness:				순발력
+GlobalConstants.Property.Intelligence:			지능
+GlobalConstants.Property.Piety:					신앙
+GlobalConstants.Property.Empathy:				공감
+GlobalConstants.Property.Charisma:				매력
+GlobalConstants.Property.Resist_Body:			육체 저항
+GlobalConstants.Property.Resist_Cold:			냉기 저항
+GlobalConstants.Property.Resist_Crush:			타격 저항
+GlobalConstants.Property.Resist_Energy:			에너지 저항
+GlobalConstants.Property.Resist_Heat:			열기 저항
+GlobalConstants.Property.Resist_Matter:			물질 저항
+GlobalConstants.Property.Resist_Slash:			베기 저항
+GlobalConstants.Property.Resist_Spirit:			영혼 저항
+GlobalConstants.Property.Resist_Thrust:			찌르기 저항
+GlobalConstants.Property.Resist_Natural:		정수 저항
+GlobalConstants.ObjectType.0:					일반 아이템
+GlobalConstants.ObjectType.1:					일반 무기
+GlobalConstants.ObjectType.2:					타격 무기
+GlobalConstants.ObjectType.3:					베기 무기
+GlobalConstants.ObjectType.4:					찌르기 무기
+GlobalConstants.ObjectType.5:					발사 무기
+GlobalConstants.ObjectType.6:					양손 무기
+GlobalConstants.ObjectType.7:					폴암
+GlobalConstants.ObjectType.8:					지팡이
+GlobalConstants.ObjectType.9:					장궁
+GlobalConstants.ObjectType.10:					석궁
+GlobalConstants.ObjectType.11:					검
+GlobalConstants.ObjectType.12:					해머
+GlobalConstants.ObjectType.13:					도끼
+GlobalConstants.ObjectType.14:					창
+GlobalConstants.ObjectType.15:					컴포지트 보우
+GlobalConstants.ObjectType.16:					투척 무기
+GlobalConstants.ObjectType.17:					왼손 도끼
+GlobalConstants.ObjectType.18:					리커브 보우
+GlobalConstants.ObjectType.19:					블레이드
+GlobalConstants.ObjectType.20:					둔기
+GlobalConstants.ObjectType.21:					관통 무기
+GlobalConstants.ObjectType.22:					대형 무기
+GlobalConstants.ObjectType.23:					켈틱 스피어
+GlobalConstants.ObjectType.24:					플렉서블 무기
+GlobalConstants.ObjectType.25:					격투 무기
+GlobalConstants.ObjectType.26:					낫
+GlobalConstants.ObjectType.27:					피스트 랩
+GlobalConstants.ObjectType.28:					마울러 스태프
+GlobalConstants.ObjectType.31:					일반 방어구
+GlobalConstants.ObjectType.32:					천 방어구
+GlobalConstants.ObjectType.33:					가죽 방어구
+GlobalConstants.ObjectType.34:					스터디드 가죽 방어구
+GlobalConstants.ObjectType.35:					사슬 방어구
+GlobalConstants.ObjectType.36:					판금 방어구
+GlobalConstants.ObjectType.37:					강화 방어구
+GlobalConstants.ObjectType.38:					비늘 방어구
+GlobalConstants.ObjectType.41:					마법 아이템
+GlobalConstants.ObjectType.42:					방패
+GlobalConstants.ObjectType.43:					화살
+GlobalConstants.ObjectType.44:					볼트
+GlobalConstants.ObjectType.45:					악기
+GlobalConstants.ObjectType.46:					독
+GlobalConstants.ObjectType.47:					연금술 팅크처
+GlobalConstants.ObjectType.48:					스펠크래프팅 보석
+GlobalConstants.ObjectType.49:					정원 오브젝트
+GlobalConstants.ObjectType.50:					집 벽 오브젝트
+GlobalConstants.ObjectType.51:					집 바닥 오브젝트
+GlobalConstants.ObjectType.53:					집 NPC
+GlobalConstants.ObjectType.54:					집 금고
+GlobalConstants.ObjectType.55:					집 제작 오브젝트
+GlobalConstants.ObjectType.68:					집 바인드스톤
+GlobalConstants.Slot.10:						오른손
+GlobalConstants.Slot.11:						왼손
+GlobalConstants.Slot.12:						양손
+GlobalConstants.Slot.13:						원거리
+GlobalConstants.Slot.21:						머리
+GlobalConstants.Slot.22:						손
+GlobalConstants.Slot.23:						발
+GlobalConstants.Slot.24:						보석
+GlobalConstants.Slot.25:						몸통
+GlobalConstants.Slot.26:						망토
+GlobalConstants.Slot.27:						다리
+GlobalConstants.Slot.28:						팔
+GlobalConstants.Slot.29:						목
+GlobalConstants.Slot.32:						허리
+GlobalConstants.Slot.33:						왼쪽 팔찌
+GlobalConstants.Slot.34:						오른쪽 팔찌
+GlobalConstants.Slot.35:						왼쪽 반지
+GlobalConstants.Slot.36:						오른쪽 반지
+GlobalConstants.Slot.37:						미시리안
+GlobalConstants.Slot.96:						왼쪽 앞 안장 가방
+GlobalConstants.Slot.97:						오른쪽 앞 안장 가방
+GlobalConstants.Slot.98:						왼쪽 뒤 안장 가방
+GlobalConstants.Slot.99:						오른쪽 뒤 안장 가방

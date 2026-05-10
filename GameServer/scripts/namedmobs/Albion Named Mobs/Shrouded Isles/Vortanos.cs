@@ -4,6 +4,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -74,7 +75,7 @@ namespace DOL.GS
         }
 		public override void EnemyKilled(GameLiving enemy)
         {
-			
+
             base.EnemyKilled(enemy);
         }
         public override void OnAttackEnemy(AttackData ad)
@@ -158,7 +159,7 @@ namespace DOL.AI.Brain
 		{
 			AggroLevel = 100;
 			AggroRange = 800;
-			ThinkInterval = 1500;		
+			ThinkInterval = 1500;
 		}
 		ushort oldModel;
 		GameNPC.eFlags oldFlags;
@@ -168,10 +169,11 @@ namespace DOL.AI.Brain
 		private bool InCombat1 = false;
 		private bool SpamMess1 = false;
 		private bool RemoveAdds = false;
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(string key, params object[] args)
 		{
 			foreach (GamePlayer player in Body.GetPlayersInRadius(2500))
 			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
 				player.Out.SendMessage(message, eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 			}
 		}
@@ -186,8 +188,8 @@ namespace DOL.AI.Brain
         }
 		private int SpamMessage(ECSGameTimer timer)
         {
-			if(HasAggro)
-				BroadcastMessage(Body.Name + " says, \"The living can never conquer the eternal darkness of death incarnate!\"");
+				if(HasAggro)
+					BroadcastMessage("NamedMobs.Vortanos.LivingCannotConquer", Body.Name);
 
 			new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(ResetSpamMessage), Util.Random(25000,45000));
 			return 0;
@@ -240,7 +242,7 @@ namespace DOL.AI.Brain
 							npc.RemoveFromWorld();
 							if (!NotInCombat)
 							{
-								BroadcastMessage(Body.Name + " says, \"Sleep my unwilling prisoners, you are no longer needed here\"");
+									BroadcastMessage("NamedMobs.Vortanos.SleepPrisoners", Body.Name);
 								NotInCombat = true;
 							}
 						}
@@ -254,7 +256,7 @@ namespace DOL.AI.Brain
 				NotInCombat = false;
 				if(!InCombat1)
                 {
-					BroadcastMessage(Body.Name + " says, \"Your flesh will be mine, one piece at a time!\"");
+						BroadcastMessage("NamedMobs.Vortanos.FleshWillBeMine", Body.Name);
 					InCombat1 = true;
                 }
 				GameLiving target = Body.TargetObject as GameLiving;
@@ -262,7 +264,7 @@ namespace DOL.AI.Brain
 				{
 					if (npc != null && npc.IsAlive && npc.Brain is VortanosAddBrain brain)
 					{
-						if (!brain.HasAggro && target.IsAlive && target != null)
+						if (!brain.HasAggro && target != null && target.IsAlive)
 							brain.AddToAggroList(target, 10);
 					}
 				}
@@ -274,7 +276,7 @@ namespace DOL.AI.Brain
                 {
 					SpawnAdds();
 					CanSpawnAdds = true;
-                }					
+                }
 			}
 			base.Think();
 		}
@@ -386,7 +388,7 @@ namespace DOL.AI.Brain
 				}
 				return m_Vortanos_Dot;
 			}
-		}		
+		}
 		#endregion
 	}
 }

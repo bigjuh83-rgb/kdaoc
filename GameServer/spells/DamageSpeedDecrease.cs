@@ -44,19 +44,19 @@ namespace DOL.GS.Spells
 			int heal = (ad.Damage + ad.CriticalDamage) * m_spell.LifeDrainReturn/100;
 			if (m_caster.IsDiseased)
 			{
-				MessageToCaster("You are diseased!", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.YouAreDiseased"), eChatType.CT_SpellResisted);
 				heal >>= 1;
 			}
 			if(heal <= 0) return;
 			heal = m_caster.ChangeHealth(m_caster, eHealthChangeType.Spell, heal);
 
-			if(heal > 0) 
+			if(heal > 0)
 			{
-				MessageToCaster("You steal " + heal + " hit point" + (heal==1?".":"s."), eChatType.CT_Spell);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.StealLife", heal), eChatType.CT_Spell);
 			}
-			else 
+			else
 			{
-				MessageToCaster("You cannot absorb any more life.", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.CannotAbsorbLife"), eChatType.CT_SpellResisted);
 			}
 		}
 
@@ -143,7 +143,7 @@ namespace DOL.GS.Spells
                     list.Add(LanguageMgr.GetTranslation((Caster as GamePlayer).Client, "DelveInfo.Radius", Spell.Radius));
                 if (Spell.DamageType != eDamageType.Natural)
                     list.Add(LanguageMgr.GetTranslation((Caster as GamePlayer).Client, "DelveInfo.Damage", GlobalConstants.DamageTypeToName(Spell.DamageType)));
-                
+
                 return list;
 			}
 		}

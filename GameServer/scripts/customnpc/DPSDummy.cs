@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -11,6 +12,9 @@ namespace DOL.GS
         private DateTime _startTime;
         private TimeSpan _timePassed;
         private bool _startCheck = true;
+
+        private static string T(GamePlayer player, string key, params object[] args)
+            => LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
 
         public override bool Interact(GamePlayer player)
         {
@@ -24,17 +28,7 @@ namespace DOL.GS
             SetDefaultResists();
             SetDefaultArmor();
 
-            SendReply(player, "Hello, you can change my [armor] and [resistances] with ease, you need but ask. Right click me to reset them back to default.\n\n" +
-                "You can also whisper me with the following format: \n\n\n" +
-                "To change individual resists: /whisper <resist> <percent> (e.g., /whisper body 10) \n\n" +
-                "The resist percent must be between 0 and 70 \n\n" +
-                "Resist values accepted include: body, cold, crush, energy, heat, matter, slash, spirit, and thrust \n\n" +
-                "To change all resists: / whisper allresist <percent> (e.g., /whisper allresist 20) \n\n" +
-                "\n\n" +
-                "To change my individual defenses: /whisper <defense> <percent> (e.g., /whisper evade 30) \n\n" +
-                "Defense values accepted include: evade, block, parry \n\n" +
-                "To change all defenses: /whisper alldefense <percent> (e.g., /whisper alldefense 20) \n\n" + 
-                "");
+            SendReply(player, T(player, "CustomNPC.DPSDummy.Greeting"));
             return true;
         }
 
@@ -52,12 +46,12 @@ namespace DOL.GS
             {
                 if (!int.TryParse(splitText[1], out int value))
                 {
-                    SendReply(player, "Invalid number format");
+                    SendReply(player, T(player, "CustomNPC.DPSDummy.InvalidNumber"));
                     return false;
                 }
                 else if (value is < 0 or > 100)
                 {
-                    SendReply(player, "Number must be between 0 and 100");
+                    SendReply(player, T(player, "CustomNPC.DPSDummy.NumberRange"));
                     return false;
                 }
 
@@ -150,59 +144,58 @@ namespace DOL.GS
                 switch (splitText[0].ToLower())
                 {
                     case "armor":
+                    case "방어구":
                     {
-                        SendReply(player, "Would you like me to don a set of \n" +
-                            "[cloth] \n" +
-                            "[leather] \n" +
-                            "[studded] \n" +
-                            "[chain] \n" +
-                            "[plate] \n" +
-                            "[reinforced] \n" +
-                            "or [scale]?" +
-                            "");
+                        SendReply(player, T(player, "CustomNPC.DPSDummy.ArmorPrompt"));
                         break;
                     }
                     case "cloth":
+                    case "천":
                     {
                         CreateArmorSetOfType(eObjectType.Cloth);
                         break;
                     }
                     case "leather":
+                    case "가죽":
                     {
                         CreateArmorSetOfType(eObjectType.Leather);
                         break;
                     }
                     case "studded":
+                    case "스터디드":
                     {
                         CreateArmorSetOfType(eObjectType.Studded);
                         break;
                     }
                     case "chain":
+                    case "체인":
                     {
                         CreateArmorSetOfType(eObjectType.Chain);
                         break;
                     }
                     case "plate":
+                    case "플레이트":
                     {
                         CreateArmorSetOfType(eObjectType.Plate);
                         break;
                     }
                     case "reinforced":
+                    case "강화가죽":
                     {
                         CreateArmorSetOfType(eObjectType.Reinforced);
                         break;
                     }
                     case "scale":
+                    case "스케일":
                     {
                         CreateArmorSetOfType(eObjectType.Scale);
                         break;
                     }
 
                     case "resistances":
+                    case "저항":
                     {
-                        SendReply(player, "Whisper me the resist type and value you'd like. Example: '/whisper Body 10' will give me +10% Body resist. \n" +
-                            "Additionally, you can whisper me 'allresist #' to set all resistances to the number provided." +
-                            "");
+                        SendReply(player, T(player, "CustomNPC.DPSDummy.ResistancePrompt"));
                         break;
                     }
                     default:

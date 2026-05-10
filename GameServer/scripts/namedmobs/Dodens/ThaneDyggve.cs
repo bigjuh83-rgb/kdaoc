@@ -30,9 +30,9 @@ namespace DOL.GS.Scripts
 			base.SetOwnBrain(new ThaneDyggveBrain());
 			LoadedFromScript = false; //load from database
 			SaveIntoDatabase();
-			base.AddToWorld();			
+			base.AddToWorld();
 			return true;
-		}	
+		}
 
 		public override int MeleeAttackRange => 350;
 		public override bool HasAbility(string keyName)
@@ -86,8 +86,8 @@ namespace DOL.GS.Scripts
 				CanBaf = false;
 				m_MjollnirAnnounce = new String[]
 				{
-					"You feel your energy draining and {0} summons powerful lightning hammers!",
-					"{0} takes another energy drain as he prepares to unleash a raging Mjollnir upon you!"
+					"NamedMobs.ThaneDyggve.MjollnirDrain",
+					"NamedMobs.ThaneDyggve.MjollnirRage"
 				};
 			}
 			public override void Think()
@@ -117,7 +117,7 @@ namespace DOL.GS.Scripts
 							if (castsMjollnir)
 							{
 								int messageNo = Util.Random(1, m_MjollnirAnnounce.Length) - 1;
-								BroadcastMessage(String.Format(m_MjollnirAnnounce[messageNo], Body.Name));
+								BroadcastMessage(m_MjollnirAnnounce[messageNo], Body.Name);
 							}
 							castsMjollnir = false;
 						}
@@ -126,18 +126,18 @@ namespace DOL.GS.Scripts
 					}
 				}
 				base.Think();
-			}		
+			}
 			/// <summary>
 			/// Broadcast relevant messages to the raid.
 			/// </summary>
 			/// <param name="message">The message to be broadcast.</param>
-			public void BroadcastMessage(String message)
+			public void BroadcastMessage(String key, params object[] args)
 			{
 				foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 				{
-					player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+					player.Out.SendMessage(global::DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 				}
-			}	
+			}
 
 			/// <summary>
 			/// Cast Mjollnir on the Target
@@ -149,9 +149,9 @@ namespace DOL.GS.Scripts
 				Body.CastSpell(Mjollnir, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells));
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(ResetMjollnir), 30000);
 				return 0;
-			}	
+			}
 			private int ResetMjollnir(ECSGameTimer timer)
-            {				
+            {
 				CanCastSpell = false;
 				return 0;
             }
@@ -190,7 +190,7 @@ namespace DOL.GS.Scripts
 					return m_Mjollnir;
 				}
 			}
-			#endregion		
+			#endregion
 		}
 	}
 }

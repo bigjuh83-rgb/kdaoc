@@ -60,6 +60,7 @@ namespace DOL.GS
 					switch (str.ToLower())
 					{
 						case "movement":
+						case "이동":
 							if (!player.CurrentRegion.IsRvR || player.Realm == Realm)
 								GameNPCHelper.CastSpellOnOwnerAndPets(this, player, SkillBase.GetSpellByID(GameHastener.SPEEDOFTHEREALMID), SkillBase.GetSpellLine(GlobalSpellsLines.Realm_Spells), false);
 							break;

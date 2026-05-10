@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -77,7 +77,7 @@ namespace DOL.GS.Commands
 
                         try
                         {
-                            relic.relicSpell = Convert.ToInt32(args[5]); 
+                            relic.relicSpell = Convert.ToInt32(args[5]);
                             relic.Model = Convert.ToUInt16(args[3]);
                             relic.Effect = Convert.ToInt32(args[6]);
                         }
@@ -318,25 +318,25 @@ namespace DOL.GS.Commands
                                             //there is a match!
                                             //remove it from the world
                                             relic.RemoveFromWorld();
-                                            client.Player.Out.SendMessage("Relic " + relic.RelicID + " has been removed from the world", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                                            
+                                            client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.MinoRelic.RemovedFromWorld", relic.RelicID), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+
                                             //remove it from the hashtable
                                             MinotaurRelicManager.RemoveRelic(relic);
-                                            client.Player.Out.SendMessage("Relic " + relic.RelicID + " has been removed from the Minorelic Hash Table", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                                            
+                                            client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.MinoRelic.RemovedFromHash", relic.RelicID), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+
                                             DataObject obj = GameServer.Database.FindObjectByKey<DbMinotaurRelic>(relic.RelicID);
                                             if (obj != null)
                                             {
                                                 GameServer.Database.DeleteObject(obj);
-                                                client.Player.Out.SendMessage("Relic " + relic.RelicID + " has been removed from the database!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                                            
+                                                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.MinoRelic.RemovedFromDatabase", relic.RelicID), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+
                                             }
-                                            
+
                                             break;
                                         }
                                     }
                                 }
-                        
+
 
                             }
 
@@ -352,19 +352,19 @@ namespace DOL.GS.Commands
                             MinotaurRelic relic = client.Player.TargetObject as MinotaurRelic;
 
                             relic.RemoveFromWorld();
-                            client.Player.Out.SendMessage("Relic " + relic.RelicID + " has been removed from the world", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                                            
+                            client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.MinoRelic.RemovedFromWorld", relic.RelicID), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+
                             //remove it from the hashtable
                             MinotaurRelicManager.RemoveRelic(relic);
-                            client.Player.Out.SendMessage("Relic " + relic.RelicID + " has been removed from the Minorelic Hash Table", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                                            
+                            client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.MinoRelic.RemovedFromHash", relic.RelicID), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+
 
                             DataObject obj = GameServer.Database.FindObjectByKey<DbMinotaurRelic>(relic.RelicID);
                             if (obj != null)
                             {
                                 GameServer.Database.DeleteObject(obj);
-                                client.Player.Out.SendMessage("Relic " + relic.RelicID + " has been removed from the database!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                                            
+                                client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.MinoRelic.RemovedFromDatabase", relic.RelicID), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+
                             }
                         }
 						break;
@@ -399,7 +399,7 @@ namespace DOL.GS.Commands
 				#region ShowAll
 				case "showall":
                     {
-                    	var info = new List<string>();
+	var info = new List<string>();
 
                         if (args.Length > 2)
                         {
@@ -455,7 +455,7 @@ namespace DOL.GS.Commands
                         }
 
                         MinotaurRelic relic = MinotaurRelicManager.GetRelic(Convert.ToInt32(args[2]));
-                        
+
                         if (relic == null)
                         {
                             DisplaySyntax(client);

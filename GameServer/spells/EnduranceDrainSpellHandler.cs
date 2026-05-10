@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -9,7 +10,7 @@ namespace DOL.GS.Spells
 		public override string ShortDescription => $"{Spell.Damage}% endurance is stolen from the target and given to the caster.";
 
 		public EnduranceDrainSpellHandler(GameLiving caster, Spell spell, SpellLine line) : base(caster, spell, line) {}
-		
+
 		public override void FinishSpellCast(GameLiving target)
 		{
 			m_caster.Mana -= PowerCost(target);
@@ -22,7 +23,7 @@ namespace DOL.GS.Spells
 			if (!target.IsAlive || target.ObjectState!=GameLiving.eObjectState.Active) return;
 
 			int end = (int)(Spell.Damage);
- 			target.ChangeEndurance(target,eEnduranceChangeType.Spell, (-end));
+			target.ChangeEndurance(target,eEnduranceChangeType.Spell, (-end));
 
 			if (target is GamePlayer)
 			{
@@ -38,25 +39,25 @@ namespace DOL.GS.Spells
 			if(!m_caster.IsAlive) return;
 			m_caster.ChangeEndurance(target, eEnduranceChangeType.Spell, end);
 			SendCasterMessage(target,end);
-			
+
 		}
 
 		public virtual void SendCasterMessage(GameLiving target,int end)
 		{
-			MessageToCaster(string.Format("You steal {0} for {1} endurance!", target.Name, end), eChatType.CT_YouHit);
-			if(end > 0) 
+			MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.StealEnduranceFromTarget", target.Name, end), eChatType.CT_YouHit);
+			if(end > 0)
 			{
-				MessageToCaster("You steal " + end + " endurance point" + (end==1?".":"s."), eChatType.CT_Spell);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.StealEndurance", end), eChatType.CT_Spell);
 			}
-			else 
+			else
 			{
-				MessageToCaster("You cannot absorb any more endurance.", eChatType.CT_SpellResisted);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.CannotAbsorbEndurance"), eChatType.CT_SpellResisted);
 			}
 		}
 
-		public override IList<string> DelveInfo 
+		public override IList<string> DelveInfo
 		{
-			get 
+			get
 			{
 				var list = new List<string>();
 				//Name
@@ -90,7 +91,7 @@ namespace DOL.GS.Spells
 
 				if (Spell.Frequency != 0)
 					list.Add("Frequency: " + (Spell.Frequency*0.001).ToString("0.0"));
-								
+
 				return list;
 			}
 		}

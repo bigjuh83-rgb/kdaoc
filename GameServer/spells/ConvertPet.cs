@@ -1,5 +1,6 @@
 
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -28,7 +29,7 @@ namespace DOL.GS.Spells
                 {
                     return false;
                 }
-            
+
             int mana = 0;
 
             foreach (GameLiving living in targets)
@@ -42,9 +43,9 @@ namespace DOL.GS.Spells
             if (m_caster is GamePlayer)
             {
                 if (absorb > 0)
-                    MessageToCaster("You absorb " + absorb + " power points.", eChatType.CT_Spell);
+                    MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.AbsorbPower", absorb), eChatType.CT_Spell);
                 else
-                    MessageToCaster("Your power is already full!", eChatType.CT_SpellResisted);
+                    MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.PowerAlreadyFull"), eChatType.CT_SpellResisted);
                 ((GamePlayer)m_caster).CommandNpcRelease();
             }
 

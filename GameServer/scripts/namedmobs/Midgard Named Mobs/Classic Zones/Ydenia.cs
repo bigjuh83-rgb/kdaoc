@@ -132,14 +132,14 @@ namespace DOL.AI.Brain
 					ECSGameTimer portTimer = new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(InitiatePort), Util.Random(25000, 35000));
 					Body.TempProperties.SetProperty("ydenia_teleport", portTimer);
 					canPort = true;
-                }				
+                }
 			}
 			base.Think();
 		}
 		private int InitiatePort(ECSGameTimer timer)
         {
 			GameLiving target = Body.TargetObject as GameLiving;
-			BroadcastMessage(String.Format("{0} says, \"Feel the power of the Seithkona, fool!\"", Body.Name));
+			BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.Ydenia.SeithkonaPower", Body.Name));
 			YdeniaPort(target);
 			return 0;
         }
@@ -149,7 +149,7 @@ namespace DOL.AI.Brain
             {
 				switch(Util.Random(1,4))
                 {
-					case 1: 
+					case 1:
 						player.MoveTo(100, 664713, 896689, 1553, 2373);
 						player.TakeDamage(player, eDamageType.Cold, player.MaxHealth / 7, 0);
 						foreach (GamePlayer players in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
@@ -157,7 +157,7 @@ namespace DOL.AI.Brain
 							if (players != null)
 								player.Out.SendSpellEffectAnimation(player, player, 4074, 0, false, 1);
 						}
-						player.Out.SendMessage("Ydenia of the Seithkona throws you into water and you take damage!", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+						player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Ydenia.ThrowsIntoWater"), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
 						break;
 					case 2:
 						player.MoveTo(100, 667220, 894261, 1543, 692);
@@ -167,7 +167,7 @@ namespace DOL.AI.Brain
 							if (players != null)
 								player.Out.SendSpellEffectAnimation(player, player, 4074, 0, false, 1);
 						}
-						player.Out.SendMessage("Ydenia of the Seithkona throws you into water and you take damage!", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+						player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Ydenia.ThrowsIntoWater"), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
 						break;
 					case 3:
 						player.MoveTo(100, 665968, 892792, 1561, 235);
@@ -177,7 +177,7 @@ namespace DOL.AI.Brain
 							if (players != null)
 								player.Out.SendSpellEffectAnimation(player, player, 4074, 0, false, 1);
 						}
-						player.Out.SendMessage("Ydenia of the Seithkona throws you into water and you take damage!", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+						player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Ydenia.ThrowsIntoWater"), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
 						break;
 					case 4:
 						player.MoveTo(100, 663895, 893446, 1554, 3482);
@@ -187,7 +187,7 @@ namespace DOL.AI.Brain
 							if (players != null)
 								player.Out.SendSpellEffectAnimation(player, player, 4074, 0, false, 1);
 						}
-						player.Out.SendMessage("Ydenia of the Seithkona throws you into water and you take damage!", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+						player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "NamedMobs.Ydenia.ThrowsIntoWater"), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
 						break;
 				}
             }

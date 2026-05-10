@@ -6,6 +6,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -263,7 +264,7 @@ namespace DOL.AI.Brain
                         PlayerY = RandomTarget.Y;
                         PlayerZ = RandomTarget.Z;
                         SpawnEffectMob();
-                        BroadcastMessage(String.Format(Body.Name + " says, '" + RandomTarget.Name +" you are not going anywhere'"));
+	                        BroadcastMessage("NamedMobs.Steinvor.NotGoingAnywhere", Body.Name, RandomTarget.Name);
                         new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(EffectTimer), 8000);
                     }
                 }
@@ -271,13 +272,14 @@ namespace DOL.AI.Brain
             return 0;
         }
 
-        public void BroadcastMessage(String message)
-        {
-            foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
-            {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
-            }
-        }
+	        public void BroadcastMessage(string key, params object[] args)
+	        {
+	            foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
+	            {
+	                string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+	                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+	            }
+	        }
         public int EffectTimer(ECSGameTimer timer) //pick and remove effect mob
         {
             if (Body.IsAlive)

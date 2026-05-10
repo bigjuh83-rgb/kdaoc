@@ -13,7 +13,7 @@ namespace DOL.GS.Scripts
         {
             if (!IsSpammingCommand(client.Player, "task"))
             {
-                client.Out.SendCustomTextWindow("Task Bonuses", ZoneBonusRotator.GetTextList());
+                client.Out.SendCustomTextWindow(global::DOL.Language.LanguageMgr.GetTranslation(client.Account.Language, "ZoneBonusRotator.WindowTitle"), ZoneBonusRotator.GetTextList(client.Account.Language));
             }
         }
     }

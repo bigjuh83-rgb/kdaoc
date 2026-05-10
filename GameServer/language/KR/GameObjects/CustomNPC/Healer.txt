@@ -1,0 +1,22 @@
+﻿# Healer NPC
+
+## Cure Sickness
+GameNPC.Interact.CuresRS.Healer:			        {0}이(가) 부활 후유증을 치료했습니다.
+
+## Dialogue
+GameNPC.Dialogue.Greetings.Healer:                  {0}: "안녕하세요, {1}. 오늘은 무엇을 도와드릴까요?"
+
+## Examine
+GameNPC.Examine.YouExamine.Healer:		            {0}을(를) 살펴봅니다. {1}은(는) {2}이며 힐러입니다.
+GameNPC.Examine.GiveDonation.Healer:               [오른쪽 클릭으로 잃은 체력 회복]
+
+## Interact
+GameNPC.Dialog.AcceptDecline.Healer:                잃은 체력을 회복하려면 {0}이(가) 듭니다. 수락하시겠습니까?
+GameNPC.Interact.Decline.Healer:                    체력 회복을 거절했습니다.
+GameNPC.Interact.YouGiveDonation.Healer:            {0}에게 기부금 {1}을(를) 건넸습니다.
+GameNPC.Interact.NeedMoney.Healer:                  {0}: "잃은 체력 {2}을(를) 회복하려면 {1}이(가) 듭니다. 돈이 부족합니다."
+
+## Restore Constitution
+GameNPC.Interact.RestoresMoreCon.Healer:            {0}이(가) 잃은 체력 {1}포인트를 회복했습니다.
+GameNPC.Interact.RestoresOneCon.Healer:             {0}이(가) 잃은 체력 {1}포인트를 회복했습니다.
+GameNPC.Interact.AlreadyRestored.Healer:            체력은 이미 완전히 회복되어 있습니다!

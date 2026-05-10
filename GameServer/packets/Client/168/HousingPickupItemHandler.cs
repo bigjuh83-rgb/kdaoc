@@ -1,5 +1,6 @@
 using DOL.Database;
 using DOL.GS.Housing;
+using DOL.Language;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -55,13 +56,13 @@ namespace DOL.GS.PacketHandler.Client.v168
 						// update garden
 						client.Out.SendGarden(house);
 
-						ChatUtil.SendSystemMessage(client, "Garden object removed.");
-						ChatUtil.SendSystemMessage(client, string.Format("You get {0} and put it in your backpack.", invitem.Name));
+						ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.GardenObjectRemoved", null);
+						ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.ItemReturnedToBackpack", invitem.Name);
 						return;
 					}
 
 					//no object @ position
-					ChatUtil.SendSystemMessage(client, "There is no Garden Tile at slot " + position + "!");
+					ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.NoGardenTileAtSlot", position);
 					break;
 
 				case 2:
@@ -76,9 +77,9 @@ namespace DOL.GS.PacketHandler.Client.v168
 					IndoorItem iitem = house.IndoorItems[position];
 					if (iitem == null)
 					{
-						client.Player.Out.SendMessage("error: id was null", eChatType.CT_Help, eChatLoc.CL_SystemWindow);
+						client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Player.Housing.HookPointIdNull"), eChatType.CT_Help, eChatLoc.CL_SystemWindow);
 						return;
-					} 
+					}
 
 					if (iitem.BaseItem != null)
 					{
@@ -87,42 +88,40 @@ namespace DOL.GS.PacketHandler.Client.v168
 						{
 							if (client.Player.Inventory.AddItem(eInventorySlot.FirstEmptyBackpack, item))
 							{
-								string removalMsg = string.Format("The {0} is cleared from the {1}.", item.Name,
-								                                  (method == 2 ? "wall surface" : "floor"));
-
-								ChatUtil.SendSystemMessage(client, removalMsg);
+								ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.ItemClearedFromSurface", item.Name,
+								                           LanguageMgr.GetTranslation(client.Account.Language, method == 2 ? "Scripts.Player.Housing.SurfaceWall" : "Scripts.Player.Housing.SurfaceFloor"));
 								InventoryLogging.LogInventoryAction("(HOUSE;" + house.HouseNumber + ")", client.Player, eInventoryActionType.Other, item.Template, item.Count);
 							}
 							else
 							{
-								ChatUtil.SendSystemMessage(client, "You need place in your inventory !");
+								ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.NeedInventorySpace", null);
 								return;
 							}
 						}
 						else
 						{
-							ChatUtil.SendSystemMessage(client, "The " + item.Name + " is cleared from the wall surface.");
+							ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.ItemClearedFromSurface", item.Name, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Player.Housing.SurfaceWall"));
 						}
 					}
 					else if (iitem.DatabaseItem.BaseItemID.Contains("GuildBanner"))
 					{
 						var it = new DbItemTemplate
-						         	{
-						         		Id_nb = iitem.DatabaseItem.BaseItemID,
-						         		CanDropAsLoot = false,
-						         		IsDropable = true,
-						         		IsPickable = true,
-						         		IsTradable = true,
-						         		Item_Type = 41,
-						         		Level = 1,
-						         		MaxCharges = 1,
-						         		MaxCount = 1,
-						         		Model = iitem.DatabaseItem.Model,
-						         		Emblem = iitem.DatabaseItem.Emblem,
-						         		Object_Type = (int) eObjectType.HouseWallObject,
-						         		Realm = 0,
-						         		Quality = 100
-						         	};
+							{
+								Id_nb = iitem.DatabaseItem.BaseItemID,
+								CanDropAsLoot = false,
+								IsDropable = true,
+								IsPickable = true,
+								IsTradable = true,
+								Item_Type = 41,
+								Level = 1,
+								MaxCharges = 1,
+								MaxCount = 1,
+								Model = iitem.DatabaseItem.Model,
+								Emblem = iitem.DatabaseItem.Emblem,
+								Object_Type = (int) eObjectType.HouseWallObject,
+								Realm = 0,
+								Quality = 100
+							};
 
 						string[] idnb = iitem.DatabaseItem.BaseItemID.Split('_');
 						it.Name = idnb[1] + "'s Banner";
@@ -131,25 +130,23 @@ namespace DOL.GS.PacketHandler.Client.v168
 						var inv = GameInventoryItem.Create(it);
 						if (client.Player.Inventory.AddItem(eInventorySlot.FirstEmptyBackpack, inv))
 						{
-							string invMsg = string.Format("The {0} is cleared from the {1}.", inv.Name,
-							                              (method == 2 ? "wall surface" : "floor"));
-
-							ChatUtil.SendSystemMessage(client, invMsg);
+							ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.ItemClearedFromSurface", inv.Name,
+							                           LanguageMgr.GetTranslation(client.Account.Language, method == 2 ? "Scripts.Player.Housing.SurfaceWall" : "Scripts.Player.Housing.SurfaceFloor"));
 							InventoryLogging.LogInventoryAction("(HOUSE;" + house.HouseNumber + ")", client.Player, eInventoryActionType.Other, inv.Template, inv.Count);
 						}
 						else
 						{
-							ChatUtil.SendSystemMessage(client, "You need place in your inventory !");
+							ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.NeedInventorySpace", null);
 							return;
 						}
 					}
 					else if (method == 2)
 					{
-						ChatUtil.SendSystemMessage(client, "The decoration item is cleared from the wall surface.");
+						ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.DecorationClearedFromSurface", LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Player.Housing.SurfaceWall"));
 					}
 					else
 					{
-						ChatUtil.SendSystemMessage(client, "The decoration item is cleared from the floor.");
+						ChatUtil.SendSystemMessage(client, "Scripts.Player.Housing.DecorationClearedFromSurface", LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Player.Housing.SurfaceFloor"));
 					}
 
 					GameServer.Database.DeleteObject((house.IndoorItems[(position)]).DatabaseItem);

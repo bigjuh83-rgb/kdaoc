@@ -1,6 +1,7 @@
 using System;
 using DOL.Database;
 using DOL.GS.Housing;
+using DOL.Language;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -16,7 +17,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 			if (client.Player.TargetObject == null)
 			{
-				client.Out.SendMessage("You must select an NPC to sell to.", eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Merchant.Sell.SelectNpc"), eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
 				return;
 			}
 

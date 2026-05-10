@@ -24,6 +24,7 @@
  *
  */
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -41,7 +42,7 @@ namespace DOL.GS.Commands
 
 			if (client.Player.IsTurningDisabled)
 			{
-				DisplayMessage(client, "You can't use this command now!");
+				DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.FaceLoc.CantUseNow"));
 				return;
 			}
 
@@ -49,7 +50,7 @@ namespace DOL.GS.Commands
 			{
 				client.Out.SendMessage
 					(
-					"Please enter X and Y coordinates.",
+					LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.FaceLoc.EnterXY"),
 					eChatType.CT_System,
 					eChatLoc.CL_SystemWindow
 					);
@@ -64,7 +65,7 @@ namespace DOL.GS.Commands
 			}
 			catch
 			{
-				client.Out.SendMessage("Please enter a valid X and Y location.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.FaceLoc.EnterValidXY"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			int Xoffset = client.Player.CurrentZone.XOffset;

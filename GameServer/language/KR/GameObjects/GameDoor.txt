@@ -1,0 +1,7 @@
+# Game Door
+
+## Door Request Handler
+DoorRequestHandler.OnTick.TooFarAway:			        {0}이(가) 너무 멀리 있습니다!
+
+## RvR
+GameDoor.NowOpen:					{0}이(가) 열렸습니다!

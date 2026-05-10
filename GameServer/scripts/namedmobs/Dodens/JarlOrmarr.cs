@@ -10,7 +10,7 @@ namespace DOL.GS.Scripts
 	public class JarlOrmarr : GameEpicBoss
 	{
 		public JarlOrmarr() : base()
-		{		
+		{
 		}
 		/// <summary>
 		/// Add Jarl Ormarr to World
@@ -19,7 +19,7 @@ namespace DOL.GS.Scripts
 		{
 			INpcTemplate npcTemplate = NpcTemplateMgr.GetTemplate(9918);
 			LoadTemplate(npcTemplate);
-	
+
 			// humanoid
 			BodyType = 6;
 			MeleeDamageType = eDamageType.Slash;
@@ -34,7 +34,7 @@ namespace DOL.GS.Scripts
 			base.AddToWorld();
 			return true;
 		}
-		
+
 
 		public override int MeleeAttackRange => 350;
 		public override bool HasAbility(string keyName)
@@ -104,10 +104,10 @@ namespace DOL.GS.Scripts
 			{
 				m_HitAnnounce = new String[]
 				{
-					"Haha! You call that a hit? I\'ll show you a hit!",
-					"I am a warrior, you can\'t kill me!"
+					"NamedMobs.JarlOrmarr.HitTaunt",
+					"NamedMobs.JarlOrmarr.WarriorTaunt"
 				};
-				
+
 				AggroLevel = 50;
 				AggroRange = 400;
 			}
@@ -119,13 +119,13 @@ namespace DOL.GS.Scripts
 			/// Broadcast relevant messages to the raid.
 			/// </summary>
 			/// <param name="message">The message to be broadcast.</param>
-			public void BroadcastMessage(String message)
+			public void BroadcastMessage(String key, params object[] args)
 			{
 				foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 				{
-					player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
+					player.Out.SendMessage(global::DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 				}
-			}		
+			}
 			/// <summary>
 			/// Called whenever the Jarl Ormarr body sends something to its brain.
 			/// </summary>
@@ -140,7 +140,7 @@ namespace DOL.GS.Scripts
 					if (Util.Chance(3))
 					{
 						int messageNo = Util.Random(1, m_HitAnnounce.Length) - 1;
-						BroadcastMessage(String.Format(m_HitAnnounce[messageNo]));
+						BroadcastMessage(m_HitAnnounce[messageNo]);
 					}
 				}
 			}

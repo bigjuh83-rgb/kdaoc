@@ -1,0 +1,14 @@
+﻿Alb.NoHopeForTheHopeful.CheckPlayerAbortQuest.Text1:	좋아, 이제 나가서 맡은 일을 끝내게!
+Alb.NoHopeForTheHopeful.CheckPlayerAbortQuest.Text2:	퀘스트 {0}을(를) 포기합니다. 원한다면 다시 시작할 수 있습니다.
+Alb.NoHopeForTheHopeful.Conclusion.Text1:		훌륭하네, {0}! 아주 잘해 주었어.
+Alb.NoHopeForTheHopeful.Conclusion.Text2:		이제 코츠월드의 시민들이 더는 그들의 공포 조장을 참지 않을 것이라는 소문이 도적들 사이에 퍼질지도 모르겠군.
+Alb.NoHopeForTheHopeful.Init.Text1:			신병용 지혜의 팔찌
+Alb.NoHopeForTheHopeful.Init.Text2:			신병용 힘의 팔찌
+Alb.NoHopeForTheHopeful.Init.Text3:			신병용 교활함의 팔찌
+Alb.NoHopeForTheHopeful.Init.Text4:			신병용 신앙의 팔찌
+Alb.NoHopeForTheHopeful.Init.Text5:			도적의 망토
+Alb.NoHopeForTheHopeful.Init.Text6:			예비 도적 두 명 처치
+Alb.NoHopeForTheHopeful.Notify:				예비 도적
+Alb.NoHopeForTheHopeful.QuestTitle:			희망자에게 희망은 없다
+Alb.NoHopeForTheHopeful.Story:				자네가 새로 온 사람 중 하나로군, 그렇지? 우리 마을에 온 걸 환영하네! 새로운 사람을 만나는 건 언제나 즐거운 일이지.\n\n이곳에 지역 경비병이 부족하다는 소문을 조금 들었을지도 모르겠군. 안타깝게도 사실이라네. 콘스탄틴 왕께서 방어 병력을 너무 넓게 배치하신 탓에, 이 근방 사람들은 안전을 꽤 걱정하고 있지. 왕을 탓할 수만은 없네. 이런 힘든 시절에는 신경 써야 할 적이 너무 많으니까.\n\n자네가 말한 대로 진심으로 도울 생각이라면, 내게 자네의 도움이 필요하네. 우리가 끝없이 겪는 문제 중 하나는 이 시골을 역병처럼 뒤덮은 지역 도적들이 일으키는 소란이지. 잡아들일수록 며칠 뒤에는 더 많이 나타난다네. 마치 벌레 같아... 한 마리가 보이면, 보이지 않는 곳에는 수백 마리가 더 있는 법이지.\n\n우리를 도와주겠나? 우리 사람들은 불량배들에게 습격당할 걱정 없이 하루하루를 보낼 수 있어야 하네. 예비 도적 두 명을 처치하고, 그 증거로 도적의 망토 두 벌을 가져오게.
+Alb.NoHopeForTheHopeful.Summary:			예비 도적 두 명을 찾아 처치한 뒤, 보상을 받으러 도리안 경에게 돌아가십시오.

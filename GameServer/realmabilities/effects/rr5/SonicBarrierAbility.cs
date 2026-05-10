@@ -9,6 +9,7 @@ using DOL.GS.Effects;
 using DOL.Events;
 using DOL.Database;
 using DOL.GS.Spells;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -50,9 +51,9 @@ namespace DOL.GS.RealmAbilities
                         ISpellHandler spellhandler3 = ScriptMgr.CreateSpellHandler(player, Spell3, SkillBase.GetSpellLine(GlobalSpellsLines.Reserved_Spells));
                         spellhandler3.StartSpell(member);
                     }
-                    else if (member.CharacterClass.ID == 4 || member.CharacterClass.ID == 6 || member.CharacterClass.ID == 11 || member.CharacterClass.ID == 19 || member.CharacterClass.ID == 21 || member.CharacterClass.ID == 22 || member.CharacterClass.ID == 24 || member.CharacterClass.ID == 26 || member.CharacterClass.ID == 28 || member.CharacterClass.ID == 34 || member.CharacterClass.ID == 44 || member.CharacterClass.ID == 45 || member.CharacterClass.ID == 46 || member.CharacterClass.ID == 47) // Chain 
+                    else if (member.CharacterClass.ID == 4 || member.CharacterClass.ID == 6 || member.CharacterClass.ID == 11 || member.CharacterClass.ID == 19 || member.CharacterClass.ID == 21 || member.CharacterClass.ID == 22 || member.CharacterClass.ID == 24 || member.CharacterClass.ID == 26 || member.CharacterClass.ID == 28 || member.CharacterClass.ID == 34 || member.CharacterClass.ID == 44 || member.CharacterClass.ID == 45 || member.CharacterClass.ID == 46 || member.CharacterClass.ID == 47) // Chain
                     {
-                        Spell Spell4 = SkillBase.GetSpellByID(36004);// 24 % Absorb-Spell			
+                        Spell Spell4 = SkillBase.GetSpellByID(36004);// 24 % Absorb-Spell
                         ISpellHandler spellhandler4 = ScriptMgr.CreateSpellHandler(player, Spell4, SkillBase.GetSpellLine(GlobalSpellsLines.Reserved_Spells));
                         spellhandler4.StartSpell(member);
                     }
@@ -66,7 +67,7 @@ namespace DOL.GS.RealmAbilities
             }
             else
             {
-                player.Out.SendMessage("You need a group for this Ability!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Message.NeedGroup"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                 return;
             }
 			DisableSkill(living);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -18,7 +19,7 @@ namespace DOL.GS.RealmAbilities
 
 		public override int CostForUpgrade(int level) { return 14; }
 
-		public override bool CheckRequirement(GamePlayer player) { 
+		public override bool CheckRequirement(GamePlayer player) {
 				return AtlasRAHelpers.GetFirstAidLevel(player) >= 2;
 		}
 
@@ -38,11 +39,11 @@ namespace DOL.GS.RealmAbilities
 			{
 				if (healed > 0)
 				{
-					player.Out.SendMessage("You heal yourself for " + healed + " hit points.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Heal.SelfForHitPoints", healed), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 				}
 				else
 				{
-					player.Out.SendMessage("You are already fully healed.", eChatType.CT_Spell,
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "FirstAidAbility.Execute.AlreadyFullyHealed"), eChatType.CT_Spell,
 						eChatLoc.CL_SystemWindow);
 				}
 			}
@@ -61,7 +62,7 @@ namespace DOL.GS.RealmAbilities
 			}
 		}
 	}
-	
+
 	public class AtlasOF_IgnorePainTank : AtlasOF_IgnorePain
 	{
 		public AtlasOF_IgnorePainTank(DbAbility dba, int level) : base(dba, level) { }

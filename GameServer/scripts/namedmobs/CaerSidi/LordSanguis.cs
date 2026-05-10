@@ -10,6 +10,7 @@ namespace DOL.GS
     public class LordSanguis : GameEpicBoss
     {
         private static new readonly Logging.Logger log = Logging.LoggerManager.Create(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        private const string ReturnsAsLichKey = "NamedMobs.LordSanguis.ReturnsAsLich";
         public LordSanguis()
             : base()
         {
@@ -29,11 +30,11 @@ namespace DOL.GS
         {
             get { return 100000; }
         }
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(String key, params object[] args)
         {
             foreach (GamePlayer player in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
         public override int MeleeAttackRange => 450;
@@ -81,7 +82,7 @@ namespace DOL.GS
         {
             if (Spawn_Lich_Lord == false)
             {
-                BroadcastMessage(String.Format(this.Name + " comes back to life as Lich Lord Sanguis!"));
+                BroadcastMessage(ReturnsAsLichKey, this.Name);
                 SpawnMages();
                 new ECSGameTimer(this, new ECSGameTimer.ECSTimerCallback(SpawnLich), 6000);
                 Spawn_Lich_Lord = true;
@@ -307,6 +308,7 @@ namespace DOL.AI.Brain
     public class LichLordSanguisBrain : StandardMobBrain
     {
         private static readonly Logging.Logger log = Logging.LoggerManager.Create(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        private const string LastAgonyKey = "NamedMobs.LordSanguis.LastAgony";
 
         public LichLordSanguisBrain()
             : base()
@@ -314,11 +316,11 @@ namespace DOL.AI.Brain
             AggroLevel = 100;
             AggroRange = 500;
         }
-        public void BroadcastMessage(String message)
+        public void BroadcastMessage(String key, params object[] args)
         {
             foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
             {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, key, args), eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
             }
         }
         public static bool set_flag = false;
@@ -336,7 +338,7 @@ namespace DOL.AI.Brain
             {
                 if (set_flag == false)
                 {
-                    BroadcastMessage(String.Format(Body.Name + " becomes almost untouchable in his last act of agony!"));
+                    BroadcastMessage(LastAgonyKey, Body.Name);
                     Body.Flags ^= GameNPC.eFlags.CANTTARGET;
                     set_flag = true;
                 }
@@ -383,7 +385,7 @@ namespace DOL.GS
 
         public static int MageCount = 0;
         public override short Quickness { get => base.Quickness; set => base.Quickness = 80; }
-        public override short Strength { get => base.Strength; set => base.Strength = 150; }   
+        public override short Strength { get => base.Strength; set => base.Strength = 150; }
         public override bool AddToWorld()
         {
             GameNpcInventoryTemplate template = new GameNpcInventoryTemplate();

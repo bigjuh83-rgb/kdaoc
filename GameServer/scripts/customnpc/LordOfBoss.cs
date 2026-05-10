@@ -5,10 +5,11 @@ using System.Collections.Generic;
 using System.Reflection;
 using DOL.AI.Brain;
 using DOL.GS.API;
+using DOL.Language;
 
 namespace DOL.GS {
     public class LordOfBoss : GameTrainingDummy {
-	    
+
 	    public override bool AddToWorld()
         {
             Name = "Mordbro";
@@ -26,58 +27,58 @@ namespace DOL.GS {
         public override bool Interact(GamePlayer player)
         {
 	        bool inFight = false;
-	        
+
 	        if (!base.Interact(player)) return false;
 	        if (player.InCombatInLast(10000)) return false;
 	        TurnTo(player.X, player.Y);
-	        
+
 	        foreach (GameNPC npc in WorldMgr.GetNPCsFromRegion(player.CurrentRegionID))
 	        {
 		        if (npc.Brain is LordOfBossBrain || npc.Name.Contains("Council") || npc.Name.Contains("isolationist") || npc.Name.Contains("muryan"))
-			        continue; 
+			        continue;
 		        inFight = true;
 	        }
 
 	        if (player.Group == null && player.Client.Account.PrivLevel == 1)
 	        {
-		        player.Out.SendMessage($"This challenge is too big for a lonely {player.CharacterClass.Name}, assemble a group and come back to me! \n I can port you [back] while you find some companions.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+		        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LordOfBoss.NeedGroup", player.CharacterClass.Name), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 		        return false;
 	        }
-	        
+
 	        if (player.Group != null && player.Group.Leader != player)
 	        {
-		        player.Out.SendMessage($"You are not the leader of your group, {player.CharacterClass.Name}. Ask them to come speak with me to start.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+		        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LordOfBoss.NotGroupLeader", player.CharacterClass.Name), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 		        return false;
 	        }
-	        
+
 	        if (inFight)
 	        {
-		        player.Out.SendMessage($"There's a battle already going on, {player.CharacterClass.Name}. You can't start a new fight yet. \n\n I can also [reset] the arena.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+		        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LordOfBoss.BattleInProgress", player.CharacterClass.Name), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 		        return false;
 	        }
-	        
-	        player.Out.SendMessage("Greetings, " + player.CharacterClass.Name + ".\n\n" + "I hope you're up for a challenge.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+
+	        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LordOfBoss.Greeting", player.CharacterClass.Name), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 
 	        switch (player.Realm)
 	        {
 		        case eRealm._FirstPlayerRealm:
-			        player.Out.SendMessage("I have some minions from [Caer Sidi] ready for you..", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+			        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LordOfBoss.Minions.CaerSidi"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			        break;
 		        case eRealm.Midgard:
-			        player.Out.SendMessage("I have some minions from [Tuscaren Glacier] ready for you..", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+			        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LordOfBoss.Minions.TuscarenGlacier"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			        break;
 		        case eRealm.Hibernia:
-			        player.Out.SendMessage("I have some minions from [Galladoria] ready for you..", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+			        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LordOfBoss.Minions.Galladoria"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			        break;
 	        }
-	        
-	        player.Out.SendMessage("..as well as many demons from [Darkness Falls].", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
-	        player.Out.SendMessage("If you're not ready, I can also port you [back].", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 
-	        
+	        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LordOfBoss.Minions.DarknessFalls"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+	        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LordOfBoss.BackPrompt"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+
+
             return true;
-			
-			
+
+
 		}
 		public override bool WhisperReceive(GameLiving source, string str)
 		{
@@ -88,7 +89,8 @@ namespace DOL.GS {
 			TurnTo(t.X, t.Y);
 			switch (str.ToLower())
 			{
-				case "back":
+					case "back":
+					case "돌아가기":
 					switch (t.Realm)
 					{
 						case eRealm.Albion:
@@ -108,141 +110,120 @@ namespace DOL.GS {
 
 				case "caer sidi":
 					if (t.Realm != eRealm.Albion) return false;
-					t.Out.SendMessage("I can summon the following bosses from Caer Sidi:\n\n" +
-					                  "1. [Skeletal Sacristan]\n" +
-					                  "2. [Spectral Provisioner]\n" +
-					                  "3. [Lich Lord Ilron]\n" +
-					                  "4. [Warlord Dorinakka]\n" +
-					                  "5. [Soul Reckoner]\n" +
-					                  "6. [Crypt Lord]\n" +
-					                  "7. [Silencer]\n" +
-					                  "8. [Lord Sanguis]\n"
-										// "4. [Bane of Hope]\n"
-			,
-
-			eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					t.Out.SendMessage(LanguageMgr.GetTranslation(t.Client.Account.Language, "LordOfBoss.Menu.CaerSidi"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 					break;
 
 				case "skeletal sacristan":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.Scripts.SkeletalSacristan");
 					break;
-				
+
 				case "spectral provisioner":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.Scripts.SpectralProvisioner");
 					break;
-				
+
 				case "lich lord ilron":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.Scripts.LichLordIlron");
 					break;
-				
+
 				case "warlord dorinakka":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.Scripts.WarlordDorinakka");
 					break;
-				
+
 				case "soul reckoner":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.SoulReckoner");
 					break;
-				
+
 				case "crypt lord":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.CryptLord");
 					break;
-				
+
 				case "silencer":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.Silencer");
 					break;
-				
+
 				case "lord sanguis":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.LordSanguis");
 					break;
-				
+
 				case "bane of hope":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.Scripts.BaneOfHope");
 					break;
 				#endregion
-				
+
 				#region Galladoria
 				case "galladoria":
 					if (t.Realm != eRealm.Hibernia) return false;
-					t.Out.SendMessage("I can summon the following bosses from Galladoria:\n\n" +
-					                  "1. [Easmarach]\n" +
-					                  "2. [Organic Energy Mechanism]\n" +
-					                  "3. [Giant Sporite Cluster]\n" +
-					                  "4. [Conservator]\n" +
-					                  "5. [Xaga]\n" +
-					                  "6. [Spindler Broodmother]\n" +
-					                  "7. [Olcasar Geomancer]\n" +
-					                  "8. [Aroon the Urlamhai]\n" +
-					                  "8. [Hurionthex]\n"
-						, eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					t.Out.SendMessage(LanguageMgr.GetTranslation(t.Client.Account.Language, "LordOfBoss.Menu.Galladoria"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 					break;
 
 				case "easmarach":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.Easmarach");
 					break;
-				
+
 				case "organic energy mechanism":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.OrganicEnergyMechanism");
 					break;
-				
+
 				case "giant sporite cluster":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.GiantSporiteCluster");
 					break;
-				
+
 				case "conservator":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.Conservator");
 					break;
-				
+
 				case "xaga":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.Xaga");
 					SummonBoss(t,"DOL.GS.Beatha");
 					SummonBoss(t,"DOL.GS.Tine");
 					break;
-				
+
 				case "spindler broodmother":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.SpindlerBroodmother");
 					break;
-				
+
 				case "olcasar geomancer":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.OlcasarGeomancer");
 					break;
-				
+
 				case "aroon the urlamhai":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.Aroon");
 					break;
-				
+
 				case "hurionthex":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.Hurionthex");
 					break;
-				
+
 				#endregion
-				
+
 				#region Darkness Falls
-				case "darkness falls":
-					t.Out.SendMessage("Demons are tricky to capture, try again later."
-						, eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+					case "darkness falls":
+					case "다크니스 폴스":
+					t.Out.SendMessage(LanguageMgr.GetTranslation(t.Client.Account.Language, "LordOfBoss.DarknessFallsUnavailable"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 					break;
-				
+
 				#endregion
-					
-				case "reset":
+
+					case "reset":
+					case "초기화":
 					if (source.InCombatInLast(10000)) return false;
 					foreach (GameNPC mob in WorldMgr.GetNPCsFromRegion(t.CurrentRegionID))
 					{
@@ -268,7 +249,7 @@ namespace DOL.GS {
 			{
 				if (npc.Brain is LordOfBossBrain || npc.Name.Contains("Council") || npc.Name.Contains("isolationist") || npc.Name.Contains("muryan"))
 					continue;
-				player.Out.SendMessage("You have already summoned a boss!.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LordOfBoss.AlreadySummoned"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 				return;
 			}
 
@@ -298,7 +279,7 @@ namespace DOL.GS {
 
         public override void Think()
         {
-           
+
         }
     }
 }

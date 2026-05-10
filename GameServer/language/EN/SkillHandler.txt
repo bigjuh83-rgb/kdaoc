@@ -70,7 +70,7 @@ SkillBase.RegisterPropertyNames.TwoHanded:				Two Handed
 ## Combat Styles
 GamePlayer.RefreshSpec.AfterBlocked:			This style is best used after your last attack is blocked.
 GamePlayer.RefreshSpec.AfterEvaded:				This style is best used after your last attack is evaded.
-GamePlayer.RefreshSpec.AfterFumbles:			This style is best used after your last attack fumbles.		
+GamePlayer.RefreshSpec.AfterFumbles:			This style is best used after your last attack fumbles.
 GamePlayer.RefreshSpec.AfterMissed:				This style is best used after your last attack is missed.
 GamePlayer.RefreshSpec.AfterParried:			This style is best used after your last attack is parried.
 GamePlayer.RefreshSpec.AfterStyle:				This style can only be used after you execute the {0} style.
@@ -225,6 +225,7 @@ SkillBase.RegisterPropertyNames.CharismaBonusCap:		Bonus to Charisma attribute b
 SkillBase.RegisterPropertyNames.BonusToArmorAbsorption:	Bonus to armor absorption (ABS)
 SkillBase.RegisterPropertyNames.BonusToArmorFactor:		Bonus to armor factor (AF)
 SkillBase.RegisterPropertyNames.CastingSpeed:			Bonus to casting speed
+SkillBase.RegisterPropertyNames.OffhandChanceAndDamage:	Offhand Chance and Damage
 SkillBase.RegisterPropertyNames.BladeturnReinforcement:	- Bladeturn reinforcement: {0}% (PvE Only)
 #BlockChance has been commented out as a PvE-only bonus - line 1791 in GameServer\packets\Client\168\DetailDisplayHandler.cs
 #SkillBase.RegisterPropertyNames.BlockChance:			- Block: {0}% (PvE Only)

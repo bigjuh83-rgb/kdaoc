@@ -2,6 +2,7 @@ using System;
 using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -16,13 +17,13 @@ namespace DOL.GS.Spells
         {
             if (target.HasAbility(Abilities.CCImmunity))
             {
-                MessageToCaster("Your target is immune to this effect!", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "CCSpellHandler.TargetImmune"), eChatType.CT_SpellResisted);
                 return;
             }
 
             if (target.EffectList.GetOfType<ChargeEffect>() != null || target.TempProperties.GetProperty<bool>("Charging"))
             {
-                MessageToCaster("Your target is moving too fast for this spell to have any effect!", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "CCSpellHandler.TargetMovingTooFast"), eChatType.CT_SpellResisted);
                 return;
             }
 
@@ -170,10 +171,10 @@ namespace DOL.GS.Spells
             }
 
             if (isImmune)
-                message = "Your target is immune to this effect!";
+                message = LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "CCSpellHandler.TargetImmune");
             else if (target is GameNPC && target.HealthPercent < 75)
             {
-                message = "Your target is enraged and resists the spell!";
+                message = LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "CCSpellHandler.TargetEnraged");
                 isImmune = true;
             }
 
@@ -182,8 +183,8 @@ namespace DOL.GS.Spells
             if (mezblock != null)
             {
                 mezblock.Cancel(false);
-                (target as GamePlayer)?.Out.SendMessage("Your item effect intercepts the mesmerization spell and fades!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
-                message = "Ceremonial Bracer intercept your mez!";
+                (target as GamePlayer)?.Out.SendMessage(LanguageMgr.GetTranslation((target as GamePlayer)?.Client.Account.Language, "CCSpellHandler.ItemInterceptsMesmerize"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                message = LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "CCSpellHandler.CeremonialBracerInterceptsMez");
                 isImmune = true;
             }
 
@@ -285,7 +286,7 @@ namespace DOL.GS.Spells
 
             if (isImmune)
             {
-                MessageToCaster("Your target is immune to this effect!", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "CCSpellHandler.TargetImmune"), eChatType.CT_SpellResisted);
                 target.StartInterruptTimer(target.SpellInterruptDuration, AttackData.eAttackType.Spell, Caster);
                 OnSpellNegated(target, SpellNegatedReason.Immune);
                 return true;

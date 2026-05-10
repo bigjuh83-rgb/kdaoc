@@ -1,0 +1,34 @@
+﻿# Effects
+GamePlayer.Spell.Proc.NotImplemented:		반응 효과 ID {0}은(는) 아직 이 서버에 구현되지 않았습니다.
+
+## Interact
+Effects.GameSpellEffect.CantRemoveEffect:		이 효과는 제거할 수 없습니다!
+Effects.StaticEffect.YouCantRemoveThisEffect:	이 효과는 제거할 수 없습니다!
+Effects.CantRemoveThis:	                        이 효과는 제거할 수 없습니다!
+SpellHandler.CancelEffect:	                    효과를 취소했습니다.
+
+## Delve Information
+Effects.DelveInfo.MinutesRemaining:				- {0}: {1}분 남음.
+Effects.DelveInfo.SecondsRemaining:				- {0}초 남음.
+Effects.DelveInfo.Seconds:				{0}초.
+Effects.CantRemoveThis:	이 효과는 제거할 수 없습니다!
+
+## Amnesia
+Amnesia.MessageToTarget:	머릿속이 하얘져 하던 일을 잊어버렸습니다!
+Amnesia.MessageToArea:      {0}이(가) 하던 일을 잊어버렸습니다!
+
+## Misc
+Effects.BannerOfWardingEffect.Name:				수호의 배너
+Effects.BannerOfWardingEffect.Description:		모든 마법 저항에 10% 보너스를 부여합니다.
+Effects.BannerOfShieldingEffect.Name:			방패의 배너
+Effects.BannerOfShieldingEffect.Description:	모든 근접 저항에 6% 보너스를 부여합니다.
+Effects.BannerOfFreedomEffect.Name:				자유의 배너
+Effects.BannerOfFreedomEffect.Description:		모든 군중 제어 효과를 6% 감소시킵니다.
+Effects.BannerOfBesiegingEffect.Name:			공성의 배너
+Effects.BannerOfBesiegingEffect.Description:	공성 무기의 발사 속도를 6% 감소시킵니다.
+
+## Volley
+Effects.VolleyEffect.MBHitsExtraDamage:   활로 {0}을(를) 쏘아 {1} 피해를 입혔습니다!
+Effects.VolleyEffect.MBHitsExtraDamageCrit:   {0}에게 치명타를 입혀 추가로 {1} 피해를 줬습니다!
+Effects.VolleyEffect.XMBExtraDamageToYou:  {0}이(가) 당신의 {1}에게 {2} 피해를 입혔습니다!
+Effects.VolleyEffect.XMBExtraDamageToYouCrit:  {0}이(가) 당신에게 치명타를 입혀 추가로 {1} 피해를 줬습니다!

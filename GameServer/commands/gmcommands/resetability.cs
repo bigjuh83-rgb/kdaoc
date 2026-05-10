@@ -1,16 +1,16 @@
 ﻿/*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -20,6 +20,7 @@
 using System;
 using DOL.GS.PacketHandler;
 using DOL.GS.RealmAbilities;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -27,9 +28,15 @@ namespace DOL.GS.Commands
 		"&resetability",
 		ePrivLevel.GM,
 		"/resetability - <self|target|group|cg|bg>")]
-	
+
 	public class ResetAbilityCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
+		private static string T(GameClient client, string key, params object[] args)
+			=> LanguageMgr.GetTranslation(client.Account.Language, key, args);
+
+		private static string T(GamePlayer player, string key, params object[] args)
+			=> LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+
 		public void OnCommand(GameClient client, string[] args)
 		{
 			GamePlayer target = client.Player.TargetObject as GamePlayer;
@@ -56,13 +63,13 @@ namespace DOL.GS.Commands
 								{
 
 									groupedplayers.ResetDisabledSkills();
-									groupedplayers.Out.SendMessage(client.Player.Name +" has reset your ability and spell timers!", eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
+									groupedplayers.Out.SendMessage(T(groupedplayers, "GMCommands.ResetAbility.TargetReset", client.Player.Name), eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
 								}
 							}
 						}
 						else
 							client.Player.ResetDisabledSkills();
-						client.Player.Out.SendMessage("Target does not have a group so, ability and spell timers have been reset for you!", eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
+						client.Player.Out.SendMessage(T(client, "GMCommands.ResetAbility.TargetNoGroupResetSelf"), eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
 						break;
 					}
 					#endregion
@@ -75,12 +82,12 @@ namespace DOL.GS.Commands
 							foreach (GamePlayer cgplayers in cg.Members.Keys)
 							{
 								cgplayers.ResetDisabledSkills();
-								cgplayers.Out.SendMessage(client.Player.Name + " has reset your ability and spell timers!", eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
+								cgplayers.Out.SendMessage(T(cgplayers, "GMCommands.ResetAbility.TargetReset", client.Player.Name), eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
 							}
 						}
 						else
 							client.Player.ResetDisabledSkills();
-						client.Player.Out.SendMessage("Target does not have a chatgroup so, ability and spell timers have been reset for you!", eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
+						client.Player.Out.SendMessage(T(client, "GMCommands.ResetAbility.TargetNoChatGroupResetSelf"), eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
 						break;
 					}
 					#endregion
@@ -91,7 +98,7 @@ namespace DOL.GS.Commands
 						if (target == null)
 							target = (GamePlayer)client.Player;
 						target.ResetDisabledSkills();
-						target.Out.SendMessage("Your ability and spell timers have been reset!", eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
+						target.Out.SendMessage(T(target, "GMCommands.ResetAbility.SelfReset"), eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
 					}
 					break;
 					#endregion
@@ -100,7 +107,7 @@ namespace DOL.GS.Commands
 				case "self":
 					{
 						client.Player.ResetDisabledSkills();
-						client.Player.Out.SendMessage("Your ability and spell timers have been reset!", eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
+						client.Player.Out.SendMessage(T(client, "GMCommands.ResetAbility.SelfReset"), eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
 					}
 					break;
 					#endregion
@@ -115,19 +122,19 @@ namespace DOL.GS.Commands
 								foreach (GamePlayer bgplayers in bg.Members.Keys)
 								{
 									bgplayers.ResetDisabledSkills();
-									bgplayers.Out.SendMessage(client.Player.Name + " has reset your ability and spell timers!", eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
+									bgplayers.Out.SendMessage(T(bgplayers, "GMCommands.ResetAbility.TargetReset", client.Player.Name), eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
 								}
 							}
 						}
 						else
 							client.Player.ResetDisabledSkills();
-						client.Player.Out.SendMessage("Target does not have a battlegroup so, ability and spell timers have been reset for you!", eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
+						client.Player.Out.SendMessage(T(client, "GMCommands.ResetAbility.TargetNoBattleGroupResetSelf"), eChatType.CT_Spell, eChatLoc.CL_ChatWindow);
 						break;
 					}
 					#endregion
 				default:
 					{
-						client.Out.SendMessage("'" + args[1] + "' is not a valid arguement.", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						client.Out.SendMessage(T(client, "GMCommands.ResetAbility.InvalidArgument", args[1]), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					}
 					break;
 			}

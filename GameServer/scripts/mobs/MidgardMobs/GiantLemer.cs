@@ -80,7 +80,7 @@ namespace DOL.AI.Brain
 				{
 					Body.Flags = oldFlags;
 					Body.Model = oldModel;
-					BroadcastMessage("A great growl goes through the woods.");
+					BroadcastMessage(DOL.Language.LanguageMgr.GetTranslation(DOL.GS.ServerProperties.Properties.SERV_LANGUAGE, "NamedMobs.GiantLemer.GreatGrowl"));
 					changed = false;
 				}
 

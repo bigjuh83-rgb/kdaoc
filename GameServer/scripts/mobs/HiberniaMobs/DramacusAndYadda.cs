@@ -41,7 +41,7 @@ namespace DOL.AI.Brain
 				{
 					if (npc != null && npc.IsAlive && npc.Brain is YaddaBrain brian)
 					{
-						if (!brian.HasAggro && brian != null && target != null && target.IsAlive)
+						if (brian != null && !brian.HasAggro && target != null && target.IsAlive)
 							brian.AddToAggroList(target, 10);
 					}
 				}
@@ -91,7 +91,7 @@ namespace DOL.AI.Brain
 				{
 					if (npc != null && npc.IsAlive && npc.Brain is DramacusBrain brian)
 					{
-						if (!brian.HasAggro && brian != null && target != null && target.IsAlive)
+						if (brian != null && !brian.HasAggro && target != null && target.IsAlive)
 							brian.AddToAggroList(target, 10);
 					}
 				}

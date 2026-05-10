@@ -62,7 +62,7 @@ namespace DOL.GS
 			SaveIntoDatabase();
 			base.AddToWorld();
 			return true;
-		}		
+		}
 	}
 }
 namespace DOL.AI.Brain
@@ -140,7 +140,7 @@ namespace DOL.AI.Brain
 					{
 						GamePlayer Target = Port_Enemys[Util.Random(0, Port_Enemys.Count - 1)];
 						TeleportTarget = Target;
-						if (TeleportTarget.IsAlive && TeleportTarget != null)
+						if (TeleportTarget != null && TeleportTarget.IsAlive)
 							new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(TeleportPlayer), 3000);
 					}
 				}
@@ -149,7 +149,7 @@ namespace DOL.AI.Brain
 		}
 		public int TeleportPlayer(ECSGameTimer timer)
 		{
-			if (TeleportTarget.IsAlive && TeleportTarget != null && HasAggro)
+			if (TeleportTarget != null && TeleportTarget.IsAlive && HasAggro)
 			{
 				switch (Util.Random(1, 4))
 				{

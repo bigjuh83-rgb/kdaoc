@@ -25,7 +25,7 @@ namespace DOL.GS.DailyQuest.Albion
 
 		// Kill Goal
 		private const int MAX_KILLED = 10;
-		
+
 		private static GameNPC James = null; // Start NPC
 
 		private int danaoinKilled = 0;
@@ -46,7 +46,7 @@ namespace DOL.GS.DailyQuest.Albion
 		public DanaoinKillQuestAlb(GamePlayer questingPlayer, DbQuest dbQuest) : base(questingPlayer, dbQuest)
 		{
 		}
-		
+
 		public override int Level
 		{
 			get
@@ -61,7 +61,7 @@ namespace DOL.GS.DailyQuest.Albion
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region defineNPCs
 
@@ -142,7 +142,7 @@ namespace DOL.GS.DailyQuest.Albion
 
 		private static void TalkToJames(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -160,18 +160,16 @@ namespace DOL.GS.DailyQuest.Albion
 					switch (quest.Step)
 					{
 						case 1:
-							James.SayTo(player, "You will find Danaoin Farmers in the North or West of Lyonesse.");
+							James.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NamedMobLocation", "Danaoin Farmers", "the North or West of Lyonesse"));
 							break;
 						case 2:
-							James.SayTo(player, "Hello " + player.Name + ", did you [kill] the Danaoin Farmers?");
+							James.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[kill] the Danaoin Farmers"));
 							break;
 					}
 				}
 				else
 				{
-					James.SayTo(player, "Hello "+ player.Name +", I am James. "+
-					                       "The Danaoin Farmers down in Lyonesse are overfarming the land and destroying Albion's natural resources.\n"+
-					                       "\nCan you [clear the Danaoin] to save Albion?");
+					James.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NamedMobDailyIntro", player.Name, "James", "Danaoin Farmers", "Lyonesse", "Albion", "clear the Danaoin"));
 				}
 			}
 				// The player whispered to the NPC
@@ -183,7 +181,7 @@ namespace DOL.GS.DailyQuest.Albion
 					switch (wArgs.Text)
 					{
 						case "clear the Danaoin":
-							player.Out.SendQuestSubscribeCommand(James, QuestMgr.GetIDForQuestType(typeof(DanaoinKillQuestAlb)), "Will you help James "+questTitle+"");
+							player.Out.SendQuestSubscribeCommand(James, QuestMgr.GetIDForQuestType(typeof(DanaoinKillQuestAlb)), DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "James", questTitle));
 							break;
 					}
 				}
@@ -194,18 +192,18 @@ namespace DOL.GS.DailyQuest.Albion
 						case "kill":
 							if (quest.Step == 2)
 							{
-								player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
+								player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat, eChatLoc.CL_PopupWindow);
 								quest.FinishQuest();
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
 			}
 		}
-		
+
 		public override bool CheckQuestQualification(GamePlayer player)
 		{
 			// if the player is already doing the quest his level is no longer of relevance
@@ -221,7 +219,7 @@ namespace DOL.GS.DailyQuest.Albion
 
 			return player.Level >= minimumLevel && player.Level <= maximumLevel;
 		}
-		
+
 		public override void LoadQuestParameters()
 		{
 			danaoinKilled = GetCustomProperty(QuestPropertyKey) != null ? int.Parse(GetCustomProperty(QuestPropertyKey)) : 0;
@@ -242,11 +240,11 @@ namespace DOL.GS.DailyQuest.Albion
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, now go out there and finish your work!");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -276,7 +274,7 @@ namespace DOL.GS.DailyQuest.Albion
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Thank you for your help.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelp"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
@@ -284,7 +282,7 @@ namespace DOL.GS.DailyQuest.Albion
 				if (!James.GiveQuest(typeof (DanaoinKillQuestAlb), player, 1))
 					return;
 
-				James.SayTo(player, "You will find the Danaoin Farmers in Lyonesse.");
+				James.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NamedMobLocation", "Danaoin Farmers", "the North or West of Lyonesse"));
 
 			}
 		}
@@ -303,9 +301,9 @@ namespace DOL.GS.DailyQuest.Albion
 				switch (Step)
 				{
 					case 1:
-						return "Find Danaoin Farmers in the West or North in Lyonesse. \nKilled: Danaoin Farmers ("+ danaoinKilled +" | 10)";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.NamedMobDescription", "Danaoin Farmers", "the West or North of Lyonesse", danaoinKilled, MAX_KILLED);
 					case 2:
-						return "Return to James in Caer Gothwaite for your Reward.";
+						return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "James", "Caer Gothwaite");
 				}
 				return base.Description;
 			}
@@ -317,7 +315,7 @@ namespace DOL.GS.DailyQuest.Albion
 
 			if (player == null || player.IsDoingQuest(typeof(DanaoinKillQuestAlb)) == null)
 				return;
-			
+
 			if (sender != m_questPlayer)
 				return;
 
@@ -325,16 +323,16 @@ namespace DOL.GS.DailyQuest.Albion
 			EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
 			if (gArgs.Target.Name.ToLower() != "danaoin farmer") return;
 			danaoinKilled++;
-			player.Out.SendMessage("[Daily] Danaoin Farmers Killed: ("+danaoinKilled+" | "+MAX_KILLED+")", eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
+			player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NamedDailyKilled", "Danaoin Farmers", danaoinKilled, MAX_KILLED), eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
 			player.Out.SendQuestUpdate(this);
-					
+
 			if (danaoinKilled >= MAX_KILLED)
 			{
 				Step = 2;
 			}
 
 		}
-		
+
 		public override string QuestPropertyKey
 		{
 			get => "DanaoinKillQuestAlb";

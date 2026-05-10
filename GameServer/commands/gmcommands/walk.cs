@@ -1,16 +1,16 @@
 /*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -19,6 +19,7 @@
 
 using System;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
@@ -44,7 +45,7 @@ namespace DOL.GS.Commands
 			{
 				if (targetNPC == null)
 				{
-					client.Out.SendMessage("Type /stop to stop your target npc from moving", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Walk.StopNeedsTarget"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return;
 				}
 				targetNPC.StopMoving();
@@ -52,14 +53,14 @@ namespace DOL.GS.Commands
 			}
 			if (args.Length < 4)
 			{
-				client.Out.SendMessage("Usage:", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-				client.Out.SendMessage("'/walk <xoff> <yoff> <zoff> <speed>'", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Walk.UsageTitle"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Walk.UsageSyntax"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 
 			if (targetNPC == null)
 			{
-				client.Out.SendMessage("Type /walk for command overview", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Walk.CommandOverview"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 			int xoff = 0;
@@ -76,7 +77,7 @@ namespace DOL.GS.Commands
 			}
 			catch (Exception)
 			{
-				client.Out.SendMessage("Type /walk for command overview", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Walk.CommandOverview"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return;
 			}
 

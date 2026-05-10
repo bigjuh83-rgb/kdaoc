@@ -1,0 +1,159 @@
+# Other Expansion Content
+
+## Horse
+HorseEmote.MustBeOnMount:					탈것에 탄 상태에서만 할 수 있습니다.
+HorseEmote.You:							당신
+HorseEmote.courbette.ToOthers:				-
+HorseEmote.courbette.ToSource:				-
+HorseEmote.courbette.NoTargetToOthers:			{0}의 탈것이 쿠르베트를 합니다.
+HorseEmote.courbette.NoTargetToSource:			당신의 탈것이 쿠르베트를 합니다.
+HorseEmote.graze.ToOthers:					-
+HorseEmote.graze.ToSource:					-
+HorseEmote.graze.NoTargetToOthers:				{0}이(가) {1}의 탈것이 풀을 뜯게 둡니다.
+HorseEmote.graze.NoTargetToSource:				당신의 탈것이 풀을 뜯게 둡니다.
+HorseEmote.halt.ToOthers:					{0}이(가) {1}에게 멈추라고 명령합니다.
+HorseEmote.halt.ToSource:					당신은 {0}에게 멈추라고 명령합니다.
+HorseEmote.halt.NoTargetToOthers:				{0}이(가) 모두에게 멈추라고 명령합니다.
+HorseEmote.halt.NoTargetToSource:				당신은 모두에게 멈추라고 명령합니다.
+HorseEmote.nod.ToOthers:						{0}의 탈것이 {1}에게 고개를 끄덕입니다.
+HorseEmote.nod.ToSource:						당신의 탈것이 {0}에게 고개를 끄덕입니다.
+HorseEmote.nod.NoTargetToOthers:				{0}의 탈것이 고개를 끄덕입니다.
+HorseEmote.nod.NoTargetToSource:				당신의 탈것이 고개를 끄덕입니다.
+HorseEmote.pet.ToOthers:						-
+HorseEmote.pet.ToSource:						-
+HorseEmote.pet.NoTargetToOthers:				{0}이(가) {1}의 탈것을 쓰다듬습니다.
+HorseEmote.pet.NoTargetToSource:				당신은 탈것을 쓰다듬습니다.
+HorseEmote.rear.ToOthers:					{0}의 탈것이 {1}을(를) 보고 앞발을 듭니다.
+HorseEmote.rear.ToSource:					당신의 탈것이 {0}을(를) 보고 앞발을 듭니다.
+HorseEmote.rear.NoTargetToOthers:				{0}의 탈것이 앞발을 듭니다.
+HorseEmote.rear.NoTargetToSource:				당신의 탈것이 앞발을 듭니다.
+HorseEmote.startle.ToOthers:					{0}의 탈것이 {1} 때문에 놀랍니다.
+HorseEmote.startle.ToSource:					당신의 탈것이 {0} 때문에 놀랍니다.
+HorseEmote.startle.NoTargetToOthers:			{0}의 탈것이 놀랍니다.
+HorseEmote.startle.NoTargetToSource:			당신의 탈것이 놀랍니다.
+HorseEmote.trick.ToOthers:					{0}이(가) {1}에게 보여주려고 {2}의 탈것 위에 섭니다.
+HorseEmote.trick.ToSource:					당신은 {0}에게 보여주려고 탈것 위에 섭니다.
+HorseEmote.trick.NoTargetToOthers:				{0}이(가) 모두에게 보여주려고 {1}의 탈것 위에 섭니다.
+HorseEmote.trick.NoTargetToSource:				당신은 모두에게 보여주려고 탈것 위에 섭니다.
+GameNPC.Interact.IsFull:					이 {0}은(는) 가득 찼습니다.
+GamePlayer.UseSlot.StopCallingMount:			탈것 호출을 중단합니다.
+GamePlayer.UseSlot.SummonHorseLevel:			이 말을 소환하려면 {0}레벨이 필요합니다.
+GamePlayer.UseSlot.WhistleMount:				탈것을 부르기 위해 휘파람을 붑니다.
+GamePlayer.UseSlot.CantSummonRvR:				RvR 지역에서는 해당 탈것을 소환할 수 없습니다.
+GamePlayer.UseSlot.CantMountCombat:				전투 중에는 탈것을 부를 수 없습니다.
+GamePlayer.UseSlot.CantMountHere:			여기서는 탈것을 소환할 수 없습니다!
+GamePlayer.UseSlot.CantMountMoving:				이동 중에는 탈것에 탈 수 없습니다.
+GamePlayer.UseSlot.CantMountStealthed:			은신 중에는 탈것에 탈 수 없습니다.
+GamePlayer.UseSlot.CantMountWhileDead:			사망 상태에서는 탈것에 탈 수 없습니다.
+GamePlayer.UseSlot.CantMountRelicCarrier:		렐릭을 운반 중에는 탈것에 탈 수 없습니다!
+GamePlayer.UseSlot.CantCallMountSeated:			앉은 상태에서는 탈것을 부를 수 없습니다.
+GamePlayer.Sit.InterruptCallMount:			앉으려 하면서 탈것 호출이 중단됩니다.
+
+## Horse Details
+DetailDisplayHandler.WriteHorseInfo.AdvancedHorse:	    고급 말입니다.
+DetailDisplayHandler.WriteHorseInfo.Armor:		- 방어구: {0}
+DetailDisplayHandler.WriteHorseInfo.Barding:		- 마갑: 없음
+DetailDisplayHandler.WriteHorseInfo.BasicHorse:		기본 말입니다.
+DetailDisplayHandler.WriteHorseInfo.Food:		- 좋아하는 먹이: 건초와 가끔 먹는 사과
+DetailDisplayHandler.WriteHorseInfo.MountWindow:	이 말을 활성 탈것으로 지정하려면 탈것 창의 적절한 슬롯에 이 아이콘을 놓으세요.
+DetailDisplayHandler.WriteHorseInfo.Name:		- 이름: {0}.
+DetailDisplayHandler.WriteHorseInfo.NameMount:		  (/namemount로 말 이름을 지을 수 있습니다.)
+DetailDisplayHandler.WriteHorseInfo.Quickbar:		이 말을 소환하려면 탈것 창에서 말 아이콘을 퀵바로 끌어다 놓고 퀵바 아이콘을 사용하세요.
+DetailDisplayHandler.WriteHorseInfo.RvRZzones:		RvR 지역에서는 소환할 수 없습니다.
+DetailDisplayHandler.WriteHorseInfo.Speed1:		(+35% 속도)
+DetailDisplayHandler.WriteHorseInfo.Speed2:		(+45% 속도)
+DetailDisplayHandler.WriteHorseInfo.Summon:		퀵바의 이 아이콘을 클릭해 말을 소환하거나 내릴 수 있습니다.
+GamePlayer.OnPlayerMove.CannotCallMount:		이동 중에는 탈것을 부를 수 없습니다.
+
+## Boats
+Scripts.Player.Boat.AlreadyOnBoat:			해당 플레이어는 이미 배에 타고 있습니다!
+Scripts.Player.Boat.BoardingDenied:			{0} 승선 요청이 거절되었습니다.
+Scripts.Player.Boat.BoardingGranted:			승선 요청을 수락했습니다.
+Scripts.Player.Boat.BoardingRequest:			{0}이(가) 당신의 배에 타려고 합니다. 수락하시겠습니까?
+Scripts.Player.Boat.BoatTooFar:				{0}이(가) 너무 멀어 승선할 수 없습니다.
+Scripts.Player.Boat.BootedBy:				{0}에 의해 배에서 쫓겨났습니다.
+Scripts.Player.Boat.BootedTarget:			{0}을(를) 배에서 내보냈습니다.
+Scripts.Player.Boat.DeleteConfirmation:			정말 당신의 배 {0}을(를) 삭제하시겠습니까?
+Scripts.Player.Boat.FullBoat:				배가 현재 가득 찼습니다.
+Scripts.Player.Boat.Help.Board:				'/boat board' - 대상 배에 탑승합니다.
+Scripts.Player.Boat.Help.Boot:				'/boat boot' - 선택한 플레이어를 당신의 배에서 내보냅니다.
+Scripts.Player.Boat.Help.Delete:			'/boat delete' - 현재 배 삭제 확인 창을 엽니다. 삭제하면 복구할 수 없습니다.
+Scripts.Player.Boat.Help.Follow:			'/boat follow' - 배가 선택한 대상을 따라가게 합니다.
+Scripts.Player.Boat.Help.StopFollow:			'/boat stopfollow' - 배가 대상을 따라가는 것을 중지합니다.
+Scripts.Player.Boat.Help.Summon:			'/boat summon' - 배를 소환합니다.
+Scripts.Player.Boat.Help.Unsummon:			'/boat unsummon' - 대상 배의 소환을 해제합니다.
+Scripts.Player.Boat.InviteNoSelf:			자기 자신은 초대할 수 없습니다!
+Scripts.Player.Boat.InviteRecieved:			{0}이(가) 배에 함께 타도록 초대했습니다.
+Scripts.Player.Boat.InviteSent:				{0}을(를) 당신의 배에 초대했습니다.
+Scripts.Player.Boat.MoveFollow:				당신의 배가 {0}을(를) 따라가기 시작합니다.
+Scripts.Player.Boat.NoBoatSelected:			먼저 배를 선택해야 합니다!
+Scripts.Player.Boat.NoPlayerSelected:			먼저 플레이어를 선택해야 합니다.
+Scripts.Player.Boat.NotInWater:				배를 소환하려면 먼저 물 안에 있어야 합니다!
+Scripts.Player.Boat.NotOwnBoat:				당신 소유의 배가 아닙니다.
+Scripts.Player.Boat.OwnerNotOn:				그 배의 소유자가 접속 중이 아닙니다.
+Scripts.Player.Boat.PlayerIsDead:			사망한 플레이어와는 상호작용할 수 없습니다!
+Scripts.Player.Boat.StopFollow:				배를 정지시켰습니다.
+Scripts.Player.Boat.Summoned:				당신의 {0}이(가) 소환되었습니다.
+Scripts.Player.Boat.TargetNotInBoat:			{0}은(는) 당신의 배에 타고 있지 않습니다.
+Scripts.Player.Boat.UnknownCommand:			올바른 배 명령어가 아닙니다. 도움말은 /boat를 입력하세요.
+Scripts.Player.Boat.Unsummoned:				당신의 {0} 소환이 해제되었습니다.
+Scripts.Player.Boat.Usage:				사용법:
+Scripts.Player.Boat.YouBoard:				{0}에 탑승합니다.
+GamePlayer.PickupObject.TooFarFromBoat:			배에서 너무 멀어 탑승할 수 없습니다!
+
+## Bodyguard
+Effects.BodyguardEffect.Name:					보디가드
+Effects.BodyguardEffect.InfoEffect:				성공하면 대상에게 향한 공격을 대신 막습니다.
+Effects.BodyguardEffect.NowBGXButSC:			이제 {0}을(를) 보디가드하지만, 더 가까이 서야 합니다.
+Effects.BodyguardEffect.XNowBGYouButSC:			{0}이(가) 이제 당신을 보디가드하지만, 더 가까이 서야 합니다.
+Effects.BodyguardEffect.YouAreNowBGX:			이제 {0}을(를) 보디가드합니다.
+Effects.BodyguardEffect.XIsBGYou:				{0}이(가) 이제 당신을 보디가드합니다.
+Effects.BodyguardEffect.YouAreNoLongerBGX:		더 이상 {0}을(를) 보디가드하지 않습니다.
+Effects.BodyguardEffect.XIsNoLongerBGYou:		{0}이(가) 더 이상 당신을 보디가드하지 않습니다.
+Effects.BodyguardEffect.XIsBodyguardingY:		{0}이(가) {1}을(를) 보디가드 중입니다
+Effects.BodyguardEffect.BodyguardedByName:		{0}은(는) {1}의 보호를 받고 있습니다
+Skill.Ability.CannotUse.Bodyguard.Dead:	사망 상태에서는 보디가드를 사용할 수 없습니다!
+Skill.Ability.CannotUse.Bodyguard.CancelTargetNull:	더 이상 아무도 보디가드하지 않습니다.
+Skill.Ability.CannotUse.Bodyguard.GuardTargetIsGuardSource:	자기 자신은 보디가드할 수 없습니다!
+Skill.Ability.CannotUse.Bodyguard.NotInGroup:	그룹원만 보디가드할 수 있습니다!
+Skill.Ability.CannotUse.Bodyguard.GuardTargetAlreadyBodyGuarded:	{0}은(는) 이미 {1}을(를) 보호하고 있습니다!
+Skill.Ability.CannotUse.Bodyguard.GuardSourceBodyGuarded:	보디가드 보호를 받는 동안에는 다른 사람을 보디가드할 수 없습니다!
+GameLiving.CalculateEnemyAttackResult.YouAttempt:		{0}을(를) 공격하려 했지만, {1}은(는) {2}의 보호를 받고 있습니다!
+GameLiving.CalculateEnemyAttackResult.YouHaveProtected: 	{1}의 공격에서 {0}을(를) 보호했습니다!
+GameLiving.CalculateEnemyAttackResult.YourPetAttempts:		당신의 펫이 {0}을(를) 공격하려 했지만, {1}은(는) {2}의 보호를 받고 있습니다!
+GameLiving.CalculateEnemyAttackResult.YouWereProtected:		{1}의 공격에서 {0}이(가) 당신을 보호했습니다!
+
+## Banners
+Effects.BannerOfWardingEffect.Name:				수호의 배너
+Effects.BannerOfWardingEffect.Description:		모든 마법 저항에 10% 보너스를 부여합니다.
+Effects.BannerOfShieldingEffect.Name:			방패의 배너
+Effects.BannerOfShieldingEffect.Description:	모든 근접 저항에 6% 보너스를 부여합니다.
+Effects.BannerOfFreedomEffect.Name:				자유의 배너
+Effects.BannerOfFreedomEffect.Description:		모든 군중 제어 효과를 6% 감소시킵니다.
+Effects.BannerOfBesiegingEffect.Name:			공성의 배너
+Effects.BannerOfBesiegingEffect.Description:	공성 무기의 발사 속도를 6% 감소시킵니다.
+
+## Brittle Guard
+GameLiving.CalculateEnemyAttackResult.BlowIntercepted:		공격이 브리틀 가드에 의해 가로막혔습니다!
+GameLiving.CalculateEnemyAttackResult.StrikeIntercepted:	당신의 공격이 브리틀 가드에 의해 가로막혔습니다!
+
+## Details
+DetailDisplayHandler.HandlePacket.ChampionLevel:	 - 필요 조건: 챔피언 레벨 {0}
+
+## King Throne NPC
+CLWeaponNPC.ReceiveItem.RespecCL:			감사합니다. /respec cl로 사용할 수 있는 챔피언 스킬 재분배 1회를 추가했습니다.
+KingNPC.WhisperReceive.IsNowChampion:			이제 챔피언의 삶을 받아들였습니다!
+KingNPC.WhisperReceive.AlreadyChampion:			이미 챔피언입니다!
+KingNPC.WhisperReceive.AskForChampion:			[챔피언]의 삶을 받아들이시겠습니까?
+
+## Warlock
+GamePlayer.CastSpell.AlreadyChosenSpells:		이미 이 챔버에 사용할 주문을 선택했습니다.
+GamePlayer.CastSpell.FollowSpell:			후속 주문으로 {0}을(를) 준비합니다!
+GamePlayer.CastSpell.NotAFollowSpell:			이 주문은 후속 주문으로 준비할 수 없습니다!
+GamePlayer.CastSpell.PrimarySpellFirst:			먼저 기본 주문을 저장해야 합니다!
+GamePlayer.CastSpell.PrepareSecondarySpell:		이 주문을 보조 주문으로 준비합니다!
+GamePlayer.CastSpell.SelectSecondSpell:			{0}에 사용할 두 번째 주문을 선택하세요.
+GamePlayer.CastSpell.SpellInChamber:			{0}을(를) {1}에 장전했습니다.
+GamePlayer.CastSpell.SpellNotInChamber:			이 주문은 이 챔버에 저장할 수 없습니다.
+GamePlayer.CastSpell.OnlyASecondarySpell:		시전 중인 주문에는 보조 주문만 후속으로 연결할 수 있습니다!
+GamePlayer.CastSpell.CantSpellDirectly:			이 주문은 직접 시전할 수 없습니다!

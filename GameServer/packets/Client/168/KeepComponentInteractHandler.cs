@@ -1,4 +1,5 @@
 using DOL.GS.Keeps;
+using DOL.Language;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -24,7 +25,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 			else if (responce == 0x02)//select an hookpoint
 			{
 				if (client.Account.PrivLevel > 1)
-					client.Out.SendMessage("DEBUG : selected hookpoint id " + HPindex, eChatType.CT_Say, eChatLoc.CL_SystemWindow);
+					client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "KeepComponentInteract.DebugSelectedHookPoint", HPindex), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 
 				GameKeepComponent hp = keep.KeepComponents[wallId];
 				client.Out.SendClearKeepComponentHookPoint(hp, HPindex);

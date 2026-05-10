@@ -147,7 +147,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
 
         private static void TalkToJarek(DOLEvent e, object sender, EventArgs args)
         {
-            //We get the player from the event arguments and check if he qualifies		
+            //We get the player from the event arguments and check if he qualifies
             GamePlayer player = ((SourceEventArgs) args).Source as GamePlayer;
             if (player == null)
                 return;
@@ -169,15 +169,13 @@ namespace DOL.GS.WeeklyQuest.Midgard
                                 "Please, enter Tuscaren Glacier and slay strong opponents. If you succeed come back for your reward.");
                             break;
                         case 2:
-                            Jarek.SayTo(player, "Hello " + player.Name + ", did you [succeed]?");
+                            Jarek.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.DidYouToken", player.Name, "[succeed]"));
                             break;
                     }
                 }
                 else
                 {
-                    Jarek.SayTo(player, "Hello " + player.Name + ", I am Jarek. " +
-                                        "A Shadowblade has reported the forces in Tuscaren Glacier are planning an attack. \n" +
-                                        "We want to pre-empt them and [end their plotting] before they have the chance. Care to help?");
+                    Jarek.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyBossQuestIntro", player.Name, "Jarek", "Tuscarian Glacier"));
                 }
             }
             // The player whispered to the NPC
@@ -189,9 +187,10 @@ namespace DOL.GS.WeeklyQuest.Midgard
                     switch (wArgs.Text)
                     {
                         case "end their plotting":
+						case "음모 저지":
                             player.Out.SendQuestSubscribeCommand(Jarek,
                                 QuestMgr.GetIDForQuestType(typeof(TuscarianBossQuestMid)),
-                                "Will you help Jarek " + questTitle + "");
+                                DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.HelpNpcQuest", "Jarek", questTitle));
                             break;
                     }
                 }
@@ -202,7 +201,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
                         case "succeed":
                             if (quest.Step == 2)
                             {
-                                player.Out.SendMessage("Thank you for your contribution!", eChatType.CT_Chat,
+                                player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThankContribution"), eChatType.CT_Chat,
                                     eChatLoc.CL_PopupWindow);
                                 quest.FinishQuest();
                             }
@@ -210,7 +209,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
                             break;
                         case "abort":
                             player.Out.SendCustomDialog(
-                                "Do you really want to abort this quest, \nall items gained during quest will be lost?",
+                                DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"),
                                 new CustomDialogResponse(CheckPlayerAbortQuest));
                             break;
                     }
@@ -246,11 +245,11 @@ namespace DOL.GS.WeeklyQuest.Midgard
 
             if (response == 0x00)
             {
-                SendSystemMessage(player, "Good, now go out there and finish your work!");
+                SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ContinueQuestWork"));
             }
             else
             {
-                SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+                SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
                 quest.AbortQuest();
             }
         }
@@ -280,7 +279,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
 
             if (response == 0x00)
             {
-                player.Out.SendMessage("Thank you for helping Midgard.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.ThanksForHelpingRealm", "Midgard"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
             }
             else
             {
@@ -288,7 +287,7 @@ namespace DOL.GS.WeeklyQuest.Midgard
                 if (!Jarek.GiveQuest(typeof(TuscarianBossQuestMid), player, 1))
                     return;
 
-                Jarek.SayTo(player, "Thank you " + player.Name + ", be an enrichment for our realm!");
+                Jarek.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EnrichmentRealm", player.Name));
             }
         }
 
@@ -306,10 +305,9 @@ namespace DOL.GS.WeeklyQuest.Midgard
                 switch (Step)
                 {
                     case 1:
-                        return "Find a way to Tuscaran Glacier and kill strong opponents. \nKilled: Bosses in Tuscaran Glacier (" +
-                               _deadTuscaBossMob + " | "+ MAX_KILLGOAL +")";
+                        return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.WeeklyBossQuestDescription", "Tuscaran Glacier", _deadTuscaBossMob, MAX_KILLGOAL);
                     case 2:
-                        return "Return to Jarek in Aegirhamn for your Reward.";
+                        return DOL.Language.LanguageMgr.GetTranslation(m_questPlayer.Client.Account.Language, "Quest.Common.ReturnToNpcLocation", "Jarek", "Aegirhamn");
                 }
 
                 return base.Description;
@@ -328,13 +326,13 @@ namespace DOL.GS.WeeklyQuest.Midgard
 
             if (Step != 1 || e != GameLivingEvent.EnemyKilled) return;
             EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs) args;
-                
+
             // check if a GameEpicBoss died + if its in Tuscaran Glacier
             if (gArgs.Target.Realm == 0 && gArgs.Target is GameEpicBoss && gArgs.Target.CurrentRegionID == 160)
             {
                 _deadTuscaBossMob++;
                 player.Out.SendMessage(
-                    "[Weekly] Bosses killed in Tuscaran Glacier: (" + _deadTuscaBossMob + " | " + MAX_KILLGOAL + ")",
+                    DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.WeeklyBossesKilled", "Tuscaran Glacier", _deadTuscaBossMob, MAX_KILLGOAL),
                     eChatType.CT_ScreenCenter, eChatLoc.CL_SystemWindow);
                 player.Out.SendQuestUpdate(this);
 

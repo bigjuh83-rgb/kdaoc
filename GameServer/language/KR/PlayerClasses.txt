@@ -1,0 +1,115 @@
+﻿# Player Classes
+
+## Class Professions
+
+### Albion
+PlayerClass.Profession.Academy:			    아카데미
+PlayerClass.Profession.ChurchofAlbion:		알비온 교회
+PlayerClass.Profession.DefendersofAlbion:	알비온 수호대
+PlayerClass.Profession.GuildofShadows:		그림자 길드
+PlayerClass.Profession.TempleofArawn:		아라운 사원
+
+### Hibernia
+PlayerClass.Profession.PathofAffinity:		친화의 길
+PlayerClass.Profession.PathofEssence:		정수의 길
+PlayerClass.Profession.PathofFocus:		    집중의 길
+PlayerClass.Profession.PathofHarmony:		조화의 길
+
+### Midgard
+PlayerClass.Profession.HouseofBodgar:		보드가르 가문
+PlayerClass.Profession.HouseofBragi:		브라기 가문
+PlayerClass.Profession.HouseofEir:		    에이르 가문
+PlayerClass.Profession.HouseofHel:		    헬 가문
+PlayerClass.Profession.HouseofKelgor:		켈고르 가문
+PlayerClass.Profession.Loki:			    로키 가문
+PlayerClass.Profession.HouseofModi:		    모디 가문
+PlayerClass.Profession.HouseofOdin:		    오딘 가문
+PlayerClass.Profession.HouseofSkadi:		스카디 가문
+PlayerClass.Profession.HouseofThor:		    토르 가문
+PlayerClass.Profession.HouseofTyr:		    티르 가문
+PlayerClass.Profession.HouseofYmir:		    이미르 가문
+
+### Mauler
+PlayerClass.Profession.TempleofIronFist:	철권 사원
+
+## Classes
+
+### Albion
+#### Base
+PlayerClass.Name.Acolyte:			        애콜라이트
+PlayerClass.Name.Disciple:			        디사이플
+PlayerClass.Name.Elementalist:			    엘리멘탈리스트
+PlayerClass.Name.Fighter:			        파이터
+PlayerClass.Name.Mage:				        메이지
+PlayerClass.Name.AlbionRogue:			    로그
+
+#### Advanced
+PlayerClass.Name.Armsman:			        암즈맨
+PlayerClass.Name.Cabalist:			        카발리스트
+PlayerClass.Name.Cleric:			        클레릭
+PlayerClass.Name.Friar:				        프라이어
+PlayerClass.Name.Heretic:			        헤러틱
+PlayerClass.Name.Infiltrator:			    인필트레이터
+PlayerClass.Name.Mauler_Alb:			    마울러
+PlayerClass.Name.Mercenary:			        머서너리
+PlayerClass.Name.Minstrel:			        민스트럴
+PlayerClass.Name.Necromancer:			    네크로맨서
+PlayerClass.Name.Paladin:			        팔라딘
+PlayerClass.Name.Reaver:			        리버
+PlayerClass.Name.Scout:				        스카우트
+PlayerClass.Name.Sorcerer:			        소서러
+PlayerClass.Name.Theurgist:			        써지스트
+PlayerClass.Name.Wizard:			        위저드
+
+### Hibernia
+#### Base
+PlayerClass.Name.Forester:			        포레스터
+PlayerClass.Name.Guardian:			        가디언
+PlayerClass.Name.Magician:			        매지션
+PlayerClass.Name.Naturalist:			    내추럴리스트
+PlayerClass.Name.Stalker:			        스토커
+
+#### Advanced
+PlayerClass.Name.Animist:			        애니미스트
+PlayerClass.Name.Bainshee:			        밴시
+PlayerClass.Name.Bard:				        바드
+PlayerClass.Name.Blademaster:			    블레이드마스터
+PlayerClass.Name.Champion:			        챔피언
+PlayerClass.Name.Druid:				        드루이드
+PlayerClass.Name.Eldritch:			        엘드리치
+PlayerClass.Name.Enchanter:			        인챈터
+PlayerClass.Name.Hero:				        히어로
+PlayerClass.Name.Mauler_Hib:			    마울러
+PlayerClass.Name.Mentalist:			        멘탈리스트
+PlayerClass.Name.Nightshade:			    나이트셰이드
+PlayerClass.Name.Ranger:			        레인저
+PlayerClass.Name.Valewalker:			    베일워커
+PlayerClass.Name.Vampiir:			        뱀피르
+PlayerClass.Name.Warden:			        워든
+
+### Midgard
+#### Base
+PlayerClass.Name.Mystic:			        미스틱
+PlayerClass.Name.MidgardRogue:			    로그
+PlayerClass.Name.Seer:				        시어
+PlayerClass.Name.Viking:			        바이킹
+
+#### Advanced
+PlayerClass.Name.Berserker:			        버서커
+PlayerClass.Name.Bonedancer:			    본댄서
+PlayerClass.Name.Healer:			        힐러
+PlayerClass.Name.Hunter:			        헌터
+PlayerClass.Name.Mauler_Mid:			    마울러
+PlayerClass.Name.Runemaster:			    룬마스터
+PlayerClass.Name.Savage:			        새비지
+PlayerClass.Name.Shadowblade:			    섀도우블레이드
+PlayerClass.Name.Shaman:			        샤먼
+PlayerClass.Name.Skald:				        스칼드
+PlayerClass.Name.Spiritmaster:			    스피릿마스터
+PlayerClass.Name.Thane:				        세인
+PlayerClass.Name.Valkyrie:			        발키리
+PlayerClass.Name.Warlock:			        워록
+PlayerClass.Name.Warrior:			        워리어
+
+## Autotraining
+PlayerClass.OnLevelUp.Autotrain:		    이제 {0}을(를) {1}레벨까지 무료로 훈련할 수 있습니다.

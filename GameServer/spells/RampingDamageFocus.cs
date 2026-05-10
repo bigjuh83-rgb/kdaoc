@@ -13,7 +13,7 @@ namespace DOL.GS.Spells
 		private int pulseCount = 0;
 		private ISpellHandler snareSubSpell;
 
-		public RampingDamageFocus(GameLiving caster, Spell spell, SpellLine spellLine) : base(caster, new FocusSpell(spell), spellLine) 
+		public RampingDamageFocus(GameLiving caster, Spell spell, SpellLine spellLine) : base(caster, new FocusSpell(spell), spellLine)
 		{
 			snareSubSpell = Spell.Value > 0 ? CreateSnare() : null;
 		}
@@ -44,7 +44,7 @@ namespace DOL.GS.Spells
 			}
 			else
 			{
-				MessageToCaster("You do not have enough power and your spell was canceled.", eChatType.CT_SpellExpires);
+				MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client, "RampingDamageFocus.NotEnoughPowerCanceled"), eChatType.CT_SpellExpires);
 				CancelFocusSpells();
 				effect.Cancel(false);
 			}
@@ -88,7 +88,7 @@ namespace DOL.GS.Spells
 					OnSpellNegated(target, SpellNegatedReason.Resisted);
 					continue;
 				}
-				
+
 				DealDamage(t);
 
 				if (Spell.Value > 0)
@@ -109,7 +109,7 @@ namespace DOL.GS.Spells
 			AttackData ad = CalculateDamageToTarget(target);
 			ad.Damage += (int)(ad.Damage * damageIncreaseInPercent);
 			SendDamageMessages(ad);
-			DamageTarget(ad, true);			
+			DamageTarget(ad, true);
 			target.StartInterruptTimer(target.SpellInterruptDuration, ad.AttackType, Caster);
 		}
 
@@ -182,7 +182,7 @@ namespace DOL.GS.Spells
 
 	public class FocusSpell : Spell
 	{
-		public FocusSpell(Spell spell) : base(spell, spell.SpellType) 
+		public FocusSpell(Spell spell) : base(spell, spell.SpellType)
 		{
 			if (spell.Frequency == 0) Frequency = 5000;
 			else Frequency = spell.Frequency;

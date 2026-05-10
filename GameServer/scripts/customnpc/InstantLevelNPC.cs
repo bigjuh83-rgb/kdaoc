@@ -1,8 +1,8 @@
 ﻿/*
  *  Script by clait
- *  
+ *
  *  This NPC will level the player to 10, 20, 30, 40 or 50
- * 
+ *
  */
 
 using System;
@@ -14,6 +14,7 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using DOL.Database;
+using DOL.Language;
 
 
 namespace DOL.GS.Scripts
@@ -22,7 +23,7 @@ namespace DOL.GS.Scripts
     public class InstantLevelNPC : GameNPC
     {
         private static new readonly Logging.Logger log = Logging.LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);
-        
+
 		public override bool AddToWorld()
 		{
 			Name = "Free Levels";
@@ -48,8 +49,8 @@ namespace DOL.GS.Scripts
         {
             if (!base.Interact(player))
                 return false;
-           
-            player.Out.SendMessage("Hello "+player.Name+", during the alpha test I am able to help your character with experience.\n\n Would you like to be [10], [20], [30], [40] or [50]?\n\n\nI've also been given the power to [reset] your character level to 1, should you ask me to.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantLevelNPC.Interact.Menu", player.Name), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 
             return true;
         }
@@ -68,60 +69,61 @@ namespace DOL.GS.Scripts
             {
                 case "10":
                     if (player.Level >= 10) {
-                       player.Out.SendMessage("My Calculus 3 spell suggest your level is already higher.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                       player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantLevelNPC.LevelAlreadyHigher"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                        return false;
                     }
                     else {
-                        player.Out.SendMessage("I have given you enough experience to reach level 10!", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantLevelNPC.LevelGranted", 10), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                         player.Level = 10;
                         return true;
                     }
                 case "20":
                     if (player.Level >= 20) {
-                       player.Out.SendMessage("My Calculus 3 spell suggest your level is already higher.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                       player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantLevelNPC.LevelAlreadyHigher"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                        return false;
                     }
                     else {
-                        player.Out.SendMessage("I have given you enough experience to reach level 20!", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantLevelNPC.LevelGranted", 20), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                         player.Level = 20;
                         return true;
                     }
                 case "30":
                     if (player.Level >= 30) {
-                       player.Out.SendMessage("My Calculus 3 spell suggest your level is already higher.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                       player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantLevelNPC.LevelAlreadyHigher"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                        return false;
                     }
                     else {
-                        player.Out.SendMessage("I have given you enough experience to reach level 30!", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantLevelNPC.LevelGranted", 30), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                         player.Level = 30;
                         return true;
                     }
                 case "40":
                     if (player.Level >= 40) {
-                       player.Out.SendMessage("My Calculus 3 spell suggest your level is already higher.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                       player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantLevelNPC.LevelAlreadyHigher"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                        return false;
                     }
                     else {
-                        player.Out.SendMessage("I have given you enough experience to reach level 40!", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantLevelNPC.LevelGranted", 40), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                         player.Level = 40;
                         return true;
                     }
                 case "50":
                     if (player.Level >= 50) {
-                       player.Out.SendMessage("My Calculus 3 spell suggest your level is already higher.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                       player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantLevelNPC.LevelAlreadyHigher"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                        return false;
                     }
                     else {
-                        player.Out.SendMessage("I have given you enough experience to reach level 50!", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+                        player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantLevelNPC.LevelGranted", 50), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                         player.Level = 50;
                         return true;
                     }
-                case "reset":
-                    player.Out.SendMessage("I have reset all your experience.\n\n Please relog your character to apply the change.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+	                case "reset":
+	                case "초기화":
+                    player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "InstantLevelNPC.LevelReset"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
                     player.Level = 1;
                     return true;
 
-                default: 
+                default:
                     return false;
 
                 return true;

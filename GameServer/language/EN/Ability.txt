@@ -27,6 +27,8 @@ Effects.BerserkEffect.StartFrenzy:		                You go into a berserker fren
 Effects.BerserkEffect.AreaStartFrenzy:                  {0} goes into a berserker frenzy!
 Effects.BerserkEffect.EndFrenzy:		                Your berserker frenzy ends.
 Effects.BerserkEffect.AreaEndFrenzy:                    {0}'s berserker frenzy ends.
+Effects.BerserkEffect.GoBerserkerFrenzy:                You go into a berserker frenzy!
+Effects.BerserkEffect.BerserkerFrenzyEnds:              Your berserker frenzy ends.
 
 ## Camouflage
 Effects.CamouflageEffect.Name:					Camouflage
@@ -42,9 +44,12 @@ Skill.Ability.CannotUse.Camouflage.DisableDuration:	You must wait {0} more secon
 
 ## Charge
 Effects.ChargeEffect.StartCharge:                       You begin to charge wildly!
+Effects.ChargeEffect.StartChargingTarget:               You are now charging {0}!
 Effects.ChargeEffect.AreaStartCharge:                   {0} begins charging wildly!
 Effects.ChargeEffect.EndCharge:                         You are no longer charging your target.
 Effects.ChargeEffect.AreaEndCharge:                     {0} ceases their charge!
+Effects.ChargeEffect.PetCharges:                        The {0} charges its prey!
+Effects.ChargeEffect.PetCeases:                         The {0} ceases its charge!
 
 ## Critical Shot
 Skill.Ability.CriticalShot.SwitchToRegular:	You switch to a regular shot!
@@ -58,6 +63,8 @@ Effects.DirtyTricks.EffectCancel:	                    You can see clearly again.
 Effects.DirtyTricks.AreaEffectCancel:                   {0} can see clearly again.
 Effects.DirtyTricks.EffectStart:	                    {0} flings a cloud of dirt in your eyes!
 Effects.DirtyTricks.AreaEffectStart:                    {0} flings dirt in {1}'s eyes!
+Skill.Ability.DirtyTricks.EffectStart:                  {0} flings a cloud of dirt in your eyes!
+Skill.Ability.DirtyTricks.EffectCancel:                 You can see clearly again.
 
 ## Engage
 Effects.EngageEffect.Name:						Engage
@@ -112,6 +119,7 @@ Effects.InterceptEffect.InterceptedByName:		{0} intercepted by {1}
 Effects.InterceptEffect.XInterceptingY:			{0} is intercepting for {0}
 Skill.Ability.Intercept.CannotUse.InterceptTargetAlreadyInterceptedEffect:	{0} is already intercepting for {1}.
 Skill.Ability.Intercept.CannotUse.NotInGroup:	You can only take intercept attacks for players in your group!
+Skill.Ability.Intercept.CannotUse.CantInterceptYourself:	You cannot intercept attacks for yourself!
 Skill.Ability.Intercept.CancelTargetNull:	You are no longer attempting to intercept attacks for anyone.
 GameLiving.AttackData.YouStepInFront:		You step in front of {0} and take the blow!
 GameLiving.AttackData.StepsInFront:		{0} steps in front of you and takes the blow!
@@ -168,6 +176,7 @@ Skill.Ability.Stealth.CannotUseToCloseAnEnemy:	You are too close to an enemy to 
 Skill.Ability.Stealth.CannotUseStunned:	You can't hide while stunned!
 Skill.Ability.Stealth.CannotUseMezzed:	You can't hide while mesmerized!
 Skill.Ability.Stealth.CannotUseActivePulsingSpell:	You currently have an active, pulsing spell effect and cannot hide!
+Skill.Ability.Stealth.CannotUseActiveVolley:	You can't hide while Volley is active!
 Skill.Ability.Stealth.CannotUseCombatState:	You must end your current action before hiding!
 Skill.Ability.Stealth.CannotUseDead:	You can't hide when dead!
 Skill.Ability.Stealth.CannotUseInCombat: You've been in combat recently and can't hide yet!
@@ -179,6 +188,8 @@ GamePlayer.Stealth.NowHidden:					You are now hidden!
 Effects.SureShotEffect.Name:					Sure Shot
 Effects.SureShotEffect.YouSwitchToSSMode:		You switch to sure shot mode!
 Skill.Ability.SureShot.CannotUseDead:	You can't switch to sure shot when dead!
+Skill.Ability.CannotUseWhileVolleyActive:	You can't use {0} while Volley is active!
+Skill.Ability.TrueShot.Prepare:	You prepare a Trueshot!
 
 ## Taunt
 Effects.Necro.TauntEffect.SeemsChange:			{0} seems to change in demeanor, appearing more aggressive than before.

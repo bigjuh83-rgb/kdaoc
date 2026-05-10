@@ -2,10 +2,11 @@
 using DOL.AI.Brain;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS {
     public class LordOfBattle : GameTrainingDummy {
-       
+
 
         public override bool AddToWorld()
         {
@@ -27,7 +28,7 @@ namespace DOL.GS {
                 return false;
 
             TurnTo(player.X, player.Y);
-            player.Out.SendMessage("Greetings, " + player.CharacterClass.Name + ".\n\n" + "If you desire, I can port you back to your realm's [event zone]", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LordOfBattle.Interact.Greeting", player.CharacterClass.Name), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 
             ECSGameEffect effect = EffectListService.GetEffectOnTarget(player, eEffect.ResurrectionIllness);
             effect?.End();
@@ -47,8 +48,8 @@ namespace DOL.GS {
 
             player.Out.SendStatusUpdate();
             return true;
-			
-			
+
+
 		}
 		public override bool WhisperReceive(GameLiving source, string str)
 		{
@@ -59,7 +60,8 @@ namespace DOL.GS {
 			TurnTo(t.X, t.Y);
 			switch (str)
 			{
-				case "event zone":
+					case "event zone":
+					case "이벤트 지역":
 					switch (t.Realm)
 					{
 						case eRealm.Albion:
@@ -142,7 +144,7 @@ namespace DOL.GS {
                     deadPlayer.StopReleaseTimer();
                     deadPlayer.Out.SendPlayerRevive(deadPlayer);
                     deadPlayer.Out.SendStatusUpdate();
-                    deadPlayer.Out.SendMessage("Mordred has found your soul worthy of resurrection!",
+                    deadPlayer.Out.SendMessage(LanguageMgr.GetTranslation(deadPlayer.Client.Account.Language, "LordOfBattle.Resurrected"),
                                            eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     deadPlayer.Notify(GamePlayerEvent.Revive, deadPlayer);
 
@@ -156,7 +158,7 @@ namespace DOL.GS {
             {
                 player.MoveTo(Body.CurrentRegionID, Body.X + 100, Body.Y, Body.Z,
                                   Body.Heading);
-                player.Client.Out.SendMessage("Cowardice is not appreciated in this arena.",
+                player.Client.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "LordOfBattle.Cowardice"),
                                            eChatType.CT_Important, eChatLoc.CL_SystemWindow);
             }
 

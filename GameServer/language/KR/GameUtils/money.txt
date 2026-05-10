@@ -1,0 +1,8 @@
+﻿# Money
+
+Money.GetString.Text1:	동화 0개
+Money.GetString.Text2:	미스릴,
+Money.GetString.Text3:	플래티넘,
+Money.GetString.Text4:	금화,
+Money.GetString.Text5:	은화,
+Money.GetString.Text6:	동화,

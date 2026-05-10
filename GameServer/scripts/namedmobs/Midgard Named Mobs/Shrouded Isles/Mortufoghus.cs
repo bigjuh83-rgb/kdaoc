@@ -166,11 +166,11 @@ namespace DOL.AI.Brain
 				{
 					GamePlayer Target = Port_Enemys[Util.Random(0, Port_Enemys.Count - 1)];
 					RandomTarget = Target;
-					if (RandomTarget.IsAlive && RandomTarget != null)
+					if (RandomTarget != null && RandomTarget.IsAlive)
 					{
 						RandomTarget.MoveTo(Body.CurrentRegionID, Body.X+Util.Random(-1500,1500), Body.Y + Util.Random(-1500, 1500), Body.Z, Body.Heading);
 						RandomTarget.TakeDamage(RandomTarget, eDamageType.Falling, RandomTarget.MaxHealth / 5, 0);
-						RandomTarget.Out.SendMessage("You take falling damage!", eChatType.CT_Important, eChatLoc.CL_ChatWindow);
+						RandomTarget.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(RandomTarget.Client.Account.Language, "NamedMobs.Common.FallingDamage"), eChatType.CT_Important, eChatLoc.CL_ChatWindow);
 						Port_Enemys.Remove(RandomTarget);
 					}
 				}

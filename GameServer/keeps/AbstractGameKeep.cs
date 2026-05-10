@@ -4,6 +4,7 @@ using System.Reflection;
 using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Keeps
 {
@@ -318,7 +319,7 @@ namespace DOL.GS.Keeps
 		/// </summary>
 		public virtual string Name
 		{
-			get	
+			get
 			{
 				if (DBKeep != null)
 				{
@@ -577,51 +578,51 @@ namespace DOL.GS.Keeps
 		{
 			if (InCombat)
 			{
-				player.Out.SendMessage(Name + " is under attack and can't be claimed.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Keep.UnderAttackCantClaim", Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				log.DebugFormat("KEEPWARNING: {0} attempted to claim {1} while in combat.", player.Name, Name);
 				return false;
 			}
 
 			if(player.Realm != this.Realm)
 			{
-				player.Out.SendMessage("The keep is not owned by your realm.",eChatType.CT_System,eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Keep.NotOwnedByRealm"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return false;
 			}
-			
+
 			// Disabled check on DBKeep.BaseLevel to allow claiming of BG keeps
 			if (this.DBKeep.BaseLevel != 50 && !ServerProperties.Properties.ALLOW_BG_CLAIM)
 			{
-			 	player.Out.SendMessage("This keep is not able to be claimed.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
-			 	return false;
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Keep.CannotBeClaimed"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				return false;
 			}
 
 			if (player.Guild == null)
 			{
-				player.Out.SendMessage("You must be in a guild to claim a keep.",eChatType.CT_System,eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Keep.MustBeInGuild"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return false;
 			}
 			if (!player.Guild.HasRank(player, Guild.eRank.Claim))
 			{
-				player.Out.SendMessage("You do not have permission to claim for your guild.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Keep.NoGuildClaimPermission"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return false;
 			}
 			if (this.Guild != null)
 			{
-				player.Out.SendMessage("The keep is already claimed.",eChatType.CT_System,eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Keep.AlreadyClaimed"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 				return false;
 			}
 			switch (ServerProperties.Properties.GUILDS_CLAIM_LIMIT)
 			{
 				case 0:
 					{
-						player.Out.SendMessage("Keep claiming is disabled!", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Keep.ClaimingDisabled"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						return false;
 					}
 				case 1:
 					{
 						if (player.Guild.ClaimedKeeps.Count == 1)
 						{
-							player.Out.SendMessage("Your guild already owns a keep.", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Keep.GuildAlreadyOwnsOne"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return false;
 						}
 						break;
@@ -630,7 +631,7 @@ namespace DOL.GS.Keeps
 					{
 						if (player.Guild.ClaimedKeeps.Count >= ServerProperties.Properties.GUILDS_CLAIM_LIMIT)
 						{
-							player.Out.SendMessage("Your guild already owns the limit of keeps (" + ServerProperties.Properties.GUILDS_CLAIM_LIMIT + ")", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Keep.GuildOwnsLimit", ServerProperties.Properties.GUILDS_CLAIM_LIMIT), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							return false;
 						}
 						break;
@@ -654,7 +655,7 @@ namespace DOL.GS.Keeps
 					needed = 0;
 				if (count < needed)
 				{
-					player.Out.SendMessage("Not enough group members are near the keep. You have " + count + "/" + needed + ".", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Keep.NotEnoughMembersNearby", count, needed), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					return false;
 				}
 			}
@@ -668,7 +669,7 @@ namespace DOL.GS.Keeps
 		public virtual void Claim(GamePlayer player)
 		{
 			Guild = player.Guild;
-			
+
 			if (ServerProperties.Properties.GUILDS_CLAIM_LIMIT > 1)
 				player.Guild.SendMessageToGuildMembers("Your guild has currently claimed " + player.Guild.ClaimedKeeps.Count + " keeps of a maximum of " + ServerProperties.Properties.GUILDS_CLAIM_LIMIT, eChatType.CT_Guild, eChatLoc.CL_ChatWindow);
 
@@ -687,7 +688,7 @@ namespace DOL.GS.Keeps
 			}
 
 			// GameKeepDoor door = new GameKeepDoor();
-    		this.SaveIntoDatabase();
+		this.SaveIntoDatabase();
             LoadFromDatabase(DBKeep);
             // door.BroadcastDoorStatus();
             StartDeductionTimer();
@@ -947,7 +948,7 @@ namespace DOL.GS.Keeps
 				else if (timeelapsed < newinterval)
 					newinterval = m_changeLevelTimer.Interval - timeelapsed;
 				m_changeLevelTimer.Interval = newinterval;
-				
+
 			}
 			m_changeLevelTimer.Stop();
 			m_changeLevelTimer.Start(newinterval);
@@ -987,7 +988,7 @@ namespace DOL.GS.Keeps
 				{
 					/*
 					 *  - A realm can claim a razed tower, and may even set it to raise to level 10,
-					 * but will have to wait until the tower is repaired to 75% before 
+					 * but will have to wait until the tower is repaired to 75% before
 					 * it will begin upgrading normally.
 					 */
 					if (component.HealthPercent < 75)
@@ -1190,7 +1191,7 @@ namespace DOL.GS.Keeps
 				player.Out.SendKeepComponentInfo(keepComponent);
 			}
 		}
-		
+
 		/// <summary>
 		/// Send Packets to Remove Keep and Components
 		/// </summary>
@@ -1204,7 +1205,7 @@ namespace DOL.GS.Keeps
 				player.Out.SendKeepRemove(this);
 			}
 		}
-		
+
 		/// <summary>
 		/// Send Packets to Add Keep and Components
 		/// </summary>

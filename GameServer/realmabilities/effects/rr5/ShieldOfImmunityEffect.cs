@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Effects
 {
@@ -49,9 +50,9 @@ namespace DOL.GS.Effects
 				ad.Damage -= absorb;
 				ad.CriticalDamage -= critic;
 				if (living is GamePlayer)
-					((GamePlayer)living).Out.SendMessage("Your Shield of Immunity absorbs " + (absorb + critic) + " points of damage", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+					((GamePlayer)living).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)living).Client.Account.Language, "RealmAbility.ShieldOfImmunity.AbsorbsDamage", absorb + critic), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 				if (ad.Attacker is GamePlayer)
-					((GamePlayer)ad.Attacker).Out.SendMessage(living.Name + "'s Shield of Immunity absorbs " + (absorb + critic) + " points of damage", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+					((GamePlayer)ad.Attacker).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)ad.Attacker).Client.Account.Language, "RealmAbility.ShieldOfImmunity.AbsorbsAttackerDamage", living.Name, absorb + critic), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 
 			}
 		}

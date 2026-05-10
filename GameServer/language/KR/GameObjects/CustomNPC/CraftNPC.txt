@@ -1,0 +1,8 @@
+﻿# Craft Master NPCs
+
+## Interact
+CraftNPC.CraftNpcDialogResponse.Accepted:		{0} 조합에 받아들여졌습니다!
+CraftNPC.Interact.Examine:				{0}을(를) 살펴봅니다. 그는 우호적입니다
+CraftNPC.Interact.NotMaster:				나는 당신의 스승이 아닙니다.
+CraftNPC.Interact.Promoted:				{0}(으)로 승급했습니다.
+CraftNPC.WhisperReceive.WishToJoin:			정말 {0} 조합에 가입하시겠습니까?

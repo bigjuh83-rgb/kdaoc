@@ -68,9 +68,9 @@ public class Blacksmith : GameNPC
 
         // Message: {0} says, "I can repair weapons or armor for you. Just hand me the item you want repaired and I'll see what I can do, for a small fee."
         SayTo(player, eChatLoc.CL_PopupWindow,
-            "I can repair weapons or armor for you. Just hand me the item you want repaired and I'll see what I can do, for a small fee.");
+            LanguageMgr.GetTranslation(player.Client.Account.Language, "Blacksmith.Interact.RepairIntro"));
         SayTo(player, eChatLoc.CL_PopupWindow,
-            $"If you're in a hurry, I can also [repair all] your items for an additional {REPAIR_ALL_TAX * 100}% fee.");
+            LanguageMgr.GetTranslation(player.Client.Account.Language, "Blacksmith.Interact.RepairAllOffer", REPAIR_ALL_TAX * 100));
 
         return true;
     }
@@ -80,7 +80,8 @@ public class Blacksmith : GameNPC
         if (!base.WhisperReceive(source, text) || !(source is GamePlayer player))
             return false;
 
-        if (text.ToLower() != "repair all") return false;
+        string normalizedText = text.ToLowerInvariant();
+        if (normalizedText != "repair all" && text != "전체 수리") return false;
         AskRepairAll(player);
         return true;
     }
@@ -228,9 +229,9 @@ public class Blacksmith : GameNPC
         cost = (long) (cost * (1 + REPAIR_ALL_TAX));
 
         if (foundItemToRepair)
-            player.Client.Out.SendCustomDialog($"It will cost {Money.GetString(cost)} to repair everything. Do you accept?", RepairAll);
+            player.Client.Out.SendCustomDialog(LanguageMgr.GetTranslation(player.Client.Account.Language, "Blacksmith.RepairAll.ConfirmCost", Money.GetString(cost)), RepairAll);
         else
-            SayTo(player, eChatLoc.CL_PopupWindow, "All items are fully repaired already.");
+            SayTo(player, eChatLoc.CL_PopupWindow, LanguageMgr.GetTranslation(player.Client.Account.Language, "Blacksmith.RepairAll.NothingToRepair"));
     }
 
     private static bool CanBeRepaired(DbInventoryItem item)

@@ -3,6 +3,7 @@ using System.Collections;
 using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Quests
 {
@@ -61,7 +62,7 @@ namespace DOL.GS.Quests
         /// </summary>
         public override string Name
         {
-            get { return "Craft Task"; }
+            get { return LanguageMgr.GetTranslation(m_taskPlayer.Client, "Task.Craft.Name"); }
         }
 
         /// <summary>
@@ -69,7 +70,7 @@ namespace DOL.GS.Quests
         /// </summary>
         public override string Description
         {
-            get { return "Craft the " + ItemName + " for " + ReceiverName + " in " + ReceiverZone; }
+            get { return LanguageMgr.GetTranslation(m_taskPlayer.Client, "Task.Craft.Description", ItemName, ReceiverName, ReceiverZone); }
         }
 
 
@@ -160,7 +161,7 @@ namespace DOL.GS.Quests
             GameNPC NPC = GetRandomNPC(player);
             if (NPC == null)
             {
-                player.Out.SendMessage("I have no task for you, come back some time later.", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Task.Availability.NoTaskComeLater"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
                 return false;
             }
 
@@ -168,7 +169,7 @@ namespace DOL.GS.Quests
 
             if (taskItem == null)
             {
-                player.Out.SendMessage("I can't think of anything for you to make, perhaps you should ask again.", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "Task.Craft.NoCraftIdea"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
                 log.ErrorFormat("Craft task item is null for player {0} at level {1}.", player.Name, player.Level);
                 return false;
             }
@@ -185,7 +186,7 @@ namespace DOL.GS.Quests
 
             player.GameTask = craftTask;
 
-            player.Out.SendMessage("Craft " + taskItem.GetName(0, false) + " for " + NPC.Name + " in " + NPC.CurrentZone.Description, eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+            player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client, "CraftTask.CraftForNpc", taskItem.GetName(0, false), NPC.Name, NPC.CurrentZone.Description), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
             return true;
 
         }
@@ -193,7 +194,7 @@ namespace DOL.GS.Quests
         /// <summary>
         /// Find a Random NPC
         /// </summary>
-        /// <param name="Player">The GamePlayer Object</param>		
+        /// <param name="Player">The GamePlayer Object</param>
         /// <returns>The GameNPC Searched</returns>
         public static GameNPC GetRandomNPC(GamePlayer Player)
         {

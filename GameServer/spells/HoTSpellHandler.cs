@@ -1,5 +1,7 @@
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
+using DOL.GS.ServerProperties;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -34,7 +36,7 @@ namespace DOL.GS.Spells
 		}
 
 		public override void OnEffectStart(GameSpellEffect effect)
-		{			
+		{
 			//SendEffectAnimation(effect.Owner, 0, false, 1);
 			////"{0} seems calm and healthy."
 			//Message.SystemToArea(effect.Owner, Util.MakeSentence(Spell.Message2, effect.Owner.GetName(0, false)), eChatType.CT_Spell, effect.Owner);
@@ -53,18 +55,21 @@ namespace DOL.GS.Spells
 
 			base.OnDirectEffect(target);
 			double heal = Spell.Value * CalculateBuffDebuffEffectiveness();
-			
+
 			if(target.Health < target.MaxHealth)
             {
 				target.Health += (int)heal;
 				if (target is NecromancerPet && Caster.Equals(target))
-					MessageToLiving((target as NecromancerPet).Owner, "Your " + target.GetName(0, false) + " is healed for " + heal + " hit points!", eChatType.CT_Spell);
+				{
+					if ((target as NecromancerPet).Owner is GamePlayer owner)
+						MessageToLiving(owner, LanguageMgr.GetTranslation(owner.Client, "HoTSpellHandler.Message.YourPetHealed", target.GetName(0, false), heal), eChatType.CT_Spell);
+				}
 				else
-					MessageToLiving(target, "You are healed by " + m_caster.GetName(0, false) + " for " + heal + " hit points.", eChatType.CT_Spell);
+					MessageToLiving(target, target is GamePlayer playerTarget ? LanguageMgr.GetTranslation(playerTarget.Client, "HoTSpellHandler.Message.YouAreHealed", m_caster.GetName(0, false), heal) : LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "HoTSpellHandler.Message.YouAreHealed", m_caster.GetName(0, false), heal), eChatType.CT_Spell);
 			}
             else
             {
-				MessageToLiving(target, "You are full health.", eChatType.CT_SpellResisted);
+				MessageToLiving(target, target is GamePlayer playerTarget ? LanguageMgr.GetTranslation(playerTarget.Client, "HoTSpellHandler.Message.FullHealth") : LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "HoTSpellHandler.Message.FullHealth"), eChatType.CT_SpellResisted);
             }
 
 			//"You feel calm and healthy."

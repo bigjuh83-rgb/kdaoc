@@ -1,4 +1,5 @@
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Spells
 {
@@ -37,7 +38,7 @@ namespace DOL.GS.Spells
             /*
             if (m_caster.IsDiseased)
             {
-                MessageToCaster("You are diseased!", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.YouAreDiseased"), eChatType.CT_SpellResisted);
                 heal >>= 1;
             }*/
 
@@ -46,11 +47,11 @@ namespace DOL.GS.Spells
 
             if (heal > 0)
             {
-                MessageToCaster("You steal " + heal + " hit point" + (heal == 1 ? "." : "s."), eChatType.CT_Spell);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.StealLife", heal), eChatType.CT_Spell);
             }
             else
             {
-                MessageToCaster("You cannot absorb any more life.", eChatType.CT_SpellResisted);
+                MessageToCaster(LanguageMgr.GetTranslation((Caster as GamePlayer)?.Client.Account.Language, "DrainSpell.CannotAbsorbLife"), eChatType.CT_SpellResisted);
             }
         }
     }

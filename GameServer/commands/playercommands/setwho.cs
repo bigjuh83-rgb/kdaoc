@@ -17,13 +17,13 @@ namespace DOL.GS.Commands
 
 			if (args.Length < 2)
 			{
-				DisplayMessage(client, "You need to specify if you want to change to class or trade");
+				DisplayMessage(client, T(client, "PlayerCommands.SetWho.Specify"));
 				return;
 			}
-			
+
 			var played = client.Player.PlayedTimeSinceLevel / 60 / 60; // Sets time played since last level
 			var totalPlayed = client.Player.PlayedTime / 60 / 60; // Time played total for character
-			
+
 			if (client.Player.Level == 50 && played < 15 && args[1].ToLower() == "class" && !client.Player.ClassNameFlag && client.Player.Advisor || client.Player.Level != 50 && totalPlayed < 15 && client.Player.Advisor && args[1].ToLower() == "class" && !client.Player.ClassNameFlag)
 			{
 				// Message: "You cannot turn off your craft title while your Advisor flag is active, as you do not meet the other level and/or time played requirements."
@@ -37,7 +37,7 @@ namespace DOL.GS.Commands
 			{
 				if (client.Player.CraftingPrimarySkill == eCraftingSkill.NoCrafting)
 				{
-					DisplayMessage(client, "You need a profession to enable it in for who messages");
+					DisplayMessage(client, T(client, "PlayerCommands.SetWho.NeedProfession"));
 					return;
 				}
 
@@ -45,14 +45,14 @@ namespace DOL.GS.Commands
 			}
 			else
 			{
-				DisplayMessage(client, "You need to specify if you want to change to class or trade");
+				DisplayMessage(client, T(client, "PlayerCommands.SetWho.Specify"));
 				return;
 			}
 
 			if (client.Player.ClassNameFlag)
-				DisplayMessage(client, "/who will no longer show your crafting title");
+				DisplayMessage(client, T(client, "PlayerCommands.SetWho.HideCraftTitle"));
 			else
-				DisplayMessage(client, "/who will now show your crafting title");
+				DisplayMessage(client, T(client, "PlayerCommands.SetWho.ShowCraftTitle"));
 		}
 	}
 }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Effects
 {
@@ -26,7 +27,7 @@ namespace DOL.GS.Effects
 				p.Out.SendSpellEffectAnimation(owner, owner, Icon, 0, false, 1);
 
 			m_debuffs = new Dictionary<eProperty, int>(1+eProperty.Stat_Last-eProperty.Stat_First);
-			
+
 			for (eProperty property = eProperty.Stat_First; property <= eProperty.Stat_Last; property++)
 			{
 				m_debuffs.Add(property, (int)(owner.GetModified(property) * 0.25));
@@ -34,35 +35,35 @@ namespace DOL.GS.Effects
 			}
 
 			owner.Out.SendCharStatsUpdate();
-			
+
 			m_timer = new ECSGameTimer(owner, new ECSGameTimer.ECSTimerCallback(HealPulse));
 			m_timer.Start(1);
 		}
-		
+
 		public int HealPulse(ECSGameTimer timer)
 		{
 			if (m_healpulse > 0)
 			{
 				m_healpulse--;
-				
+
 				GamePlayer player = Owner as GamePlayer;
 				if (player == null) return 0;
 				if (player.Group == null) return 3000;
-				
+
 				foreach (GamePlayer p in player.Group.GetPlayersInTheGroup())
 				{
 					if (p.Health < p.MaxHealth && player.IsWithinRadius(p, 750) && p.IsAlive)
 					{
 						player.Stealth(false);
 						int heal = 300;
-						
+
 						if (p.Health + heal > p.MaxHealth)
 							heal = p.MaxHealth - p.Health;
-							
+
 						p.ChangeHealth(player, eHealthChangeType.Regenerate, heal);
-						
-						player.Out.SendMessage("You heal " + p.Name + " for " + heal.ToString() + " hit points.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
-						p.Out.SendMessage(player.Name + " heals you for " + heal.ToString() + " hit points.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Heal.TargetForHitPoints", p.Name, heal), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+						p.Out.SendMessage(LanguageMgr.GetTranslation(p.Client.Account.Language, "RealmAbility.Heal.CasterHealsYouForHitPoints", player.Name, heal), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 					}
 				}
 				return 3000;
@@ -73,7 +74,7 @@ namespace DOL.GS.Effects
 		public override void Stop()
 		{
 			base.Stop();
-			
+
 			if (owner != null)
 			{
 				for (eProperty property = eProperty.Stat_First; property <= eProperty.Stat_Last; property++)
@@ -84,7 +85,7 @@ namespace DOL.GS.Effects
 
 				owner.Out.SendCharStatsUpdate();
 			}
-			
+
 			if (m_timer != null)
 			{
 				m_timer.Stop();

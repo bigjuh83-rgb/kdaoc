@@ -4,6 +4,7 @@ using DOL.Database;
 using DOL.GS;
 using DOL.GS.PacketHandler;
 using DOL.GS.Effects;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -21,7 +22,7 @@ namespace DOL.GS.RealmAbilities
 			if (living.EffectList.CountOfType<BadgeOfValorEffect>() > 0)
             {
 				if (living is GamePlayer)
-					(living as GamePlayer).Out.SendMessage("You already have an effect of that type!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+					(living as GamePlayer).Out.SendMessage(LanguageMgr.GetTranslation(((GamePlayer)living).Client.Account.Language, "RealmAbility.Message.AlreadyEffect"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                 return;
             }
 

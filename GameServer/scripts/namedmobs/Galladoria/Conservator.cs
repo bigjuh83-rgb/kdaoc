@@ -4,6 +4,7 @@ using DOL.Events;
 using DOL.Database;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -34,7 +35,7 @@ namespace DOL.GS
             if (source is GamePlayer || source is GameSummonedPet)
             {
                 Point3D spawn = new Point3D(SpawnPoint.X, SpawnPoint.Y, SpawnPoint.Z);
-                if (!source.IsWithinRadius(spawn,800))//dont take any dmg 
+                if (!source.IsWithinRadius(spawn,800))//dont take any dmg
                 {
                     if (damageType == eDamageType.Body || damageType == eDamageType.Cold || damageType == eDamageType.Energy || damageType == eDamageType.Heat
                         || damageType == eDamageType.Matter || damageType == eDamageType.Spirit || damageType == eDamageType.Crush || damageType == eDamageType.Thrust
@@ -57,7 +58,7 @@ namespace DOL.GS
                 }
             }
         }
-    
+
         public override bool AddToWorld()
         {
             INpcTemplate npcTemplate = NpcTemplateMgr.GetTemplate(60159351);
@@ -158,13 +159,14 @@ namespace DOL.AI.Brain
             AggroLevel = 100;
             AggroRange = 500;
         }
-        public void BroadcastMessage(String message)
-        {
-            foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
-            {
-                player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
-            }
-        }
+        public void BroadcastMessage(string key, params object[] args)
+		{
+			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
+			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
+				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_SystemWindow);
+			}
+		}
         protected virtual int PoisonTimer(ECSGameTimer timer)
         {
             if (Body.TargetObject != null)
@@ -178,7 +180,7 @@ namespace DOL.AI.Brain
         {
             if (Body.TargetObject != null)
             {
-                BroadcastMessage(String.Format(Body.Name + " gathers energy from the water..."));
+                BroadcastMessage("NamedMobs.Conservator.GathersWaterEnergy", Body.Name);
                 if (spamaoe == true)
                 {
                     new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(RealAoe), 5000);//5s
@@ -208,7 +210,7 @@ namespace DOL.AI.Brain
                 spampoison = false;
                 INpcTemplate npcTemplate = NpcTemplateMgr.GetTemplate(60159351);
                 Body.MaxSpeedBase = npcTemplate.MaxSpeed;
-            }          
+            }
             if (Body.InCombatInLast(30 * 1000) == false && this.Body.InCombatInLast(35 * 1000))
             {
                 Body.Health = Body.MaxHealth;
@@ -280,7 +282,7 @@ namespace DOL.AI.Brain
                     spell.TooltipId = 4445;
                     spell.Range = 1800;
                     spell.Duration = 40;
-                    spell.Frequency = 10; 
+                    spell.Frequency = 10;
                     spell.SpellID = 11703;
                     spell.Target = eSpellTarget.ENEMY.ToString();
                     spell.Type = "DamageOverTime";
@@ -315,7 +317,7 @@ namespace DOL.AI.Brain
                     spell.DamageType = (int)eDamageType.Energy; //Energy DMG Type
                     spell.Uninterruptible = true;
                     spell.MoveCast = true;
-                    m_co_aoe = new Spell(spell, 70);                   
+                    m_co_aoe = new Spell(spell, 70);
                 }
                 return m_co_aoe;
             }

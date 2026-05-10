@@ -34,41 +34,49 @@ namespace DOL.GS.Quests.Hibernia
 		protected const int minimumLevel = 50;
 		protected const int maximumLevel = 50;
 
+		private static string L(GamePlayer player, string key, params object[] args)
+		{
+			string language = player != null && player.Client != null && player.Client.Account != null
+				? player.Client.Account.Language
+				: ServerProperties.Properties.SERV_LANGUAGE;
+			return DOL.Language.LanguageMgr.GetTranslation(language, key, args);
+		}
+
 		private static GameNPC Revelin = null; // Start NPC
 		//private static GameNPC Lauralaye = null; //Reward NPC
 		private static Cailean Cailean = null; // Mob to kill
 
-		private static DbItemTemplate Horn = null; //ball of flame        
-		private static DbItemTemplate BlademasterEpicBoots = null; //Mist Shrouded Boots 
-		private static DbItemTemplate BlademasterEpicHelm = null; //Mist Shrouded Coif 
-		private static DbItemTemplate BlademasterEpicGloves = null; //Mist Shrouded Gloves 
-		private static DbItemTemplate BlademasterEpicVest = null; //Mist Shrouded Hauberk 
-		private static DbItemTemplate BlademasterEpicLegs = null; //Mist Shrouded Legs 
-		private static DbItemTemplate BlademasterEpicArms = null; //Mist Shrouded Sleeves 
-		private static DbItemTemplate DruidEpicBoots = null; //Shadow Shrouded Boots 
-		private static DbItemTemplate DruidEpicHelm = null; //Shadow Shrouded Coif 
-		private static DbItemTemplate DruidEpicGloves = null; //Shadow Shrouded Gloves 
-		private static DbItemTemplate DruidEpicVest = null; //Shadow Shrouded Hauberk 
-		private static DbItemTemplate DruidEpicLegs = null; //Shadow Shrouded Legs 
-		private static DbItemTemplate DruidEpicArms = null; //Shadow Shrouded Sleeves 
-		private static DbItemTemplate MentalistEpicBoots = null; //Valhalla Touched Boots 
-		private static DbItemTemplate MentalistEpicHelm = null; //Valhalla Touched Coif 
-		private static DbItemTemplate MentalistEpicGloves = null; //Valhalla Touched Gloves 
-		private static DbItemTemplate MentalistEpicVest = null; //Valhalla Touched Hauberk 
-		private static DbItemTemplate MentalistEpicLegs = null; //Valhalla Touched Legs 
-		private static DbItemTemplate MentalistEpicArms = null; //Valhalla Touched Sleeves 
-		private static DbItemTemplate AnimistEpicBoots = null; //Subterranean Boots 
-		private static DbItemTemplate AnimistEpicHelm = null; //Subterranean Coif 
-		private static DbItemTemplate AnimistEpicGloves = null; //Subterranean Gloves 
-		private static DbItemTemplate AnimistEpicVest = null; //Subterranean Hauberk 
-		private static DbItemTemplate AnimistEpicLegs = null; //Subterranean Legs 
-		private static DbItemTemplate AnimistEpicArms = null; //Subterranean Sleeves 
-		private static DbItemTemplate ValewalkerEpicBoots = null; //Subterranean Boots 
-		private static DbItemTemplate ValewalkerEpicHelm = null; //Subterranean Coif 
-		private static DbItemTemplate ValewalkerEpicGloves = null; //Subterranean Gloves 
-		private static DbItemTemplate ValewalkerEpicVest = null; //Subterranean Hauberk 
-		private static DbItemTemplate ValewalkerEpicLegs = null; //Subterranean Legs 
-		private static DbItemTemplate ValewalkerEpicArms = null; //Subterranean Sleeves  
+		private static DbItemTemplate Horn = null; //ball of flame
+		private static DbItemTemplate BlademasterEpicBoots = null; //Mist Shrouded Boots
+		private static DbItemTemplate BlademasterEpicHelm = null; //Mist Shrouded Coif
+		private static DbItemTemplate BlademasterEpicGloves = null; //Mist Shrouded Gloves
+		private static DbItemTemplate BlademasterEpicVest = null; //Mist Shrouded Hauberk
+		private static DbItemTemplate BlademasterEpicLegs = null; //Mist Shrouded Legs
+		private static DbItemTemplate BlademasterEpicArms = null; //Mist Shrouded Sleeves
+		private static DbItemTemplate DruidEpicBoots = null; //Shadow Shrouded Boots
+		private static DbItemTemplate DruidEpicHelm = null; //Shadow Shrouded Coif
+		private static DbItemTemplate DruidEpicGloves = null; //Shadow Shrouded Gloves
+		private static DbItemTemplate DruidEpicVest = null; //Shadow Shrouded Hauberk
+		private static DbItemTemplate DruidEpicLegs = null; //Shadow Shrouded Legs
+		private static DbItemTemplate DruidEpicArms = null; //Shadow Shrouded Sleeves
+		private static DbItemTemplate MentalistEpicBoots = null; //Valhalla Touched Boots
+		private static DbItemTemplate MentalistEpicHelm = null; //Valhalla Touched Coif
+		private static DbItemTemplate MentalistEpicGloves = null; //Valhalla Touched Gloves
+		private static DbItemTemplate MentalistEpicVest = null; //Valhalla Touched Hauberk
+		private static DbItemTemplate MentalistEpicLegs = null; //Valhalla Touched Legs
+		private static DbItemTemplate MentalistEpicArms = null; //Valhalla Touched Sleeves
+		private static DbItemTemplate AnimistEpicBoots = null; //Subterranean Boots
+		private static DbItemTemplate AnimistEpicHelm = null; //Subterranean Coif
+		private static DbItemTemplate AnimistEpicGloves = null; //Subterranean Gloves
+		private static DbItemTemplate AnimistEpicVest = null; //Subterranean Hauberk
+		private static DbItemTemplate AnimistEpicLegs = null; //Subterranean Legs
+		private static DbItemTemplate AnimistEpicArms = null; //Subterranean Sleeves
+		private static DbItemTemplate ValewalkerEpicBoots = null; //Subterranean Boots
+		private static DbItemTemplate ValewalkerEpicHelm = null; //Subterranean Coif
+		private static DbItemTemplate ValewalkerEpicGloves = null; //Subterranean Gloves
+		private static DbItemTemplate ValewalkerEpicVest = null; //Subterranean Hauberk
+		private static DbItemTemplate ValewalkerEpicLegs = null; //Subterranean Legs
+		private static DbItemTemplate ValewalkerEpicArms = null; //Subterranean Sleeves
 		private static DbItemTemplate VampiirEpicBoots = null;
 		private static DbItemTemplate VampiirEpicHelm = null;
 		private static DbItemTemplate VampiirEpicGloves = null;
@@ -108,7 +116,7 @@ namespace DOL.GS.Quests.Hibernia
 		{
 			if (!ServerProperties.Properties.LOAD_QUESTS)
 				return;
-			
+
 
 			#region NPC Declarations
 
@@ -2088,7 +2096,7 @@ namespace DOL.GS.Quests.Hibernia
 
 		protected static void TalkToRevelin(DOLEvent e, object sender, EventArgs args)
 		{
-			//We get the player from the event arguments and check if he qualifies		
+			//We get the player from the event arguments and check if he qualifies
 			GamePlayer player = ((SourceEventArgs)args).Source as GamePlayer;
 			if (player == null)
 				return;
@@ -2106,16 +2114,16 @@ namespace DOL.GS.Quests.Hibernia
 					switch (quest.Step)
 					{
 						case 1:
-							Revelin.SayTo(player, "Seek out Cailean in Cursed Forest and kill it. Cailean is a terrored tree that can be found North-West of Granny Fort across the river.");
+							Revelin.SayTo(player, L(player, "Quest.Epic.Harmony50.Step1Reminder"));
 							break;
 						case 2:
-							Revelin.SayTo(player, "Were you able to [fulfill] your given task?");
+							Revelin.SayTo(player, L(player, "Quest.Epic.Harmony50.Step2Reminder"));
 							break;
 					}
 				}
 				else
 				{
-					Revelin.SayTo(player, "Hibernia needs your [services]");
+					Revelin.SayTo(player, L(player, "Quest.Epic.Harmony50.Intro"));
 				}
 			}
 			// The player whispered to the NPC
@@ -2128,7 +2136,8 @@ namespace DOL.GS.Quests.Hibernia
 					switch (wArgs.Text)
 					{
 						case "services":
-							player.Out.SendQuestSubscribeCommand(Revelin, QuestMgr.GetIDForQuestType(typeof(Harmony_50)), "Will you help Revelin [Path of Harmony Level 50 Epic]?");
+						case "도움":
+							player.Out.SendQuestSubscribeCommand(Revelin, QuestMgr.GetIDForQuestType(typeof(Harmony_50)), L(player, "Quest.Epic.Harmony50.Subscribe"));
 							break;
 					}
 				}
@@ -2137,21 +2146,22 @@ namespace DOL.GS.Quests.Hibernia
 					switch (wArgs.Text)
 					{
 						case "fulfill":
+						case "완수":
 							if (quest.Step == 2)
 							{
 								RemoveItem(player, Horn);
 								if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 									    eInventorySlot.LastBackpack))
 								{
-									Revelin.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+									Revelin.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 									quest.FinishQuest();
 								}
 								else
-									player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+									player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 							}
 							break;
 						case "abort":
-							player.Out.SendCustomDialog("Do you really want to abort this quest, \nall items gained during quest will be lost?", new CustomDialogResponse(CheckPlayerAbortQuest));
+							player.Out.SendCustomDialog(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortConfirm"), new CustomDialogResponse(CheckPlayerAbortQuest));
 							break;
 					}
 				}
@@ -2165,11 +2175,11 @@ namespace DOL.GS.Quests.Hibernia
 						if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 							    eInventorySlot.LastBackpack))
 						{
-							Revelin.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+							Revelin.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 							quest.FinishQuest();
 						}
 						else
-							player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 					}
 			}
 		}
@@ -2216,11 +2226,11 @@ namespace DOL.GS.Quests.Hibernia
 
 			if (response == 0x00)
 			{
-				SendSystemMessage(player, "Good, no go out there and finish your work!");
+				SendSystemMessage(player, L(player, "Quest.Epic.Harmony50.AbortDecline"));
 			}
 			else
 			{
-				SendSystemMessage(player, "Aborting Quest " + questTitle + ". You can start over again if you want.");
+				SendSystemMessage(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.AbortingQuestRestart", questTitle));
 				quest.AbortQuest();
 			}
 		}
@@ -2250,21 +2260,21 @@ namespace DOL.GS.Quests.Hibernia
 
 			if (response == 0x00)
 			{
-				player.Out.SendMessage("Our God forgives your laziness, just look out for stray lightning bolts.", eChatType.CT_Say, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(L(player, "Quest.Epic.Harmony50.Decline"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 			}
 			else
 			{
 				// Check to see if we can add quest
 				if (!Revelin.GiveQuest(typeof(Harmony_50), player, 1))
 					return;
-				player.Out.SendMessage("Please kill Cailean in Cursed Forest.", eChatType.CT_System, eChatLoc.CL_PopupWindow);
+				player.Out.SendMessage(L(player, "Quest.Epic.Harmony50.Accept"), eChatType.CT_System, eChatLoc.CL_PopupWindow);
 			}
 		}
 
 		//Set quest name
 		public override string Name
 		{
-			get { return "The Horn Twin (Level 50 Path of Harmony Epic)"; }
+			get { return L(m_questPlayer, "Quest.Epic.Harmony50.Name"); }
 		}
 
 		// Define Steps
@@ -2275,9 +2285,9 @@ namespace DOL.GS.Quests.Hibernia
 				switch (Step)
 				{
 					case 1:
-						return "Seek out Cailean in Cursed Forest and kill it! Cailean is in the middle of north-west forest";
+						return L(m_questPlayer, "Quest.Epic.Harmony50.Description1");
 					case 2:
-						return "Return to Revelin and give him the Horn!";
+						return L(m_questPlayer, "Quest.Epic.Harmony50.Description2");
 				}
 				return base.Description;
 			}
@@ -2292,14 +2302,14 @@ namespace DOL.GS.Quests.Hibernia
 
 			if (sender != m_questPlayer)
 				return;
-			
+
 			if (Step == 1 && e == GameLivingEvent.EnemyKilled)
 			{
 				EnemyKilledEventArgs gArgs = (EnemyKilledEventArgs)args;
 
 				if (gArgs.Target.Name == Cailean.Name && player.Inventory.IsSlotsFree(1, eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack))
 				{
-					m_questPlayer.Out.SendMessage("You collect the Horn from Cailean", eChatType.CT_System, eChatLoc.CL_SystemWindow);
+					m_questPlayer.Out.SendMessage(L(m_questPlayer, "Quest.Epic.Harmony50.CollectHorn"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					GiveItem(player, Horn);
 					Step = 2;
 				}
@@ -2312,11 +2322,11 @@ namespace DOL.GS.Quests.Hibernia
 					if (player.Inventory.IsSlotsFree(6, eInventorySlot.FirstBackpack,
 						    eInventorySlot.LastBackpack))
 					{
-						Revelin.SayTo(player, "You have earned this Epic Armor, wear it with honor!");
+						Revelin.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.EpicArmorEarned"));
 						FinishQuest();
 					}
 					else
-						player.Out.SendMessage("You do not have enough free space in your inventory!", eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.NotEnoughInventorySpace"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
 				}
 			}
@@ -2410,24 +2420,24 @@ namespace DOL.GS.Quests.Hibernia
 			}
 
 			m_questPlayer.GainExperience(eXPSource.Quest, 1937768448, true);
-			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");		
+			//m_questPlayer.AddMoney(Money.GetMoney(0,0,0,2,Util.Random(50)), "You recieve {0} as a reward.");
 		}
 
 		#region Allakhazam Epic Source
 
 		/*
         *#25 talk to Revelin
-        *#26 seek out Loken in Raumarik Loc 47k, 25k, 4k, and kill him purp and 2 blue adds 
-        *#27 return to Revelin 
+        *#26 seek out Loken in Raumarik Loc 47k, 25k, 4k, and kill him purp and 2 blue adds
+        *#27 return to Revelin
         *#28 give her the ball of flame
         *#29 talk with Revelin about Loken�s demise
-        *#30 go to MorlinCaan in Jordheim 
+        *#30 go to MorlinCaan in Jordheim
         *#31 give her the sealed pouch
         *#32 you get your epic armor as a reward
         */
 
 		/*
-            *Sidhe Scale Boots 
+            *Sidhe Scale Boots
             *Sidhe Scale Coif
             *Sidhe Scale Gloves
             *Sidhe Scale Hauberk

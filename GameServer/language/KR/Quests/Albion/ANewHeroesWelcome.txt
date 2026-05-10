@@ -1,0 +1,13 @@
+﻿Alb.ANewHeroesWelcome.CheckPlayerAbortQuest.Text1:	좋습니다. 이제 나가서 맡은 일을 마무리하십시오!
+Alb.ANewHeroesWelcome.CheckPlayerAbortQuest.Text2:	퀘스트 {0}을(를) 중단합니다. 원한다면 다시 시작할 수 있습니다.
+Alb.ANewHeroesWelcome.Conclusion.Text1:			고맙습니다, {0}.
+Alb.ANewHeroesWelcome.Conclusion.Text2:			블랙 마운틴 남부의 치유사들에게 전령을 보내겠습니다. 이 전쟁은 우리의 자원을 고갈시키고 있고, 모든 전선에서 해야 할 일이 많습니다. 저 역시 감당하기 벅찰 만큼 일이 많군요. 도와주고 싶다면 언제든 말해 주십시오.
+Alb.ANewHeroesWelcome.Init.Text1:			신병의 망토
+Alb.ANewHeroesWelcome.Init.Text2:			폼핀에게 보내는 편지
+Alb.ANewHeroesWelcome.Init.Text3:			전갈을 외침꾼 폼핀에게 가져가십시오
+Alb.ANewHeroesWelcome.QuestTitle:			새로운 영웅을 맞이하며
+Alb.ANewHeroesWelcome.ScriptLoaded.Text1:		마스터 클레이스탄
+Alb.ANewHeroesWelcome.ScriptLoaded.Text2:		외침꾼 폼핀
+Alb.ANewHeroesWelcome.Story:				코츠월드에 온 것을 환영합니다! 카멜롯 외곽에 새로 도착한 이들 중 하나로군요. 왕국 방어를 돕기 위해 왔다면 더없이 환영합니다. 그 경험에 대비할 수 있도록 제가 맡은 역할을 하게 되어 기쁩니다.\n\n콘스탄틴 왕은 알비온을 괴롭히는 문제들을 처리하느라 손이 모자랍니다. 어두운 시대지만, 우리는 굳센 백성이며 백성의 안녕을 진지하게 여기는 왕을 둔 행운도 있습니다. 그래도 우리는 수많은 위험에 둘러싸여 있습니다. 미드가르드와 하이버니아의 침공 위협, 지켜야 할 귀중한 유물, 보호해야 할 땅, 그리고 지하에 도사린 채 공격할 기회를 기다리는 악의 세력까지 말입니다.\n\n왕국 전쟁은 최전선에서 싸우는 우리의 남녀 모두에게 큰 부담을 주고 있습니다. 길드 지도자들은 프론티어에 보낼 치유사를 가능한 한 많이 모집하고 있다고 알려 왔습니다. 이 소식에 관한 전갈을 외침꾼 폼핀에게 전해 주십시오. 그는 이 전갈이 알맞은 사람들에게 닿도록 할 겁니다. 어쩌면 당신에게 맡길 일도 있을지 모릅니다.
+Alb.ANewHeroesWelcome.Summary:				마스터 클레이스탄의 전갈을 외침꾼 폼핀에게 전달하십시오. 그는 최근 소식에 가장 밝습니다. 최신 지역 소식을 알려 주고, 어쩌면 당신에게 일을 맡길 수도 있습니다.
+Alb.ANewHeroesWelcome.TalkToPompinTheCrier:		안녕하십니까, 코츠월드에 온 것을 환영합니다.

@@ -1,0 +1,48 @@
+Hib.ImportantDelivery.CheckPlayerAbortQuest.Abort:	퀘스트 {0}을(를) 포기합니다. 원한다면 다시 시작할 수 있습니다.
+Hib.ImportantDelivery.CheckPlayerAbortQuest.NoAbort:	좋습니다. 이제 나가서 일을 마무리하세요!
+Hib.ImportantDelivery.CheckPlayerAcceptQuest.Accept:	축하합니다! 이제 카멜롯의 세계를 이해하는 데 한 걸음 더 가까워졌습니다. 이번 훈련 단계에서는 렐름 곳곳으로 가서 여러 시민에게 필요한 보급품을 전달하게 됩니다. 퀘스트 진행 중에는 가끔 퀘스트 일지를 확인해 다음에 해야 할 일을 살펴보세요. 퀘스트 일지는 [캐릭터 정보] 창의 명령 버튼에서 열 수 있습니다.
+Hib.ImportantDelivery.CheckPlayerAcceptQuest.NoAccept:	알겠습니다. 마음이 바뀌면 다시 찾아오세요!
+Hib.ImportantDelivery.DefineItems.CrateOfVegetables:	채소 상자
+Hib.ImportantDelivery.DefineItems.RecruitsCloak:	신병의 망토
+Hib.ImportantDelivery.DefineItems.RecruitsDiary:	신병의 일지
+Hib.ImportantDelivery.DefineItems.SackOfSupplies:	보급품 자루
+Hib.ImportantDelivery.Description.Step1:		[1단계] 애드리르가 임무를 설명하는 것을 들으세요. 그가 말을 멈추면 훈련을 [빠르게] 진행하기 위해 무엇을 줄 수 있는지 물어보세요.
+Hib.ImportantDelivery.Description.Step2:		[2단계] 애드리르가 일지에 대해 설명하는 것을 들으세요. 그가 말을 멈추면 일지가 앞으로 할 일을 어떻게 [빠르게] 도와주는지 물어보세요.
+Hib.ImportantDelivery.Description.Step3:		[3단계] 애드리르에게서 남동쪽으로 이동하세요. 마구간지기 룸도르를 찾아 표를 건네세요.
+Hib.ImportantDelivery.Description.Step4:		[4단계] 티르 나 므베오의 애식에게 보급품 자루를 건네세요. 룸도르에게 표를 건넸던 것과 같은 방식으로 하면 됩니다.
+Hib.ImportantDelivery.Description.Step5:		[5단계] 애식이 하는 말을 들으세요.
+Hib.ImportantDelivery.Description.Step6:		[6단계] 애식이 준 표를 붉은 문이 있는 건물의 북북서쪽에 있는 마구간지기 트루이콘에게 가져가세요. 애식에게 보급품을 건넨 것과 같은 방식으로 표를 건네면 됩니다.
+Hib.ImportantDelivery.Description.Step7:		[7단계] 마구간지기 프레아구스에게 채소 상자를 건네세요.
+Hib.ImportantDelivery.Description.Step8:		[8단계] 마구간지기 프레아구스의 말을 더 들으세요. 그가 말을 멈추면 하이버니아를 위해 열심히 일한 것에 대한 [보상]이 있는지 물어보세요.
+Hib.ImportantDelivery.FinishQuest.RecieveReward:	보상으로 {0}을(를) 받았습니다.
+Hib.ImportantDelivery.Notify.RentingHorse:		좋은 날입니다, {0}. 말을 빌리고 싶다면 표를 구입한 뒤 제게 건네세요. 안전한 여행 되십시오!
+Hib.ImportantDelivery.Notify.Supplies:			아! 기다리고 있던 보급품이군요. 고맙습니다, {0}. 앞으로 몇 주 동안 큰 도움이 될 것입니다. 괜찮다면 또 다른 [심부름]이 있습니다.
+Hib.ImportantDelivery.Notify.Vegetables:		아, 애식에게서 오길 기다리던 채소들이군요. 전해 주셔서 고맙습니다. 마구간을 봐줄 사람이 없어 직접 가지 못했습니다. 어디 보죠, 당신의 수고에는 [보상]이 필요하겠군요.
+Hib.ImportantDelivery.QuestTitle:			중요한 배달 (하이버니아)
+Hib.ImportantDelivery.TalkToAddrir.Abort:		정말 이 퀘스트를 포기하시겠습니까? 퀘스트 중 얻은 모든 아이템을 잃게 됩니다.
+Hib.ImportantDelivery.TalkToAddrir.CaseCharSheet:	캐릭터 정보
+Hib.ImportantDelivery.TalkToAddrir.CaseExpedite:	빠르게
+Hib.ImportantDelivery.TalkToAddrir.CaseHorseTicket:	말표
+Hib.ImportantDelivery.TalkToAddrir.CaseInformation:	정보
+Hib.ImportantDelivery.TalkToAddrir.CaseJournal:		일지
+Hib.ImportantDelivery.TalkToAddrir.CaseQuestion:	질문
+Hib.ImportantDelivery.TalkToAddrir.CaseTraining:	훈련을 계속
+Hib.ImportantDelivery.TalkToAddrir.CharSheet:		캐릭터 정보 창에는 능력치, 무기 기술, 기본 클래스와 직업 등 캐릭터의 모든 정보가 담겨 있습니다. 언제든 캐릭터 통계를 보고 싶다면 메뉴 바의 가장 왼쪽 아이콘, 사람 주위에 원이 있는 모양의 아이콘을 누르세요. 더 많은 [정보]를 볼 수 있습니다.
+Hib.ImportantDelivery.TalkToAddrir.Expedite:		이제 하이버니아 세계에 대해 간단히 소개했으니 첫 임무를 시작해 봅시다. 이 보급품 꾸러미를 티르 나 므베오의 애식에게 전달해 주세요. 걱정하지 마세요. 당신을 위한 특별한 [말표]가 있습니다.
+Hib.ImportantDelivery.TalkToAddrir.Greetings:		반갑습니다, 젊은 신병이여. 저는 애드리르이며, 이 넓은 렐름에서 길을 찾을 수 있도록 돕고 있습니다. 그 과정에서 무기, 방어구, 돈, 심지어 레벨도 얻을 수 있을 것입니다. 먼저 간단한 [질문] 하나로 훈련을 시작하겠습니다.
+Hib.ImportantDelivery.TalkToAddrir.HorseTicket:		이 말표를 마그 멜의 말수레 옆에 있는 룸도르에게 가져가기만 하면 됩니다. 그에게 표를 건네면 티르 나 므베오로 갈 수 있습니다. 서두르세요, 젊은 신병. 시간이 중요합니다.
+Hib.ImportantDelivery.TalkToAddrir.Information:		이 모든 것이 조금 벅차게 느껴질 수 있다는 것을 압니다. 하지만 이 전환을 순조롭게 해 줄 특별한 물건이 있습니다. 자, 이 [일지]를 받으세요.
+Hib.ImportantDelivery.TalkToAddrir.Journal:		이 일지는 제가 맡기는 여러 일을 수행하는 동안 가끔 도움이 될 것입니다. 저는 이것을 똑똑한 일지라고 부릅니다. 당신 같은 신병을 위해 엘드리치 중 한 명이 만든 것이죠. 훈련을 [빠르게] 진행하는 데 도움이 될 것입니다.
+Hib.ImportantDelivery.TalkToAddrir.OneStepCloser:	축하합니다! 이제 카멜롯의 세계를 이해하는 데 한 걸음 더 가까워졌습니다. 이번 훈련 단계에서는 렐름 곳곳으로 가서 여러 시민에게 필요한 보급품을 전달하게 됩니다. 퀘스트 진행 중에는 가끔 퀘스트 일지를 확인해 다음에 해야 할 일을 살펴보세요. 퀘스트 일지는 [캐릭터 정보] 창의 명령 버튼에서 열 수 있습니다.
+Hib.ImportantDelivery.TalkToAddrir.Question:		훈련을 계속할지 묻겠습니다. 대화 상자가 뜨면 수락 또는 거절을 누르면 됩니다. [훈련을 계속]할 준비가 되었습니까?
+Hib.ImportantDelivery.TalkToAddrir.Training:		훈련을 시작할 준비가 되었습니까?
+Hib.ImportantDelivery.TalkToAethic.CaseErrand:		심부름
+Hib.ImportantDelivery.TalkToAethic.Errand:		이 채소 상자를 아르디의 프레아구스에게 전달해 주세요. 당신이라면 해낼 수 있을 겁니다. 이 말표를 가지고 마구간지기 트루이콘에게 건네세요. 채소가 상하기 전에 서두르세요.
+Hib.ImportantDelivery.TalkToAethic.Greetings:		반갑습니다, 여행자여. 이 근처에서는 처음 보는군요. 새 신병이겠지요. 그래요, 제가 도울 일이 있습니까?
+Hib.ImportantDelivery.TalkToAethic.Supplies:		아! 기다리고 있던 보급품이군요. 고맙습니다, {0}. 앞으로 몇 주 동안 큰 도움이 될 것입니다. 괜찮다면 또 다른 [심부름]이 있습니다.
+Hib.ImportantDelivery.TalkToAethic.Vegetables:		이 채소 상자를 아르디의 프레아구스에게 전달해 주세요. 당신이라면 해낼 수 있을 겁니다. 이 말표를 가지고 마구간지기 트루이콘에게 건네세요. 채소가 상하기 전에 서두르세요.
+Hib.ImportantDelivery.TalkToFreagus.CaseReward:		보상
+Hib.ImportantDelivery.TalkToFreagus.Errand:		멀리 가지 마세요, 친구여. 아직 돌봐야 할 심부름이 하나 더 있습니다.
+Hib.ImportantDelivery.TalkToFreagus.GoodCrop:		아! 티르 나 므베오의 애식에게서 온 것이 분명하군요. 좋은 수확물이 들어오길 한동안 기다리고 있었습니다. 제 가족과 말들, 그리고 저도 한동안 잘 먹을 수 있겠군요. 고맙습니다, {0}. 어디 보죠, 당신의 수고에 대한 [보상]이 있는지 찾아보겠습니다.
+Hib.ImportantDelivery.TalkToFreagus.Reward:		조금 낡았지만 추운 달에는 따뜻하게 지켜 줄 겁니다. 다시 한 번 고맙습니다, {0}.
+Hib.ImportantDelivery.TalkToFreagus.Welcome:		제 마구간에 온 것을 환영합니다, 친구여. 오늘은 무엇을 도와드릴까요?

@@ -4,6 +4,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS
 {
@@ -122,10 +123,11 @@ namespace DOL.AI.Brain
 			AggroRange = 600;
 			ThinkInterval = 1500;
 		}
-		public void BroadcastMessage(String message)
+		public void BroadcastMessage(string key, params object[] args)
 		{
 			foreach (GamePlayer player in Body.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
 			{
+				string message = LanguageMgr.GetTranslation(player.Client.Account.Language, key, args);
 				player.Out.SendMessage(message, eChatType.CT_Broadcast, eChatLoc.CL_ChatWindow);
 			}
 		}
@@ -135,7 +137,7 @@ namespace DOL.AI.Brain
 		{
 			if(ad != null && ad.Damage > 0 && ad.Attacker != null && CanSpawnAdds == false && Util.Chance(20))
             {
-				BroadcastMessage(String.Format("A blow knocks one of " + Body.Name + "'s tooths to the ground."));
+				BroadcastMessage("NamedMobs.Amphiptere.ToothKnocked", Body.Name);
 				new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(SpawnAdd), 5000);
 				CanSpawnAdds = true;
 			}
@@ -188,7 +190,7 @@ namespace DOL.AI.Brain
 					if (npc != null && npc.IsAlive && npc.Brain is AmphiptereAddsBrain brain)
 						if (target != null && !brain.HasAggro)
 							brain.AddToAggroList(target, 100);
-				}				
+				}
 				if (target != null)
 				{
 					if (Body.IsCasting)

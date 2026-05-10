@@ -120,8 +120,8 @@ namespace DOL.AI.Brain
 					{
 						GamePlayer Target = Port_Enemys[Util.Random(0, Port_Enemys.Count - 1)];
 						TeleportTarget = Target;
-						if (TeleportTarget.IsAlive && TeleportTarget != null)
-						{							
+						if (TeleportTarget != null && TeleportTarget.IsAlive)
+						{
 							Body.TargetObject = TeleportTarget; //set target to randomly picked
 							Body.TurnTo(TeleportTarget,4000);
 							if(!Body.IsCasting && Body.GetSkillDisabledDuration(Iarnvidiur_Bolt) == 0)
@@ -136,7 +136,7 @@ namespace DOL.AI.Brain
 		public int TeleportPlayer(ECSGameTimer timer)
         {
 			GamePlayer oldTarget = (GamePlayer)Body.TargetObject; //old target
-			if (TeleportTarget.IsAlive && TeleportTarget != null)
+			if (TeleportTarget != null && TeleportTarget.IsAlive)
 			{
 				switch (Util.Random(1, 4))
 				{
@@ -212,7 +212,7 @@ namespace DOL.AI.Brain
 							{
 								case 1: Body.CastSpell(Iarnvidiur_Dot,SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells)); break; //dot
 								case 2: Body.CastSpell(IarnvidiurDD,SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells)); break; //dd
-							}							
+							}
 							if (oldTarget != null) Body.TargetObject = oldTarget; //return to old target
 							new ECSGameTimer(Body, new ECSGameTimer.ECSTimerCallback(ResetDD), 3000);
 						}

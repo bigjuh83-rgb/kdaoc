@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DOL.Database;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerRules;
+using DOL.Language;
 
 namespace DOL.GS.RealmAbilities
 {
@@ -31,12 +32,12 @@ namespace DOL.GS.RealmAbilities
             GamePlayer target = living.TargetObject as GamePlayer;
             if (player.TargetObject == null || target == null)
             {
-                player.Out.SendMessage("You must target a player to launch this spell!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.ChainLightning.MustTargetPlayer"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                 return;
             }
             if (!GameServer.ServerRules.IsAllowedToAttack(living, target, true))
             {
-                player.Out.SendMessage("You must select an enemy target!", eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RealmAbility.Message.MustSelectEnemyTarget"), eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                 return;
             }
 
@@ -79,7 +80,7 @@ namespace DOL.GS.RealmAbilities
             basedamage = (int)(450 * modifier);
             resist = basedamage * target.GetResist(eDamageType.Energy) / -100;
             damage = basedamage + resist;
-            (caster as GamePlayer)?.Out.SendMessage($"You hit {target.Name} for {damage}({resist}) points of damage!", eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+            (caster as GamePlayer)?.Out.SendMessage(LanguageMgr.GetTranslation((caster as GamePlayer).Client.Account.Language, "RealmAbility.Damage.YouHitForDamageResist", target.Name, damage, resist), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
             target.Stealth(false);
 
             foreach (GamePlayer p in target.GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
