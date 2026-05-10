@@ -99,7 +99,13 @@ namespace DOL.DOLServer.Actions
             {
                 string line = Console.ReadLine();
 
-                if (string.IsNullOrEmpty(line))
+                if (ShouldThrottleMissingConsoleInput(line))
+                {
+                    System.Threading.Thread.Sleep(1000);
+                    continue;
+                }
+
+                if (line.Length == 0)
                     continue;
 
                 switch (line.ToLower())
@@ -117,6 +123,11 @@ namespace DOL.DOLServer.Actions
             }
 
             GameServer.Instance?.Stop();
+        }
+
+        private static bool ShouldThrottleMissingConsoleInput(string line)
+        {
+            return line == null;
         }
 
         private void ProcessCommand(string line)
