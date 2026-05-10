@@ -75,7 +75,7 @@ namespace DOL.GS.PacketHandler
 			Array.Copy(_sbox, 0, tmpsbox, 0, _sbox.Length);
 			byte i = 0;
 			byte j = 0;
-			ushort len = (ushort)((buf[offset] << 8) | buf[offset + 1] + 10); //+10 byte for packet#,session,param,code,checksum
+			ushort len = (ushort)(((buf[offset] << 8) | buf[offset + 1]) + 10); //+10 byte for packet#,session,param,code,checksum
 			offset += 2;
 			int k;
 			for (k = (len / 2) + offset; k < len + offset; k++)
@@ -100,7 +100,8 @@ namespace DOL.GS.PacketHandler
 				buf[k] ^= xorKey;
 				j += buf[k];
 			}
-			log.Debug($"Decrypted {len}/{buf.Length} bytes (udp: {udpPacket})");
+			if (log.IsDebugEnabled)
+				log.Debug($"Decrypted {len}/{buf.Length} bytes (udp: {udpPacket})");
 			return buf;
 		}
 
@@ -149,7 +150,8 @@ namespace DOL.GS.PacketHandler
 				j += buf[k];
 				buf[k] ^= xorKey;
 			}
-			log.Debug($"Encrypted {len}/{buf.Length} bytes (udp: {udpPacket})");
+			if (log.IsDebugEnabled)
+				log.Debug($"Encrypted {len}/{buf.Length} bytes (udp: {udpPacket})");
 			return buf;
 		}
 

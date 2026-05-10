@@ -469,11 +469,17 @@ namespace DOL.GS
             if (house == null)
                 return;
 
-            if (house.DatabaseItem.GuildHouse)
-            {
-                DbGuild guild = DOLDB<DbGuild>.SelectObject(DB.Column("GuildName").IsEqualTo(house.DatabaseItem.GuildName));
-                int emblem = guild.Emblem;
-                DbInventoryItem cloak = Inventory.GetItem(eInventorySlot.Cloak);
+	            if (house.DatabaseItem.GuildHouse)
+	            {
+	                DbGuild guild = DOLDB<DbGuild>.SelectObject(DB.Column("GuildName").IsEqualTo(house.DatabaseItem.GuildName));
+	                if (guild == null)
+	                {
+	                    log.Warn($"Cannot set consignment merchant emblem for house {house.HouseNumber}: guild '{house.DatabaseItem.GuildName}' was not found.");
+	                    return;
+	                }
+
+	                int emblem = guild.Emblem;
+	                DbInventoryItem cloak = Inventory.GetItem(eInventorySlot.Cloak);
 
                 if (cloak != null)
                 {

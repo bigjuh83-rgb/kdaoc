@@ -264,7 +264,7 @@ namespace DOL.GS
 				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Target.Required"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;
 			}
-			if (!GameServer.ServerRules.IsAllowedToAttack(Owner, ((GameLiving)Owner.TargetObject), true))
+			if (Owner.TargetObject is not GameLiving target || !GameServer.ServerRules.IsAllowedToAttack(Owner, target, true))
 			{
 				Owner.Out.SendMessage(LanguageMgr.GetTranslation(Owner.Client.Account.Language, "Siege.Target.CannotAttack"), eChatType.CT_Say, eChatLoc.CL_SystemWindow);
 				return;

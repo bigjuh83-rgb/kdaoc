@@ -17,6 +17,16 @@ namespace DOL.Network
 
 		protected PacketIn(int size) : base(size) { }
 
+		public override int ReadByte()
+		{
+			int value = base.ReadByte();
+
+			if (value < 0)
+				throw new EndOfStreamException("Unexpected end of packet data.");
+
+			return value;
+		}
+
 		public virtual PacketIn Init()
 		{
 			return this;

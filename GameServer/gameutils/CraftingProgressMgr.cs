@@ -65,10 +65,18 @@ namespace DOL.GS {
         /// Single Instance
         /// </summary>
         /// <param name="change"></param>
-        private static void _saveInstance(GamePlayer player, Dictionary<eCraftingSkill, int> change) {
-            DbAccountXCrafting craftingForRealm = DOLDB<DbAccountXCrafting>.SelectObject(DB.Column("AccountID").IsEqualTo(player.AccountName)
-                .And(DB.Column("Realm").IsEqualTo(player.Realm)));
-            craftingForRealm.CraftingPrimarySkill = (byte)player.CraftingPrimarySkill;
+	        private static void _saveInstance(GamePlayer player, Dictionary<eCraftingSkill, int> change) {
+	            DbAccountXCrafting craftingForRealm = DOLDB<DbAccountXCrafting>.SelectObject(DB.Column("AccountID").IsEqualTo(player.AccountName)
+	                .And(DB.Column("Realm").IsEqualTo(player.Realm)));
+	            if (craftingForRealm == null) {
+	                craftingForRealm = new DbAccountXCrafting {
+	                    AccountId = player.AccountName,
+	                    Realm = (int) player.Realm
+	                };
+	                GameServer.Database.AddObject(craftingForRealm);
+	            }
+
+	            craftingForRealm.CraftingPrimarySkill = (byte)player.CraftingPrimarySkill;
             string cs = string.Empty;
             if (player.CraftingPrimarySkill != eCraftingSkill.NoCrafting) {
                 lock (_lock) {

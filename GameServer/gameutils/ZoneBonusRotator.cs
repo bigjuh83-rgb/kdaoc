@@ -112,6 +112,13 @@ namespace DOL.GS.Scripts
         /// </summary>
         public static void GetZones()
         {
+            albionClassicZones.Clear();
+            albionSIZones.Clear();
+            midgardClassicZones.Clear();
+            midgardSIZones.Clear();
+            hiberniaClassicZones.Clear();
+            hiberniaSIZones.Clear();
+
             // Get Albion ZoneID's
             foreach (DbZone zone in DOLDB<DbZone>.SelectObjects(DB.Column("RegionID").IsEqualTo(ALBION_CLASSIC_ID)))
             {
@@ -172,29 +179,20 @@ namespace DOL.GS.Scripts
             hibDBZone = DOLDB<DbZone>.SelectObject(DB.Column("ZoneID").IsEqualTo(currentHiberniaZone));
             hibDBZoneSI = DOLDB<DbZone>.SelectObject(DB.Column("ZoneID").IsEqualTo(currentHiberniaZoneSI));
 
-            // Set XP Bonuses in DB
-            albDBZone.Experience = PvEExperienceBonusAmount;
-            albDBZoneSI.Experience = PvEExperienceBonusAmount;
-            midDBZone.Experience = PvEExperienceBonusAmount;
-            midDBZoneSI.Experience = PvEExperienceBonusAmount;
-            hibDBZone.Experience = PvEExperienceBonusAmount;
-            hibDBZoneSI.Experience = PvEExperienceBonusAmount;
-
-            // Save XP Bonuses in DB
-            GameServer.Database.SaveObject(albDBZone);
-            GameServer.Database.SaveObject(albDBZoneSI);
-            GameServer.Database.SaveObject(midDBZone);
-            GameServer.Database.SaveObject(midDBZoneSI);
-            GameServer.Database.SaveObject(hibDBZone);
-            GameServer.Database.SaveObject(hibDBZoneSI);
+            SetDbZoneExperience(albDBZone, PvEExperienceBonusAmount);
+            SetDbZoneExperience(albDBZoneSI, PvEExperienceBonusAmount);
+            SetDbZoneExperience(midDBZone, PvEExperienceBonusAmount);
+            SetDbZoneExperience(midDBZoneSI, PvEExperienceBonusAmount);
+            SetDbZoneExperience(hibDBZone, PvEExperienceBonusAmount);
+            SetDbZoneExperience(hibDBZoneSI, PvEExperienceBonusAmount);
 
             // Update Bonuses In-Game
-            WorldMgr.Zones[(ushort)currentAlbionZone].BonusExperience = PvEExperienceBonusAmount;
-            WorldMgr.Zones[(ushort)currentAlbionZoneSI].BonusExperience = PvEExperienceBonusAmount;
-            WorldMgr.Zones[(ushort)currentMidgardZone].BonusExperience = PvEExperienceBonusAmount;
-            WorldMgr.Zones[(ushort)currentMidgardZoneSI].BonusExperience = PvEExperienceBonusAmount;
-            WorldMgr.Zones[(ushort)currentHiberniaZone].BonusExperience = PvEExperienceBonusAmount;
-            WorldMgr.Zones[(ushort)currentHiberniaZoneSI].BonusExperience = PvEExperienceBonusAmount;
+            SetWorldZoneExperience(currentAlbionZone, PvEExperienceBonusAmount);
+            SetWorldZoneExperience(currentAlbionZoneSI, PvEExperienceBonusAmount);
+            SetWorldZoneExperience(currentMidgardZone, PvEExperienceBonusAmount);
+            SetWorldZoneExperience(currentMidgardZoneSI, PvEExperienceBonusAmount);
+            SetWorldZoneExperience(currentHiberniaZone, PvEExperienceBonusAmount);
+            SetWorldZoneExperience(currentHiberniaZoneSI, PvEExperienceBonusAmount);
 
             foreach (GamePlayer player in ClientService.Instance.GetPlayers())
                 TellPlayer(player);
@@ -216,46 +214,13 @@ namespace DOL.GS.Scripts
             switch (currentRvRRealm)
             {
                 case 1:
-                    foreach (int i in albionRvRZones)
-                    {
-                        DbZone zone = DOLDB<DbZone>.SelectObject(DB.Column("ZoneID").IsEqualTo(i));
-                        zone.Experience = RvRExperienceBonusAmount;
-                        zone.Realmpoints = RPBonusAmount;
-                        zone.Bountypoints = BPBonusAmount;
-                        GameServer.Database.SaveObject(zone);
-
-                        WorldMgr.Zones[(ushort)i].BonusExperience = RvRExperienceBonusAmount;
-                        WorldMgr.Zones[(ushort)i].BonusRealmpoints = RPBonusAmount;
-                        WorldMgr.Zones[(ushort)i].BonusBountypoints = BPBonusAmount;
-                    }
+                    SetRvRZoneBonuses(albionRvRZones, RvRExperienceBonusAmount, RPBonusAmount, BPBonusAmount);
                     break;
                 case 2:
-                    foreach (int i in midgardRvRZones)
-                    {
-                        DbZone zone = DOLDB<DbZone>.SelectObject(DB.Column("ZoneID").IsEqualTo(i));
-                        zone.Experience = RvRExperienceBonusAmount;
-                        zone.Realmpoints = RPBonusAmount;
-                        zone.Bountypoints = BPBonusAmount;
-                        GameServer.Database.SaveObject(zone);
-
-                        WorldMgr.Zones[(ushort)i].BonusExperience = RvRExperienceBonusAmount;
-                        WorldMgr.Zones[(ushort)i].BonusRealmpoints = RPBonusAmount;
-                        WorldMgr.Zones[(ushort)i].BonusBountypoints = BPBonusAmount;
-                    }
+                    SetRvRZoneBonuses(midgardRvRZones, RvRExperienceBonusAmount, RPBonusAmount, BPBonusAmount);
                     break;
                 case 3:
-                    foreach (int i in hiberniaRvRZones)
-                    {
-                        DbZone zone = DOLDB<DbZone>.SelectObject(DB.Column("ZoneID").IsEqualTo(i));
-                        zone.Experience = RvRExperienceBonusAmount;
-                        zone.Realmpoints = RPBonusAmount;
-                        zone.Bountypoints = BPBonusAmount;
-                        GameServer.Database.SaveObject(zone);
-
-                        WorldMgr.Zones[(ushort)i].BonusExperience = RvRExperienceBonusAmount;
-                        WorldMgr.Zones[(ushort)i].BonusRealmpoints = RPBonusAmount;
-                        WorldMgr.Zones[(ushort)i].BonusBountypoints = BPBonusAmount;
-                    }
+                    SetRvRZoneBonuses(hiberniaRvRZones, RvRExperienceBonusAmount, RPBonusAmount, BPBonusAmount);
                     break;
             }
 
@@ -341,8 +306,8 @@ namespace DOL.GS.Scripts
                         SILowZones.Add(lowZone);
                 }
 
-                currentAlbionZone = ClassicHighZones[Util.Random(ClassicHighZones.Count - 1)];
-                currentAlbionZoneSI = SILowZones[Util.Random(SILowZones.Count - 1)];
+                currentAlbionZone = PickRandomZone(ClassicHighZones, albionClassicZones);
+                currentAlbionZoneSI = PickRandomZone(SILowZones, albionSIZones);
             }
             else
             {
@@ -360,8 +325,8 @@ namespace DOL.GS.Scripts
                         SIHighZones.Add(highZone);
                 }
 
-                currentAlbionZone = ClassicLowZones[Util.Random(ClassicLowZones.Count - 1)];
-                currentAlbionZoneSI = SIHighZones[Util.Random(SIHighZones.Count - 1)];
+                currentAlbionZone = PickRandomZone(ClassicLowZones, albionClassicZones);
+                currentAlbionZoneSI = PickRandomZone(SIHighZones, albionSIZones);
             }
             //currentAlbionZone = Util.Random(albionClassicZones.Count - 1);
             //currentAlbionZoneSI = Util.Random(albionSIZones.Count - 1);
@@ -383,8 +348,8 @@ namespace DOL.GS.Scripts
                         SILowZones.Add(lowZone);
                 }
 
-                currentMidgardZone = ClassicHighZones[Util.Random(ClassicHighZones.Count - 1)];
-                currentMidgardZoneSI = SILowZones[Util.Random(SILowZones.Count - 1)];
+                currentMidgardZone = PickRandomZone(ClassicHighZones, midgardClassicZones);
+                currentMidgardZoneSI = PickRandomZone(SILowZones, midgardSIZones);
             }
             else
             {
@@ -402,8 +367,8 @@ namespace DOL.GS.Scripts
                         SIHighZones.Add(highZone);
                 }
 
-                currentMidgardZone = ClassicLowZones[Util.Random(ClassicLowZones.Count - 1)];
-                currentMidgardZoneSI = SIHighZones[Util.Random(SIHighZones.Count - 1)];
+                currentMidgardZone = PickRandomZone(ClassicLowZones, midgardClassicZones);
+                currentMidgardZoneSI = PickRandomZone(SIHighZones, midgardSIZones);
             }
 
             //currentMidgardZone = Util.Random(midgardClassicZones.Count - 1);
@@ -426,8 +391,8 @@ namespace DOL.GS.Scripts
                         SILowZones.Add(lowZone);
                 }
 
-                currentHiberniaZone = ClassicHighZones[Util.Random(ClassicHighZones.Count - 1)];
-                currentHiberniaZoneSI = SILowZones[Util.Random(SILowZones.Count - 1)];
+                currentHiberniaZone = PickRandomZone(ClassicHighZones, hiberniaClassicZones);
+                currentHiberniaZoneSI = PickRandomZone(SILowZones, hiberniaSIZones);
             }
             else
             {
@@ -445,16 +410,25 @@ namespace DOL.GS.Scripts
                         SIHighZones.Add(highZone);
                 }
 
-                currentHiberniaZone = ClassicLowZones[Util.Random(ClassicLowZones.Count - 1)];
-                currentHiberniaZoneSI = SIHighZones[Util.Random(SIHighZones.Count - 1)];
+                currentHiberniaZone = PickRandomZone(ClassicLowZones, hiberniaClassicZones);
+                currentHiberniaZoneSI = PickRandomZone(SIHighZones, hiberniaSIZones);
             }
             //currentHiberniaZone = Util.Random(hiberniaClassicZones.Count - 1);
             //currentHiberniaZoneSI = Util.Random(hiberniaSIZones.Count - 1);
 
         }
 
+        private static int PickRandomZone(List<int> preferredZones, List<int> fallbackZones)
+        {
+            List<int> zones = preferredZones.Count > 0 ? preferredZones : fallbackZones;
+            return zones.Count > 0 ? zones[Util.Random(zones.Count - 1)] : 0;
+        }
+
         private static void TellPlayer(GamePlayer player)
         {
+            if (player?.Client?.Account == null)
+                return;
+
             player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "ZoneBonusRotator.Updated"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
         }
 
@@ -533,12 +507,12 @@ namespace DOL.GS.Scripts
                     break;
             }
             return "\n" + LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.OFBonusRegion", realm) + "\n\n" +
-                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmClassic", GlobalConstants.RealmToName(eRealm.Albion, Properties.SERV_LANGUAGE), albDBZone.Name, albDBZone.Experience) + "\n" +
-                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmSI", GlobalConstants.RealmToName(eRealm.Albion, Properties.SERV_LANGUAGE), albDBZoneSI.Name, albDBZoneSI.Experience) + "\n\n" +
-                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmClassic", GlobalConstants.RealmToName(eRealm.Midgard, Properties.SERV_LANGUAGE), midDBZone.Name, midDBZone.Experience) + "\n" +
-                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmSI", GlobalConstants.RealmToName(eRealm.Midgard, Properties.SERV_LANGUAGE), midDBZoneSI.Name, midDBZoneSI.Experience) + "\n\n" +
-                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmClassic", GlobalConstants.RealmToName(eRealm.Hibernia, Properties.SERV_LANGUAGE), hibDBZone.Name, hibDBZone.Experience) + "\n" +
-                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmSI", GlobalConstants.RealmToName(eRealm.Hibernia, Properties.SERV_LANGUAGE), hibDBZoneSI.Name, hibDBZoneSI.Experience) + "\n\n";
+                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmClassic", GlobalConstants.RealmToName(eRealm.Albion, Properties.SERV_LANGUAGE), GetZoneName(albDBZone), GetZoneExperience(albDBZone)) + "\n" +
+                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmSI", GlobalConstants.RealmToName(eRealm.Albion, Properties.SERV_LANGUAGE), GetZoneName(albDBZoneSI), GetZoneExperience(albDBZoneSI)) + "\n\n" +
+                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmClassic", GlobalConstants.RealmToName(eRealm.Midgard, Properties.SERV_LANGUAGE), GetZoneName(midDBZone), GetZoneExperience(midDBZone)) + "\n" +
+                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmSI", GlobalConstants.RealmToName(eRealm.Midgard, Properties.SERV_LANGUAGE), GetZoneName(midDBZoneSI), GetZoneExperience(midDBZoneSI)) + "\n\n" +
+                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmClassic", GlobalConstants.RealmToName(eRealm.Hibernia, Properties.SERV_LANGUAGE), GetZoneName(hibDBZone), GetZoneExperience(hibDBZone)) + "\n" +
+                LanguageMgr.GetTranslation(Properties.SERV_LANGUAGE, "ZoneBonusRotator.RealmSI", GlobalConstants.RealmToName(eRealm.Hibernia, Properties.SERV_LANGUAGE), GetZoneName(hibDBZoneSI), GetZoneExperience(hibDBZoneSI)) + "\n\n";
         }
 
         public static List<string> GetTextList(string language)
@@ -563,16 +537,16 @@ namespace DOL.GS.Scripts
             temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.BonusXP", RvRExperienceBonusAmount));
             temp.Add("");
             temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.CurrentRealmZones", GlobalConstants.RealmToName(eRealm.Albion, language)));
-            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.ClassicZone", albDBZone.Name, GetLevelRange(albDBZone.ZoneID), albDBZone.Experience));
-            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.SIZone", albDBZoneSI.Name, GetLevelRange(albDBZoneSI.ZoneID), albDBZoneSI.Experience));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.ClassicZone", GetZoneName(albDBZone), GetLevelRange(albDBZone), GetZoneExperience(albDBZone)));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.SIZone", GetZoneName(albDBZoneSI), GetLevelRange(albDBZoneSI), GetZoneExperience(albDBZoneSI)));
             temp.Add("");
             temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.CurrentRealmZones", GlobalConstants.RealmToName(eRealm.Midgard, language)));
-            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.ClassicZone", midDBZone.Name, GetLevelRange(midDBZone.ZoneID), midDBZone.Experience));
-            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.SIZone", midDBZoneSI.Name, GetLevelRange(midDBZoneSI.ZoneID), midDBZoneSI.Experience));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.ClassicZone", GetZoneName(midDBZone), GetLevelRange(midDBZone), GetZoneExperience(midDBZone)));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.SIZone", GetZoneName(midDBZoneSI), GetLevelRange(midDBZoneSI), GetZoneExperience(midDBZoneSI)));
             temp.Add("");
             temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.CurrentRealmZones", GlobalConstants.RealmToName(eRealm.Hibernia, language)));
-            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.ClassicZone", hibDBZone.Name, GetLevelRange(hibDBZone.ZoneID), hibDBZone.Experience));
-            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.SIZone", hibDBZoneSI.Name, GetLevelRange(hibDBZoneSI.ZoneID), hibDBZoneSI.Experience));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.ClassicZone", GetZoneName(hibDBZone), GetLevelRange(hibDBZone), GetZoneExperience(hibDBZone)));
+            temp.Add(LanguageMgr.GetTranslation(language, "ZoneBonusRotator.SIZone", GetZoneName(hibDBZoneSI), GetLevelRange(hibDBZoneSI), GetZoneExperience(hibDBZoneSI)));
 
             temp.Add("");
             var rvr = _lastRvRChangeTick + RvRTimer - GameLoop.GameLoopTime;
@@ -606,46 +580,13 @@ namespace DOL.GS.Scripts
             switch (currentRvRRealm)
             {
                 case 1:
-                    foreach (int i in albionRvRZones)
-                    {
-                        DbZone zone = DOLDB<DbZone>.SelectObject(DB.Column("ZoneID").IsEqualTo(i));
-                        zone.Experience = 0;
-                        zone.Realmpoints = 0;
-                        zone.Bountypoints = 0;
-                        GameServer.Database.SaveObject(zone);
-
-                        WorldMgr.Zones[(ushort)i].BonusExperience = 0;
-                        WorldMgr.Zones[(ushort)i].BonusRealmpoints = 0;
-                        WorldMgr.Zones[(ushort)i].BonusBountypoints = 0;
-                    }
+                    SetRvRZoneBonuses(albionRvRZones, 0, 0, 0);
                     break;
                 case 2:
-                    foreach (int i in midgardRvRZones)
-                    {
-                        DbZone zone = DOLDB<DbZone>.SelectObject(DB.Column("ZoneID").IsEqualTo(i));
-                        zone.Experience = 0;
-                        zone.Realmpoints = 0;
-                        zone.Bountypoints = 0;
-                        GameServer.Database.SaveObject(zone);
-
-                        WorldMgr.Zones[(ushort)i].BonusExperience = 0;
-                        WorldMgr.Zones[(ushort)i].BonusRealmpoints = 0;
-                        WorldMgr.Zones[(ushort)i].BonusBountypoints = 0;
-                    }
+                    SetRvRZoneBonuses(midgardRvRZones, 0, 0, 0);
                     break;
                 case 3:
-                    foreach (int i in hiberniaRvRZones)
-                    {
-                        DbZone zone = DOLDB<DbZone>.SelectObject(DB.Column("ZoneID").IsEqualTo(i));
-                        zone.Experience = 0;
-                        zone.Realmpoints = 0;
-                        zone.Bountypoints = 0;
-                        GameServer.Database.SaveObject(zone);
-
-                        WorldMgr.Zones[(ushort)i].BonusExperience = 0;
-                        WorldMgr.Zones[(ushort)i].BonusRealmpoints = 0;
-                        WorldMgr.Zones[(ushort)i].BonusBountypoints = 0;
-                    }
+                    SetRvRZoneBonuses(hiberniaRvRZones, 0, 0, 0);
                     break;
             }
         }
@@ -660,38 +601,31 @@ namespace DOL.GS.Scripts
             hibDBZone = DOLDB<DbZone>.SelectObject(DB.Column("ZoneID").IsEqualTo(currentHiberniaZone));
             hibDBZoneSI = DOLDB<DbZone>.SelectObject(DB.Column("ZoneID").IsEqualTo(currentHiberniaZoneSI));
 
-            albDBZone.Experience = 0;
-            albDBZoneSI.Experience = 0;
-            midDBZone.Experience = 0;
-            midDBZoneSI.Experience = 0;
-            hibDBZone.Experience = 0;
-            hibDBZoneSI.Experience = 0;
-
-            GameServer.Database.SaveObject(albDBZone);
-            GameServer.Database.SaveObject(albDBZoneSI);
-            GameServer.Database.SaveObject(midDBZone);
-            GameServer.Database.SaveObject(midDBZoneSI);
-            GameServer.Database.SaveObject(hibDBZone);
-            GameServer.Database.SaveObject(midDBZoneSI);
+            SetDbZoneExperience(albDBZone, 0);
+            SetDbZoneExperience(albDBZoneSI, 0);
+            SetDbZoneExperience(midDBZone, 0);
+            SetDbZoneExperience(midDBZoneSI, 0);
+            SetDbZoneExperience(hibDBZone, 0);
+            SetDbZoneExperience(hibDBZoneSI, 0);
 
 
             foreach (var zone in albionClassicZones)
-                WorldMgr.Zones[(ushort)zone].BonusExperience = 0;
+                SetWorldZoneExperience(zone, 0);
 
             foreach (var zone in albionSIZones)
-                WorldMgr.Zones[(ushort)zone].BonusExperience = 0;
+                SetWorldZoneExperience(zone, 0);
 
             foreach (var zone in midgardClassicZones)
-                WorldMgr.Zones[(ushort)zone].BonusExperience = 0;
+                SetWorldZoneExperience(zone, 0);
 
             foreach (var zone in midgardSIZones)
-                WorldMgr.Zones[(ushort)zone].BonusExperience = 0;
+                SetWorldZoneExperience(zone, 0);
 
             foreach (var zone in hiberniaClassicZones)
-                WorldMgr.Zones[(ushort)zone].BonusExperience = 0;
+                SetWorldZoneExperience(zone, 0);
 
             foreach (var zone in hiberniaSIZones)
-                WorldMgr.Zones[(ushort)zone].BonusExperience = 0;
+                SetWorldZoneExperience(zone, 0);
 
             /*
             WorldMgr.Zones[(ushort)albionClassicZones[currentAlbionZone]].BonusExperience = 0;
@@ -701,6 +635,67 @@ namespace DOL.GS.Scripts
             WorldMgr.Zones[(ushort)hiberniaClassicZones[currentHiberniaZone]].BonusExperience = 0;
             WorldMgr.Zones[(ushort)hiberniaSIZones[currentHiberniaZoneSI]].BonusExperience = 0;
             */
+        }
+
+        private static void SetDbZoneExperience(DbZone zone, int experience)
+        {
+            if (zone == null)
+                return;
+
+            zone.Experience = experience;
+            GameServer.Database.SaveObject(zone);
+        }
+
+        private static void SetRvRZoneBonuses(IEnumerable<int> zoneIds, int experience, int realmPoints, int bountyPoints)
+        {
+            foreach (int zoneId in zoneIds)
+            {
+                DbZone zone = DOLDB<DbZone>.SelectObject(DB.Column("ZoneID").IsEqualTo(zoneId));
+                SetDbZoneBonuses(zone, experience, realmPoints, bountyPoints);
+                SetWorldZoneBonuses(zoneId, experience, realmPoints, bountyPoints);
+            }
+        }
+
+        private static void SetDbZoneBonuses(DbZone zone, int experience, int realmPoints, int bountyPoints)
+        {
+            if (zone == null)
+                return;
+
+            zone.Experience = experience;
+            zone.Realmpoints = realmPoints;
+            zone.Bountypoints = bountyPoints;
+            GameServer.Database.SaveObject(zone);
+        }
+
+        private static void SetWorldZoneExperience(int zoneId, int experience)
+        {
+            if (WorldMgr.Zones.TryGetValue((ushort)zoneId, out var zone))
+                zone.BonusExperience = experience;
+        }
+
+        private static void SetWorldZoneBonuses(int zoneId, int experience, int realmPoints, int bountyPoints)
+        {
+            if (!WorldMgr.Zones.TryGetValue((ushort)zoneId, out var zone))
+                return;
+
+            zone.BonusExperience = experience;
+            zone.BonusRealmpoints = realmPoints;
+            zone.BonusBountypoints = bountyPoints;
+        }
+
+        private static string GetZoneName(DbZone zone)
+        {
+            return zone?.Name ?? "Unknown";
+        }
+
+        private static int GetZoneExperience(DbZone zone)
+        {
+            return zone?.Experience ?? 0;
+        }
+
+        private static string GetLevelRange(DbZone zone)
+        {
+            return zone == null ? string.Empty : GetLevelRange(zone.ZoneID);
         }
     }
 }

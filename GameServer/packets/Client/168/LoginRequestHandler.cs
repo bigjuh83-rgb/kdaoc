@@ -57,7 +57,20 @@ namespace DOL.GS.PacketHandler.Client.v168
 		private static HashSet<string> _clientsLoggingIn = new();
 		private static Lock _lock = new();
 
-		protected async override void HandlePacketInternal(GameClient client, GSPacketIn packet)
+		protected override async void HandlePacketInternal(GameClient client, GSPacketIn packet)
+		{
+			try
+			{
+				await HandleLoginRequestAsync(client, packet);
+			}
+			catch (Exception e)
+			{
+				Log.Error($"Unhandled exception while processing login request for {client}", e);
+				client?.Disconnect();
+			}
+		}
+
+		private static async Task HandleLoginRequestAsync(GameClient client, GSPacketIn packet)
 		{
 			// Prevent multiple concurrent logins for the same client.
 			if (client == null)

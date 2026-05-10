@@ -20,6 +20,11 @@ namespace DOL.GS.PacketHandler.Client.v168
             return string.Equals(language, "KR", StringComparison.OrdinalIgnoreCase);
         }
 
+        public static bool ShouldMoveToBindOnInstanceLogin(Region registeredRegion, Region currentRegion)
+        {
+            return registeredRegion == null || currentRegion == null || currentRegion.IsInstance;
+        }
+
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
             GamePlayer player = client.Player;
@@ -91,7 +96,9 @@ namespace DOL.GS.PacketHandler.Client.v168
 
             if (checkInstanceLogin)
             {
-                if (WorldMgr.Regions[player.CurrentRegionID] == null || player.CurrentRegion == null || player.CurrentRegion.IsInstance)
+                Region registeredRegion = WorldMgr.GetRegion(player.CurrentRegionID);
+
+                if (ShouldMoveToBindOnInstanceLogin(registeredRegion, player.CurrentRegion))
                 {
                     Log.WarnFormat($"{player.Name}:{player.Client.Account.Name} logging into instance or CurrentRegion is null, moving to bind!");
                     player.MoveToBind();

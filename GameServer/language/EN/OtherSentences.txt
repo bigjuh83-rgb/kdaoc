@@ -560,6 +560,7 @@ UseSkillHandler.BackupStyle.NowUsing:         You will now use {0} as your backu
 UseSpellHandler.SpellCannotResolve:           Error: Spell (Line {0}, Level {1}) can't be resolved...
 RegionChange.DestinationUnsupported:          Destination region {0} is not supported by your client type.
 RegionChange.JumpPointException:              Exception in jump point ({0}) handler.
+RegionChange.InvalidJumpPoint:                Jump point ({0}) has no valid destination.
 PlayerMoveItem.InvalidItem:                   Invalid item (slot #{0}).
 PlayerMoveItem.DroppedOnGround:               You drop {0} on the ground!
 PlayerCommand.NoSuchCommand:                  No such command ({0})

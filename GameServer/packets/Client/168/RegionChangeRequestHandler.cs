@@ -19,6 +19,41 @@ namespace DOL.GS.PacketHandler.Client.v168
         /// </summary>
         protected readonly Hashtable m_customJumpPointHandlers = new();
 
+        public static DbZonePoint CreateWorkingZonePoint(DbZonePoint zonePoint, out bool canPersistSourceInfo)
+        {
+            if (zonePoint.TargetRegion != 0)
+            {
+                canPersistSourceInfo = true;
+                return zonePoint;
+            }
+
+            canPersistSourceInfo = false;
+
+            return new()
+            {
+                Id = zonePoint.Id,
+                TargetX = zonePoint.TargetX,
+                TargetY = zonePoint.TargetY,
+                TargetZ = zonePoint.TargetZ,
+                TargetRegion = zonePoint.TargetRegion,
+                TargetHeading = zonePoint.TargetHeading,
+                SourceX = zonePoint.SourceX,
+                SourceY = zonePoint.SourceY,
+                SourceZ = zonePoint.SourceZ,
+                SourceRegion = zonePoint.SourceRegion,
+                Realm = zonePoint.Realm,
+                ClassType = zonePoint.ClassType
+            };
+        }
+
+        public static bool IsDeniedByBattlegroundCap(DbBattleground battleground, int level, int realmLevel)
+        {
+            return battleground != null
+                && (level < battleground.MinLevel
+                    || level > battleground.MaxLevel
+                    || (battleground.MaxRealmLevel != 0 && realmLevel >= battleground.MaxRealmLevel));
+        }
+
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
             ushort zonePointId = client.Version >= GameClient.eClientVersion.Version1126 ? packet.ReadShortLowEndian() : packet.ReadShort();
@@ -46,13 +81,8 @@ namespace DOL.GS.PacketHandler.Client.v168
             }
 
             // Some jump points are handled code side, such as instances. As such, region may be zero in the database.
-            if (zonePoint.TargetRegion == 0)
-            {
-                zonePoint = new()
-                {
-                    Id = zonePointId
-                };
-            }
+            // Use a detached copy so handlers can fill the destination without mutating the DB object.
+            zonePoint = CreateWorkingZonePoint(zonePoint, out bool canPersistSourceInfo);
 
             if (client.Account.PrivLevel > 1)
                 ChatUtil.SendDebugMessage(client, $"ZonePoint (ID: {zonePointId}) (TargetRegion: {zonePoint.TargetRegion}) (ClassType: {zonePoint.ClassType})");
@@ -82,7 +112,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
             DbBattleground bg = GameServer.KeepManager.GetBattleground(zonePoint.TargetRegion);
 
-            if (bg != null && client.Player.Level < bg.MinLevel && client.Player.Level > bg.MaxLevel && client.Player.RealmLevel >= bg.MaxRealmLevel)
+            if (IsDeniedByBattlegroundCap(bg, client.Player.Level, client.Player.RealmLevel))
                 return;
 
             IJumpPointHandler customHandler = null;
@@ -134,7 +164,7 @@ namespace DOL.GS.PacketHandler.Client.v168
             try
             {
                 // Check if the zone point has source locations set  Check prior to any zone point modification by handlers.
-                if (zonePoint.SourceRegion == 0)
+                if (canPersistSourceInfo && zonePoint.SourceRegion == 0)
                 {
                     zonePoint.SourceRegion = player.CurrentRegionID;
                     zonePoint.SourceX = player.X;
@@ -163,6 +193,13 @@ namespace DOL.GS.PacketHandler.Client.v168
                     player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RegionChange.JumpPointException", zonePoint.Id), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                     return;
                 }
+            }
+
+            if (zonePoint.TargetRegion == 0)
+            {
+                Log.Error($"ZonePoint has no target region after processing (ID: {zonePoint.Id}) (Class {zonePoint.ClassType})");
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "RegionChange.InvalidJumpPoint", zonePoint.Id), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                return;
             }
 
             player.MoveTo(zonePoint.TargetRegion, zonePoint.TargetX, zonePoint.TargetY, zonePoint.TargetZ, zonePoint.TargetHeading);

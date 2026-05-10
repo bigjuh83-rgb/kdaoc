@@ -39,8 +39,13 @@ namespace DOL.GS.PacketHandler.Client.v168
 			AbstractGameKeep keep = GameServer.KeepManager.GetKeepByID(keepId);
 			if (keep == null)
 				return;
-			GameKeepComponent component = keep.KeepComponents[wallId] as GameKeepComponent;
+			if (wallId >= keep.KeepComponents.Count)
+				return;
+
+			GameKeepComponent component = keep.KeepComponents[wallId];
 			if (component == null)
+				return;
+			if (!component.HookPoints.TryGetValue(hookpointID, out GameKeepHookPoint hookPoint))
 				return;
 
 			HookPointInventory inventory = null;
@@ -51,7 +56,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 			else inventory = HookPointInventory.RedHPInventory; // guard
 
 			HookPointItem item = inventory?.GetItem(itemslot);
-			item?.Invoke(client.Player, payType, component.HookPoints[hookpointID], component);
+			item?.Invoke(client.Player, payType, hookPoint, component);
 		}
 	}
 }

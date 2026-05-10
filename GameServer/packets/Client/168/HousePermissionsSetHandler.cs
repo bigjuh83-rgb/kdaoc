@@ -30,7 +30,14 @@ namespace DOL.GS.PacketHandler.Client.v168
 				return;
 
 			// read in the permission values
-			DbHousePermissions permission = house.PermissionLevels[level];
+			if (!house.PermissionLevels.TryGetValue(level, out DbHousePermissions permission))
+			{
+				permission = new DbHousePermissions(housenumber, level);
+				GameServer.Database.AddObject(permission);
+
+				if (house.PermissionLevels is System.Collections.Generic.IDictionary<int, DbHousePermissions> permissionLevels)
+					permissionLevels[level] = permission;
+			}
 
 			permission.CanEnterHouse = (packet.ReadByte() != 0);
 			permission.Vault1 = (byte) packet.ReadByte();

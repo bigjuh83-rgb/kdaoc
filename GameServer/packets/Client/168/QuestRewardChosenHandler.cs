@@ -22,6 +22,9 @@ namespace DOL.GS.PacketHandler.Client.v168
             for (int i = 0; i < 8; ++i)
                 itemsChosen[i] = packet.ReadByte();
 
+            if (countChosen > itemsChosen.Length)
+                return;
+
             ushort data2 = packet.ReadShort(); // Unknown.
             ushort data3 = packet.ReadShort(); // Unknown.
             ushort data4 = packet.ReadShort(); // Unknown.

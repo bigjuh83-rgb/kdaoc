@@ -1873,6 +1873,40 @@ namespace DOL.GS.Quests
 						return;
 
 					m_optionalRewardChoice.Clear();
+
+					if (OptionalRewards.Count > 0)
+					{
+						if (NumOptionalRewardsChoice > 0 && rewardArgs.CountChosen <= 0)
+						{
+							QuestPlayer.Out.SendMessage(LanguageMgr.GetTranslation(QuestPlayer.Client, "RewardQuest.Notify"), eChatType.CT_System, eChatLoc.CL_ChatWindow);
+							return;
+						}
+
+						if (rewardArgs.CountChosen < 0
+							|| rewardArgs.ItemsChosen == null
+							|| rewardArgs.CountChosen > rewardArgs.ItemsChosen.Length
+							|| rewardArgs.CountChosen > NumOptionalRewardsChoice)
+						{
+							QuestPlayer.Out.SendMessage(LanguageMgr.GetTranslation(QuestPlayer.Client, "RewardQuest.Notify"), eChatType.CT_System, eChatLoc.CL_ChatWindow);
+							return;
+						}
+
+						for (int reward = 0; reward < rewardArgs.CountChosen; ++reward)
+						{
+							int rewardIndex = rewardArgs.ItemsChosen[reward];
+							if (rewardIndex < 0 || rewardIndex >= OptionalRewards.Count)
+							{
+								QuestPlayer.Out.SendMessage(LanguageMgr.GetTranslation(QuestPlayer.Client, "RewardQuest.Notify"), eChatType.CT_System, eChatLoc.CL_ChatWindow);
+								return;
+							}
+						}
+					}
+					else if (rewardArgs.CountChosen > 0)
+					{
+						QuestPlayer.Out.SendMessage(LanguageMgr.GetTranslation(QuestPlayer.Client, "RewardQuest.Notify"), eChatType.CT_System, eChatLoc.CL_ChatWindow);
+						return;
+					}
+
 					m_rewardItemsChosen = rewardArgs.ItemsChosen;
 
 					if (ExecuteCustomQuestStep(QuestPlayer, 0, eStepCheckType.RewardsChosen))
@@ -1882,12 +1916,6 @@ namespace DOL.GS.Quests
 							for (int reward = 0; reward < rewardArgs.CountChosen; ++reward)
 							{
 								m_optionalRewardChoice.Add(OptionalRewards[rewardArgs.ItemsChosen[reward]]);
-							}
-
-							if (NumOptionalRewardsChoice > 0 && rewardArgs.CountChosen <= 0)
-							{
-                                QuestPlayer.Out.SendMessage(LanguageMgr.GetTranslation(QuestPlayer.Client, "RewardQuest.Notify"), eChatType.CT_System, eChatLoc.CL_ChatWindow);
-								return;
 							}
 						}
 

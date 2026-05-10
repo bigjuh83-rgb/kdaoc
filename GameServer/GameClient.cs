@@ -284,15 +284,37 @@ namespace DOL.GS
 
         private bool CheckVersion(int size)
         {
-            // This currently assumes the first packet is received in full, which may not be the case.
-            // This should eventually be fixed since the connection may fail because of that.
+            int endPosition = ReceiveBufferOffset + size;
 
-            if (size < 17) // 17 is correct bytes count for 0xF4 packet.
+            if (endPosition < 2)
+            {
+                ReceiveBufferOffset = endPosition;
+                return false;
+            }
+
+            int firstPacketSize = (ReceiveBuffer[0] << 8) + ReceiveBuffer[1] + GSPacketIn.HDR_SIZE;
+
+            if (firstPacketSize > ReceiveBuffer.Length)
+            {
+                if (log.IsWarnEnabled)
+                    log.Warn($"Disconnected {TcpEndpointAddress} in login phase because packet size {firstPacketSize} exceeds receive buffer size {ReceiveBuffer.Length}");
+
+                Disconnect();
+                return false;
+            }
+
+            if (endPosition < firstPacketSize)
+            {
+                ReceiveBufferOffset = endPosition;
+                return false;
+            }
+
+            if (firstPacketSize < 17) // 17 is the expected minimum byte count for the 0xF4 version packet.
             {
                 if (log.IsWarnEnabled)
                 {
-                    log.Warn($"Disconnected {TcpEndpointAddress} in login phase because wrong packet size {size}");
-                    log.Warn(Marshal.ToHexDump("packet buffer:", ReceiveBuffer, 0, size));
+                    log.Warn($"Disconnected {TcpEndpointAddress} in login phase because wrong packet size {firstPacketSize}");
+                    log.Warn(Marshal.ToHexDump("packet buffer:", ReceiveBuffer, 0, firstPacketSize));
                 }
 
                 Disconnect();
@@ -302,7 +324,7 @@ namespace DOL.GS
             int version;
 
             // The first packet format changes after 1.115c. If bytes count is below 19, we have a pre-1.115c packet.
-            if (size < 19)
+            if (firstPacketSize < 19)
             {
                 // Currently, the version is sent with the first packet, no matter what packet code it is.
                 version = ReceiveBuffer[12] * 100 + ReceiveBuffer[13] * 10 + ReceiveBuffer[14];

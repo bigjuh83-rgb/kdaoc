@@ -146,10 +146,13 @@ namespace DOL.GS
                 if (list == null)
                     return false;
 
-                int itemSlot = (int) fromClientSlot - (int) eInventorySlot.MarketExplorerFirst;
-                DbInventoryItem item = list[itemSlot];
-                BuyItem(item, player);
-                return true;
+	                int itemSlot = (int) fromClientSlot - (int) eInventorySlot.MarketExplorerFirst;
+	                if (itemSlot < 0 || itemSlot >= list.Count)
+	                    return false;
+
+	                DbInventoryItem item = list[itemSlot];
+	                BuyItem(item, player);
+	                return true;
             }
 
             return false;

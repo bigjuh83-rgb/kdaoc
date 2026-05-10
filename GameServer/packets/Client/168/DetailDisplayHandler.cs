@@ -20,6 +20,58 @@ namespace DOL.GS.PacketHandler.Client.v168
 	{
 		protected static readonly Logger log = LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);
 
+		public static bool TryGetIndexedSkill<TSkill>(IReadOnlyList<(Skill, Skill)> snapSkills, int objectId, out TSkill skill)
+			where TSkill : Skill
+		{
+			return TryGetIndexedSkill(snapSkills, objectId, out skill, out Skill _);
+		}
+
+		public static bool TryGetIndexedSkill<TSkill, TContext>(IReadOnlyList<(Skill, Skill)> snapSkills, int objectId, out TSkill skill, out TContext context)
+			where TSkill : Skill
+			where TContext : Skill
+		{
+			skill = null;
+			context = null;
+
+			if (snapSkills == null || objectId < 100)
+				return false;
+
+			int firstNonSpecIndex = -1;
+
+			for (int i = 0; i < snapSkills.Count; i++)
+			{
+				if (snapSkills[i].Item1 is not Specialization)
+				{
+					firstNonSpecIndex = i;
+					break;
+				}
+			}
+
+			if (firstNonSpecIndex < 0)
+				return false;
+
+			int index = firstNonSpecIndex + objectId - 100;
+
+			if (index < 0 || index >= snapSkills.Count)
+				return false;
+
+			(Skill indexedSkill, Skill indexedContext) = snapSkills[index];
+			skill = indexedSkill as TSkill;
+
+			if (skill == null)
+				return false;
+
+			context = indexedContext as TContext;
+
+			if (typeof(TContext) != typeof(Skill) && context == null)
+			{
+				skill = null;
+				return false;
+			}
+
+			return true;
+		}
+
 		protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
 		{
 			if (client?.Player == null)
@@ -54,8 +106,6 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 			var snapSkills = client.Player.GetAllUsableSkills();
 			var snapLists = client.Player.GetAllUsableListSpells();
-			// find the first non-specialization index.
-			int indexAtSpecOid = Math.Max(0, snapSkills.FindIndex(it => (it.Item1 is Specialization) == false)) + (objectId - 100);
 
 			switch (objectType)
 			{
@@ -287,14 +337,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 						SpellLine spellLine = null;
 						Spell spell = null;
 
-						// are we in list ?
-						if (indexAtSpecOid < snapSkills.Count)
-						{
-							spell = (Spell)snapSkills[indexAtSpecOid].Item1;
-							spellLine = (SpellLine)snapSkills[indexAtSpecOid].Item2;
-						}
-
-						if (spell == null || spellLine == null)
+						if (!TryGetIndexedSkill(snapSkills, objectId, out spell, out spellLine))
 							return;
 
 						caption = spell.Name;
@@ -569,12 +612,9 @@ namespace DOL.GS.PacketHandler.Client.v168
 					#region Style
 				case 6: //style
 					{
-						Style style = null;
-						// are we in list ?
-						if (indexAtSpecOid < snapSkills.Count)
-							style = (Style)snapSkills[indexAtSpecOid].Item1;
-						if (style == null)
+						if (!TryGetIndexedSkill(snapSkills, objectId, out Style style))
 							return;
+
 						caption = style.Name;
 						WriteStyleInfo(objectInfo, style, client);
 						break;
@@ -656,11 +696,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 					#region Ability
 				case 8://abilities
 					{
-						Ability abil = null;
-						// are we in list ?
-						if (indexAtSpecOid < snapSkills.Count)
-							abil = (Ability)snapSkills[indexAtSpecOid].Item1;
-						if (abil == null)
+						if (!TryGetIndexedSkill(snapSkills, objectId, out Ability abil))
 							return;
 
 						caption = abil.Name;

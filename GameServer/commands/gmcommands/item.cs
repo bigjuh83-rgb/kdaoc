@@ -1579,10 +1579,16 @@ namespace DOL.GS.Commands
 								list.Add(T(client, "GMCommands.Item.SalvageInfo.UsingID", yield.ID));
 							}
 
-							list.Add(" ");
+								list.Add(" ");
 
-							DbItemTemplate material = GameServer.Database.FindObjectByKey<DbItemTemplate>(yield.MaterialId_nb);
-							string materialName = yield.MaterialId_nb;
+								if (yield == null)
+								{
+									client.Out.SendCustomTextWindow(T(client, "GMCommands.Item.SalvageInfo.WindowTitle", item.Name), list);
+									return;
+								}
+
+								DbItemTemplate material = GameServer.Database.FindObjectByKey<DbItemTemplate>(yield.MaterialId_nb);
+								string materialName = yield.MaterialId_nb;
 
 							if (material != null)
 							{

@@ -84,7 +84,7 @@ namespace DOL.GS.Commands
 							List<string> msg = new List<string>();
 							//note: we do not show the player his Appeals priority.
 							msg.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.CheckAppeal.SummaryLine", appeal.Name, appeal.Status, appeal.Text, appeal.Timestamp) + "\n");
-							msg.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Appeal.CurrentStaffAvailable", AppealMgr.GetAvailableStaffMembers().Count + "\n"));
+								msg.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Appeal.CurrentStaffAvailable", AppealMgr.GetAvailableStaffMembers().Count, AppealMgr.Count) + "\n");
 							msg.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Appeal.PleaseBePatient") + "\n");
 							msg.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Appeal.IfYouLogOut") + "\n");
 							msg.Add(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Appeal.ToCancelYourAppeal"));

@@ -10,7 +10,20 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         private static readonly Logger log = LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);
 
-        protected async override void HandlePacketInternal(GameClient client, GSPacketIn packet)
+        protected override async void HandlePacketInternal(GameClient client, GSPacketIn packet)
+        {
+            try
+            {
+                await HandleWorldInitRequestAsync(client, packet);
+            }
+            catch (System.Exception e)
+            {
+                log.Error($"Unhandled exception while processing world init request for {client}", e);
+                client?.Disconnect();
+            }
+        }
+
+        private static async Task HandleWorldInitRequestAsync(GameClient client, GSPacketIn packet)
         {
             if (client.ClientState is not GameClient.eClientState.CharScreen and not GameClient.eClientState.Playing)
                 return;

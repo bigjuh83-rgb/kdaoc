@@ -201,18 +201,32 @@ namespace DOL.GS.Quests
 				if (QuestMgr.GetIDForQuestType(this.GetType()) != rewardArgs.QuestID)
 					return;
 
-				for (int reward = 0; reward < rewardArgs.CountChosen; ++reward)
-					Rewards.Choose(rewardArgs.ItemsChosen[reward]);
+					//k109: Handle the player not choosing a reward.
+					if (Rewards.ChoiceOf > 0 && rewardArgs.CountChosen <= 0)
+					{
+						QuestPlayer.Out.SendMessage(LanguageMgr.GetTranslation(QuestPlayer.Client, "RewardQuest.Notify"), eChatType.CT_System, eChatLoc.CL_ChatWindow);
+						return;
+					}
 
-                //k109: Handle the player not choosing a reward.
-                if (Rewards.ChoiceOf > 0 && rewardArgs.CountChosen <= 0)
-                {
-                    QuestPlayer.Out.SendMessage(LanguageMgr.GetTranslation(QuestPlayer.Client, "RewardQuest.Notify"), eChatType.CT_System, eChatLoc.CL_ChatWindow);
-                    return;
-                }
+					if (rewardArgs.ItemsChosen == null || rewardArgs.CountChosen > rewardArgs.ItemsChosen.Length || rewardArgs.CountChosen > Rewards.ChoiceOf)
+					{
+						QuestPlayer.Out.SendMessage(LanguageMgr.GetTranslation(QuestPlayer.Client, "RewardQuest.Notify"), eChatType.CT_System, eChatLoc.CL_ChatWindow);
+						return;
+					}
 
-				FinishQuest();
-			}
+					Rewards.ChosenItems.Clear();
+					for (int reward = 0; reward < rewardArgs.CountChosen; ++reward)
+					{
+						if (!Rewards.Choose(rewardArgs.ItemsChosen[reward]))
+						{
+							Rewards.ChosenItems.Clear();
+							QuestPlayer.Out.SendMessage(LanguageMgr.GetTranslation(QuestPlayer.Client, "RewardQuest.Notify"), eChatType.CT_System, eChatLoc.CL_ChatWindow);
+							return;
+						}
+					}
+
+					FinishQuest();
+				}
 		}
 
 		/// <summary>
@@ -602,7 +616,7 @@ namespace DOL.GS.Quests
 			/// <returns></returns>
 			public bool Choose(int reward)
 			{
-				if (reward > m_optionalItems.Count)
+				if (reward < 0 || reward >= m_optionalItems.Count)
 					return false;
 
 				m_chosenItems.Add(m_optionalItems[reward]);

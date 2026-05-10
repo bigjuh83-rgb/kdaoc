@@ -1,6 +1,7 @@
 using DOL.GS.PacketHandler;
 using DOL.Network;
 using NUnit.Framework;
+using System.IO;
 using System.Text;
 
 namespace DOL.GS.Tests
@@ -95,6 +96,28 @@ namespace DOL.GS.Tests
             string result = packet.ReadIntPascalStringLowEndian();
 
             Assert.That(result, Is.EqualTo("abc"));
+        }
+
+        [Test]
+        public void ReadShort_WithTruncatedHeader_ShouldThrowEndOfStream()
+        {
+            GSPacketIn packet = new();
+            packet.WriteByte(0x12);
+            packet.Position = 0;
+
+            Assert.Throws<EndOfStreamException>(() => packet.ReadShort());
+        }
+
+        [Test]
+        public void ReadInt_WithTruncatedHeader_ShouldThrowEndOfStream()
+        {
+            GSPacketIn packet = new();
+            packet.WriteByte(0x12);
+            packet.WriteByte(0x34);
+            packet.WriteByte(0x56);
+            packet.Position = 0;
+
+            Assert.Throws<EndOfStreamException>(() => packet.ReadInt());
         }
 
         private static GSPacketIn CreateIntPascalPacket(byte[] stringBytes)

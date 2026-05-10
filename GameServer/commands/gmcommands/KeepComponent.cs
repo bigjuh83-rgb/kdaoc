@@ -282,10 +282,16 @@ namespace DOL.GS.Commands
                             return;
                         }
 
-                        var dbcomponent = DOLDB<DbKeepComponent>.SelectObject(DB.Column("KeepID").IsEqualTo(component.Keep.KeepID).And(DB.Column("ID").IsEqualTo(component.ID)));
-                        component.ComponentX = dbcomponent.X;
-                        component.ComponentY = dbcomponent.Y;
-                        component.ComponentHeading = dbcomponent.Heading;
+	                        var dbcomponent = DOLDB<DbKeepComponent>.SelectObject(DB.Column("KeepID").IsEqualTo(component.Keep.KeepID).And(DB.Column("ID").IsEqualTo(component.ID)));
+	                        if (dbcomponent == null)
+	                        {
+	                            client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "GMCommands.Error", "Keep component not found in the database."), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+	                            return;
+	                        }
+
+	                        component.ComponentX = dbcomponent.X;
+	                        component.ComponentY = dbcomponent.Y;
+	                        component.ComponentHeading = dbcomponent.Heading;
 						component.Skin = dbcomponent.Skin;
 
 						foreach (GamePlayer otherPlayer in ClientService.Instance.GetPlayersOfRegion(client.Player.CurrentRegion))

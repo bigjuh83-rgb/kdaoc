@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using DOL.Events;
 using DOL.GS.PacketHandler;
@@ -67,7 +68,7 @@ namespace DOL.GS.Quests
 			get { return m_targetName; }
 		}
 
-		private bool[] m_mobIsAlive;
+		private readonly HashSet<GameLiving> m_countedMobs = new();
 
 		public TaskDungeonMission(object owner, eDungeonType dungeonType = eDungeonType.Ranged)
 			: base(owner)
@@ -158,12 +159,8 @@ namespace DOL.GS.Quests
             //Set the mission description again if owner is group, otherwise
             //mission description is always "Clear" before entering the dungeon.
             if (owner is Group)
-	UpdateMission();
-
-            m_mobIsAlive = new bool[m_total];
-            for(int i = 0; i < m_total; i++)
-	m_mobIsAlive[i] = true;
-		}
+                UpdateMission();
+        }
 
         //Dinberg: removed this void. Handled in TaskDungeonInstance
 		//private static byte GetLevelFromPlayer(GamePlayer player)
@@ -340,84 +337,44 @@ namespace DOL.GS.Quests
 			return regions[Util.Random(0, regions.Length - 1)];
 		}
 
-		public override void Notify(DOLEvent e, object sender, EventArgs args)
-		{
-			if (e != GameLivingEvent.EnemyKilled)
-				return;
-			if (sender is GamePlayer && (sender as GamePlayer).CurrentRegion != m_taskRegion)
-				return;
+        public override void Notify(DOLEvent e, object sender, EventArgs args)
+        {
+            if (e != GameLivingEvent.EnemyKilled)
+                return;
+            if (sender is GamePlayer player && player.CurrentRegion != m_taskRegion)
+                return;
 
-			EnemyKilledEventArgs eargs = args as EnemyKilledEventArgs;
+            EnemyKilledEventArgs eargs = args as EnemyKilledEventArgs;
+            if (eargs?.Target == null)
+                return;
 
-			switch (m_missionType)
-			{
-				case eTDMissionType.Boss:
-					{
-						if (eargs.Target.Name == m_bossName)
-							FinishMission();
-						break;
-					}
-				case eTDMissionType.Specific:
-					{
-						if (eargs.Target.Name == m_targetName)
-						{
-							if(m_mobIsAlive[eargs.Target.ObjectID - 1])
-							{
-								m_mobIsAlive[eargs.Target.ObjectID - 1] = false;
-								m_current++;
-								UpdateMission();
-								if (m_current == m_total)
-									FinishMission();
-								else
-								{
-	                                /* - Dinberg, disabled this. Messages extremely annoying.
-									if (m_owner is GamePlayer)
-									{
-										(m_owner as GamePlayer).Out.SendMessage((m_total - m_current) + " " + m_targetName + " Left", eChatType.CT_ScreenCenter_And_CT_System, eChatLoc.CL_ChatWindow);
-									}
-									else if (m_owner is Group)
-									{
-										foreach (GamePlayer player in (m_owner as Group).GetPlayersInTheGroup())
-										{
-											player.Out.SendMessage((m_total - m_current) + " " + m_targetName + " Left", eChatType.CT_ScreenCenter, eChatLoc.CL_ChatWindow);
-										}
-									}
-	                                 */
-								}
-							}
-						}
-						break;
-					}
-				case eTDMissionType.Clear:
-					{
-						if(m_mobIsAlive[eargs.Target.ObjectID - 1])
-						{
-							m_mobIsAlive[eargs.Target.ObjectID - 1] = false;
-							m_current++;
-							UpdateMission();
-							if (m_current == m_total)
-								FinishMission();
-							else
-							{
-	                            /*
-								if (m_owner is GamePlayer)
-								{
-									(m_owner as GamePlayer).Out.SendMessage((m_total - m_current) + " Creatures Left", eChatType.CT_ScreenCenter_And_CT_System, eChatLoc.CL_ChatWindow);
-								}
-								else if (m_owner is Group)
-								{
-									foreach (GamePlayer player in (m_owner as Group).GetPlayersInTheGroup())
-									{
-										player.Out.SendMessage((m_total - m_current) + " Creatures Left", eChatType.CT_ScreenCenter, eChatLoc.CL_ChatWindow);
-									}
-								}
-	                             */
-							}
-						}
-						break;
-					}
-			}
-		}
+            switch (m_missionType)
+            {
+                case eTDMissionType.Boss:
+                    if (eargs.Target.Name == m_bossName)
+                        FinishMission();
+                    break;
+                case eTDMissionType.Specific:
+                    if (eargs.Target.Name == m_targetName)
+                        CountMissionTargetKill(eargs.Target);
+                    break;
+                case eTDMissionType.Clear:
+                    CountMissionTargetKill(eargs.Target);
+                    break;
+            }
+        }
+
+        private void CountMissionTargetKill(GameLiving target)
+        {
+            if (!m_countedMobs.Add(target))
+                return;
+
+            m_current++;
+            UpdateMission();
+
+            if (m_current >= m_total)
+                FinishMission();
+        }
 
 		/*
 		 * [Task] You have been asked to kill Dralkden the Thirster in the nearby caves.

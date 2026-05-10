@@ -65,7 +65,7 @@ namespace DOL.GS
 			Point3D newGroundTarget = null;
 
 			if (Owner.TargetObject != null)
-				newGroundTarget = TargetObject;
+				newGroundTarget = Owner.TargetObject;
 			else if (Owner.GroundTarget.IsValid)
 				newGroundTarget = Owner.GroundTarget;
 
