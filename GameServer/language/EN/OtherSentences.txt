@@ -1409,13 +1409,13 @@ GMCommands.Mob.TriggerRemoved:            Trigger: "{0}, chance: {1}, voice: {2}
 GMCommands.Mob.TriggersTitle:             {0}'s triggers:
 GMCommands.Mob.TriggerHelpIntro:          The trigger command lets you add sentences for the mob to say when it spawns, aggros, fights, or dies.
 GMCommands.Mob.TriggerHelpScope:          Triggers apply to all mobs with the same mob name. Each mob name can have multiple triggers and trigger types.
-GMCommands.Mob.TriggerHelpKeywords:       Aggro and die triggers allow {targetname}, {class}, {race}, {sourcename}, and {controller} keywords.
+GMCommands.Mob.TriggerHelpKeywords:       Aggro and die triggers allow {{targetname}}, {{class}}, {{race}}, {{sourcename}}, and {{controller}} keywords.
 GMCommands.Mob.TriggerHelpExample1:       Ex: /mob trigger aggroing 50 10 This is what I'll say 50% time when I aggro!
 GMCommands.Mob.TriggerHelpExample2:       Ex: /mob trigger dying 100 5 This is what I'll say when I die!
-GMCommands.Mob.TriggerHelpExample3:       Ex: /mob trigger aggroing 100 0 {y}I really hate {class}'s like you!
-GMCommands.Mob.TriggerHelpExample4:       Ex: /mob trigger roaming 5 12 Prepare to die {targetname}!
-GMCommands.Mob.TriggerHelpExample5:       Ex: /mob trigger aggroing 5 0 {b}I've been waiting for this moment ever since I was a young {sourcename}!
-GMCommands.Mob.TriggerHelpUsageAdd:       Usage: '/mob trigger <type(dying|aggroing|spawning|fighting|killing|roaming|interact)> <percentChance> <emote {0 for no emote}> <sentence>'
+GMCommands.Mob.TriggerHelpExample3:       Ex: /mob trigger aggroing 100 0 {{y}}I really hate {{class}}'s like you!
+GMCommands.Mob.TriggerHelpExample4:       Ex: /mob trigger roaming 5 12 Prepare to die {{targetname}}!
+GMCommands.Mob.TriggerHelpExample5:       Ex: /mob trigger aggroing 5 0 {{b}}I've been waiting for this moment ever since I was a young {{sourcename}}!
+GMCommands.Mob.TriggerHelpUsageAdd:       Usage: '/mob trigger <type(dying|aggroing|spawning|fighting|killing|roaming|interact)> <percentChance> <emote {{0 for no emote}}> <sentence>'
 GMCommands.Mob.TriggerHelpUsageInfo:      Usage: '/mob trigger info' - Give information regarding a selected mob/NPC's ambient trigger(s).
 GMCommands.Mob.TriggerHelpUsageRemove:    Usage: '/mob trigger remove <id>' Remove a trigger.
 GMCommands.Player.DuplicateName:          Duplicate name!

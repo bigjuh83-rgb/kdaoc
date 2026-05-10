@@ -341,7 +341,7 @@ GMCommands.Keep.Usage.Name:					'/keep name <Name>' 이름을 변경합니다
 GMCommands.Keep.Usage.KeepID:				'/keep keepid <keepID>' 성에 KeepID를 지정합니다
 GMCommands.Keep.Usage.Level:				'/keep level <level>' 성의 레벨을 변경합니다
 GMCommands.Keep.Usage.BaseLevel:			'/keep baselevel <level>' 성의 기본 레벨을 변경합니다
-GMCommands.Keep.Usage.Move:				'/keep move {[x,y,z,h] [amount]}' 관리자 전용
+GMCommands.Keep.Usage.Move:				'/keep move {{[x,y,z,h] [amount]}}' 관리자 전용
 GMCommands.Keep.Usage.SkinType:			'/keep skintype [0 = any, 1 = old, 2 = new]' 성이 구형 또는 신형 스킨을 사용하도록 강제합니다
 # GMCommands.Keep.Usage.MoveHere:			'/keep movehere' To move keep to player position
 # GMCommands.Keep.Usage.AddComponent:		'/keep addcomponent <compx> <compy> <comphead> <skin> <height>' To add component to current keep

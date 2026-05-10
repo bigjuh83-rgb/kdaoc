@@ -341,7 +341,7 @@ GMCommands.Keep.Usage.Name:					'/keep name <Name>' To change name
 GMCommands.Keep.Usage.KeepID:				'/keep keepid <keepID>' To assign keepid to keep
 GMCommands.Keep.Usage.Level:				'/keep level <level>' To change level of keep
 GMCommands.Keep.Usage.BaseLevel:			'/keep baselevel <level>' To change base level of keep
-GMCommands.Keep.Usage.Move:				'/keep move {[x,y,z,h] [amount]}' admin only
+GMCommands.Keep.Usage.Move:				'/keep move {{[x,y,z,h] [amount]}}' admin only
 GMCommands.Keep.Usage.SkinType:			'/keep skintype [0 = any, 1 = old, 2 = new]' To force keep to use old or new skins
 # GMCommands.Keep.Usage.MoveHere:			'/keep movehere' To move keep to player position
 # GMCommands.Keep.Usage.AddComponent:		'/keep addcomponent <compx> <compy> <comphead> <skin> <height>' To add component to current keep
