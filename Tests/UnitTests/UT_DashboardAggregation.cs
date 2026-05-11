@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
+using System.Reflection;
 using DOL.Database;
 using DOL.GS.API.Dashboard;
+using DOL.GS.PerformanceStatistics;
 using NUnit.Framework;
 
 namespace DOL.GS.Tests
@@ -42,6 +44,39 @@ namespace DOL.GS.Tests
             var stats = DashboardAggregation.BuildRealmStats(-1, 2, -3);
 
             Assert.That(stats.Select(stat => stat.Players), Is.EqualTo(new[] { 0, 2, 0 }));
+        }
+
+        [Test]
+        public void LiveResponse_PublicContractDoesNotContainPrivateFieldNames()
+        {
+            string[] propertyNames = typeof(DashboardLiveResponse)
+                .GetProperties()
+                .Select(property => property.Name)
+                .ToArray();
+
+            Assert.That(propertyNames, Does.Not.Contain("AccountName"));
+            Assert.That(propertyNames, Does.Not.Contain("CharacterName"));
+            Assert.That(propertyNames, Does.Not.Contain("IPAddress"));
+            Assert.That(propertyNames, Does.Not.Contain("Zone"));
+            Assert.That(propertyNames, Does.Not.Contain("GuildName"));
+        }
+
+        [Test]
+        public void PerformanceSampler_FallsBackWhenCpuStatisticCannotBeCreated()
+        {
+            object sampler = CreatePerformanceSampler(() => throw new PlatformNotSupportedException());
+            DashboardPerformanceStats snapshot = InvokePerformanceSnapshot(sampler);
+
+            Assert.That(snapshot.CpuPercent, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void PerformanceSampler_FallsBackWhenCpuStatisticReadFails()
+        {
+            object sampler = CreatePerformanceSampler(() => new ThrowingPerformanceStatistic());
+            DashboardPerformanceStats snapshot = InvokePerformanceSnapshot(sampler);
+
+            Assert.That(snapshot.CpuPercent, Is.EqualTo(0));
         }
 
         [Test]
@@ -159,6 +194,39 @@ namespace DOL.GS.Tests
 
             Assert.That(activityBucket.AlbionGold, Is.EqualTo(123));
             Assert.That(activityBucket.AlbionRealmPoints, Is.EqualTo(456));
+        }
+
+        private static DashboardPerformanceStats InvokePerformanceSnapshot(object sampler)
+        {
+            MethodInfo getSnapshot = sampler.GetType().GetMethod(
+                "GetSnapshot",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            Assert.That(getSnapshot, Is.Not.Null);
+            return (DashboardPerformanceStats)getSnapshot.Invoke(sampler, Array.Empty<object>());
+        }
+
+        private static object CreatePerformanceSampler(Func<IPerformanceStatistic> createStatistic)
+        {
+            Type samplerType = typeof(DashboardLiveResponse).Assembly.GetType("DOL.GS.API.Dashboard.DashboardPerformanceSampler");
+            Assert.That(samplerType, Is.Not.Null);
+
+            ConstructorInfo constructor = samplerType.GetConstructor(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null,
+                new[] { typeof(Func<IPerformanceStatistic>) },
+                null);
+
+            Assert.That(constructor, Is.Not.Null);
+            return constructor.Invoke(new object[] { createStatistic });
+        }
+
+        private sealed class ThrowingPerformanceStatistic : IPerformanceStatistic
+        {
+            public double GetNextValue()
+            {
+                throw new PlatformNotSupportedException();
+            }
         }
 
         private static DbServerStat CreateServerStat(DateTime statDate, int clients)
