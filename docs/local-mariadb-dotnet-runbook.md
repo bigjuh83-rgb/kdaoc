@@ -170,3 +170,32 @@ Then start the server and test Korean display with:
 ```
 
 `/kotest` should print Korean in system/chat/popup/custom text windows.
+
+## Public Dashboard
+
+Enable the Atlas API and periodic stat saving before using the public dashboard:
+
+- `atlas_api=True`
+- `statsave_interval=1`
+
+Dashboard URLs:
+
+- `http://<server-host>:<api-port>/dashboard`
+- `http://<server-host>:<api-port>/api/dashboard/live`
+- `http://<server-host>:<api-port>/api/dashboard/history?range=24h`
+- `http://<server-host>:<api-port>/api/dashboard/realm-activity?range=7d`
+- `http://<server-host>:<api-port>/status/badge.png`
+
+For Naver Cafe, use `/status/badge.png` as a plain image and link the image to `/dashboard` if the cafe editor allows image links. The badge does not require JavaScript or iframe support.
+
+Gold and realm point charts intentionally show server-issued inflow only. Player trades, consignment payouts, guild transfers, vault movement, removed money, and manual GM money/RP grants are excluded.
+
+Quick smoke checks when a MariaDB-backed server is already running:
+
+```bash
+curl -I http://localhost:9874/dashboard
+curl -s http://localhost:9874/api/dashboard/live
+curl -s http://localhost:9874/api/dashboard/history?range=24h
+curl -s http://localhost:9874/api/dashboard/realm-activity?range=7d
+curl -I http://localhost:9874/status/badge.png
+```
