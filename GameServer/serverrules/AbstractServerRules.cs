@@ -1852,7 +1852,7 @@ namespace DOL.GS.ServerRules
 
                 if (money > 0)
                 {
-                    playerToAward.AddMoney(money, LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.Reward.ReceiveMoney", "{0}"));
+                    playerToAward.AddServerIssuedMoney(money, LanguageMgr.GetTranslation(playerToAward.Client.Account.Language, "ServerRules.Reward.ReceiveMoney", "{0}"));
                     InventoryLogging.LogInventoryAction(killedPlayer, playerToAward, eInventoryActionType.Other, money);
                 }
             }

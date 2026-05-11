@@ -358,7 +358,7 @@ namespace DOL.GS.MonthlyQuest.Albion
 			if (m_questPlayer.Inventory.IsSlotsFree(3, eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack))
 			{
 				m_questPlayer.ForceGainExperience((m_questPlayer.ExperienceForNextLevel - m_questPlayer.ExperienceForCurrentLevel));
-				m_questPlayer.AddMoney(Money.GetMoney(0,0,m_questPlayer.Level*8,0,Util.Random(50)), "You receive {0} as a reward.");
+				m_questPlayer.AddServerIssuedMoney(Money.GetMoney(0,0,m_questPlayer.Level*8,0,Util.Random(50)), "You receive {0} as a reward.");
 				AtlasROGManager.GenerateReward(m_questPlayer, 5000);
 				AtlasROGManager.GenerateJewel(m_questPlayer, 51);
 				_isCaptured = 0;

@@ -411,7 +411,7 @@ namespace DOL.GS.Quests.Albion
 
             m_questPlayer.GainExperience(eXPSource.Quest, 50, true);
             long money = Money.GetMoney(0, 0, 0, 0, 50);
-            m_questPlayer.AddMoney(money, L(m_questPlayer, "Quest.Albion.WolfPeltCloak.MoneyReward"));
+            m_questPlayer.AddServerIssuedMoney(money, L(m_questPlayer, "Quest.Albion.WolfPeltCloak.MoneyReward"));
             InventoryLogging.LogInventoryAction("(QUEST;" + Name + ")", m_questPlayer, eInventoryActionType.Quest, money);
 
         }

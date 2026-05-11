@@ -508,7 +508,7 @@ namespace DOL.GS
 
                     if (moneyToPlayer > 0)
                     {
-                        eligibleMember.AddMoney(moneyToPlayer, LanguageMgr.GetTranslation(eligibleMember.Client.Account.Language, eligibleMembers.Count > 1 ? "GamePlayer.PickupObject.YourLootShare" : "GamePlayer.PickupObject.YouPickUp", Money.GetString(splitMoney)));
+                        eligibleMember.AddServerIssuedMoney(moneyToPlayer, LanguageMgr.GetTranslation(eligibleMember.Client.Account.Language, eligibleMembers.Count > 1 ? "GamePlayer.PickupObject.YourLootShare" : "GamePlayer.PickupObject.YouPickUp", Money.GetString(splitMoney)));
                         InventoryLogging.LogInventoryAction("(ground)", eligibleMember, eInventoryActionType.Loot, splitMoney);
                     }
                 }

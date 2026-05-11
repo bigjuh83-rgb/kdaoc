@@ -406,7 +406,7 @@ namespace DOL.GS.Quests.Hibernia
         public override void FinishQuest()
         {
             m_questPlayer.ForceGainExperience( 20);
-            m_questPlayer.AddMoney(Money.GetMoney(0, 0, 0, 6, 0), L(m_questPlayer, "Quest.Hibernia.WildWilderness.MoneyReward"));
+            m_questPlayer.AddServerIssuedMoney(Money.GetMoney(0, 0, 0, 6, 0), L(m_questPlayer, "Quest.Hibernia.WildWilderness.MoneyReward"));
 
             base.FinishQuest();
         }

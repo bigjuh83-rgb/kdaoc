@@ -402,7 +402,7 @@ namespace DOL.GS.Quests.Albion
             base.FinishQuest();
             m_questPlayer.ForceGainExperience( 50);
             long money = Money.GetMoney(0, 0, 0, 0, 30 + Util.Random(50));
-            m_questPlayer.AddMoney(money, L(m_questPlayer, "Quest.Albion.ImmediateResolution.MoneyReward"));
+            m_questPlayer.AddServerIssuedMoney(money, L(m_questPlayer, "Quest.Albion.ImmediateResolution.MoneyReward"));
             InventoryLogging.LogInventoryAction("(QUEST;" + Name + ")", m_questPlayer, eInventoryActionType.Quest, money);
 
         }

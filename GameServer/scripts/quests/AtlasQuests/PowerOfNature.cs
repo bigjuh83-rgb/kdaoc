@@ -769,7 +769,7 @@ namespace DOL.GS.Quests.Hibernia
         public override void FinishQuest()
         {
             m_questPlayer.GainExperience(eXPSource.Quest, 20, false);
-            m_questPlayer.AddMoney(Money.GetMoney(0, 0, 1, 32, Util.Random(50)), L(m_questPlayer, "Quest.Atlas.PowerOfNature.MoneyReward"));
+            m_questPlayer.AddServerIssuedMoney(Money.GetMoney(0, 0, 1, 32, Util.Random(50)), L(m_questPlayer, "Quest.Atlas.PowerOfNature.MoneyReward"));
 
             base.FinishQuest(); //Defined in Quest, changes the state, stores in DB etc ...
         }

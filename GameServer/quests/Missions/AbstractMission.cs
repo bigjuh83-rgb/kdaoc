@@ -202,7 +202,7 @@ namespace DOL.GS.Quests
 
                 if (RewardMoney > 0)
                 {
-                    player.AddMoney(RewardMoney, LanguageMgr.GetTranslation(player.Client, "Mission.RewardMoney"));
+                    player.AddServerIssuedMoney(RewardMoney, LanguageMgr.GetTranslation(player.Client, "Mission.RewardMoney"));
                     InventoryLogging.LogInventoryAction("(MISSION;" + MissionType + ")", player, eInventoryActionType.Quest, RewardMoney);
                 }
 

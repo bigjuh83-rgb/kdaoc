@@ -358,7 +358,7 @@ namespace DOL.GS.Quests
 
             if (RewardMoney > 0)
             {
-                m_taskPlayer.AddMoney(RewardMoney, LanguageMgr.GetTranslation(m_taskPlayer.Client, "Task.RewardMoney"));
+                m_taskPlayer.AddServerIssuedMoney(RewardMoney, LanguageMgr.GetTranslation(m_taskPlayer.Client, "Task.RewardMoney"));
                 InventoryLogging.LogInventoryAction("(TASK;" + m_dbTask.TaskType + ")", m_taskPlayer,
                     eInventoryActionType.Quest, RewardMoney);
             }

@@ -6515,6 +6515,24 @@ namespace DOL.GS
                 Out.SendMessage(string.Format(messageFormat, Money.GetString(money)), ct, cl);
         }
 
+        public virtual void AddServerIssuedMoney(long money)
+        {
+            AddServerIssuedMoney(money, null, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+        }
+
+        public virtual void AddServerIssuedMoney(long money, string messageFormat)
+        {
+            AddServerIssuedMoney(money, messageFormat, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+        }
+
+        public virtual void AddServerIssuedMoney(long money, string messageFormat, eChatType ct, eChatLoc cl)
+        {
+            AddMoney(money, messageFormat, ct, cl);
+
+            if (money > 0 && Client?.Account?.PrivLevel == 1)
+                DashboardRealmActivityTracker.RecordServerIssuedGold(Realm, money, DateTime.UtcNow);
+        }
+
         /// <summary>
         /// Removes money from the player
         /// </summary>
@@ -9721,7 +9739,7 @@ namespace DOL.GS
 
             if (moneyToPlayer > 0)
             {
-                AddMoney(moneyToPlayer, LanguageMgr.GetTranslation(Client.Account.Language, "GamePlayer.PickupObject.YouPickUp", Money.GetString(moneyToPlayer)));
+                AddServerIssuedMoney(moneyToPlayer, LanguageMgr.GetTranslation(Client.Account.Language, "GamePlayer.PickupObject.YouPickUp", Money.GetString(moneyToPlayer)));
                 InventoryLogging.LogInventoryAction("(ground)", this, eInventoryActionType.Loot, moneyToPlayer);
             }
 

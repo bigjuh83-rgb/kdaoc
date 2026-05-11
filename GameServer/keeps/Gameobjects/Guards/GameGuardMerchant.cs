@@ -343,7 +343,7 @@ namespace DOL.GS
 				string message = LanguageMgr.GetTranslation(player.Client.Account.Language,
 					"GameMerchant.OnPlayerSell.GivesYou", GetName(0, true), Money.GetString(itemValue),
 					item.GetName(0, false));
-				player.AddMoney(itemValue, message, eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
+				player.AddServerIssuedMoney(itemValue, message, eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
 				InventoryLogging.LogInventoryAction(player, this, eInventoryActionType.Merchant, item.Template,
 					item.Count);
 				InventoryLogging.LogInventoryAction(this, player, eInventoryActionType.Merchant, itemValue);
