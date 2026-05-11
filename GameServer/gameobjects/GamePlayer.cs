@@ -3634,7 +3634,7 @@ namespace DOL.GS
         /// </summary>
         public void GainRealmPoints(long amount, bool modify, bool sendMessage)
         {
-            GainRealmPoints(amount, modify, true, true);
+            GainRealmPoints(amount, modify, sendMessage, true);
         }
 
         /// <summary>
@@ -3645,6 +3645,19 @@ namespace DOL.GS
         /// <param name="sendMessage">Wether to send a message like "You have gained N realmpoints"</param>
         /// <param name="notify"></param>
         public virtual void GainRealmPoints(long amount, bool modify, bool sendMessage, bool notify)
+        {
+            GainRealmPoints(amount, modify, sendMessage, notify, true);
+        }
+
+        /// <summary>
+        /// Called when this player gains realm points
+        /// </summary>
+        /// <param name="amount">The amount of realm points gained</param>
+        /// <param name="modify">Should we apply the rp modifer</param>
+        /// <param name="sendMessage">Wether to send a message like "You have gained N realmpoints"</param>
+        /// <param name="notify"></param>
+        /// <param name="trackDashboardReward">Should this gain count as server-issued dashboard activity</param>
+        public virtual void GainRealmPoints(long amount, bool modify, bool sendMessage, bool notify, bool trackDashboardReward)
         {
             if (!GainRP)
                 return;
@@ -3681,6 +3694,9 @@ namespace DOL.GS
 
             RealmPoints += amount;
             m_statistics.AddToTotalRealmPointsEarned((uint) amount);
+
+            if (trackDashboardReward && amount > 0 && Client?.Account?.PrivLevel == 1)
+                DashboardRealmActivityTracker.RecordServerIssuedRealmPoints(Realm, amount, DateTime.UtcNow);
 
             if (m_guild != null && Client.Account.PrivLevel == 1)
                 m_guild.RealmPoints += amount;

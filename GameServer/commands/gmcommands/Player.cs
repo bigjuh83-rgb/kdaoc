@@ -734,7 +734,7 @@ namespace DOL.GS.Commands
                                 player = client.Player;
 
                             long amount = long.Parse(args[2]);
-                            player.GainRealmPoints(amount, false);
+                            player.GainRealmPoints(amount, false, true, true, false);
                             client.Out.SendMessage(T(client, "GMCommands.Player.PointsGiven", player.Name, amount, T(client, "GMCommands.Player.Point.RealmPoints")),
                                                    eChatType.CT_Important, eChatLoc.CL_SystemWindow);
                             player.Out.SendMessage(
