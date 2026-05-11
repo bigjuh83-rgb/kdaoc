@@ -90,23 +90,33 @@ namespace DOL.GS
         }
     }
 
-    public sealed class BufferedDashboardRealmActivitySink : IDashboardRealmActivitySink
+    public sealed class BufferedDashboardRealmActivitySink : IDashboardRealmActivitySink, IDisposable
     {
+        private static readonly TimeSpan DefaultFlushDelay = TimeSpan.FromSeconds(30);
         private readonly object m_lock = new();
         private readonly Dictionary<string, PendingActivity> m_pending = new();
         private readonly IDashboardRealmActivityRepository m_repository;
         private readonly bool m_autoFlush;
+        private readonly TimeSpan m_flushDelay;
+        private Timer m_flushTimer;
         private bool m_flushQueued;
+        private bool m_disposed;
 
         public BufferedDashboardRealmActivitySink()
-            : this(new DatabaseDashboardRealmActivityRepository(), true)
+            : this(new DatabaseDashboardRealmActivityRepository(), true, DefaultFlushDelay)
         {
         }
 
         public BufferedDashboardRealmActivitySink(IDashboardRealmActivityRepository repository, bool autoFlush)
+            : this(repository, autoFlush, DefaultFlushDelay)
+        {
+        }
+
+        public BufferedDashboardRealmActivitySink(IDashboardRealmActivityRepository repository, bool autoFlush, TimeSpan flushDelay)
         {
             m_repository = repository ?? throw new ArgumentNullException(nameof(repository));
             m_autoFlush = autoFlush;
+            m_flushDelay = flushDelay < TimeSpan.Zero ? TimeSpan.Zero : flushDelay;
         }
 
         public void Add(eRealm realm, long gold, long realmPoints, DateTime at)
@@ -133,6 +143,21 @@ namespace DOL.GS
             }
         }
 
+        public void Dispose()
+        {
+            Timer timer;
+
+            lock (m_lock)
+            {
+                m_disposed = true;
+                m_flushQueued = false;
+                timer = m_flushTimer;
+                m_flushTimer = null;
+            }
+
+            timer?.Dispose();
+        }
+
         public void Flush()
         {
             List<PendingActivity> snapshot;
@@ -148,13 +173,21 @@ namespace DOL.GS
 
             foreach (PendingActivity activity in snapshot)
             {
+                bool persisted = false;
+
                 try
                 {
-                    Flush(activity);
+                    persisted = Flush(activity);
                 }
                 catch (Exception e)
                 {
                     DashboardRealmActivityTracker.LogFailure(e);
+                }
+
+                if (!persisted)
+                {
+                    Requeue(activity);
+                    DashboardRealmActivityTracker.LogFailure(new InvalidOperationException("Dashboard realm activity persistence failed."));
                 }
             }
         }
@@ -170,7 +203,7 @@ namespace DOL.GS
             return current + amount;
         }
 
-        private void Flush(PendingActivity activity)
+        private bool Flush(PendingActivity activity)
         {
             DbDashboardRealmActivity row = m_repository.Find(activity.Key);
 
@@ -181,32 +214,57 @@ namespace DOL.GS
                     BucketRealmKey = activity.Key,
                     BucketStart = activity.BucketStart,
                     Realm = (int)activity.Realm,
-                    ServerIssuedGold = 0,
-                    ServerIssuedRealmPoints = 0
+                    ServerIssuedGold = activity.Gold,
+                    ServerIssuedRealmPoints = activity.RealmPoints
                 };
 
-                if (!m_repository.Add(row))
-                {
-                    row = m_repository.Find(activity.Key);
+                if (m_repository.Add(row))
+                    return true;
 
-                    if (row == null)
-                        return;
-                }
+                row = m_repository.Find(activity.Key);
+
+                if (row == null)
+                    return false;
             }
 
             row.ServerIssuedGold = AddClamped(row.ServerIssuedGold, activity.Gold);
             row.ServerIssuedRealmPoints = AddClamped(row.ServerIssuedRealmPoints, activity.RealmPoints);
-            m_repository.Save(row);
+            return m_repository.Save(row);
+        }
+
+        private void Requeue(PendingActivity activity)
+        {
+            lock (m_lock)
+            {
+                if (m_disposed)
+                    return;
+
+                if (!m_pending.TryGetValue(activity.Key, out PendingActivity pending))
+                {
+                    pending = new PendingActivity(activity.Key, activity.BucketStart, activity.Realm);
+                    m_pending[activity.Key] = pending;
+                }
+
+                pending.Gold = AddClamped(pending.Gold, activity.Gold);
+                pending.RealmPoints = AddClamped(pending.RealmPoints, activity.RealmPoints);
+
+                if (m_autoFlush)
+                    QueueFlushLocked();
+            }
         }
 
         private void QueueFlushLocked()
         {
-            if (m_flushQueued)
+            if (m_disposed || m_flushQueued)
                 return;
 
             try
             {
-                m_flushQueued = ThreadPool.QueueUserWorkItem(_ => FlushQueued());
+                if (m_flushTimer == null)
+                    m_flushTimer = new Timer(_ => FlushQueued(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                m_flushTimer.Change(m_flushDelay, Timeout.InfiniteTimeSpan);
+                m_flushQueued = true;
             }
             catch (Exception e)
             {
@@ -221,6 +279,9 @@ namespace DOL.GS
 
             lock (m_lock)
             {
+                if (m_disposed)
+                    return;
+
                 m_flushQueued = false;
 
                 if (m_autoFlush && m_pending.Count > 0)

@@ -87,7 +87,7 @@ namespace DOL.GS.API.Dashboard
                     return cached.Value;
 
                 DateTime start = DashboardAggregation.GetHourBucket(now.Add(-duration));
-                IList<DbDashboardRealmActivity> rows = GameServer.Database.SelectObjects<DbDashboardRealmActivity>(DB.Column("BucketStart").IsGreaterThan(start));
+                IList<DbDashboardRealmActivity> rows = GameServer.Database.SelectObjects<DbDashboardRealmActivity>(DB.Column("BucketStart").IsGreaterOrEqualTo(start));
                 DashboardRealmActivityResponse response = new(
                     rangeName,
                     DashboardAggregation.BuildRealmActivitySeries(rows, now, duration),

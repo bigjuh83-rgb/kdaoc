@@ -87,7 +87,58 @@ namespace DOL.GS.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(repository.FindCalls, Is.EqualTo(1));
-                Assert.That(repository.SaveCalls, Is.EqualTo(1));
+                Assert.That(repository.AddCalls, Is.EqualTo(1));
+                Assert.That(repository.SaveCalls, Is.EqualTo(0));
+            });
+        }
+
+        [Test]
+        public void BufferedSink_AutoFlushUsesDelayedBatch()
+        {
+            FakeDashboardRealmActivityRepository repository = new();
+            using BufferedDashboardRealmActivitySink sink = new(repository, true, TimeSpan.FromHours(1));
+
+            sink.Add(eRealm.Albion, 100, 0, DateTime.UtcNow);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(repository.FindCalls, Is.EqualTo(0));
+                Assert.That(repository.AddCalls, Is.EqualTo(0));
+                Assert.That(repository.SaveCalls, Is.EqualTo(0));
+            });
+
+            sink.Flush();
+
+            Assert.That(repository.AddCalls, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void BufferedSink_FlushRequeuesWhenExistingRowSaveFails()
+        {
+            FakeDashboardRealmActivityRepository repository = new();
+            BufferedDashboardRealmActivitySink sink = new(repository, false);
+            DateTime at = new(2026, 5, 11, 12, 42, 0, DateTimeKind.Utc);
+            string key = DOL.GS.API.Dashboard.DashboardAggregation.BuildActivityKey(at, eRealm.Albion);
+            repository.Rows[key] = new DOL.Database.DbDashboardRealmActivity
+            {
+                BucketRealmKey = key,
+                BucketStart = DOL.GS.API.Dashboard.DashboardAggregation.GetHourBucket(at),
+                Realm = (int)eRealm.Albion,
+                ServerIssuedGold = 20,
+                ServerIssuedRealmPoints = 5
+            };
+            repository.SaveResults.Enqueue(false);
+            repository.SaveResults.Enqueue(true);
+
+            sink.Add(eRealm.Albion, 100, 7, at);
+            sink.Flush();
+            sink.Flush();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(repository.SaveCalls, Is.EqualTo(2));
+                Assert.That(repository.Rows[key].ServerIssuedGold, Is.EqualTo(120));
+                Assert.That(repository.Rows[key].ServerIssuedRealmPoints, Is.EqualTo(12));
             });
         }
 
@@ -169,6 +220,8 @@ namespace DOL.GS.Tests
         private sealed class FakeDashboardRealmActivityRepository : IDashboardRealmActivityRepository
         {
             public Dictionary<string, DOL.Database.DbDashboardRealmActivity> Rows { get; } = new();
+            public Queue<bool> AddResults { get; } = new();
+            public Queue<bool> SaveResults { get; } = new();
             public int FindCalls { get; private set; }
             public int AddCalls { get; private set; }
             public int SaveCalls { get; private set; }
@@ -176,22 +229,43 @@ namespace DOL.GS.Tests
             public DOL.Database.DbDashboardRealmActivity Find(string key)
             {
                 FindCalls++;
-                Rows.TryGetValue(key, out DOL.Database.DbDashboardRealmActivity row);
-                return row;
+                return Rows.TryGetValue(key, out DOL.Database.DbDashboardRealmActivity row)
+                    ? Clone(row)
+                    : null;
             }
 
             public bool Add(DOL.Database.DbDashboardRealmActivity row)
             {
                 AddCalls++;
-                Rows[row.BucketRealmKey] = row;
-                return true;
+                bool result = AddResults.Count == 0 || AddResults.Dequeue();
+
+                if (result)
+                    Rows[row.BucketRealmKey] = Clone(row);
+
+                return result;
             }
 
             public bool Save(DOL.Database.DbDashboardRealmActivity row)
             {
                 SaveCalls++;
-                Rows[row.BucketRealmKey] = row;
-                return true;
+                bool result = SaveResults.Count == 0 || SaveResults.Dequeue();
+
+                if (result)
+                    Rows[row.BucketRealmKey] = Clone(row);
+
+                return result;
+            }
+
+            private static DOL.Database.DbDashboardRealmActivity Clone(DOL.Database.DbDashboardRealmActivity row)
+            {
+                return new DOL.Database.DbDashboardRealmActivity
+                {
+                    BucketRealmKey = row.BucketRealmKey,
+                    BucketStart = row.BucketStart,
+                    Realm = row.Realm,
+                    ServerIssuedGold = row.ServerIssuedGold,
+                    ServerIssuedRealmPoints = row.ServerIssuedRealmPoints
+                };
             }
         }
 
