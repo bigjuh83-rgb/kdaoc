@@ -39,6 +39,11 @@ namespace DOL.GS.API.Dashboard
                 Results.Ok(provider.GetHistory(context.Request.Query["range"].FirstOrDefault())));
             api.MapGet("/api/dashboard/realm-activity", (HttpContext context) =>
                 Results.Ok(provider.GetRealmActivity(context.Request.Query["range"].FirstOrDefault())));
+            api.MapGet("/status/badge.png", (HttpContext context) =>
+            {
+                context.Response.Headers.CacheControl = "public, max-age=30";
+                return Results.File(DashboardBadgeRenderer.Render(provider.GetLive()), "image/png");
+            });
         }
     }
 }
