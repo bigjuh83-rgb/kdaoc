@@ -58,6 +58,7 @@
         <EmbeddedResource Include=".\config\*" />
         <TranslationFiles Include=".\language\**\*.txt" />
         <APIDocs Include=".\API\docs\*" />
+        <DashboardAssets Include=".\API\Dashboard\static\**\*" />
         <Content Include="API\docs\index.css" />
         <Content Include="API\docs\index.html" />
         <Content Include="API\docs\oauth2-redirect.html" />
@@ -76,6 +77,7 @@
     <Target Name="CopyFiles" AfterTargets="AfterBuild">
         <Copy SourceFiles="@(TranslationFiles)" DestinationFiles="@(TranslationFiles->'$(MSBuildProjectDirectory)\..\$(Configuration)\languages\%(RecursiveDir)%(Filename)%(Extension)')" />
         <Copy SourceFiles="@(APIDocs)" DestinationFiles="@(APIDocs->'$(MSBuildProjectDirectory)\..\$(Configuration)\wwwroot\docs\%(RecursiveDir)%(Filename)%(Extension)')" />
+        <Copy SourceFiles="@(DashboardAssets)" DestinationFiles="@(DashboardAssets->'$(MSBuildProjectDirectory)\..\$(Configuration)\wwwroot\dashboard\%(RecursiveDir)%(Filename)%(Extension)')" />
     </Target>
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KDAOC Server Stats</title>
+  <link rel="stylesheet" href="/dashboard/dashboard.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">KDAOC Live</p>
+        <h1>Server Statistics</h1>
+      </div>
+      <div class="refresh">Updated <span id="updatedAt">-</span></div>
+    </header>
+
+    <section class="summary" aria-label="Server summary">
+      <article><span>Online</span><strong id="onlinePlayers">0</strong></article>
+      <article><span>Albion</span><strong id="albionPlayers">0</strong></article>
+      <article><span>Midgard</span><strong id="midgardPlayers">0</strong></article>
+      <article><span>Hibernia</span><strong id="hiberniaPlayers">0</strong></article>
+      <article><span>Uptime</span><strong id="uptime">-</strong></article>
+    </section>
+
+    <section class="grid" aria-label="Server charts">
+      <article class="panel wide"><h2>24h Population</h2><canvas id="populationChart"></canvas></article>
+      <article class="panel"><h2>Realm Split</h2><canvas id="realmChart"></canvas></article>
+      <article class="panel"><h2>Class Distribution</h2><canvas id="classChart"></canvas></article>
+      <article class="panel wide"><h2>CPU / RAM Trend</h2><canvas id="performanceChart"></canvas></article>
+      <article class="panel wide"><h2>This Week Server-Issued Gold</h2><canvas id="goldChart"></canvas></article>
+      <article class="panel wide"><h2>This Week Server-Issued Realm Points</h2><canvas id="rpChart"></canvas></article>
+    </section>
+  </main>
+  <script src="/dashboard/dashboard.js"></script>
+</body>
+</html>
