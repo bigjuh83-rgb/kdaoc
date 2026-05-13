@@ -1,0 +1,31 @@
+{
+  "description": "Albion beginner hunting loop near the Cotswold/Camelot Hills dummy start area. Coordinates are intentionally sparse seeds, not a full client navmesh.",
+  "regions": {
+    "1": {
+      "nodes": [
+        { "id": "cotswold_start", "x": 523520, "y": 490520, "z": 2543 },
+        { "id": "cotswold_south_bend", "x": 523760, "y": 490280, "z": 2495 },
+        { "id": "cotswold_east_track", "x": 523900, "y": 490900, "z": 2543 },
+        { "id": "cotswold_mid_track", "x": 524250, "y": 490650, "z": 2543 },
+        { "id": "boar_piglet_field", "x": 524685, "y": 490940, "z": 2554 },
+        { "id": "worker_ant_west", "x": 524937, "y": 490917, "z": 2568 },
+        { "id": "worker_ant_south", "x": 525209, "y": 490147, "z": 2647 },
+        { "id": "worker_ant_north", "x": 525498, "y": 491133, "z": 2664 },
+        { "id": "safe_return", "x": 523980, "y": 490360, "z": 2510 }
+      ],
+      "edges": [
+        { "from": "cotswold_start", "to": "cotswold_south_bend" },
+        { "from": "cotswold_start", "to": "cotswold_east_track" },
+        { "from": "cotswold_south_bend", "to": "safe_return" },
+        { "from": "safe_return", "to": "cotswold_mid_track" },
+        { "from": "cotswold_east_track", "to": "cotswold_mid_track" },
+        { "from": "cotswold_mid_track", "to": "boar_piglet_field" },
+        { "from": "boar_piglet_field", "to": "worker_ant_west" },
+        { "from": "worker_ant_west", "to": "worker_ant_south" },
+        { "from": "worker_ant_west", "to": "worker_ant_north" },
+        { "from": "worker_ant_south", "to": "worker_ant_north", "max_height_delta": 650 }
+      ],
+      "collisions": []
+    }
+  }
+}

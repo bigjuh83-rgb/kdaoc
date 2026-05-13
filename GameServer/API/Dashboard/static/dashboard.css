@@ -23,7 +23,7 @@ body {
     linear-gradient(180deg, rgba(215, 175, 84, 0.06), transparent 220px),
     var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Noto Sans KR", "Malgun Gothic", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .shell {

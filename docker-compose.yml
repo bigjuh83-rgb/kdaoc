@@ -16,7 +16,7 @@ services:
     restart: always
     environment:
       MYSQL_DATABASE: opendaoc
-      MYSQL_ROOT_PASSWORD: my-secret-pw
+      MYSQL_ROOT_PASSWORD: ${OPENDAOC_DB_PASSWORD:-opendaoc-local}
     volumes:
       - opendaoc-db-data:/var/lib/mysql
       - base-db:/docker-entrypoint-initdb.d
@@ -41,7 +41,7 @@ services:
       CPU_USE: "8"
       DB_AUTOSAVE: "True"
       DB_AUTOSAVE_INTERVAL: "10"
-      DB_CONNECTION_STRING: "server=db;port=3306;database=opendaoc;userid=root;password=my-secret-pw;treattinyasboolean=true"
+      DB_CONNECTION_STRING: "server=db;port=3306;database=opendaoc;userid=root;password=${OPENDAOC_DB_PASSWORD:-opendaoc-local};treattinyasboolean=true"
       DB_TYPE: "MYSQL"
       DETECT_REGION_IP: "True"
       ENABLE_COMPILATION: "True"

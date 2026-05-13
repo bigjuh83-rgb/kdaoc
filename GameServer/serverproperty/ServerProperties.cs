@@ -366,6 +366,69 @@ namespace DOL.GS.ServerProperties
 		public static string QUEUE_API_URI;
 
 		/// <summary>
+		/// OpenAI-compatible local LLM endpoint used by WorldAI.
+		/// </summary>
+		[ServerProperty("worldai", "worldai_llm_api_url", "OpenAI-compatible local LLM API base URL for WorldAI.", "http://192.168.0.42:1234")]
+		public static string WORLDAI_LLM_API_URL;
+
+		/// <summary>
+		/// Model id used by the OpenAI-compatible local LLM endpoint.
+		/// </summary>
+		[ServerProperty("worldai", "worldai_llm_model", "Model id used by WorldAI local LLM calls.", "gemma-4-e4b-it")]
+		public static string WORLDAI_LLM_MODEL;
+
+		/// <summary>
+		/// Timeout for one WorldAI local LLM request.
+		/// </summary>
+		[ServerProperty("worldai", "worldai_llm_timeout_seconds", "Timeout in seconds for one WorldAI local LLM request.", 45)]
+		public static int WORLDAI_LLM_TIMEOUT_SECONDS;
+
+		[ServerProperty("worldai", "worldai_mob_growth_enabled", "Enable living-world monster survival growth. Keep false until ready to open this content.", false)]
+		public static bool WORLDAI_MOB_GROWTH_ENABLED;
+
+		[ServerProperty("worldai", "worldai_mob_growth_tick_minutes", "Minutes between automatic monster growth scans.", 30)]
+		public static int WORLDAI_MOB_GROWTH_TICK_MINUTES;
+
+		[ServerProperty("worldai", "worldai_mob_growth_survival_score", "Growth score added when an eligible monster survives one scan tick.", 2)]
+		public static int WORLDAI_MOB_GROWTH_SURVIVAL_SCORE;
+
+		[ServerProperty("worldai", "worldai_mob_growth_unhunted_score", "Extra growth score added when a monster has not been killed for the configured idle window.", 8)]
+		public static int WORLDAI_MOB_GROWTH_UNHUNTED_SCORE;
+
+		[ServerProperty("worldai", "worldai_mob_growth_combat_score", "Growth score added when an eligible monster survives combat contact.", 12)]
+		public static int WORLDAI_MOB_GROWTH_COMBAT_SCORE;
+
+		[ServerProperty("worldai", "worldai_mob_growth_combat_cooldown_seconds", "Minimum seconds between combat growth grants for the same monster.", 30)]
+		public static int WORLDAI_MOB_GROWTH_COMBAT_COOLDOWN_SECONDS;
+
+		[ServerProperty("worldai", "worldai_mob_growth_player_kill_score", "Growth score added when an eligible monster kills a player.", 50)]
+		public static int WORLDAI_MOB_GROWTH_PLAYER_KILL_SCORE;
+
+		[ServerProperty("worldai", "worldai_mob_growth_unhunted_after_minutes", "Minutes after which an un-killed monster also gains idle/unhunted growth.", 360)]
+		public static int WORLDAI_MOB_GROWTH_UNHUNTED_AFTER_MINUTES;
+
+		[ServerProperty("worldai", "worldai_mob_growth_elite_score", "Growth score required for Elite stage.", 60)]
+		public static int WORLDAI_MOB_GROWTH_ELITE_SCORE;
+
+		[ServerProperty("worldai", "worldai_mob_growth_champion_score", "Growth score required for Champion stage.", 180)]
+		public static int WORLDAI_MOB_GROWTH_CHAMPION_SCORE;
+
+		[ServerProperty("worldai", "worldai_mob_growth_boss_score", "Growth score required for Boss stage.", 420)]
+		public static int WORLDAI_MOB_GROWTH_BOSS_SCORE;
+
+		[ServerProperty("worldai", "worldai_mob_growth_max_level_bonus", "Maximum level bonus a grown monster can receive.", 5)]
+		public static int WORLDAI_MOB_GROWTH_MAX_LEVEL_BONUS;
+
+		[ServerProperty("worldai", "worldai_mob_growth_max_health_multiplier", "Maximum health multiplier a grown monster can receive.", 1.5)]
+		public static double WORLDAI_MOB_GROWTH_MAX_HEALTH_MULTIPLIER;
+
+		[ServerProperty("worldai", "worldai_mob_growth_max_active_bosses", "Maximum active grown bosses operators should allow before pruning or resetting.", 5)]
+		public static int WORLDAI_MOB_GROWTH_MAX_ACTIVE_BOSSES;
+
+		[ServerProperty("worldai", "worldai_mob_growth_excluded_regions", "CSV/semicolon region IDs excluded from monster growth.", "")]
+		public static string WORLDAI_MOB_GROWTH_EXCLUDED_REGIONS;
+
+		/// <summary>
 		/// Enable Discord Webhook?
 		/// </summary>
 		[ServerProperty("server", "Discord_Webhook_Active", "Enable Discord webhook?", false)]

@@ -1,4 +1,9 @@
 const realmColors = ["#d64a4a", "#5f8ee8", "#50ad6f"];
+const realmNames = new Map([
+  ["Albion", "알비온"],
+  ["Midgard", "미드가드"],
+  ["Hibernia", "하이버니아"]
+]);
 let latestLive = null;
 let latestHistory = null;
 let latestActivity = null;
@@ -37,9 +42,12 @@ function resizeCanvas(canvas) {
 function clearChart(canvas, title) {
   const { ctx, width, height } = resizeCanvas(canvas);
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = "#aaa399";
-  ctx.font = "14px system-ui";
-  ctx.fillText(title, 12, 26);
+
+  if (title) {
+    ctx.fillStyle = "#aaa399";
+    ctx.font = "14px system-ui";
+    ctx.fillText(title, 12, 26);
+  }
 
   return { ctx, width, height };
 }
@@ -51,23 +59,41 @@ function chartError(canvasId, message) {
   ctx.fillRect(12, 38, 36, 3);
 }
 
+function drawLegend(ctx, series, x, y) {
+  ctx.font = "13px system-ui";
+
+  series.forEach((item, index) => {
+    const label = item.label || `Series ${index + 1}`;
+    const offset = index * 130;
+
+    ctx.fillStyle = item.color || realmColors[index % realmColors.length];
+    ctx.fillRect(x + offset, y - 10, 18, 4);
+    ctx.fillStyle = "#f1efe8";
+    ctx.fillText(label, x + offset + 26, y);
+  });
+}
+
 function drawLineChart(canvasId, series) {
   const canvas = document.getElementById(canvasId);
-  const { ctx, width, height } = clearChart(canvas, "Not enough data yet");
-  const padding = 28;
-  const values = series.flatMap(item => item.values);
-  const max = Math.max(1, ...values);
   const points = series[0]?.values.length || 0;
 
   if (points < 2) {
+    clearChart(canvas, "데이터가 더 필요합니다");
     return;
   }
 
+  const { ctx, width, height } = clearChart(canvas);
+  const padding = 34;
+  const values = series.flatMap(item => item.values);
+  const max = Math.max(1, ...values);
+  const allZero = values.every(value => value <= 0);
+
   ctx.strokeStyle = "#34302a";
   ctx.lineWidth = 1;
+  drawLegend(ctx, series, padding, 20);
 
   for (let i = 0; i < 4; i++) {
-    const y = padding + ((height - padding * 2) * i / 3);
+    const y = padding + 16 + ((height - padding * 2 - 16) * i / 3);
     ctx.beginPath();
     ctx.moveTo(padding, y);
     ctx.lineTo(width - padding, y);
@@ -81,7 +107,9 @@ function drawLineChart(canvasId, series) {
 
     item.values.forEach((value, pointIndex) => {
       const x = padding + ((width - padding * 2) * pointIndex / (points - 1));
-      const y = height - padding - ((height - padding * 2) * value / max);
+      const overlapOffset = series.length > 1 ? (index - ((series.length - 1) / 2)) * 4 : 0;
+      const zeroOffset = allZero ? index * 9 : overlapOffset;
+      const y = height - padding - zeroOffset - ((height - padding * 2 - 16) * value / max);
 
       if (pointIndex === 0) {
         ctx.moveTo(x, y);
@@ -96,7 +124,12 @@ function drawLineChart(canvasId, series) {
 
 function drawBarChart(canvasId, labels, values, colors) {
   const canvas = document.getElementById(canvasId);
-  const { ctx, width, height } = clearChart(canvas, "No data");
+  if (values.length === 0) {
+    clearChart(canvas, "데이터 없음");
+    return;
+  }
+
+  const { ctx, width, height } = clearChart(canvas);
   const max = Math.max(1, ...values);
   const barWidth = Math.max(12, (width - 40) / Math.max(1, values.length));
 
@@ -115,17 +148,25 @@ function drawBarChart(canvasId, labels, values, colors) {
   });
 }
 
+function displayRealmName(name) {
+  return realmNames.get(name) || name;
+}
+
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString("ko-KR");
+}
+
 function applyLive(live) {
   latestLive = live;
   setText("onlinePlayers", live.totalPlayers);
-  setText("updatedAt", new Date(live.updatedAt).toLocaleTimeString());
+  setText("updatedAt", new Date(live.updatedAt).toLocaleTimeString("ko-KR"));
   setText("uptime", live.uptime);
 
   const realms = live.realms || [];
   setText("albionPlayers", realms.find(realm => realm.realmName === "Albion")?.players ?? 0);
   setText("midgardPlayers", realms.find(realm => realm.realmName === "Midgard")?.players ?? 0);
   setText("hiberniaPlayers", realms.find(realm => realm.realmName === "Hibernia")?.players ?? 0);
-  drawBarChart("realmChart", realms.map(realm => realm.realmName), realms.map(realm => realm.players), realmColors);
+  drawBarChart("realmChart", realms.map(realm => displayRealmName(realm.realmName)), realms.map(realm => realm.players), realmColors);
   drawBarChart("classChart", (live.classes || []).map(item => item.className), (live.classes || []).map(item => item.players), ["#d7af54", "#75c2cb", "#c97cc7"]);
 }
 
@@ -134,32 +175,29 @@ function applyHistory(history) {
   const points = history.points || [];
 
   drawLineChart("populationChart", [
-    { values: points.map(point => point.totalPlayers), color: "#d7af54" },
-    { values: points.map(point => point.albionPlayers), color: realmColors[0] },
-    { values: points.map(point => point.midgardPlayers), color: realmColors[1] },
-    { values: points.map(point => point.hiberniaPlayers), color: realmColors[2] }
+    { label: "전체", values: points.map(point => point.totalPlayers), color: "#d7af54" },
+    { label: "알비온", values: points.map(point => point.albionPlayers), color: realmColors[0] },
+    { label: "미드가드", values: points.map(point => point.midgardPlayers), color: realmColors[1] },
+    { label: "하이버니아", values: points.map(point => point.hiberniaPlayers), color: realmColors[2] }
   ]);
 
-  drawLineChart("performanceChart", [
-    { values: points.map(point => point.cpuPercent), color: "#d7af54" },
-    { values: points.map(point => Math.round((point.memoryKb || 0) / 1024)), color: "#75c2cb" }
-  ]);
 }
 
 function applyActivity(activity) {
   latestActivity = activity;
   const points = activity.points || [];
+  const total = (selector) => points.reduce((sum, point) => sum + Number(selector(point) || 0), 0);
 
   drawLineChart("goldChart", [
-    { values: points.map(point => point.albionGold), color: realmColors[0] },
-    { values: points.map(point => point.midgardGold), color: realmColors[1] },
-    { values: points.map(point => point.hiberniaGold), color: realmColors[2] }
+    { label: `알비온 ${formatNumber(total(point => point.albionGold))}`, values: points.map(point => point.albionGold), color: realmColors[0] },
+    { label: `미드가드 ${formatNumber(total(point => point.midgardGold))}`, values: points.map(point => point.midgardGold), color: realmColors[1] },
+    { label: `하이버니아 ${formatNumber(total(point => point.hiberniaGold))}`, values: points.map(point => point.hiberniaGold), color: realmColors[2] }
   ]);
 
   drawLineChart("rpChart", [
-    { values: points.map(point => point.albionRealmPoints), color: realmColors[0] },
-    { values: points.map(point => point.midgardRealmPoints), color: realmColors[1] },
-    { values: points.map(point => point.hiberniaRealmPoints), color: realmColors[2] }
+    { label: `알비온 ${formatNumber(total(point => point.albionRealmPoints))}`, values: points.map(point => point.albionRealmPoints), color: realmColors[0] },
+    { label: `미드가드 ${formatNumber(total(point => point.midgardRealmPoints))}`, values: points.map(point => point.midgardRealmPoints), color: realmColors[1] },
+    { label: `하이버니아 ${formatNumber(total(point => point.hiberniaRealmPoints))}`, values: points.map(point => point.hiberniaRealmPoints), color: realmColors[2] }
   ]);
 }
 
@@ -188,24 +226,23 @@ async function refresh() {
     applyLive(live.value);
   } else {
     latestLive = null;
-    chartError("realmChart", "Live data unavailable");
-    chartError("classChart", "Live data unavailable");
+    chartError("realmChart", "실시간 데이터를 불러올 수 없습니다");
+    chartError("classChart", "실시간 데이터를 불러올 수 없습니다");
   }
 
   if (history.status === "fulfilled") {
     applyHistory(history.value);
   } else {
     latestHistory = null;
-    chartError("populationChart", "History unavailable");
-    chartError("performanceChart", "History unavailable");
+    chartError("populationChart", "이전 기록을 불러올 수 없습니다");
   }
 
   if (activity.status === "fulfilled") {
     applyActivity(activity.value);
   } else {
     latestActivity = null;
-    chartError("goldChart", "Activity unavailable");
-    chartError("rpChart", "Activity unavailable");
+    chartError("goldChart", "활동 기록을 불러올 수 없습니다");
+    chartError("rpChart", "활동 기록을 불러올 수 없습니다");
   }
 }
 

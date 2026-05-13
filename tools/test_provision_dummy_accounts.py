@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""Unit checks for dummy account provisioning helpers."""
+
+from __future__ import annotations
+
+import importlib.util
+import sys
+import unittest
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
+
+
+def load_module():
+    module_path = Path(__file__).with_name("provision-dummy-accounts.py")
+    spec = importlib.util.spec_from_file_location("provision_dummy_accounts_for_tests", module_path)
+
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"failed to load {module_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+provision = load_module()
+
+
+class ProvisionDummyAccountsTests(unittest.TestCase):
+    def test_parse_starter_classes_accepts_semicolon_and_comma(self):
+        self.assertEqual(provision.parse_class_list("14;2;1;11;19;"), {1, 2, 11, 14, 19})
+        self.assertEqual(provision.parse_class_list("14, 2, bad, 19"), {2, 14, 19})
+
+    def test_left_hand_weapon_can_seed_right_hand_when_empty(self):
+        used_slots: set[int] = set()
+
+        slot = provision.choose_starter_slot(
+            provision.LEFT_HAND_SLOT,
+            object_type=3,
+            used_slots=used_slots,
+        )
+
+        self.assertEqual(slot, provision.RIGHT_HAND_SLOT)
+        self.assertIn(provision.RIGHT_HAND_SLOT, used_slots)
+
+    def test_shield_stays_left_hand(self):
+        used_slots: set[int] = set()
+
+        slot = provision.choose_starter_slot(
+            provision.LEFT_HAND_SLOT,
+            object_type=provision.SHIELD_OBJECT_TYPE,
+            used_slots=used_slots,
+        )
+
+        self.assertEqual(slot, provision.LEFT_HAND_SLOT)
+
+    def test_duplicate_equipment_slot_falls_back_to_backpack(self):
+        used_slots = {provision.RIGHT_HAND_SLOT}
+
+        slot = provision.choose_starter_slot(
+            provision.RIGHT_HAND_SLOT,
+            object_type=3,
+            used_slots=used_slots,
+        )
+
+        self.assertEqual(slot, provision.FIRST_BACKPACK_SLOT)
+
+    def test_character_insert_can_override_start_location(self):
+        args = SimpleNamespace(
+            start_x=523520,
+            start_y=490520,
+            start_z=2543,
+            start_region=1,
+            position_step=20,
+            template_account="bigjuh",
+            template_character="천재다",
+        )
+
+        with patch.object(
+            provision,
+            "get_columns",
+            return_value=["AccountName", "Name", "DOLCharacters_ID", "Xpos", "Ypos", "Zpos", "Region"],
+        ):
+            sql = provision.build_character_insert(args, "dummy001", "Dummy001", 100, 2)
+
+        self.assertIn("523560 AS `Xpos`", sql)
+        self.assertIn("490560 AS `Ypos`", sql)
+        self.assertIn("2543 AS `Zpos`", sql)
+        self.assertIn("1 AS `Region`", sql)
+
+    def test_resolve_mysql_bin_uses_system_mariadb_when_legacy_path_missing(self):
+        def fake_exists(path):
+            return str(path) == "/usr/bin/mariadb"
+
+        with patch.object(provision.Path, "exists", fake_exists):
+            self.assertEqual(provision.resolve_mysql_bin(None), "/usr/bin/mariadb")
+
+    def test_resolve_mysql_bin_keeps_explicit_value(self):
+        self.assertEqual(provision.resolve_mysql_bin("/custom/mysql"), "/custom/mysql")
+
+
+if __name__ == "__main__":
+    raise SystemExit(unittest.main())

@@ -14,7 +14,7 @@ DB_HOST="${DB_HOST:-127.0.0.1}"
 DB_PORT="${DB_PORT:-3306}"
 DB_NAME="${DB_NAME:-opendaoc}"
 DB_USER="${DB_USER:-root}"
-DB_PASSWORD="${DB_PASSWORD:-my-secret-pw}"
+DB_PASSWORD="${DB_PASSWORD:-opendaoc-local}"
 DB_TREAT_TINY_AS_BOOLEAN="${DB_TREAT_TINY_AS_BOOLEAN:-false}"
 SERVER_PORT="${SERVER_PORT:-10300}"
 REGION_PORT="${REGION_PORT:-10400}"
@@ -45,7 +45,7 @@ Environment:
   DB_PORT         MariaDB port. Default: 3306
   DB_NAME         Database name. Default: opendaoc
   DB_USER         Database user. Default: root
-  DB_PASSWORD     Database password. Default: my-secret-pw. Use DB_PASSWORD='' for no password.
+  DB_PASSWORD     Database password. Default: opendaoc-local. Use DB_PASSWORD='' for no password.
   DB_SQL_DIR      SQL directory. Default: ../OpenDAoC-Database/opendaoc-db-core
   CONFIGURATION   Build configuration. Default: Debug
 USAGE
@@ -88,7 +88,9 @@ if ! command -v "$DOTNET_BIN" >/dev/null 2>&1; then
   fi
 fi
 
-CONNECTION_STRING="Server=$DB_HOST;Port=$DB_PORT;Database=$DB_NAME;UserId=$DB_USER;Password=$DB_PASSWORD;TreatTinyAsBoolean=$DB_TREAT_TINY_AS_BOOLEAN;Pooling=true;MinimumPoolSize=30;MaximumPoolSize=120;ConnectionReset=false;CharSet=utf8mb4"
+DB_MIN_POOL_SIZE="${DB_MIN_POOL_SIZE:-0}"
+DB_MAX_POOL_SIZE="${DB_MAX_POOL_SIZE:-60}"
+CONNECTION_STRING="Server=$DB_HOST;Port=$DB_PORT;Database=$DB_NAME;UserId=$DB_USER;Password=$DB_PASSWORD;TreatTinyAsBoolean=$DB_TREAT_TINY_AS_BOOLEAN;Pooling=true;MinimumPoolSize=$DB_MIN_POOL_SIZE;MaximumPoolSize=$DB_MAX_POOL_SIZE;ConnectionReset=false;CharSet=utf8mb4"
 
 python3 - "$CONFIG" "$CONNECTION_STRING" "$SERVER_PORT" "$REGION_PORT" "$UDP_PORT" "$SERVER_NAME" "$SERVER_NAME_SHORT" <<'PY'
 import shutil
@@ -168,6 +170,12 @@ fi
 
 if [[ "$SKIP_BUILD" -eq 0 ]]; then
   "$DOTNET_BIN" build "$ROOT/CoreServer/CoreServer.csproj" -c "$CONFIGURATION"
+fi
+
+OUTPUT_CONFIG_DIR="$ROOT/$CONFIGURATION/config"
+if [[ -d "$ROOT/$CONFIGURATION" ]]; then
+  mkdir -p "$OUTPUT_CONFIG_DIR"
+  cp "$CONFIG" "$OUTPUT_CONFIG_DIR/serverconfig.xml"
 fi
 
 if [[ "$RUN_SERVER" -eq 1 ]]; then

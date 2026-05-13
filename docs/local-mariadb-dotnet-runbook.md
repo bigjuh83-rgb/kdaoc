@@ -32,7 +32,7 @@ For MariaDB, the Docker setup used these important defaults:
 ```text
 database: opendaoc
 user: root
-password: my-secret-pw
+password: opendaoc-local
 host: 127.0.0.1
 port: 3306
 ```
@@ -44,7 +44,7 @@ If MariaDB is installed inside Linux/WSL, table-name case sensitivity can matter
 From `OpenDAoC-Core`:
 
 ```bash
-DB_PASSWORD='my-secret-pw' tools/run-local-server.sh
+DB_PASSWORD='opendaoc-local' tools/run-local-server.sh
 ```
 
 If `dotnet` is not on the WSL `PATH`, the script will fall back to:
@@ -79,7 +79,7 @@ exit
 If the local `opendaoc` database is empty, import the SQL from the adjacent database repo:
 
 ```bash
-DB_PASSWORD='my-secret-pw' tools/run-local-server.sh --init-db --no-run
+DB_PASSWORD='opendaoc-local' tools/run-local-server.sh --init-db --no-run
 ```
 
 This imports:
@@ -102,7 +102,7 @@ The key values for local MariaDB are:
 
 ```xml
 <DBType>MYSQL</DBType>
-<DBConnectionString>Server=127.0.0.1;Port=3306;Database=opendaoc;UserId=root;Password=my-secret-pw;TreatTinyAsBoolean=false;Pooling=true;MinimumPoolSize=30;MaximumPoolSize=120;ConnectionReset=false;CharSet=utf8mb4</DBConnectionString>
+<DBConnectionString>Server=127.0.0.1;Port=3306;Database=opendaoc;UserId=root;Password=opendaoc-local;TreatTinyAsBoolean=false;Pooling=true;MinimumPoolSize=0;MaximumPoolSize=60;ConnectionReset=false;CharSet=utf8mb4</DBConnectionString>
 <ScriptCompilationTarget>./lib/GameServerScripts.dll</ScriptCompilationTarget>
 <EnableCompilation>True</EnableCompilation>
 <AutoAccountCreation>True</AutoAccountCreation>
@@ -141,6 +141,16 @@ Use a local MariaDB account with no password:
 ```bash
 DB_PASSWORD='' tools/run-local-server.sh
 ```
+
+Tune local MariaDB connection pooling:
+
+```bash
+DB_MIN_POOL_SIZE=0 DB_MAX_POOL_SIZE=60 tools/run-local-server.sh
+```
+
+For the portable local MariaDB setup, keep `DB_MIN_POOL_SIZE=0`. A high minimum
+pool size can create too many startup connections while the server registers
+database tables.
 
 Prepare config/build without starting:
 
@@ -186,7 +196,15 @@ Dashboard URLs:
 - `http://<server-host>:<api-port>/api/dashboard/realm-activity?range=7d`
 - `http://<server-host>:<api-port>/status/badge.png`
 
-For Naver Cafe, use `/status/badge.png` as a plain image and link the image to `/dashboard` if the cafe editor allows image links. The badge does not require JavaScript or iframe support.
+For Naver Cafe, use `/status/badge.png` as a plain image and link the image to `/dashboard` if the cafe editor allows image links. The badge does not require JavaScript or iframe support. Include the API port in both URLs when the dashboard is not served on port 80/443:
+
+```html
+<a href="http://<public-ip>:<api-port>/dashboard" target="_blank">
+  <img src="http://<public-ip>:<api-port>/status/badge.png" alt="KDAOC real-time population">
+</a>
+```
+
+Do not use `https://<public-ip>/...` unless a valid HTTPS reverse proxy is already serving the dashboard. A raw HTTP Kestrel dashboard on port 5000 will not answer on HTTPS port 443.
 
 Gold and realm point charts intentionally show server-issued inflow only. Player trades, consignment payouts, guild transfers, vault movement, removed money, and manual GM money/RP grants are excluded.
 

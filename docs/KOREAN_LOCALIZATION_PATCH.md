@@ -334,18 +334,18 @@ pregame/asset.xml
 pregame/styles.xml
 ```
 
-The key fix was converting `pregame/asset.xml` bitmap font entries to `TTFFont` entries.
+The first working fix was converting `pregame/asset.xml` bitmap font entries to `TTFFont` entries. Later race/class description testing showed that the pregame TTF path could still render some Hangul syllables as `@`, so the current working direction is to match the in-game fix: use `GdiFont`, `Gulim`, and Korean charset `129` for the main pregame font aliases.
 
 Most important:
 
 ```xml
-<TTFFont>
+<GdiFont>
     <Name>button_large</Name>
-    <File>ui/fonts/KoreanGothic-Bold.ttf</File>
     <Height>13</Height>
-    <Antialiased>true</Antialiased>
-    <Hint>2</Hint>
-</TTFFont>
+    <Bold>true</Bold>
+    <Charset>129</Charset>
+    <Face>Gulim</Face>
+</GdiFont>
 ```
 
 Why:
@@ -353,7 +353,8 @@ Why:
 - `pregame/styles.xml` template `256x16_no_bg` uses `<Name>button_large</Name>`.
 - Character select top line uses `256x16_no_bg`.
 - The original `button_large` was `ui/fonts/button_12.tga`, a bitmap font without Hangul glyphs.
-- Replacing it with TTF fixed `짱이다 the Fighter` on character select.
+- Replacing it with Korean-capable fonts fixed `짱이다 the Fighter` on character select.
+- Using `GdiFont` avoids the pregame TTF renderer replacing some valid Korean syllables with `@` in race/class descriptions.
 
 Pregame font names converted:
 

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using DOL.GS.API.Dashboard;
+using DOL.GS.API.DummyNavigation;
+using DOL.GS.API.WorldAI;
 using DOL.GS.ServerProperties;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -74,6 +76,8 @@ namespace DOL.GS.API
                 await c.Response.WriteAsJsonAsync(_utils.GetUptime(GameServer.Instance.StartupTime)));
 
             api.MapDashboardRoutes(contentRoot);
+            api.MapWorldAiRoutes();
+            api.MapDummyNavigationRoutes();
 
             #endregion
 

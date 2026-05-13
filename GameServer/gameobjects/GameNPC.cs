@@ -17,6 +17,7 @@ using DOL.GS.PacketHandler;
 using DOL.GS.Quests;
 using DOL.GS.ServerProperties;
 using DOL.GS.Styles;
+using DOL.GS.WorldAI;
 using DOL.Language;
 using DOL.Logging;
 
@@ -2012,6 +2013,8 @@ namespace DOL.GS
 			if (IsStealthed)
 				WasStealthed = true;
 
+			MobGrowthService.Instance.ApplyToNpc(this);
+
 			ClientService.CreateObjectForPlayers(this);
 			return true;
 		}
@@ -2618,8 +2621,23 @@ namespace DOL.GS
 
 		public static bool ShouldUseCustomTextWindowForSayTo(string language, eChatLoc loc)
 		{
+			return ShouldUseCustomTextWindowForSayTo(language, loc, null);
+		}
+
+		public static bool ShouldUseCustomTextWindowForSayTo(string language, eChatLoc loc, string message)
+		{
 			return loc == eChatLoc.CL_PopupWindow
-				&& string.Equals(language, "KR", StringComparison.OrdinalIgnoreCase);
+				&& string.Equals(language, "KR", StringComparison.OrdinalIgnoreCase)
+				&& !HasBracketHotspot(message);
+		}
+
+		public static bool HasBracketHotspot(string message)
+		{
+			if (string.IsNullOrEmpty(message))
+				return false;
+
+			int open = message.IndexOf('[');
+			return open >= 0 && message.IndexOf(']', open + 1) > open + 1;
 		}
 
 		private static IList<string> BuildSayToTextWindowLines(string message)
@@ -2653,7 +2671,7 @@ namespace DOL.GS
 			switch (loc)
 			{
 				case eChatLoc.CL_PopupWindow:
-					if (ShouldUseCustomTextWindowForSayTo(language, loc))
+					if (ShouldUseCustomTextWindowForSayTo(language, loc, message))
 						target.Out.SendCustomTextWindow(npcName, BuildSayToTextWindowLines(message));
 					else
 						target.Out.SendMessage(resultText, eChatType.CT_System, eChatLoc.CL_PopupWindow);
@@ -3125,7 +3143,26 @@ namespace DOL.GS
 			if (Brain is StandardMobBrain standardMobBrain)
 				standardMobBrain.OnAttackedByEnemy(ad);
 
+			if (Properties.WORLDAI_MOB_GROWTH_ENABLED)
+				MobGrowthService.Instance.RecordCombat(MobGrowthService.FromNpc(this), DateTime.UtcNow, MobGrowthOptions.FromProperties());
+
 			base.OnAttackedByEnemy(ad);
+		}
+
+		public override void Die(GameObject killer)
+		{
+			if (Properties.WORLDAI_MOB_GROWTH_ENABLED)
+				MobGrowthService.Instance.RecordDeath(MobGrowthService.FromNpc(this), DateTime.UtcNow, MobGrowthOptions.FromProperties());
+
+			base.Die(killer);
+		}
+
+		public override void EnemyKilled(GameLiving enemy)
+		{
+			if (Properties.WORLDAI_MOB_GROWTH_ENABLED && enemy is GamePlayer)
+				MobGrowthService.Instance.RecordPlayerKill(MobGrowthService.FromNpc(this), DateTime.UtcNow, MobGrowthOptions.FromProperties());
+
+			base.EnemyKilled(enemy);
 		}
 
 		public virtual bool CanDropLoot => true;
@@ -4050,9 +4087,15 @@ namespace DOL.GS
 		}
 
 		private double m_campBonus = 1;
+		private double m_worldAiMaxHealthScalingFactor = 1.0;
 
 		public virtual double CampBonus { get => m_campBonus; set => m_campBonus = value; }
-		public virtual double MaxHealthScalingFactor => 1.0;
+		public virtual double MaxHealthScalingFactor => m_worldAiMaxHealthScalingFactor;
+		public double WorldAiMaxHealthScalingFactor
+		{
+			get => m_worldAiMaxHealthScalingFactor;
+			set => m_worldAiMaxHealthScalingFactor = Math.Max(1.0, value);
+		}
 		public double DamageFactor { get => damageFactor; set => damageFactor = value; }
 	}
 }
