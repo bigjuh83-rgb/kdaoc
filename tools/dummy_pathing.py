@@ -182,20 +182,56 @@ class PathGraph:
                 continue
 
             region = int(raw_collision.get("region", default_region if default_region is not None else 0))
-            self.collisions.append(
+            self.collisions.extend(self._parse_collision_segments(raw_collision, region))
+
+    def _parse_collision_segments(self, raw_collision: dict[str, object], region: int) -> list[CollisionSegment]:
+        collision_id = str(raw_collision.get("id", f"collision-{len(self.collisions) + 1}"))
+        kind = str(raw_collision.get("kind", "blocked")).lower()
+        min_z = int(raw_collision["min_z"]) if raw_collision.get("min_z") is not None else None
+        max_z = int(raw_collision["max_z"]) if raw_collision.get("max_z") is not None else None
+        flags = normalize_flags(raw_collision.get("flags", [raw_collision.get("kind", "blocked")]))
+
+        if all(key in raw_collision for key in ("min_x", "min_y", "max_x", "max_y")):
+            min_x = int(raw_collision["min_x"])
+            min_y = int(raw_collision["min_y"])
+            max_x = int(raw_collision["max_x"])
+            max_y = int(raw_collision["max_y"])
+            corners = [
+                (min_x, min_y, max_x, min_y),
+                (max_x, min_y, max_x, max_y),
+                (max_x, max_y, min_x, max_y),
+                (min_x, max_y, min_x, min_y),
+            ]
+            return [
                 CollisionSegment(
-                    id=str(raw_collision.get("id", f"collision-{len(self.collisions) + 1}")),
+                    id=f"{collision_id}:{index}",
                     region=region,
-                    kind=str(raw_collision.get("kind", "blocked")).lower(),
-                    ax=int(raw_collision["ax"]),
-                    ay=int(raw_collision["ay"]),
-                    bx=int(raw_collision["bx"]),
-                    by=int(raw_collision["by"]),
-                    min_z=int(raw_collision["min_z"]) if raw_collision.get("min_z") is not None else None,
-                    max_z=int(raw_collision["max_z"]) if raw_collision.get("max_z") is not None else None,
-                    flags=normalize_flags(raw_collision.get("flags", [raw_collision.get("kind", "blocked")])),
+                    kind=kind,
+                    ax=ax,
+                    ay=ay,
+                    bx=bx,
+                    by=by,
+                    min_z=min_z,
+                    max_z=max_z,
+                    flags=flags,
                 )
+                for index, (ax, ay, bx, by) in enumerate(corners)
+            ]
+
+        return [
+            CollisionSegment(
+                id=collision_id,
+                region=region,
+                kind=kind,
+                ax=int(raw_collision["ax"]),
+                ay=int(raw_collision["ay"]),
+                bx=int(raw_collision["bx"]),
+                by=int(raw_collision["by"]),
+                min_z=min_z,
+                max_z=max_z,
+                flags=flags,
             )
+        ]
 
     def distance_between_ids(self, left_id: str, right_id: str) -> float:
         return distance(self.nodes[left_id].point, self.nodes[right_id].point)
@@ -226,6 +262,33 @@ class PathGraph:
             return None
 
         return best
+
+    def nearest_reachable_node(
+        self,
+        region: int,
+        point: PathPoint,
+        *,
+        max_distance: float,
+        max_height_delta: int,
+        safety: PathSafety,
+    ) -> PathNode | None:
+        candidates = [
+            node
+            for node in self.nodes.values()
+            if node.region == region
+            and abs(node.z - point.z) <= max_height_delta
+            and self.node_allowed(node, safety)
+        ]
+        candidates.sort(key=lambda node: distance(point, node.point))
+
+        for node in candidates:
+            if distance(point, node.point) > max_distance:
+                return None
+
+            if self.direct_path_allowed(region, point, node.point, safety, max_distance=max_distance):
+                return node
+
+        return None
 
     def astar(self, start_id: str, goal_id: str, safety: PathSafety) -> PathRoute:
         if start_id not in self.nodes:
@@ -273,14 +336,14 @@ class PathGraph:
         max_node_distance: float,
         safety: PathSafety,
     ) -> PathRoute:
-        start_node = self.nearest_node(
+        start_node = self.nearest_reachable_node(
             region,
             start,
             max_distance=max_node_distance,
             max_height_delta=safety.max_height_delta,
             safety=safety,
         )
-        goal_node = self.nearest_node(
+        goal_node = self.nearest_reachable_node(
             region,
             goal,
             max_distance=max_node_distance,

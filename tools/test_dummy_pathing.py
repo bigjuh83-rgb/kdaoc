@@ -121,6 +121,38 @@ class DummyPathingTests(unittest.TestCase):
             )
         )
 
+    def test_box_collision_blocks_direct_path(self):
+        graph = pathing.PathGraph.from_payload(
+            {
+                "nodes": [
+                    {"id": "a", "region": 1, "x": 0, "y": 0, "z": 0},
+                    {"id": "b", "region": 1, "x": 1000, "y": 0, "z": 0},
+                ],
+                "edges": [{"from": "a", "to": "b"}],
+                "collisions": [
+                    {
+                        "id": "asset-box",
+                        "region": 1,
+                        "kind": "blocked",
+                        "min_x": 400,
+                        "min_y": -100,
+                        "max_x": 600,
+                        "max_y": 100,
+                    }
+                ],
+            }
+        )
+
+        self.assertFalse(
+            graph.direct_path_allowed(
+                1,
+                pathing.PathPoint(0, 0, 0),
+                pathing.PathPoint(1000, 0, 0),
+                pathing.PathSafety(),
+                max_distance=1200,
+            )
+        )
+
     def test_route_between_points_uses_nearest_region_nodes(self):
         graph = self.make_graph()
         route = graph.route_between_points(
@@ -133,6 +165,46 @@ class DummyPathingTests(unittest.TestCase):
 
         self.assertTrue(route.ok, route.reason)
         self.assertEqual([node.id for node in route.nodes], ["a", "d", "c"])
+
+    def test_route_between_points_ignores_nearby_node_behind_collision(self):
+        graph = pathing.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [
+                            {"id": "blocked_near", "x": 100, "y": 0, "z": 0},
+                            {"id": "reachable_start", "x": 0, "y": 300, "z": 0},
+                            {"id": "goal", "x": 1000, "y": 300, "z": 0},
+                        ],
+                        "edges": [
+                            {"from": "blocked_near", "to": "goal"},
+                            {"from": "reachable_start", "to": "goal"},
+                        ],
+                        "collisions": [
+                            {
+                                "id": "wall",
+                                "kind": "wall",
+                                "ax": 50,
+                                "ay": -100,
+                                "bx": 50,
+                                "by": 120,
+                            }
+                        ],
+                    }
+                }
+            }
+        )
+
+        route = graph.route_between_points(
+            1,
+            pathing.PathPoint(0, 0, 0),
+            pathing.PathPoint(1000, 300, 0),
+            max_node_distance=500,
+            safety=pathing.PathSafety(max_direct_distance=500, max_edge_length=1200),
+        )
+
+        self.assertTrue(route.ok, route.reason)
+        self.assertEqual([node.id for node in route.nodes], ["reachable_start", "goal"])
 
 
 if __name__ == "__main__":
