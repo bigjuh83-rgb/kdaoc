@@ -629,6 +629,118 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(client.moves, [])
         self.assertEqual(action_counts["nav_segment_blocked"], 1)
 
+    def test_metrics_csv_includes_movement_failure_sample(self):
+        path = Path("behavior-movement-failure-test.csv")
+        results = [
+            behavior.DummyResult(
+                "dummy001",
+                ok=True,
+                rounds=1,
+                successful_rounds=1,
+                metrics=[
+                    behavior.RoundMetric(
+                        "dummy001",
+                        1,
+                        True,
+                        3,
+                        1.25,
+                        "",
+                        {"nav_segment_blocked": 1},
+                        [],
+                        "none",
+                        [
+                            behavior.MovementFailure(
+                                "target",
+                                "SegmentBlocked",
+                                "target:42",
+                                10,
+                                20,
+                                30,
+                                100,
+                                200,
+                                300,
+                            )
+                        ],
+                    )
+                ],
+            )
+        ]
+
+        try:
+            behavior.write_metrics_csv(str(path), results)
+            payload = path.read_text(encoding="utf-8")
+        finally:
+            path.unlink(missing_ok=True)
+
+        self.assertIn("movement_failures", payload)
+        self.assertIn("movement_failure_sample", payload)
+        self.assertIn("target:SegmentBlocked 10,20,30->100,200,300", payload)
+
+    def test_report_includes_movement_failure_section(self):
+        path = Path("behavior-movement-failure-report-test.md")
+        results = [
+            behavior.DummyResult(
+                "dummy001",
+                ok=True,
+                actions=3,
+                rounds=1,
+                successful_rounds=1,
+                metrics=[
+                    behavior.RoundMetric(
+                        "dummy001",
+                        1,
+                        True,
+                        3,
+                        1.25,
+                        "",
+                        {"path_failed": 1},
+                        [],
+                        "none",
+                        [
+                            behavior.MovementFailure(
+                                "waypoint",
+                                "no nearby start graph node",
+                                "waypoint:0:100:200:300",
+                                10,
+                                20,
+                                30,
+                                100,
+                                200,
+                                300,
+                            )
+                        ],
+                    )
+                ],
+            )
+        ]
+        args = SimpleNamespace(
+            host="127.0.0.1",
+            port=10300,
+            concurrency=1,
+            behavior_profile="cautious-solo",
+            ai_player=False,
+            hunter=True,
+            combat=True,
+            move=True,
+            use_skills=True,
+            recovery=False,
+            party_size=1,
+            ai_persona="auto",
+            realm_strategy="fixed",
+            realm=1,
+            waypoints=[behavior.Waypoint(100, 200, 300)],
+        )
+
+        try:
+            behavior.write_report_md(str(path), results, 1.25, args)
+            payload = path.read_text(encoding="utf-8")
+        finally:
+            path.unlink(missing_ok=True)
+
+        self.assertIn("## Movement Failures", payload)
+        self.assertIn("no nearby start graph node", payload)
+        self.assertIn("waypoint:0:100:200:300", payload)
+
 
 if __name__ == "__main__":
     raise SystemExit(unittest.main())

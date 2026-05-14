@@ -100,6 +100,20 @@ class RoundMetric:
     action_counts: dict[str, int] | None = None
     combat_metrics: list["CombatMetric"] | None = None
     persona: str = ""
+    movement_failures: list["MovementFailure"] | None = None
+
+
+@dataclass(frozen=True)
+class MovementFailure:
+    context: str
+    reason: str
+    destination_key: str
+    start_x: int
+    start_y: int
+    start_z: int
+    goal_x: int
+    goal_y: int
+    goal_z: int
 
 
 @dataclass
@@ -924,6 +938,33 @@ def move_towards_destination(
     return MovementOutcome(moved=moved, arrived=False, actions=actions)
 
 
+def record_movement_failure(
+    failures: list[MovementFailure],
+    client,
+    destination: MovementDestination,
+    outcome: MovementOutcome,
+    context: str,
+    *,
+    limit: int = 25,
+) -> None:
+    if outcome.moved or outcome.arrived or not outcome.reason or len(failures) >= limit:
+        return
+
+    failures.append(
+        MovementFailure(
+            context=context,
+            reason=outcome.reason,
+            destination_key=destination.key,
+            start_x=int(client.x),
+            start_y=int(client.y),
+            start_z=int(client.z),
+            goal_x=int(destination.x),
+            goal_y=int(destination.y),
+            goal_z=int(destination.z),
+        )
+    )
+
+
 def direct_path_allowed_for_state(path_state: PathMovementState, start: object, goal: object, max_distance: float) -> bool:
     if path_state.graph is not None:
         return path_state.graph.direct_path_allowed(path_state.region, start, goal, path_state.safety, max_distance=max_distance)
@@ -1062,6 +1103,7 @@ def run_dummy_round(
     actions = 0
     action_counts: dict[str, int] = {}
     combat_metrics: list[CombatMetric] = []
+    movement_failures: list[MovementFailure] = []
     started = time.monotonic()
 
     try:
@@ -1330,9 +1372,10 @@ def run_dummy_round(
                 follow_player = choose_follow_player(client, args)
 
                 if follow_player is not None:
+                    follow_destination = destination_from_actor("follow-player", follow_player)
                     outcome = move_towards_destination(
                         client,
-                        destination_from_actor("follow-player", follow_player),
+                        follow_destination,
                         step=args.player_follow_step,
                         stop_distance=args.player_follow_distance,
                         args=args,
@@ -1340,21 +1383,23 @@ def run_dummy_round(
                         action_counts=action_counts,
                     )
                     actions += outcome.actions
+                    record_movement_failure(movement_failures, client, follow_destination, outcome, "player_follow")
                     actions += add_action(action_counts, "player_follow" if outcome.moved else "player_hold")
 
                 next_player_follow = now + args.player_follow_interval + rng.uniform(0, args.jitter)
 
             if args.waypoints and args.waypoint_interval > 0 and now >= next_waypoint_move and not current_target:
                 waypoint = args.waypoints[waypoint_index]
+                waypoint_destination = MovementDestination(
+                    key=f"waypoint:{waypoint_index}:{waypoint.x}:{waypoint.y}:{waypoint.z}",
+                    x=waypoint.x,
+                    y=waypoint.y,
+                    z=waypoint.z,
+                )
                 waypoint_step = smooth_movement_step(args) if args.smooth_movement else args.waypoint_step
                 outcome = move_towards_destination(
                     client,
-                    MovementDestination(
-                        key=f"waypoint:{waypoint_index}:{waypoint.x}:{waypoint.y}:{waypoint.z}",
-                        x=waypoint.x,
-                        y=waypoint.y,
-                        z=waypoint.z,
-                    ),
+                    waypoint_destination,
                     step=waypoint_step,
                     stop_distance=args.waypoint_stop_distance,
                     args=args,
@@ -1362,6 +1407,7 @@ def run_dummy_round(
                     action_counts=action_counts,
                 )
                 actions += outcome.actions
+                record_movement_failure(movement_failures, client, waypoint_destination, outcome, "waypoint")
 
                 if outcome.moved:
                     actions += add_action(action_counts, "waypoint_move")
@@ -1395,9 +1441,10 @@ def run_dummy_round(
                 )
 
                 if target_npc is not None:
+                    target_destination = destination_from_actor("target", target_npc)
                     outcome = move_towards_destination(
                         client,
-                        destination_from_actor("target", target_npc),
+                        target_destination,
                         step=smooth_movement_step(args),
                         stop_distance=melee_stop_distance(args),
                         args=args,
@@ -1405,6 +1452,7 @@ def run_dummy_round(
                         action_counts=action_counts,
                     )
                     actions += outcome.actions
+                    record_movement_failure(movement_failures, client, target_destination, outcome, "smooth_target")
                     distance = client.distance_to(target_npc)
                     actions += add_action(action_counts, "smooth_move" if outcome.moved else "smooth_hold")
 
@@ -1497,9 +1545,10 @@ def run_dummy_round(
                     leader_x = int(party_snapshot["leader_x"])
                     leader_y = int(party_snapshot["leader_y"])
                     leader_z = int(party_snapshot["leader_z"])
+                    leader_destination = destination_from_point("party-leader", leader_x, leader_y, leader_z)
                     outcome = move_towards_destination(
                         client,
-                        destination_from_point("party-leader", leader_x, leader_y, leader_z),
+                        leader_destination,
                         step=args.party_follow_step,
                         stop_distance=args.party_follow_distance,
                         args=args,
@@ -1507,6 +1556,7 @@ def run_dummy_round(
                         action_counts=action_counts,
                     )
                     actions += outcome.actions
+                    record_movement_failure(movement_failures, client, leader_destination, outcome, "party_follow")
                     actions += add_action(action_counts, "party_follow" if outcome.moved else "party_hold")
 
                 next_follow = now + args.party_follow_interval + rng.uniform(0, args.jitter)
@@ -1562,9 +1612,10 @@ def run_dummy_round(
                         party_state.update_leader(client, npc)
 
                     if (args.move or args.hunter) and not args.smooth_movement:
+                        target_destination = destination_from_actor("target", npc)
                         outcome = move_towards_destination(
                             client,
-                            destination_from_actor("target", npc),
+                            target_destination,
                             step=args.move_step,
                             stop_distance=melee_stop_distance(args),
                             args=args,
@@ -1572,6 +1623,7 @@ def run_dummy_round(
                             action_counts=action_counts,
                         )
                         actions += outcome.actions
+                        record_movement_failure(movement_failures, client, target_destination, outcome, "target")
                         actions += add_action(action_counts, "move" if outcome.moved else "hold_position")
 
                         if outcome.moved:
@@ -1632,6 +1684,7 @@ def run_dummy_round(
             action_counts,
             combat_metrics,
             args.ai_persona_name,
+            movement_failures,
         )
 
     except Exception as exc:  # noqa: BLE001 - test runner should report and continue.
@@ -1649,6 +1702,7 @@ def run_dummy_round(
             action_counts,
             combat_metrics,
             args.ai_persona_name,
+            movement_failures,
         )
     finally:
         try:
@@ -1750,6 +1804,8 @@ def write_metrics_csv(path: str, results: list[DummyResult]) -> None:
                 "player_deaths",
                 "target_timeouts",
                 "avg_combat_seconds",
+                "movement_failures",
+                "movement_failure_sample",
                 "error",
                 *action_names,
             ]
@@ -1772,6 +1828,8 @@ def write_metrics_csv(path: str, results: list[DummyResult]) -> None:
                         sum(1 for combat in combats if combat.outcome == "player_death"),
                         sum(1 for combat in combats if combat.outcome == "target_timeout"),
                         f"{(sum(durations) / len(durations)):.3f}" if durations else "0.000",
+                        len(metric.movement_failures or []),
+                        format_movement_failure_sample(metric.movement_failures or []),
                         metric.error,
                         *[(metric.action_counts or {}).get(action_name, 0) for action_name in action_names],
                     ]
@@ -1825,6 +1883,25 @@ def iter_combat_metrics(results: list[DummyResult]):
         for metric in result.metrics or []:
             for combat in metric.combat_metrics or []:
                 yield combat
+
+
+def iter_movement_failures(results: list[DummyResult]):
+    for result in results:
+        for metric in result.metrics or []:
+            for failure in metric.movement_failures or []:
+                yield metric, failure
+
+
+def format_movement_failure_sample(failures: list[MovementFailure]) -> str:
+    if not failures:
+        return ""
+
+    failure = failures[0]
+    return (
+        f"{failure.context}:{failure.reason} "
+        f"{failure.start_x},{failure.start_y},{failure.start_z}"
+        f"->{failure.goal_x},{failure.goal_y},{failure.goal_z}"
+    )
 
 
 def summarize_combat(results: list[DummyResult]) -> dict[str, object]:
@@ -2002,6 +2079,29 @@ def write_report_md(path: str, results: list[DummyResult], elapsed: float, args:
             )
     else:
         lines.append("| `none` | 0 | 0 | 0 | 0 | 0 | 0.00s |")
+
+    movement_failures = list(iter_movement_failures(results))
+    lines += [
+        "",
+        "## Movement Failures",
+        "",
+        f"- Samples captured: `{len(movement_failures)}`",
+        "",
+        "| Account | Round | Context | Reason | From | To | Destination |",
+        "| --- | ---: | --- | --- | --- | --- | --- |",
+    ]
+
+    if movement_failures:
+        for metric, failure in movement_failures[:25]:
+            reason = failure.reason.replace("|", "\\|")
+            destination_key = failure.destination_key.replace("|", "\\|")
+            lines.append(
+                f"| `{metric.username}` | {metric.round_index} | `{failure.context}` | {reason} | "
+                f"`{failure.start_x},{failure.start_y},{failure.start_z}` | "
+                f"`{failure.goal_x},{failure.goal_y},{failure.goal_z}` | `{destination_key}` |"
+            )
+    else:
+        lines.append("| `none` | 0 | `none` | none | `0,0,0` | `0,0,0` | `none` |")
 
     lines += [
         "",
