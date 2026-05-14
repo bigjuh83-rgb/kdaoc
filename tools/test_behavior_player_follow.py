@@ -592,6 +592,59 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(action_counts["nav_path_plan"], 1)
         self.assertEqual(action_counts["nav_segment_blocked"], 1)
 
+    def test_graph_path_can_move_when_navmesh_is_unavailable(self):
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [
+                            {"id": "start", "x": 0, "y": 0, "z": 0},
+                            {"id": "goal", "x": 1000, "y": 0, "z": 0},
+                        ],
+                        "edges": [{"from": "start", "to": "goal"}],
+                    }
+                }
+            }
+        )
+        args = SimpleNamespace(
+            nav_api_url="http://127.0.0.1:5000",
+            path_last_mile_distance=150.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=200.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            nav_segment_validate=True,
+        )
+        state = behavior.PathMovementState(graph, 1, behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0))
+        client = StepPathClient()
+        action_counts: dict[str, int] = {}
+        original_request_nav_path = behavior.request_nav_path
+
+        def fake_request_nav_path(_args, _region, _start, _goal):
+            return False, "NavmeshUnavailable", []
+
+        behavior.request_nav_path = fake_request_nav_path
+
+        try:
+            outcome = behavior.move_towards_destination(
+                client,
+                behavior.MovementDestination("target:far", 1000, 0, 0),
+                step=250.0,
+                stop_distance=100.0,
+                args=args,
+                path_state=state,
+                action_counts=action_counts,
+            )
+        finally:
+            behavior.request_nav_path = original_request_nav_path
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual(client.moves[-1][:3], (1000, 0, 0))
+        self.assertEqual(action_counts["nav_path_failed"], 1)
+        self.assertEqual(action_counts["path_plan"], 1)
+        self.assertEqual(action_counts["path_step"], 1)
+        self.assertNotIn("nav_segment_blocked", action_counts)
+
     def test_nav_segment_validation_blocks_last_mile(self):
         args = SimpleNamespace(
             nav_api_url="http://127.0.0.1:5000",

@@ -766,6 +766,10 @@ def nav_segment_allowed(args: argparse.Namespace, region: int, start: object, go
     return ok, reason
 
 
+def graph_can_fallback_from_nav_failure(path_state: PathMovementState, reason: str) -> bool:
+    return path_state.graph is not None and reason in {"NavmeshUnavailable", "ZoneNotFound", "CrossZonePathUnsupported"}
+
+
 def build_path_safety(args: argparse.Namespace):
     return PathSafety(
         max_edge_length=args.path_max_edge_length,
@@ -834,7 +838,7 @@ def move_towards_destination(
     if direct_path_allowed_for_state(path_state, current, goal, args.path_last_mile_distance):
         segment_ok, segment_reason = nav_segment_allowed(args, path_state.region, current, goal)
 
-        if not segment_ok:
+        if not segment_ok and not graph_can_fallback_from_nav_failure(path_state, segment_reason):
             client.send_position_update(speed=0.0, target_in_view=False)
             actions += add_action(action_counts, "nav_segment_blocked")
             return MovementOutcome(moved=False, arrived=False, actions=actions, reason=segment_reason)
@@ -900,7 +904,7 @@ def move_towards_destination(
         if direct_path_allowed_for_state(path_state, current, goal, args.path_last_mile_distance):
             segment_ok, segment_reason = nav_segment_allowed(args, path_state.region, current, goal)
 
-            if not segment_ok:
+            if not segment_ok and not graph_can_fallback_from_nav_failure(path_state, segment_reason):
                 path_state.destination_key = ""
                 path_state.last_reason = segment_reason
                 client.send_position_update(speed=0.0, target_in_view=False)
@@ -925,7 +929,7 @@ def move_towards_destination(
 
     segment_ok, segment_reason = nav_segment_allowed(args, path_state.region, current, next_point)
 
-    if not segment_ok:
+    if not segment_ok and not graph_can_fallback_from_nav_failure(path_state, segment_reason):
         path_state.follower.clear()
         path_state.destination_key = ""
         path_state.last_reason = segment_reason
