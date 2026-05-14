@@ -915,6 +915,7 @@ def move_towards_destination(
             actions += add_action(action_counts, "path_last_mile" if moved else "path_arrived")
             return MovementOutcome(moved=moved, arrived=not moved, actions=actions)
 
+        path_state.follower.clear()
         path_state.destination_key = ""
         client.send_position_update(speed=0.0, target_in_view=False)
         actions += add_action(action_counts, "path_hold")

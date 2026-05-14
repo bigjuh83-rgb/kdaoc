@@ -645,6 +645,50 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(action_counts["path_step"], 1)
         self.assertNotIn("nav_segment_blocked", action_counts)
 
+    def test_route_end_before_last_mile_clears_stale_route_for_replan(self):
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=150.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=200.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+        )
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [
+                            {"id": "start", "x": 0, "y": 0, "z": 0},
+                            {"id": "goal", "x": 1000, "y": 0, "z": 0},
+                        ],
+                        "edges": [{"from": "start", "to": "goal"}],
+                    }
+                }
+            }
+        )
+        state = behavior.PathMovementState(graph, 1, behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0))
+        state.follower.set_route([behavior.PathPoint(0, 0, 0)])
+        state.destination_key = "target:stale"
+        state.last_plan_at = 1.0
+        client = PathClient()
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("target:stale", 1000, 0, 0),
+            step=250.0,
+            stop_distance=100.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+        )
+
+        self.assertFalse(outcome.moved)
+        self.assertEqual(outcome.reason, "route ended before last mile")
+        self.assertEqual(state.follower.route, [])
+        self.assertEqual(state.destination_key, "")
+
     def test_nav_segment_validation_blocks_last_mile(self):
         args = SimpleNamespace(
             nav_api_url="http://127.0.0.1:5000",
