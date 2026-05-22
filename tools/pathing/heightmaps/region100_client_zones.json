@@ -1,0 +1,23 @@
+{
+  "type": "daoc-client-zone-mpk",
+  "zones_root": "../../../../OpenDAoCClient/zones",
+  "correction_max_distance": 0,
+  "correction_sample_count": 4,
+  "correction_points": [],
+  "zones": {
+    "100": { "name": "Vale of Mularn", "offset_x": 92, "offset_y": 82, "width": 8, "height": 8 },
+    "101": { "name": "East Svealand", "offset_x": 88, "offset_y": 90, "width": 8, "height": 8 },
+    "102": { "name": "West Svealand", "offset_x": 80, "offset_y": 90, "width": 8, "height": 8 },
+    "103": { "name": "Gotar", "offset_x": 88, "offset_y": 98, "width": 8, "height": 8 },
+    "104": { "name": "Muspelheim", "offset_x": 100, "offset_y": 78, "width": 8, "height": 8 },
+    "105": { "name": "Myrkwood Forest", "offset_x": 92, "offset_y": 106, "width": 8, "height": 8 },
+    "106": { "name": "Skona Ravine", "offset_x": 84, "offset_y": 110, "width": 8, "height": 8 },
+    "107": { "name": "Vanern Swamp", "offset_x": 76, "offset_y": 106, "width": 8, "height": 8 },
+    "108": { "name": "Raumarik", "offset_x": 72, "offset_y": 90, "width": 8, "height": 8 },
+    "111": { "name": "Uppland", "offset_x": 88, "offset_y": 74, "width": 8, "height": 8 },
+    "112": { "name": "Yggdra Forest", "offset_x": 80, "offset_y": 82, "width": 8, "height": 8 },
+    "113": { "name": "Jamtland Mountains", "offset_x": 80, "offset_y": 74, "width": 8, "height": 8 },
+    "115": { "name": "Odin's Gate", "offset_x": 72, "offset_y": 70, "width": 8, "height": 8 },
+    "116": { "name": "Malmohus", "offset_x": 84, "offset_y": 118, "width": 8, "height": 8 }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "type": "daoc-client-zone-mpk",
+  "zones_root": "../../../../OpenDAoCClient/zones",
+  "correction_max_distance": 0,
+  "correction_sample_count": 4,
+  "correction_points": [],
+  "zones": {
+    "200": { "name": "Lough Derg", "offset_x": 39, "offset_y": 59, "width": 8, "height": 8 },
+    "201": { "name": "Silvermine Mts.", "offset_x": 39, "offset_y": 67, "width": 8, "height": 8 },
+    "202": { "name": "Shannon Estuary", "offset_x": 35, "offset_y": 75, "width": 8, "height": 8 },
+    "203": { "name": "Cliffs of Moher", "offset_x": 27, "offset_y": 51, "width": 8, "height": 8 },
+    "204": { "name": "Lough Gur", "offset_x": 35, "offset_y": 83, "width": 8, "height": 8 },
+    "205": { "name": "Bog of Cullen", "offset_x": 43, "offset_y": 87, "width": 8, "height": 8 },
+    "206": { "name": "Valley of Bri Leith", "offset_x": 47, "offset_y": 59, "width": 8, "height": 8 },
+    "207": { "name": "Connacht", "offset_x": 35, "offset_y": 51, "width": 8, "height": 8 },
+    "208": { "name": "Cursed Forest", "offset_x": 55, "offset_y": 59, "width": 8, "height": 8 },
+    "210": { "name": "Mount Collory", "offset_x": 47, "offset_y": 51, "width": 8, "height": 8 },
+    "211": { "name": "Cruachan Gorge", "offset_x": 39, "offset_y": 43, "width": 8, "height": 8 },
+    "212": { "name": "Breifine", "offset_x": 47, "offset_y": 43, "width": 8, "height": 8 },
+    "214": { "name": "Emain Macha", "offset_x": 51, "offset_y": 35, "width": 8, "height": 8 },
+    "216": { "name": "Sheeroe Hills", "offset_x": 43, "offset_y": 79, "width": 8, "height": 8 }
+  }
+}

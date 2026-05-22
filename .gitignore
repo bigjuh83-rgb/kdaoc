@@ -9,6 +9,14 @@
 # Local brainstorming/mockup companion files
 .superpowers/
 
+# OpenDAoC local dummy/load-test outputs
+tools/reports/
+tools/dummy-accounts*.csv
+!tools/dummy-accounts.example.csv
+tools/dummy-metrics.csv
+tools/dummy-*-metrics.csv
+tools/dummy-*-report.md
+
 # User-specific files
 *.rsuser
 *.suo
@@ -68,6 +76,10 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+
+# Python local caches
+__pycache__/
+*.py[cod]
 
 # Tye
 .tye/

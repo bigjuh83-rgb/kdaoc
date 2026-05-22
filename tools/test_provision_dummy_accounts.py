@@ -80,7 +80,19 @@ class ProvisionDummyAccountsTests(unittest.TestCase):
         with patch.object(
             provision,
             "get_columns",
-            return_value=["AccountName", "Name", "DOLCharacters_ID", "Xpos", "Ypos", "Zpos", "Region"],
+            return_value=[
+                "AccountName",
+                "Name",
+                "DOLCharacters_ID",
+                "Xpos",
+                "Ypos",
+                "Zpos",
+                "Region",
+                "BindXpos",
+                "BindYpos",
+                "BindZpos",
+                "BindRegion",
+            ],
         ):
             sql = provision.build_character_insert(args, "dummy001", "Dummy001", 100, 2)
 
@@ -88,16 +100,44 @@ class ProvisionDummyAccountsTests(unittest.TestCase):
         self.assertIn("490560 AS `Ypos`", sql)
         self.assertIn("2543 AS `Zpos`", sql)
         self.assertIn("1 AS `Region`", sql)
+        self.assertIn("523560 AS `BindXpos`", sql)
+        self.assertIn("490560 AS `BindYpos`", sql)
+        self.assertIn("2543 AS `BindZpos`", sql)
+        self.assertIn("1 AS `BindRegion`", sql)
 
     def test_resolve_mysql_bin_uses_system_mariadb_when_legacy_path_missing(self):
         def fake_exists(path):
             return str(path) == "/usr/bin/mariadb"
 
-        with patch.object(provision.Path, "exists", fake_exists):
+        with (
+            patch.object(provision, "DEFAULT_MYSQL_CANDIDATES", ["/usr/bin/mariadb"]),
+            patch.object(provision.Path, "exists", fake_exists),
+        ):
             self.assertEqual(provision.resolve_mysql_bin(None), "/usr/bin/mariadb")
 
     def test_resolve_mysql_bin_keeps_explicit_value(self):
         self.assertEqual(provision.resolve_mysql_bin("/custom/mysql"), "/custom/mysql")
+
+    def test_read_serverconfig_password_falls_back_when_config_missing(self):
+        class MissingPath:
+            def __init__(self, *_parts):
+                pass
+
+            def resolve(self):
+                return self
+
+            @property
+            def parents(self):
+                return {1: self}
+
+            def __truediv__(self, _other):
+                return self
+
+            def exists(self):
+                return False
+
+        with patch.object(provision, "Path", MissingPath):
+            self.assertEqual(provision.read_serverconfig_password(), "opendaoc-local")
 
 
 if __name__ == "__main__":

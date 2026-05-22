@@ -317,4 +317,7 @@ Confirmed result after the final font-path fix:
 - If Korean appears as `@`, check the actual UI font alias path first.
 - If `@` appears only on character creation/select descriptions, check `pregame/asset.xml` first.
 - If Korean appears as mojibake, check whether UTF-8 bytes are being read as CP949 or CP949 bytes are being read as UTF-8.
+- If the small quest/trainer Accept/Decline dialog body still shows mojibake while larger custom text windows already render Korean, do not chase `popup.xml` first. Live memory proved the popup text itself was correct in CP949 and UTF-16; the real runtime problem was the popup font table keeping slot 8 on the old bitmap font object. The deeper root cause was that the popup font-loader caller in `game.dll` was passing an empty filename, so the client never opened `fonts/uifont.dat` and always fell back to the hardcoded 13-slot bitmap table. The current local fix changes `OpenDAoCClient/game.dll` offset `0x0b90e0` to push an injected `fonts\\uifont.dat` string at `0x97f9a3`, and keeps `0x1005ee = eb` so the parsed popup font sections stay on the GDI branch.
+- Keep the Windows codepage fixes too: when `ACP=65001`, `OpenDAoCClient/game.dll` still needs `0x37b7e2 = b8 b5 03 00 00 90` and `0x107c39 = 68 b5 03 00 00` so legacy Dialog text decodes CP949 instead of Windows-1252.
+- Do not rename the hardcoded Dialog font string at `0x5572e4`; changing `arial11` there caused a realm-select crash.
 - If character select columns drift, do not switch `WritePascalStringIntLE()` to UTF-8.

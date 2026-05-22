@@ -421,58 +421,37 @@ C:\Users\uihan\Desktop\다옥프리서버\OpenDAoCClient\game.dll
 Current verified offsets:
 
 ```text
+0x0b90e0 = 68 a3 f9 97 00
+0x57f9a3 = 66 6f 6e 74 73 5c 75 69 66 6f 6e 74 2e 64 61 74 00
+0x1005ee = eb 5a 57 68 64 c8 93 00
 0x88b8e  = eb 72 ff 05 e0 f3 f4 00
 0x1a3b35 = eb 0d 85 f6 74 61 68 20
 0x1a3695 = eb 0b 56 e8 a0 01 00 00
+0x37b7e2 = b8 b5 03 00 00 90
+0x107c39 = 68 b5 03 00 00
 ```
 
 Meaning:
 
+- `0x0b90e0`: patch the popup font-loader caller so it pushes `0x97f9a3` instead of the old empty-string pointer `0x937c08`. `0x97f9a3` is a writable `.data` slack slot that now stores `fonts\\uifont.dat\\0`. Without this, the popup loader never opens `uifont.dat` and always rebuilds the hardcoded bitmap fallback table on restart.
+- `0x57f9a3`: injected `fonts\\uifont.dat\\0` string used by the caller patch above.
+- `0x1005ee`: keep the parsed popup font-section loader on the non-bitmap path so the `type=gdi` entries from `fonts/uifont.dat` win once the caller actually passes the right filename.
 - `0x88b8e`: MBCS/crash-protection branch patch. Keep as `EB`; restoring this caused crashes.
 - `0x1a3b35`: bypass rename confirm A-Z-only validation.
 - `0x1a3695`: bypass character select/play A-Z-only validation.
+- `0x37b7e2`: force the client CRT `GetACP()` path to return CP949 (`mov eax, 949; nop`). This is required when Windows has the UTF-8 beta/system ANSI codepage (`ACP=65001`), otherwise legacy Dialog windows decode Korean CP949 packet text as mojibake.
+- `0x107c39`: replace the remaining numeric `push 1252` codepage branch with `push 949`; this covers legacy Dialog text paths that still decode CP949 packet bytes as Windows-1252.
 
 Also patch all codepage string/table occurrences from `1252` to `949`. Current DLLs have no `1252` string hits and many `949` hits.
 
 ### Reapply Script
 
-Run from WSL. This patches both client folders and creates timestamped backups.
+Run from WSL. This patches one or more `game.dll` files and creates timestamped backups.
 
 ```bash
-python3 - <<'PY'
-from pathlib import Path
-from datetime import datetime
-
-clients = [
-    Path('/mnt/c/Program Files (x86)/Electronic Arts/Dark Age of Camelot'),
-    Path('/mnt/c/Users/uihan/Desktop/다옥프리서버/OpenDAoCClient'),
-]
-
-stamp = datetime.now().strftime('%Y%m%d-%H%M%S')
-
-for root in clients:
-    dll = root / 'game.dll'
-    backup = root / f'game.dll.backup-before-korean-{stamp}'
-    backup.write_bytes(dll.read_bytes())
-
-    data = bytearray(dll.read_bytes())
-
-    # Codepage table/string: 1252 -> 949 plus null padding.
-    data = data.replace(b'1252', b'949\x00')
-
-    # Keep crash-protection/MBCS branch patch.
-    data[0x88b8e] = 0xEB
-
-    # Bypass client-side A-Z name validation checks.
-    data[0x1a3b35:0x1a3b37] = bytes.fromhex('eb 0d')
-    data[0x1a3695:0x1a3697] = bytes.fromhex('eb 0b')
-
-    dll.write_bytes(data)
-
-    print(dll)
-    for off in (0x88b8e, 0x1a3b35, 0x1a3695):
-        print(hex(off), data[off:off+8].hex(' '))
-PY
+python3 /mnt/c/Users/uihan/Desktop/다옥프리서버/OpenDAoCClient/tools/apply-korean-game-dll-patch.py \
+  /mnt/c/Users/uihan/Desktop/다옥프리서버/OpenDAoCClient/game.dll \
+  '/mnt/c/Program Files (x86)/Electronic Arts/Dark Age of Camelot/game.dll'
 ```
 
 ## Docker Build And Restart
@@ -509,7 +488,7 @@ There is an existing startup noise error from `GameLoopTickPacerStats` index ran
 Confirm the character name is stored correctly:
 
 ```bash
-'/mnt/c/Program Files/Docker/Docker/resources/bin/docker.exe' compose -f docker-compose.local.yml exec -T db mariadb --ssl=0 -uroot -pmy-secret-pw -e "SELECT Name, HEX(Name), CHAR_LENGTH(Name), LENGTH(Name), Class, Race, Region FROM opendaoc.DOLCharacters WHERE AccountName='bigjuh';"
+'/mnt/c/Program Files/Docker/Docker/resources/bin/docker.exe' compose -f docker-compose.local.yml exec -T db mariadb --ssl=0 -uroot -p'<DB_PASSWORD>' -e "SELECT Name, HEX(Name), CHAR_LENGTH(Name), LENGTH(Name), Class, Race, Region FROM opendaoc.DOLCharacters WHERE AccountName='bigjuh';"
 ```
 
 Good result for `짱이다`:

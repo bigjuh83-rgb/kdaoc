@@ -1,0 +1,583 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using DOL.AI.Brain;
+using DOL.GS.Styles;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+
+namespace DOL.GS.API.DummyCombat
+{
+    internal static class DummyCombatRoutes
+    {
+        private const string TestClonePrefix = "KDAOC_TEST_";
+
+        public static void MapDummyCombatRoutes(this WebApplication api)
+        {
+            api.MapGet("/api/dummy/combat/usable", (HttpContext context) =>
+            {
+                string name = context.Request.Query["name"].FirstOrDefault() ?? string.Empty;
+                string account = context.Request.Query["account"].FirstOrDefault() ?? string.Empty;
+                GamePlayer player = FindPlayer(name, account);
+
+                if (player == null)
+                    return Results.NotFound(new { error = "PlayerNotFound", name, account });
+
+                return Results.Ok(BuildUsableSnapshot(player));
+            });
+
+            api.MapGet("/api/dummy/combat/npcs", (HttpContext context) =>
+            {
+                string name = context.Request.Query["name"].FirstOrDefault() ?? string.Empty;
+                ushort region = 0;
+                int limit = 20;
+                int objectId = 0;
+                int x = 0;
+                int y = 0;
+                int radius = 0;
+                int minLevel = 0;
+                int maxLevel = 0;
+
+                ushort.TryParse(context.Request.Query["region"].FirstOrDefault(), out region);
+                int.TryParse(context.Request.Query["limit"].FirstOrDefault(), out limit);
+                int.TryParse(context.Request.Query["objectId"].FirstOrDefault(), out objectId);
+                int.TryParse(context.Request.Query["x"].FirstOrDefault(), out x);
+                int.TryParse(context.Request.Query["y"].FirstOrDefault(), out y);
+                int.TryParse(context.Request.Query["radius"].FirstOrDefault(), out radius);
+                int.TryParse(context.Request.Query["minLevel"].FirstOrDefault(), out minLevel);
+                int.TryParse(context.Request.Query["maxLevel"].FirstOrDefault(), out maxLevel);
+                limit = Math.Clamp(limit, 1, 200);
+                radius = Math.Clamp(radius, 0, 50000);
+
+                GameNPC[] npcs = region > 0
+                    ? WorldMgr.GetNPCsFromRegion(region)
+                    : WorldMgr.GetAllRegions()
+                        .SelectMany(entry => entry.Objects.OfType<GameNPC>())
+                        .ToArray();
+
+                bool hasOrigin = x != 0 || y != 0;
+                long radiusSquared = (long)radius * radius;
+
+                var matches = npcs
+                    .Where(npc => npc != null)
+                    .Where(npc => npc.ObjectState is GameObject.eObjectState.Active)
+                    .Where(npc => npc.IsAlive)
+                    .Where(npc => objectId <= 0 || npc.ObjectID == objectId)
+                    .Where(npc => minLevel <= 0 || npc.Level >= minLevel)
+                    .Where(npc => maxLevel <= 0 || npc.Level <= maxLevel)
+                    .Where(npc =>
+                    {
+                        if (!hasOrigin || radius <= 0)
+                            return true;
+
+                        return DistanceSquared(npc.X, npc.Y, x, y) <= radiusSquared;
+                    })
+                    .Where(npc => string.IsNullOrWhiteSpace(name) ||
+                                  npc.Name.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0)
+                    .OrderBy(npc => hasOrigin ? DistanceSquared(npc.X, npc.Y, x, y) : 0)
+                    .ThenBy(npc => npc.Name)
+                    .ThenBy(npc => npc.ObjectID)
+                    .Take(limit)
+                    .Select(npc => ToNpcCombatDto(npc, queryX: hasOrigin ? x : null, queryY: hasOrigin ? y : null))
+                    .ToArray();
+
+                return matches.Length == 0
+                    ? Results.NotFound(new { error = "NpcNotFound", name, region })
+                    : Results.Ok(matches);
+            });
+
+            api.MapGet("/api/dummy/combat/encounter-snapshot", (HttpContext context) =>
+            {
+                string name = context.Request.Query["name"].FirstOrDefault() ?? string.Empty;
+                ushort region = 0;
+                int radius = 5000;
+                int limit = 80;
+
+                ushort.TryParse(context.Request.Query["region"].FirstOrDefault(), out region);
+                int.TryParse(context.Request.Query["radius"].FirstOrDefault(), out radius);
+                int.TryParse(context.Request.Query["limit"].FirstOrDefault(), out limit);
+                radius = Math.Clamp(radius, 250, 20000);
+                limit = Math.Clamp(limit, 1, 500);
+
+                if (string.IsNullOrWhiteSpace(name))
+                    return Results.BadRequest(new { error = "MissingName" });
+
+                GameNPC target = FindNpc(name, region);
+
+                if (target == null)
+                    return Results.NotFound(new { error = "NpcNotFound", name, region });
+
+                region = target.CurrentRegionID;
+                long radiusSquared = (long)radius * radius;
+
+                var players = ClientService.Instance.GetClients()
+                    .Select(client => client.Player)
+                    .Where(IsUsablePlayer)
+                    .Where(player => player.CurrentRegionID == region)
+                    .Where(player => DistanceSquared(player.X, player.Y, target.X, target.Y) <= radiusSquared)
+                    .OrderBy(player => DistanceSquared(player.X, player.Y, target.X, target.Y))
+                    .ThenBy(player => player.Name)
+                    .Take(limit)
+                    .Select(player => ToPlayerEncounterDto(player, target))
+                    .ToArray();
+
+                var npcs = WorldMgr.GetNPCsFromRegion(region)
+                    .Where(npc => npc != null)
+                    .Where(npc => npc.ObjectState is GameObject.eObjectState.Active)
+                    .Where(npc => npc.ObjectID != target.ObjectID)
+                    .Where(npc => DistanceSquared(npc.X, npc.Y, target.X, target.Y) <= radiusSquared)
+                    .OrderBy(npc => DistanceSquared(npc.X, npc.Y, target.X, target.Y))
+                    .ThenBy(npc => npc.Name)
+                    .Take(limit)
+                    .Select(npc => ToNpcEncounterDto(npc, target))
+                    .ToArray();
+
+                return Results.Ok(new
+                {
+                    eventType = "server_encounter_snapshot",
+                    queryName = name,
+                    region,
+                    radius,
+                    target = ToNpcCombatDto(target, radius, npcs.Length),
+                    players,
+                    npcs
+                });
+            });
+
+            api.MapPost("/api/dummy/combat/clone-npc", (HttpContext context) =>
+            {
+                string sourceName = context.Request.Query["source"].FirstOrDefault() ?? string.Empty;
+                string requestedName = context.Request.Query["name"].FirstOrDefault() ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(sourceName))
+                    return Results.BadRequest(new { error = "MissingSource" });
+
+                string cloneName = string.IsNullOrWhiteSpace(requestedName)
+                    ? $"{TestClonePrefix}{Guid.NewGuid():N}"
+                    : requestedName.Trim();
+
+                if (!cloneName.StartsWith(TestClonePrefix, StringComparison.OrdinalIgnoreCase))
+                    cloneName = $"{TestClonePrefix}{cloneName}";
+
+                ushort region = 0;
+                int x = 0;
+                int y = 0;
+                int z = 0;
+                int nearbyRadius = 2600;
+                ushort heading = 0;
+                byte level = 0;
+
+                ushort.TryParse(context.Request.Query["region"].FirstOrDefault(), out region);
+                int.TryParse(context.Request.Query["x"].FirstOrDefault(), out x);
+                int.TryParse(context.Request.Query["y"].FirstOrDefault(), out y);
+                int.TryParse(context.Request.Query["z"].FirstOrDefault(), out z);
+                int.TryParse(context.Request.Query["nearbyRadius"].FirstOrDefault(), out nearbyRadius);
+                ushort.TryParse(context.Request.Query["heading"].FirstOrDefault(), out heading);
+                byte.TryParse(context.Request.Query["level"].FirstOrDefault(), out level);
+
+                GameNPC source = FindNpc(sourceName, region);
+
+                if (source == null)
+                    return Results.NotFound(new { error = "SourceNpcNotFound", source = sourceName, region });
+
+                RemoveTestClones(cloneName);
+
+                region = region > 0 ? region : source.CurrentRegionID;
+                x = x != 0 ? x : source.X;
+                y = y != 0 ? y : source.Y;
+                z = z != 0 ? z : source.Z;
+                heading = heading != 0 ? heading : source.Heading;
+                nearbyRadius = Math.Clamp(nearbyRadius, 0, 10000);
+                int nearbyNpcCount = CountNearbyNpcs(region, x, y, nearbyRadius, source.ObjectID, cloneName);
+
+                GameNPC clone = CreateNpcClone(source);
+                clone.Name = cloneName;
+                clone.SaveInDB = false;
+                clone.RespawnInterval = 0;
+                clone.Level = level > 0 ? level : source.Level;
+
+                bool created = clone.Create(region, x, y, z, heading);
+
+                if (!created)
+                    return Results.BadRequest(new { error = "CloneCreateFailed", name = cloneName, region, x, y, z });
+
+                clone.Health = clone.MaxHealth;
+
+                return Results.Ok(ToNpcCombatDto(clone, nearbyRadius, nearbyNpcCount));
+            });
+
+            api.MapDelete("/api/dummy/combat/test-clones", (HttpContext context) =>
+            {
+                string prefix = context.Request.Query["prefix"].FirstOrDefault() ?? TestClonePrefix;
+
+                if (string.IsNullOrWhiteSpace(prefix))
+                    prefix = TestClonePrefix;
+
+                int removed = RemoveTestClones(prefix);
+                return Results.Ok(new { removed, prefix });
+            });
+        }
+
+        private static GameNPC FindNpc(string name, ushort region)
+        {
+            IEnumerable<GameNPC> npcs = region > 0
+                ? WorldMgr.GetNPCsFromRegion(region)
+                : WorldMgr.GetAllRegions().SelectMany(entry => entry.Objects.OfType<GameNPC>());
+
+            return npcs
+                .Where(npc => npc != null)
+                .Where(npc => npc.ObjectState is GameObject.eObjectState.Active)
+                .FirstOrDefault(npc => string.Equals(npc.Name, name, StringComparison.OrdinalIgnoreCase)) ??
+                   npcs
+                       .Where(npc => npc != null)
+                       .Where(npc => npc.ObjectState is GameObject.eObjectState.Active)
+                       .FirstOrDefault(npc => npc.Name.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static GameNPC CreateNpcClone(GameNPC source)
+        {
+            // Use a plain NPC for test clones. Scripted epic bosses often override AddToWorld()
+            // to reload templates, reset static encounter state, or save themselves to the DB.
+            GameNPC clone = new GameNPC();
+
+            clone.BodyType = source.BodyType;
+            clone.DamageFactor = source.DamageFactor;
+            clone.Faction = source.Faction;
+            clone.Flags = source.Flags;
+            clone.GuildName = source.GuildName;
+            clone.Heading = source.Heading;
+            clone.Level = source.Level;
+            clone.MaxSpeedBase = source.MaxSpeedBase;
+            clone.MeleeDamageType = source.MeleeDamageType;
+            clone.Model = source.Model;
+            clone.ParryChance = source.ParryChance;
+            clone.Realm = source.Realm;
+            clone.RoamingRange = 0;
+            clone.Size = source.Size;
+            clone.TetherRange = source.TetherRange;
+
+            if (clone.Brain is StandardMobBrain cloneBrain && source.Brain is StandardMobBrain sourceBrain)
+            {
+                cloneBrain.AggroLevel = sourceBrain.AggroLevel;
+                cloneBrain.AggroRange = sourceBrain.AggroRange;
+            }
+
+            if (source.Spells != null && source.Spells.Count > 0)
+                clone.Spells = new List<Spell>(source.Spells);
+
+            if (source.Styles != null && source.Styles.Count > 0)
+                clone.Styles = new List<Style>(source.Styles);
+
+            return clone;
+        }
+
+        private static int RemoveTestClones(string prefix)
+        {
+            GameNPC[] clones = WorldMgr.GetAllRegions()
+                .SelectMany(entry => entry.Objects.OfType<GameNPC>())
+                .Where(npc => npc != null)
+                .Where(npc => npc.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            int removed = 0;
+
+            foreach (GameNPC clone in clones)
+            {
+                clone.Delete();
+                removed++;
+            }
+
+            return removed;
+        }
+
+        private static int CountNearbyNpcs(ushort region, int x, int y, int radius, int sourceObjectId, string cloneName)
+        {
+            if (region <= 0 || radius <= 0)
+                return 0;
+
+            long radiusSquared = (long)radius * radius;
+
+            return WorldMgr.GetNPCsFromRegion(region)
+                .Where(npc => npc != null)
+                .Where(npc => npc.ObjectState is GameObject.eObjectState.Active)
+                .Where(npc => npc.ObjectID != sourceObjectId)
+                .Where(npc => !string.Equals(npc.Name, cloneName, StringComparison.OrdinalIgnoreCase))
+                .Where(npc => !npc.Name.StartsWith(TestClonePrefix, StringComparison.OrdinalIgnoreCase))
+                .Count(npc =>
+                {
+                    long dx = (long)npc.X - x;
+                    long dy = (long)npc.Y - y;
+                    return dx * dx + dy * dy <= radiusSquared;
+                });
+        }
+
+        private static long DistanceSquared(int ax, int ay, int bx, int by)
+        {
+            long dx = (long)ax - bx;
+            long dy = (long)ay - by;
+            return dx * dx + dy * dy;
+        }
+
+        private static double HorizontalDistance(GameObject actor, GameObject target)
+        {
+            return Math.Round(Math.Sqrt(DistanceSquared(actor.X, actor.Y, target.X, target.Y)), 2);
+        }
+
+        private static GamePlayer FindPlayer(string name, string account)
+        {
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                GamePlayer player = ClientService.Instance.GetPlayerByExactName(name);
+
+                if (IsUsablePlayer(player))
+                    return player;
+            }
+
+            return ClientService.Instance.GetClients()
+                .Select(client => client.Player)
+                .FirstOrDefault(player =>
+                    IsUsablePlayer(player) &&
+                    ((!string.IsNullOrWhiteSpace(name) && string.Equals(player.Name, name, StringComparison.OrdinalIgnoreCase)) ||
+                     (!string.IsNullOrWhiteSpace(account) && string.Equals(player.Client?.Account?.Name, account, StringComparison.OrdinalIgnoreCase))));
+        }
+
+        private static bool IsUsablePlayer(GamePlayer player)
+        {
+            return player != null &&
+                   player.ObjectState is GameObject.eObjectState.Active &&
+                   player.Client?.ClientState is GameClient.eClientState.Playing;
+        }
+
+        private static object BuildUsableSnapshot(GamePlayer player)
+        {
+            var skills = player.GetAllUsableSkills(true);
+            int nonSpecBegin = Math.Max(0, skills.FindIndex(item => item.Item1 is not Specialization));
+            var spellLines = player.GetAllUsableListSpells(true);
+
+            return new
+            {
+                player = new
+                {
+                    name = player.Name,
+                    account = player.Client?.Account?.Name ?? string.Empty,
+                    level = player.Level,
+                    @class = player.CharacterClass?.Name ?? string.Empty,
+                    classId = player.CharacterClass?.ID ?? 0,
+                    realm = player.Realm.ToString()
+                },
+                skills = skills.Select((entry, index) => ToSkillDto(entry.Item1, entry.Item2, index, nonSpecBegin)).ToArray(),
+                spellLines = spellLines.Select((entry, lineIndex) => new
+                {
+                    lineIndex,
+                    line = new
+                    {
+                        entry.Item1.Name,
+                        entry.Item1.KeyName,
+                        entry.Item1.Spec,
+                        entry.Item1.IsBaseLine
+                    },
+                    entries = entry.Item2.Select(skill => ToSpellLineEntryDto(skill, lineIndex)).ToArray()
+                }).ToArray()
+            };
+        }
+
+        private static object ToNpcCombatDto(GameNPC npc, int nearbyNpcRadius = 0, int nearbyNpcCount = -1, int? queryX = null, int? queryY = null)
+        {
+            int maxHealth = Math.Max(1, npc.MaxHealth);
+            double healthPercent = Math.Round(npc.Health * 100.0 / maxHealth, 2);
+            StandardMobBrain brain = npc.Brain as StandardMobBrain;
+            double distance = queryX.HasValue && queryY.HasValue
+                ? Math.Round(Math.Sqrt(DistanceSquared(npc.X, npc.Y, queryX.Value, queryY.Value)), 2)
+                : 0;
+
+            return new
+            {
+                name = npc.Name,
+                guildName = npc.GuildName ?? string.Empty,
+                objectId = npc.ObjectID,
+                internalId = npc.InternalID,
+                classType = npc.GetType().FullName,
+                level = npc.Level,
+                region = npc.CurrentRegionID,
+                x = npc.X,
+                y = npc.Y,
+                z = npc.Z,
+                health = npc.Health,
+                maxHealth,
+                healthPercent,
+                isAlive = npc.IsAlive,
+                inCombat = npc.InCombat,
+                hasAggro = brain?.HasAggro ?? false,
+                target = npc.TargetObject?.Name ?? string.Empty,
+                distance,
+                nearbyNpcRadius,
+                nearbyNpcCount
+            };
+        }
+
+        private static object ToPlayerEncounterDto(GamePlayer player, GameNPC target)
+        {
+            return new
+            {
+                type = "player",
+                name = player.Name,
+                account = player.Client?.Account?.Name ?? string.Empty,
+                objectId = player.ObjectID,
+                level = player.Level,
+                realm = player.Realm.ToString(),
+                region = player.CurrentRegionID,
+                x = player.X,
+                y = player.Y,
+                z = player.Z,
+                distance = HorizontalDistance(player, target),
+                health = player.Health,
+                maxHealth = Math.Max(1, player.MaxHealth),
+                healthPercent = Math.Round(player.Health * 100.0 / Math.Max(1, player.MaxHealth), 2),
+                isAlive = player.IsAlive,
+                isDead = !player.IsAlive,
+                inCombat = player.InCombat,
+                targetObjectId = player.TargetObject?.ObjectID ?? 0,
+                targetName = player.TargetObject?.Name ?? string.Empty,
+                targetType = player.TargetObject?.GetType().FullName ?? string.Empty
+            };
+        }
+
+        private static object ToNpcEncounterDto(GameNPC npc, GameNPC target)
+        {
+            StandardMobBrain brain = npc.Brain as StandardMobBrain;
+            int maxHealth = Math.Max(1, npc.MaxHealth);
+
+            return new
+            {
+                type = "npc",
+                name = npc.Name,
+                guildName = npc.GuildName ?? string.Empty,
+                objectId = npc.ObjectID,
+                internalId = npc.InternalID,
+                classType = npc.GetType().FullName,
+                level = npc.Level,
+                region = npc.CurrentRegionID,
+                x = npc.X,
+                y = npc.Y,
+                z = npc.Z,
+                distance = HorizontalDistance(npc, target),
+                health = npc.Health,
+                maxHealth,
+                healthPercent = Math.Round(npc.Health * 100.0 / maxHealth, 2),
+                isAlive = npc.IsAlive,
+                inCombat = npc.InCombat,
+                hasAggro = brain?.HasAggro ?? false,
+                targetObjectId = npc.TargetObject?.ObjectID ?? 0,
+                targetName = npc.TargetObject?.Name ?? string.Empty,
+                targetType = npc.TargetObject?.GetType().FullName ?? string.Empty
+            };
+        }
+
+        private static object ToSkillDto(Skill skill, Skill sibling, int rawIndex, int nonSpecBegin)
+        {
+            int useSkillType = rawIndex >= nonSpecBegin ? 1 : 0;
+            int useSkillIndex = useSkillType > 0 ? rawIndex - nonSpecBegin : rawIndex;
+
+            return new
+            {
+                rawIndex,
+                useSkillIndex,
+                useSkillType,
+                kind = SkillKind(skill),
+                name = skill.Name,
+                id = skill.ID,
+                internalId = skill.InternalID,
+                level = skill.Level,
+                icon = skill.Icon,
+                skillType = skill.SkillType.ToString(),
+                siblingKind = sibling == null ? string.Empty : SkillKind(sibling),
+                style = skill is Style style ? StyleInfo(style) : null,
+                ability = skill is Ability ability ? AbilityInfo(ability) : null,
+                spell = skill is Spell spell ? SpellInfo(spell) : null
+            };
+        }
+
+        private static object ToSpellLineEntryDto(Skill skill, int lineIndex)
+        {
+            int spellLevel = skill switch
+            {
+                Spell spellEntry => spellEntry.Level,
+                Style styleEntry => styleEntry.SpecLevelRequirement,
+                Ability abilityEntry => abilityEntry.SpecLevelRequirement,
+                _ => skill.Level
+            };
+
+            return new
+            {
+                lineIndex,
+                spellLevel,
+                kind = SkillKind(skill),
+                name = skill.Name,
+                id = skill.ID,
+                internalId = skill.InternalID,
+                level = skill.Level,
+                icon = skill.Icon,
+                skillType = skill.SkillType.ToString(),
+                style = skill is Style style ? StyleInfo(style) : null,
+                ability = skill is Ability ability ? AbilityInfo(ability) : null,
+                spell = skill is Spell spell ? SpellInfo(spell) : null
+            };
+        }
+
+        private static string SkillKind(Skill skill)
+        {
+            return skill switch
+            {
+                Spell => "Spell",
+                Style => "Style",
+                Ability => "Ability",
+                Specialization => "Specialization",
+                SpellLine => "SpellLine",
+                _ => skill.GetType().Name
+            };
+        }
+
+        private static object StyleInfo(Style style)
+        {
+            return new
+            {
+                specLevelRequirement = style.SpecLevelRequirement,
+                openingRequirementType = style.OpeningRequirementType.ToString(),
+                openingRequirementValue = style.OpeningRequirementValue,
+                attackResultRequirement = style.AttackResultRequirement.ToString()
+            };
+        }
+
+        private static object AbilityInfo(Ability ability)
+        {
+            return new
+            {
+                specLevelRequirement = ability.SpecLevelRequirement,
+                spec = ability.Spec
+            };
+        }
+
+        private static object SpellInfo(Spell spell)
+        {
+            return new
+            {
+                spellType = spell.SpellType.ToString(),
+                target = spell.Target.ToString(),
+                range = spell.Range,
+                radius = spell.Radius,
+                castTime = spell.CastTime,
+                recastDelay = spell.RecastDelay,
+                duration = spell.Duration,
+                concentration = spell.Concentration,
+                damage = spell.Damage,
+                value = spell.Value,
+                power = spell.Power,
+                isHarmful = spell.IsHarmful,
+                isHelpful = spell.IsHelpful,
+                isHealing = spell.IsHealing,
+                isBuff = spell.IsBuff,
+                isDebuff = spell.IsDebuff
+            };
+        }
+    }
+}

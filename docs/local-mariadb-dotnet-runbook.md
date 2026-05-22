@@ -39,6 +39,44 @@ port: 3306
 
 If MariaDB is installed inside Linux/WSL, table-name case sensitivity can matter. The Docker setup used `lower_case_table_names=1`. On Windows MariaDB this is usually already case-insensitive, but on Linux it must be set before the database directory is initialized.
 
+## Standard Main-Computer Restart
+
+Use this single path for routine main-computer server restarts:
+
+```text
+C:\Users\uihan\Desktop\다옥프리서버\OpenDAoC-Core\start-main-server-visible.bat
+```
+
+This batch file is the standard entrypoint. It closes old OpenDAoC visible
+server consoles, starts the WSL local MariaDB if needed, stops any old
+`CoreServer.dll --start` process inside WSL, and then starts the main server in
+a visible Windows console.
+
+Do not use ad-hoc commands such as `dotnet CoreServer.dll --start` for routine
+main-computer testing. Direct `dotnet` launches are only for short diagnostics,
+and they must be stopped before returning to normal testing.
+
+Fast status check:
+
+```text
+C:\Users\uihan\Desktop\다옥프리서버\OpenDAoC-Core\check-main-server-fast.bat
+```
+
+The expected quick result is `OK tcp 10300`, `OK udp 10400`, and `OK db 3306`.
+If the game port is down, restart with `start-main-server-visible.bat` instead
+of searching for a new launch command.
+
+Windows cleanup logic lives in:
+
+```text
+C:\Users\uihan\Desktop\다옥프리서버\OpenDAoC-Core\tools\cleanup-main-server-windows.ps1
+```
+
+Keep this cleanup in a `.ps1` file and call it with PowerShell `-File`. Do not
+copy the cleanup pipeline into a Bash double-quoted `powershell -Command`
+string, because shell expansion can change PowerShell variables before
+PowerShell receives the command.
+
 ## One-Command Local Start
 
 From `OpenDAoC-Core`:

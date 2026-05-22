@@ -14,7 +14,7 @@ namespace DOL.GS.DailyQuest
 		/// </summary>
 		private static readonly Logging.Logger log = Logging.LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);
 
-		private const string questTitle = "[Hardcore] A Lot Of Bravery";
+		private const string questTitle = "[하드코어] 용기의 증명";
 		private const int minimumLevel = 1;
 		private const int maximumLevel = 50;
 

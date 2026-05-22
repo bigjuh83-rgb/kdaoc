@@ -11,6 +11,7 @@ import argparse
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -21,6 +22,17 @@ from pathlib import Path
 
 
 DEFAULT_MYSQL = "/home/bigjuh/.local/opendaoc-mariadb/current/bin/mariadb"
+DEFAULT_DUMMY_HOST = os.environ.get("OPENDAOC_DUMMY_HOST", "192.168.0.42")
+
+
+def read_serverconfig_password() -> str:
+    config_path = Path(__file__).resolve().parents[1] / "CoreServer" / "config" / "serverconfig.xml"
+
+    if not config_path.exists():
+        return "opendaoc-local"
+
+    match = re.search(r"Password=([^;]+)", config_path.read_text(encoding="utf-8", errors="ignore"))
+    return match.group(1) if match else "opendaoc-local"
 
 
 def load_headless_client_class():
@@ -129,7 +141,7 @@ def add_result(results: list[CheckResult], name: str, ok: bool, detail: str) -> 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--host", default=DEFAULT_DUMMY_HOST)
     parser.add_argument("--port", type=int, default=10300)
     parser.add_argument("--username", default=os.environ.get("OPENDAOC_USERNAME", "bigjuh"))
     parser.add_argument("--password", default=os.environ.get("OPENDAOC_PASSWORD", ""))
@@ -145,7 +157,7 @@ def main() -> int:
     parser.add_argument("--db-port", type=int, default=int(os.environ.get("DB_PORT", "3306")))
     parser.add_argument("--db-name", default=os.environ.get("DB_NAME", "opendaoc"))
     parser.add_argument("--db-user", default=os.environ.get("DB_USER", "root"))
-    parser.add_argument("--db-password", default=os.environ.get("DB_PASSWORD", "opendaoc-local"))
+    parser.add_argument("--db-password", default=os.environ.get("DB_PASSWORD", read_serverconfig_password()))
 
     parser.add_argument("--api-base", default=os.environ.get("OPENDAOC_API_BASE", "http://127.0.0.1:5000"))
     parser.add_argument("--require-api", action="store_true")
@@ -214,6 +226,7 @@ def main() -> int:
     api_checks = [
         ("world news api", f"{args.api_base.rstrip('/')}/api/world/news?limit=3"),
         ("world events api", f"{args.api_base.rstrip('/')}/api/world/events?limit=3"),
+        ("mob growth summary api", f"{args.api_base.rstrip('/')}/api/world/mob-growth/summary?limit=5"),
         ("dashboard live api", f"{args.api_base.rstrip('/')}/api/dashboard/live"),
     ]
 

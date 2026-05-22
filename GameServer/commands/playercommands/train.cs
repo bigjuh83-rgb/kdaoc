@@ -165,6 +165,7 @@ namespace DOL.GS.Commands
             client.Out.SendCharStatsUpdate();
             client.Out.SendUpdatePlayerSkills(true);
             client.Out.SendTrainerWindow();
+            client.Player.SaveIntoDatabase();
             client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Train.Complete"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
     }

@@ -19,6 +19,7 @@ namespace DOL.GS.WorldAI
     {
         bool Add(DbMobGrowthState row);
         DbMobGrowthState Find(string mobId);
+        IList<DbMobGrowthState> GetActive(int limit);
         IList<DbMobGrowthState> GetTopActive(int limit);
         int CountActiveBosses();
         bool Save(DbMobGrowthState row);
@@ -108,6 +109,50 @@ namespace DOL.GS.WorldAI
                 .Select(part => part.Trim())
                 .Any(part => ushort.TryParse(part, out ushort value) && value == regionId);
         }
+    }
+
+    public sealed class MobGrowthSummary
+    {
+        public bool Enabled { get; set; }
+        public int ActiveCount { get; set; }
+        public int ActiveBosses { get; set; }
+        public int MaxActiveBosses { get; set; }
+        public DateTime GeneratedAt { get; set; }
+        public IList<MobGrowthStageSummary> Stages { get; set; } = Array.Empty<MobGrowthStageSummary>();
+        public IList<MobGrowthRegionSummary> Regions { get; set; } = Array.Empty<MobGrowthRegionSummary>();
+        public IList<MobGrowthTopMob> Top { get; set; } = Array.Empty<MobGrowthTopMob>();
+    }
+
+    public sealed class MobGrowthStageSummary
+    {
+        public string Stage { get; set; }
+        public int Count { get; set; }
+        public int MaxScore { get; set; }
+    }
+
+    public sealed class MobGrowthRegionSummary
+    {
+        public ushort RegionId { get; set; }
+        public string Region { get; set; }
+        public int Count { get; set; }
+        public int Bosses { get; set; }
+        public int MaxScore { get; set; }
+    }
+
+    public sealed class MobGrowthTopMob
+    {
+        public string MobId { get; set; }
+        public string Name { get; set; }
+        public string Stage { get; set; }
+        public string Region { get; set; }
+        public ushort RegionId { get; set; }
+        public int BaseLevel { get; set; }
+        public int EffectiveLevel { get; set; }
+        public int GrowthScore { get; set; }
+        public int SurvivalTicks { get; set; }
+        public int CombatCount { get; set; }
+        public int PlayerKills { get; set; }
+        public DateTime LastSeenAt { get; set; }
     }
 
     public sealed class MobGrowthService
@@ -209,6 +254,49 @@ namespace DOL.GS.WorldAI
         public IList<DbMobGrowthState> GetTopActive(int limit)
         {
             return m_growth.GetTopActive(Math.Clamp(limit, 1, 100));
+        }
+
+        public MobGrowthSummary GetSummary(int topLimit)
+        {
+            MobGrowthOptions options = MobGrowthOptions.FromProperties();
+            int limit = Math.Clamp(topLimit, 1, 100);
+            IList<DbMobGrowthState> active = m_growth.GetActive(1000);
+
+            return new MobGrowthSummary
+            {
+                Enabled = options.Enabled,
+                ActiveCount = active.Count,
+                ActiveBosses = active.Count(row => row.Stage == MobGrowthStages.Boss),
+                MaxActiveBosses = options.MaxActiveBosses,
+                GeneratedAt = DateTime.UtcNow,
+                Stages = active
+                    .GroupBy(row => string.IsNullOrWhiteSpace(row.Stage) ? MobGrowthStages.Normal : row.Stage)
+                    .OrderBy(group => StageOrder(group.Key))
+                    .Select(group => new MobGrowthStageSummary
+                    {
+                        Stage = group.Key,
+                        Count = group.Count(),
+                        MaxScore = group.Max(row => row.GrowthScore)
+                    })
+                    .ToList(),
+                Regions = active
+                    .GroupBy(row => new { row.RegionId, row.Region })
+                    .OrderByDescending(group => group.Max(row => row.GrowthScore))
+                    .ThenBy(group => group.Key.RegionId)
+                    .Take(10)
+                    .Select(group => new MobGrowthRegionSummary
+                    {
+                        RegionId = group.Key.RegionId,
+                        Region = group.Key.Region,
+                        Count = group.Count(),
+                        Bosses = group.Count(row => row.Stage == MobGrowthStages.Boss),
+                        MaxScore = group.Max(row => row.GrowthScore)
+                    })
+                    .ToList(),
+                Top = m_growth.GetTopActive(limit)
+                    .Select(ToTopMob)
+                    .ToList()
+            };
         }
 
         public bool Reset(string mobId)
@@ -472,6 +560,36 @@ namespace DOL.GS.WorldAI
             state.UpdatedAt = DateTime.UtcNow;
             m_growth.Save(state);
         }
+
+        private static int StageOrder(string stage)
+        {
+            return stage switch
+            {
+                MobGrowthStages.Boss => 3,
+                MobGrowthStages.Champion => 2,
+                MobGrowthStages.Elite => 1,
+                _ => 0
+            };
+        }
+
+        private static MobGrowthTopMob ToTopMob(DbMobGrowthState row)
+        {
+            return new MobGrowthTopMob
+            {
+                MobId = row.MobId,
+                Name = row.CurrentName,
+                Stage = row.Stage,
+                Region = row.Region,
+                RegionId = row.RegionId,
+                BaseLevel = row.BaseLevel,
+                EffectiveLevel = row.EffectiveLevel,
+                GrowthScore = row.GrowthScore,
+                SurvivalTicks = row.SurvivalTicks,
+                CombatCount = row.CombatCount,
+                PlayerKills = row.PlayerKills,
+                LastSeenAt = row.LastSeenAt
+            };
+        }
     }
 
     public sealed class DatabaseMobGrowthRepository : IMobGrowthRepository
@@ -487,6 +605,15 @@ namespace DOL.GS.WorldAI
                 return null;
 
             return GameServer.Database.FindObjectByKey<DbMobGrowthState>(mobId);
+        }
+
+        public IList<DbMobGrowthState> GetActive(int limit)
+        {
+            return GameServer.Database.SelectAllObjects<DbMobGrowthState>()
+                .Where(row => row.IsActive)
+                .OrderByDescending(row => row.GrowthScore)
+                .Take(Math.Clamp(limit, 1, 1000))
+                .ToList();
         }
 
         public IList<DbMobGrowthState> GetTopActive(int limit)

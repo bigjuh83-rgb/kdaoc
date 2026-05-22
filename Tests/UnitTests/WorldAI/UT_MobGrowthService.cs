@@ -144,6 +144,62 @@ namespace DOL.GS.Tests
             });
         }
 
+        [Test]
+        public void Summary_GroupsActiveMobsByStageAndRegion()
+        {
+            FakeMobGrowthRepository growth = new();
+            growth.Add(new DbMobGrowthState
+            {
+                MobId = "elite-1",
+                CurrentName = "정예 늑대",
+                Region = "Salisbury Plains",
+                RegionId = 1,
+                Stage = MobGrowthStages.Elite,
+                BaseLevel = 10,
+                EffectiveLevel = 11,
+                GrowthScore = 75,
+                SurvivalTicks = 4,
+                CombatCount = 2,
+                IsActive = true
+            });
+            growth.Add(new DbMobGrowthState
+            {
+                MobId = "boss-1",
+                CurrentName = "곰 우두머리",
+                Region = "Camelot Hills",
+                RegionId = 0,
+                Stage = MobGrowthStages.Boss,
+                BaseLevel = 12,
+                EffectiveLevel = 17,
+                GrowthScore = 500,
+                PlayerKills = 1,
+                IsActive = true
+            });
+            growth.Add(new DbMobGrowthState
+            {
+                MobId = "dead-1",
+                CurrentName = "죽은 뱀",
+                Region = "Salisbury Plains",
+                RegionId = 1,
+                Stage = MobGrowthStages.Champion,
+                GrowthScore = 300,
+                IsActive = false
+            });
+            MobGrowthService service = CreateService(growth);
+
+            MobGrowthSummary summary = service.GetSummary(5);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(summary.ActiveCount, Is.EqualTo(2));
+                Assert.That(summary.ActiveBosses, Is.EqualTo(1));
+                Assert.That(summary.Stages.Single(stage => stage.Stage == MobGrowthStages.Elite).Count, Is.EqualTo(1));
+                Assert.That(summary.Stages.Single(stage => stage.Stage == MobGrowthStages.Boss).Count, Is.EqualTo(1));
+                Assert.That(summary.Regions.Single(region => region.RegionId == 0).Bosses, Is.EqualTo(1));
+                Assert.That(summary.Top.First().MobId, Is.EqualTo("boss-1"));
+            });
+        }
+
         private static MobGrowthService CreateService(FakeMobGrowthRepository growth)
         {
             FakeWorldEventRepository events = new();
@@ -188,6 +244,15 @@ namespace DOL.GS.Tests
         {
             Rows.TryGetValue(mobId, out DbMobGrowthState row);
             return row;
+        }
+
+        public IList<DbMobGrowthState> GetActive(int limit)
+        {
+            return Rows.Values
+                .Where(row => row.IsActive)
+                .OrderByDescending(row => row.GrowthScore)
+                .Take(limit)
+                .ToList();
         }
 
         public IList<DbMobGrowthState> GetTopActive(int limit)

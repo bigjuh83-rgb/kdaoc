@@ -144,6 +144,26 @@ namespace DOL.GS
                         HandleSpeedHack(actualDistance, allowedMaxDistance, actualSpeed, allowedMaxSpeed);
                     }
                 }
+                else if (ShouldLogMovementDiagnostic())
+                {
+                    double actualDistance = Math.Sqrt(squaredDistance);
+                    double actualSpeed = actualDistance * 1000.0 / timeDiff;
+
+                    log.Info(
+                        "Movement diagnostic violation sample: " +
+                        $"CharName={_player.Name} " +
+                        $"Account={_player.Client?.Account?.Name} " +
+                        $"From={_previous.X},{_previous.Y},{_previous.Z} " +
+                        $"To={_current.X},{_current.Y},{_current.Z} " +
+                        $"Distance={actualDistance:0.##} " +
+                        $"AllowedDistance={allowedMaxDistance:0.##} " +
+                        $"Speed={actualSpeed:0.##} " +
+                        $"AllowedSpeed={allowedMaxSpeed:0.##} " +
+                        $"CurrentSpeed={_player.CurrentSpeed} " +
+                        $"MaxSpeed={_current.MaxSpeed} " +
+                        $"TimeDiff={timeDiff:0.##} " +
+                        $"ViolationCount={validViolationCount}");
+                }
             }
         }
 
@@ -234,6 +254,11 @@ namespace DOL.GS
                    $"TeleportCount={teleportCount}";
         }
 
+        private bool ShouldLogMovementDiagnostic()
+        {
+            return log.IsInfoEnabled && IsDummyPlayer();
+        }
+
         private short GetCachedPlayerMaxSpeed()
         {
             long now = GameLoop.GameLoopTime;
@@ -241,10 +266,23 @@ namespace DOL.GS
             if (_cachedMaxSpeedTime != now)
             {
                 _cachedMaxSpeed = _player.Steed?.MaxSpeed ?? _player.MaxSpeed;
+
+                // Headless dummy clients can briefly report valid movement while the movement
+                // component still yields a zero max speed. Treat that as an initialization gap
+                // instead of forcing the allowed distance to zero, which causes rubber-banding.
+                if (_cachedMaxSpeed <= 0 && IsDummyPlayer())
+                    _cachedMaxSpeed = (short)Math.Max((int)Math.Abs(_player.CurrentSpeed), GamePlayer.PLAYER_BASE_SPEED);
+
                 _cachedMaxSpeedTime = now;
             }
 
             return _cachedMaxSpeed;
+        }
+
+        private bool IsDummyPlayer()
+        {
+            return _player.Name?.StartsWith("Dummy", StringComparison.OrdinalIgnoreCase) == true ||
+                   _player.Client?.Account?.Name?.StartsWith("dummy", StringComparison.OrdinalIgnoreCase) == true;
         }
 
         private void UpdateSafePosition(PositionSample currentSample, long now)

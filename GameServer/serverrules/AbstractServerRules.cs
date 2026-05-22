@@ -1127,7 +1127,9 @@ namespace DOL.GS.ServerRules
                     totalDamage += pair.Value; // Should be done before excluding players.
 
                     // If the killed NPC is gray to any of the entities, or if a guard is involved, don't give any XP, drop any loot, change faction relations, etc.
-                    if (pair.Key.IsObjectGreyCon(killedNpc) || pair.Key is GameGuard)
+                    // KDAOC random loot can opt into grey-con drops for smoke tests and low-level content tuning.
+                    bool allowKdaocGreyLoot = Properties.KDAOC_RANDOM_ITEM_ENABLED && Properties.KDAOC_RANDOM_ITEM_DROP_GREY_MOBS;
+                    if ((pair.Key.IsObjectGreyCon(killedNpc) && !allowKdaocGreyLoot) || pair.Key is GameGuard)
                         return false;
 
                     // We only care about players in range.

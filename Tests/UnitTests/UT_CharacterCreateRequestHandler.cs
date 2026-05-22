@@ -25,6 +25,18 @@ namespace DOL.GS.Tests
             Assert.That(GetProperty<int>(data, "CreationModel"), Is.EqualTo(0x1234));
         }
 
+        [TestCase("가나", true)]
+        [TestCase("가", false)]
+        [TestCase("Abc", true)]
+        [TestCase("Ab", false)]
+        public void IsCharacterNameValid_ShouldAllowTwoSyllableHangulNames(string name, bool expected)
+        {
+            MethodInfo method = typeof(CharacterCreateRequestHandler).GetMethod("IsCharacterNameValid", BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.That(method, Is.Not.Null);
+            Assert.That((bool)method.Invoke(null, new object[] { name }), Is.EqualTo(expected));
+        }
+
         private static object CreateCreationCharacterData(GSPacketIn packet, GameClient client)
         {
             Type nestedType = typeof(CharacterCreateRequestHandler).GetNestedType("CreationCharacterData", BindingFlags.NonPublic);

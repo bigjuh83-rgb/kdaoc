@@ -383,50 +383,134 @@ namespace DOL.GS.ServerProperties
 		[ServerProperty("worldai", "worldai_llm_timeout_seconds", "Timeout in seconds for one WorldAI local LLM request.", 45)]
 		public static int WORLDAI_LLM_TIMEOUT_SECONDS;
 
-		[ServerProperty("worldai", "worldai_mob_growth_enabled", "Enable living-world monster survival growth. Keep false until ready to open this content.", false)]
+		[ServerProperty("kdaoc", "worldai_mob_growth_enabled", "KDAOC: Enable living-world monster survival growth. Keep false until ready to open this content.", false)]
 		public static bool WORLDAI_MOB_GROWTH_ENABLED;
 
-		[ServerProperty("worldai", "worldai_mob_growth_tick_minutes", "Minutes between automatic monster growth scans.", 30)]
+		[ServerProperty("kdaoc", "worldai_mob_growth_tick_minutes", "KDAOC: Minutes between automatic monster growth scans.", 30)]
 		public static int WORLDAI_MOB_GROWTH_TICK_MINUTES;
 
-		[ServerProperty("worldai", "worldai_mob_growth_survival_score", "Growth score added when an eligible monster survives one scan tick.", 2)]
+		[ServerProperty("kdaoc", "worldai_mob_growth_survival_score", "KDAOC: Growth score added when an eligible monster survives one scan tick.", 2)]
 		public static int WORLDAI_MOB_GROWTH_SURVIVAL_SCORE;
 
-		[ServerProperty("worldai", "worldai_mob_growth_unhunted_score", "Extra growth score added when a monster has not been killed for the configured idle window.", 8)]
+		[ServerProperty("kdaoc", "worldai_mob_growth_unhunted_score", "KDAOC: Extra growth score added when a monster has not been killed for the configured idle window.", 8)]
 		public static int WORLDAI_MOB_GROWTH_UNHUNTED_SCORE;
 
-		[ServerProperty("worldai", "worldai_mob_growth_combat_score", "Growth score added when an eligible monster survives combat contact.", 12)]
+		[ServerProperty("kdaoc", "worldai_mob_growth_combat_score", "KDAOC: Growth score added when an eligible monster survives combat contact.", 12)]
 		public static int WORLDAI_MOB_GROWTH_COMBAT_SCORE;
 
-		[ServerProperty("worldai", "worldai_mob_growth_combat_cooldown_seconds", "Minimum seconds between combat growth grants for the same monster.", 30)]
+		[ServerProperty("kdaoc", "worldai_mob_growth_combat_cooldown_seconds", "KDAOC: Minimum seconds between combat growth grants for the same monster.", 30)]
 		public static int WORLDAI_MOB_GROWTH_COMBAT_COOLDOWN_SECONDS;
 
-		[ServerProperty("worldai", "worldai_mob_growth_player_kill_score", "Growth score added when an eligible monster kills a player.", 50)]
+		[ServerProperty("kdaoc", "worldai_mob_growth_player_kill_score", "KDAOC: Growth score added when an eligible monster kills a player.", 50)]
 		public static int WORLDAI_MOB_GROWTH_PLAYER_KILL_SCORE;
 
-		[ServerProperty("worldai", "worldai_mob_growth_unhunted_after_minutes", "Minutes after which an un-killed monster also gains idle/unhunted growth.", 360)]
+		[ServerProperty("kdaoc", "worldai_mob_growth_unhunted_after_minutes", "KDAOC: Minutes after which an un-killed monster also gains idle/unhunted growth.", 360)]
 		public static int WORLDAI_MOB_GROWTH_UNHUNTED_AFTER_MINUTES;
 
-		[ServerProperty("worldai", "worldai_mob_growth_elite_score", "Growth score required for Elite stage.", 60)]
+		[ServerProperty("kdaoc", "worldai_mob_growth_elite_score", "KDAOC: Growth score required for Elite stage.", 60)]
 		public static int WORLDAI_MOB_GROWTH_ELITE_SCORE;
 
-		[ServerProperty("worldai", "worldai_mob_growth_champion_score", "Growth score required for Champion stage.", 180)]
+		[ServerProperty("kdaoc", "worldai_mob_growth_champion_score", "KDAOC: Growth score required for Champion stage.", 180)]
 		public static int WORLDAI_MOB_GROWTH_CHAMPION_SCORE;
 
-		[ServerProperty("worldai", "worldai_mob_growth_boss_score", "Growth score required for Boss stage.", 420)]
+		[ServerProperty("kdaoc", "worldai_mob_growth_boss_score", "KDAOC: Growth score required for Boss stage.", 420)]
 		public static int WORLDAI_MOB_GROWTH_BOSS_SCORE;
 
-		[ServerProperty("worldai", "worldai_mob_growth_max_level_bonus", "Maximum level bonus a grown monster can receive.", 5)]
+		[ServerProperty("kdaoc", "worldai_mob_growth_max_level_bonus", "KDAOC: Maximum level bonus a grown monster can receive.", 5)]
 		public static int WORLDAI_MOB_GROWTH_MAX_LEVEL_BONUS;
 
-		[ServerProperty("worldai", "worldai_mob_growth_max_health_multiplier", "Maximum health multiplier a grown monster can receive.", 1.5)]
+		[ServerProperty("kdaoc", "worldai_mob_growth_max_health_multiplier", "KDAOC: Maximum health multiplier a grown monster can receive.", 1.5)]
 		public static double WORLDAI_MOB_GROWTH_MAX_HEALTH_MULTIPLIER;
 
-		[ServerProperty("worldai", "worldai_mob_growth_max_active_bosses", "Maximum active grown bosses operators should allow before pruning or resetting.", 5)]
+		[ServerProperty("kdaoc", "worldai_mob_growth_max_active_bosses", "KDAOC: Maximum active grown bosses operators should allow before pruning or resetting.", 5)]
 		public static int WORLDAI_MOB_GROWTH_MAX_ACTIVE_BOSSES;
 
-		[ServerProperty("worldai", "worldai_mob_growth_excluded_regions", "CSV/semicolon region IDs excluded from monster growth.", "")]
+		[ServerProperty("kdaoc", "worldai_mob_growth_excluded_regions", "KDAOC: CSV/semicolon region IDs excluded from monster growth.", "")]
 		public static string WORLDAI_MOB_GROWTH_EXCLUDED_REGIONS;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_enabled", "KDAOC: Enable global random generated item drops.", false)]
+		public static bool KDAOC_RANDOM_ITEM_ENABLED;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_suppress_existing_loot", "KDAOC: When enabled, random item loot replaces existing normal item loot generators.", true)]
+		public static bool KDAOC_RANDOM_ITEM_SUPPRESS_EXISTING_LOOT;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_exclusive_priority", "KDAOC: Exclusive loot priority used when suppressing existing loot.", 1000)]
+		public static int KDAOC_RANDOM_ITEM_EXCLUSIVE_PRIORITY;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_min_mob_level", "KDAOC: Minimum monster level eligible for random item drops.", 1)]
+		public static int KDAOC_RANDOM_ITEM_MIN_MOB_LEVEL;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_max_item_level", "KDAOC: Maximum generated random item level.", 50)]
+		public static int KDAOC_RANDOM_ITEM_MAX_ITEM_LEVEL;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_drop_grey_mobs", "KDAOC: Allow random item drops from grey-con monsters.", false)]
+		public static bool KDAOC_RANDOM_ITEM_DROP_GREY_MOBS;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_base_drop_chance", "KDAOC: Base random item drop chance for normal monsters, in percent.", 12)]
+		public static int KDAOC_RANDOM_ITEM_BASE_DROP_CHANCE;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_named_drop_bonus", "KDAOC: Extra random item drop chance for named/epic NPCs, in percent.", 20)]
+		public static int KDAOC_RANDOM_ITEM_NAMED_DROP_BONUS;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_boss_drop_bonus", "KDAOC: Extra random item drop chance for boss NPCs, in percent.", 55)]
+		public static int KDAOC_RANDOM_ITEM_BOSS_DROP_BONUS;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_normal_drop_rolls", "KDAOC: Independent random item drop rolls for normal monsters.", 1)]
+		public static int KDAOC_RANDOM_ITEM_NORMAL_DROP_ROLLS;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_named_drop_rolls", "KDAOC: Independent random item drop rolls for named/epic NPCs.", 2)]
+		public static int KDAOC_RANDOM_ITEM_NAMED_DROP_ROLLS;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_boss_drop_rolls", "KDAOC: Independent random item drop rolls for boss NPCs. Each roll uses the normal tier chance table.", 6)]
+		public static int KDAOC_RANDOM_ITEM_BOSS_DROP_ROLLS;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_boss_min_total_drops", "KDAOC: Minimum total random items from one boss kill. Missing items are filled with lower-tier drops.", 5)]
+		public static int KDAOC_RANDOM_ITEM_BOSS_MIN_TOTAL_DROPS;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_max_drop_rolls", "KDAOC: Safety cap for random item drop rolls per monster.", 12)]
+		public static int KDAOC_RANDOM_ITEM_MAX_DROP_ROLLS;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_boss_max_premium_drops", "KDAOC: Maximum Heroic-or-better random items from one boss kill. Extra premium rolls are downgraded to Rare.", 2)]
+		public static int KDAOC_RANDOM_ITEM_BOSS_MAX_PREMIUM_DROPS;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_boss_title_min_level", "KDAOC: Minimum NPC level for title-based random-item boss detection.", 55)]
+		public static int KDAOC_RANDOM_ITEM_BOSS_TITLE_MIN_LEVEL;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_boss_title_tokens", "KDAOC: Semicolon-separated title words that make high-level DB NPCs count as random-item bosses.", "lord;lady;king;queen;prince;princess;dragon;giant;chief;chieftain;commander;baron;duke;duchess;emperor;empress;archon;overlord")]
+		public static string KDAOC_RANDOM_ITEM_BOSS_TITLE_TOKENS;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_min_level_offset", "KDAOC: Minimum level offset applied to generated random items.", -2)]
+		public static int KDAOC_RANDOM_ITEM_MIN_LEVEL_OFFSET;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_max_level_offset", "KDAOC: Maximum level offset applied to generated random items.", 1)]
+		public static int KDAOC_RANDOM_ITEM_MAX_LEVEL_OFFSET;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_named_level_bonus", "KDAOC: Additional generated item level bonus for named/epic NPCs.", 2)]
+		public static int KDAOC_RANDOM_ITEM_NAMED_LEVEL_BONUS;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_boss_level_bonus", "KDAOC: Additional generated item level bonus for boss NPCs.", 4)]
+		public static int KDAOC_RANDOM_ITEM_BOSS_LEVEL_BONUS;
+
+		[ServerProperty("kdaoc", "kdaoc_random_item_max_generation_attempts", "KDAOC: Maximum attempts to generate a safe random item before dropping nothing.", 5)]
+		public static int KDAOC_RANDOM_ITEM_MAX_GENERATION_ATTEMPTS;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_enabled", "KDAOC: Enable volatile in-memory dynamic quests. Dynamic quests are not saved to DB.", false)]
+		public static bool KDAOC_DYNAMIC_QUEST_ENABLED;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_max_active_per_player", "KDAOC: Maximum active in-memory dynamic quests per player.", 1)]
+		public static int KDAOC_DYNAMIC_QUEST_MAX_ACTIVE_PER_PLAYER;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_max_active_per_npc", "KDAOC: Maximum active in-memory dynamic quest offers per NPC.", 1)]
+		public static int KDAOC_DYNAMIC_QUEST_MAX_ACTIVE_PER_NPC;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_max_kill_count", "KDAOC: Maximum kill target count allowed for one dynamic quest.", 20)]
+		public static int KDAOC_DYNAMIC_QUEST_MAX_KILL_COUNT;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_reward_xp_multiplier", "KDAOC: XP multiplier for volatile dynamic quest completion.", 1.0)]
+		public static double KDAOC_DYNAMIC_QUEST_REWARD_XP_MULTIPLIER;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_reward_money_multiplier", "KDAOC: Money multiplier for volatile dynamic quest completion.", 1.0)]
+		public static double KDAOC_DYNAMIC_QUEST_REWARD_MONEY_MULTIPLIER;
 
 		/// <summary>
 		/// Enable Discord Webhook?

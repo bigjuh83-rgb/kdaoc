@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import os
 import re
@@ -51,6 +52,22 @@ DEFAULT_NATURAL_CHARACTER_NAMES = [
     "리아",
     "테오",
 ]
+
+
+def read_serverconfig_password() -> str:
+    config_path = Path(__file__).resolve().parents[1] / "CoreServer" / "config" / "serverconfig.xml"
+
+    if not config_path.exists():
+        return "opendaoc-local"
+
+    match = re.search(r"Password=([^;]+)", config_path.read_text(encoding="utf-8", errors="ignore"))
+    return match.group(1) if match else "opendaoc-local"
+
+def client_character_index(realm: int, slot_index: int) -> int:
+    """Return the WorldInit client index for a realm-local character slot."""
+
+    return (realm - 1) * 10 + slot_index
+
 
 EQUIP_SLOTS = {
     7,
@@ -221,6 +238,22 @@ def parse_class_list(value: str) -> set[int]:
     return classes
 
 
+def parse_cycle(value: str, delimiter: str = "|") -> list[str]:
+    return [part.strip() for part in value.split(delimiter) if part.strip()]
+
+
+def cycle_value(values: list[str], offset: int) -> str | None:
+    if not values:
+        return None
+
+    return values[offset % len(values)]
+
+
+def cycle_int(values: list[str], offset: int) -> int | None:
+    value = cycle_value(values, offset)
+    return int(value) if value is not None else None
+
+
 def choose_starter_slot(item_type: int, object_type: int, used_slots: set[int]) -> int:
     if item_type in EQUIP_SLOTS:
         chosen_slot = item_type
@@ -289,6 +322,12 @@ def build_character_insert(
 ) -> str:
     columns = get_columns(args, "dolcharacters")
     select_parts: list[str] = []
+    class_id = cycle_int(getattr(args, "class_cycle_values", []), position_offset)
+    race_id = cycle_int(getattr(args, "race_cycle_values", []), position_offset)
+    creation_model = cycle_int(getattr(args, "creation_model_cycle_values", []), position_offset)
+    current_model = cycle_int(getattr(args, "current_model_cycle_values", []), position_offset)
+    specs = cycle_value(getattr(args, "spec_cycle_values", []), position_offset)
+    abilities = cycle_value(getattr(args, "ability_cycle_values", []), position_offset)
 
     for column in columns:
         if column == "AccountName":
@@ -299,6 +338,20 @@ def build_character_insert(
             select_parts.append(f"{sql_quote(character_name)} AS `{column}`")
         elif column == "DOLCharacters_ID":
             select_parts.append(f"UUID() AS `{column}`")
+        elif column == "Realm":
+            select_parts.append(f"{args.realm} AS `{column}`")
+        elif column == "Class" and class_id is not None:
+            select_parts.append(f"{class_id} AS `{column}`")
+        elif column == "Race" and race_id is not None:
+            select_parts.append(f"{race_id} AS `{column}`")
+        elif column == "CreationModel" and creation_model is not None:
+            select_parts.append(f"{creation_model} AS `{column}`")
+        elif column == "CurrentModel" and current_model is not None:
+            select_parts.append(f"{current_model} AS `{column}`")
+        elif column == "SerializedSpecs" and specs is not None:
+            select_parts.append(f"{sql_quote(specs)} AS `{column}`")
+        elif column == "SerializedAbilities" and abilities is not None:
+            select_parts.append(f"{sql_quote(abilities)} AS `{column}`")
         elif column == "GuildID":
             select_parts.append(f"NULL AS `{column}`")
         elif column in {"CreationDate", "LastLevelUp", "LastTimeRowUpdated"}:
@@ -314,6 +367,14 @@ def build_character_insert(
         elif column == "Zpos" and args.start_z is not None:
             select_parts.append(f"{args.start_z} AS `{column}`")
         elif column in {"Region", "RegionID"} and args.start_region is not None:
+            select_parts.append(f"{args.start_region} AS `{column}`")
+        elif column == "BindXpos" and args.start_x is not None:
+            select_parts.append(f"{args.start_x + args.position_step * position_offset} AS `{column}`")
+        elif column == "BindYpos" and args.start_y is not None:
+            select_parts.append(f"{args.start_y + args.position_step * position_offset} AS `{column}`")
+        elif column == "BindZpos" and args.start_z is not None:
+            select_parts.append(f"{args.start_z} AS `{column}`")
+        elif column == "BindRegion" and args.start_region is not None:
             select_parts.append(f"{args.start_region} AS `{column}`")
         elif column == "Xpos":
             select_parts.append(f"`{column}` + {args.position_step * position_offset} AS `{column}`")
@@ -437,14 +498,96 @@ def add_starter_equipment(args: argparse.Namespace, account_name: str, character
     return inserted
 
 
-def write_accounts_csv(path: Path, rows: list[tuple[str, str, int, int]]) -> None:
+def sanitize_invalid_item_procs(args: argparse.Namespace, account_name: str, character_name: str) -> None:
+    character = get_single_row(
+        args,
+        "SELECT DOLCharacters_ID FROM `dolcharacters` "
+        f"WHERE `AccountName`={sql_quote(account_name)} AND `Name`={sql_quote(character_name)} LIMIT 1;",
+    )
+
+    if character is None:
+        return
+
+    owner_id = character["DOLCharacters_ID"]
+
+    run_mysql(
+        args,
+        "UPDATE `itemtemplate` it "
+        "JOIN `inventory` inv ON inv.`ITemplate_Id`=it.`Id_nb` "
+        "LEFT JOIN `spell` sp ON sp.`SpellID`=it.`ProcSpellID` "
+        "SET it.`ProcSpellID`=0 "
+        f"WHERE inv.`OwnerID`={sql_quote(owner_id)} AND it.`ProcSpellID`<>0 AND sp.`SpellID` IS NULL;",
+    )
+    run_mysql(
+        args,
+        "UPDATE `itemtemplate` it "
+        "JOIN `inventory` inv ON inv.`ITemplate_Id`=it.`Id_nb` "
+        "LEFT JOIN `spell` sp ON sp.`SpellID`=it.`ProcSpellID1` "
+        "SET it.`ProcSpellID1`=0 "
+        f"WHERE inv.`OwnerID`={sql_quote(owner_id)} AND it.`ProcSpellID1`<>0 AND sp.`SpellID` IS NULL;",
+    )
+    run_mysql(
+        args,
+        "UPDATE `itemtemplate` it "
+        "JOIN `inventory` inv ON inv.`ITemplate_Id`=it.`Id_nb` "
+        "SET it.`ProcChance`=0 "
+        f"WHERE inv.`OwnerID`={sql_quote(owner_id)} "
+        "AND it.`ProcSpellID`=0 AND it.`ProcSpellID1`=0;",
+    )
+
+
+CLASS_NAMES = {
+    1: "Paladin",
+    2: "Armsman",
+    4: "Minstrel",
+    5: "Theurgist",
+    6: "Cleric",
+    7: "Wizard",
+    8: "Sorcerer",
+    10: "Friar",
+    11: "Mercenary",
+    13: "Cabalist",
+    14: "Fighter",
+    15: "Elementalist",
+    16: "Acolyte",
+    17: "Rogue",
+    18: "Mage",
+    20: "Disciple",
+    22: "Warrior",
+    24: "Skald",
+    26: "Healer",
+    28: "Shaman",
+    29: "Runemaster",
+    31: "Berserker",
+    35: "Viking",
+    36: "Mystic",
+    37: "Seer",
+    38: "Rogue",
+    40: "Eldritch",
+    41: "Enchanter",
+    43: "Blademaster",
+    44: "Hero",
+    45: "Champion",
+    47: "Druid",
+    48: "Bard",
+    51: "Magician",
+    52: "Guardian",
+    53: "Naturalist",
+    54: "Stalker",
+    57: "Forester",
+}
+
+
+def write_accounts_csv(path: Path, rows: list[dict[str, str | int | None]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
     with path.open("w", encoding="utf-8", newline="") as handle:
-        handle.write("username,password,realm,char_index\n")
+        fieldnames = ["username", "password", "realm", "char_index", "class_id", "class_name", "specs"]
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
 
-        for username, password, realm, char_index in rows:
-            handle.write(f"{username},{password},{realm},{char_index}\n")
+        for row in rows:
+            writer.writerow({name: row.get(name, "") for name in fieldnames})
 
 
 def main() -> int:
@@ -454,7 +597,7 @@ def main() -> int:
     parser.add_argument("--db-port", type=int, default=int(os.environ.get("DB_PORT", "3306")))
     parser.add_argument("--db-name", default=os.environ.get("DB_NAME", "opendaoc"))
     parser.add_argument("--db-user", default=os.environ.get("DB_USER", "root"))
-    parser.add_argument("--db-password", default=os.environ.get("DB_PASSWORD", "opendaoc-local"))
+    parser.add_argument("--db-password", default=os.environ.get("DB_PASSWORD", read_serverconfig_password()))
     parser.add_argument("--template-account", default="bigjuh")
     parser.add_argument("--template-character", default="천재다")
     parser.add_argument("--prefix", default="dummy")
@@ -466,6 +609,13 @@ def main() -> int:
     parser.add_argument("--count", type=int, default=5)
     parser.add_argument("--password", default=os.environ.get("OPENDAOC_DUMMY_PASSWORD", "dummy-pass"))
     parser.add_argument("--realm", type=int, default=1)
+    parser.add_argument("--class-cycle", default="", help="pipe-separated class IDs to assign by offset")
+    parser.add_argument("--csv-class-cycle", default="", help="pipe-separated target class IDs to write to csv by offset")
+    parser.add_argument("--race-cycle", default="", help="pipe-separated race IDs to assign by offset")
+    parser.add_argument("--creation-model-cycle", default="", help="pipe-separated CreationModel values to assign by offset")
+    parser.add_argument("--current-model-cycle", default="", help="pipe-separated CurrentModel values to assign by offset")
+    parser.add_argument("--spec-cycle", default="", help="pipe-separated SerializedSpecs values to assign by offset")
+    parser.add_argument("--ability-cycle", default="", help="pipe-separated SerializedAbilities values to assign by offset")
     parser.add_argument("--language", default="KR")
     parser.add_argument("--priv-level", type=int, default=1)
     parser.add_argument("--position-step", type=int, default=20)
@@ -479,6 +629,13 @@ def main() -> int:
     parser.add_argument("--no-starter-equipment", action="store_true", help="do not add class starter equipment to empty dummy inventories")
     args = parser.parse_args()
     args.mysql_bin = resolve_mysql_bin(args.mysql_bin)
+    args.class_cycle_values = parse_cycle(args.class_cycle)
+    args.csv_class_cycle_values = parse_cycle(args.csv_class_cycle)
+    args.race_cycle_values = parse_cycle(args.race_cycle)
+    args.creation_model_cycle_values = parse_cycle(args.creation_model_cycle)
+    args.current_model_cycle_values = parse_cycle(args.current_model_cycle)
+    args.spec_cycle_values = parse_cycle(args.spec_cycle, "||")
+    args.ability_cycle_values = parse_cycle(args.ability_cycle, "||")
 
     if not Path(args.mysql_bin).exists():
         raise SystemExit(f"mysql client not found: {args.mysql_bin}")
@@ -495,7 +652,7 @@ def main() -> int:
     if args.character_name_mode == "natural" and not natural_names:
         raise SystemExit("natural character name mode needs at least one name")
 
-    csv_rows: list[tuple[str, str, int, int]] = []
+    csv_rows: list[dict[str, str | int | None]] = []
     created = 0
     skipped = 0
     equipped = 0
@@ -504,8 +661,11 @@ def main() -> int:
         number = args.start + offset
         account_name = f"{args.prefix}{number:03d}"
         character_name = build_character_name(args, number, offset, natural_names)
-        char_index = args.slot_index
-        account_slot = args.realm * 100 + char_index
+        char_index = client_character_index(args.realm, args.slot_index)
+        account_slot = args.realm * 100 + args.slot_index
+        class_id = cycle_int(args.class_cycle_values, offset)
+        csv_class_id = cycle_int(args.csv_class_cycle_values, offset) or class_id
+        specs = cycle_value(args.spec_cycle_values, offset)
 
         if args.replace:
             run_mysql(
@@ -523,8 +683,19 @@ def main() -> int:
 
         if not args.no_starter_equipment:
             equipped += add_starter_equipment(args, account_name, character_name)
+            sanitize_invalid_item_procs(args, account_name, character_name)
 
-        csv_rows.append((account_name, args.password, args.realm, char_index))
+        csv_rows.append(
+            {
+                "username": account_name,
+                "password": args.password,
+                "realm": args.realm,
+                "char_index": char_index,
+                "class_id": csv_class_id or "",
+                "class_name": CLASS_NAMES.get(csv_class_id or 0, ""),
+                "specs": specs or "",
+            }
+        )
 
     write_accounts_csv(Path(args.csv), csv_rows)
     print(f"dummy provisioning completed: created={created} skipped={skipped} equipped_items={equipped} csv={args.csv}")

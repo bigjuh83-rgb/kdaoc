@@ -2615,7 +2615,7 @@ namespace DOL.GS
 				m_syncLockUpdates.ExitReadLock();
 			}
 
-			if (spec.KeyName == keyname)
+			if (spec != null && spec.KeyName == keyname)
 				return spec;
 
 			if (create)

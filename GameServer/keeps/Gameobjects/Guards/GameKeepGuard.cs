@@ -467,6 +467,14 @@ namespace DOL.GS.Keeps
 				if (area is KeepArea)
 				{
 					AbstractGameKeep keep = (area as KeepArea).Keep;
+
+					if (keep == null)
+					{
+						if (log.IsWarnEnabled)
+							log.Warn($"Skipping keep guard {Name} ({mobobject.ObjectId}) for orphan keep area {area.Description}.");
+						continue;
+					}
+
 					Component = new GameKeepComponent();
 					Component.Keep = keep;
 					m_dataObjectID = mobobject.ObjectId;

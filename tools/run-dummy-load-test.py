@@ -19,6 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
 DEFAULT_REPORT_ROOT = TOOLS / "reports" / "dummy-load"
+DEFAULT_DUMMY_HOST = os.environ.get("OPENDAOC_DUMMY_HOST", "192.168.0.42")
 
 
 @dataclass(frozen=True)
@@ -59,7 +60,9 @@ class BalanceScenario:
     smooth_movement: bool = False
     smooth_move_interval: float = 0.25
     movement_speed: float = 220.0
+    ground_z_map: str = "tools/pathing/heightmaps/region001_client_zones.json"
     path_graph: str = ""
+    client_grid_nav_map: str = ""
     path_region: int = 0
     start_x: int | None = None
     start_y: int | None = None
@@ -76,6 +79,7 @@ class BalanceScenario:
 ALBION_LOW_LEVEL_START = (523520, 490520, 2543)
 ALBION_LOW_LEVEL_WAYPOINTS = "523520,490520,2543|523900,490900,2543|524250,490650,2543|523760,490280,2543"
 ALBION_LOW_LEVEL_PATH_GRAPH = "tools/pathing/regions/albion-lowlevel.json"
+REGION001_CLIENT_GROUND_Z_MAP = "tools/pathing/heightmaps/region001_client_zones.json"
 
 
 PRESETS: dict[str, LoadPreset] = {
@@ -112,6 +116,7 @@ SCENARIOS: dict[str, BalanceScenario] = {
         think_max=1.0,
         smooth_movement=True,
         path_graph=ALBION_LOW_LEVEL_PATH_GRAPH,
+        client_grid_nav_map=REGION001_CLIENT_GROUND_Z_MAP,
         path_region=1,
         start_x=ALBION_LOW_LEVEL_START[0],
         start_y=ALBION_LOW_LEVEL_START[1],
@@ -146,6 +151,7 @@ SCENARIOS: dict[str, BalanceScenario] = {
         think_max=0.7,
         smooth_movement=True,
         path_graph=ALBION_LOW_LEVEL_PATH_GRAPH,
+        client_grid_nav_map=REGION001_CLIENT_GROUND_Z_MAP,
         path_region=1,
         start_x=ALBION_LOW_LEVEL_START[0],
         start_y=ALBION_LOW_LEVEL_START[1],
@@ -180,6 +186,7 @@ SCENARIOS: dict[str, BalanceScenario] = {
         think_max=1.35,
         smooth_movement=True,
         path_graph=ALBION_LOW_LEVEL_PATH_GRAPH,
+        client_grid_nav_map=REGION001_CLIENT_GROUND_Z_MAP,
         path_region=1,
         start_x=ALBION_LOW_LEVEL_START[0],
         start_y=ALBION_LOW_LEVEL_START[1],
@@ -239,6 +246,7 @@ SCENARIOS: dict[str, BalanceScenario] = {
         think_max=2.20,
         smooth_movement=True,
         path_graph=ALBION_LOW_LEVEL_PATH_GRAPH,
+        client_grid_nav_map=REGION001_CLIENT_GROUND_Z_MAP,
         path_region=1,
         start_x=ALBION_LOW_LEVEL_START[0],
         start_y=ALBION_LOW_LEVEL_START[1],
@@ -286,7 +294,7 @@ SCENARIOS: dict[str, BalanceScenario] = {
         target_timeout=45,
         target_selection="nearest",
         ideal_target_level=2,
-        max_target_distance=0,
+        max_target_distance=4500,
         combat_interval=1.1,
         target_pool=8,
         attack_range=120,
@@ -295,6 +303,18 @@ SCENARIOS: dict[str, BalanceScenario] = {
         rest_chance=0.02,
         think_min=0.0,
         think_max=0.25,
+        smooth_movement=True,
+        path_graph=ALBION_LOW_LEVEL_PATH_GRAPH,
+        client_grid_nav_map=REGION001_CLIENT_GROUND_Z_MAP,
+        path_region=1,
+        start_x=ALBION_LOW_LEVEL_START[0],
+        start_y=ALBION_LOW_LEVEL_START[1],
+        start_z=ALBION_LOW_LEVEL_START[2],
+        start_region=1,
+        position_step=650,
+        waypoints=ALBION_LOW_LEVEL_WAYPOINTS,
+        prefer_target_name="worker ant,boar piglet",
+        avoid_target_name="green snake",
         description="몬스터 성장/전투 이벤트 압박용. 많은 타겟 교전과 처치 추정을 만든다.",
     ),
 }
@@ -354,6 +374,10 @@ def build_provision_command(args: argparse.Namespace, preset: LoadPreset, scenar
         str(args.count or preset.count),
         "--password",
         args.password,
+        "--template-account",
+        args.template_account,
+        "--template-character",
+        args.template_character,
         "--csv",
         str(accounts_csv),
         "--replace",
@@ -479,10 +503,18 @@ def build_behavior_command(
             str(scenario.smooth_move_interval),
             "--movement-speed",
             str(scenario.movement_speed),
+            "--movement-update-interval",
+            str(scenario.smooth_move_interval),
         ]
+
+    if scenario.ground_z_map:
+        command += ["--ground-z-map", scenario.ground_z_map]
 
     if scenario.path_graph:
         command += ["--path-graph", scenario.path_graph]
+
+    if scenario.client_grid_nav_map:
+        command += ["--client-grid-nav-map", scenario.client_grid_nav_map]
 
     if scenario.path_region:
         command += ["--path-region", str(scenario.path_region)]
@@ -863,7 +895,7 @@ def main() -> int:
     parser.add_argument("preset_arg", nargs="?", default="smoke", choices=sorted(PRESETS))
     parser.add_argument("--preset", dest="preset_option", choices=sorted(PRESETS), help="preset name; equivalent to positional preset")
     parser.add_argument("--scenario", default="solo-melee", choices=sorted(SCENARIOS))
-    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--host", default=DEFAULT_DUMMY_HOST)
     parser.add_argument("--port", type=int, default=10300)
     parser.add_argument("--start", type=int, default=100)
     parser.add_argument("--count", type=int)
@@ -886,6 +918,8 @@ def main() -> int:
         help="override the action rotation chosen by --scenario",
     )
     parser.add_argument("--password", default=os.environ.get("OPENDAOC_DUMMY_PASSWORD", "dummy-pass"))
+    parser.add_argument("--template-account", default=os.environ.get("OPENDAOC_TEMPLATE_ACCOUNT", "dummy040"))
+    parser.add_argument("--template-character", default=os.environ.get("OPENDAOC_TEMPLATE_CHARACTER", "Dummy040"))
     parser.add_argument("--accounts-csv", help="use an existing account CSV instead of the generated output accounts.csv")
     parser.add_argument("--character-name-mode", choices=["sequential", "natural"], default=None)
     parser.add_argument("--character-names", default="")

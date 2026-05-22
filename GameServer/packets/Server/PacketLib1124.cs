@@ -222,6 +222,9 @@ namespace DOL.GS.PacketHandler
 
 					byte flags3 = 0x00;
 
+					if (questIndicator == eQuestIndicator.Available)
+						flags3 |= 0x02;
+
 					if (questIndicator == eQuestIndicator.Lesson)
 						flags3 |= 0x01;
 

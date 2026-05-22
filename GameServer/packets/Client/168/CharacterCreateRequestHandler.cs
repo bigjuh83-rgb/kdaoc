@@ -19,6 +19,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     public class CharacterCreateRequestHandler : PacketHandler
     {
         private static readonly Logger log = LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);
+        private static readonly Regex CharacterNameStartRegex = new(@"^(?:[A-Z][a-zA-Z]|[\p{IsHangulSyllables}\p{IsHangulJamo}\p{IsHangulCompatibilityJamo}])", RegexOptions.Compiled);
 
         /// <summary>
         /// Client Operation Value.
@@ -39,21 +40,8 @@ namespace DOL.GS.PacketHandler.Client.v168
             {
                 var pakdata = new CreationCharacterData(packet, client);
 
-                // Graveen: changed the following to allow GMs to have special chars in their names (_,-, etc..)
-                var nameCheck = new Regex(@"^(?:[A-Z][a-zA-Z]|[\p{IsHangulSyllables}\p{IsHangulJamo}\p{IsHangulCompatibilityJamo}])");
-                if (!string.IsNullOrEmpty(pakdata.CharName) && (pakdata.CharName.Length < 3 || !nameCheck.IsMatch(pakdata.CharName)))
-                {
-                    if ((ePrivLevel)client.Account.PrivLevel == ePrivLevel.Player)
-                    {
-                        if (Properties.BAN_HACKERS)
-                        {
-                            client.BanAccount(string.Format("Autoban bad CharName '{0}'", pakdata.CharName));
-                        }
-
-                        client.Disconnect();
-                        return;
-                    }
-                }
+                if (!string.IsNullOrEmpty(pakdata.CharName) && DisconnectOnInvalidCharacterName(client, pakdata.CharName))
+                    return;
 
                 switch (pakdata.Operation)
                 {
@@ -136,21 +124,8 @@ namespace DOL.GS.PacketHandler.Client.v168
             {
                 var pakdata = new CreationCharacterData(packet, client);
 
-                // Graveen: changed the following to allow GMs to have special chars in their names (_,-, etc..)
-                var nameCheck = new Regex(@"^(?:[A-Z][a-zA-Z]|[\p{IsHangulSyllables}\p{IsHangulJamo}\p{IsHangulCompatibilityJamo}])");
-                if (!string.IsNullOrEmpty(pakdata.CharName) && (pakdata.CharName.Length < 3 || !nameCheck.IsMatch(pakdata.CharName)))
-                {
-                    if ((ePrivLevel)client.Account.PrivLevel == ePrivLevel.Player)
-                    {
-                        if (Properties.BAN_HACKERS)
-                        {
-                            client.BanAccount($"Autoban bad CharName '{pakdata.CharName}'");
-                        }
-
-                        client.Disconnect();
-                        return;
-                    }
-                }
+                if (!string.IsNullOrEmpty(pakdata.CharName) && DisconnectOnInvalidCharacterName(client, pakdata.CharName))
+                    return;
 
                 switch ((eOperation) pakdata.Operation)
                 {
@@ -195,6 +170,45 @@ namespace DOL.GS.PacketHandler.Client.v168
             {
                 client.Out.SendCharacterOverview(currentRealm);
             }
+        }
+
+        private static bool DisconnectOnInvalidCharacterName(GameClient client, string characterName)
+        {
+            if (IsCharacterNameValid(characterName) || (ePrivLevel)client.Account.PrivLevel != ePrivLevel.Player)
+                return false;
+
+            if (log.IsWarnEnabled)
+                log.Warn($"Disconnecting account {client.Account.Name} because character name '{characterName}' is invalid. Length:{characterName.Length}");
+
+            if (Properties.BAN_HACKERS)
+                client.BanAccount($"Autoban bad CharName '{characterName}'");
+
+            client.Disconnect();
+            return true;
+        }
+
+        private static bool IsCharacterNameValid(string characterName)
+        {
+            if (string.IsNullOrEmpty(characterName) || !CharacterNameStartRegex.IsMatch(characterName))
+                return false;
+
+            int minimumLength = ContainsHangul(characterName) ? 2 : 3;
+            return characterName.Length >= minimumLength;
+        }
+
+        private static bool ContainsHangul(string value)
+        {
+            foreach (char character in value)
+            {
+                if ((character >= '\uAC00' && character <= '\uD7AF')
+                    || (character >= '\u1100' && character <= '\u11FF')
+                    || (character >= '\u3130' && character <= '\u318F'))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         class CreationCharacterData

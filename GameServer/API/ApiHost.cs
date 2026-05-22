@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using DOL.GS.API.Dashboard;
+using DOL.GS.API.DummyCombat;
 using DOL.GS.API.DummyNavigation;
 using DOL.GS.API.WorldAI;
 using DOL.GS.ServerProperties;
@@ -78,6 +79,7 @@ namespace DOL.GS.API
             api.MapDashboardRoutes(contentRoot);
             api.MapWorldAiRoutes();
             api.MapDummyNavigationRoutes();
+            api.MapDummyCombatRoutes();
 
             #endregion
 

@@ -25,6 +25,7 @@ using DOL.GS.ServerProperties;
 using DOL.GS.SkillHandler;
 using DOL.GS.Spells;
 using DOL.GS.Styles;
+using DOL.GS.WorldAI;
 using DOL.Language;
 using DOL.Logging;
 using JNogueira.Discord.WebhookClient;
@@ -6086,10 +6087,14 @@ namespace DOL.GS
                         continue;
 
                     if (IsWithinRadius(player, WorldMgr.MAX_EXPFORKILL_DISTANCE))
+                    {
+                        DynamicQuestRuntimeService.Instance.HandleEnemyKilled(player, enemy);
                         Notify(GameLivingEvent.EnemyKilled, player, new EnemyKilledEventArgs(enemy));
+                    }
                 }
             }
 
+            DynamicQuestRuntimeService.Instance.HandleEnemyKilled(this, enemy);
             base.EnemyKilled(enemy);
         }
 

@@ -1639,6 +1639,10 @@ namespace DOL.GS
 			if (CanFinishOneQuest(player))
 				return eQuestIndicator.Finish;
 
+			eQuestIndicator dynamicQuestIndicator = DynamicQuestRuntimeService.Instance.GetQuestIndicator(this, player);
+			if (dynamicQuestIndicator != eQuestIndicator.None)
+				return dynamicQuestIndicator;
+
 			return eQuestIndicator.None;
 		}
 
@@ -2565,6 +2569,9 @@ namespace DOL.GS
 			}
 
 			FireAmbientSentence(eAmbientTrigger.interact, player);
+			if (DynamicQuestRuntimeService.Instance.HandleNpcInteract(this, player))
+				return true;
+
 			return true;
 		}
 
@@ -2952,7 +2959,18 @@ namespace DOL.GS
 		public bool CanUseLefthandedWeapon
 		{
 			get => m_leftHandSwingChance > 0;
-			set => CanUseLefthandedWeapon = value;
+			set
+			{
+				if (value)
+				{
+					if (m_leftHandSwingChance == 0)
+						m_leftHandSwingChance = 1;
+				}
+				else
+				{
+					m_leftHandSwingChance = 0;
+				}
+			}
 		}
 
 		public override void StartInterruptTimer(int duration, AttackData.eAttackType attackType, GameLiving attacker)

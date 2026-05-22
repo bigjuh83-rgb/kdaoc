@@ -1,0 +1,4 @@
+username,password,realm,char_index
+dummy001,password1,1,0
+dummy002,password2,1,0
+dummy003,password3,2,0

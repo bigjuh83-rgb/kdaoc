@@ -142,4 +142,6 @@ If Korean appears like mojibake, check the direction:
 - client to server creation/name packets should decode UTF-8
 - server to client display packets should encode CP949
 
+If only the small Accept/Decline quest or trainer popup body is broken, verify `game.dll` offset `0x1005ee` is patched to `eb` so the legacy `uifont*.dat` loader skips the bitmap branch and uses the local GDI Gulim entries.
+
 If character select columns drift or class text merges into the name, keep `WritePascalStringIntLE()` on CP949 rather than UTF-8.

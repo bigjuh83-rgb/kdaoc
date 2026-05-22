@@ -30,6 +30,9 @@ namespace DOL.GS.API.WorldAI
             api.MapGet("/api/world/llm/health", () =>
                 Results.Ok(LlmJobQueueService.Instance.GetQueueHealth()));
 
+            api.MapGet("/api/world/mob-growth/summary", (HttpContext context) =>
+                Results.Ok(MobGrowthService.Instance.GetSummary(ReadLimit(context, 20))));
+
             api.MapGet("/api/world/llm/config", () =>
                 Results.Ok(new
                 {

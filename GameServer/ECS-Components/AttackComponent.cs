@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using DOL.AI.Brain;
@@ -12,6 +13,7 @@ using DOL.GS.RealmAbilities;
 using DOL.GS.ServerProperties;
 using DOL.GS.SkillHandler;
 using DOL.GS.Styles;
+using DOL.Logging;
 using DOL.Language;
 using static DOL.GS.GameObject;
 
@@ -19,6 +21,8 @@ namespace DOL.GS
 {
     public class AttackComponent : IServiceObject
     {
+        private static readonly Logger log = LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);
+
         public GameLiving owner;
         public WeaponAction weaponAction; // This represents the current weapon action, which may become outdated when resolving ranged attacks.
         public AttackAction attackAction;
@@ -969,6 +973,33 @@ namespace DOL.GS
         /// attacktimer and should not be called manually
         /// </summary>
         /// <returns>the object where we collect and modifiy all parameters about the attack</returns>
+        private void LogDummyMeleeFailure(string reason, GameLiving target, int attackRange)
+        {
+            if (owner is not GamePlayer player || target == null)
+                return;
+
+            string playerName = player.Name ?? string.Empty;
+            string accountName = player.Client?.Account?.Name ?? string.Empty;
+
+            if (!playerName.StartsWith("Growth", StringComparison.OrdinalIgnoreCase) &&
+                !playerName.StartsWith("Dummy", StringComparison.OrdinalIgnoreCase) &&
+                !accountName.StartsWith("growth", StringComparison.OrdinalIgnoreCase) &&
+                !accountName.StartsWith("dummy", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            bool inFront = owner.IsObjectInFront(target, 120);
+            bool inRadius = owner.IsWithinRadius(target, attackRange);
+            int distance = owner.GetDistanceTo(target);
+
+            log.Info(
+                $"KDAOC dummy melee failure reason={reason} player={playerName} account={accountName} " +
+                $"target={target.Name} targetOid={target.ObjectID} attackRange={attackRange} distance={distance} " +
+                $"inRadius={inRadius} inFront={inFront} targetInView={owner.TargetInView} " +
+                $"playerLoc=({owner.CurrentRegionID},{owner.X},{owner.Y},{owner.Z}) heading={owner.Heading} " +
+                $"targetLoc=({target.CurrentRegionID},{target.X},{target.Y},{target.Z}) targetHeading={target.Heading} " +
+                $"playerMoving={owner.IsMoving} targetMoving={target.IsMoving}");
+        }
+
         public AttackData LivingMakeAttack(WeaponAction action, GameObject target, DbInventoryItem weapon, Style style, double effectiveness, int interval, bool dualWield, bool ignoreLOS = false)
         {
             AttackData ad = new()
@@ -1015,6 +1046,7 @@ namespace DOL.GS
                 ad.Target is not GameKeepComponent &&
                 !(owner.IsObjectInFront(ad.Target, 120) && owner.TargetInView))
             {
+                LogDummyMeleeFailure("not_visible", ad.Target, attackRange);
                 ad.AttackResult = eAttackResult.TargetNotVisible;
                 SendAttackingCombatMessages(action, ad);
                 return ad;
@@ -1033,6 +1065,7 @@ namespace DOL.GS
             {
                 if (!owner.IsWithinRadius(ad.Target, attackRange))
                 {
+                    LogDummyMeleeFailure("out_of_range", ad.Target, attackRange);
                     ad.AttackResult = eAttackResult.OutOfRange;
                     SendAttackingCombatMessages(action, ad);
                     return ad;

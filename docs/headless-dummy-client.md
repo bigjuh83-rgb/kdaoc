@@ -12,6 +12,8 @@ OpenDAoC 서버를 실제 DAoC 클라이언트 UI 없이 접속 테스트하기 
 - `tools/worldai-smoke-test.py`: WorldAI, MobGrowth, 공개 API를 한 번에 확인하는 서버 스모크 테스트.
 - `tools/dummy-accounts.example.csv`: 여러 계정 테스트용 CSV 예시.
 
+현재 기본 더미 접속 대상은 메인컴 서버 `192.168.0.42:10300`이다. 서브컴 스트레스 테스트처럼 다른 서버로 붙일 때만 `OPENDAOC_DUMMY_HOST` 환경변수나 `--host` 인자로 덮어쓴다.
+
 ## WorldAI/API 스모크 테스트
 
 서버가 켜져 있고 `atlas_api=True`이면 아래 명령으로 WorldAI, MobGrowth, 대시보드 API를 한 번에 확인할 수 있다.
@@ -216,7 +218,7 @@ python3 tools/behavior-dummy-client.py \
 
 ## Graph Pathing
 
-`--nav-api-url`을 주면 더미는 먼저 서버의 `/api/dummy/nav/path`에 경로를 요청한다. 이 API는 서버가 로드한 zone navmesh와 `PathfindingProvider`를 사용하므로, navmesh가 있는 지역에서는 실제 서버 지형 판정에 가까운 경로를 받는다. navmesh가 없거나 API가 실패하면 `--path-graph`의 region별 waypoint graph로 자동 fallback한다. 둘 다 실패하면 더미는 목표로 직선 순간이동하지 않고 정지한다.
+`--nav-api-url`을 주면 더미는 먼저 서버의 `/api/dummy/nav/path`에 경로를 요청한다. 이 API는 서버가 로드한 zone navmesh와 `PathfindingProvider`를 사용하므로, navmesh가 있는 지역에서는 실제 서버 지형 판정에 가까운 경로를 받는다. navmesh가 없거나 API가 실패하면 `--path-graph`의 region별 waypoint graph로 자동 fallback하고, graph도 없거나 실패하면 `--client-grid-nav-map`의 클라이언트 MPK 기반 경량 grid A*를 마지막으로 시도한다. 모두 실패하면 더미는 목표로 직선 순간이동하지 않고 정지한다.
 
 nav API 응답의 `snappedStart`, `snappedEnd`, `floor`, `lineOfSight`도 보존한다. 더미는 snapped start/end를 경로 경유점으로 반영하고, API가 경로 노드 없이 snapped end만 돌려줄 때는 `lineOfSight=true`인 경우에만 직접 이동 후보로 인정한다.
 
@@ -241,12 +243,79 @@ graph JSON은 `regions -> regionId -> nodes/edges/collisions` 구조를 쓴다. 
 
 현재 포함된 샘플 graph는 `tools/pathing/regions/albion-lowlevel.json`이며, `newbie-solo`, `solo-melee`, `ai-pve-casual`, `ai-filler-casual` 시나리오는 이 graph를 자동으로 사용한다. graph는 전체 DAoC 지형 파일을 파싱한 완전 navmesh가 아니라, 운영자가 안전한 이동 노드를 직접 늘려가는 seed 데이터다. 서버 navmesh가 준비된 지역은 `--nav-api-url http://127.0.0.1:5000`처럼 API를 켜고 쓰면 되고, navmesh가 없는 지역은 graph를 계속 보강한다.
 
+이동 되감기나 순간이동처럼 보이는 현상을 잡을 때는 `--trace-movement-log tools/reports/movement-{username}.jsonl`을 붙인다. 이 로그에는 위치 패킷 전송, 이동 스텝, 관찰된 서버 위치가 JSONL로 남으므로 클라이언트 화면에서 본 증상과 패킷 좌표를 바로 비교할 수 있다.
+
+## Client Grid Nav Fallback
+
+`--client-grid-nav-map tools/pathing/heightmaps/region001_client_zones.json`을 주면 더미는 클라이언트 `datXXX.mpk`에서 `terrain.pcx`, `offset.pcx`, `water.pcx`, `fixtures.csv`를 읽어 256 world-unit 단위의 경량 grid를 만들고 A*로 우회 경로를 찾는다. 이 방식은 서버 navmesh처럼 정확한 NIF 충돌을 계산하지는 않지만, 물/급경사/충돌 fixture 주변을 피하는 outdoor fallback이다.
+
+주요 옵션은 다음과 같다.
+
+- `--client-grid-nav-cell-size`: grid 셀 크기. 기본 `256`.
+- `--client-grid-nav-max-step-z`: 인접 셀 사이 허용 Z 차이. 기본 `240`.
+- `--client-grid-nav-fixture-padding`: `fixtures.csv`의 충돌 오브젝트 주변 회피 여유. 기본 `160`.
+- `--client-grid-nav-allow-water`: water map 셀도 통과 허용.
+
+`run-dummy-load-test.py`의 low-level 시나리오는 ground-Z map과 같은 설정 파일을 `--client-grid-nav-map`으로도 자동 전달한다. navmesh와 수동 graph가 더 정확하므로 우선순위는 `nav API -> path graph -> client grid` 순서다.
+
+저녁에 클라이언트 화면으로 비교할 때는 아래 도구로 바로 실행 명령을 뽑는다.
+
+```bash
+python3 tools/prepare-dummy-nav-tests.py --profile all --mode compare
+```
+
+출력되는 `grid-off`와 `grid-on` 명령을 하나씩 실행하면 같은 waypoint에서 client-grid fallback 차이를 비교할 수 있다. 각 명령은 `tools/reports/movement-...jsonl`에 `path_plan`, `path_step_target`, `move_step`, `ground_z_sample`, `send_position`, `observe_self_position` 이벤트를 남긴다. 되감기는 `observe_self_position.horizontal_delta`, Z 문제는 `move_step.z_source`와 `ground_z_sample`, 경로 문제는 `path_plan.source/status`와 `path_step_target.next_*`를 먼저 보면 된다.
+
+## Client Terrain Z Fallback
+
+navmesh가 없는 지역에서도 더미가 공중부양하지 않도록 `--ground-z-map tools/pathing/heightmaps/region001_client_zones.json`을 사용한다. 이 설정은 클라이언트 zone의 `datXXX.mpk`에서 `terrain.pcx`, `offset.pcx`, `SECTOR.DAT`를 읽고 다음 공식으로 Z를 계산한다.
+
+```text
+Z = terrain_pixel * scalefactor + offset_pixel * offsetfactor
+```
+
+중요한 좌표 규칙은 classic outdoor zone 한 변 `65536` world units를 `256` terrain cells로 나누는 것이다. 즉 PCX 샘플 좌표는 `zone local coordinate / 256` 기준이다. `0..255` 꼭짓점 비율로 보간하면 샘플 위치가 밀려 경사에서 공중부양/땅속 파묻힘이 섞여 보인다.
+
+`run-dummy-load-test.py`의 기본 low-level 시나리오는 이 ground-Z map을 자동으로 붙인다. 수동 실행 예시는 다음과 같다.
+
+```bash
+python3 tools/behavior-dummy-client.py \
+  --accounts tools/dummy-accounts.csv \
+  --hold 300 \
+  --smooth-movement \
+  --movement-speed 191 \
+  --smooth-move-interval 0.20 \
+  --movement-update-interval 0.20 \
+  --ground-z-map tools/pathing/heightmaps/region001_client_zones.json \
+  --waypoints '581632,581632,2192|582432,581632,2008|581066,581066,2412' \
+  --waypoint-continuous-turns \
+  --waypoint-advance-distance 35 \
+  --waypoint-stop-distance 12
+```
+
+특정 좌표에서만 클라이언트 시각 지면과 PCX 높이가 다르면 `region001_client_zones.json`의 `correction_points`에 `/loc` 기준 보정점을 추가한다. `z`는 실제 관찰한 지면 Z이고, `delta_z`는 샘플값에 더할 직접 보정값이다. 보정점은 `correction_max_distance` 안에서 IDW 방식으로 섞인다.
+
+```json
+{
+  "correction_max_distance": 300,
+  "correction_sample_count": 4,
+  "correction_points": [
+    { "zone": 1, "x": 581632, "y": 581632, "z": 2192 },
+    { "zone": 1, "x": 582432, "y": 581632, "delta_z": -8 }
+  ]
+}
+```
+
+이 fallback은 높이 보정만 제공한다. 벽, 건물, 절벽, 복잡한 장애물 회피는 navmesh 또는 운영자가 만든 안전 waypoint graph가 필요하다.
+
 ## 밸런스 측정 지표
 
 행동형 더미는 전투 중인 대상이 서버의 object remove 패킷으로 사라지면 `target_removed`로 기록한다. 이 값은 “처치 추정”이다. 플레이어가 죽으면 `player_death`, 같은 대상을 너무 오래 잡고 있으면 `target_timeout`, 라운드 종료까지 대상이 남아 있으면 `round_end`로 기록한다.
 
 `--metrics-csv`와 `--report-md`를 함께 쓰면 계정/라운드별 전투 수, 처치 추정 수, 사망 수, 타임아웃 수, 평균 처치 시간을 남긴다. 리포트의 `Balance Metrics`와 `Target Summary` 섹션은 몬스터별 위험도와 처치 시간을 빠르게 비교하기 위한 요약이다.
 `--combat-csv`를 함께 쓰면 전투 단위 상세 행을 따로 저장한다. 각 행에는 계정, 라운드, 대상 이름/레벨, 결과, 지속 시간, 공격/스킬 시도 횟수, 시작/종료 거리가 들어간다.
+
+더미는 기본적으로 로그인 직후 `/autoloot on`을 한 번 보내고, 서버의 실제 `DropLoot -> TryAutoPickUpItem -> Inventory.AddItem` 경로로 아이템을 획득한다. `--report-md`에는 `Loot Summary`가 추가되어 획득 수, 등급별 수, 샘플 아이템 이름을 보여준다. 랜덤 드랍 시스템을 끄지 않은 상태에서 40레벨 이상 사냥터를 테스트하면 `마력`, `희귀`, `영웅`, `전설`, `신화` 접두어가 붙은 드랍을 더미가 실제로 먹었는지 바로 확인할 수 있다. 필요하면 `--no-auto-loot`으로 끌 수 있다.
 
 ```bash
 python3 tools/behavior-dummy-client.py \
@@ -257,6 +326,27 @@ python3 tools/behavior-dummy-client.py \
   --metrics-csv tools/reports/balance/metrics.csv \
   --combat-csv tools/reports/balance/combat.csv \
   --report-md tools/reports/balance/report.md
+```
+
+랜덤 드랍 전용 스모크 테스트 예시는 다음과 같다.
+
+```bash
+python3 tools/behavior-dummy-client.py \
+  --accounts tools/dummy-accounts.csv \
+  --concurrency 3 \
+  --hold 180 \
+  --hunter \
+  --player-level 40 \
+  --min-target-level 40 \
+  --max-target-level-delta 6 \
+  --combat-interval 1.5 \
+  --target-timeout 45 \
+  --target-pool 5 \
+  --smooth-movement \
+  --use-skills \
+  --metrics-csv tools/reports/random-loot/metrics.csv \
+  --combat-csv tools/reports/random-loot/combat.csv \
+  --report-md tools/reports/random-loot/report.md
 ```
 
 현재 지표는 서버가 클라이언트에 보내는 패킷 기준이라 정확한 DPS 미터가 아니다. 밸런스 1차 판단에는 `처치 추정 수`, `플레이어 사망 수`, `평균 처치 시간`, `타임아웃 수`를 같이 본다.
@@ -441,6 +531,21 @@ python3 tools/behavior-dummy-client.py \
 사망 복구가 발생하면 `death_detected`, `death_release`, `death_recovered` 액션 카운트가 함께 기록된다.
 `Role Rotations` 섹션은 이번 테스트에서 몇 명이 어떤 로테이션으로 동작했는지 보여준다.
 
+보스전이나 공성전처럼 공유 목표가 있는 파티는 `--party-encounter-mode boss|quest|siege`, `--party-assist-only`, `--require-target-name`을 함께 쓴다. 이때 더미는 공유 목표를 보존하되, 파티원이 피해를 받으면 가까운 non-boss 위협을 별도 구조 슬롯으로 잠시 처리한다. 구조 타겟은 공유 목표를 덮어쓰지 않으며, 제거 패킷이 오면 보스 목표처럼 계속 보존하지 않는다. `--party-rescue-engaged-distance` 기본값은 `250`이라서 HP가 빠졌다는 이유만으로 멀리 있는 주변 잡몹을 구조 대상으로 오판하지 않는다.
+
+보스전 구조 규칙은 기본적으로 “활성 탱커만 애드 처리, 딜러와 힐러는 공유 목표 유지”다. `--party-assist-rescue-target`과 `--party-local-rescue-target`의 기본값은 `false`라서 딜러가 보스 대신 애드에 끌려가지 않는다. required boss가 처음 교전된 직후에는 `--party-rescue-objective-engaged-grace` 동안 구조 타겟을 무시한다. 현재 보스 스크립트는 `20`초로 둔다. Lord Elidyn처럼 주변 guard가 초반에 섞이는 전투에서 파티가 보스를 잃지 않게 하기 위한 공통 규칙이며, 특정 보스명 전용 로직은 아니다.
+
+원거리와 힐러는 `--boss-ranged-safe-distance`로 공유 목표 자체에서 거리를 벌린다. Barfog처럼 광역 피해가 있는 보스에서는 `1000` 거리 유지가 사망을 크게 줄였다. 보스 처치 후 같은 hold 안에서 respawn된 보스를 다시 끌어오지 않도록 `--stop-after-required-target-removed`를 함께 사용한다.
+
+2026-05-19 검증 메모: Lord Elidyn 8인 테스트에서 구조 대상을 공유 목표로 덮어쓰거나, 400 이상 떨어진 guard를 구조 대상으로 오판하면 파티가 보스 대신 guard에 묶였다. 수정 후 `boss-elidyn-pve8-rescuedistance-20260519-204613` 리포트에서 8/8 라운드 성공, 사망 0, target_removed 8, 루팅 6개를 확인했다.
+
+2026-05-20 검증 메모:
+
+- `boss-barfog-pve24-rangedsafe-20260519-232517`: 24인 Barfog 풀피 전투는 사망 24, target_removed 0, loot 0. 현재 장비/구성 기준으로는 24인이 부족하다.
+- `boss-barfog-pve40-rangedsafe2-20260519-233416`: 40인 Barfog 풀피 전투는 사망 2, target_removed 38, loot 6, 타임아웃 0. 등급은 신화 2, 희귀 2, 일반 2.
+- `boss-elidyn-pve40-rangedsafe-20260519-233926`: 구조 타겟을 딜러가 같이 처리하던 상태에서는 target switch 43회, 사망 7, target_removed 33, loot 0.
+- `boss-elidyn-pve40-rescuegrace-20260520-001440`: 활성 탱커 중심 구조 + required objective 20초 보호 후에는 target switch 0, 사망 0, target_removed 40, loot 5, 타임아웃 0.
+
 ## AI 플레이어 모드
 
 `--ai-player`는 더미를 단순 부하용 로봇이 아니라 생활형 AI 플레이어처럼 움직이게 하는 모드다. 기존 사냥 루프 위에 아래 행동을 추가한다.
@@ -515,7 +620,7 @@ python3 tools/behavior-dummy-client.py \
 ```bash
 python3 tools/run-dummy-load-test.py smoke \
   --scenario ai-pve-casual \
-  --host 192.168.0.24 \
+  --host 192.168.0.42 \
   --count 12 \
   --concurrency 3 \
   --hold 180 \
@@ -527,7 +632,7 @@ python3 tools/run-dummy-load-test.py smoke \
 ```bash
 python3 tools/run-dummy-load-test.py party-small \
   --scenario ai-party-casual \
-  --host 192.168.0.24 \
+  --host 192.168.0.42 \
   --count 12 \
   --concurrency 6 \
   --party-size 3 \
@@ -540,9 +645,9 @@ python3 tools/run-dummy-load-test.py party-small \
 ```bash
 python3 tools/run-dummy-load-test.py ai-filler-small \
   --scenario ai-filler-casual \
-  --host 192.168.0.24 \
+  --host 192.168.0.42 \
   --realm-strategy least-populated \
-  --live-api-url http://192.168.0.24:5000/api/dashboard/live \
+  --live-api-url http://192.168.0.42:5000/api/dashboard/live \
   --accounts-csv tools/ai-accounts-all-realms.csv \
   --name ai-filler-small
 ```
@@ -559,7 +664,7 @@ python3 tools/behavior-dummy-client.py \
   --ai-player \
   --behavior-profile pve-casual \
   --realm-strategy least-populated \
-  --live-api-url http://192.168.0.24:5000/api/dashboard/live
+  --live-api-url http://192.168.0.42:5000/api/dashboard/live
 ```
 
 `least-populated`는 API의 `realms` 값을 보고 가장 인구가 적은 렐름을 고른다. CSV 안에 해당 렐름 계정이 `--concurrency`만큼 있어야 하며, 부족하면 명확한 오류로 중단한다.
@@ -573,7 +678,7 @@ python3 tools/behavior-dummy-client.py \
   --ai-player \
   --behavior-profile pve-casual \
   --realm-strategy least-populated \
-  --live-api-url http://192.168.0.24:5000/api/dashboard/live \
+  --live-api-url http://192.168.0.42:5000/api/dashboard/live \
   --waypoints '1000,2000,300|1400,2300,300|1700,2600,310' \
   --waypoint-mode loop \
   --waypoint-interval 1.5
@@ -715,7 +820,7 @@ python3 tools/run-dummy-load-test.py party-large \
 python3 tools/run-dummy-balance-suite.py \
   --preset smoke \
   --scenarios newbie-solo,solo-melee,party-assist,mobgrowth-pressure \
-  --host 192.168.0.24 \
+  --host 192.168.0.42 \
   --accounts-csv tools/reports/subcomputer/account-slices/accounts-1000.csv \
   --account-start-offset 40 \
   --count 12 \
@@ -748,7 +853,7 @@ tools/reports/dummy-balance-suite/YYYYMMDD-HHMMSS-balance-check/
 ```bash
 python3 tools/run-dummy-balance-suite.py \
   --preset party-small \
-  --host 192.168.0.24 \
+  --host 192.168.0.42 \
   --accounts-csv tools/reports/subcomputer/account-slices/accounts-1000.csv \
   --server-log tools/reports/subcomputer/server-tail.log \
   --server-log-time-offset-hours -9 \
@@ -763,7 +868,7 @@ python3 tools/run-dummy-balance-suite.py \
 ```bash
 python3 tools/run-dummy-balance-suite.py \
   --preset party-small \
-  --host 192.168.0.24 \
+  --host 192.168.0.42 \
   --accounts-csv tools/reports/subcomputer/account-slices/accounts-1000.csv \
   --baseline-summary tools/reports/dummy-balance-suite/이전실행/summary.csv \
   --name after-balance-change
@@ -846,7 +951,7 @@ python3 tools/summarize-server-stats.py Debug/logs/server.log \
 ## 현재 한계
 
 - 스킬 사용, 인벤토리 조작은 아직 하지 않는다.
-- 이동은 실제 클라이언트 렌더링/충돌 계산이 아니라 서버 위치 패킷 기반의 단순 직선 접근이다.
+- 이동은 실제 클라이언트 렌더링/충돌 계산이 아니라 서버 위치 패킷 기반이다. nav API나 region waypoint graph가 없는 지역에서는 안전한 이동 경로를 보장하지 못한다.
 - 더미가 몬스터에게 죽을 수 있다. 테스트를 반복하기 전에는 `tools/provision-dummy-accounts.py --replace`로 템플릿 위치를 다시 복제하면 깨끗하다.
 - `--fresh-account-per-round`는 빠른 반복을 위해 링크데드 대기 중인 계정을 재사용하지 않는다. 라운드 수만큼 더미 계정을 넉넉히 만들어야 한다.
 - 연결 종료는 정상 로그아웃 패킷이 아니라 소켓 종료라서 서버 로그에는 링크데드로 남을 수 있다.
@@ -857,3 +962,250 @@ python3 tools/summarize-server-stats.py Debug/logs/server.log \
 - 실제 사거리 접근 후 스킬/스타일 사용 루프
 - 시나리오 파일 기반 테스트
 - 서버 지표 임계치 기반 자동 실패 처리
+
+## 8인 파티 PvE 검증값
+
+2026-05-18 기준으로 `giant boar` 34레벨 군집에서 8인 파티 루프가 안정적으로 동작한 설정은 `tools/run-dummy-party-pve8-giant-boar.sh`에 고정했다.
+
+핵심값:
+
+- 계정 CSV: `tools/dummy-party-albion-pve8.csv`
+- 파티 구성: `dummy040` 팔라딘 리더, `dummy300` 암즈맨, `dummy041/042/043/302` 머서너리, `dummy301/303` 클레릭
+- 시작 위치: Albion region 1, `X=561900~562300`, `Y=357450~357560`, `Z=4826`
+- 타겟: `giant boar` 34레벨
+- 근접 판정: `--attack-range 145`, `--minimum-melee-stop-distance 65`, 실제 정지 거리 약 120
+- 전투/어시스트 주기: `--combat-interval 1.0`, `--party-assist-interval 0.8`
+- 파티 거리: `--party-follow-distance 250`
+- 역할 고정: `melee-basic,melee-basic,melee-burst,melee-burst,melee-burst,melee-burst,healer-support,healer-support`
+
+검증 결과:
+
+- `tools/reports/highlevel-party-albion-pve8-giant-boar-l34/report.md`
+- 8/8 접속 성공
+- 전투 중 플레이어 사망 0
+- 타겟 타임아웃 0
+- 이동 실패 0
+- 150초 동안 `giant boar` 34레벨 대상 `target_removed` 18회 기록
+- 실제 개인 루팅 메시지 5건 기록
+
+주의:
+
+- `attack_range=350`처럼 너무 크게 잡으면 더미가 약 305 거리에서 멈춰 근접 타격이 제대로 들어가지 않아 타임아웃이 난다.
+- 같은 `giant boar`라도 35레벨 일부 스폰은 공격 횟수는 쌓이는데 `combat_damage_msg`와 `target_removed`가 나오지 않는 케이스가 확인됐다. 파티 루프 검증에는 34레벨 군집을 사용하고, 35레벨 일부 스폰의 무피해/무제거 문제는 별도 몹 판정 버그로 분리한다.
+- 리포트의 `target_removed`는 클라이언트별 제거 관측도 포함하므로 유니크 처치 수와 1:1로 같지 않을 수 있다. 유니크 처치는 `combat.csv`의 `target_id` 기준으로 확인한다.
+
+## 16인 멀티파티 랜덤드랍/이동 검증
+
+기존 8인 파티를 그대로 복제하지 않고, 새 클래스/장비 조합의 혼합 8인 파티를 추가해 동시에 검증할 때는 다음 스크립트를 사용한다.
+
+```bash
+tools/run-dummy-multiparty-pve16.sh
+```
+
+구성:
+
+- `party-classic`: `tools/dummy-party-albion-pve8.csv`
+- `party-mixed`: `tools/dummy-party-albion-mixed-pve8.csv`
+- 혼합 파티 클래스: Reaver, Friar, Scout, Wizard, Theurgist, Cabalist, Necromancer, Cleric
+- 타겟: `giant boar` 34레벨
+- 제외 타겟: `peallaidh`, `Grymkin`, `moorlich`, `arawnite`, `shamaness`, `archer`, `horse`, `warder`, `bone snapper`, `danaoin`
+- Z 보정: `tools/pathing/heightmaps/region001_client_zones.json`
+- 이동 추적: 각 더미별 `traces/{username}-{round}.jsonl`
+
+2026-05-18 검증 리포트:
+
+- `tools/reports/multiparty-pve16-20260518-102436/party-classic/report.md`
+- `tools/reports/multiparty-pve16-20260518-102436/party-mixed/report.md`
+- `tools/reports/multiparty-pve16-20260518-102436/movement-analysis.md`
+
+통과 기준과 결과:
+
+- 16/16 접속 성공
+- 사망 0
+- 타겟 타임아웃 0
+- 이동 실패 0
+- 관찰된 상대 더미 위치 샘플 30,259건
+- 심한 순간이동 판정 0 (`horizontal_delta > 800`)
+- 심한 Z 튐 판정 0 (`abs(delta_z) > 250`)
+- 개인 랜덤드랍 3건: `마력` 1, `일반` 2
+
+첫 멀티파티 실행에서는 혼합 파티 리더가 `arawnite shamaness`를 한 번 잡아 사망 1회가 났다. 원인은 전투/파티 루프가 아니라 위험 타겟 필터 누락이었고, `arawnite/shamaness`를 제외 목록에 넣은 뒤 위 기준으로 통과했다.
+
+이동 로그 분석만 다시 하려면:
+
+```bash
+python3 tools/analyze-dummy-movement-traces.py \
+  'tools/reports/multiparty-pve16-*/party-classic/traces/*.jsonl' \
+  'tools/reports/multiparty-pve16-*/party-mixed/traces/*.jsonl' \
+  --report-md tools/reports/movement-analysis.md \
+  --json-out tools/reports/movement-analysis.json
+```
+
+## 2026-05-18 더미 파티 안정화 기록
+
+더미 이동/전투 루프의 최종 안정화 기준은 `tools/reports/rainbow-low-randomloot-actionposfix-20260518-205535/report.md`로 잡는다.
+
+핵심 수정:
+
+- `tools/headless-daoc-client.py`: 스킬/스펠/슬롯 액션 패킷에는 아직 position 패킷으로 서버에 보낸 적 없는 로컬 이동 좌표를 싣지 않는다. 이동은 position 패킷이 담당하고, 액션 패킷은 마지막 전송 좌표를 재사용한다.
+- `tools/behavior-dummy-client.py`: 타겟 바라보기는 speed 0 position 패킷 대신 heading 패킷만 보낸다.
+- `GameServer/gameutils/PlayerMovementMonitor.cs`: 더미 계정의 이동 컴포넌트 max speed가 순간적으로 0으로 계산되면 기본 플레이어 속도/현재 속도로 fallback한다.
+- `GameServer/gameutils/KdaocRandomItemService.cs`: 랜덤 생성 아이템은 proc spell id를 0으로 정규화해 없는 proc id 전투 로그 에러를 막는다.
+- DB 테스트 장비 `ReaverDexteraBarbedChain`, `ScoutDexteraBlade`의 잘못된 proc id는 0으로 정리했다.
+
+검증 결과:
+
+- 8/8 접속 성공
+- combat plan 8/8 로드
+- `rainbow sprite` 32레벨 대상 `target_removed` 6회
+- 전투 중 플레이어 사망 0
+- 랜덤 아이템 획득 1건: `a Matterbender Sabre`
+- 서버 전투 구간 로그: incorrect spell 0, skill error 0, proc id error 0, movement diagnostic 0, position timeout 0, exception 0
+
+주의:
+
+- 랜덤 드랍 검증은 테스트용으로 `kdaoc_random_item_base_drop_chance=100`, `kdaoc_random_item_drop_grey_mobs=True`를 잠시 적용한 뒤 수행했다.
+- 검증 후 운영값은 `kdaoc_random_item_base_drop_chance=12`, `kdaoc_random_item_drop_grey_mobs=False`로 되돌리고 visible 서버를 재시작했다.
+
+## 2026-05-18 더미 보스/장시간 안정화 기록
+
+죽은 더미가 `/release`와 position heartbeat만 보내고 ping을 보내지 않으면 서버의 `ClientService.HARD_TIMEOUT` 기준인 `PingTime`이 갱신되지 않는다. 이 경우 약 150초 뒤 서버가 `Hard timeout on client`로 소켓을 닫고, 더미는 다음 쓰기에서 `[Errno 32] Broken pipe`로 실패한다. `tools/behavior-dummy-client.py`는 `send_ping_if_due()`를 공통 헬퍼로 분리해 휴식 중/사망 중/일반 루프 모두에서 ping을 유지한다.
+
+보스용 더미 스펙도 50레벨 허용 포인트를 넘기면 서버가 로그인 시 `Spec points total ... incorrect` 경고를 내고 `RespecAllLines()`로 스펙을 1레벨까지 리셋한다. `tools/run-dummy-boss-elidyn-pve40.sh`와 `tools/run-dummy-boss-barfog-pve24.sh`의 Friar, Wizard, Theurgist, Necromancer 스펙은 허용 포인트 안으로 낮췄고, 현재 DB의 해당 더미 캐릭터 `SerializedSpecs`도 동일하게 정리했다.
+
+추가로 `tools/provision-dummy-accounts.py`는 더미가 장착한 starter equipment의 `itemtemplate` proc spell id가 `spell` 테이블에 없으면 `ProcSpellID`, `ProcSpellID1`, `ProcChance`를 0으로 정리한다. 이 처리가 없으면 `MercenaryDexteraMace`, `Mercenary_Laevus_Mace`, `ArmsmanDexteraMace` 같은 템플릿에서 전투 중 `Proc ID ... Not Found` 로그가 다시 생길 수 있다.
+
+검증 리포트:
+
+- 16인 일반 멀티파티: `tools/reports/multiparty-pve16-procfix-20260518-212243`
+- Elidyn 40더미 보스: `tools/reports/boss-elidyn-pve40-ping-specfix-20260518-220738`
+- Barfog 24더미 보스 내구 테스트: `tools/reports/boss-barfog-pve24-ping-specfix-20260518-220039`
+
+검증 결과:
+
+- 16인 일반 멀티파티: 16/16 OK, 사망 0, 타임아웃 0, 이동 실패 0, runtime proc/skill/movement 에러 0
+- Elidyn 40더미: 40/40 OK, `Lord Elidyn` 제거 관측 21회, 타임아웃 0, 이동 실패 0, hard timeout/Broken pipe 재발 없음
+- Barfog 24더미: 24/24 OK, 타임아웃 0, 이동 실패 0, hard timeout/Broken pipe 재발 없음. 단 `King of the Barfog Hills` 65레벨은 24명으로 처치 실패했고 사망 13회가 발생했으므로 파티 화력/생존 밸런스 튜닝 대상으로 분리한다.
+
+남은 로그:
+
+- `TickObjectPool`의 `GSTCPPacketOut ID=0xAF`/`GSUDPPacketOut ID=0xA9` dirty item 경고는 더미 전투 실패가 아니라 패킷 큐가 다음 틱까지 남은 경우 발생하는 풀 검증 경고다. 전투 루프 오류와 분리해서 패킷 풀 안정화 작업으로 추적한다.
+- Region 233의 일부 NPC `Couldn't find a zone` 경고는 서버 시작 시 데이터/존 매핑 문제로 발생하며 더미 클라이언트 전투 루프 문제와 분리한다.
+
+## 2026-05-19 Barfog 보스전 안정화 기록
+
+`King of the Barfog Hills` 보스전은 기존에 HP가 50~70% 근처에서 멈추거나 전투가 끊겼다. 원인은 더미 파티가 사망/시야 손실/힐 타겟 전환 뒤 보스 타겟을 잃거나, `target_in_view=True`로 바뀌는 position 패킷이 이동 throttle에 의해 스킵되어 서버가 `not visible` 상태로 판단하는 경우였다.
+
+핵심 수정:
+
+- `tools/behavior-dummy-client.py`: 보스 고정 타겟(`--party-assist-only` + `--require-target-name`)에서는 사망/타임아웃 때 보스 이름을 rejected target kind에 넣지 않는다.
+- `tools/behavior-dummy-client.py`: 파티 follower가 leader target을 잃어도 화면에 보이는 required target 이름을 직접 재획득한다 (`party_assist_required_reacquire`).
+- `tools/headless-daoc-client.py`: position 패킷에서 `target_in_view`가 false에서 true로 전환되는 순간에는 movement update throttle을 무시하고 즉시 전송한다. 정지 상태에서도 같은 전환을 보장한다.
+- `tools/run-dummy-boss-barfog-pve24.sh`: 5파티 보스전은 `OPENDAOC_BOSS_*_DELAY`로 classic/mixed/support/healwall/ranged 파티 입장을 순차화할 수 있다.
+
+검증 리포트:
+
+- 5파티 70% 스톨 재현/개선 확인: `tools/reports/boss-barfog-targetviewfix-20260519-074409`
+- 49% 중간 재합류 후 처치 성공: `tools/reports/boss-barfog-reacquire-from49-20260519-075411`
+
+검증 결과:
+
+- 40/40 더미 OK
+- `King of the Barfog Hills` HP 49% 상태에서 새 5파티 재합류 후 처치 성공
+- 사망 7회, target timeout 0, movement failure 0
+- 처치 후 랜덤 드랍 1건: `희귀` 1
+
+주의:
+
+- 바포그가 비전투 상태에서 낮은 HP로 남아 있을 수 있다. 공정한 100% 시작 비교가 필요하면 서버 재시작 또는 별도 NPC reset API가 필요하다.
+- 100%에서 한 번에 처치되는지의 최종 장시간 검증은 위 패치 이후 추가로 돌릴 수 있다. 중간 재합류 킬은 성공했으므로 재타겟/시야 복구 로직은 통과 기준으로 본다.
+
+## 2026-05-19 보스 루팅 검증 기록
+
+보스가 전투 중이 아니면 만피로 회복되는 동작은 정상으로 보고 유지한다. 바포그의 전투 중 HP 리셋만 별도 버그로 처리했고, 비전투 회복/리셋은 원래 보스 동작으로 둔다.
+
+Elidyn 보스 검증:
+
+- 기본 운영 확률 검증: `tools/reports/boss-elidyn-loot-verify-20260519-083840`
+- 테스트용 100% 드랍 검증: `tools/reports/boss-elidyn-randomloot100-20260519-084802`
+
+검증 결과:
+
+- 운영 확률 상태: 40/40 더미 OK, `Lord Elidyn` 처치 성공, 사망 2, target timeout 0, target removed 35, loot 0. 기본 보스 확률은 100%가 아니므로 loot 0은 가능한 결과다.
+- 테스트용 100% 상태: 40/40 더미 OK, `Lord Elidyn` 처치 성공, 사망 1, target timeout 0, target removed 39, loot 1, 등급 `일반` 1.
+- 테스트 후 서버프로퍼티는 운영값으로 복구했다: `kdaoc_random_item_base_drop_chance=12`, `kdaoc_random_item_named_drop_bonus=20`, `kdaoc_random_item_boss_drop_bonus=55`.
+
+운영 절차:
+
+- 루팅 자체를 확정 검증할 때만 `kdaoc_random_item_base_drop_chance=100`, `kdaoc_random_item_named_drop_bonus=0`, `kdaoc_random_item_boss_drop_bonus=0`으로 임시 변경하고 서버를 재시작한다.
+- 검증 뒤 반드시 운영값으로 되돌리고 visible 서버를 다시 재시작한다.
+- `tools/start-main-visible-server.sh`는 새 visible 서버 시작 시 기존 `CoreServer.dll --start`를 먼저 종료한 뒤 시작한다. `tools/windows-open-visible-server.cmd`와 `start-main-server-visible.bat`은 서버 종료 후 `pause`로 남지 않고 창이 닫히도록 한다.
+
+## 2026-05-19 보스/랜덤템 추가 검증 기록
+
+서버 콘솔 정리:
+
+- `tools/windows-open-visible-server.cmd`와 `start-main-server-visible.bat`은 먼저 현재 창 제목을 임시 `OpenDAoC Launcher`로 바꾼 뒤 기존 `OpenDAoC Visible Server*` / `OpenDAoC Main Server*` cmd 창을 `taskkill`과 PowerShell `MainWindowTitle` 검사로 닫는다. 새 서버를 켤 때 이전 visible 콘솔창이 누적되지 않게 하기 위한 조치다.
+- `tools/start-main-visible-server.sh`는 기존 `CoreServer.dll --start` 종료 후 `10300`, `10400`, `5000` 포트가 모두 비었는지 확인한 뒤 새 서버를 시작한다. 포트 잔류 때문에 새 서버가 `Address already in use`로 내려가는 문제를 줄이기 위한 조치다.
+
+보스 랜덤 드랍 규칙:
+
+- 보스는 `kdaoc_random_item_boss_drop_rolls` 기본값 6회로 여러 번 독립 드랍 롤을 굴린다. 각 롤의 등급 확률표는 기존 `RollTier` 그대로 사용하므로 고등급 확률을 직접 올리지는 않는다.
+- `kdaoc_random_item_boss_max_premium_drops` 기본값 2로 보스 한 마리당 Heroic 이상 아이템은 최대 2개까지만 유지한다. 초과 고등급 롤은 `희귀:` 등급으로 낮춰 “높은 등급 1~2개 + 낮은 등급 여러 개” 보상이 되게 했다.
+- 관련 서버프로퍼티: `kdaoc_random_item_normal_drop_rolls=1`, `kdaoc_random_item_named_drop_rolls=2`, `kdaoc_random_item_boss_drop_rolls=6`, `kdaoc_random_item_max_drop_rolls=12`, `kdaoc_random_item_boss_max_premium_drops=2`.
+
+보스 AI 분석 메모:
+
+- Fester: `FesterBrain.Think()`가 `CheckProximityAggro()` 실패 시 즉시 `RETURN_TO_SPAWN`과 `Body.Health = Body.MaxHealth`를 수행한다. 전투 중 HP가 100%로 튀는 현상은 더미 딜 문제가 아니라 보스가 근접 어그로 체크를 잃어 리셋되는 구조가 직접 원인이다.
+- Green Knight: `OFGreenKnight`는 `Flags = PEACE`로 시작하고 `WhisperReceive("defend"|"숲을 지키기")`에서만 `Flags = 0` 후 `StartAttack()`한다. 더미가 이 시작 귓속말을 하지 않으면 전투가 시작되지 않는 것이 정상 스크립트 동작이다.
+- Legendary Afanc: 전투 중 미니언 소환과 플레이어 강제 이동/낙하 피해가 있다. 더미가 포트된 파티원을 재집결시키고 보스/미니언 우선순위를 관리하지 못하면 딜이 멈추거나 사망이 누적된다.
+
+통합 파티 행동 원칙:
+
+- 더미 전투 로직은 보스 이름별 전용 분기를 넣지 않는다. Barfog/Fester/Afanc/공성문/퀘스트 몹 모두 `PartyState` 공유 목표와 역할 기반 행동으로 처리한다.
+- 보스별 예외는 전투 시작 전 플래그 해제용 명령까지만 허용한다. 예: Green Knight의 `defend` 귓속말은 `--startup-command`로 넣고, 전투 중 행동은 공통 엔진을 그대로 쓴다.
+- `--party-encounter-mode boss|quest|siege`는 공유 목표 보존 모드다. `--party-assist-only`와 함께 쓰면 `--require-target-name` 없이도 현재 공유 타겟 ID와 마지막 좌표를 보존한다.
+- `PartyState`는 슬롯 0 리더만 탱커로 보지 않는다. `melee-basic`, `melee-burst`, `hybrid` 역할 중 살아있는 멤버를 활성 탱커로 승계하고, 팔로워 집결/구조 처리 기준도 활성 탱커 위치를 사용한다.
+- 구조 요청은 활성 탱커만 처리한다. 힐러/딜러가 맞으면 파티 상태에 구조 대상이 기록되고, 활성 탱커가 해당 애드 또는 방해 몹을 떼어낸다.
+
+보스/파티 검증:
+
+- Barfog 최종 검증: `tools/reports/boss-barfog-fullkill-peace-reacquire-20260519-112939`
+  - 24/24 더미 OK, 사망 1, timeout 0, target_removed 0, movement failure 0, loot 1, `신화` 1.
+  - 추가 원인: HP 30%대에서 보스가 `combat=false/aggo=false`로 풀리면 평화 NPC 플래그 때문에 재탐색이 안 됐다. `--require-target-name` + `--party-assist-only` 보스전은 평화 NPC도 스캔하도록 수정했다.
+- Elidyn 운영 확률 검증: `tools/reports/boss-elidyn-oper-20260519-120156`
+  - 40/40 더미 OK, 사망 13, timeout 0, target_removed 0, loot 0. 운영 확률에서는 loot 0도 가능하다.
+- Elidyn 100% 드랍 검증: `tools/reports/boss-elidyn-randomloot100-20260519-120741`
+  - 40/40 더미 OK, 사망 15, timeout 0, target_removed 0, loot 1, `일반` 1.
+  - 획득 샘플: `dummy041`이 `a Speedy Dirk` 획득. DB `itemunique` 기준 `Speedy Dirk`는 Item_Type 11, Object_Type 4, DPS_AF 162, SPD_ABS 25, Type_Damage 3, Quality 96, Bonus 35, Level 50, Effect 0, ProcSpellID 0, ProcSpellID1 0, ProcChance 0으로 안전 검증 조건을 만족했다.
+- Fester 100% 드랍 시도: `tools/reports/boss-fester-randomloot100-20260519-122137`
+  - 전투는 시작됐지만 34% 부근에서 HP가 100%로 돌아가고 `inCombat=true`, `hasAggro=false` 상태가 됐다. 이는 더미 타겟 유지와 별개로 보스 AI/리셋 상태 이슈로 분리한다.
+- Green Knight 시도: `tools/reports/boss-greenknight-randomloot100-20260519-121634`
+  - 좌표/API는 확인됐지만 HP 100000 상태에서 전투가 시작되지 않았다. 79레벨/특수 보스라 별도 풀링 조건 또는 전용 스크립트 파라미터가 필요하다.
+- Legendary Afanc 시도: `tools/reports/boss-afanc-oper-20260519-123007`
+  - 전투는 시작됐고 84%에서 57%까지 감소했지만 이후 데미지가 멈췄다. 40/40 더미 OK, 사망 34, timeout 0, target_removed 0, loot 0. 특수 보스 방어/공격 가능 판정 또는 위치 문제가 의심된다.
+
+검증 뒤 서버프로퍼티는 운영값으로 복구했다: `kdaoc_random_item_base_drop_chance=12`, `kdaoc_random_item_named_drop_bonus=20`, `kdaoc_random_item_boss_drop_bonus=55`. visible 서버도 재시작해 운영값 반영 상태로 돌려놓았다.
+
+## 2026-05-20 추가 보스 공통 AI 검증
+
+바포그, 엘리딘, 그린나이트 외 후보를 DB `mob`와 namedmob 스크립트에서 추가 추출했다. Albion 본토 `Region=1`에서 바로 테스트 가능한 후보로 `Golestandt`, `Moran the Mighty`, `Legendary Afanc`, `Cailleach Uragaig`를 우선 선택했다.
+
+공통 더미 AI 수정:
+
+- `--require-target-name` 매칭이 `Legendary Afanc's minion`처럼 보스 이름을 접두어로 가진 소환수를 본체 목표로 착각하던 문제를 수정했다.
+- 필수 목표 이름 매칭은 본체 이름과 같은 NPC만 통과하고, `"'s minion"`, `" minion"`, `" add"`, `" spawn"` 등 파생 이름은 구조/add 대상으로 분리한다.
+- 이 수정은 특정 보스 전용 분기가 아니라 공통 보스/퀘스트/공성 목표 분리 규칙이다.
+
+검증 결과:
+
+- `tools/reports/boss-golestandt-pve40-20260520-012838`: 40/40 접속, 사망 40, target_removed 0, loot 0. 드래곤급 광역/랜덤타겟 패턴을 현재 공통 생존전략으로는 버티지 못했다.
+- `tools/reports/boss-moran-pve40-20260520-013454`: 40/40 접속, 사망 26, target_removed 14, loot 0. 일부 파티는 처치 확인까지 갔지만 안정 공략에는 부족했다.
+- `tools/reports/boss-legendary-afanc-pve40-20260520-013923`: 수정 전, `Legendary Afanc's minion`을 목표로 착각해 target switch 195회, 사망 25, target_removed 15, loot 3.
+- `tools/reports/boss-legendary-afanc-pve40-objective-match-20260520-015016`: 수정 후, target switch 12회, 사망 13, target_removed 27, loot 0. 소환수 오인식은 크게 줄었지만 Afanc의 소환/강제이동 패턴은 추가 생존전략이 필요하다.
+- `tools/reports/boss-cailleach-uragaig-pve40-20260520-015654`: 40/40 접속, 사망 1, target_removed 39, loot 1(`영웅` 1). 일반 named 보스급은 공통 파티 행동으로 안정 공략 가능하다.
+
+남은 공통 과제:
+
+- 드래곤/특수 보스는 보스별 공격 패턴이 아니라 역할 기반 생존전략으로 해결한다. 예: 원거리/힐러 산개, 비활성 탱커 교대, 광역 피해 후 재집결, 소환수 다수 발생 시 활성 탱커 단독 처리 한계 보완.
+- 보스별 전용 행동은 전투 시작 전 플래그 해제나 대화 명령까지만 허용한다.

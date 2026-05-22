@@ -1,0 +1,23 @@
+{
+  "type": "daoc-client-zone-mpk",
+  "zones_root": "../../../../OpenDAoCClient/zones",
+  "correction_max_distance": 0,
+  "correction_sample_count": 4,
+  "correction_points": [],
+  "zones": {
+    "0": { "name": "Camelot Hills", "offset_x": 67, "offset_y": 59, "width": 8, "height": 8 },
+    "1": { "name": "Salisbury Plains", "offset_x": 67, "offset_y": 67, "width": 8, "height": 8 },
+    "2": { "name": "Black Mtns. South", "offset_x": 59, "offset_y": 53, "width": 8, "height": 8 },
+    "3": { "name": "Black Mtns. North", "offset_x": 59, "offset_y": 45, "width": 8, "height": 8 },
+    "4": { "name": "Dartmoor", "offset_x": 43, "offset_y": 85, "width": 8, "height": 8 },
+    "6": { "name": "Cornwall", "offset_x": 43, "offset_y": 77, "width": 8, "height": 8 },
+    "7": { "name": "Llyn Barfog", "offset_x": 51, "offset_y": 45, "width": 8, "height": 8 },
+    "8": { "name": "Campacorentin Forest", "offset_x": 59, "offset_y": 71, "width": 8, "height": 8 },
+    "9": { "name": "Avalon Marsh", "offset_x": 51, "offset_y": 75, "width": 8, "height": 8 },
+    "10": { "name": "Lyonesse", "offset_x": 35, "offset_y": 77, "width": 8, "height": 8 },
+    "11": { "name": "Forest Sauvage", "offset_x": 69, "offset_y": 51, "width": 8, "height": 8 },
+    "12": { "name": "Snowdonia", "offset_x": 61, "offset_y": 37, "width": 8, "height": 8 },
+    "14": { "name": "Pennine Mountains", "offset_x": 69, "offset_y": 43, "width": 8, "height": 8 },
+    "15": { "name": "Hadrian's Wall", "offset_x": 73, "offset_y": 35, "width": 8, "height": 8 }
+  }
+}

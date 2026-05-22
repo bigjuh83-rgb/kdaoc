@@ -8,12 +8,14 @@ OpenDAoC development. It is not a game client replacement.
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import os
 import socket
 import struct
 import time
 from dataclasses import dataclass
+from typing import Callable
 
 
 CLIENT_PACKETS = {
@@ -29,7 +31,10 @@ CLIENT_PACKETS = {
     "heading": 0xBA,
     "target": 0xB0,
     "attack": 0x74,
+    "buy": 0x78,
+    "sell": 0x79,
     "dialog_response": 0x82,
+    "move_item": 0xDD,
     "use_slot": 0x71,
     "use_spell": 0x7D,
     "use_skill": 0xBB,
@@ -37,6 +42,8 @@ CLIENT_PACKETS = {
     "check_los": 0xD0,
     "command": 0xAF,
 }
+
+DEFAULT_DUMMY_HOST = os.environ.get("OPENDAOC_DUMMY_HOST", "192.168.0.42")
 
 SERVER_PACKETS = {
     0x22: "CryptKey",
@@ -115,6 +122,21 @@ class HeadlessDaocClient:
         self.mana_percent = 100
         self.endurance_percent = 100
         self.is_dead = False
+        self.attack_mode_enabled: bool | None = None
+        self.last_position_speed = 0.0
+        self.last_position_target_in_view = False
+        self.last_position_update_sent_at = 0.0
+        self.last_local_move_at = 0.0
+        self.last_sent_position = (0, 0, 0)
+        self.last_local_movement_speed = 0.0
+        self.server_correction_smoothing = False
+        self.server_correction_min_distance = 20.0
+        self.server_correction_step = 45.0
+        self.server_correction_max_snap_distance = 800.0
+        self.ground_z_sampler: Callable[[int, int, int], int | None] | None = None
+        self.trace_movement_path: str | None = None
+        self.trace_observed_player_positions = False
+        self.read_timeout = 0.15
         self.sock: socket.socket | None = None
         self.recv_buffer = bytearray()
         self.npcs: dict[int, KnownNpc] = {}
@@ -124,7 +146,8 @@ class HeadlessDaocClient:
 
     def connect(self) -> None:
         self.sock = socket.create_connection((self.host, self.port), timeout=self.timeout)
-        self.sock.settimeout(0.15)
+        self.read_timeout = min(0.15, max(self.timeout, 0.01))
+        self.sock.settimeout(self.read_timeout)
 
     def close(self) -> None:
         if self.sock is not None:
@@ -151,6 +174,16 @@ class HeadlessDaocClient:
         self.sock.sendall(packet)
         self.sequence += 1
 
+    def trace_movement(self, event: str, **fields) -> None:
+        if not self.trace_movement_path:
+            return
+
+        payload = {"t": time.monotonic(), "event": event}
+        payload.update(fields)
+
+        with open(self.trace_movement_path, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n")
+
     def read_packets_for(self, seconds: float) -> list[ServerPacket]:
         if self.sock is None:
             raise RuntimeError("client is not connected")
@@ -159,7 +192,13 @@ class HeadlessDaocClient:
         packets: list[ServerPacket] = []
 
         while time.monotonic() < deadline:
+            remaining = deadline - time.monotonic()
+
+            if remaining <= 0:
+                break
+
             try:
+                self.sock.settimeout(min(self.read_timeout, max(remaining, 0.001)))
                 chunk = self.sock.recv(65535)
             except socket.timeout:
                 continue
@@ -184,6 +223,7 @@ class HeadlessDaocClient:
                 if packet.code == 0x28 and len(packet.data) >= 2:
                     self.session_id = int.from_bytes(packet.data[:2], "little")
 
+        self.sock.settimeout(self.read_timeout)
         return packets
 
     def drain(self, seconds: float = 0.05) -> int:
@@ -226,7 +266,7 @@ class HeadlessDaocClient:
         self.send_packet(CLIENT_PACKETS["ping"], b"\x00\x00\x00\x00" + struct.pack(">I", timestamp))
         return self.drain(0.05)
 
-    def send_heading(self, heading: int) -> int:
+    def send_heading(self, heading: int, *, drain_after: bool = True) -> int:
         self.heading = heading & 0x0FFF
         data = bytearray()
         data += struct.pack(">H", self.session_id & 0xFFFF)
@@ -237,9 +277,34 @@ class HeadlessDaocClient:
         data += b"\x00"  # steed slot.
         data += b"\x00"  # state flags.
         self.send_packet(CLIENT_PACKETS["heading"], bytes(data))
-        return self.drain(0.05)
+        return self.drain(0.05) if drain_after else 0
 
     def send_position_update(self, speed: float = 0.0, target_in_view: bool = False) -> int:
+        if self.is_dead:
+            self.trace_movement(
+                "skip_send_position_dead",
+                x=int(self.x),
+                y=int(self.y),
+                z=int(self.z),
+                speed=f"{float(speed):.3f}",
+                heading=int(self.heading & 0x0FFF),
+                target_in_view=int(target_in_view),
+            )
+            return 0
+
+        self.last_position_speed = float(speed)
+        self.last_position_target_in_view = bool(target_in_view)
+        self.last_position_update_sent_at = time.monotonic()
+        self.last_sent_position = (int(self.x), int(self.y), int(self.z))
+        self.trace_movement(
+            "send_position",
+            x=int(self.x),
+            y=int(self.y),
+            z=int(self.z),
+            speed=f"{float(speed):.3f}",
+            heading=int(self.heading & 0x0FFF),
+            target_in_view=int(target_in_view),
+        )
         action_flags = 0x30 if target_in_view else 0
         data = bytearray()
         data += struct.pack("<f", float(self.x))
@@ -259,6 +324,40 @@ class HeadlessDaocClient:
         data += b"\x64"  # health byte.
         data += b"\x64"  # mana percent.
         data += b"\x64"  # endurance percent.
+        data += b"\x00\x00"
+        self.send_packet(CLIENT_PACKETS["position"], bytes(data))
+        return self.drain(0.05)
+
+    def send_corpse_position_update(self) -> int:
+        self.last_position_speed = 0.0
+        self.last_position_target_in_view = False
+        self.last_position_update_sent_at = time.monotonic()
+        self.last_sent_position = (int(self.x), int(self.y), int(self.z))
+        self.trace_movement(
+            "send_corpse_position",
+            x=int(self.x),
+            y=int(self.y),
+            z=int(self.z),
+            heading=int(self.heading & 0x0FFF),
+        )
+        data = bytearray()
+        data += struct.pack("<f", float(self.x))
+        data += struct.pack("<f", float(self.y))
+        data += struct.pack("<f", float(self.z))
+        data += struct.pack("<f", 0.0)
+        data += struct.pack("<f", 0.0)
+        data += struct.pack(">H", self.session_id & 0xFFFF)
+        data += struct.pack(">H", self.player_object_id & 0xFFFF)
+        data += struct.pack(">H", self.zone_id & 0xFFFF)
+        data += b"\x14"  # SITTING | SWIMMING: client corpse/death pose.
+        data += b"\x00"
+        data += b"\x00\x00"
+        data += struct.pack(">H", self.heading & 0x0FFF)
+        data += b"\x00"
+        data += b"\x00\x00"
+        data += b"\x00"
+        data += b"\x64"
+        data += b"\x64"
         data += b"\x00\x00"
         self.send_packet(CLIENT_PACKETS["position"], bytes(data))
         return self.drain(0.05)
@@ -286,7 +385,13 @@ class HeadlessDaocClient:
         return self.drain(0.05)
 
     def set_attack_mode(self, enabled: bool) -> int:
+        if self.attack_mode_enabled == bool(enabled):
+            self.trace_movement("attack_mode_skip", enabled=bool(enabled))
+            return 0
+
+        self.attack_mode_enabled = bool(enabled)
         self.send_packet(CLIENT_PACKETS["attack"], bytes([1 if enabled else 0, 0]))
+        self.trace_movement("attack_mode", enabled=bool(enabled))
         return self.drain(0.05)
 
     def accept_group_invite(self, leader_session_id: int) -> int:
@@ -299,32 +404,83 @@ class HeadlessDaocClient:
         self.send_packet(CLIENT_PACKETS["dialog_response"], bytes(data))
         return self.drain(0.05)
 
-    def use_skill(self, index: int, skill_type: int = 1, target_in_view: bool = True) -> int:
-        data = self.build_action_payload(target_in_view=target_in_view)
+    def accept_custom_dialog(self, response: int = 1) -> int:
+        data = bytearray()
+        data += b"\x00\x00"
+        data += b"\x00\x01"
+        data += b"\x00\x00"
+        data += b"\x01"  # eDialogCode.CustomDialog
+        data += bytes([response & 0xFF])
+        self.send_packet(CLIENT_PACKETS["dialog_response"], bytes(data))
+        return self.drain(0.05)
+
+    def buy_item(self, slot: int, count: int = 1, menu_id: int = 0) -> int:
+        data = bytearray()
+        data += struct.pack(">I", max(self.x, 0) & 0xFFFFFFFF)
+        data += struct.pack(">I", max(self.y, 0) & 0xFFFFFFFF)
+        data += struct.pack(">H", self.player_object_id & 0xFFFF)
+        data += struct.pack(">H", slot & 0xFFFF)
+        data += bytes([max(1, min(count, 255)) & 0xFF])
+        data += bytes([menu_id & 0xFF])
+        self.send_packet(CLIENT_PACKETS["buy"], bytes(data))
+        return self.drain(0.05)
+
+    def sell_item(self, slot: int) -> int:
+        data = bytearray()
+        data += struct.pack(">I", max(self.x, 0) & 0xFFFFFFFF)
+        data += struct.pack(">I", max(self.y, 0) & 0xFFFFFFFF)
+        data += struct.pack(">H", self.player_object_id & 0xFFFF)
+        data += struct.pack(">H", slot & 0xFFFF)
+        self.send_packet(CLIENT_PACKETS["sell"], bytes(data))
+        return self.drain(0.05)
+
+    def move_item(self, from_slot: int, to_slot: int, count: int = 1) -> int:
+        data = bytearray()
+        data += b"\x00\x00"
+        data += struct.pack(">H", to_slot & 0xFFFF)
+        data += struct.pack(">H", from_slot & 0xFFFF)
+        data += struct.pack(">H", max(1, min(count, 0xFFFF)) & 0xFFFF)
+        self.send_packet(CLIENT_PACKETS["move_item"], bytes(data))
+        return self.drain(0.05)
+
+    def use_skill(self, index: int, skill_type: int = 1, target_in_view: bool = True, speed: float | None = None) -> int:
+        data = self.build_action_payload(target_in_view=target_in_view, speed=speed)
         data += bytes([index & 0xFF, skill_type & 0xFF])
         self.send_packet(CLIENT_PACKETS["use_skill"], bytes(data))
         return self.drain(0.05)
 
-    def use_spell(self, spell_level: int, spell_line_index: int = 0, target_in_view: bool = True) -> int:
-        data = self.build_action_payload(target_in_view=target_in_view)
+    def use_spell(self, spell_level: int, spell_line_index: int = 0, target_in_view: bool = True, speed: float | None = None) -> int:
+        data = self.build_action_payload(target_in_view=target_in_view, speed=speed)
         data += bytes([spell_level & 0xFF, spell_line_index & 0xFF])
         data += b"\x00\x00"
         self.send_packet(CLIENT_PACKETS["use_spell"], bytes(data))
         return self.drain(0.05)
 
-    def use_slot(self, slot: int, use_type: int = 0, target_in_view: bool = True) -> int:
-        data = self.build_action_payload(target_in_view=target_in_view)
+    def use_slot(self, slot: int, use_type: int = 0, target_in_view: bool = True, speed: float | None = None) -> int:
+        data = self.build_action_payload(target_in_view=target_in_view, speed=speed)
         data += bytes([slot & 0xFF, use_type & 0xFF])
         self.send_packet(CLIENT_PACKETS["use_slot"], bytes(data))
         return self.drain(0.05)
 
-    def build_action_payload(self, target_in_view: bool = True) -> bytearray:
+    def build_action_payload(self, target_in_view: bool = True, speed: float | None = None) -> bytearray:
         flag_speed_data = 0xA000 if target_in_view else 0
+        movement_speed = self.last_position_speed if speed is None else speed
+        last_sent_x, last_sent_y, last_sent_z = self.last_sent_position
+        has_unsent_position = (int(self.x), int(self.y), int(self.z)) != (last_sent_x, last_sent_y, last_sent_z)
+        payload_x = self.x
+        payload_y = self.y
+        payload_z = self.z
+
+        if has_unsent_position:
+            payload_x = last_sent_x
+            payload_y = last_sent_y
+            payload_z = last_sent_z
+
         data = bytearray()
-        data += struct.pack("<f", float(self.x))
-        data += struct.pack("<f", float(self.y))
-        data += struct.pack("<f", float(self.z))
-        data += struct.pack("<f", 0.0)
+        data += struct.pack("<f", float(payload_x))
+        data += struct.pack("<f", float(payload_y))
+        data += struct.pack("<f", float(payload_z))
+        data += struct.pack("<f", float(movement_speed))
         data += struct.pack(">H", self.heading & 0x0FFF)
         data += struct.pack(">H", flag_speed_data)
         return data
@@ -355,36 +511,190 @@ class HeadlessDaocClient:
     def distance_to(self, obj) -> float:
         return math.sqrt(self.distance_squared(obj))
 
-    def move_towards(self, obj, step: float = 250.0, stop_distance: float = 250.0) -> bool:
-        return self.move_towards_position(obj.x, obj.y, obj.z, step=step, stop_distance=stop_distance)
+    def horizontal_distance_to(self, obj) -> float:
+        return math.sqrt((obj.x - self.x) ** 2 + (obj.y - self.y) ** 2)
 
-    def move_towards_position(self, x: int, y: int, z: int, step: float = 250.0, stop_distance: float = 250.0) -> bool:
+    def move_towards(self, obj, step: float = 250.0, stop_distance: float = 250.0, movement_speed: float | None = None) -> bool:
+        return self.move_towards_position(obj.x, obj.y, obj.z, step=step, stop_distance=stop_distance, movement_speed=movement_speed)
+
+    def move_towards_position(
+        self,
+        x: int,
+        y: int,
+        z: int,
+        step: float = 250.0,
+        stop_distance: float = 250.0,
+        movement_speed: float | None = None,
+        max_z_step: float = 0.0,
+        min_position_send_interval: float = 0.0,
+        ground_z: int | None = None,
+        snap_ground_z_on_stop: bool = False,
+        target_in_view: bool = False,
+    ) -> bool:
+        start_x = int(self.x)
+        start_y = int(self.y)
+        start_z = int(self.z)
         dx = x - self.x
         dy = y - self.y
-        dz = z - self.z
-        distance = math.sqrt(dx * dx + dy * dy + dz * dz)
+        horizontal_distance = math.sqrt(dx * dx + dy * dy)
 
-        if distance <= stop_distance or distance <= 0:
-            if distance > 0:
+        if horizontal_distance <= stop_distance or horizontal_distance <= 0:
+            if ground_z is not None and snap_ground_z_on_stop:
+                self.z = int(ground_z)
+            should_send_stop = (
+                self.last_position_speed != 0.0
+                or (target_in_view and not self.last_position_target_in_view)
+                or min_position_send_interval <= 0
+                or time.monotonic() - self.last_position_update_sent_at >= min_position_send_interval
+            )
+            if horizontal_distance > 0:
                 self.heading = heading_from_delta(dx, dy)
-            self.send_position_update(speed=0.0, target_in_view=True)
+                if not should_send_stop:
+                    self.send_heading(self.heading, drain_after=False)
+            if should_send_stop:
+                self.send_position_update(speed=0.0, target_in_view=target_in_view)
+            else:
+                self.trace_movement(
+                    "skip_stop_send",
+                    x=int(self.x),
+                    y=int(self.y),
+                    z=int(self.z),
+                    heading=int(self.heading & 0x0FFF),
+                )
             return False
 
-        travel = min(step, max(distance - stop_distance, 0))
-        ratio = travel / distance
-        self.x = int(self.x + dx * ratio)
-        self.y = int(self.y + dy * ratio)
-        self.z = int(self.z + dz * ratio)
+        now = time.monotonic()
+        travel_limit = step
+
+        movement_reference_time = max(self.last_local_move_at, self.last_position_update_sent_at)
+
+        if movement_speed is not None and movement_speed > 0 and movement_reference_time > 0.0:
+            elapsed = max(0.0, now - movement_reference_time)
+            # Follow elapsed wall-clock time instead of forcing a full smooth step every tick.
+            # Forcing `step` here makes a 55-unit smooth step fire every 0.05s tick, which
+            # overshoots the advertised speed and looks like forward walking mixed with teleporting.
+            travel_limit = min(max(1.0, movement_speed * elapsed), max(1.0, movement_speed * 1.0))
+
+        travel = min(travel_limit, max(horizontal_distance - stop_distance, 0))
+        ratio = travel / horizontal_distance
+        next_x = int(self.x + dx * ratio)
+        next_y = int(self.y + dy * ratio)
+        sampled_ground_z = self.ground_z_sampler(next_x, next_y, self.zone_id) if self.ground_z_sampler else None
+
+        # Near the stop boundary, integer world coordinates can quantize a valid sub-unit move
+        # into "no position change". Treat that as arrival instead of repeatedly advertising run
+        # speed at the same coordinates, which looks like in-place rewind/rubber-banding in game.
+        if next_x == self.x and next_y == self.y:
+            self.heading = heading_from_delta(dx, dy)
+            self.send_position_update(speed=0.0, target_in_view=target_in_view)
+            return False
+
+        self.x = next_x
+        self.y = next_y
+        self.last_local_move_at = now
+        z_source = "interpolated"
+
+        if sampled_ground_z is not None:
+            self.z = int(sampled_ground_z)
+            z_source = "ground_z_sampler"
+            self.trace_movement(
+                "ground_z_sample",
+                x=int(self.x),
+                y=int(self.y),
+                z=int(self.z),
+                target_x=int(x),
+                target_y=int(y),
+                zone=int(self.zone_id),
+            )
+        elif ground_z is not None:
+            self.z = int(ground_z)
+            z_source = "explicit_ground_z"
+        else:
+            dz = z - self.z
+
+            if dz:
+                z_step = dz * ratio
+
+                if max_z_step > 0:
+                    z_step = max(-max_z_step, min(max_z_step, z_step))
+
+                self.z = int(self.z + z_step)
+
         self.heading = heading_from_delta(dx, dy)
-        self.send_position_update(speed=travel, target_in_view=True)
+        display_speed = movement_speed if movement_speed is not None and movement_speed > 0 else travel
+        self.last_local_movement_speed = float(display_speed)
+        self.trace_movement(
+            "move_step",
+            from_x=start_x,
+            from_y=start_y,
+            from_z=start_z,
+            x=int(self.x),
+            y=int(self.y),
+            z=int(self.z),
+            target_x=int(x),
+            target_y=int(y),
+            target_z=int(z),
+            horizontal_distance=f"{float(horizontal_distance):.3f}",
+            travel=f"{float(travel):.3f}",
+            ratio=f"{float(ratio):.6f}",
+            heading=int(self.heading & 0x0FFF),
+            speed=f"{float(display_speed):.3f}",
+            z_source=z_source,
+            sampled_ground_z="" if sampled_ground_z is None else int(sampled_ground_z),
+            zone=int(self.zone_id),
+        )
+        should_send_position = (
+            min_position_send_interval <= 0
+            or self.last_position_speed == 0.0
+            or (target_in_view and not self.last_position_target_in_view)
+            or now - self.last_position_update_sent_at >= min_position_send_interval
+        )
+
+        if not should_send_position:
+            self.trace_movement(
+                "skip_move_send",
+                x=int(self.x),
+                y=int(self.y),
+                z=int(self.z),
+                heading=int(self.heading & 0x0FFF),
+                speed=f"{float(display_speed):.3f}",
+            )
+            return True
+
+        self.send_position_update(speed=display_speed, target_in_view=target_in_view)
         return True
 
-    def wander(self, heading: int, step: float = 250.0) -> None:
+    def wander(
+        self,
+        heading: int,
+        step: float = 250.0,
+        movement_speed: float | None = None,
+        min_position_send_interval: float = 0.0,
+    ) -> None:
         self.heading = heading & 0x0FFF
         radians = self.heading / 4096 * (math.pi * 2)
-        self.x = int(self.x + math.sin(radians) * step)
-        self.y = int(self.y + math.cos(radians) * step)
-        self.send_position_update(speed=step, target_in_view=False)
+        now = time.monotonic()
+        travel = step
+
+        movement_reference_time = max(self.last_local_move_at, self.last_position_update_sent_at)
+
+        if movement_speed is not None and movement_speed > 0 and movement_reference_time > 0.0:
+            elapsed = max(0.0, now - movement_reference_time)
+            travel = min(step, max(1.0, movement_speed * elapsed), max(1.0, movement_speed * 1.0))
+
+        self.x = int(self.x - math.sin(radians) * travel)
+        self.y = int(self.y + math.cos(radians) * travel)
+        self.last_local_move_at = now
+        self.last_local_movement_speed = float(movement_speed if movement_speed is not None and movement_speed > 0 else travel)
+
+        if (
+            min_position_send_interval > 0
+            and self.last_position_speed != 0.0
+            and time.monotonic() - self.last_position_update_sent_at < min_position_send_interval
+        ):
+            return
+
+        self.send_position_update(speed=movement_speed if movement_speed is not None and movement_speed > 0 else travel, target_in_view=False)
 
     def observe_packet(self, packet: ServerPacket) -> None:
         if packet.code == 0x20:
@@ -412,12 +722,71 @@ class HeadlessDaocClient:
         if len(data) < 22:
             return
 
-        self.x = int(struct.unpack_from("<f", data, 0)[0])
-        self.y = int(struct.unpack_from("<f", data, 4)[0])
-        self.z = int(struct.unpack_from("<f", data, 8)[0])
-        self.player_object_id = struct.unpack_from(">H", data, 12)[0]
-        self.heading = struct.unpack_from(">H", data, 14)[0]
-        self.zone_id = struct.unpack_from(">H", data, 20)[0]
+        server_x = int(struct.unpack_from("<f", data, 0)[0])
+        server_y = int(struct.unpack_from("<f", data, 4)[0])
+        server_z = int(struct.unpack_from("<f", data, 8)[0])
+        object_id = struct.unpack_from(">H", data, 12)[0]
+        server_heading = struct.unpack_from(">H", data, 14)[0]
+        server_zone_id = struct.unpack_from(">H", data, 20)[0]
+        should_smooth = self.server_correction_smoothing and self.player_object_id != 0
+        previous_x = int(self.x)
+        previous_y = int(self.y)
+        previous_z = int(self.z)
+        delta_x = server_x - previous_x
+        delta_y = server_y - previous_y
+        delta_z = server_z - previous_z
+        horizontal_delta = math.sqrt(delta_x * delta_x + delta_y * delta_y)
+
+        if should_smooth:
+            dx = delta_x
+            dy = delta_y
+            dz = delta_z
+            horizontal_distance = horizontal_delta
+
+            if self.server_correction_min_distance <= horizontal_distance <= self.server_correction_max_snap_distance:
+                correction = min(self.server_correction_step, horizontal_distance)
+                ratio = correction / horizontal_distance if horizontal_distance > 0 else 0.0
+                self.x = int(self.x + dx * ratio)
+                self.y = int(self.y + dy * ratio)
+                self.z = int(self.z + dz * ratio)
+                self.heading = server_heading
+                self.zone_id = server_zone_id
+                self.trace_movement(
+                    "observe_self_position_smooth",
+                    x=int(self.x),
+                    y=int(self.y),
+                    z=int(self.z),
+                    server_x=int(server_x),
+                    server_y=int(server_y),
+                    server_z=int(server_z),
+                    correction=f"{float(correction):.3f}",
+                    distance=f"{float(horizontal_distance):.3f}",
+                    heading=int(self.heading & 0x0FFF),
+                    zone=int(self.zone_id),
+                )
+                return
+
+        self.x = server_x
+        self.y = server_y
+        self.z = server_z
+        self.player_object_id = object_id
+        self.heading = server_heading
+        self.zone_id = server_zone_id
+        self.trace_movement(
+            "observe_self_position",
+            x=int(self.x),
+            y=int(self.y),
+            z=int(self.z),
+            previous_x=previous_x,
+            previous_y=previous_y,
+            previous_z=previous_z,
+            delta_x=int(delta_x),
+            delta_y=int(delta_y),
+            delta_z=int(delta_z),
+            horizontal_delta=f"{float(horizontal_delta):.3f}",
+            heading=int(self.heading & 0x0FFF),
+            zone=int(self.zone_id),
+        )
 
     def observe_status_update(self, data: bytes) -> None:
         if len(data) < 4:
@@ -524,11 +893,35 @@ class HeadlessDaocClient:
         if player is None:
             return
 
+        previous_x = int(player.x)
+        previous_y = int(player.y)
+        previous_z = int(player.z)
         player.x = int(struct.unpack_from("<f", data, 0)[0])
         player.y = int(struct.unpack_from("<f", data, 4)[0])
         player.z = int(struct.unpack_from("<f", data, 8)[0])
         player.heading = struct.unpack_from(">H", data, 30)[0]
         player.last_seen = time.monotonic()
+        delta_x = int(player.x - previous_x)
+        delta_y = int(player.y - previous_y)
+        delta_z = int(player.z - previous_z)
+        horizontal_delta = math.sqrt(delta_x * delta_x + delta_y * delta_y)
+        if self.trace_observed_player_positions:
+            self.trace_movement(
+                "observe_player_position",
+                object_id=int(object_id),
+                name=player.name,
+                x=int(player.x),
+                y=int(player.y),
+                z=int(player.z),
+                previous_x=previous_x,
+                previous_y=previous_y,
+                previous_z=previous_z,
+                delta_x=delta_x,
+                delta_y=delta_y,
+                delta_z=delta_z,
+                horizontal_delta=f"{float(horizontal_delta):.3f}",
+                heading=int(player.heading & 0x0FFF),
+            )
 
     def observe_object_remove(self, data: bytes) -> None:
         if len(data) < 2:
@@ -553,6 +946,7 @@ class HeadlessDaocClient:
         if object_id == self.player_object_id:
             self.health_percent = 0
             self.is_dead = True
+            self.trace_movement("player_death", object_id=int(object_id), health_percent=0)
 
     def observe_player_revive(self, data: bytes) -> None:
         if len(data) < 2:
@@ -562,13 +956,14 @@ class HeadlessDaocClient:
 
         if object_id == self.player_object_id:
             self.is_dead = False
+            self.trace_movement("player_revive", object_id=int(object_id), health_percent=int(self.health_percent))
 
     def observe_message(self, data: bytes) -> None:
         if len(data) < 2:
             return
 
         chat_type = data[0]
-        text = data[1:].split(b"\x00", 1)[0].decode("utf-8", errors="replace")
+        text = decode_daoc_text(data[1:].split(b"\x00", 1)[0])
         self.messages.append(ChatMessage(chat_type, text, time.monotonic()))
 
     def consume_messages(self) -> list[ChatMessage]:
@@ -613,6 +1008,16 @@ def int_pascal(value: str) -> bytes:
     return struct.pack("<I", len(encoded)) + encoded
 
 
+def decode_daoc_text(data: bytes) -> str:
+    if not data:
+        return ""
+
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        return data.decode("cp949", errors="replace")
+
+
 def read_pascal_string(data: bytes, offset: int) -> tuple[str, int]:
     if offset >= len(data):
         return "", offset
@@ -627,14 +1032,14 @@ def heading_from_delta(dx: float, dy: float) -> int:
     if dx == 0 and dy == 0:
         return 0
 
-    radians = math.atan2(dx, dy)
+    radians = math.atan2(-dx, dy)
     heading = int((radians % (math.pi * 2)) / (math.pi * 2) * 4096)
     return heading & 0x0FFF
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--host", default=DEFAULT_DUMMY_HOST)
     parser.add_argument("--port", type=int, default=10300)
     parser.add_argument("--username", default=os.environ.get("OPENDAOC_USERNAME", "bigjuh"))
     parser.add_argument("--password", default=os.environ.get("OPENDAOC_PASSWORD", ""))

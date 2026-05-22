@@ -28,6 +28,8 @@ Patch `ui/custom/assets.xml` and `ui/custom/ChatFont.xml` so common UI fonts use
 
 `Gulim` is the current recommended custom UI font for this client path. It is less pretty than newer fonts, but it has been the most reliable option for this old DAoC GDI rendering path.
 
+The small quest/trainer Accept/Decline dialog is a separate client path. It does not become Korean just because `ui/custom/popup.xml` or Atlantis/Isles XML fonts are correct. The real permanent fix is in `game.dll`: the popup font-loader caller was passing an empty filename, so the client never opened `fonts/uifont.dat` and always rebuilt the hardcoded bitmap fallback table. The local Korean build now patches that caller to pass `fonts\\uifont.dat`, and it also keeps `0x1005ee` on `eb` so the parsed popup font sections stay on the GDI branch.
+
 Example:
 
 ```xml
@@ -192,6 +194,13 @@ Move Forward -> 앞으로이동
 ```
 
 When patching those built-in labels, keep the Korean string shorter than or equal to the original byte length, and encode it as CP949. `game.dll` is the live client DLL; the other `game*.dll` files in the local client folder are backups unless deliberately selected.
+
+For the popup/dialog font path, keep these `game.dll` fixes together:
+
+- `0x0b90e0`: change the popup font-loader caller from `push 0x937c08` (empty filename) to `push 0x97f9a3`, where `0x97f9a3` contains `fonts\\uifont.dat\\0` in `.data` slack.
+- `0x1005ee`: keep this as `eb` so the parsed popup font sections skip the bitmap branch and use the GDI entries from `fonts/uifont.dat`.
+
+Without the caller patch, the popup path never opens `uifont.dat` and still rebuilds the old 13-slot bitmap table on every restart.
 
 ## Verification
 

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Reflection;
 using DOL.Database;
+using DOL.GS.ServerProperties;
 
 namespace DOL.GS
 {
@@ -106,6 +107,18 @@ namespace DOL.GS
 				log.Debug("Found " + m_globalGenerators.Count + " Global LootGenerators");
 				log.Debug("Found " + m_mobNameGenerators.Count + " Mobnames registered by LootGenerators");
 				log.Debug("Found " + m_mobGuildGenerators.Count + " Guildnames registered by LootGenerators");
+			}
+
+			if (Properties.KDAOC_RANDOM_ITEM_ENABLED)
+			{
+				KdaocRandomItemLootGenerator generator = new KdaocRandomItemLootGenerator();
+				if (Properties.KDAOC_RANDOM_ITEM_SUPPRESS_EXISTING_LOOT)
+					generator.ExclusivePriority = Math.Max(1, Properties.KDAOC_RANDOM_ITEM_EXCLUSIVE_PRIORITY);
+
+				RegisterLootGenerator(generator, null, null, null, 0);
+
+				if (log.IsInfoEnabled)
+					log.Info($"KDAOC random item loot generator enabled. suppress_existing_loot={Properties.KDAOC_RANDOM_ITEM_SUPPRESS_EXISTING_LOOT}, exclusive_priority={generator.ExclusivePriority}");
 			}
 
 			// no loot generators loaded...

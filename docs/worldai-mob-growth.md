@@ -110,6 +110,19 @@ are ignored.
 /mobgrowth reset <mobId|target>
 ```
 
+## API
+
+The local API exposes an operator summary for dashboards and smoke tests:
+
+```text
+GET /api/world/mob-growth/summary?limit=20
+```
+
+The response includes whether the system is enabled, active grown mob count,
+active boss count versus cap, per-stage counts, top regions, and the highest
+score active monsters. This is read-only and does not trigger a scan; use
+`/mobgrowth scan [limit]` or the runtime timer to populate `mob_growth_state`.
+
 Recommended manual test flow:
 
 ```text

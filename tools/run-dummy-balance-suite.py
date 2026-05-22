@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import shlex
 import subprocess
 import sys
@@ -15,6 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
+DEFAULT_DUMMY_HOST = os.environ.get("OPENDAOC_DUMMY_HOST", "192.168.0.42")
 DEFAULT_SCENARIOS = ["newbie-solo", "solo-melee", "ai-pve-casual", "ai-party-casual", "party-assist", "mobgrowth-pressure"]
 
 
@@ -323,7 +325,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--preset", default="smoke")
     parser.add_argument("--scenarios", default=",".join(DEFAULT_SCENARIOS))
-    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--host", default=DEFAULT_DUMMY_HOST)
     parser.add_argument("--port", type=int, default=10300)
     parser.add_argument("--start", type=int)
     parser.add_argument("--count", type=int)
