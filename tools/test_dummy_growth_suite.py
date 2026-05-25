@@ -71,6 +71,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(growth.target_levels(5, 1), (4, 5, 1))
         self.assertEqual(growth.target_levels(6, 1), (4, 5, 1))
         self.assertEqual(growth.target_levels(7, 1), (6, 6, 0))
+        self.assertEqual(growth.target_levels(8, 1), (6, 6, 1))
         self.assertEqual(growth.target_levels(20, 2), (19, 21, 2))
         self.assertEqual(growth.target_levels(20, 4), (19, 22, 3))
         self.assertEqual(growth.target_levels(49, 8), (48, 50, 5))
@@ -144,12 +145,21 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 self.assertLessEqual(distance, 10000)
                 self.assertIn(preferred_name, route.prefer)
 
-    def test_hib_level_eight_route_uses_db_backed_connla_water_beetles(self) -> None:
+    def test_hib_level_eight_route_uses_db_backed_shannon_hill_toads(self) -> None:
         route = growth.select_route_point(growth.REALMS["hib"], level=8, party_size=1)
 
-        self.assertEqual(route.teleport_destination, "Connla")
+        self.assertEqual(route.teleport_destination, "Shannon Estuary")
+        self.assertIn("hill toad", route.prefer)
+        self.assertNotIn("water beetle", route.prefer)
+        self.assertLess(math.hypot(route.x - 309663, route.y - 647096), 2500)
+
+    def test_hib_level_ten_route_uses_db_backed_tir_na_mbeo_water_beetles(self) -> None:
+        route = growth.select_route_point(growth.REALMS["hib"], level=10, party_size=1)
+
+        self.assertEqual(route.teleport_destination, "Tir na mBeo")
         self.assertIn("water beetle", route.prefer)
-        self.assertLess(math.hypot(route.x - 292688, route.y - 648549), 2500)
+        self.assertIn("water beetle collector", route.avoid)
+        self.assertLess(math.hypot(route.x - 350899, route.y - 531716), 2500)
 
     def test_albion_level_fifty_route_uses_db_backed_tylwyth_cluster_away_from_sages(self) -> None:
         route = growth.select_route_point(growth.REALMS["alb"], level=50, party_size=2)
@@ -301,12 +311,14 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertIn("tree spirit", alb.avoid)
         self.assertIn("spriggarn stalker", alb.avoid)
         self.assertEqual(mid.teleport_destination, "Fort Veldon")
-        self.assertIn("wolf spiderling", mid.prefer)
-        self.assertEqual(hib.teleport_destination, "Connla")
+        self.assertIn("small hill cat", mid.prefer)
+        self.assertIn("wolf spiderling", mid.avoid)
+        self.assertEqual(hib.teleport_destination, "Tir na mBeo")
         self.assertIn("water beetle", hib.prefer)
+        self.assertIn("water beetle collector", hib.avoid)
         self.assertEqual((alb.x, alb.y, alb.z), (496426, 593548, 1904))
-        self.assertEqual((mid.x, mid.y, mid.z), (800176, 675574, 5316))
-        self.assertEqual((hib.x, hib.y, hib.z), (292688, 648549, 4928))
+        self.assertEqual((mid.x, mid.y, mid.z), (807285, 680511, 5000))
+        self.assertEqual((hib.x, hib.y, hib.z), (350899, 531716, 3637))
 
         teleporter = next(
             point
@@ -371,10 +383,10 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         )
         x, y, _z = [int(part) for part in observer_home.split(",")]
 
-        self.assertLess(math.hypot(x - 800176, y - 675574), 2600.0)
-        self.assertLess(math.hypot(x - 801046, y - 678588), 1200.0)
-        self.assertGreater(y, 676500)
-        self.assertLess(y, 678800)
+        self.assertLess(math.hypot(x - 802606, y - 679069), 80.0)
+        self.assertLess(math.hypot(x - 801046, y - 678588), 1700.0)
+        self.assertGreater(y, 678000)
+        self.assertLess(y, 679500)
 
     def test_experience_floor_matches_server_level_table(self) -> None:
         self.assertEqual(growth.experience_floor_for_level(1), 0)

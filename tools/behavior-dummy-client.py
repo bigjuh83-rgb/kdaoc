@@ -470,6 +470,36 @@ class CombatMetric:
     end_distance: float = 0.0
 
 
+POST_ABANDON_TARGET_REMOVED_OUTCOMES = frozenset(
+    {
+        "critical_health_drop_aggro",
+        "flee",
+        "travel_aggro_drop",
+    }
+)
+POST_ABANDON_TARGET_REMOVED_GRACE_SECONDS = 8.0
+
+
+def promote_recent_finished_combat_to_target_removed(
+    metric: CombatMetric,
+    *,
+    finished_at: float,
+    now: float,
+    damage_done: int,
+    grace_seconds: float = POST_ABANDON_TARGET_REMOVED_GRACE_SECONDS,
+) -> bool:
+    if metric.outcome not in POST_ABANDON_TARGET_REMOVED_OUTCOMES:
+        return False
+    if damage_done <= 0:
+        return False
+    if now - finished_at > grace_seconds:
+        return False
+
+    metric.duration += max(0.0, now - finished_at)
+    metric.outcome = "target_removed"
+    return True
+
+
 @dataclass(frozen=True)
 class Waypoint:
     x: int
@@ -9971,6 +10001,7 @@ def run_dummy_round(
     combat_plan_loaded = False
     death_seen = False
     active_combat: dict[str, float | int | str] | None = None
+    recent_finished_combats: dict[int, tuple[CombatMetric, float, int]] = {}
     last_spoken_state = ""
     last_state_speech_at = 0.0
 
@@ -10606,19 +10637,26 @@ def run_dummy_round(
                 duration_seconds=round(duration, 3),
                 final_distance=round(final_distance, 2),
             )
-            combat_metrics.append(
-                CombatMetric(
-                    target_id=int(active_combat["target_id"]),
-                    target_name=str(active_combat["target_name"]),
-                    target_level=int(active_combat["target_level"]),
-                    outcome=outcome,
-                    duration=duration,
-                    attacks=int(active_combat["attacks"]),
-                    skills=int(active_combat["skills"]),
-                    start_distance=float(active_combat["start_distance"]),
-                    end_distance=final_distance,
-                )
+            metric = CombatMetric(
+                target_id=int(active_combat["target_id"]),
+                target_name=str(active_combat["target_name"]),
+                target_level=int(active_combat["target_level"]),
+                outcome=outcome,
+                duration=duration,
+                attacks=int(active_combat["attacks"]),
+                skills=int(active_combat["skills"]),
+                start_distance=float(active_combat["start_distance"]),
+                end_distance=final_distance,
             )
+            combat_metrics.append(metric)
+            if outcome in POST_ABANDON_TARGET_REMOVED_OUTCOMES:
+                recent_finished_combats[metric.target_id] = (
+                    metric,
+                    now,
+                    int(active_combat.get("damage_done", 0) or 0),
+                )
+            else:
+                recent_finished_combats.pop(metric.target_id, None)
             speak_state_change(
                 now,
                 f"finish:{outcome}",
@@ -10640,6 +10678,29 @@ def run_dummy_round(
 
             for object_id in client.consume_removed_object_ids():
                 if object_id != current_target:
+                    recent_finished = recent_finished_combats.get(int(object_id))
+                    if recent_finished is None:
+                        continue
+                    metric, finished_at, damage_done = recent_finished
+                    previous_outcome = metric.outcome
+                    promoted = promote_recent_finished_combat_to_target_removed(
+                        metric,
+                        finished_at=finished_at,
+                        now=now,
+                        damage_done=damage_done,
+                    )
+                    recent_finished_combats.pop(int(object_id), None)
+                    if promoted:
+                        actions += add_action(action_counts, "target_removed")
+                        actions += add_action(action_counts, "post_abandon_target_removed")
+                        rejected_targets.pop(object_id, None)
+                        log_encounter_event(
+                            "post_abandon_target_removed",
+                            now,
+                            removed_object_id=int(object_id),
+                            previous_outcome=previous_outcome,
+                            damage_done=int(damage_done),
+                        )
                     continue
 
                 log_encounter_event("target_object_removed", now, removed_object_id=int(object_id))

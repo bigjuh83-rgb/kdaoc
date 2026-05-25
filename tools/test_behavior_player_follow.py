@@ -81,6 +81,45 @@ class AccountCsvTests(unittest.TestCase):
 
         self.assertEqual(command, "/train Staff 6")
 
+    def test_recent_flee_combat_promotes_to_target_removed_when_object_dies(self) -> None:
+        metric = behavior.CombatMetric(
+            target_id=22674,
+            target_name="giant spider",
+            target_level=7,
+            outcome="flee",
+            duration=64.0,
+        )
+
+        promoted = behavior.promote_recent_finished_combat_to_target_removed(
+            metric,
+            finished_at=100.0,
+            now=102.5,
+            damage_done=116,
+        )
+
+        self.assertTrue(promoted)
+        self.assertEqual(metric.outcome, "target_removed")
+        self.assertEqual(metric.duration, 66.5)
+
+    def test_recent_flee_combat_without_damage_does_not_promote(self) -> None:
+        metric = behavior.CombatMetric(
+            target_id=22674,
+            target_name="giant spider",
+            target_level=7,
+            outcome="flee",
+            duration=64.0,
+        )
+
+        promoted = behavior.promote_recent_finished_combat_to_target_removed(
+            metric,
+            finished_at=100.0,
+            now=102.5,
+            damage_done=0,
+        )
+
+        self.assertFalse(promoted)
+        self.assertEqual(metric.outcome, "flee")
+
     def test_auto_train_command_caps_to_configured_spec_level(self) -> None:
         command = behavior.auto_train_command_from_specs("Slash|3;Parry|1", 5)
 

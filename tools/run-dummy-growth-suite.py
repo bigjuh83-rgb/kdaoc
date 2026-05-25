@@ -520,7 +520,15 @@ REALMS: dict[str, RealmProfile] = {
                 "tawny lynx,carrion crawler,vein spider,black mauler juvenile,young grendelorm,sveawolf mother",
                 teleport_destination="Audliten",
             ),
-            route_point(10, 800176, 675574, 5316, "wolf spiderling", teleport_destination="Fort Veldon"),
+            route_point(
+                10,
+                807285,
+                680511,
+                5000,
+                "small hill cat",
+                "wolf spiderling,hill person,huldu stalker",
+                teleport_destination="Fort Veldon",
+            ),
             route_point(15, 736792, 836202, 5159, teleport_destination="Fort Veldon"),
             route_point(20, 783734, 797071, 5282, teleport_destination="Audliten"),
             route_point(25, 779270, 829104, 4856, teleport_destination="Huginfell"),
@@ -578,8 +586,8 @@ REALMS: dict[str, RealmProfile] = {
             route_point(2, 345100, 474178, 5473, "villainous youth,skeletal pawn,water beetle larva", "feccan,annoying lucradan,ambient,Lance Settler,lunantishee,blackthorn"),
             route_point(3, 347024, 473748, 6055, "mudman,villainous youth,skeletal pawn", "feccan,annoying lucradan,ambient,Lance Settler,lunantishee,blackthorn"),
             route_point(5, 348637, 479175, 5742, "eirebug,spraggon,large frog", "feccan,lough wolf,wild crouch,water beetle"),
-            route_point(8, 292688, 648549, 4928, "water beetle", teleport_destination="Connla"),
-            route_point(10, 292688, 648549, 4928, "water beetle", teleport_destination="Connla"),
+            route_point(8, 309663, 647096, 5234, "hill toad", teleport_destination="Shannon Estuary"),
+            route_point(10, 350899, 531716, 3637, "water beetle", "water beetle collector", teleport_destination="Tir na mBeo"),
             route_point(15, 339898, 516372, 5410, teleport_destination="Tir na mBeo"),
             route_point(20, 344391, 564431, 5739, teleport_destination="Ardagh"),
             route_point(25, 343316, 522184, 5174, teleport_destination="Howth"),
@@ -1238,6 +1246,9 @@ def target_levels(level: int, party_size: int) -> tuple[int, int, int]:
     if player_level <= 7 and party_size <= 1:
         target = max(1, player_level - 1)
         return target, target, 0
+
+    if player_level == 8 and party_size <= 1:
+        return 6, 6, 1
 
     if player_level <= 10 and party_size <= 1:
         target = max(1, player_level - 2)
