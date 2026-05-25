@@ -8837,6 +8837,243 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
+    def _engagement_context(self, *, state=behavior.DummyBehaviorState.HuntObjective, **overrides):
+        values = {
+            "behavior_state": state,
+            "current_target": 0,
+            "current_target_intent": behavior.TargetIntent.none,
+            "is_party_leader": False,
+            "is_party_follower": False,
+            "party_ready": True,
+            "leader_engaged": False,
+            "current_health_percent": 100,
+            "objective_home_reached": True,
+            "objective_hunt_ready": True,
+            "drop_aggro_active": state == behavior.DummyBehaviorState.DropAggroAndRecover,
+            "rest_active": False,
+            "flee_active": False,
+        }
+        values.update(overrides)
+        return behavior.EngagementContext(**values)
+
+    def _engagement_candidate(self, npc, *, source, intent):
+        return behavior.EngagementCandidate(
+            object_id=npc.object_id,
+            name=npc.name,
+            level=npc.level,
+            x=npc.x,
+            y=npc.y,
+            z=npc.z,
+            source=source,
+            intent=intent,
+            npc=npc,
+        )
+
+    def test_engagement_gate_rejects_candidate_outside_combat_home_leash(self):
+        npc = FakeNpc(301, "spindly rock crab", 9, 900.0)
+        npc.x = 2200
+        npc.y = 0
+        client = FakeClient(npcs=[npc])
+        args = SimpleNamespace(
+            max_target_distance=5000.0,
+            required_target_home=SimpleNamespace(x=0, y=0, z=0),
+            target_home_max_distance=5000.0,
+            combat_home_leash_distance=500.0,
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.hunter_selection,
+                intent=behavior.TargetIntent.objective,
+            ),
+            self._engagement_context(),
+            client,
+            args,
+            {},
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reject_reason, "combat_home_leash")
+
+    def test_engagement_gate_rejects_travel_non_objective_damage_candidate(self):
+        npc = FakeNpc(302, "wintery dirge", 11, 350.0)
+        args = SimpleNamespace(require_target_name="spindly rock crab", max_target_distance=1500.0)
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.incoming_damage_counterattack,
+                intent=behavior.TargetIntent.travel_aggro,
+            ),
+            self._engagement_context(state=behavior.DummyBehaviorState.TravelToObjective),
+            FakeClient(npcs=[npc]),
+            args,
+            {},
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reject_reason, "travel_non_objective")
+
+    def test_engagement_gate_rejects_drop_aggro_non_objective_candidate(self):
+        npc = FakeNpc(303, "wyvern", 39, 300.0)
+        args = SimpleNamespace(require_target_name="icestrider interceptor")
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.local_rescue,
+                intent=behavior.TargetIntent.travel_aggro,
+            ),
+            self._engagement_context(state=behavior.DummyBehaviorState.DropAggroAndRecover),
+            FakeClient(npcs=[npc]),
+            args,
+            {},
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reject_reason, "drop_aggro_active")
+
+    def test_engagement_gate_rejects_required_target_outside_combat_home_leash(self):
+        npc = FakeNpc(304, "spindly rock crab", 9, 900.0)
+        npc.x = 2200
+        npc.y = 0
+        client = FakeClient(npcs=[npc])
+        args = SimpleNamespace(
+            require_target_name="spindly rock crab",
+            max_target_distance=5000.0,
+            required_target_home=SimpleNamespace(x=0, y=0, z=0),
+            target_home_max_distance=5000.0,
+            combat_home_leash_distance=500.0,
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.required_retaliation,
+                intent=behavior.TargetIntent.required_retaliation,
+            ),
+            self._engagement_context(),
+            client,
+            args,
+            {},
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reject_reason, "combat_home_leash")
+
+    def test_commit_target_updates_party_leader_only_after_allowed_decision(self):
+        npc = FakeNpc(305, "spindly rock crab", 9, 200.0)
+        candidate = self._engagement_candidate(
+            npc,
+            source=behavior.TargetSource.hunter_selection,
+            intent=behavior.TargetIntent.objective,
+        )
+        client = SimpleNamespace(target_calls=[])
+        client.target_object = lambda object_id, **kwargs: client.target_calls.append((object_id, kwargs)) or 0
+        party_state = SimpleNamespace(update_calls=[])
+        party_state.update_leader = lambda leader, target=None: party_state.update_calls.append(target)
+
+        rejected = behavior.TargetDecision(
+            allowed=False,
+            candidate=candidate,
+            intent=behavior.TargetIntent.objective,
+            source=behavior.TargetSource.hunter_selection,
+            priority=0,
+            reject_reason="combat_home_leash",
+            should_target_object=False,
+            should_update_current_target=False,
+            should_publish_party_leader_target=True,
+            should_mark_leader_engaged=False,
+        )
+        behavior.commit_target(
+            rejected,
+            client,
+            party_state,
+            now=10.0,
+            current_target=0,
+            current_target_since=0.0,
+            current_target_last_visible_at=0.0,
+            current_target_intent=behavior.TargetIntent.none,
+            action_counts={},
+        )
+        self.assertEqual(client.target_calls, [])
+        self.assertEqual(party_state.update_calls, [])
+
+        allowed = behavior.TargetDecision(
+            allowed=True,
+            candidate=candidate,
+            intent=behavior.TargetIntent.objective,
+            source=behavior.TargetSource.hunter_selection,
+            priority=100,
+            reject_reason="",
+            should_target_object=True,
+            should_update_current_target=True,
+            should_publish_party_leader_target=True,
+            should_mark_leader_engaged=False,
+        )
+        behavior.commit_target(
+            allowed,
+            client,
+            party_state,
+            now=11.0,
+            current_target=0,
+            current_target_since=0.0,
+            current_target_last_visible_at=0.0,
+            current_target_intent=behavior.TargetIntent.none,
+            action_counts={},
+        )
+
+        self.assertEqual(client.target_calls[0][0], 305)
+        self.assertEqual(party_state.update_calls[0].object_id, 305)
+
+    def test_friendly_heal_target_source_does_not_use_engagement_gate(self):
+        self.assertFalse(behavior.should_use_engagement_gate_for_target_source("friendly_heal"))
+
+    def test_rejected_target_decision_does_not_change_current_target(self):
+        npc = FakeNpc(306, "wintery dirge", 11, 300.0)
+        candidate = self._engagement_candidate(
+            npc,
+            source=behavior.TargetSource.incoming_damage_counterattack,
+            intent=behavior.TargetIntent.travel_aggro,
+        )
+        client = SimpleNamespace(target_calls=[])
+        client.target_object = lambda object_id, **kwargs: client.target_calls.append((object_id, kwargs)) or 0
+        action_counts = {}
+        events = []
+
+        result = behavior.commit_target(
+            behavior.TargetDecision(
+                allowed=False,
+                candidate=candidate,
+                intent=behavior.TargetIntent.travel_aggro,
+                source=behavior.TargetSource.incoming_damage_counterattack,
+                priority=0,
+                reject_reason="travel_non_objective",
+                should_target_object=False,
+                should_update_current_target=False,
+                should_publish_party_leader_target=False,
+                should_mark_leader_engaged=False,
+            ),
+            client,
+            None,
+            now=12.0,
+            current_target=77,
+            current_target_since=5.0,
+            current_target_last_visible_at=6.0,
+            current_target_intent=behavior.TargetIntent.objective,
+            action_counts=action_counts,
+            log_event=lambda name, timestamp, **fields: events.append((name, timestamp, fields)),
+        )
+
+        self.assertEqual(result.current_target, 77)
+        self.assertEqual(result.current_target_since, 5.0)
+        self.assertEqual(result.current_target_last_visible_at, 6.0)
+        self.assertEqual(result.current_target_intent, behavior.TargetIntent.objective)
+        self.assertEqual(client.target_calls, [])
+        self.assertEqual(action_counts["target_gate_rejected"], 1)
+        self.assertEqual(events[0][0], "target_gate_rejected")
+
     def test_party_assist_command_waits_for_leader_engaged_when_required(self):
         args = SimpleNamespace(party_use_assist_command=True, party_require_leader_engaged=True)
 

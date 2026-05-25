@@ -105,9 +105,78 @@ class TargetIntent(str, Enum):
     none = "none"
     objective = "objective"
     required_retaliation = "required_retaliation"
+    party_assist = "party_assist"
     party_rescue = "party_rescue"
     travel_aggro = "travel_aggro"
     avoided_add = "avoided_add"
+    current_target_confirm = "current_target_confirm"
+
+
+class TargetSource(str, Enum):
+    hunter_selection = "hunter_selection"
+    party_assist = "party_assist"
+    party_rescue = "party_rescue"
+    local_rescue = "local_rescue"
+    incoming_damage_counterattack = "incoming_damage_counterattack"
+    leader_target_reacquire = "leader_target_reacquire"
+    current_target_api_refresh = "current_target_api_refresh"
+    required_retaliation = "required_retaliation"
+    current_target_preserve = "current_target_preserve"
+
+
+@dataclass(frozen=True)
+class EngagementCandidate:
+    object_id: int
+    name: str
+    level: int
+    x: int
+    y: int
+    z: int
+    source: TargetSource | str
+    intent: TargetIntent | str
+    npc: object | None = None
+
+
+@dataclass(frozen=True)
+class EngagementContext:
+    behavior_state: DummyBehaviorState | str
+    current_target: int
+    current_target_intent: TargetIntent | str
+    is_party_leader: bool
+    is_party_follower: bool
+    party_ready: bool
+    leader_engaged: bool
+    current_health_percent: int
+    objective_home_reached: bool
+    objective_hunt_ready: bool
+    drop_aggro_active: bool
+    rest_active: bool
+    flee_active: bool
+
+
+@dataclass(frozen=True)
+class TargetDecision:
+    allowed: bool
+    candidate: EngagementCandidate
+    intent: TargetIntent | str
+    source: TargetSource | str
+    priority: int
+    reject_reason: str
+    should_target_object: bool
+    should_update_current_target: bool
+    should_publish_party_leader_target: bool
+    should_mark_leader_engaged: bool
+
+
+@dataclass(frozen=True)
+class TargetCommitResult:
+    current_target: int
+    current_target_since: float
+    current_target_last_visible_at: float
+    current_target_intent: TargetIntent | str
+    target_object_called: bool
+    current_target_updated: bool
+    party_leader_target_published: bool
 
 
 DEFAULT_COMMANDS = ["/worldnews"]
@@ -1986,6 +2055,279 @@ def behavior_state_value(state: DummyBehaviorState | str) -> str:
 
 def target_intent_value(intent: TargetIntent | str) -> str:
     return intent.value if isinstance(intent, TargetIntent) else str(intent or "")
+
+
+def target_source_value(source: TargetSource | str) -> str:
+    return source.value if isinstance(source, TargetSource) else str(source or "")
+
+
+def should_use_engagement_gate_for_target_source(source: TargetSource | str) -> bool:
+    return target_source_value(source) in {item.value for item in TargetSource}
+
+
+def _target_gate_actor(candidate: EngagementCandidate):
+    if candidate.npc is not None:
+        return candidate.npc
+    return SimpleNamespace(
+        object_id=candidate.object_id,
+        name=candidate.name,
+        level=candidate.level,
+        x=candidate.x,
+        y=candidate.y,
+        z=candidate.z,
+        flags=0,
+    )
+
+
+def engagement_candidate_from_actor(
+    npc,
+    *,
+    source: TargetSource | str,
+    intent: TargetIntent | str,
+) -> EngagementCandidate:
+    return EngagementCandidate(
+        object_id=int(getattr(npc, "object_id", 0) or 0),
+        name=str(getattr(npc, "name", "") or ""),
+        level=int(getattr(npc, "level", 0) or 0),
+        x=int(getattr(npc, "x", 0) or 0),
+        y=int(getattr(npc, "y", 0) or 0),
+        z=int(getattr(npc, "z", 0) or 0),
+        source=source,
+        intent=intent,
+        npc=npc,
+    )
+
+
+def _target_decision(
+    *,
+    allowed: bool,
+    candidate: EngagementCandidate,
+    intent: TargetIntent | str,
+    source: TargetSource | str,
+    priority: int = 0,
+    reject_reason: str = "",
+    should_target_object: bool = False,
+    should_update_current_target: bool = False,
+    should_publish_party_leader_target: bool = False,
+    should_mark_leader_engaged: bool = False,
+) -> TargetDecision:
+    return TargetDecision(
+        allowed=allowed,
+        candidate=candidate,
+        intent=intent,
+        source=source,
+        priority=priority,
+        reject_reason=reject_reason,
+        should_target_object=should_target_object,
+        should_update_current_target=should_update_current_target,
+        should_publish_party_leader_target=should_publish_party_leader_target,
+        should_mark_leader_engaged=should_mark_leader_engaged,
+    )
+
+
+def _reject_engagement_candidate(
+    candidate: EngagementCandidate,
+    *,
+    intent: TargetIntent | str,
+    source: TargetSource | str,
+    reason: str,
+) -> TargetDecision:
+    return _target_decision(
+        allowed=False,
+        candidate=candidate,
+        intent=intent,
+        source=source,
+        reject_reason=reason,
+    )
+
+
+def evaluate_engagement_candidate(
+    candidate: EngagementCandidate,
+    context: EngagementContext,
+    client,
+    args: argparse.Namespace,
+    party_snapshot,
+) -> TargetDecision:
+    source = candidate.source
+    intent = candidate.intent
+    intent_name = target_intent_value(intent)
+    source_name = target_source_value(source)
+    actor = _target_gate_actor(candidate)
+
+    if int(candidate.object_id or 0) <= 0:
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="invalid_target")
+
+    if not should_use_engagement_gate_for_target_source(source):
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="non_hostile_target_source")
+
+    if context.flee_active:
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="flee_active")
+
+    if context.rest_active or behavior_state_value(context.behavior_state) == DummyBehaviorState.RestRecover.value:
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="rest_active")
+
+    if context.drop_aggro_active or behavior_state_value(context.behavior_state) == DummyBehaviorState.DropAggroAndRecover.value:
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="drop_aggro_active")
+
+    if is_objective_travel_state(context.behavior_state) and intent_name not in {
+        TargetIntent.objective.value,
+        TargetIntent.required_retaliation.value,
+        TargetIntent.current_target_confirm.value,
+    }:
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="travel_non_objective")
+
+    if not required_target_level_allowed(args, actor):
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="level_filter")
+
+    if not target_within_required_home(args, actor):
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="target_home_max_distance")
+
+    if not target_within_selection_distance(client, args, actor):
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="max_target_distance")
+
+    leash_violated, _leash_kind, _leash_distance = target_home_leash_violation(client, args, actor)
+    if leash_violated:
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="combat_home_leash")
+
+    if (
+        required_target_home_destination(args) is not None
+        and intent_name in {TargetIntent.objective.value, TargetIntent.required_retaliation.value}
+        and not (context.objective_home_reached or context.objective_hunt_ready)
+    ):
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="objective_home_not_ready")
+
+    if (
+        source_name in {TargetSource.party_assist.value, TargetSource.leader_target_reacquire.value}
+        and not context.party_ready
+    ):
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="party_not_ready")
+
+    if (
+        source_name in {TargetSource.party_assist.value, TargetSource.leader_target_reacquire.value}
+        and bool(getattr(args, "party_require_leader_engaged", False))
+        and not context.leader_engaged
+    ):
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="leader_not_engaged")
+
+    should_publish_leader_target = bool(
+        context.is_party_leader
+        and intent_name
+        in {
+            TargetIntent.objective.value,
+            TargetIntent.required_retaliation.value,
+            TargetIntent.party_assist.value,
+            TargetIntent.current_target_confirm.value,
+        }
+    )
+    priority = 100
+    if intent_name == TargetIntent.required_retaliation.value:
+        priority = 120
+    elif intent_name == TargetIntent.party_rescue.value:
+        priority = 90
+    elif intent_name in {TargetIntent.travel_aggro.value, TargetIntent.avoided_add.value}:
+        priority = 10
+
+    return _target_decision(
+        allowed=True,
+        candidate=candidate,
+        intent=intent,
+        source=source,
+        priority=priority,
+        should_target_object=True,
+        should_update_current_target=True,
+        should_publish_party_leader_target=should_publish_leader_target,
+        should_mark_leader_engaged=False,
+    )
+
+
+def _target_gate_reject_action_name(reason: str) -> str:
+    suffix = re.sub(r"[^a-z0-9_]+", "_", str(reason or "unknown").strip().lower()).strip("_")
+    return f"target_gate_rejected_{suffix or 'unknown'}"
+
+
+def commit_target(
+    decision: TargetDecision,
+    client,
+    party_state,
+    *,
+    now: float,
+    current_target: int,
+    current_target_since: float,
+    current_target_last_visible_at: float,
+    current_target_intent: TargetIntent | str,
+    action_counts: dict[str, int] | None = None,
+    log_event=None,
+    examine: bool | None = None,
+) -> TargetCommitResult:
+    candidate = decision.candidate
+
+    if not decision.allowed:
+        if action_counts is not None:
+            add_action(action_counts, "target_gate_rejected")
+            add_action(action_counts, _target_gate_reject_action_name(decision.reject_reason))
+        if log_event is not None:
+            log_event(
+                "target_gate_rejected",
+                now,
+                target_id=int(candidate.object_id or 0),
+                target_name=str(candidate.name or ""),
+                target_level=int(candidate.level or 0),
+                target_source=target_source_value(decision.source),
+                target_intent=target_intent_value(decision.intent),
+                reject_reason=str(decision.reject_reason or ""),
+            )
+        return TargetCommitResult(
+            current_target=current_target,
+            current_target_since=current_target_since,
+            current_target_last_visible_at=current_target_last_visible_at,
+            current_target_intent=current_target_intent,
+            target_object_called=False,
+            current_target_updated=False,
+            party_leader_target_published=False,
+        )
+
+    target_object_called = False
+    if decision.should_target_object:
+        if examine is None:
+            client.target_object(candidate.object_id)
+        else:
+            client.target_object(candidate.object_id, examine=examine)
+        target_object_called = True
+
+    updated_current_target = current_target
+    updated_current_target_since = current_target_since
+    updated_current_target_last_visible_at = current_target_last_visible_at
+    updated_current_target_intent = current_target_intent
+    current_target_updated = False
+    if decision.should_update_current_target:
+        updated_current_target = int(candidate.object_id or 0)
+        updated_current_target_since = now
+        updated_current_target_last_visible_at = now
+        updated_current_target_intent = decision.intent
+        current_target_updated = True
+
+    party_leader_target_published = False
+    if decision.should_publish_party_leader_target and party_state is not None:
+        target_actor = candidate.npc if candidate.npc is not None else _target_gate_actor(candidate)
+        party_state.update_leader(client, target_actor)
+        party_leader_target_published = True
+
+    if (
+        decision.should_mark_leader_engaged
+        and party_state is not None
+        and hasattr(party_state, "mark_leader_target_engaged")
+    ):
+        party_state.mark_leader_target_engaged(candidate.object_id)
+
+    return TargetCommitResult(
+        current_target=updated_current_target,
+        current_target_since=updated_current_target_since,
+        current_target_last_visible_at=updated_current_target_last_visible_at,
+        current_target_intent=updated_current_target_intent,
+        target_object_called=target_object_called,
+        current_target_updated=current_target_updated,
+        party_leader_target_published=party_leader_target_published,
+    )
 
 
 def is_objective_travel_state(state: DummyBehaviorState | str) -> bool:
@@ -13925,10 +14267,12 @@ def run_dummy_round(
 
                 kept_current_target_without_visible_npc = False
 
-                if args.hunter:
-                    selected_npc = None
-                    selected_npc_is_rescue = False
+                selected_npc = None
+                selected_npc_is_rescue = False
+                selected_target_source: TargetSource | str = TargetSource.hunter_selection
+                selected_target_decision = None
 
+                if args.hunter:
                     if party_state is not None:
                         party_snapshot = party_state.snapshot()
                         leader_target_id = int(party_snapshot["leader_target_id"])
@@ -13966,6 +14310,7 @@ def run_dummy_round(
                             )
                             if selected_npc is not None:
                                 selected_npc_is_rescue = True
+                                selected_target_source = TargetSource.party_rescue
                                 if args.party_rescue_aggro and party_state.request_rescue(
                                     party_member_name,
                                     selected_npc,
@@ -13991,6 +14336,7 @@ def run_dummy_round(
 
                             if selected_npc is not None:
                                 selected_npc_is_rescue = True
+                                selected_target_source = TargetSource.party_rescue
                                 actions += add_action(action_counts, "party_rescue_threat_target")
 
                         if (
@@ -14013,6 +14359,7 @@ def run_dummy_round(
                             if selected_npc is not None:
                                 if should_accept_party_rescue_target(args, selected_npc):
                                     selected_npc_is_rescue = True
+                                    selected_target_source = TargetSource.party_rescue
                                     actions += add_action(action_counts, "party_rescue_assist_target")
                                 else:
                                     selected_npc = None
@@ -14035,6 +14382,7 @@ def run_dummy_round(
 
                             if selected_npc is not None:
                                 selected_npc_is_rescue = True
+                                selected_target_source = TargetSource.local_rescue
                                 actions += add_action(action_counts, "party_local_rescue_target")
 
                                 if args.party_rescue_aggro and party_state.request_rescue(
@@ -14048,6 +14396,8 @@ def run_dummy_round(
 
                     if current_target and selected_npc is None:
                         selected_npc = selected_npc or choose_current_visible_target(npcs, current_target)
+                        if selected_npc is not None:
+                            selected_target_source = TargetSource.current_target_preserve
                         if (
                             selected_npc is not None
                             and party_state is not None
@@ -14063,6 +14413,7 @@ def run_dummy_round(
                             )
                         ):
                             selected_npc_is_rescue = True
+                            selected_target_source = TargetSource.party_rescue
                             actions += add_action(action_counts, "party_rescue_continue_target")
 
                         if should_reject_selected_target_for_required_filter(args, selected_npc, selected_npc_is_rescue):
@@ -14093,6 +14444,8 @@ def run_dummy_round(
                                 client.clear_target()
                                 client.set_attack_mode(False)
                                 actions += add_action(action_counts, "party_assist_required_target_rejected")
+                            elif selected_npc is not None:
+                                selected_target_source = TargetSource.party_assist
 
                     if selected_npc is None:
                         party_snapshot = party_state.snapshot() if party_state is not None else {}
@@ -14108,6 +14461,7 @@ def run_dummy_round(
                                 int(party_snapshot.get("leader_target_id", 0) or 0),
                             )
                             if selected_npc is not None:
+                                selected_target_source = TargetSource.leader_target_reacquire
                                 party_state.update_shared_target(selected_npc)
                                 actions += add_action(action_counts, "party_assist_required_reacquire")
 
@@ -14128,6 +14482,7 @@ def run_dummy_round(
                             )
                             if selected_npc is not None:
                                 selected_npc_is_rescue = True
+                                selected_target_source = TargetSource.party_rescue
                                 actions += add_action(action_counts, "party_rescue_snapshot_target")
                         if (
                             current_target <= 0
@@ -14176,6 +14531,8 @@ def run_dummy_round(
                                     rejected_target_kinds,
                                     now,
                                 )
+                                if selected_npc is not None:
+                                    selected_target_source = TargetSource.hunter_selection
                                 if selected_npc is None:
                                     hunter_api_target = fetch_hunter_target_api_observation(
                                         args,
@@ -14187,6 +14544,7 @@ def run_dummy_round(
                                     )
                                     if hunter_api_target is not None:
                                         selected_npc = actor_from_target_observation(hunter_api_target)
+                                        selected_target_source = TargetSource.current_target_api_refresh
                                         server_target_observations[hunter_api_target.object_id] = hunter_api_target
                                         actions += add_action(action_counts, "hunter_target_api_scout")
                                         log_encounter_event(
@@ -14334,11 +14692,13 @@ def run_dummy_round(
                         if not npcs:
                             selected_npc = None
 
+                    selected_target_decision = None
                     if selected_npc is not None:
                         selection_party_snapshot = party_state.snapshot() if party_state is not None else {}
                         selection_leader_engaged = (
                             float(selection_party_snapshot.get("leader_target_engaged_at", 0.0) or 0.0) > 0.0
                         )
+                        selection_required_home_reached = required_target_home_reached(client, args)
                         selection_required_home_hunt_ready = required_target_home_hunt_ready(client, args)
                         selection_party_ready_for_objective = (
                             party_ready_for_pull(args, party_state) if party_state is not None else True
@@ -14434,8 +14794,60 @@ def run_dummy_round(
                                 npcs = []
                                 actions += add_action(action_counts, "drop_aggro_target_selection_suppressed")
                         else:
-                            current_target_intent = selected_target_intent
-                            if selected_target_intent in {TargetIntent.objective, TargetIntent.required_retaliation}:
+                            selected_target_candidate = engagement_candidate_from_actor(
+                                selected_npc,
+                                source=selected_target_source,
+                                intent=selected_target_intent,
+                            )
+                            selected_target_decision = evaluate_engagement_candidate(
+                                selected_target_candidate,
+                                EngagementContext(
+                                    behavior_state=behavior_state,
+                                    current_target=current_target,
+                                    current_target_intent=current_target_intent,
+                                    is_party_leader=is_party_leader,
+                                    is_party_follower=is_party_follower,
+                                    party_ready=selection_party_ready_for_objective,
+                                    leader_engaged=selection_leader_engaged,
+                                    current_health_percent=current_health_percent,
+                                    objective_home_reached=selection_required_home_reached,
+                                    objective_hunt_ready=selection_required_home_hunt_ready,
+                                    drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                                    rest_active=rest_until > now,
+                                    flee_active=flee_until > now,
+                                ),
+                                client,
+                                args,
+                                selection_party_snapshot,
+                            )
+                            if not selected_target_decision.allowed:
+                                commit_target(
+                                    selected_target_decision,
+                                    client,
+                                    party_state,
+                                    now=now,
+                                    current_target=current_target,
+                                    current_target_since=current_target_since,
+                                    current_target_last_visible_at=current_target_last_visible_at,
+                                    current_target_intent=current_target_intent,
+                                    action_counts=action_counts,
+                                    log_event=log_encounter_event,
+                                )
+                                rejected_target_id = int(getattr(selected_npc, "object_id", 0) or 0)
+                                if rejected_target_id:
+                                    rejected_targets[rejected_target_id] = now + min(
+                                        float(getattr(args, "target_failure_cooldown", 5.0) or 5.0),
+                                        5.0,
+                                    )
+                                selected_npc = None
+                                npcs = []
+                            else:
+                                current_target_intent = selected_target_decision.intent
+                            if (
+                                selected_target_decision is not None
+                                and selected_target_decision.allowed
+                                and selected_target_intent in {TargetIntent.objective, TargetIntent.required_retaliation}
+                            ):
                                 transition_to(
                                     DummyBehaviorState.HuntObjective,
                                     "objective_target_selected"
@@ -14447,14 +14859,73 @@ def run_dummy_round(
                 if npcs:
                     npc = rng.choice(npcs[: max(args.target_pool, 1)])
                     distance = combat_distance_to(client, npc)
+                    target_commit_result = None
 
                     if current_target != npc.object_id:
                         finish_combat("target_switched", now, distance)
                         examine = args.target_examine_chance > 0 and rng.random() < args.target_examine_chance
-                        client.target_object(npc.object_id, examine=examine)
-                        current_target = npc.object_id
-                        current_target_since = now
-                        current_target_last_visible_at = now
+                        if selected_target_decision is None:
+                            fallback_candidate = engagement_candidate_from_actor(
+                                npc,
+                                source=selected_target_source,
+                                intent=current_target_intent,
+                            )
+                            selected_target_decision = evaluate_engagement_candidate(
+                                fallback_candidate,
+                                EngagementContext(
+                                    behavior_state=behavior_state,
+                                    current_target=current_target,
+                                    current_target_intent=current_target_intent,
+                                    is_party_leader=is_party_leader,
+                                    is_party_follower=is_party_follower,
+                                    party_ready=party_ready_for_pull(args, party_state) if party_state is not None else True,
+                                    leader_engaged=float(
+                                        (party_state.snapshot() if party_state is not None else {}).get(
+                                            "leader_target_engaged_at",
+                                            0.0,
+                                        )
+                                        or 0.0
+                                    )
+                                    > 0.0,
+                                    current_health_percent=current_health_percent,
+                                    objective_home_reached=required_target_home_reached(client, args),
+                                    objective_hunt_ready=required_target_home_hunt_ready(client, args),
+                                    drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                                    rest_active=rest_until > now,
+                                    flee_active=flee_until > now,
+                                ),
+                                client,
+                                args,
+                                party_state.snapshot() if party_state is not None else {},
+                            )
+
+                        target_commit_result = commit_target(
+                            selected_target_decision,
+                            client,
+                            party_state,
+                            now=now,
+                            current_target=current_target,
+                            current_target_since=current_target_since,
+                            current_target_last_visible_at=current_target_last_visible_at,
+                            current_target_intent=current_target_intent,
+                            action_counts=action_counts,
+                            log_event=log_encounter_event,
+                            examine=examine,
+                        )
+                        current_target = target_commit_result.current_target
+                        current_target_since = target_commit_result.current_target_since
+                        current_target_last_visible_at = target_commit_result.current_target_last_visible_at
+                        current_target_intent = target_commit_result.current_target_intent
+                        if not target_commit_result.current_target_updated:
+                            rejected_target_id = int(getattr(npc, "object_id", 0) or 0)
+                            if rejected_target_id:
+                                rejected_targets[rejected_target_id] = now + min(
+                                    float(getattr(args, "target_failure_cooldown", 5.0) or 5.0),
+                                    5.0,
+                                )
+                            npcs = []
+                            selected_npc = None
+                            continue
                         current_target_removed_preserve_count = 0
                         attack_target_in_view_primed_at = 0.0
                         attack_target_in_view_primed_target = 0
@@ -14465,7 +14936,11 @@ def run_dummy_round(
                             party_state.clear_rescue_target(npc.object_id)
 
                     if is_party_leader and should_update_party_objective_target(selected_npc_is_rescue):
-                        party_state.update_leader(client, npc)
+                        if not (
+                            target_commit_result is not None
+                            and target_commit_result.party_leader_target_published
+                        ):
+                            party_state.update_leader(client, npc)
                     elif is_party_leader:
                         party_state.update_leader(client)
                     elif (
