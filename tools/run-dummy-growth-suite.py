@@ -1716,7 +1716,8 @@ def write_growth_path_graph(path: Path, *, ground_z_offset: int = 0) -> None:
             add_edge(last_id, dest_id)
 
         start_id = f"{realm.key}_start"
-        add_node(start_id, realm.start[0], realm.start[1], realm.start[2], sample_height=False)
+        start_point = RoutePoint(0, realm.start[0], realm.start[1], realm.start[2])
+        add_node(start_id, start_point.x, start_point.y, start_point.z, sample_height=False)
         hub_x, hub_y, hub_z = STARTUP_TELEPORTER_HUBS[realm.key]
         hub_id = f"{realm.key}_teleporter_hub"
         add_node(hub_id, hub_x, hub_y, hub_z, sample_height=False)
@@ -1729,7 +1730,7 @@ def write_growth_path_graph(path: Path, *, ground_z_offset: int = 0) -> None:
             destination_nodes[normalize_teleport_destination(destination_name)] = (destination_id, destination_point)
         add_segment(
             source_id=start_id,
-            source=RoutePoint(0, realm.start[0], realm.start[1], realm.start[2]),
+            source=start_point,
             dest_id=hub_id,
             dest=RoutePoint(0, hub_x, hub_y, hub_z),
             mid_prefix=f"{realm.key}_start_teleporter_hub",
@@ -1756,7 +1757,7 @@ def write_growth_path_graph(path: Path, *, ground_z_offset: int = 0) -> None:
                 source = realm.points[index - 1]
                 source_node_id = previous_node_id or f"{realm.key}_{source.level}"
             else:
-                source = RoutePoint(0, realm.start[0], realm.start[1], realm.start[2])
+                source = start_point
                 source_node_id = previous_node_id
             if index > 0 or previous_node_id == start_id:
                 add_segment(
@@ -1766,13 +1767,25 @@ def write_growth_path_graph(path: Path, *, ground_z_offset: int = 0) -> None:
                     dest=point,
                     mid_prefix=f"{realm.key}_{source.level}_{point.level}",
                 )
+            if (
+                index > 0
+                and not point.teleport_destination
+                and ((point.x - start_point.x) ** 2 + (point.y - start_point.y) ** 2) ** 0.5 <= 12000
+            ):
+                add_segment(
+                    source_id=start_id,
+                    source=start_point,
+                    dest_id=node_id,
+                    dest=point,
+                    mid_prefix=f"{realm.key}_start_{point.level}",
+                )
             previous_node_id = node_id
 
         for variant in variant_points:
             variant_id = route_variant_node_id(realm, variant)
             add_node(variant_id, variant.x, variant.y, variant.z, sample_height=False)
             source_id = start_id
-            source = RoutePoint(0, realm.start[0], realm.start[1], realm.start[2])
+            source = start_point
             if variant.teleport_destination:
                 destination = destination_nodes.get(normalize_teleport_destination(variant.teleport_destination))
                 if destination is not None:

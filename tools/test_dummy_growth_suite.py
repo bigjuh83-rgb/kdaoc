@@ -940,6 +940,22 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertTrue(graph.astar("mid_teleport_fort_veldon", "mid_10", safety).ok)
         self.assertTrue(graph.astar("hib_teleport_connla", "hib_10", safety).ok)
 
+    def test_growth_path_graph_routes_nearby_mid_six_without_remote_level_five_hub(self) -> None:
+        import dummy_pathing
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "growth-route-graph.json"
+            growth.write_growth_path_graph(path)
+            graph = dummy_pathing.PathGraph.from_file(path)
+
+        safety = dummy_pathing.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0, max_height_delta=2500)
+        route = graph.astar("mid_start", "mid_6", safety)
+        node_ids = [node.id for node in route.nodes]
+
+        self.assertTrue(route.ok)
+        self.assertNotIn("mid_5", node_ids)
+        self.assertLess(len(route.nodes), 50)
+
     def test_growth_path_graph_routes_to_level_ten_party_variants(self) -> None:
         import dummy_pathing
 
