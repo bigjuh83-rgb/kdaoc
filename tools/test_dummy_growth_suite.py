@@ -439,6 +439,22 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(args.max_level, 51)
         self.assertEqual(args.segment_seconds, 420)
 
+    def test_explicit_max_segments_overrides_growth_stage_defaults(self) -> None:
+        args = growth.parse_args_for_tests(
+            [
+                "--dry-run",
+                "--growth-stage",
+                "stabilize",
+                "--checkpoint-levels",
+                "1,4",
+                "--max-segments",
+                "2",
+            ]
+        )
+
+        self.assertEqual(args.checkpoint_levels_parsed, [1, 4])
+        self.assertEqual(args.max_segments, 2)
+
     def test_checkpoint_levels_parse_as_ordered_short_live_probe(self) -> None:
         args = growth.parse_args_for_tests(["--dry-run", "--checkpoint-levels", "1,5,6,10,20,35,49"])
 
@@ -1351,6 +1367,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(command[command.index("--combat-home-leash-distance") + 1], "6200.0")
         self.assertEqual(command[command.index("--combat-chase-max-distance") + 1], "2200.0")
         self.assertEqual(command[command.index("--max-target-distance") + 1], "1500.0")
+        self.assertEqual(command[command.index("--flee-safe-point-distance") + 1], "2400")
+        self.assertEqual(command[command.index("--flee-critical-safe-point-distance") + 1], "4200")
         self.assertIn("--allow-avoid-target-fallback", command)
         self.assertIn("--current-target-api-refresh", command)
         self.assertIn("--hunter-target-api-scout", command)

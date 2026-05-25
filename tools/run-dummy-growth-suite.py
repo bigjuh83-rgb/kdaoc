@@ -1601,6 +1601,14 @@ def growth_flee_home_stop_distance(level: int) -> int:
     return 120 if level >= 10 else 900
 
 
+def growth_flee_safe_point_distance(level: int) -> int:
+    return 2400 if level <= 4 else 5200
+
+
+def growth_flee_critical_safe_point_distance(level: int) -> int:
+    return 4200 if level <= 4 else 9000
+
+
 def growth_required_target_tank_commit_health_percent(level: int, party_size: int) -> int:
     if level <= 10 and party_size > 1:
         return 70
@@ -2195,11 +2203,11 @@ def build_behavior_command(
         "--flee-safe-threat-radius",
         "6000",
         "--flee-safe-point-distance",
-        "5200",
+        str(growth_flee_safe_point_distance(current_level)),
         "--flee-critical-health-percent",
         "45",
         "--flee-critical-safe-point-distance",
-        "9000",
+        str(growth_flee_critical_safe_point_distance(current_level)),
         "--flee-safe-api-scout",
         "--flee-safe-replan-damage-grace",
         "6",
@@ -4314,6 +4322,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     explicit_segment_seconds_value = args.segment_seconds
     explicit_reset_level_value = args.reset_level
     explicit_max_level_value = args.max_level
+    explicit_max_segments_value = args.max_segments
     apply_growth_stage_defaults(args)
     if explicit_segment_seconds:
         args.segment_seconds = explicit_segment_seconds_value
@@ -4321,6 +4330,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         args.reset_level = explicit_reset_level_value
     if explicit_max_level:
         args.max_level = explicit_max_level_value
+    if explicit_max_segments:
+        args.max_segments = explicit_max_segments_value
     args.checkpoint_levels_parsed = parse_checkpoint_levels(args.checkpoint_levels)
     if args.checkpoint_levels_parsed:
         if args.resume:
