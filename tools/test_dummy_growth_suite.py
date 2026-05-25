@@ -97,15 +97,15 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual((route.x, route.y), (783163, 751764))
         self.assertLess(math.hypot(growth.REALMS["mid"].start[0] - route.x, growth.REALMS["mid"].start[1] - route.y), 10500)
 
-    def test_mid_level_five_train_route_uses_nearby_neutral_implings(self) -> None:
+    def test_mid_level_five_train_route_uses_db_backed_dense_worker_cluster(self) -> None:
         route = growth.select_route_point(growth.REALMS["mid"], level=5, party_size=1)
 
-        self.assertEqual(route.teleport_destination, "")
-        self.assertIn("impling", route.prefer)
-        self.assertIn("green serpent", route.avoid)
-        self.assertIn("small hill cat", route.avoid)
-        self.assertEqual((route.x, route.y, route.z), (765794, 742802, 5205))
-        self.assertLess(math.hypot(growth.REALMS["mid"].start[0] - route.x, growth.REALMS["mid"].start[1] - route.y), 10500)
+        self.assertEqual(route.teleport_destination, "Mularn")
+        self.assertIn("wood-eater worker", route.prefer)
+        self.assertIn("hill person", route.avoid)
+        self.assertIn("young grendelorm", route.avoid)
+        self.assertEqual((route.x, route.y, route.z), (786637, 723034, 4722))
+        self.assertLess(math.hypot(803612 - route.x, 726671 - route.y), 18000)
 
     def test_alb_hib_early_gear_routes_use_nearby_level_five_mobs(self) -> None:
         expected = {

@@ -487,11 +487,12 @@ REALMS: dict[str, RealmProfile] = {
             route_point(3, 767400, 745984, 4542, "young lynx,lupine snarler,young sveawolf", "thrall,green serpent,soft-shelled crab,vein spiderling,lupine gnawer,impling"),
             route_point(
                 5,
-                765794,
-                742802,
-                5205,
-                "impling",
-                "small hill cat,young lynx,green serpent,lupine snarler,young sveawolf,vein spiderling,harvestman,wildling",
+                786637,
+                723034,
+                4722,
+                "wood-eater worker",
+                "hill person,young grendelorm,wood-eater hunter,vein spider,huldu hunter,huldu stalker,small hill cat",
+                teleport_destination="Mularn",
             ),
             route_point(
                 6,
