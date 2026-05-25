@@ -9144,10 +9144,21 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
     def test_leader_abandon_clears_shared_party_target(self):
         state = behavior.PartyState("leader", ["leader", "member"])
         client = SimpleNamespace(session_id=1, player_object_id=7, health_percent=76, x=10, y=20, z=30, heading=40)
-        target = SimpleNamespace(object_id=99, name="Ellyll windchaser", x=100, y=200, z=300)
+        target = SimpleNamespace(
+            object_id=99,
+            name="Ellyll windchaser",
+            x=100,
+            y=200,
+            z=300,
+            health_percent=44.0,
+            health=440,
+            max_health=1000,
+            target="member",
+        )
 
         state.update_leader(client, target)
         state.mark_leader_target_engaged(99)
+        self.assertEqual(state.snapshot()["leader_target_focus_name"], "member")
 
         self.assertTrue(
             behavior.clear_party_leader_target_on_abandon(
@@ -9159,6 +9170,26 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         snapshot = state.snapshot()
         self.assertEqual(snapshot["leader_target_id"], 0)
         self.assertEqual(snapshot["leader_target_engaged_at"], 0.0)
+        self.assertEqual(snapshot["leader_target_focus_name"], "")
+        self.assertEqual(snapshot["leader_target_focus_updated_at"], 0.0)
+        self.assertEqual(snapshot["leader_target_health"], 0)
+        self.assertEqual(snapshot["leader_target_max_health"], 0)
+
+    def test_leader_abandon_keeps_newer_shared_party_target(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        client = SimpleNamespace(session_id=1, player_object_id=7, health_percent=76, x=10, y=20, z=30, heading=40)
+        target = SimpleNamespace(object_id=100, name="newer target", x=100, y=200, z=300)
+
+        state.update_leader(client, target)
+
+        self.assertFalse(
+            behavior.clear_party_leader_target_on_abandon(
+                state,
+                is_party_leader=True,
+                target_id=99,
+            )
+        )
+        self.assertEqual(state.snapshot()["leader_target_id"], 100)
 
     def test_non_leader_abandon_does_not_clear_shared_party_target(self):
         state = behavior.PartyState("leader", ["leader", "member"])
@@ -9172,6 +9203,43 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 state,
                 is_party_leader=False,
                 target_id=99,
+            )
+        )
+        self.assertEqual(state.snapshot()["leader_target_id"], 99)
+
+    def test_party_assist_follower_clears_removed_shared_party_target(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        client = SimpleNamespace(session_id=1, player_object_id=7, health_percent=76, x=10, y=20, z=30, heading=40)
+        target = SimpleNamespace(object_id=99, name="Ellyll windchaser", x=100, y=200, z=300)
+
+        state.update_leader(client, target)
+        state.mark_leader_target_engaged(99)
+
+        self.assertTrue(
+            behavior.clear_party_leader_target_on_removed_object(
+                state,
+                is_party_leader=False,
+                party_assist_only=True,
+                removed_object_id=99,
+            )
+        )
+        snapshot = state.snapshot()
+        self.assertEqual(snapshot["leader_target_id"], 0)
+        self.assertEqual(snapshot["leader_target_engaged_at"], 0.0)
+
+    def test_non_assist_follower_keeps_removed_shared_party_target(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        client = SimpleNamespace(session_id=1, player_object_id=7, health_percent=76, x=10, y=20, z=30, heading=40)
+        target = SimpleNamespace(object_id=99, name="Ellyll windchaser", x=100, y=200, z=300)
+
+        state.update_leader(client, target)
+
+        self.assertFalse(
+            behavior.clear_party_leader_target_on_removed_object(
+                state,
+                is_party_leader=False,
+                party_assist_only=False,
+                removed_object_id=99,
             )
         )
         self.assertEqual(state.snapshot()["leader_target_id"], 99)

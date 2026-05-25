@@ -1054,6 +1054,19 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(node.z, sampled_z)
         self.assertGreater(node.z, 0)
 
+    def test_growth_path_graph_routes_through_snowdonia_steep_height_samples(self) -> None:
+        import dummy_pathing
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "growth-route-graph.json"
+            growth.write_growth_path_graph(path)
+            graph = dummy_pathing.PathGraph.from_file(path)
+
+        safety = dummy_pathing.PathSafety(max_direct_distance=150.0, max_edge_length=1800.0, max_height_delta=900)
+        route = graph.astar("alb_teleport_snowdonia_fortress", "alb_50", safety)
+
+        self.assertTrue(route.ok, route.reason)
+
     def test_mid_level_five_return_route_does_not_detour_through_level_one_variant_grid(self) -> None:
         import dummy_pathing
 
@@ -2277,6 +2290,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             growth.route_home_string(growth.REALMS["alb"], 1, ground_z_offset=0),
         )
         self.assertEqual(command[command.index("--path-last-mile-distance") + 1], "8000.0")
+        self.assertEqual(command[command.index("--path-max-height-delta") + 1], "900")
         self.assertEqual(command[command.index("--startup-command") + 1], "/sprint")
         self.assertEqual(command[command.index("--startup-delay") + 1], "0.5")
         self.assertNotIn("--waypoint-continuous-turns", command)

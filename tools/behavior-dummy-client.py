@@ -1057,21 +1057,35 @@ class PartyState:
                 self.leader_target_engaged_at = time.monotonic()
             self.updated_at = time.monotonic()
 
+    def _clear_leader_target_locked(self) -> None:
+        self.leader_target_id = 0
+        self.leader_target_name = ""
+        self.leader_target_x = 0
+        self.leader_target_y = 0
+        self.leader_target_z = 0
+        self.leader_target_health_percent = 0.0
+        self.leader_target_health = 0
+        self.leader_target_max_health = 0
+        self.leader_target_updated_at = 0.0
+        self.leader_target_engaged_at = 0.0
+        self.leader_target_focus_name = ""
+        self.leader_target_focus_updated_at = 0.0
+        self.updated_at = time.monotonic()
+
     def clear_leader_target(self) -> None:
         with self.lock:
-            self.leader_target_id = 0
-            self.leader_target_name = ""
-            self.leader_target_x = 0
-            self.leader_target_y = 0
-            self.leader_target_z = 0
-            self.leader_target_health_percent = 0.0
-            self.leader_target_health = 0
-            self.leader_target_max_health = 0
-            self.leader_target_updated_at = 0.0
-            self.leader_target_engaged_at = 0.0
-            self.leader_target_focus_name = ""
-            self.leader_target_focus_updated_at = 0.0
-            self.updated_at = time.monotonic()
+            self._clear_leader_target_locked()
+
+    def clear_leader_target_if_match(self, target_id: int) -> bool:
+        target_id = int(target_id or 0)
+        if target_id <= 0:
+            return False
+
+        with self.lock:
+            if self.leader_target_id != target_id:
+                return False
+            self._clear_leader_target_locked()
+            return True
 
     def mark_objective_complete(self, target_id: int, target_name: str = "") -> None:
         with self.lock:
@@ -2648,11 +2662,26 @@ def clear_party_leader_target_on_abandon(
         return False
 
     if target_id:
-        snapshot = party_state.snapshot()
-        if int(snapshot.get("leader_target_id", 0) or 0) != int(target_id):
-            return False
+        return party_state.clear_leader_target_if_match(target_id)
 
     party_state.clear_leader_target()
+    return True
+
+
+def clear_party_leader_target_on_removed_object(
+    party_state: PartyState | None,
+    *,
+    is_party_leader: bool,
+    party_assist_only: bool,
+    removed_object_id: int,
+) -> bool:
+    if party_state is None or (not is_party_leader and not party_assist_only):
+        return False
+
+    if not party_state.clear_leader_target_if_match(removed_object_id):
+        return False
+
+    party_state.clear_rescue_target(removed_object_id)
     return True
 
 
@@ -10844,6 +10873,7 @@ def run_dummy_round(
                 completed_target_display_name = str(active_combat["target_name"]) if active_combat is not None else ""
                 completed_target_name = completed_target_display_name.lower()
                 completed_target_level = int(active_combat["target_level"]) if active_combat is not None else 0
+                should_clear_removed_shared_target = not stop_after_removed
                 recorded = finish_combat("target_removed", now)
                 current_target = 0
                 rejected_targets.pop(object_id, None)
@@ -10865,9 +10895,30 @@ def run_dummy_round(
                             completed_target_level=completed_target_level,
                             loot_wait_seconds=args.target_removed_loot_wait,
                         )
-                    elif party_state is not None and (is_party_leader or args.party_assist_only):
-                        party_state.clear_leader_target()
-                        party_state.clear_rescue_target(object_id)
+                    elif clear_party_leader_target_on_removed_object(
+                        party_state,
+                        is_party_leader=is_party_leader,
+                        party_assist_only=bool(args.party_assist_only),
+                        removed_object_id=object_id,
+                    ):
+                        actions += add_action(action_counts, "party_leader_target_removed_clear")
+                        log_encounter_event(
+                            "party_leader_target_removed_clear",
+                            now,
+                            removed_object_id=int(object_id),
+                        )
+                elif should_clear_removed_shared_target and clear_party_leader_target_on_removed_object(
+                    party_state,
+                    is_party_leader=is_party_leader,
+                    party_assist_only=bool(args.party_assist_only),
+                    removed_object_id=object_id,
+                ):
+                    actions += add_action(action_counts, "party_leader_target_removed_clear")
+                    log_encounter_event(
+                        "party_leader_target_removed_clear",
+                        now,
+                        removed_object_id=int(object_id),
+                    )
 
         def consume_messages(now: float) -> None:
             nonlocal actions, current_target, current_target_intent, current_target_since, current_target_last_visible_at
@@ -11024,13 +11075,13 @@ def run_dummy_round(
                         client.set_attack_mode(False)
                         current_target = 0
                         actions += add_action(action_counts, "server_los_failure_retarget")
+                        clear_shared_leader_target_on_abandon(
+                            now,
+                            "server_los_failure_retarget",
+                            abandoned_target_id,
+                        )
                         if last_damage_taken_at > 0.0 and now - last_damage_taken_at <= args.travel_aggro_clear_grace:
                             transition_to(DummyBehaviorState.DropAggroAndRecover, "server_los_failure_drop_aggro", now)
-                            clear_shared_leader_target_on_abandon(
-                                now,
-                                "server_los_failure_drop_aggro",
-                                abandoned_target_id,
-                            )
                             flee_until = max(
                                 flee_until,
                                 now + drop_aggro_recovery_duration(args, health_percent=current_health_percent),
@@ -15347,14 +15398,14 @@ def run_dummy_round(
                     client.set_attack_mode(False)
                     current_target = 0
                     actions += add_action(action_counts, "target_lost")
+                    clear_shared_leader_target_on_abandon(
+                        now,
+                        "target_loss_after_server_los" if loss_after_server_los else "target_lost",
+                        abandoned_target_id,
+                    )
                     if loss_after_server_los:
                         actions += add_action(action_counts, "target_lost_after_server_los_failure")
                         transition_to(DummyBehaviorState.DropAggroAndRecover, "target_loss_after_server_los_drop_aggro", now)
-                        clear_shared_leader_target_on_abandon(
-                            now,
-                            "target_loss_after_server_los_drop_aggro",
-                            abandoned_target_id,
-                        )
                         flee_until = max(
                             flee_until,
                             now + drop_aggro_recovery_duration(args, health_percent=current_health_percent),

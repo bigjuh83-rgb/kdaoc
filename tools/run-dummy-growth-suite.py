@@ -1736,7 +1736,8 @@ def write_growth_path_graph(path: Path, *, ground_z_offset: int = 0) -> None:
             dx = dest.x - source.x
             dy = dest.y - source.y
             distance = max((dx * dx + dy * dy) ** 0.5, 1.0)
-            steps = max(1, int(distance // 350) + 1)
+            step_distance = 120 if sample_mid_height else 350
+            steps = max(1, int(distance // step_distance) + 1)
             last_id = source_id
             for step in range(1, steps):
                 ratio = step / steps
@@ -2528,6 +2529,8 @@ def build_watcher_command(
         str(max(float(args.path_last_mile_distance), observer_follow_distance)),
         "--path-node-arrival-distance",
         "80",
+        "--path-max-height-delta",
+        "900",
         "--path-waypoint-ground-z-skip-delta",
         "500",
         "--waypoints",
