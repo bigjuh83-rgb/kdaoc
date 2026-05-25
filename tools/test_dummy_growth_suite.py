@@ -296,15 +296,15 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         hib = growth.select_route_point(growth.REALMS["hib"], level=10, party_size=1)
         alb = growth.select_route_point(growth.REALMS["alb"], level=10, party_size=1)
 
-        self.assertEqual(alb.teleport_destination, "Caer Ulfwych")
-        self.assertIn("sylvan goblin warrior", alb.prefer)
-        self.assertIn("devout filidh", alb.avoid)
-        self.assertIn("wood ogre", alb.avoid)
+        self.assertEqual(alb.teleport_destination, "Campacorentin Station")
+        self.assertIn("giant spider", alb.prefer)
+        self.assertIn("tree spirit", alb.avoid)
+        self.assertIn("spriggarn stalker", alb.avoid)
         self.assertEqual(mid.teleport_destination, "Fort Veldon")
         self.assertIn("wolf spiderling", mid.prefer)
         self.assertEqual(hib.teleport_destination, "Connla")
         self.assertIn("water beetle", hib.prefer)
-        self.assertEqual((alb.x, alb.y, alb.z), (517187, 627281, 1701))
+        self.assertEqual((alb.x, alb.y, alb.z), (496426, 593548, 1904))
         self.assertEqual((mid.x, mid.y, mid.z), (800176, 675574, 5316))
         self.assertEqual((hib.x, hib.y, hib.z), (292688, 648549, 4928))
 
@@ -320,9 +320,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         mid = growth.select_route_point(growth.REALMS["mid"], level=10, party_size=4)
         hib = growth.select_route_point(growth.REALMS["hib"], level=10, party_size=8)
 
-        self.assertEqual(alb.teleport_destination, "Caer Ulfwych")
-        self.assertIn("sylvan goblin warrior", alb.prefer)
-        self.assertEqual((alb.x, alb.y, alb.z), (517187, 627281, 1701))
+        self.assertEqual(alb.teleport_destination, "Campacorentin Station")
+        self.assertIn("giant spider", alb.prefer)
+        self.assertEqual((alb.x, alb.y, alb.z), (496426, 593548, 1904))
         self.assertEqual(mid.teleport_destination, "Gotar")
         self.assertIn("spindly rock crab", mid.prefer)
         self.assertIn("perfidious pook", mid.avoid)
@@ -918,9 +918,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         waypoints = growth.waypoint_string(realm, 10)
 
-        self.assertRegex(waypoints, r"517187,627281,\d+")
-        self.assertRegex(waypoints, r"517547,627281,\d+")
-        self.assertRegex(waypoints, r"517547,627641,\d+")
+        self.assertRegex(waypoints, r"496426,593548,\d+")
+        self.assertRegex(waypoints, r"496786,593548,\d+")
+        self.assertRegex(waypoints, r"496786,593908,\d+")
 
     def test_early_level_waypoints_sweep_wider_hunt_area(self) -> None:
         realm = growth.REALMS["alb"]
@@ -1234,15 +1234,15 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertIn("--startup-teleporter-home", command)
         self.assertEqual(command[command.index("--startup-teleporter-home") + 1], growth.startup_teleporter_home(growth.REALMS["alb"]))
         self.assertIn("--startup-teleport-destination", command)
-        self.assertEqual(command[command.index("--startup-teleport-destination") + 1], "Caer Ulfwych")
+        self.assertEqual(command[command.index("--startup-teleport-destination") + 1], "Campacorentin Station")
         self.assertIn("--require-target-name", command)
-        self.assertIn("sylvan goblin warrior", command[command.index("--require-target-name") + 1])
+        self.assertIn("giant spider", command[command.index("--require-target-name") + 1])
         self.assertIn("--avoid-target-name", command)
-        self.assertIn("devout filidh", command[command.index("--avoid-target-name") + 1])
-        self.assertIn("wood ogre", command[command.index("--avoid-target-name") + 1])
+        self.assertIn("tree spirit", command[command.index("--avoid-target-name") + 1])
+        self.assertIn("spriggarn stalker", command[command.index("--avoid-target-name") + 1])
         self.assertIn("--allow-preferred-low-con-fallback", command)
         self.assertEqual(command[command.index("--preferred-low-con-min-level") + 1], "7")
-        self.assertEqual(command[command.index("--flee-home") + 1], "521393,616461,1784")
+        self.assertEqual(command[command.index("--flee-home") + 1], "493679,591770,1819")
         self.assertEqual(command[command.index("--flee-home-stop-distance") + 1], "120")
         self.assertEqual(command[command.index("--flee-town-health-percent") + 1], "99")
 
@@ -2288,7 +2288,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         )
 
         self.assertIn("--startup-teleport-destination", command)
-        self.assertEqual(command[command.index("--startup-teleport-destination") + 1], "Caer Ulfwych")
+        self.assertEqual(command[command.index("--startup-teleport-destination") + 1], "Campacorentin Station")
         self.assertIn("--startup-teleport-warmup-whisper", command)
         self.assertEqual(command[command.index("--startup-teleport-warmup-whisper") + 1], "towns")
 
