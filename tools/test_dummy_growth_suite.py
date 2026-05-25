@@ -97,6 +97,29 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual((route.x, route.y), (783163, 751764))
         self.assertLess(math.hypot(growth.REALMS["mid"].start[0] - route.x, growth.REALMS["mid"].start[1] - route.y), 10500)
 
+    def test_alb_mid_level_eight_routes_use_xp_eligible_level_six_clusters(self) -> None:
+        alb = growth.select_route_point(growth.REALMS["alb"], level=8, party_size=1)
+        mid = growth.select_route_point(growth.REALMS["mid"], level=8, party_size=1)
+
+        self.assertEqual(alb.level, 8)
+        self.assertEqual(alb.teleport_destination, "Campacorentin Station")
+        self.assertIn("giant spider", alb.prefer)
+        self.assertNotIn("shady pilferer", alb.prefer)
+        self.assertEqual((alb.x, alb.y), (498052, 592067))
+
+        self.assertEqual(mid.level, 8)
+        self.assertEqual(mid.teleport_destination, "Audliten")
+        self.assertIn("army ant worker", mid.prefer)
+        self.assertNotIn("vein spider", mid.prefer)
+        self.assertEqual((mid.x, mid.y), (719301, 770132))
+
+    def test_level_eight_route_requires_preferred_target_to_avoid_wrong_npcs(self) -> None:
+        alb = growth.select_route_point(growth.REALMS["alb"], level=8, party_size=1)
+        mid = growth.select_route_point(growth.REALMS["mid"], level=8, party_size=1)
+
+        self.assertEqual(growth.strict_route_target_name(alb, 8), "giant spider")
+        self.assertEqual(growth.strict_route_target_name(mid, 8), "army ant worker")
+
     def test_mid_level_five_train_route_uses_db_backed_dense_worker_cluster(self) -> None:
         route = growth.select_route_point(growth.REALMS["mid"], level=5, party_size=1)
 

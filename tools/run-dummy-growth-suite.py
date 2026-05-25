@@ -368,7 +368,7 @@ def should_provision_base_classes(args: argparse.Namespace) -> bool:
 
 
 def strict_route_target_name(route: RoutePoint, current_level: int) -> str:
-    if current_level >= 10 and route.prefer:
+    if current_level >= 8 and route.prefer:
         return route.prefer
     return ""
 
@@ -421,6 +421,15 @@ REALMS: dict[str, RealmProfile] = {
             route_point(2, 534900, 478900, 2310, "small gray wolf,skeleton,black wolf pup", "young cutpurse,green snake"),
             route_point(3, 534900, 478900, 2310, "small gray wolf,skeleton,black wolf pup", "young cutpurse,green snake"),
             route_point(5, 533895, 472812, 2654, "shady pilferer,spriggarn stalker,skeleton", "young cutpurse,river drakeling,river sprite,bear,carrion drake"),
+            route_point(
+                8,
+                498052,
+                592067,
+                1994,
+                "giant spider",
+                "tree spirit,shady pilferer,spriggarn stalker,skeleton,rot worm,emerald snake,faerie bell-wether,young cutpurse",
+                teleport_destination="Campacorentin Station",
+            ),
             route_point(
                 10,
                 517187,
@@ -501,6 +510,15 @@ REALMS: dict[str, RealmProfile] = {
                 5074,
                 "vein spider",
                 "small hill cat,young lynx,green serpent,lupine snarler,young sveawolf",
+            ),
+            route_point(
+                8,
+                719301,
+                770132,
+                4506,
+                "army ant worker",
+                "tawny lynx,carrion crawler,vein spider,black mauler juvenile,young grendelorm,sveawolf mother",
+                teleport_destination="Audliten",
             ),
             route_point(10, 800176, 675574, 5316, "wolf spiderling", teleport_destination="Fort Veldon"),
             route_point(15, 736792, 836202, 5159, teleport_destination="Fort Veldon"),
