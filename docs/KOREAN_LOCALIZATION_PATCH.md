@@ -429,6 +429,29 @@ Current verified offsets:
 0x1a3695 = eb 0b 56 e8 a0 01 00 00
 0x37b7e2 = b8 b5 03 00 00 90
 0x107c39 = 68 b5 03 00 00
+0x0f29a4 = c7 45 dc 00 02 00 00
+0x540aec = be d6 b4 cf b9 cc 00 00
+0x540b60 = ba ed b7 b9 c0 cc b5 e5 00 00 00 00
+0x540bc8 = bb f5 ba f1 c1 f6 00 00
+0x540bd0 = b9 f6 bc ad c4 bf 00 00 00 00 00 00
+0x540bf4 = bb fe b8 d5 00 00 00 00
+0x540bfc = bd ba c7 c7 b8 b4 b8 b6 bd ba c5 cd 00 00 00 00
+0x540c0c = c8 fa b7 af 00 00 00 00
+0x540c14 = c7 e5 c5 cd 00 00 00 00
+0x540c24 = bd a6 b5 b5 bf ec 00 00 00 00 00 00
+0x540c30 = bf f6 b8 ae be ee 00 00
+0x540c84 = c4 ab b9 df b8 ae 00 00 00 00 00 00
+0x540c9c = b8 d3 bc ad b3 ca b8 ae 00 00 00 00
+0x540ca8 = c7 c1 b8 ae be ee 00 00
+0x540cb0 = c0 ce c7 ca c6 ae 00 00 00 00 00 00
+0x540cd0 = c5 ac b7 b9 b8 af 00 00
+0x540cd8 = bc ad c1 f6 bd ba c6 ae 00 00 00 00
+0x540ce4 = b9 ce bd ba c6 ae b7 b2 00 00 00 00
+0x540cf0 = bd ba c4 ab bf f4 00 00
+0x540cf8 = be cf c1 ee b8 c7 00 00
+0x540d00 = c6 c8 b6 f3 b5 f2 00 00
+0x5992b8 = c0 ce c4 da b4 a9 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+0x599338 = c7 c1 b7 ce bd ba c6 ae 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 ```
 
 Meaning:
@@ -441,6 +464,9 @@ Meaning:
 - `0x1a3695`: bypass character select/play A-Z-only validation.
 - `0x37b7e2`: force the client CRT `GetACP()` path to return CP949 (`mov eax, 949; nop`). This is required when Windows has the UTF-8 beta/system ANSI codepage (`ACP=65001`), otherwise legacy Dialog windows decode Korean CP949 packet text as mojibake.
 - `0x107c39`: replace the remaining numeric `push 1252` codepage branch with `push 949`; this covers legacy Dialog text paths that still decode CP949 packet bytes as Windows-1252.
+- `0x0f29a4`: increase the default GDI font atlas side from `0x100` (256) to `0x200` (512). Live tracing showed dynamic keyboard/ListBox Hangul reaches the glyph builder, but `font_buttons` reports `used=max=361` because `floor(256 / 13) * floor(256 / 13) = 361`; once full, new Hangul glyphs fall back to `@`. This patch grows the atlas at construction time instead of bypassing the full check at `0x45cb72`.
+- `0x540aec` through `0x540d00`: CP949 character creation class label table. These labels use phonetic Korean names where the old labels were meaning-translations; long names are shortened to fit the original null-terminated fixed slots.
+- `0x5992b8` and `0x599338`: CP949 character creation race label table entries for Inconnu and Frostalf, also kept within the original fixed 32-byte slots.
 
 Also patch all codepage string/table occurrences from `1252` to `949`. Current DLLs have no `1252` string hits and many `949` hits.
 
@@ -565,3 +591,10 @@ The chronological Korean-localization history, including the final `@` rendering
 ```text
 docs/korean-localization-history.md
 ```
+
+Latest 2026-05-23 client/custom UI notes:
+
+- Dynamic keyboard/ListBox `@` fallback was resolved by enlarging the `game.dll` GDI font atlas, not by keeping a large XML glyph-primer set.
+- Large Korean XML primer batches are documented as a failed experiment; they can overflow or destabilize the old UI/font cache behavior.
+- Bob's UI custom first-tab overlap was fixed per window by blanking duplicate inner title labels, not by moving the tab template globally.
+- The current custom UI details are recorded in `docs/custom-ui-korean-guide.md`.

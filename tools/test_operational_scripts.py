@@ -1,6 +1,7 @@
 import unittest
 import csv
 import importlib.util
+import json
 import tempfile
 from pathlib import Path
 from unittest import mock
@@ -24,8 +25,70 @@ assert GROWTH_SUMMARY_SPEC is not None and GROWTH_SUMMARY_SPEC.loader is not Non
 summarize_dummy_growth_run = importlib.util.module_from_spec(GROWTH_SUMMARY_SPEC)
 GROWTH_SUMMARY_SPEC.loader.exec_module(summarize_dummy_growth_run)
 
+GROWTH_REPLAY_SPEC = importlib.util.spec_from_file_location(
+    "replay_dummy_growth_watchers",
+    ROOT / "tools" / "replay-dummy-growth-watchers.py",
+)
+assert GROWTH_REPLAY_SPEC is not None and GROWTH_REPLAY_SPEC.loader is not None
+replay_dummy_growth_watchers = importlib.util.module_from_spec(GROWTH_REPLAY_SPEC)
+GROWTH_REPLAY_SPEC.loader.exec_module(replay_dummy_growth_watchers)
+
+GROWTH_MONITOR_SPEC = importlib.util.spec_from_file_location(
+    "monitor_dummy_growth_live",
+    ROOT / "tools" / "monitor-dummy-growth-live.py",
+)
+assert GROWTH_MONITOR_SPEC is not None and GROWTH_MONITOR_SPEC.loader is not None
+monitor_dummy_growth_live = importlib.util.module_from_spec(GROWTH_MONITOR_SPEC)
+GROWTH_MONITOR_SPEC.loader.exec_module(monitor_dummy_growth_live)
+
 
 class OperationalScriptTests(unittest.TestCase):
+    def test_midgard_hammer_spec_prefers_hammer_starter_weapon(self) -> None:
+        rows = [
+            {"TemplateID": "axe", "Item_Type": "10", "Object_Type": "13"},
+            {"TemplateID": "hammer", "Item_Type": "10", "Object_Type": "12"},
+            {"TemplateID": "shield", "Item_Type": "11", "Object_Type": "42"},
+        ]
+
+        ordered = provision_dummy_accounts.sort_starter_templates_for_specs(22, "Hammer|50;Sword|1;Axe|1", rows)
+
+        self.assertEqual(ordered[0]["TemplateID"], "hammer")
+
+    def test_midgard_axe_spec_prefers_axe_starter_weapon(self) -> None:
+        rows = [
+            {"TemplateID": "hammer", "Item_Type": "10", "Object_Type": "12"},
+            {"TemplateID": "axe", "Item_Type": "10", "Object_Type": "13"},
+        ]
+
+        ordered = provision_dummy_accounts.sort_starter_templates_for_specs(31, "Axe|50;Hammer|1", rows)
+
+        self.assertEqual(ordered[0]["TemplateID"], "axe")
+
+    def test_preferred_starter_weapon_filter_removes_offspec_hand_weapon(self) -> None:
+        rows = [
+            {"TemplateID": "training_hammer", "Item_Type": "10", "Object_Type": "12"},
+            {"TemplateID": "training_axe", "Item_Type": "11", "Object_Type": "13"},
+            {"TemplateID": "small_training_shield", "Item_Type": "11", "Object_Type": "42"},
+            {"TemplateID": "bronze_helm", "Item_Type": "21", "Object_Type": "34"},
+        ]
+
+        filtered = provision_dummy_accounts.filter_starter_templates_for_preferred_weapon(rows, 12)
+
+        self.assertEqual(
+            [row["TemplateID"] for row in filtered],
+            ["training_hammer", "small_training_shield", "bronze_helm"],
+        )
+
+    def test_preferred_starter_weapon_filter_keeps_original_when_no_match_exists(self) -> None:
+        rows = [
+            {"TemplateID": "training_axe", "Item_Type": "11", "Object_Type": "13"},
+            {"TemplateID": "small_training_shield", "Item_Type": "11", "Object_Type": "42"},
+        ]
+
+        filtered = provision_dummy_accounts.filter_starter_templates_for_preferred_weapon(rows, 12)
+
+        self.assertEqual(filtered, rows)
+
     def test_growth_run_summary_treats_missing_columns_as_zero(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -76,9 +139,28 @@ class OperationalScriptTests(unittest.TestCase):
                     }
                 )
             with (case_dir / "watcher-movement-summary.csv").open("w", encoding="utf-8", newline="") as handle:
-                writer = csv.DictWriter(handle, fieldnames=["xy_status", "z_status", "rewind_status"])
+                writer = csv.DictWriter(
+                    handle,
+                    fieldnames=[
+                        "xy_status",
+                        "z_status",
+                        "rewind_status",
+                        "primary_behavior_anomaly_status",
+                        "primary_behavior_aggro_not_dropped",
+                        "primary_behavior_flee_too_short",
+                    ],
+                )
                 writer.writeheader()
-                writer.writerow({"xy_status": "warn", "z_status": "ok", "rewind_status": "warn"})
+                writer.writerow(
+                    {
+                        "xy_status": "warn",
+                        "z_status": "ok",
+                        "rewind_status": "warn",
+                        "primary_behavior_anomaly_status": "critical",
+                        "primary_behavior_aggro_not_dropped": "1",
+                        "primary_behavior_flee_too_short": "1",
+                    }
+                )
 
             rows = summarize_dummy_growth_run.summarize_run(root)
 
@@ -86,6 +168,221 @@ class OperationalScriptTests(unittest.TestCase):
         self.assertEqual(rows[0]["watcher_xy_warn"], 1)
         self.assertEqual(rows[0]["watcher_z_warn"], 0)
         self.assertEqual(rows[0]["watcher_rewind_warn"], 1)
+        self.assertEqual(rows[0]["watcher_behavior_critical"], 1)
+        self.assertEqual(rows[0]["watcher_aggro_not_dropped"], 1)
+        self.assertEqual(rows[0]["watcher_flee_too_short"], 1)
+
+    def test_growth_live_monitor_does_not_expand_target_radius_while_traveling(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            case_dir = Path(temp_dir) / "mid-p1"
+            encounter_dir = case_dir / "encounters"
+            encounter_dir.mkdir(parents=True)
+            control_path = case_dir / "live-control.json"
+            control_path.write_text(
+                json.dumps(
+                    {
+                        "hunter_target_api_engage_distance": 1500.0,
+                        "max_target_distance": 1500.0,
+                        "combat_direct_move_distance": 1500.0,
+                        "hunter_target_api_radius": 2200.0,
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            rows = [
+                {
+                    "elapsed": 1.0,
+                    "event": "hunter_target_scan_empty",
+                    "behavior_state": "TravelToObjective",
+                    "hunter_reject_counts": {"visible": 10, "distance": 10, "eligible": 0},
+                },
+                {
+                    "elapsed": 4.0,
+                    "event": "attack_decision",
+                    "behavior_state": "ReturnToObjective",
+                    "reason": "distance",
+                },
+            ]
+            (encounter_dir / "segment-001-growthmid6500-1.jsonl").write_text(
+                "\n".join(json.dumps(row) for row in rows) + "\n",
+                encoding="utf-8",
+            )
+
+            changed, reason = monitor_dummy_growth_live.tune_control(
+                case_dir,
+                max_engage=2800.0,
+                max_radius=5200.0,
+                step=350.0,
+            )
+            payload = json.loads(control_path.read_text(encoding="utf-8"))
+
+        self.assertFalse(changed)
+        self.assertEqual(reason, "traveling_to_objective")
+        self.assertEqual(payload["max_target_distance"], 1500.0)
+        self.assertEqual(payload["hunter_target_api_radius"], 2200.0)
+
+    def test_growth_live_monitor_expands_target_radius_while_hunting(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            case_dir = Path(temp_dir) / "mid-p1"
+            encounter_dir = case_dir / "encounters"
+            encounter_dir.mkdir(parents=True)
+            control_path = case_dir / "live-control.json"
+            control_path.write_text("{}\n", encoding="utf-8")
+            rows = [
+                {
+                    "elapsed": 1.0,
+                    "event": "hunter_target_scan_empty",
+                    "behavior_state": "HuntObjective",
+                    "hunter_reject_counts": {"visible": 10, "distance": 10, "eligible": 0},
+                },
+                {
+                    "elapsed": 4.0,
+                    "event": "attack_decision",
+                    "behavior_state": "HuntObjective",
+                    "reason": "distance",
+                },
+            ]
+            (encounter_dir / "segment-001-growthmid6500-1.jsonl").write_text(
+                "\n".join(json.dumps(row) for row in rows) + "\n",
+                encoding="utf-8",
+            )
+
+            changed, reason = monitor_dummy_growth_live.tune_control(
+                case_dir,
+                max_engage=2800.0,
+                max_radius=5200.0,
+                step=350.0,
+            )
+            payload = json.loads(control_path.read_text(encoding="utf-8"))
+
+        self.assertTrue(changed)
+        self.assertEqual(reason, "distance")
+        self.assertEqual(payload["max_target_distance"], 1850.0)
+        self.assertEqual(payload["hunter_target_api_radius"], 2725.0)
+
+    def test_growth_live_monitor_does_not_expand_target_radius_during_active_combat(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            case_dir = Path(temp_dir) / "mid-p1"
+            encounter_dir = case_dir / "encounters"
+            encounter_dir.mkdir(parents=True)
+            control_path = case_dir / "live-control.json"
+            control_path.write_text(
+                json.dumps(
+                    {
+                        "hunter_target_api_engage_distance": 1500.0,
+                        "max_target_distance": 1500.0,
+                        "combat_direct_move_distance": 1500.0,
+                        "hunter_target_api_radius": 2200.0,
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            rows = [
+                {
+                    "elapsed": 1.0,
+                    "event": "hunter_target_scan_empty",
+                    "behavior_state": "TravelToObjective",
+                    "hunter_reject_counts": {"visible": 10, "distance": 10, "eligible": 0},
+                },
+                {
+                    "elapsed": 4.0,
+                    "event": "hunter_target_scan_empty",
+                    "behavior_state": "TravelToObjective",
+                    "hunter_reject_counts": {"visible": 10, "distance": 10, "eligible": 0},
+                },
+                {
+                    "elapsed": 8.0,
+                    "event": "attack_decision",
+                    "behavior_state": "HuntObjective",
+                    "current_target": 12100,
+                    "target_name": "wood imp",
+                    "reason": "smooth_visible_target",
+                },
+            ]
+            (encounter_dir / "segment-001-growthmid6500-1.jsonl").write_text(
+                "\n".join(json.dumps(row) for row in rows) + "\n",
+                encoding="utf-8",
+            )
+
+            changed, reason = monitor_dummy_growth_live.tune_control(
+                case_dir,
+                max_engage=2800.0,
+                max_radius=5200.0,
+                step=350.0,
+            )
+            payload = json.loads(control_path.read_text(encoding="utf-8"))
+
+        self.assertFalse(changed)
+        self.assertEqual(reason, "active_combat")
+        self.assertEqual(payload["max_target_distance"], 1500.0)
+        self.assertEqual(payload["hunter_target_api_radius"], 2200.0)
+
+    def test_replay_dummy_growth_watchers_rebuilds_summary_from_existing_logs(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            case_dir = root / "mid-p1"
+            movement_dir = case_dir / "movement"
+            encounter_dir = case_dir / "encounters"
+            movement_dir.mkdir(parents=True)
+            encounter_dir.mkdir()
+            with (root / "timeline.csv").open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=["case", "segment", "level_before"])
+                writer.writeheader()
+                writer.writerow({"case": "mid-p1", "segment": "1", "level_before": "6"})
+            with (case_dir / "watcher-movement-summary.csv").open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=["case", "segment", "primary_account", "watcher_account"])
+                writer.writeheader()
+                writer.writerow(
+                    {
+                        "case": "mid-p1",
+                        "segment": "1",
+                        "primary_account": "growthmid001",
+                        "watcher_account": "growthmid002",
+                    }
+                )
+            movement_rows = [
+                {"event": "move_step", "t": 0, "x": 10, "y": 10, "z": 100},
+                {"event": "move_step", "t": 1, "x": 20, "y": 20, "z": 100},
+            ]
+            for account in ("growthmid001", "growthmid002"):
+                (movement_dir / f"segment-001-{account}-1.jsonl").write_text(
+                    "\n".join(json.dumps(row) for row in movement_rows) + "\n",
+                    encoding="utf-8",
+                )
+            (encounter_dir / "segment-001-growthmid001-1.jsonl").write_text(
+                json.dumps({"event": "flee_start", "t": 0, "target_name": "huldu hunter", "x": 10, "y": 10})
+                + "\n"
+                + json.dumps(
+                    {
+                        "event": "flee_threat_pressure",
+                        "t": 15,
+                        "target_name": "huldu hunter",
+                        "character": "GrowthMid001",
+                        "flee_threat_target": "GrowthMid001",
+                        "flee_threat_active": True,
+                        "flee_threat_distance": 900,
+                        "x": 20,
+                        "y": 20,
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            rows, critical = replay_dummy_growth_watchers.replay_run(
+                root,
+                replay_dummy_growth_watchers.parse_args([str(root)]),
+            )
+
+            with (case_dir / "watcher-movement-summary.csv").open(encoding="utf-8", newline="") as handle:
+                summary_rows = list(csv.DictReader(handle))
+
+        self.assertEqual(rows, 1)
+        self.assertEqual(critical, 1)
+        self.assertEqual(summary_rows[0]["primary_behavior_anomaly_status"], "critical")
+        self.assertEqual(summary_rows[0]["primary_behavior_aggro_not_dropped"], "1")
 
     def test_boss_rule_matrix_runner_uses_disjoint_party_account_files(self) -> None:
         script = (ROOT / "tools" / "run-dummy-boss-rule-matrix.sh").read_text(encoding="utf-8")

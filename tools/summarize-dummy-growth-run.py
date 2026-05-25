@@ -67,6 +67,12 @@ def summarize_watcher(case_dir: Path) -> dict[str, int]:
         "watcher_xy_warn": 0,
         "watcher_z_warn": 0,
         "watcher_rewind_warn": 0,
+        "watcher_behavior_critical": 0,
+        "watcher_bad_target_choice": 0,
+        "watcher_aggro_not_dropped": 0,
+        "watcher_flee_too_short": 0,
+        "watcher_target_stuck": 0,
+        "watcher_unsafe_rest": 0,
     }
     for row in read_csv_rows(case_dir / "watcher-movement-summary.csv"):
         summary["watcher_rows"] += 1
@@ -76,6 +82,13 @@ def summarize_watcher(case_dir: Path) -> dict[str, int]:
             summary["watcher_z_warn"] += 1
         if str(row.get("rewind_status", "")).lower() == "warn":
             summary["watcher_rewind_warn"] += 1
+        if str(row.get("primary_behavior_anomaly_status", "")).lower() == "critical":
+            summary["watcher_behavior_critical"] += 1
+        summary["watcher_bad_target_choice"] += to_int(row.get("primary_behavior_bad_target_choice"))
+        summary["watcher_aggro_not_dropped"] += to_int(row.get("primary_behavior_aggro_not_dropped"))
+        summary["watcher_flee_too_short"] += to_int(row.get("primary_behavior_flee_too_short"))
+        summary["watcher_target_stuck"] += to_int(row.get("primary_behavior_target_stuck"))
+        summary["watcher_unsafe_rest"] += to_int(row.get("primary_behavior_unsafe_rest"))
     return summary
 
 
@@ -103,6 +116,12 @@ def print_table(rows: list[dict[str, object]]) -> None:
         "watcher_xy_warn",
         "watcher_z_warn",
         "watcher_rewind_warn",
+        "watcher_behavior_critical",
+        "watcher_bad_target_choice",
+        "watcher_aggro_not_dropped",
+        "watcher_flee_too_short",
+        "watcher_target_stuck",
+        "watcher_unsafe_rest",
     ]
     print("\t".join(fieldnames))
     for row in rows:
@@ -119,6 +138,12 @@ def write_csv(path: Path, rows: list[dict[str, object]]) -> None:
         "watcher_xy_warn",
         "watcher_z_warn",
         "watcher_rewind_warn",
+        "watcher_behavior_critical",
+        "watcher_bad_target_choice",
+        "watcher_aggro_not_dropped",
+        "watcher_flee_too_short",
+        "watcher_target_stuck",
+        "watcher_unsafe_rest",
     ]
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:

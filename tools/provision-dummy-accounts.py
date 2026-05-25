@@ -104,6 +104,21 @@ RANGED_SLOT = 13
 FIRST_BACKPACK_SLOT = 40
 LAST_BACKPACK_SLOT = 79
 SHIELD_OBJECT_TYPE = 42
+WEAPON_ITEM_TYPES = {RIGHT_HAND_SLOT, LEFT_HAND_SLOT, TWO_HAND_SLOT}
+SPEC_WEAPON_OBJECT_TYPES = {
+    "slash": 3,
+    "thrust": 4,
+    "crush": 2,
+    "staff": 8,
+    "sword": 11,
+    "hammer": 12,
+    "axe": 13,
+    "left axe": 17,
+    "blades": 19,
+    "blunt": 20,
+    "large weapons": 22,
+    "celtic spear": 23,
+}
 
 
 def crypt_password(password: str) -> str:
@@ -273,6 +288,81 @@ def choose_starter_slot(item_type: int, object_type: int, used_slots: set[int]) 
     raise RuntimeError("no free starter equipment slot")
 
 
+def preferred_weapon_object_type_from_specs(specs: str | None) -> int | None:
+    best_name = ""
+    best_value = -1
+    for part in (specs or "").split(";"):
+        if "|" not in part:
+            continue
+        name, value = part.split("|", 1)
+        normalized = name.strip().lower()
+        try:
+            score = int(value.strip())
+        except ValueError:
+            continue
+        if normalized in SPEC_WEAPON_OBJECT_TYPES and score > best_value:
+            best_name = normalized
+            best_value = score
+
+    return SPEC_WEAPON_OBJECT_TYPES.get(best_name)
+
+
+def sort_starter_templates_for_specs(
+    class_id: int,
+    specs: str | None,
+    templates: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    preferred_object_type = preferred_weapon_object_type_from_specs(specs)
+    if preferred_object_type is None:
+        return list(templates)
+
+    def sort_key(row: dict[str, str]) -> tuple[int, int]:
+        try:
+            item_type = int(row.get("Item_Type", "0") or 0)
+            object_type = int(row.get("Object_Type", "0") or 0)
+        except ValueError:
+            return (2, 0)
+        if item_type in {RIGHT_HAND_SLOT, LEFT_HAND_SLOT, TWO_HAND_SLOT} and object_type == preferred_object_type:
+            return (0, item_type)
+        return (1, item_type)
+
+    return sorted(templates, key=sort_key)
+
+
+def is_weapon_starter_template(row: dict[str, str]) -> bool:
+    try:
+        item_type = int(row.get("Item_Type", "0") or 0)
+        object_type = int(row.get("Object_Type", "0") or 0)
+    except ValueError:
+        return False
+
+    return item_type in WEAPON_ITEM_TYPES and object_type != SHIELD_OBJECT_TYPE
+
+
+def starter_template_matches_weapon(row: dict[str, str], object_type: int) -> bool:
+    try:
+        return is_weapon_starter_template(row) and int(row.get("Object_Type", "0") or 0) == object_type
+    except ValueError:
+        return False
+
+
+def filter_starter_templates_for_preferred_weapon(
+    templates: list[dict[str, str]],
+    preferred_object_type: int | None,
+) -> list[dict[str, str]]:
+    if preferred_object_type is None:
+        return list(templates)
+
+    if not any(starter_template_matches_weapon(row, preferred_object_type) for row in templates):
+        return list(templates)
+
+    return [
+        row
+        for row in templates
+        if not is_weapon_starter_template(row) or starter_template_matches_weapon(row, preferred_object_type)
+    ]
+
+
 def get_single_row(args: argparse.Namespace, sql: str) -> dict[str, str] | None:
     rows = parse_mysql_rows(run_mysql(args, sql))
     return rows[0] if rows else None
@@ -424,6 +514,62 @@ def load_starter_templates(args: argparse.Namespace, class_id: int) -> list[dict
     return [row for row in rows if class_id in parse_class_list(row.get("Class", ""))]
 
 
+def load_preferred_weapon_template(args: argparse.Namespace, preferred_object_type: int) -> dict[str, str] | None:
+    rows = parse_mysql_rows(
+        run_mysql(
+            args,
+            f"""
+            SELECT
+                '' AS Class,
+                it.Id_nb AS TemplateID,
+                it.Item_Type,
+                it.Object_Type,
+                it.PackSize,
+                it.Color,
+                it.Emblem,
+                it.Extension,
+                it.SalvageExtension,
+                it.MaxCondition,
+                it.MaxDurability,
+                it.Charges,
+                it.MaxCharges,
+                it.Charges1,
+                it.MaxCharges1,
+                it.PoisonSpellID,
+                it.PoisonMaxCharges,
+                it.PoisonCharges
+            FROM itemtemplate it
+            WHERE it.Item_Type IN ({RIGHT_HAND_SLOT}, {LEFT_HAND_SLOT}, {TWO_HAND_SLOT})
+              AND it.Object_Type = {preferred_object_type}
+              AND it.Level <= 1
+              AND it.Realm IN (0, {int(args.realm)})
+            ORDER BY
+                CASE WHEN it.Level = 0 THEN 0 ELSE 1 END,
+                CASE WHEN it.Realm = 0 THEN 0 ELSE 1 END,
+                it.Level,
+                it.DPS_AF,
+                it.Id_nb
+            LIMIT 1;
+            """,
+        )
+    )
+    return rows[0] if rows else None
+
+
+def starter_templates_for_specs(args: argparse.Namespace, class_id: int, specs: str | None) -> list[dict[str, str]]:
+    preferred_object_type = preferred_weapon_object_type_from_specs(specs)
+    templates = sort_starter_templates_for_specs(class_id, specs, load_starter_templates(args, class_id))
+
+    if preferred_object_type is not None and not any(
+        starter_template_matches_weapon(row, preferred_object_type) for row in templates
+    ):
+        preferred_template = load_preferred_weapon_template(args, preferred_object_type)
+        if preferred_template is not None:
+            templates = [preferred_template, *templates]
+
+    return filter_starter_templates_for_preferred_weapon(templates, preferred_object_type)
+
+
 def inventory_count(args: argparse.Namespace, owner_id: str) -> int:
     row = get_single_row(
         args,
@@ -435,7 +581,7 @@ def inventory_count(args: argparse.Namespace, owner_id: str) -> int:
 def add_starter_equipment(args: argparse.Namespace, account_name: str, character_name: str) -> int:
     character = get_single_row(
         args,
-        "SELECT DOLCharacters_ID, Class FROM `dolcharacters` "
+        "SELECT DOLCharacters_ID, Class, SerializedSpecs FROM `dolcharacters` "
         f"WHERE `AccountName`={sql_quote(account_name)} AND `Name`={sql_quote(character_name)} LIMIT 1;",
     )
 
@@ -447,7 +593,8 @@ def add_starter_equipment(args: argparse.Namespace, account_name: str, character
     if inventory_count(args, owner_id) > 0:
         return 0
 
-    starter_templates = load_starter_templates(args, int(character["Class"]))
+    class_id = int(character["Class"])
+    starter_templates = starter_templates_for_specs(args, class_id, character.get("SerializedSpecs", ""))
     used_slots: set[int] = set()
     inserted = 0
     active_weapon_slot: int | None = None

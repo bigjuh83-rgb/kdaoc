@@ -1,6 +1,6 @@
 # Custom UI Korean Patch Guide
 
-Last updated: 2026-05-12
+Last updated: 2026-05-23
 
 This note records how the local DAoC custom UI was prepared for Korean text so the same method can later be explained to cafe users.
 
@@ -201,6 +201,57 @@ For the popup/dialog font path, keep these `game.dll` fixes together:
 - `0x1005ee`: keep this as `eb` so the parsed popup font sections skip the bitmap branch and use the GDI entries from `fonts/uifont.dat`.
 
 Without the caller patch, the popup path never opens `uifont.dat` and still rebuilds the old 13-slot bitmap table on every restart.
+
+## 2026-05-23 Custom UI Cleanup Notes
+
+The later custom UI pass fixed several issues that only appeared after the Korean font size and tab labels were made readable in game.
+
+Chat font:
+
+- The Atlantis and Custom UI chat font paths must be patched together. Patching only one skin makes the font-size menu look like it works in one UI but not the other.
+- The chat font size menu is live enough for the local client, but the chosen GDI/font file and `LinePadding` still decide whether Korean looks cramped or too loose.
+- If the chat input looks vertically too tall after increasing the font size, reduce the chat control padding before changing the font again.
+
+Character creation:
+
+- Realm/race/class labels use phonetic Korean names when possible, not meaning translations.
+- Keep names short enough for the original button slots. Examples: `피르볼그`, `드루이드`, `블레이드`.
+- The realm description text needs extra vertical spacing because Korean glyphs are taller than the original English text. Apply the same spacing fix to Albion, Hibernia, and Midgard description panels.
+
+Stats windows:
+
+- Character stat labels should stay Korean where they are normal user-facing stats: `힘`, `체력`, `민첩`, `순발`, `지능`, `공감`, `신앙`, `매력`.
+- Damage/resist type labels use English phonetic Korean where that is clearer and shorter: `크러쉬`, `슬래쉬`, `피어싱`, `콜드`, `히트`, `매터`, `바디`, `스피릿`, `에너지`.
+- Do not translate database skill rows for this client patch. Server/database Korean skill-name changes affect English users and can drift from source expectations. Keep the DB reverted and handle display/UI wording in client resources where possible.
+
+Custom tab overlap:
+
+Some Bob's UI custom windows draw both the tab caption and a duplicate title label for the active first tab. With Korean, these labels overlap when the first tab has focus. Do not move the tab bar first; remove or blank the duplicate content title label for the active first tab.
+
+Confirmed local fixes:
+
+```text
+ui/custom/custom13_window.xml
+ui/custom/Options/Armor Resists/Style 09/custom13_window.xml
+  - first tab: 크러쉬
+  - duplicate inner first-tab label ControlId 1106 blanked
+
+ui/custom/custom17_window.xml
+ui/custom/Options/Realm Ranks/Style 01/custom17_window.xml
+  - first tab: 그래프
+  - duplicate inner title label ControlId 1102 blanked
+
+ui/custom/custom11_window.xml
+ui/custom/Options/Tabbed XP/Style 01/custom11_window.xml
+  - first tab: 경험
+  - duplicate inner title label ControlId 1209 blanked
+
+ui/custom/custom9_window.xml
+ui/custom/Options/Mini Resists/Style 01/custom9_window.xml
+  - mini resist labels widened and value columns shifted for Korean phonetic labels
+```
+
+The tab template itself was not the root cause of the first-tab overlap. The root cause was duplicate labels in each affected custom window.
 
 ## Verification
 

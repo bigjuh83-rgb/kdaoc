@@ -256,6 +256,7 @@ class HeadlessDaocClient:
         self.print_packets("player_init", self.read_packets_for(1.0))
 
     def send_command(self, command: str) -> None:
+        self.trace_movement("command", command=command)
         if command.startswith("/"):
             command = "&" + command[1:]
         self.send_packet(CLIENT_PACKETS["command"], b"\x00" + command.encode("utf-8") + b"\x00")

@@ -244,6 +244,98 @@ The cafe-facing method is recorded in:
 docs/custom-ui-korean-guide.md
 ```
 
+### 9. 2026-05-23 Client and Custom UI Finalization Pass
+
+This pass focused on the local 1.127/OpenDAoC client after the server was already sending CP949 Korean correctly. The main symptoms were not global mojibake. They were client rendering and fixed-slot UI problems:
+
+- dynamic list/adapter text could show Korean syllables as `@`
+- custom UI tab captions overlapped when the first tab had focus
+- some custom UI stat/resist labels were too wide for the original English layout
+- chat and pregame text needed a Korean-readable font size and line spacing
+
+The `@` glyph issue was first diagnosed with small XML glyph primers. A short local `LabelDef` primer in `stats_attributes_window.xml` proved that static labels and dynamic ListBox/Adapter text shared enough glyph cache state for `채널`, `글자 크기`, `하이랜더`, and `없음` to improve. A later large Korean primer failed: hundreds of labels across multiple font aliases caused broader UI degradation and more `@` fallback. The production direction is therefore not large XML preloading.
+
+The durable local client-side fix is to enlarge the GDI font atlas in `game.dll` instead of relying on massive XML primers:
+
+```text
+OpenDAoCClient/game.dll
+0x0f29a4: default GDI font atlas side 0x100 -> 0x200
+```
+
+Live tracing showed dynamic keyboard/ListBox Hangul reached the glyph builder but `font_buttons` filled the original 256x256 atlas. Once full, new Hangul glyphs fell back to `@`. Growing the atlas fixed the remaining keyboard action names without using a large primer set. The dangerous warmup branch at `0x488b8e` was not used for this fix.
+
+Additional `game.dll` string patch from the same pass:
+
+```text
+OpenDAoCClient/game.dll
+0x5383A4
+before: "You must wait one more second to interact again!"
+after : "다시 상호작용하려면 잠시 기다리세요!" (CP949, zero padded)
+```
+
+The stats/spec UI cleanup kept gameplay database skill names reverted. Database-level Korean skill-name edits were rolled back because they affect English users and can create source/database mismatches. Client UI wording is preferred for this patch scope.
+
+Custom UI first-tab overlap fixes:
+
+```text
+ui/custom/custom13_window.xml
+ui/custom/Options/Armor Resists/Style 09/custom13_window.xml
+  - first tab label: 크러쉬
+  - duplicate inner first-tab label ControlId 1106 blanked
+
+ui/custom/custom17_window.xml
+ui/custom/Options/Realm Ranks/Style 01/custom17_window.xml
+  - first tab label: 그래프
+  - duplicate inner title label ControlId 1102 blanked
+
+ui/custom/custom11_window.xml
+ui/custom/Options/Tabbed XP/Style 01/custom11_window.xml
+  - first tab label: 경험
+  - duplicate inner title label ControlId 1209 blanked
+```
+
+The fixed custom resist labels now use short phonetic Korean for DAoC damage types:
+
+```text
+Crush -> 크러쉬
+Slash -> 슬래쉬
+Thrust/Piercing -> 피어싱
+Cold -> 콜드
+Heat -> 히트
+Matter -> 매터
+Body -> 바디
+Spirit -> 스피릿
+Energy -> 에너지
+```
+
+The mini resist window required wider label slots and shifted value columns:
+
+```text
+ui/custom/custom9_window.xml
+ui/custom/Options/Mini Resists/Style 01/custom9_window.xml
+```
+
+Chat/font notes from the pass:
+
+- Atlantis and Custom UI font definitions must be updated together.
+- Chat font size changes are visible in the local client, but the final readability depends on both font choice and chat line padding.
+- If input text looks too vertically loose after increasing Korean font size, adjust the chat control spacing instead of reverting to a tiny font.
+
+Character creation notes from the pass:
+
+- Use phonetic Korean race/class names where possible.
+- `Firbolg` should be `피르볼그`.
+- `Druid` can fit as `드루이드`; avoid the shortened `드루` when the button slot allows the full name.
+- Realm description panels need extra vertical spacing for Korean text, and the fix must apply to all realms, not only Hibernia.
+
+Confirmed final visual checks from the user:
+
+- keyboard configuration no longer shows `@`
+- custom menu/game-setting first-tab focus overlap fixed
+- armor resist first-tab focus overlap fixed
+- realm rank first-tab focus overlap fixed
+- tabbed XP first-tab focus overlap fixed
+
 ## Current Important Files
 
 Server:

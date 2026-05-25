@@ -135,8 +135,6 @@ namespace DOL.GS.Scripts
 
         public override bool WhisperReceive(GameLiving source, string str) // What to do when a player whispers me
         {
-            if (!base.WhisperReceive(source, str)) return false;
-
             GamePlayer player = source as GamePlayer;
             if (player == null)
                 return false;
@@ -144,14 +142,19 @@ namespace DOL.GS.Scripts
             if (GameRelic.IsPlayerCarryingRelic(player))
                 return false;
 
+            if (!base.WhisperReceive(source, str))
+                return GetTeleportLocation(player, str);
+
             return GetTeleportLocation(player, str);
 
         }
 
         protected virtual bool GetTeleportLocation(GamePlayer player, string text)
         {
-		            text = text switch
-		            {
+            text = string.Join(" ", (text ?? string.Empty).Trim().Trim('"').Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+
+            text = text switch
+            {
 		                "슈라우디드 아일스" => "shrouded isles",
 		                "주택" => "housing",
 	                "마을" => "towns",

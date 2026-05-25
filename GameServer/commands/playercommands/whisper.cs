@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using DOL.GS;
 using DOL.GS.PacketHandler;
 
 namespace DOL.GS.Commands
@@ -36,16 +37,16 @@ namespace DOL.GS.Commands
 				return;
 			}
 
-			if (IsSpammingCommand(client.Player, "whisper", 500))
-			{
-				DisplayMessage(client, T(client, "PlayerCommands.Whisper.SlowDown"));
-				return;
-			}
-
 			GameObject obj = client.Player.TargetObject;
 			if (obj == null)
 			{
 				DisplayMessage(client, T(client, "PlayerCommands.Whisper.SelectTarget"));
+				return;
+			}
+
+			if (obj is not GameNPC && IsSpammingCommand(client.Player, "whisper", 500))
+			{
+				DisplayMessage(client, T(client, "PlayerCommands.Whisper.SlowDown"));
 				return;
 			}
 

@@ -11,15 +11,15 @@ SkillBase.RegisterPropertyNames.AllSkills:				모든 기술
 SkillBase.RegisterPropertyNames.ALLSpellLines:			모든 주문 계열
 
 ### Resists
-SkillBase.RegisterPropertyNames.Body:					육체
-SkillBase.RegisterPropertyNames.Cold:					냉기
-SkillBase.RegisterPropertyNames.Crush:					타격
+SkillBase.RegisterPropertyNames.Body:					바디
+SkillBase.RegisterPropertyNames.Cold:					콜드
+SkillBase.RegisterPropertyNames.Crush:					크러쉬
 SkillBase.RegisterPropertyNames.Energy:					에너지
-SkillBase.RegisterPropertyNames.Heat:					열기
-SkillBase.RegisterPropertyNames.Matter:					물질
-SkillBase.RegisterPropertyNames.Slash:					베기
-SkillBase.RegisterPropertyNames.Spirit:					영혼
-SkillBase.RegisterPropertyNames.Thrust:					찌르기
+SkillBase.RegisterPropertyNames.Heat:					히트
+SkillBase.RegisterPropertyNames.Matter:					매터
+SkillBase.RegisterPropertyNames.Slash:					슬래쉬
+SkillBase.RegisterPropertyNames.Spirit:					스피릿
+SkillBase.RegisterPropertyNames.Thrust:					피어싱
 
 ### Stats
 SkillBase.RegisterPropertyNames.Acuity:					통찰
@@ -44,7 +44,7 @@ SkillBase.RegisterPropertyNames.CelticSpear:			켈틱 창
 SkillBase.RegisterPropertyNames.Composite:				합성궁
 SkillBase.RegisterPropertyNames.CriticalStrike:			치명 공격
 SkillBase.RegisterPropertyNames.Crossbows:				석궁
-SkillBase.RegisterPropertyNames.Crushing:				타격
+SkillBase.RegisterPropertyNames.Crushing:				크러쉬
 SkillBase.RegisterPropertyNames.DualWield:				쌍수
 SkillBase.RegisterPropertyNames.FlexibleWeapon:			유연 무기
 SkillBase.RegisterPropertyNames.Hammer:					망치
@@ -59,12 +59,12 @@ SkillBase.RegisterPropertyNames.RecurvedBow:			곡궁
 SkillBase.RegisterPropertyNames.Scythe:					낫
 SkillBase.RegisterPropertyNames.Shields:				방패
 SkillBase.RegisterPropertyNames.ShortBow:				단궁
-SkillBase.RegisterPropertyNames.Slashing:				베기
+SkillBase.RegisterPropertyNames.Slashing:				슬래쉬
 SkillBase.RegisterPropertyNames.Spear:					창
 SkillBase.RegisterPropertyNames.Staff:					지팡이
 SkillBase.RegisterPropertyNames.Sword:					검
 SkillBase.RegisterPropertyNames.ThrownWeapons:			투척
-SkillBase.RegisterPropertyNames.Thrusting:				찌르기
+SkillBase.RegisterPropertyNames.Thrusting:				피어싱
 SkillBase.RegisterPropertyNames.TwoHanded:				양손 무기
 
 ## Combat Styles

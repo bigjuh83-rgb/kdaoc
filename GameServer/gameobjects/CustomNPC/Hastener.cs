@@ -84,7 +84,13 @@ namespace DOL.GS
 		public override IList GetExamineMessages(GamePlayer player)
 		{
 			IList list = new ArrayList();
-			list.Add(string.Format("You examine {0}. {1} is {2}.", GetName(0, false), GetPronoun(0, true), GetAggroLevelString(player, false)));
+			string language = player.Client.Account.Language;
+			list.Add(LanguageMgr.GetTranslation(language,
+				"GameNPC.GetExamineMessages.YouExamine",
+				GetName(0, false, language, this),
+				GetPronoun(0, true, language),
+				GetAggroLevelString(player, false),
+				string.Empty));
 			return list;
 		}
 

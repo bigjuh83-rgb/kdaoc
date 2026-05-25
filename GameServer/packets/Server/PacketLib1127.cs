@@ -1,5 +1,7 @@
 ﻿using DOL.GS.Commands;
 
+using System;
+
 namespace DOL.GS.PacketHandler
 {
     [PacketLib(1127, GameClient.eClientVersion.Version1127)]
@@ -26,6 +28,8 @@ namespace DOL.GS.PacketHandler
 
         public override void SendMessage(string msg, eChatType type, eChatLoc loc)
         {
+            msg = LocalizeKnownKoreanMessage(msg);
+
             SnoopManager.CheckAndBroadcast(m_gameClient.Player, msg, type, loc);
 
             if (m_gameClient.DisabledChatTypes.Contains(type))
@@ -38,6 +42,8 @@ namespace DOL.GS.PacketHandler
         {
             if (m_gameClient.ClientState is GameClient.eClientState.CharScreen)
                 return;
+
+            msg = LocalizeKnownKoreanMessage(msg);
 
             var pak = PooledObjectFactory.GetForTick<GSTCPPacketOut>().Init(GetPacketCode(eServerPackets.Message));
             pak.WriteByte((byte) type);
@@ -52,6 +58,41 @@ namespace DOL.GS.PacketHandler
 
             pak.WriteString(msg);
             SendTCP(pak);
+        }
+
+        private string LocalizeKnownKoreanMessage(string msg)
+        {
+            if (m_gameClient?.Account?.Language != "KR" || string.IsNullOrEmpty(msg))
+                return msg;
+
+            const string speedUpSelf = "Your speed greatly increases!";
+            const string speedUpOtherSuffix = "'s speed greatly increases!";
+            const string speedNormalSelf = "Your speed returns to normal.";
+            const string speedNormalOtherSuffix = "'s speed returns to normal.";
+
+            if (msg == speedUpSelf)
+                return "이동 속도가 크게 증가합니다!";
+
+            if (msg.EndsWith(speedUpOtherSuffix, StringComparison.Ordinal))
+            {
+                string name = msg.Substring(0, msg.Length - speedUpOtherSuffix.Length);
+                return string.IsNullOrWhiteSpace(name)
+                    ? msg
+                    : $"{name}의 이동 속도가 크게 증가합니다!";
+            }
+
+            if (msg == speedNormalSelf)
+                return "이동 속도가 정상으로 돌아옵니다.";
+
+            if (msg.EndsWith(speedNormalOtherSuffix, StringComparison.Ordinal))
+            {
+                string name = msg.Substring(0, msg.Length - speedNormalOtherSuffix.Length);
+                return string.IsNullOrWhiteSpace(name)
+                    ? msg
+                    : $"{name}의 이동 속도가 정상으로 돌아옵니다.";
+            }
+
+            return msg;
         }
     }
 }

@@ -11,6 +11,7 @@ from pathlib import Path
 
 DISTANCE_EVENTS = {"hunter_target_scan_empty", "attack_decision"}
 BAD_IDLE_REASONS = {"distance", "combat_gap", "idle_ready", "level"}
+OBJECTIVE_TRAVEL_STATES = {"TravelToObjective", "ReturnToObjective", "DropAggroAndRecover"}
 
 
 def jsonl_tail(path: Path, max_lines: int = 80) -> list[dict[str, object]]:
@@ -112,6 +113,20 @@ def has_lower_level_targets(row: dict[str, object]) -> bool:
     return False
 
 
+def is_objective_travel_row(row: dict[str, object]) -> bool:
+    return str(row.get("behavior_state", "") or "") in OBJECTIVE_TRAVEL_STATES
+
+
+def row_has_active_target(row: dict[str, object]) -> bool:
+    for key in ("current_target", "active_target_id", "target_id"):
+        try:
+            if int(row.get(key, 0) or 0) > 0:
+                return True
+        except (TypeError, ValueError):
+            continue
+    return False
+
+
 def tune_control(case_dir: Path, *, max_engage: float, max_radius: float, step: float) -> tuple[bool, str]:
     control_path = case_dir / "live-control.json"
     payload = load_control(control_path)
@@ -156,10 +171,17 @@ def tune_control(case_dir: Path, *, max_engage: float, max_radius: float, step: 
     if latest_event == "live_control_applied":
         return False, "already_applied"
 
+    if row_has_active_target(latest):
+        return False, "active_combat"
+
+    if len(recent_empty) >= 2 and is_objective_travel_row(latest):
+        return False, "traveling_to_objective"
+
     recent_lower_level = [row for row in recent_empty if has_lower_level_targets(row)]
     if len(recent_lower_level) >= 2 and not recent_kills:
         old_min = int(max_numeric(payload, "min_target_level", float(latest.get("hunter_min_level", 1) or 1)))
-        new_min = max(1, old_min - 1)
+        baseline_min = int(max_numeric(payload, "baseline_min_target_level", float(latest.get("hunter_min_level", 1) or 1)))
+        new_min = max(1, baseline_min, old_min - 1)
         if new_min < old_min:
             payload["min_target_level"] = new_min
             write_control(control_path, payload, "lower_min_level")

@@ -133,8 +133,6 @@ namespace DOL.GS.Scripts
 
         public override bool WhisperReceive(GameLiving source, string str) // What to do when a player whispers me
         {
-            if (!base.WhisperReceive(source, str)) return false;
-
             GamePlayer player = source as GamePlayer;
             if (player == null)
                 return false;
@@ -142,12 +140,17 @@ namespace DOL.GS.Scripts
             if (GameRelic.IsPlayerCarryingRelic(player))
                 return false;
 
+            if (!base.WhisperReceive(source, str))
+                return GetTeleportLocation(player, str);
+
             return GetTeleportLocation(player, str);
 
         }
 
         protected virtual bool GetTeleportLocation(GamePlayer player, string text)
         {
+            text = string.Join(" ", (text ?? string.Empty).Trim().Trim('"').Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+
 	            text = text switch
 	            {
 	                "주택" => "housing",
@@ -488,8 +491,10 @@ namespace DOL.GS.Scripts
 
             if (spell != null)
             {
-                UniPortal portalHandler = new UniPortal(this, spell, spellLine, destination);
-                portalHandler.StartSpell(player);
+                // Live town teleporters should move the selected player immediately.
+                // The UniPortal realm-target path can announce the destination without
+                // applying MoveTo when no affected targets are selected.
+                OnTeleport(player, destination);
                 return;
             }
 
@@ -512,13 +517,18 @@ namespace DOL.GS.Scripts
         {
             if (player.InCombat == false && GameRelic.IsPlayerCarryingRelic(player) == false)
             {
-                player.LeaveHouse();
-                GameLocation currentLocation =
-                    new GameLocation("TeleportStart", player.CurrentRegionID, player.X, player.Y, player.Z);
-                player.MoveTo((ushort) destination.RegionID, destination.X, destination.Y, destination.Z,
-                    (ushort) destination.Heading);
-                GameServer.ServerRules.OnPlayerTeleport(player, currentLocation, destination);
+                TeleportPlayerNow(player, destination);
             }
+        }
+
+        private static void TeleportPlayerNow(GamePlayer player, DbTeleport destination)
+        {
+            player.LeaveHouse();
+            GameLocation currentLocation =
+                new GameLocation("TeleportStart", player.CurrentRegionID, player.X, player.Y, player.Z);
+            player.MoveTo((ushort) destination.RegionID, destination.X, destination.Y, destination.Z,
+                (ushort) destination.Heading);
+            GameServer.ServerRules.OnPlayerTeleport(player, currentLocation, destination);
         }
     }
 }

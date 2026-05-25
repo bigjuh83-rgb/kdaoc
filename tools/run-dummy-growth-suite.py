@@ -122,6 +122,8 @@ class RoutePoint:
     z: int
     prefer: str = ""
     avoid: str = ""
+    teleport_destination: str = ""
+    objective_adds: str = ""
 
 
 @dataclass(frozen=True)
@@ -141,6 +143,55 @@ class RealmProfile:
     growth_class_cycle: str = ""
     growth_race_cycle: str = ""
     growth_spec_cycle: str = ""
+
+
+TELEPORT_DESTINATIONS: dict[str, tuple[tuple[str, int, int, int], ...]] = {
+    "alb": (
+        ("Adribard's Retreat", 472348, 629103, 1724),
+        ("Avalon Marsh", 462144, 633058, 1739),
+        ("Caer Ulfwych", 521393, 616461, 1784),
+        ("Campacorentin Station", 493679, 591770, 1819),
+        ("Castle Sauvage", 584151, 477177, 2600),
+        ("Cotswold Village", 560574, 511800, 2280),
+        ("Prydwen Keep", 574199, 528948, 2863),
+        ("Snowdonia Fortress", 527543, 358900, 8320),
+        ("Yarley's Farm", 369957, 679721, 5540),
+    ),
+    "mid": (
+        ("Audliten", 729152, 760225, 4573),
+        ("Fort Atla", 749218, 817547, 4408),
+        ("Fort Veldon", 801046, 678588, 5299),
+        ("Gotar", 771152, 836380, 4624),
+        ("Huginfell", 712192, 783970, 4672),
+        ("Mularn", 803612, 726671, 4743),
+        ("Svasud Faste", 767242, 669591, 5736),
+        ("Vindsaul Faste", 703389, 738621, 5704),
+        ("West Skona", 712345, 923847, 5043),
+    ),
+    "hib": (
+        ("Ardagh", 350446, 553634, 5120),
+        ("Connla", 295765, 642599, 4849),
+        ("Druim Cain", 421264, 486315, 1824),
+        ("Druim Ligen", 334342, 419994, 5184),
+        ("Howth", 343184, 592636, 5456),
+        ("Innis Carthaig", 334622, 720123, 4296),
+        ("Mag Mell", 346100, 491380, 5210),
+        ("Shannon Estuary", 309968, 645164, 4848),
+        ("Tir na mBeo", 345698, 528897, 5448),
+    ),
+}
+
+DIRECT_STARTUP_TELEPORT_DESTINATIONS = {
+    "druim cain",
+    "svasud faste",
+}
+
+
+STARTUP_TELEPORTER_HUBS: dict[str, tuple[int, int, int]] = {
+    "alb": (531504, 479073, 2200),
+    "mid": (774601, 755307, 4600),
+    "hib": (345677, 490738, 5200),
+}
 
 
 @dataclass(frozen=True)
@@ -189,12 +240,89 @@ class GrowthItemPlan:
     sell_reason: str = ""
 
 
-def route_point(level: int, x: int, y: int, z: int, prefer: str = "", avoid: str = "") -> RoutePoint:
-    return RoutePoint(level=level, x=x, y=y, z=z, prefer=prefer, avoid=avoid)
+def route_point(
+    level: int,
+    x: int,
+    y: int,
+    z: int,
+    prefer: str = "",
+    avoid: str = "",
+    teleport_destination: str = "",
+    objective_adds: str = "",
+) -> RoutePoint:
+    return RoutePoint(
+        level=level,
+        x=x,
+        y=y,
+        z=z,
+        prefer=prefer,
+        avoid=avoid,
+        teleport_destination=teleport_destination,
+        objective_adds=objective_adds,
+    )
+
+
+def nearest_teleport_destination(realm: RealmProfile, route: RoutePoint) -> str:
+    if route.teleport_destination:
+        return route.teleport_destination
+    destinations = TELEPORT_DESTINATIONS.get(realm.key, ())
+    if not destinations:
+        return route.teleport_destination
+
+    def distance_squared(destination: tuple[str, int, int, int]) -> int:
+        _, x, y, z = destination
+        return (route.x - x) ** 2 + (route.y - y) ** 2 + (route.z - z) ** 2
+
+    return min(destinations, key=distance_squared)[0]
+
+
+def teleport_destination_point(realm: RealmProfile, destination_name: str) -> tuple[int, int, int] | None:
+    destination_key = normalize_teleport_destination(destination_name)
+    if not destination_key:
+        return None
+    for name, x, y, z in TELEPORT_DESTINATIONS.get(realm.key, ()):
+        if normalize_teleport_destination(name) == destination_key:
+            return x, y, z
+    return None
+
+
+def startup_teleporter_home(realm: RealmProfile) -> str:
+    x, y, z = STARTUP_TELEPORTER_HUBS[realm.key]
+    return f"{x},{y},{z}"
+
+
+def normalize_teleport_destination(value: str) -> str:
+    return " ".join(str(value or "").strip().lower().split())
+
+
+def normalize_identifier(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", normalize_teleport_destination(value)).strip("_")
 
 
 def growth_cycle(value: str, fallback: str) -> str:
     return value or fallback
+
+
+def split_spec_cycle(value: str) -> list[str]:
+    return [part.strip() for part in (value or "").split("||") if part.strip()]
+
+
+def checkpoint_specs_by_account(
+    account_names: list[str],
+    realm: RealmProfile | None,
+    target_specs_by_account: dict[str, str] | None,
+) -> dict[str, str]:
+    if realm is None:
+        return {}
+    cycle_specs = split_spec_cycle(growth_cycle(realm.growth_spec_cycle, realm.spec_cycle))
+    specs_by_account: dict[str, str] = {}
+    for index, account in enumerate(account_names):
+        spec = (target_specs_by_account or {}).get(account, "").strip()
+        if not spec and cycle_specs:
+            spec = cycle_specs[index % len(cycle_specs)]
+        if spec:
+            specs_by_account[account] = spec
+    return specs_by_account
 
 
 BASE_CLASS_BY_TARGET_CLASS = {
@@ -240,6 +368,8 @@ def should_provision_base_classes(args: argparse.Namespace) -> bool:
 
 
 def strict_route_target_name(route: RoutePoint, current_level: int) -> str:
+    if current_level >= 10 and route.prefer:
+        return route.prefer
     return ""
 
 
@@ -260,7 +390,7 @@ REALMS: dict[str, RealmProfile] = {
             "Smite|1;Rejuvenation|40;Enhancement|36||"
             "Smite|1;Rejuvenation|40;Enhancement|36||"
             "Fire Magic|50;Earth Magic|15;Cold Magic|10||"
-            "Earth Magic|45;Cold Magic|25;Wind Magic|8||"
+            "Wind Magic|45;Earth Magic|25;Cold Magic|8||"
             "Slash|39;Thrust|1;Crush|1;Two Handed|1;Chants|48;Shields|42;Parry|13||"
             "Slash|1;Thrust|1;Crush|50;Polearm|1;Shields|42;Two Handed|1;Parry|39;Crossbows|1||"
             "Slash|50;Thrust|1;Crush|1;Dual Wield|50;Parry|28||"
@@ -270,16 +400,16 @@ REALMS: dict[str, RealmProfile] = {
             "Matter Magic|46;Body Magic|28;Spirit Magic|4||"
             "Body Magic|45;Mind Magic|29;Matter Magic|4"
         ),
-        growth_class_cycle="1|2|11|6|10|7|5|6|13|8|4",
-        growth_race_cycle="1|3|1|3|3|1|1|3|2|2|1",
+        growth_class_cycle="1|6|2|11|10|7|5|6|13|8|4",
+        growth_race_cycle="1|3|3|1|3|1|1|3|2|2|1",
         growth_spec_cycle=(
             "Slash|39;Thrust|1;Crush|1;Two Handed|1;Chants|48;Shields|42;Parry|13||"
+            "Smite|1;Rejuvenation|40;Enhancement|36||"
             "Slash|1;Thrust|1;Crush|50;Polearm|1;Shields|42;Two Handed|1;Parry|39;Crossbows|1||"
             "Slash|50;Thrust|1;Crush|1;Dual Wield|50;Parry|28||"
-            "Smite|1;Rejuvenation|40;Enhancement|36||"
             "Staff|39;Enhancement|45;Rejuvenation|30;Parry|18||"
             "Fire Magic|50;Earth Magic|15;Cold Magic|10||"
-            "Earth Magic|45;Cold Magic|25;Wind Magic|8||"
+            "Wind Magic|45;Earth Magic|25;Cold Magic|8||"
             "Smite|1;Rejuvenation|40;Enhancement|36||"
             "Body Magic|45;Mind Magic|29;Matter Magic|4||"
             "Matter Magic|46;Body Magic|28;Spirit Magic|4||"
@@ -290,16 +420,32 @@ REALMS: dict[str, RealmProfile] = {
             route_point(1, 534650, 477500, 2200, "black wolf pup,boar piglet,weak skeleton", "young cutpurse,green snake"),
             route_point(2, 534900, 478900, 2310, "small gray wolf,skeleton,black wolf pup", "young cutpurse,green snake"),
             route_point(3, 534900, 478900, 2310, "small gray wolf,skeleton,black wolf pup", "young cutpurse,green snake"),
-            route_point(5, 560244, 532267, 2196, "spriggarn elder,river spriteling,giant frog", "river drakeling,river sprite,bear,carrion drake"),
-            route_point(10, 522181, 564087, 2975),
-            route_point(15, 516090, 540076, 3779),
-            route_point(20, 536446, 475521, 3652),
-            route_point(25, 494638, 482463, 4231),
-            route_point(30, 483121, 518214, 4105),
-            route_point(35, 488921, 459093, 4242),
-            route_point(40, 490379, 482595, 4043),
-            route_point(45, 506796, 463636, 3860),
-            route_point(50, 509770, 464011, 4072),
+            route_point(5, 533895, 472812, 2654, "shady pilferer,spriggarn stalker,skeleton", "young cutpurse,river drakeling,river sprite,bear,carrion drake"),
+            route_point(
+                10,
+                517187,
+                627281,
+                1701,
+                "sylvan goblin warrior",
+                "devout filidh,sylvan goblin chief,wood ogre,bloated spider,red lion",
+                teleport_destination="Caer Ulfwych",
+            ),
+            route_point(15, 542572, 584326, 3263, "ashen fellwood", teleport_destination="Caer Ulfwych"),
+            route_point(20, 536446, 475521, 3652, teleport_destination="Caer Ulfwych"),
+            route_point(25, 494638, 482463, 4231, teleport_destination="Campacorentin Station"),
+            route_point(30, 542878, 608836, 2917, "black lion,black lioness", teleport_destination="Caer Ulfwych"),
+            route_point(35, 488921, 459093, 4242, teleport_destination="Cornwall Station"),
+            route_point(40, 490379, 482595, 4043, teleport_destination="Swanton Keep"),
+            route_point(45, 506796, 463636, 3860, teleport_destination="Lyonesse"),
+            route_point(
+                50,
+                504923,
+                344510,
+                2833,
+                "Tylwyth Teg ranger",
+                "ellyll sage,cyhraeth,ravenclan giant",
+                teleport_destination="Snowdonia Fortress",
+            ),
         ),
         ground_z_map="tools/pathing/heightmaps/region001_client_zones.json",
         startup_service_npc_name="Brother Penric",
@@ -322,13 +468,13 @@ REALMS: dict[str, RealmProfile] = {
             "Augmentation|40;Mending|36;Subterranean|1||"
             "Runecarving|50;Darkness|15;Suppression|10"
         ),
-        growth_class_cycle="22|31|24|26|22|28|29|26",
-        growth_race_cycle="5|6|5|7|7|8|5|7",
+        growth_class_cycle="22|26|31|24|22|28|29|26",
+        growth_race_cycle="5|7|6|5|7|8|5|7",
         growth_spec_cycle=(
             "Hammer|50;Shields|42;Parry|39;Sword|1;Axe|1;Thrown Weapons|1||"
+            "Mending|40;Augmentation|36;Pacification|1||"
             "Axe|50;Left Axe|50;Parry|28;Sword|1;Hammer|1||"
             "Sword|44;Battlesongs|46;Parry|21;Hammer|1;Axe|1||"
-            "Mending|40;Augmentation|36;Pacification|1||"
             "Sword|50;Shields|42;Parry|39;Hammer|1;Axe|1;Thrown Weapons|1||"
             "Augmentation|40;Mending|36;Subterranean|1||"
             "Runecarving|50;Darkness|15;Suppression|10||"
@@ -339,16 +485,40 @@ REALMS: dict[str, RealmProfile] = {
             route_point(1, 770900, 746700, 4620, "young sveawolf", "soft-shelled crab,vein spiderling,lupine gnawer,lupine snarler"),
             route_point(2, 767400, 745984, 4542, "young lynx,lupine snarler,young sveawolf", "soft-shelled crab,vein spiderling,lupine gnawer"),
             route_point(3, 767400, 745984, 4542, "young lynx,lupine snarler,young sveawolf", "thrall,green serpent,soft-shelled crab,vein spiderling,lupine gnawer,impling"),
-            route_point(5, 767741, 715551, 4734, "huldu hunter,phantom hound,harvestman", "tomte thug,rock crab,tomte skirmisher"),
-            route_point(10, 746382, 789306, 5014),
-            route_point(15, 736792, 836202, 5159),
-            route_point(20, 783734, 797071, 5282),
-            route_point(25, 779270, 829104, 4856),
-            route_point(30, 733576, 760848, 5342),
-            route_point(35, 709212, 769221, 5283),
-            route_point(40, 681918, 728644, 5595),
-            route_point(45, 674302, 736960, 5227),
-            route_point(50, 681850, 778501, 5004),
+            route_point(
+                5,
+                765794,
+                742802,
+                5205,
+                "impling",
+                "small hill cat,young lynx,green serpent,lupine snarler,young sveawolf,vein spiderling,harvestman,wildling",
+            ),
+            route_point(
+                6,
+                783163,
+                751764,
+                5074,
+                "vein spider",
+                "small hill cat,young lynx,green serpent,lupine snarler,young sveawolf",
+            ),
+            route_point(10, 800176, 675574, 5316, "wolf spiderling", teleport_destination="Fort Veldon"),
+            route_point(15, 736792, 836202, 5159, teleport_destination="Fort Veldon"),
+            route_point(20, 783734, 797071, 5282, teleport_destination="Audliten"),
+            route_point(25, 779270, 829104, 4856, teleport_destination="Huginfell"),
+            route_point(30, 733576, 760848, 5342, teleport_destination="Fort Atla"),
+            route_point(35, 709212, 769221, 5283, teleport_destination="Gna Faste"),
+            route_point(40, 681918, 728644, 5595, teleport_destination="Vindsaul Faste"),
+            route_point(45, 674302, 736960, 5227, teleport_destination="Raumarik"),
+            route_point(
+                50,
+                664136,
+                726812,
+                6510,
+                "fenrir tracker",
+                "wyvern,torpor worm,winter wolf,bone-eater clanmother,ghostly Hibernian invader",
+                teleport_destination="Vindsaul Faste",
+                objective_adds="fenrir snowscout,fenrir prophet",
+            ),
         ),
         ground_z_map="tools/pathing/heightmaps/region100_client_zones.json",
         startup_service_npc_name="Aud",
@@ -371,13 +541,13 @@ REALMS: dict[str, RealmProfile] = {
             "Light|50;Mana|15;Void|10||"
             "Mana|50;Enchantments|20;Light|1"
         ),
-        growth_class_cycle="44|43|45|47|48|40|41|47",
+        growth_class_cycle="44|47|43|45|48|40|41|47",
         growth_race_cycle="9|9|9|9|9|11|11|9",
         growth_spec_cycle=(
             "Blades|50;Shields|42;Parry|39;Large Weapons|1;Celtic Spear|1||"
+            "Regrowth|40;Nurture|36;Nature|1||"
             "Blades|50;Celtic Dual|50;Parry|28;Shields|1||"
             "Large Weapons|50;Valor|40;Parry|23;Shields|1;Blades|1||"
-            "Regrowth|40;Nurture|36;Nature|1||"
             "Music|43;Nurture|37;Regrowth|33;Blades|1||"
             "Light|50;Mana|15;Void|10||"
             "Mana|50;Enchantments|20;Light|1||"
@@ -388,16 +558,25 @@ REALMS: dict[str, RealmProfile] = {
             route_point(1, 344500, 474500, 5372, "large frog,skeletal pawn,water beetle larva", "feccan,annoying lucradan,ambient,Lance Settler,lunantishee,blackthorn"),
             route_point(2, 345100, 474178, 5473, "villainous youth,skeletal pawn,water beetle larva", "feccan,annoying lucradan,ambient,Lance Settler,lunantishee,blackthorn"),
             route_point(3, 347024, 473748, 6055, "mudman,villainous youth,skeletal pawn", "feccan,annoying lucradan,ambient,Lance Settler,lunantishee,blackthorn"),
-            route_point(5, 335600, 521600, 4909, "orchard nipper", "lough wolf,wild crouch,water beetle"),
-            route_point(10, 353966, 507105, 5299),
-            route_point(15, 339898, 516372, 5410),
-            route_point(20, 344391, 564431, 5739),
-            route_point(25, 343316, 522184, 5174),
-            route_point(30, 344511, 546390, 5249),
-            route_point(35, 335203, 518049, 4450),
-            route_point(40, 370138, 573183, 4407),
-            route_point(45, 399161, 507683, 4546),
-            route_point(50, 402603, 570938, 4821),
+            route_point(5, 348637, 479175, 5742, "eirebug,spraggon,large frog", "feccan,lough wolf,wild crouch,water beetle"),
+            route_point(8, 292688, 648549, 4928, "water beetle", teleport_destination="Connla"),
+            route_point(10, 292688, 648549, 4928, "water beetle", teleport_destination="Connla"),
+            route_point(15, 339898, 516372, 5410, teleport_destination="Tir na mBeo"),
+            route_point(20, 344391, 564431, 5739, teleport_destination="Ardagh"),
+            route_point(25, 343316, 522184, 5174, teleport_destination="Howth"),
+            route_point(30, 344511, 546390, 5249, teleport_destination="Connla"),
+            route_point(35, 335203, 518049, 4450, teleport_destination="Innis Carthaig"),
+            route_point(40, 370138, 573183, 4407, teleport_destination="Druim Cain"),
+            route_point(45, 399161, 507683, 4546, teleport_destination="Cursed Forest"),
+            route_point(
+                50,
+                332526,
+                733763,
+                4750,
+                "far darrig",
+                "melancholic fairy,dullahan",
+                teleport_destination="Innis Carthaig",
+            ),
         ),
         ground_z_map="tools/pathing/heightmaps/region200_client_zones.json",
         startup_service_npc_name="Ionhar",
@@ -423,6 +602,33 @@ LEVEL_ONE_PARTY_ROUTE_VARIANTS: dict[str, dict[int, RoutePoint]] = {
         2: route_point(1, 344500, 474500, 5372, "large frog,skeletal pawn,water beetle larva", "feccan,annoying lucradan,ambient,Lance Settler,lunantishee,blackthorn"),
         4: route_point(1, 344500, 474500, 5372, "large frog,skeletal pawn,water beetle larva", "feccan,annoying lucradan,ambient,Lance Settler,lunantishee,blackthorn"),
         8: route_point(1, 344500, 474500, 5372, "large frog,skeletal pawn,water beetle larva", "feccan,annoying lucradan,ambient,Lance Settler,lunantishee,blackthorn"),
+    },
+}
+
+
+LEVEL_TEN_PARTY_ROUTE_VARIANTS: dict[str, dict[int, RoutePoint]] = {
+    "alb": {
+        2: route_point(
+            10,
+            517187,
+            627281,
+            1701,
+            "sylvan goblin warrior",
+            "devout filidh,sylvan goblin chief,wood ogre,bloated spider,red lion",
+            teleport_destination="Caer Ulfwych",
+        ),
+        4: route_point(10, 511763, 615379, 1779, "wild boar", "brownie,river sprite,bandit", teleport_destination="Caer Ulfwych"),
+        8: route_point(10, 511763, 615379, 1779, "wild boar", "brownie,river sprite,bandit", teleport_destination="Caer Ulfwych"),
+    },
+    "mid": {
+        2: route_point(10, 772717, 833982, 4374, "spindly rock crab", "perfidious pook,tawny lynx,army ant soldier,army ant worker", teleport_destination="Gotar"),
+        4: route_point(10, 772717, 833982, 4374, "spindly rock crab", "perfidious pook,tawny lynx,army ant soldier,army ant worker", teleport_destination="Gotar"),
+        8: route_point(10, 772717, 833982, 4374, "spindly rock crab", "perfidious pook,tawny lynx,army ant soldier,army ant worker", teleport_destination="Gotar"),
+    },
+    "hib": {
+        2: route_point(10, 336157, 532604, 5556, "lough wolf", "wild lucradan,red wolfhound,badger,hazard,blackthorn,feccan", teleport_destination="Tir na mBeo"),
+        4: route_point(10, 336157, 532604, 5556, "lough wolf", "wild lucradan,red wolfhound,badger,hazard,blackthorn,feccan", teleport_destination="Tir na mBeo"),
+        8: route_point(10, 336157, 532604, 5556, "lough wolf", "wild lucradan,red wolfhound,badger,hazard,blackthorn,feccan", teleport_destination="Tir na mBeo"),
     },
 }
 
@@ -560,6 +766,34 @@ def write_accounts(path: Path, rows: list[dict[str, str]]) -> None:
         writer.writeheader()
         for row in rows:
             writer.writerow(row)
+
+
+def checkpoint_account_segment_count(checkpoint_levels: list[int], max_segments: int) -> int:
+    if not checkpoint_levels:
+        return 1
+    return max(1, min(len(checkpoint_levels), max(1, int(max_segments))))
+
+
+def select_segment_account_rows(
+    account_rows: list[dict[str, str]],
+    *,
+    party_size: int,
+    watcher_count: int,
+    segment_ordinal: int,
+    account_segments: int,
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    rows_per_segment = party_size + watcher_count
+    if rows_per_segment <= 0:
+        return [], []
+    start = max(0, int(segment_ordinal)) * rows_per_segment if account_segments > 1 else 0
+    end = start + rows_per_segment
+    if len(account_rows) < end:
+        raise ValueError(
+            f"not enough account rows for segment {segment_ordinal + 1}: "
+            f"need {end}, have {len(account_rows)}"
+        )
+    rows = account_rows[start:end]
+    return rows[:party_size], rows[party_size : party_size + watcher_count]
 
 
 def character_name_from_account(account: str) -> str:
@@ -808,24 +1042,57 @@ def union_plan_slots(plans: dict[str, GrowthItemPlan], attr: str, fallback: list
     return sorted(slots)
 
 
-def reset_growth_characters(args: argparse.Namespace, accounts: Iterable[str], level: int = 1) -> None:
+def reset_growth_characters(
+    args: argparse.Namespace,
+    accounts: Iterable[str],
+    level: int = 1,
+    realm: RealmProfile | None = None,
+    target_specs_by_account: dict[str, str] | None = None,
+) -> None:
     account_names = [account for account in accounts if account]
     if not account_names:
         return
     quoted = ", ".join(sql_quote(account) for account in account_names)
     reset_level = max(1, level)
     reset_experience = experience_floor_for_level(reset_level)
+    position_assignments = ""
+    if realm is not None:
+        base_x, base_y, base_z = realm.start
+        step = int(getattr(args, "position_step", 0) or 0)
+        x_cases = " ".join(
+            f"WHEN {sql_quote(account)} THEN {base_x + step * index}"
+            for index, account in enumerate(account_names)
+        )
+        y_cases = " ".join(
+            f"WHEN {sql_quote(account)} THEN {base_y + step * index}"
+            for index, account in enumerate(account_names)
+        )
+        position_assignments = f"""
+            Xpos = CASE AccountName {x_cases} ELSE Xpos END,
+            Ypos = CASE AccountName {y_cases} ELSE Ypos END,
+            Zpos = {base_z},
+            Region = {realm.region},
+            BindXpos = CASE AccountName {x_cases} ELSE BindXpos END,
+            BindYpos = CASE AccountName {y_cases} ELSE BindYpos END,
+            BindZpos = {base_z},
+            BindRegion = {realm.region},
+        """
     sql = f"""
         UPDATE DOLCharacters
         SET
             Level = {reset_level},
             Experience = {reset_experience},
+            Health = 1000000,
+            Mana = 1000000,
+            MaxEndurance = GREATEST(MaxEndurance, 100),
+            Endurance = 1000000,
             PlayedTimeSinceLevel = 0,
             DeathCount = 0,
             Copper = 0,
             Silver = 0,
             Gold = 0,
             Platinum = 0,
+            {position_assignments}
             LastLevelUp = NOW()
         WHERE AccountName IN ({quoted});
     """
@@ -841,9 +1108,14 @@ def reset_growth_characters(args: argparse.Namespace, accounts: Iterable[str], l
         )
     )
     updates: list[str] = []
+    checkpoint_specs = (
+        checkpoint_specs_by_account(account_names, realm, target_specs_by_account)
+        if reset_level >= 50
+        else {}
+    )
     for row in rows:
         account = row.get("AccountName", "")
-        specs = baseline_specs(row.get("SerializedSpecs", ""))
+        specs = checkpoint_specs.get(account) or baseline_specs(row.get("SerializedSpecs", ""))
         if not account or not specs:
             continue
         updates.append(
@@ -873,6 +1145,10 @@ def select_route_point(realm: RealmProfile, level: int, party_size: int = 0) -> 
         route = LEVEL_ONE_PARTY_ROUTE_VARIANTS.get(realm.key, {}).get(party_size)
         if route is not None:
             return route
+    if level == 10 and party_size > 1:
+        route = LEVEL_TEN_PARTY_ROUTE_VARIANTS.get(realm.key, {}).get(party_size)
+        if route is not None:
+            return route
     selected = realm.points[0]
     for point in realm.points:
         if level >= point.level:
@@ -880,6 +1156,38 @@ def select_route_point(realm: RealmProfile, level: int, party_size: int = 0) -> 
         else:
             break
     return selected
+
+
+def route_variant_node_id(realm: RealmProfile, point: RoutePoint) -> str:
+    return f"{realm.key}_{point.level}_{point.x}_{point.y}"
+
+
+def route_variant_points_for_graph(realm: RealmProfile) -> list[RoutePoint]:
+    seen = {(point.level, point.x, point.y, point.z) for point in realm.points}
+    variants: list[RoutePoint] = []
+    for variant_group in (LEVEL_ONE_PARTY_ROUTE_VARIANTS, LEVEL_TEN_PARTY_ROUTE_VARIANTS):
+        for _party_size, variant in sorted(variant_group.get(realm.key, {}).items()):
+            key = (variant.level, variant.x, variant.y, variant.z)
+            if key in seen:
+                continue
+            variants.append(variant)
+            seen.add(key)
+    return variants
+
+
+def route_variant_travel_detours(realm: RealmProfile, source_id: str, variant: RoutePoint) -> tuple[RoutePoint, ...]:
+    if (
+        realm.key == "hib"
+        and source_id == "hib_teleport_tir_na_mbeo"
+        and variant.level == 10
+        and variant.x == 336157
+        and variant.y == 532604
+    ):
+        return (
+            RoutePoint(0, 333500, 529000, 5278),
+            RoutePoint(0, 333500, 531300, 5349),
+        )
+    return ()
 
 
 def target_levels(level: int, party_size: int) -> tuple[int, int, int]:
@@ -902,15 +1210,49 @@ def target_levels(level: int, party_size: int) -> tuple[int, int, int]:
             return max(1, player_level - 1), min(50, player_level + 2), 2
         return max(1, player_level - 1), min(50, player_level + 3), 3
 
+    if player_level == 5 and party_size <= 1:
+        return 4, 5, 1
+
+    if player_level == 6 and party_size <= 1:
+        return 4, 5, 1
+
     if player_level <= 7 and party_size <= 1:
-        return max(1, player_level - 2), player_level, 0
+        target = max(1, player_level - 1)
+        return target, target, 0
+
+    if player_level <= 10 and party_size <= 1:
+        target = max(1, player_level - 2)
+        if player_level == 10:
+            return max(1, target - 1), target, 1
+        return max(1, target - 1), target, 0
+
+    if player_level == 10 and party_size <= 2:
+        return 8, 9, 0
+
+    if 5 <= player_level <= 10 and party_size <= 2:
+        return max(1, player_level - 1), player_level, 0
+
+    if player_level >= 50:
+        if party_size <= 2:
+            return 46, 47, 1
+        return 46, 48, 2
 
     ideal_bonus = 1 if party_size == 1 else 1 if party_size <= 2 else 2 if party_size <= 4 else 3
     max_delta = 1 if party_size == 1 else 2 if party_size <= 2 else 3 if party_size <= 4 else 5
     return max(1, player_level - 1), min(50, player_level + ideal_bonus), max_delta
 
 
+def target_max_level(level: int, ideal_target: int, max_delta: int) -> int:
+    if max_delta <= 0:
+        return max(0, int(ideal_target))
+    if int(ideal_target) < int(level):
+        return min(50, max(1, int(ideal_target) + int(max_delta)))
+    return min(50, max(1, int(level)) + int(max_delta))
+
+
 def early_growth_party_slot_rotations(level: int, party_size: int) -> str:
+    if level50_party_boss_rules_enabled(level, party_size) and party_size == 4:
+        return "melee-basic,healer-support,melee-basic,melee-burst"
     if party_size <= 1 or level > 4:
         return ""
     return "melee-basic,melee-burst"
@@ -924,10 +1266,26 @@ def party_min_ready(level: int, party_size: int) -> int:
     return party_size
 
 
+def level50_party_boss_rules_enabled(level: int, party_size: int) -> bool:
+    return level >= 50 and party_size >= 4
+
+
 def watcher_count_for_party(args: argparse.Namespace, party_size: int) -> int:
     if not getattr(args, "watch_movement", False):
         return 0
     return 1 if party_size > 0 else 0
+
+
+def watcher_observer_follow_distance(args: argparse.Namespace) -> float:
+    return max(float(getattr(args, "watcher_follow_distance", 0.0) or 0.0), 8000.0)
+
+
+def watcher_observer_max_distance(args: argparse.Namespace) -> float:
+    return max(float(getattr(args, "watcher_follow_max_distance", 0.0) or 0.0), 60000.0)
+
+
+def watcher_observer_movement_speed(args: argparse.Namespace) -> float:
+    return max(float(getattr(args, "watcher_movement_speed", 0.0) or 0.0), 240.0)
 
 
 def growth_stage_for_level(level: int) -> str:
@@ -950,8 +1308,27 @@ def apply_growth_stage_defaults(args: argparse.Namespace) -> None:
         setattr(args, name, value)
 
 
+def parse_checkpoint_levels(value: str) -> list[int]:
+    if not value.strip():
+        return []
+    levels: list[int] = []
+    for token in value.split(","):
+        text = token.strip()
+        if not text:
+            continue
+        try:
+            level = int(text)
+        except ValueError as exc:
+            raise SystemExit(f"invalid --checkpoint-levels value: {text}") from exc
+        if level < 1:
+            raise SystemExit("--checkpoint-levels must be positive")
+        if level not in levels:
+            levels.append(level)
+    return levels
+
+
 def should_train_at_level(level: int) -> bool:
-    return level >= 5
+    return 5 <= int(level) < 50
 
 
 def parse_specs(specs: str | None) -> dict[str, int]:
@@ -965,6 +1342,55 @@ def parse_specs(specs: str | None) -> dict[str, int]:
             continue
         parsed[name] = to_int(value)
     return parsed
+
+
+CASTER_SPEC_NAME_TOKENS = (
+    "magic",
+    "runecarving",
+    "darkness",
+    "suppression",
+    "summoning",
+    "body",
+    "mind",
+    "matter",
+    "spirit",
+    "fire",
+    "earth",
+    "cold",
+    "wind",
+    "void",
+    "mana",
+    "light",
+    "enchant",
+    "mental",
+    "animism",
+    "arboreal",
+    "creeping",
+    "verdant",
+    "painworking",
+    "death servant",
+    "death sight",
+)
+CASTER_STATIONARY_CAST_HOLD_SECONDS = 3.4
+
+
+def first_trainable_spec_name(specs: str | None) -> str:
+    for name, value in parse_specs(specs).items():
+        if value > 1:
+            return name.strip().lower()
+    return ""
+
+
+def solo_action_rotation_for_accounts(accounts_csv: Path, party_size: int) -> str:
+    if party_size != 1 or not accounts_csv.exists():
+        return "melee-basic" if party_size == 1 else "auto"
+    rows = read_accounts(accounts_csv)
+    if not rows:
+        return "melee-basic"
+    spec_name = first_trainable_spec_name(rows[0].get("specs") or rows[0].get("SerializedSpecs"))
+    if spec_name and any(token in spec_name for token in CASTER_SPEC_NAME_TOKENS):
+        return "caster-basic"
+    return "melee-basic"
 
 
 def spec_gain_summary(before_specs: str | None, after_specs: str | None) -> str:
@@ -1045,25 +1471,60 @@ def waypoint_offsets(level: int) -> tuple[tuple[int, int], ...]:
     return ((0, 0), (360, 0), (360, 360), (0, 360))
 
 
-def growth_target_home_max_distance(args: argparse.Namespace, level: int) -> float:
+def growth_target_home_max_distance(args: argparse.Namespace, level: int, party_size: int = 0) -> float:
     base = float(getattr(args, "target_home_max_distance", 0.0) or 0.0)
-    if level <= 4:
+    if level == 10 and party_size > 1 and base > 0.0:
+        return min(base, 1800.0)
+    if level >= 45:
+        return max(base, 2800.0)
+    if level <= 10:
         return max(base, 6200.0)
     return base
 
 
-def growth_max_target_distance(args: argparse.Namespace, level: int) -> float:
+def growth_max_target_distance(args: argparse.Namespace, level: int, party_size: int = 0) -> float:
     base = float(getattr(args, "max_target_distance", 0.0) or 0.0)
     if level <= 4 and base > 0.0:
+        return min(base, 1500.0)
+    if level <= 9 and base > 0.0:
+        return 2800.0
+    if level == 10 and party_size > 1 and base > 0.0:
         return min(base, 1500.0)
     return base
 
 
-def growth_combat_home_leash_distance(args: argparse.Namespace, level: int) -> float:
+def growth_combat_home_leash_distance(args: argparse.Namespace, level: int, party_size: int = 0) -> float:
     base = float(getattr(args, "combat_home_leash_distance", 1200.0) or 0.0)
-    if level <= 4:
+    if level == 10 and party_size > 1:
+        return min(max(base, 1800.0), 1800.0)
+    if level >= 45:
+        return max(base, 2800.0)
+    if level <= 10:
         return max(base, 6200.0)
     return base
+
+
+def growth_combat_direct_move_distance(args: argparse.Namespace, level: int, party_size: int = 0) -> float:
+    base = 1500.0
+    if level <= 10:
+        return max(base, growth_max_target_distance(args, level, party_size))
+    return base
+
+
+def growth_required_target_home_hunt_distance(args: argparse.Namespace, level: int, party_size: int = 0) -> float:
+    return max(900.0, growth_combat_home_leash_distance(args, level, party_size))
+
+
+def growth_hunter_target_api_radius(args: argparse.Namespace, level: int) -> float:
+    if 5 <= level <= 9:
+        return growth_max_target_distance(args, level)
+    return 2200.0
+
+
+def growth_hunter_target_api_engage_distance(args: argparse.Namespace, level: int) -> float:
+    if 5 <= level <= 9:
+        return growth_max_target_distance(args, level)
+    return 1500.0
 
 
 def growth_combat_chase_max_distance(level: int) -> float:
@@ -1095,6 +1556,73 @@ def route_home_string(realm: RealmProfile, level: int, party_size: int = 0, *, g
         ground_z_offset=ground_z_offset,
     )
     return f"{point.x},{point.y},{z}"
+
+
+def growth_flee_home_string(
+    realm: RealmProfile,
+    level: int,
+    party_size: int = 0,
+    *,
+    ground_z_offset: int = 0,
+) -> str:
+    route = select_route_point(realm, level, party_size)
+    if level >= 10 and route.teleport_destination:
+        destination = teleport_destination_point(realm, route.teleport_destination)
+        if destination is not None:
+            x, y, z = destination
+            return f"{x},{y},{z + ground_z_offset}"
+    return f"{realm.start[0]},{realm.start[1]},{realm.start[2] + ground_z_offset}"
+
+
+def growth_flee_town_health_percent(level: int) -> int:
+    return 99 if level >= 10 else 10
+
+
+def growth_flee_home_stop_distance(level: int) -> int:
+    return 120 if level >= 10 else 900
+
+
+def growth_required_target_tank_commit_health_percent(level: int, party_size: int) -> int:
+    if level <= 10 and party_size > 1:
+        return 70
+    return 55
+
+
+def watcher_observer_home_string(
+    realm: RealmProfile,
+    level: int,
+    party_size: int = 0,
+    *,
+    observer_distance: float = 5000.0,
+    ground_z_offset: int = 0,
+) -> str:
+    point = select_route_point(realm, level, party_size)
+    anchor_x, anchor_y, _anchor_z = realm.start
+    teleport_destination = nearest_teleport_destination(realm, point) if level >= 10 else point.teleport_destination
+    teleport_point = teleport_destination_point(realm, teleport_destination)
+    if teleport_point is not None:
+        anchor_x, anchor_y, _anchor_z = teleport_point
+    dx = anchor_x - point.x
+    dy = anchor_y - point.y
+    length = math.hypot(dx, dy)
+    if length <= 0.0:
+        x = point.x
+        y = point.y
+    else:
+        distance = max(0.0, float(observer_distance or 0.0))
+        if teleport_point is not None:
+            distance = min(distance, length * 0.75)
+        x = int(round(point.x + dx / length * distance))
+        y = int(round(point.y + dy / length * distance))
+    z = sample_route_z(
+        realm,
+        build_realm_height_samplers(),
+        x,
+        y,
+        point.z,
+        ground_z_offset=ground_z_offset,
+    )
+    return f"{x},{y},{z}"
 
 
 def resolve_root_path(value: str) -> Path:
@@ -1165,6 +1693,7 @@ def write_growth_path_graph(path: Path, *, ground_z_offset: int = 0) -> None:
             dest_id: str,
             dest: RoutePoint,
             mid_prefix: str,
+            sample_mid_height: bool = False,
         ) -> None:
             dx = dest.x - source.x
             dy = dest.y - source.y
@@ -1179,7 +1708,7 @@ def write_growth_path_graph(path: Path, *, ground_z_offset: int = 0) -> None:
                     int(round(source.x + dx * ratio)),
                     int(round(source.y + dy * ratio)),
                     int(round(source.z + (dest.z - source.z) * ratio)),
-                    sample_height=False,
+                    sample_height=sample_mid_height,
                 )
                 add_edge(last_id, mid_id)
                 last_id = mid_id
@@ -1187,17 +1716,41 @@ def write_growth_path_graph(path: Path, *, ground_z_offset: int = 0) -> None:
 
         start_id = f"{realm.key}_start"
         add_node(start_id, realm.start[0], realm.start[1], realm.start[2], sample_height=False)
+        hub_x, hub_y, hub_z = STARTUP_TELEPORTER_HUBS[realm.key]
+        hub_id = f"{realm.key}_teleporter_hub"
+        add_node(hub_id, hub_x, hub_y, hub_z, sample_height=False)
+        destination_nodes: dict[str, tuple[str, RoutePoint]] = {}
+        for destination_name, dest_x, dest_y, dest_z in TELEPORT_DESTINATIONS.get(realm.key, ()):
+            destination_key = normalize_identifier(destination_name)
+            destination_id = f"{realm.key}_teleport_{destination_key}"
+            destination_point = RoutePoint(0, dest_x, dest_y, dest_z)
+            add_node(destination_id, dest_x, dest_y, dest_z, sample_height=False)
+            destination_nodes[normalize_teleport_destination(destination_name)] = (destination_id, destination_point)
+        add_segment(
+            source_id=start_id,
+            source=RoutePoint(0, realm.start[0], realm.start[1], realm.start[2]),
+            dest_id=hub_id,
+            dest=RoutePoint(0, hub_x, hub_y, hub_z),
+            mid_prefix=f"{realm.key}_start_teleporter_hub",
+        )
         previous_node_id = start_id
-        variants = LEVEL_ONE_PARTY_ROUTE_VARIANTS.get(realm.key, {})
-        variant_points = [
-            variant
-            for _party_size, variant in sorted(variants.items())
-            if all((variant.x, variant.y, variant.z) != (point.x, point.y, point.z) for point in realm.points)
-        ]
+        variant_points = route_variant_points_for_graph(realm)
 
         for index, point in enumerate(realm.points):
             node_id = f"{realm.key}_{point.level}"
             add_node(node_id, point.x, point.y, point.z, sample_height=False)
+            if point.teleport_destination:
+                destination = destination_nodes.get(normalize_teleport_destination(point.teleport_destination))
+                if destination is not None:
+                    destination_id, destination_point = destination
+                    add_segment(
+                        source_id=destination_id,
+                        source=destination_point,
+                        dest_id=node_id,
+                        dest=point,
+                        mid_prefix=f"{realm.key}_teleport_{normalize_identifier(point.teleport_destination)}_{point.level}",
+                        sample_mid_height=point.level >= 50,
+                    )
             if index > 0:
                 source = realm.points[index - 1]
                 source_node_id = previous_node_id or f"{realm.key}_{source.level}"
@@ -1215,22 +1768,48 @@ def write_growth_path_graph(path: Path, *, ground_z_offset: int = 0) -> None:
             previous_node_id = node_id
 
         for variant in variant_points:
-            variant_id = f"{realm.key}_{variant.level}_{variant.x}_{variant.y}"
+            variant_id = route_variant_node_id(realm, variant)
             add_node(variant_id, variant.x, variant.y, variant.z, sample_height=False)
+            source_id = start_id
+            source = RoutePoint(0, realm.start[0], realm.start[1], realm.start[2])
+            if variant.teleport_destination:
+                destination = destination_nodes.get(normalize_teleport_destination(variant.teleport_destination))
+                if destination is not None:
+                    source_id, source = destination
+            detours = route_variant_travel_detours(realm, source_id, variant)
+            last_id = source_id
+            last_point = source
+            for detour_index, detour in enumerate(detours, start=1):
+                detour_id = f"{realm.key}_{source_id}_{variant.x}_{variant.y}_detour_{detour_index}"
+                add_node(detour_id, detour.x, detour.y, detour.z)
+                add_segment(
+                    source_id=last_id,
+                    source=last_point,
+                    dest_id=detour_id,
+                    dest=detour,
+                    mid_prefix=f"{detour_id}_path",
+                    sample_mid_height=True,
+                )
+                last_id = detour_id
+                last_point = detour
             add_segment(
-                source_id=start_id,
-                source=RoutePoint(0, realm.start[0], realm.start[1], realm.start[2]),
+                source_id=last_id,
+                source=last_point,
                 dest_id=variant_id,
                 dest=variant,
-                mid_prefix=f"{realm.key}_start_{variant.x}_{variant.y}",
+                mid_prefix=f"{realm.key}_{last_id}_{variant.x}_{variant.y}",
+                sample_mid_height=bool(detours),
             )
 
         local_step = 350
         local_radius = 5600
-        for point in (*realm.points, *variant_points):
-            center_id = f"{realm.key}_{point.level}"
-            if point in variant_points:
-                center_id = f"{realm.key}_{point.level}_{point.x}_{point.y}"
+        hunt_centers = [(f"{realm.key}_{point.level}", point) for point in realm.points]
+        hunt_centers.extend(
+            (route_variant_node_id(realm, variant), variant)
+            for variant in variant_points
+            if variant.level >= 10
+        )
+        for center_id, point in hunt_centers:
             grid_prefix = center_id
             grid_ids: dict[tuple[int, int], str] = {(0, 0): center_id}
             for dx in range(-local_radius, local_radius + 1, local_step):
@@ -1267,7 +1846,7 @@ def build_provision_command(
     start: int,
     party_size: int = 1,
 ) -> list[str]:
-    start_point = select_route_point(realm, max(1, int(getattr(args, "reset_level", 1) or 1)), party_size)
+    start_point = RoutePoint(level=1, x=realm.start[0], y=realm.start[1], z=realm.start[2])
     target_class_cycle = growth_cycle(realm.growth_class_cycle, realm.class_cycle)
     provision_class_cycle = base_class_cycle_for_growth(target_class_cycle) if should_provision_base_classes(args) else target_class_cycle
     start_z = sample_route_z(
@@ -1358,9 +1937,26 @@ def build_behavior_command(
     encounter_pattern = case_dir / "encounters" / f"segment-{segment_index:03d}-{{username}}-{{round}}.jsonl"
     trace_pattern.parent.mkdir(parents=True, exist_ok=True)
     encounter_pattern.parent.mkdir(parents=True, exist_ok=True)
-    if not live_control_json.exists():
-        live_control_json.write_text("{}\n", encoding="utf-8")
+    live_control_json.write_text(
+        json.dumps(
+            {
+                "revision": f"segment-{segment_index:03d}-level-{current_level}",
+                "baseline_min_target_level": min_target,
+                "baseline_max_target_level": target_max_level(current_level, ideal_target, max_delta),
+                "baseline_player_level": current_level,
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     route = select_route_point(realm, current_level, party_size)
+    level50_boss_party = level50_party_boss_rules_enabled(current_level, party_size)
+    party_assist_interval = "0.6" if level50_boss_party else "3"
+    party_form_up_delay = "8" if level50_boss_party else "4"
+    party_rescue_max_age = "14" if level50_boss_party else "10"
+    party_rescue_assist_after = "3" if level50_boss_party else "6"
+    action_rotation = solo_action_rotation_for_accounts(accounts_csv, party_size)
     command = [
         sys.executable,
         str(TOOLS / "behavior-dummy-client.py"),
@@ -1392,7 +1988,7 @@ def build_behavior_command(
         "--behavior-profile",
         "solo-melee" if party_size == 1 else "party-dps",
         "--action-rotation",
-        "melee-basic" if party_size == 1 else "auto",
+        action_rotation,
         "--party-role-strategy",
         "same" if party_size == 1 else "mixed",
         "--realm-strategy",
@@ -1406,15 +2002,15 @@ def build_behavior_command(
         "--min-target-level",
         str(min_target),
         "--max-target-level",
-        "-1",
+        str(target_max_level(current_level, ideal_target, max_delta)),
         "--max-target-level-delta",
         str(max_delta),
         "--max-target-distance",
-        str(growth_max_target_distance(args, current_level)),
+        str(growth_max_target_distance(args, current_level, party_size)),
         "--target-home-max-distance",
-        str(growth_target_home_max_distance(args, current_level)),
+        str(growth_target_home_max_distance(args, current_level, party_size)),
         "--combat-home-leash-distance",
-        str(growth_combat_home_leash_distance(args, current_level)),
+        str(growth_combat_home_leash_distance(args, current_level, party_size)),
         "--combat-chase-max-distance",
         str(growth_combat_chase_max_distance(current_level)),
         "--combat-chase-max-distance-grace",
@@ -1427,16 +2023,20 @@ def build_behavior_command(
         "--server-los-failure-target-cooldown",
         "4",
         "--server-los-failure-grace",
-        "3",
+        "10",
         "--target-selection",
         "smart",
         "--include-peace-npcs",
         "--current-target-api-refresh",
         "--hunter-target-api-scout",
         "--hunter-target-api-radius",
-        "2200",
+        str(growth_hunter_target_api_radius(args, current_level)),
         "--hunter-target-api-engage-distance",
-        "1500",
+        str(growth_hunter_target_api_engage_distance(args, current_level)),
+        "--hunter-target-max-ground-z-delta",
+        "220",
+        "--hunter-min-time-left-for-new-target",
+        "55",
         "--allow-avoid-target-fallback",
         "--combat-interval",
         str(args.combat_interval),
@@ -1445,11 +2045,14 @@ def build_behavior_command(
         "--attack-range",
         "350",
         "--combat-direct-move-distance",
-        "1500",
+        str(growth_combat_direct_move_distance(args, current_level, party_size)),
         "--attack-target-in-view-prime-delay",
         "1.1",
+        "--melee-stick-attack",
+        "--melee-stick-attack-distance",
+        "1800",
         "--target-face-command-interval",
-        "0",
+        "0.8",
         "--melee-range-buffer",
         "300",
         "--minimum-melee-stop-distance",
@@ -1489,7 +2092,9 @@ def build_behavior_command(
         "--required-target-home-stop-distance",
         "900",
         "--required-target-home-hunt-distance",
-        "6200",
+        str(growth_required_target_home_hunt_distance(args, current_level, party_size)),
+        "--required-target-recover-before-home-health-percent",
+        "88",
         "--use-skills",
         "--skill-interval",
         "3.0",
@@ -1497,14 +2102,19 @@ def build_behavior_command(
         "0,1,2",
         "--skill-type",
         "1",
+        "--allow-unvalidated-skills",
+        "--startup-self-buff-count",
+        "2",
+        "--startup-self-buff-delay",
+        "0.8",
         "--party-invite-interval",
         "6",
         "--party-accept-interval",
         "3",
         "--party-assist-interval",
-        "3",
+        party_assist_interval,
         "--party-follow-interval",
-        "1.2",
+        "0.2",
         "--party-follow-step",
         "320",
         "--party-follow-distance",
@@ -1534,37 +2144,63 @@ def build_behavior_command(
         "14",
         "--flee-health-percent",
         "55",
+        "--flee-pressure-health-percent",
+        "85",
         "--flee-duration",
-        "16",
+        "24",
         "--flee-step",
-        "420",
+        "900",
         "--flee-move-interval",
         "0.35",
         "--flee-movement-speed",
         "360",
         "--flee-use-sprint",
         "--flee-home",
-        f"{realm.start[0]},{realm.start[1]},{realm.start[2]}",
+        growth_flee_home_string(realm, current_level, party_size, ground_z_offset=args.ground_z_offset),
         "--flee-home-stop-distance",
-        "900",
+        str(growth_flee_home_stop_distance(current_level)),
         "--flee-dynamic-safe-point",
         "--flee-safe-threat-radius",
-        "3200",
+        "6000",
         "--flee-safe-point-distance",
-        "2200",
+        "5200",
+        "--flee-critical-health-percent",
+        "45",
+        "--flee-critical-safe-point-distance",
+        "9000",
         "--flee-safe-api-scout",
+        "--flee-safe-replan-damage-grace",
+        "6",
+        "--travel-aggro-clear-grace",
+        "24",
+        "--travel-aggro-avoid-seconds",
+        "150",
+        "--travel-aggro-avoid-radius",
+        "5200",
+        "--flee-town-health-percent",
+        str(growth_flee_town_health_percent(current_level)),
         "--flee-min-combat-seconds",
         "4",
         "--flee-min-damage-taken",
         "20",
         "--flee-damage-taken-ratio",
         "1.5",
+        "--flee-melee-counterattack-min-attacks",
+        "3",
+        "--flee-melee-counterattack-health-floor",
+        "55",
+        "--flee-melee-counterattack-max-distance",
+        "1800",
+        "--required-target-tank-commit-health-percent",
+        str(growth_required_target_tank_commit_health_percent(current_level, party_size)),
         "--think-min",
         "0.25",
         "--think-max",
         "0.9",
         "--startup-command",
         "/bind",
+        "--startup-command",
+        "/sprint",
         "--startup-delay",
         str(getattr(args, "startup_delay", 0.0)),
         "--greet-nearby-player",
@@ -1596,6 +2232,8 @@ def build_behavior_command(
         "--live-control-interval",
         str(getattr(args, "live_control_interval", 1.0)),
     ]
+    if action_rotation == "caster-basic":
+        command += ["--stationary-cast-actions", "--cast-action-hold", f"{CASTER_STATIONARY_CAST_HOLD_SECONDS:.1f}"]
     if realm.ground_z_map:
         command += [
             "--ground-z-map",
@@ -1604,7 +2242,7 @@ def build_behavior_command(
             str(args.ground_z_offset),
             "--server-correction-smoothing",
         ]
-    if realm.startup_service_npc_name:
+    if realm.startup_service_npc_name and current_level < 50:
         command += [
             "--startup-service-npc-name",
             realm.startup_service_npc_name,
@@ -1619,6 +2257,10 @@ def build_behavior_command(
         command += ["--startup-service-sell-slot", ",".join(str(slot) for slot in auto_sell_slots)]
     if should_train_at_level(current_level):
         command += ["--startup-auto-train", "--startup-train-level", str(current_level)]
+    elif current_level >= 50:
+        command += ["--startup-train-full-specs", "--startup-train-level", str(current_level)]
+    teleport_destination = nearest_teleport_destination(realm, route) if current_level >= 10 else route.teleport_destination
+    append_startup_teleport_command(command, args, teleport_destination, realm=realm)
     if args.nav_api_url:
         command += ["--nav-api-url", args.nav_api_url]
     if args.live_api_url:
@@ -1627,7 +2269,11 @@ def build_behavior_command(
     if required_target_name:
         command += ["--require-target-name", required_target_name]
     if route.prefer:
-        command += ["--prefer-target-name", route.prefer]
+        command += ["--prefer-target-name", route.prefer, "--target-auto-lowest-visible-level"]
+        if current_level >= 6:
+            command += ["--allow-preferred-low-con-fallback", "--preferred-low-con-min-level", str(min_target)]
+    if route.objective_adds:
+        command += ["--objective-add-target-name", route.objective_adds]
     if route.avoid:
         command += ["--avoid-target-name", route.avoid]
     if party_size > 1:
@@ -1635,16 +2281,122 @@ def build_behavior_command(
             "--party-assist-only",
             "--party-min-ready",
             str(party_min_ready(current_level, party_size)),
+            "--party-form-up-delay",
+            party_form_up_delay,
+            "--party-ready-max-leader-distance",
+            "1500",
+            "--party-pre-pull-home-stop-distance",
+            "1800",
+            "--party-require-leader-engaged",
+            "--party-mark-pull-engaged",
+            "--party-pull-engage-distance",
+            "1800",
+            "--party-block-solo-required-retaliation",
             "--party-rescue-aggro",
+            "--party-rescue-before-objective-engaged",
+            "--party-clear-objective-adds-before-engage",
+            "--party-local-rescue-target",
+            "--party-local-rescue-max-distance",
+            "900",
+            "--party-healer-local-rescue-health-percent",
+            "35",
+            "--party-rescue-max-distance",
+            "1400",
+            "--party-rescue-engaged-distance",
+            "350",
+            "--party-rescue-objective-max-distance",
+            "1800",
+            "--party-rescue-min-hold",
+            "4",
+            "--party-rescue-max-age",
+            party_rescue_max_age,
+            "--party-rescue-assist-after",
+            party_rescue_assist_after,
+            "--party-rescue-emergency-assist-after",
+            "2",
+            "--party-active-tank-reaggro-taunt-interval",
+            "0.8",
         ]
+        if level50_boss_party:
+            command += [
+                "--party-encounter-mode",
+                "boss",
+                "--boss-ranged-safe-distance",
+                "1000",
+                "--boss-hazard-message-backoff-duration",
+                "9",
+                "--boss-hazard-message-backoff-distance",
+                "2400",
+                "--party-focus-target-backoff",
+                "--party-focus-target-max-age",
+                "6",
+                "--party-focus-target-backoff-distance",
+                "1400",
+                "--party-melee-survival-health-percent",
+                "45",
+                "--party-melee-survival-resume-health-percent",
+                "80",
+                "--party-melee-survival-backoff-duration",
+                "12",
+                "--party-survival-death-count",
+                "2",
+                "--party-survival-death-window",
+                "75",
+                "--party-survival-active-tank-health-percent",
+                "35",
+                "--party-survival-backoff-distance",
+                "1000",
+            ]
         slot_rotations = early_growth_party_slot_rotations(current_level, party_size)
         if slot_rotations:
             command += [
                 "--party-slot-rotations",
                 slot_rotations,
-                "--allow-unvalidated-skills",
             ]
     return command
+
+
+def append_startup_teleport_command(
+    command: list[str],
+    args: argparse.Namespace,
+    teleport_destination: str,
+    *,
+    realm: RealmProfile | None = None,
+) -> None:
+    if not teleport_destination:
+        return
+
+    command += [
+        "--startup-teleporter-npc-name",
+        getattr(
+            args,
+            "growth_teleporter_npc_name",
+            "master visur,stor gothi annark,channeler glasny,teleporter,porter,텔레포터",
+        ),
+        "--startup-teleport-destination",
+        teleport_destination,
+        "--startup-teleport-warmup-delay",
+        str(getattr(args, "growth_teleport_warmup_delay", 1.6)),
+        "--startup-teleport-scan-seconds",
+        str(getattr(args, "growth_teleport_scan_seconds", 1.0)),
+        "--startup-teleport-approach-distance",
+        str(getattr(args, "growth_teleport_approach_distance", 80.0)),
+        "--startup-teleport-approach-timeout",
+        str(getattr(args, "growth_teleport_approach_timeout", 20.0)),
+        "--startup-teleport-wait-seconds",
+        str(getattr(args, "growth_teleport_wait_seconds", 2.0)),
+    ]
+    if normalize_teleport_destination(teleport_destination) not in DIRECT_STARTUP_TELEPORT_DESTINATIONS:
+        command += ["--startup-teleport-warmup-whisper", "towns"]
+    if realm is not None:
+        command += [
+            "--startup-teleporter-home",
+            startup_teleporter_home(realm),
+            "--startup-teleporter-home-stop-distance",
+            str(getattr(args, "growth_teleporter_home_stop_distance", 900.0)),
+            "--startup-teleporter-home-timeout",
+            str(getattr(args, "growth_teleporter_home_timeout", 90.0)),
+        ]
 
 
 def build_watcher_command(
@@ -1666,7 +2418,16 @@ def build_watcher_command(
     encounter_pattern = case_dir / "watcher-encounters" / f"segment-{segment_index:03d}-{{username}}-{{round}}.jsonl"
     trace_pattern.parent.mkdir(parents=True, exist_ok=True)
     encounter_pattern.parent.mkdir(parents=True, exist_ok=True)
-    route = select_route_point(realm, current_level, party_size)
+    observer_follow_distance = watcher_observer_follow_distance(args)
+    observer_max_distance = watcher_observer_max_distance(args)
+    observer_movement_speed = watcher_observer_movement_speed(args)
+    observer_home = watcher_observer_home_string(
+        realm,
+        current_level,
+        party_size,
+        observer_distance=observer_follow_distance,
+        ground_z_offset=args.ground_z_offset,
+    )
     command = [
         sys.executable,
         str(TOOLS / "behavior-dummy-client.py"),
@@ -1705,7 +2466,7 @@ def build_watcher_command(
         "--smooth-move-interval",
         str(args.smooth_move_interval),
         "--movement-speed",
-        str(args.watcher_movement_speed),
+        str(observer_movement_speed),
         "--movement-update-interval",
         str(args.smooth_move_interval),
         "--path-graph",
@@ -1713,13 +2474,13 @@ def build_watcher_command(
         "--path-region",
         str(realm.region),
         "--path-last-mile-distance",
-        str(args.path_last_mile_distance),
+        str(max(float(args.path_last_mile_distance), observer_follow_distance)),
         "--path-node-arrival-distance",
         "80",
         "--path-waypoint-ground-z-skip-delta",
         "500",
         "--waypoints",
-        route_home_string(realm, current_level, party_size, ground_z_offset=args.ground_z_offset),
+        observer_home,
         "--waypoint-mode",
         "loop",
         "--waypoint-advance-distance",
@@ -1727,22 +2488,72 @@ def build_watcher_command(
         "--waypoint-stop-distance",
         "12",
         "--required-target-home",
-        route_home_string(realm, current_level, party_size, ground_z_offset=args.ground_z_offset),
+        observer_home,
         "--required-target-home-stop-distance",
-        str(max(args.watcher_follow_distance, 900.0)),
+        str(observer_follow_distance),
+        "--low-health-rest-percent",
+        "70",
+        "--low-health-rest-resume-percent",
+        "88",
+        "--low-health-rest-min",
+        "6",
+        "--low-health-rest-max",
+        "14",
+        "--flee-health-percent",
+        "90",
+        "--flee-pressure-health-percent",
+        "99",
+        "--flee-duration",
+        "32",
+        "--flee-step",
+        "1200",
+        "--flee-move-interval",
+        "0.35",
+        "--flee-movement-speed",
+        str(observer_movement_speed),
+        "--flee-use-sprint",
+        "--flee-home",
+        growth_flee_home_string(realm, current_level, party_size, ground_z_offset=args.ground_z_offset),
+        "--flee-home-stop-distance",
+        str(growth_flee_home_stop_distance(current_level)),
+        "--flee-dynamic-safe-point",
+        "--flee-safe-threat-radius",
+        "6000",
+        "--flee-safe-point-distance",
+        "8000",
+        "--flee-critical-health-percent",
+        "90",
+        "--flee-critical-safe-point-distance",
+        "10000",
+        "--flee-safe-api-scout",
+        "--flee-safe-replan-damage-grace",
+        "6",
+        "--travel-aggro-clear-grace",
+        "24",
+        "--travel-aggro-avoid-seconds",
+        "150",
+        "--travel-aggro-avoid-radius",
+        "5200",
+        "--flee-town-health-percent",
+        "10",
         "--follow-nearby-player",
         "--follow-player-name",
         character_name_from_account(primary_account),
         "--player-follow-interval",
         str(args.watcher_follow_interval),
         "--player-follow-distance",
-        str(args.watcher_follow_distance),
+        str(observer_follow_distance),
         "--player-follow-step",
-        "260",
+        "240",
         "--follow-player-max-distance",
-        str(args.watcher_follow_max_distance),
+        str(observer_max_distance),
+        "--follow-player-hold-allows-waypoint",
         "--player-state-max-age",
-        "10",
+        "60",
+        "--startup-command",
+        "/sprint",
+        "--startup-delay",
+        "0.5",
         "--jitter",
         "0.05",
         "--tick",
@@ -1767,6 +2578,9 @@ def build_watcher_command(
             str(args.ground_z_offset),
             "--server-correction-smoothing",
         ]
+    route = select_route_point(realm, current_level, party_size)
+    teleport_destination = nearest_teleport_destination(realm, route) if current_level >= 10 else route.teleport_destination
+    append_startup_teleport_command(command, args, teleport_destination, realm=realm)
     if args.nav_api_url:
         command += ["--nav-api-url", args.nav_api_url]
     if args.live_api_url:
@@ -1774,7 +2588,18 @@ def build_watcher_command(
     return command
 
 
-def build_live_supervisor_command(args: argparse.Namespace, case_dir: Path) -> list[str]:
+def build_live_supervisor_command(
+    args: argparse.Namespace,
+    case_dir: Path,
+    *,
+    current_level: int | None = None,
+    party_size: int = 0,
+) -> list[str]:
+    max_engage = float(getattr(args, "live_supervisor_max_engage", 2800.0) or 2800.0)
+    if current_level is not None:
+        level_max_engage = growth_max_target_distance(args, current_level, party_size)
+        if level_max_engage > 0.0:
+            max_engage = min(max_engage, level_max_engage)
     return [
         sys.executable,
         str(TOOLS / "monitor-dummy-growth-live.py"),
@@ -1785,7 +2610,7 @@ def build_live_supervisor_command(args: argparse.Namespace, case_dir: Path) -> l
         "--step",
         str(getattr(args, "live_supervisor_step", 350.0)),
         "--max-engage",
-        str(getattr(args, "live_supervisor_max_engage", 2800.0)),
+        str(max_engage),
         "--max-radius",
         str(getattr(args, "live_supervisor_max_radius", 5200.0)),
         "--hold",
@@ -1884,6 +2709,37 @@ def run_command(command: list[str], dry_run: bool) -> int:
     return process.returncode
 
 
+def should_equip_level50_party_gear(args: argparse.Namespace, *, current_level: int, party_size: int) -> bool:
+    return bool(
+        getattr(args, "level50_party_gear", True)
+        and party_size >= 2
+        and current_level >= 50
+    )
+
+
+def build_level50_party_gear_command(args: argparse.Namespace, accounts_csv: Path) -> list[str]:
+    command = [
+        sys.executable,
+        str(TOOLS / "equip-dummy-boss-gear.py"),
+    ]
+    if getattr(args, "mysql_bin", None):
+        command += ["--mysql-bin", str(args.mysql_bin)]
+    command += [
+        "--db-host",
+        str(args.db_host),
+        "--db-port",
+        str(args.db_port),
+        "--db-name",
+        str(args.db_name),
+        "--db-user",
+        str(args.db_user),
+        "--db-password",
+        str(args.db_password),
+        str(accounts_csv),
+    ]
+    return command
+
+
 def run_commands_concurrently(commands: list[list[str]], dry_run: bool) -> int:
     if dry_run or len(commands) <= 1:
         rc = 0
@@ -1947,6 +2803,21 @@ def movement_step_rows(path: Path) -> list[dict[str, object]]:
     return [row for row in trace_rows(path) if row.get("event") == "move_step"]
 
 
+def movement_pair_step_rows(path: Path) -> list[dict[str, object]]:
+    rows = jsonl_rows(path)
+    last_startup_teleport_index = -1
+    for index, row in enumerate(rows):
+        if row.get("event") == "startup_teleport_sync":
+            last_startup_teleport_index = index
+    return [
+        row
+        for index, row in enumerate(rows)
+        if index > last_startup_teleport_index
+        and row.get("event") == "move_step"
+        and all(key in row for key in ("x", "y", "z"))
+    ]
+
+
 def paired_movement_rows(
     primary: list[dict[str, object]],
     watcher: list[dict[str, object]],
@@ -1972,32 +2843,49 @@ def paired_movement_rows(
 
 
 def movement_anomaly_summary(path: Path, *, rewind_warn_distance: float) -> dict[str, object]:
-    rows = movement_step_rows(path)
+    rows = jsonl_rows(path)
     max_step = 0.0
     large_steps = 0
     reverse_spikes = 0
     previous_dx = 0.0
     previous_dy = 0.0
     previous_distance = 0.0
+    move_samples = 0
+    previous_move: dict[str, object] | None = None
 
-    for index in range(1, len(rows)):
-        before = rows[index - 1]
-        current = rows[index]
+    for current in rows:
+        event = str(current.get("event", ""))
+        if event == "startup_teleport_sync":
+            previous_move = None
+            previous_dx = 0.0
+            previous_dy = 0.0
+            previous_distance = 0.0
+            continue
+        if event != "move_step":
+            continue
+
+        move_samples += 1
+        if previous_move is None:
+            previous_move = current
+            continue
+
+        before = previous_move
         dx = numeric(current, "x") - numeric(before, "x")
         dy = numeric(current, "y") - numeric(before, "y")
         distance = math.sqrt(dx * dx + dy * dy)
         max_step = max(max_step, distance)
         if distance > rewind_warn_distance:
             large_steps += 1
-        if index > 1 and distance > rewind_warn_distance * 0.5 and previous_distance > rewind_warn_distance * 0.5:
+        if distance > rewind_warn_distance * 0.5 and previous_distance > rewind_warn_distance * 0.5:
             if dx * previous_dx + dy * previous_dy < 0:
                 reverse_spikes += 1
         previous_dx = dx
         previous_dy = dy
         previous_distance = distance
+        previous_move = current
 
     return {
-        "move_samples": len(rows),
+        "move_samples": move_samples,
         "max_step_distance": max_step,
         "large_step_events": large_steps,
         "reverse_spike_events": reverse_spikes,
@@ -2048,9 +2936,6 @@ def primary_encounter_anomaly_summary(path: Path) -> dict[str, object]:
             max_combat_gap = max(max_combat_gap, timestamp - last_finish_at)
             last_finish_at = None
 
-    if last_finish_at is not None and last_event_at >= last_finish_at:
-        max_combat_gap = max(max_combat_gap, last_event_at - last_finish_at)
-
     top_reason = ""
     if reject_reasons:
         top_reason = max(reject_reasons.items(), key=lambda item: item[1])[0]
@@ -2074,6 +2959,123 @@ def primary_encounter_anomaly_summary(path: Path) -> dict[str, object]:
     }
 
 
+def preferred_target_tokens(prefer_target_name: str) -> list[str]:
+    return [token.strip().lower() for token in prefer_target_name.split(",") if token.strip()]
+
+
+def target_name_matches_any(name: str, tokens: list[str]) -> bool:
+    normalized = name.lower()
+    return bool(tokens and any(token in normalized for token in tokens))
+
+
+def primary_behavior_anomaly_summary(path: Path, *, prefer_target_name: str = "") -> dict[str, object]:
+    rows = jsonl_rows(path)
+    prefer_tokens = preferred_target_tokens(prefer_target_name)
+    reasons: set[str] = set()
+    last_flee_at: float | None = None
+    last_flee_x = 0.0
+    last_flee_y = 0.0
+    flee_window_recovered = False
+    flee_window_aggro_not_dropped = False
+    flee_window_too_short = False
+    combat_attempts_by_target: dict[str, int] = {}
+    weak_flee_finishes_by_target: dict[str, int] = {}
+
+    for row in rows:
+        event = str(row.get("event", ""))
+        timestamp = numeric(row, "t")
+        target_name = str(row.get("target_name") or row.get("active_target_name") or "")
+
+        if event == "combat_start" and target_name:
+            normalized_target = target_name.lower()
+            combat_attempts_by_target[normalized_target] = combat_attempts_by_target.get(normalized_target, 0) + 1
+
+        elif event == "combat_finish":
+            outcome = str(row.get("outcome", ""))
+            duration = numeric(row, "duration_seconds")
+            damage_done = numeric(row, "damage_done")
+            damage_taken = numeric(row, "damage_taken")
+            if (
+                target_name
+                and outcome in {"flee", "target_timeout", "target_home_leash"}
+                and duration >= 8.0
+                and damage_taken >= 40.0
+                and damage_done <= max(12.0, damage_taken * 0.35)
+            ):
+                normalized_target = target_name.lower()
+                weak_flee_finishes_by_target[normalized_target] = weak_flee_finishes_by_target.get(normalized_target, 0) + 1
+
+        elif event == "flee_start":
+            last_flee_at = timestamp
+            last_flee_x = numeric(row, "x")
+            last_flee_y = numeric(row, "y")
+            flee_window_recovered = False
+            flee_window_aggro_not_dropped = False
+            flee_window_too_short = False
+
+        elif event == "flee_threat_pressure" and last_flee_at is not None:
+            age = timestamp - last_flee_at
+            threat_target = str(row.get("flee_threat_target", ""))
+            character = str(row.get("character", ""))
+            active = bool(row.get("flee_threat_active") or row.get("flee_threat_has_aggro") or row.get("flee_threat_in_combat"))
+            if active and threat_target and character and threat_target.lower() == character.lower() and age >= 12.0:
+                flee_window_aggro_not_dropped = True
+            if active and age >= 12.0:
+                threat_distance = numeric(row, "flee_threat_distance")
+                dx = numeric(row, "x") - last_flee_x
+                dy = numeric(row, "y") - last_flee_y
+                flee_distance = math.sqrt(dx * dx + dy * dy)
+                if threat_distance <= 1200.0 or flee_distance < 1600.0:
+                    flee_window_too_short = True
+
+        elif event == "flee_recovered" and last_flee_at is not None:
+            flee_window_recovered = True
+
+        elif event == "flee_finished" and last_flee_at is not None:
+            if not flee_window_recovered:
+                if flee_window_aggro_not_dropped:
+                    reasons.add("aggro_not_dropped")
+                if flee_window_too_short:
+                    reasons.add("flee_too_short")
+            last_flee_at = None
+            flee_window_recovered = False
+            flee_window_aggro_not_dropped = False
+            flee_window_too_short = False
+
+        elif event == "low_health_rest":
+            if row.get("flee_threat_active") or row.get("flee_threat_has_aggro") or row.get("flee_threat_target"):
+                reasons.add("unsafe_rest")
+            elif last_flee_at is not None:
+                last_flee_at = None
+                flee_window_recovered = False
+                flee_window_aggro_not_dropped = False
+                flee_window_too_short = False
+
+    if last_flee_at is not None and not flee_window_recovered:
+        if flee_window_aggro_not_dropped:
+            reasons.add("aggro_not_dropped")
+        if flee_window_too_short:
+            reasons.add("flee_too_short")
+
+    for target_name, weak_finishes in weak_flee_finishes_by_target.items():
+        if weak_finishes >= 1 and combat_attempts_by_target.get(target_name, 0) >= 1:
+            reasons.add("target_stuck")
+        if prefer_tokens and weak_finishes >= 1 and combat_attempts_by_target.get(target_name, 0) >= 2:
+            if not target_name_matches_any(target_name, prefer_tokens):
+                reasons.add("bad_target_choice")
+
+    status = "critical" if reasons else "ok"
+    return {
+        "primary_behavior_anomaly_status": status,
+        "primary_behavior_anomaly_reason": ";".join(sorted(reasons)),
+        "primary_behavior_bad_target_choice": 1 if "bad_target_choice" in reasons else 0,
+        "primary_behavior_aggro_not_dropped": 1 if "aggro_not_dropped" in reasons else 0,
+        "primary_behavior_flee_too_short": 1 if "flee_too_short" in reasons else 0,
+        "primary_behavior_target_stuck": 1 if "target_stuck" in reasons else 0,
+        "primary_behavior_unsafe_rest": 1 if "unsafe_rest" in reasons else 0,
+    }
+
+
 def empty_primary_encounter_anomaly_summary() -> dict[str, object]:
     return {
         "primary_idle_ready_ticks": 0,
@@ -2086,12 +3088,29 @@ def empty_primary_encounter_anomaly_summary() -> dict[str, object]:
     }
 
 
+def empty_primary_behavior_anomaly_summary() -> dict[str, object]:
+    return {
+        "primary_behavior_anomaly_status": "ok",
+        "primary_behavior_anomaly_reason": "",
+        "primary_behavior_bad_target_choice": 0,
+        "primary_behavior_aggro_not_dropped": 0,
+        "primary_behavior_flee_too_short": 0,
+        "primary_behavior_target_stuck": 0,
+        "primary_behavior_unsafe_rest": 0,
+    }
+
+
 def ground_z_deltas(rows: list[dict[str, object]]) -> list[float]:
     deltas: list[float] = []
     for row in rows:
         if row.get("event") != "move_step" or "sampled_ground_z" not in row:
             continue
-        deltas.append(abs(numeric(row, "z") - numeric(row, "sampled_ground_z")))
+        try:
+            z = float(row.get("z", ""))
+            sampled_ground_z = float(row.get("sampled_ground_z", ""))
+        except (TypeError, ValueError):
+            continue
+        deltas.append(abs(z - sampled_ground_z))
     return deltas
 
 
@@ -2100,15 +3119,18 @@ def compare_watcher_pair(
     watcher_path: Path,
     *,
     primary_encounter_path: Path | None = None,
+    prefer_target_name: str = "",
     z_warn_delta: float,
     xy_warn_delta: float,
     rewind_warn_distance: float,
     z_compare_xy_distance: float,
 ) -> dict[str, object]:
-    primary = movement_step_rows(primary_path)
-    watcher = movement_step_rows(watcher_path)
-    primary_ground_deltas = ground_z_deltas(primary)
-    watcher_ground_deltas = ground_z_deltas(watcher)
+    primary_all = movement_step_rows(primary_path)
+    watcher_all = movement_step_rows(watcher_path)
+    primary = movement_pair_step_rows(primary_path)
+    watcher = movement_pair_step_rows(watcher_path)
+    primary_ground_deltas = ground_z_deltas(primary_all)
+    watcher_ground_deltas = ground_z_deltas(watcher_all)
     all_ground_deltas = primary_ground_deltas + watcher_ground_deltas
     pairs = paired_movement_rows(primary, watcher)
     samples = len(pairs)
@@ -2152,10 +3174,15 @@ def compare_watcher_pair(
         if primary_encounter_path is not None
         else empty_primary_encounter_anomaly_summary()
     )
+    behavior_anomaly = (
+        primary_behavior_anomaly_summary(primary_encounter_path, prefer_target_name=prefer_target_name)
+        if primary_encounter_path is not None
+        else empty_primary_behavior_anomaly_summary()
+    )
     return {
         "samples": samples,
-        "primary_moves": len(primary),
-        "watcher_moves": len(watcher),
+        "primary_moves": len(primary_all),
+        "watcher_moves": len(watcher_all),
         "avg_abs_z_delta": sum(z_deltas) / len(z_deltas) if z_deltas else 0.0,
         "max_abs_z_delta": max_z,
         "close_xy_samples": len(close_z_deltas),
@@ -2170,11 +3197,12 @@ def compare_watcher_pair(
         "primary_max_step_distance": primary_anomaly["max_step_distance"],
         "watcher_max_step_distance": watcher_anomaly["max_step_distance"],
         "rewind_events": rewind_events,
-        "watcher_status": "warn" if len(primary) > 0 and (len(watcher) == 0 or samples == 0 or not close_z_deltas) else "ok",
+        "watcher_status": "warn" if len(primary_all) > 0 and (len(watcher) == 0 or samples == 0 or not close_z_deltas) else "ok",
         "z_status": "warn" if (max_ground_z if all_ground_deltas else max_close_z) > z_warn_delta else "ok",
         "xy_status": "warn" if max_xy > xy_warn_delta else "ok",
         "rewind_status": "warn" if rewind_events else "ok",
         **encounter_anomaly,
+        **behavior_anomaly,
     }
 
 
@@ -2212,6 +3240,13 @@ def write_watcher_summary(path: Path, rows: list[dict[str, object]]) -> None:
         "primary_combat_gap_max_seconds",
         "primary_anomaly_status",
         "primary_anomaly_reason",
+        "primary_behavior_anomaly_status",
+        "primary_behavior_anomaly_reason",
+        "primary_behavior_bad_target_choice",
+        "primary_behavior_aggro_not_dropped",
+        "primary_behavior_flee_too_short",
+        "primary_behavior_target_stuck",
+        "primary_behavior_unsafe_rest",
     ]
     path.parent.mkdir(parents=True, exist_ok=True)
     existing: list[dict[str, object]] = []
@@ -2235,9 +3270,36 @@ def empty_metric_summary() -> dict[str, float]:
         "target_removed": 0,
         "player_deaths": 0,
         "target_timeouts": 0,
+        "combat_failures": 0,
+        "server_los_failures": 0,
+        "target_home_leashes": 0,
         "movement_failures": 0,
         "loot_acquired": 0,
     }
+
+
+COMBAT_FAILURE_OUTCOMES = {"server_los_failure", "target_timeout", "target_home_leash"}
+
+
+def aggregate_combat_metrics(path: Path) -> dict[str, int]:
+    summary = {
+        "combat_failures": 0,
+        "server_los_failures": 0,
+        "target_home_leashes": 0,
+    }
+    if not path.exists():
+        return summary
+
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle):
+            outcome = str(row.get("outcome", "") or "").strip()
+            if outcome in COMBAT_FAILURE_OUTCOMES:
+                summary["combat_failures"] += 1
+            if outcome == "server_los_failure":
+                summary["server_los_failures"] += 1
+            elif outcome == "target_home_leash":
+                summary["target_home_leashes"] += 1
+    return summary
 
 
 def aggregate_metrics(path: Path) -> dict[str, float]:
@@ -2268,8 +3330,54 @@ def segment_regression_passed(metrics: dict[str, object], *, require_kill: bool)
         return False
     if to_int(metrics.get("movement_failures")) > 0:
         return False
+    if to_int(metrics.get("target_timeouts")) > 0:
+        return False
+    combat_failures = to_int(metrics.get("combat_failures"))
+    if to_int(metrics.get("target_removed")) > 0:
+        combat_failures = max(0, combat_failures - to_int(metrics.get("server_los_failures")))
+    if combat_failures > 0:
+        return False
     if require_kill and to_int(metrics.get("target_removed")) <= 0:
         return False
+    return True
+
+
+def segment_requires_kill(args: argparse.Namespace, current_level: int) -> bool:
+    if not bool(getattr(args, "require_segment_kill", True)):
+        return False
+    return int(current_level) != 5
+
+
+def segment_xp_regression_passed(xp_effective_delta: int | float, *, require_xp: bool) -> bool:
+    if not require_xp:
+        return True
+    return to_int(xp_effective_delta) > 0
+
+
+def segment_requires_xp(args: argparse.Namespace, current_level: int) -> bool:
+    if not bool(getattr(args, "require_segment_xp", True)):
+        return False
+    level = int(current_level)
+    if level == 5:
+        return False
+    if level >= 50:
+        return False
+    return True
+
+
+def watcher_regression_passed(case_dir: Path, segment_index: int, watcher_pairs: list[tuple[str, str, Path]]) -> bool:
+    for watcher_index, (_primary_account, _watcher_account, _watcher_csv) in enumerate(watcher_pairs):
+        metrics = aggregate_metrics(case_dir / f"segment-{segment_index:03d}-watcher-{watcher_index + 1:02d}-metrics.csv")
+        if to_int(metrics.get("player_deaths")) > 0 or to_int(metrics.get("movement_failures")) > 0:
+            return False
+    summary_path = case_dir / "watcher-movement-summary.csv"
+    if summary_path.exists():
+        with summary_path.open(encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle):
+                if to_int(row.get("segment")) != segment_index:
+                    continue
+                if str(row.get("primary_behavior_anomaly_status", "")).lower() == "critical":
+                    return False
     return True
 
 
@@ -2453,6 +3561,9 @@ def write_timeline_row(path: Path, row: dict[str, object]) -> None:
         "target_removed",
         "player_deaths",
         "target_timeouts",
+        "combat_failures",
+        "server_los_failures",
+        "target_home_leashes",
         "movement_failures",
         "loot_acquired",
         "levels_per_hour",
@@ -2697,7 +3808,9 @@ def run_case(
     watcher_accounts_dir = case_dir / "watcher-accounts"
     start = args.start + case_index * args.start_stride
     requested_watcher_count = watcher_count_for_party(args, party_size)
-    provision_count = party_size + requested_watcher_count
+    checkpoint_levels = list(getattr(args, "checkpoint_levels_parsed", []))
+    account_segments = checkpoint_account_segment_count(checkpoint_levels, args.max_segments)
+    provision_count = (party_size + requested_watcher_count) * account_segments
     provision_command = build_provision_command(args, realm, accounts_csv, provision_count, start, party_size)
     if not args.skip_provision:
         rc = run_command(provision_command, args.dry_run)
@@ -2719,28 +3832,73 @@ def run_case(
         ]
     else:
         account_rows = read_accounts(accounts_csv)
-    primary_rows = account_rows[:party_size]
-    watcher_rows = account_rows[party_size : party_size + requested_watcher_count]
+    primary_rows, watcher_rows = select_segment_account_rows(
+        account_rows,
+        party_size=party_size,
+        watcher_count=requested_watcher_count,
+        segment_ordinal=0,
+        account_segments=account_segments,
+    )
     account_names = [row["username"] for row in primary_rows]
     watcher_account_names = [row["username"] for row in watcher_rows]
-    if primary_rows:
-        write_accounts(primary_accounts_csv, primary_rows)
-    if watcher_rows:
-        watcher_accounts_dir.mkdir(parents=True, exist_ok=True)
-        rename_watcher_characters(args, watcher_account_names)
-    if not args.skip_provision and args.reset_progress and not args.dry_run:
-        reset_growth_characters(args, account_names + watcher_account_names, level=args.reset_level)
+    if not args.skip_provision and args.reset_progress and not args.dry_run and not checkpoint_levels:
+        reset_growth_characters(args, account_names + watcher_account_names, level=args.reset_level, realm=realm)
 
     first_segment = next_segment_index(case_dir) if args.resume else 1
     last_segment = first_segment + args.max_segments - 1
-    for segment_index in range(first_segment, last_segment + 1):
+    segment_plan: list[tuple[int, int | None]]
+    if checkpoint_levels:
+        segment_plan = [
+            (first_segment + offset, level)
+            for offset, level in enumerate(checkpoint_levels[: args.max_segments])
+        ]
+    else:
+        segment_plan = [(segment_index, None) for segment_index in range(first_segment, last_segment + 1)]
+    for plan_index, (segment_index, checkpoint_level) in enumerate(segment_plan):
+        primary_rows, watcher_rows = select_segment_account_rows(
+            account_rows,
+            party_size=party_size,
+            watcher_count=requested_watcher_count,
+            segment_ordinal=plan_index,
+            account_segments=account_segments,
+        )
+        account_names = [row["username"] for row in primary_rows]
+        watcher_account_names = [row["username"] for row in watcher_rows]
+        if primary_rows:
+            write_accounts(primary_accounts_csv, primary_rows)
+        if watcher_rows:
+            watcher_accounts_dir.mkdir(parents=True, exist_ok=True)
+            rename_watcher_characters(args, watcher_account_names)
+        if checkpoint_level is not None and args.reset_progress and not args.dry_run:
+            checkpoint_specs = {
+                row["username"]: row.get("specs", "")
+                for row in primary_rows + watcher_rows
+                if row.get("username")
+            }
+            reset_growth_characters(
+                args,
+                account_names + watcher_account_names,
+                level=checkpoint_level,
+                realm=realm,
+                target_specs_by_account=checkpoint_specs,
+            )
         before = {} if args.dry_run else snapshot_characters(args, account_names)
-        observed_level = max([snap.level for snap in before.values()] or [1])
-        if observed_level >= args.max_level:
+        observed_level = checkpoint_level if checkpoint_level is not None and args.dry_run else max([snap.level for snap in before.values()] or [1])
+        if checkpoint_level is None and observed_level >= args.max_level:
             break
         current_level = max(1, observed_level)
         promoted_count = promote_growth_classes_for_level(args, primary_rows, current_level)
-        active_before = snapshot_characters(args, account_names) if promoted_count and not args.dry_run else before
+        equipped_level50_party_gear = False
+        if should_equip_level50_party_gear(args, current_level=current_level, party_size=party_size):
+            rc = run_command(build_level50_party_gear_command(args, primary_accounts_csv), args.dry_run)
+            if rc != 0:
+                return rc
+            equipped_level50_party_gear = True
+        active_before = (
+            snapshot_characters(args, account_names)
+            if (promoted_count or equipped_level50_party_gear) and not args.dry_run
+            else before
+        )
         item_plans = build_growth_item_plans(args, account_names, active_before)
         behavior_args = argparse.Namespace(**vars(args))
         equip_mode = getattr(args, "growth_auto_equip_mode", "candidate")
@@ -2767,7 +3925,7 @@ def run_case(
         )
         commands = [behavior_command]
         if args.live_supervisor:
-            commands.append(build_live_supervisor_command(args, case_dir))
+            commands.append(build_live_supervisor_command(args, case_dir, current_level=current_level, party_size=party_size))
         watcher_pairs: list[tuple[str, str, Path]] = []
         if args.watch_movement:
             for watcher_index, watcher_row in enumerate(watcher_rows[:1]):
@@ -2792,6 +3950,7 @@ def run_case(
         rc = run_commands_concurrently(commands, args.dry_run)
         if watcher_pairs:
             watcher_summary_rows: list[dict[str, object]] = []
+            route = select_route_point(realm, current_level, party_size)
             for primary_account, watcher_account, _watcher_csv in watcher_pairs:
                 primary_path = case_dir / "movement" / f"segment-{segment_index:03d}-{primary_account}-1.jsonl"
                 watcher_path = case_dir / "movement" / f"segment-{segment_index:03d}-{watcher_account}-1.jsonl"
@@ -2806,6 +3965,7 @@ def run_case(
                             primary_path,
                             watcher_path,
                             primary_encounter_path=primary_encounter_path,
+                            prefer_target_name=route.prefer,
                             z_warn_delta=args.watcher_z_warn_delta,
                             xy_warn_delta=args.watcher_xy_warn_delta,
                             rewind_warn_distance=args.watcher_rewind_warn_distance,
@@ -2817,11 +3977,29 @@ def run_case(
         if not args.dry_run and args.post_segment_snapshot_delay > 0:
             time.sleep(args.post_segment_snapshot_delay)
         segment_metrics = case_dir / f"segment-{segment_index:03d}-metrics.csv"
+        segment_combat = case_dir / f"segment-{segment_index:03d}-combat.csv"
         metrics_by_user = metrics_by_account(segment_metrics)
         fallback_metrics = aggregate_metrics(segment_metrics)
+        fallback_metrics.update(aggregate_combat_metrics(segment_combat))
         if not args.dry_run and getattr(args, "fail_on_regression", True) and not segment_regression_passed(
             fallback_metrics,
-            require_kill=bool(getattr(args, "require_segment_kill", True)),
+            require_kill=segment_requires_kill(args, current_level),
+        ):
+            repro_command = build_failure_reproduction_command(
+                args,
+                realm=realm,
+                party_size=party_size,
+                case_index=case_index,
+                current_level=current_level,
+                output_dir=output_dir,
+            )
+            write_failure_reproduction_command(case_dir / "failure-reproduction-command.txt", repro_command)
+            rc = rc or 1
+        if (
+            watcher_pairs
+            and not args.dry_run
+            and getattr(args, "fail_on_regression", True)
+            and not watcher_regression_passed(case_dir, segment_index, watcher_pairs)
         ):
             repro_command = build_failure_reproduction_command(
                 args,
@@ -2842,12 +4020,14 @@ def run_case(
             if args.dry_run
             else snapshot_characters_after_segment(args, account_names, before, text_metrics_by_account)
         )
+        segment_xp_effective_delta = 0
         for account in account_names:
             before_row = before.get(account)
             after_row = after.get(account)
             delta = snapshot_delta(before_row, after_row)
             text_metrics = text_metrics_by_account.get(account, {"text_xp_delta": 0, "text_xp_messages": 0})
             xp_effective_delta = max(delta["xp_delta"], text_metrics["text_xp_delta"])
+            segment_xp_effective_delta += xp_effective_delta
             xp_persist_lag = max(0, text_metrics["text_xp_delta"] - delta["xp_delta"])
             xp_persist_status = "lagging" if xp_persist_lag > 0 else "synced"
             spec_gain = spec_gain_summary(before_row.specs if before_row else "", after_row.specs if after_row else "")
@@ -2913,9 +4093,27 @@ def run_case(
                     "deaths_per_hour": format_rate(per_hour(delta["death_delta"], elapsed_seconds)),
                 },
             )
+        if (
+            not args.dry_run
+            and getattr(args, "fail_on_regression", True)
+            and not segment_xp_regression_passed(
+                segment_xp_effective_delta,
+                require_xp=segment_requires_xp(args, current_level),
+            )
+        ):
+            repro_command = build_failure_reproduction_command(
+                args,
+                realm=realm,
+                party_size=party_size,
+                case_index=case_index,
+                current_level=current_level,
+                output_dir=output_dir,
+            )
+            write_failure_reproduction_command(case_dir / "failure-reproduction-command.txt", repro_command)
+            rc = rc or 1
         if rc != 0 or args.once:
             return rc
-        if segment_index < last_segment and args.inter_segment_delay > 0:
+        if plan_index + 1 < len(segment_plan) and args.inter_segment_delay > 0:
             time.sleep(args.inter_segment_delay)
     return 0
 
@@ -2974,6 +4172,17 @@ def run_case_plan(
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    raw_argv = list(argv) if argv is not None else sys.argv[1:]
+    explicit_segment_seconds = any(
+        token == "--segment-seconds" or token.startswith("--segment-seconds=")
+        for token in raw_argv
+    )
+    explicit_reset_level = any(token == "--reset-level" or token.startswith("--reset-level=") for token in raw_argv)
+    explicit_max_level = any(token == "--max-level" or token.startswith("--max-level=") for token in raw_argv)
+    explicit_max_segments = any(token == "--max-segments" or token.startswith("--max-segments=") for token in raw_argv)
+    explicit_inter_segment_delay = any(
+        token == "--inter-segment-delay" or token.startswith("--inter-segment-delay=") for token in raw_argv
+    )
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", default=DEFAULT_DUMMY_HOST)
     parser.add_argument("--port", type=int, default=10300)
@@ -2993,11 +4202,21 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--party-sizes", default="1,2,4,8", help="comma-separated party sizes")
     parser.add_argument("--start", type=int, default=701)
     parser.add_argument("--start-stride", type=int, default=20)
+    parser.add_argument(
+        "--growth-teleporter-npc-name",
+        default="master visur,stor gothi annark,channeler glasny,teleporter,porter,텔레포터",
+    )
+    parser.add_argument("--growth-teleport-scan-seconds", type=float, default=1.0)
+    parser.add_argument("--growth-teleport-approach-distance", type=float, default=80.0)
+    parser.add_argument("--growth-teleport-approach-timeout", type=float, default=20.0)
+    parser.add_argument("--growth-teleport-warmup-delay", type=float, default=1.6)
+    parser.add_argument("--growth-teleport-wait-seconds", type=float, default=2.0)
     parser.add_argument("--position-step", type=int, default=80)
     parser.add_argument("--segment-seconds", type=int, default=600)
     parser.add_argument("--max-segments", type=int, default=60)
     parser.add_argument("--max-level", type=int, default=50)
     parser.add_argument("--growth-stage", choices=sorted(GROWTH_STAGE_DEFAULTS), default="custom", help="apply a checkpoint preset: stabilize(1-4), train(5), gear(6-10), long(10-50), or custom")
+    parser.add_argument("--checkpoint-levels", default="", help="comma-separated forced levels for fast 1-50 checkpoint probes, e.g. 1,5,6,10,20,35,49")
     parser.add_argument("--ramp-up", type=int, default=5)
     parser.add_argument("--login-retries", type=int, default=12)
     parser.add_argument("--login-retry-delay", type=float, default=5.0)
@@ -3008,7 +4227,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--combat-interval", type=float, default=1.5)
     parser.add_argument("--target-pool", type=int, default=5)
     parser.add_argument("--smooth-move-interval", type=float, default=0.20)
-    parser.add_argument("--movement-speed", type=float, default=191.0)
+    parser.add_argument("--movement-speed", type=float, default=240.0)
     parser.add_argument("--path-last-mile-distance", type=float, default=1200.0)
     parser.add_argument("--ground-z-offset", type=int, default=0)
     parser.add_argument("--encounter-log-interval", type=float, default=3.0)
@@ -3020,21 +4239,22 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--live-supervisor-max-radius", type=float, default=5200.0)
     parser.add_argument("--startup-delay", type=float, default=12.0, help="seconds growth dummies wait after login/services so PvP enter immunity expires before hunting")
     parser.add_argument("--post-segment-snapshot-delay", type=float, default=2.0, help="seconds to wait after dummy logout before DB-backed XP/money/inventory snapshots")
-    parser.add_argument("--post-segment-snapshot-timeout", type=float, default=45.0, help="maximum seconds to poll DB snapshots until server-message XP is persisted")
+    parser.add_argument("--post-segment-snapshot-timeout", type=float, default=90.0, help="maximum seconds to poll DB snapshots until server-message XP is persisted")
     parser.add_argument("--post-segment-snapshot-poll-interval", type=float, default=2.0, help="seconds between DB snapshot polls while waiting for persisted XP")
     parser.add_argument("--inter-segment-delay", type=float, default=75.0, help="seconds to wait between repeated login segments so linkdead server-side sessions are fully released")
     parser.add_argument("--watch-movement", action=argparse.BooleanOptionalAction, default=True, help="run one non-combat watcher dummy behind each growth dummy and compare movement/Z traces")
     parser.add_argument("--watcher-follow-interval", type=float, default=0.4)
-    parser.add_argument("--watcher-follow-distance", type=float, default=550.0)
-    parser.add_argument("--watcher-follow-max-distance", type=float, default=9000.0)
+    parser.add_argument("--watcher-follow-distance", type=float, default=5000.0)
+    parser.add_argument("--watcher-follow-max-distance", type=float, default=60000.0)
     parser.add_argument("--watcher-movement-speed", type=float, default=240.0)
     parser.add_argument("--watcher-z-warn-delta", type=float, default=180.0)
-    parser.add_argument("--watcher-z-compare-xy-distance", type=float, default=850.0)
-    parser.add_argument("--watcher-xy-warn-delta", type=float, default=1800.0)
+    parser.add_argument("--watcher-z-compare-xy-distance", type=float, default=5600.0)
+    parser.add_argument("--watcher-xy-warn-delta", type=float, default=18000.0)
     parser.add_argument("--watcher-rewind-warn-distance", type=float, default=650.0)
     parser.add_argument("--growth-auto-equip-mode", choices=["candidate", "slots", "off"], default="candidate", help="candidate uses DB item scoring, slots tries --growth-auto-equip-slots directly, off disables segment-start equipment changes")
     parser.add_argument("--growth-auto-equip-slots", type=parse_slot_list, default=parse_slot_list("40-55"), help="manual backpack slots used only with --growth-auto-equip-mode slots")
     parser.add_argument("--growth-auto-sell-junk", action=argparse.BooleanOptionalAction, default=True, help="sell DB-scored junk slots during solo service stops; party selling is logged but not executed until per-account trade/sell routing is available")
+    parser.add_argument("--level50-party-gear", action=argparse.BooleanOptionalAction, default=True, help="equip party checkpoint characters with validated level-50 boss-test gear")
     parser.add_argument("--output-root", type=Path, default=DEFAULT_REPORT_ROOT)
     parser.add_argument("--run-dir", type=Path, help="reuse a specific output directory instead of creating a timestamped run")
     parser.add_argument("--resume", action="store_true", help="continue an existing --run-dir from the next missing segment")
@@ -3055,9 +4275,28 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--parallel-cases", type=int, default=1, help="number of realm/party cases to run concurrently; each case still launches its own party and watcher dummies")
     parser.add_argument("--fail-on-regression", action=argparse.BooleanOptionalAction, default=True, help="fail a segment and write a reproduction command when deaths, movement failures, or no kills are observed")
     parser.add_argument("--require-segment-kill", action=argparse.BooleanOptionalAction, default=True, help="with --fail-on-regression, require at least one target_removed per segment")
+    parser.add_argument("--require-segment-xp", action=argparse.BooleanOptionalAction, default=True, help="with --fail-on-regression, require XP progress for growth hunting segments below level 50")
     parser.add_argument("--smoke", action="store_true", help="quick albion solo smoke: 1 realm, 1 party size, 1 short segment")
+    parser.add_argument("--fast-flee-debug", action="store_true", help="quick solo flee-loop repro: short segment, no watcher/snapshot/live retuning, fail only on deaths or movement failures")
     args = parser.parse_args(argv)
+    explicit_segment_seconds_value = args.segment_seconds
+    explicit_reset_level_value = args.reset_level
+    explicit_max_level_value = args.max_level
     apply_growth_stage_defaults(args)
+    if explicit_segment_seconds:
+        args.segment_seconds = explicit_segment_seconds_value
+    if explicit_reset_level:
+        args.reset_level = explicit_reset_level_value
+    if explicit_max_level:
+        args.max_level = explicit_max_level_value
+    args.checkpoint_levels_parsed = parse_checkpoint_levels(args.checkpoint_levels)
+    if args.checkpoint_levels_parsed:
+        if args.resume:
+            raise SystemExit("--checkpoint-levels cannot be combined with --resume")
+        if not explicit_max_segments:
+            args.max_segments = len(args.checkpoint_levels_parsed)
+        if not explicit_inter_segment_delay:
+            args.inter_segment_delay = 0.0
     args.mysql_bin = resolve_mysql_bin(args.mysql_bin)
     if args.resume:
         args.skip_provision = True
@@ -3068,10 +4307,26 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     if args.smoke:
         args.realms = "alb"
         args.party_sizes = "1"
-        args.segment_seconds = min(args.segment_seconds, 45)
+        if not explicit_segment_seconds:
+            args.segment_seconds = min(args.segment_seconds, 45)
         args.max_segments = 1
         args.once = True
         args.parallel_cases = 1
+    if args.fast_flee_debug:
+        args.party_sizes = "1"
+        if not explicit_segment_seconds:
+            args.segment_seconds = min(args.segment_seconds, 90)
+        args.max_segments = 1
+        args.once = True
+        args.parallel_cases = 1
+        args.watch_movement = False
+        args.live_supervisor = False
+        args.require_segment_kill = False
+        args.post_segment_snapshot_delay = 0.0
+        args.post_segment_snapshot_timeout = 0.0
+        args.post_segment_snapshot_poll_interval = 0.5
+        args.ramp_up = min(args.ramp_up, 2)
+        args.startup_delay = min(args.startup_delay, 4.0)
     if args.parallel_cases < 1:
         raise SystemExit("--parallel-cases must be positive")
     if args.reset_level < 1:
@@ -3117,6 +4372,7 @@ def main() -> int:
         "max_segments": args.max_segments,
         "max_level": args.max_level,
         "growth_stage": args.growth_stage,
+        "checkpoint_levels": getattr(args, "checkpoint_levels_parsed", []),
         "cases": len(cases),
         "parallel_cases": min(args.parallel_cases, len(cases)) if cases else 0,
         "dry_run": args.dry_run,
