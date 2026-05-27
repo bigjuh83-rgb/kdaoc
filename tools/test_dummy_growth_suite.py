@@ -54,6 +54,30 @@ def route_point_inside_zone_config(route, zone_config: dict) -> bool:
 
 
 class DummyGrowthSuiteTests(unittest.TestCase):
+    def test_command_for_metadata_redacts_all_password_flags(self) -> None:
+        rendered = growth.command_for_metadata(
+            [
+                "python3",
+                "tool.py",
+                "--password",
+                "login-secret",
+                "--api-password",
+                "api-secret",
+                "--db-password",
+                "db-secret",
+                "--other",
+                "visible",
+            ]
+        )
+
+        self.assertIn("--password '***'", rendered)
+        self.assertIn("--api-password '***'", rendered)
+        self.assertIn("--db-password '***'", rendered)
+        self.assertIn("visible", rendered)
+        self.assertNotIn("login-secret", rendered)
+        self.assertNotIn("api-secret", rendered)
+        self.assertNotIn("db-secret", rendered)
+
     def test_money_to_copper_uses_daoc_coin_scale(self) -> None:
         row = {"Copper": "7", "Silver": "6", "Gold": "5", "Platinum": "4"}
 

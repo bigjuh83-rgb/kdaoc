@@ -156,6 +156,28 @@ class AccountCsvTests(unittest.TestCase):
     def test_format_live_control_speech_command_preserves_old_say_channel_behavior(self) -> None:
         self.assertEqual(behavior.format_live_control_speech_command("say", "old payload"), "/say old payload")
 
+    def test_safe_live_control_command_allows_only_operational_allowlist(self) -> None:
+        self.assertEqual(behavior.safe_live_control_command("/invite PlayerOne"), "/invite PlayerOne")
+        self.assertEqual(behavior.safe_live_control_command("/g hold here"), "/g hold here")
+        self.assertEqual(behavior.safe_live_control_command("/say ready"), "/say ready")
+        self.assertEqual(behavior.safe_live_control_command("/release"), "")
+        self.assertEqual(behavior.safe_live_control_command("/quit"), "")
+        self.assertEqual(behavior.safe_live_control_command("hello"), "")
+
+    def test_parse_live_control_bool_handles_false_strings(self) -> None:
+        self.assertFalse(behavior.parse_live_control_bool("false"))
+        self.assertFalse(behavior.parse_live_control_bool("0"))
+        self.assertFalse(behavior.parse_live_control_bool("no"))
+        self.assertTrue(behavior.parse_live_control_bool("true"))
+        self.assertTrue(behavior.parse_live_control_bool(1))
+
+    def test_live_control_intent_hint_maps_to_action_timers(self) -> None:
+        self.assertEqual(behavior.live_control_intent_timer_updates("heal_priority"), {"party_heal"})
+        self.assertEqual(behavior.live_control_intent_timer_updates("resurrect_priority"), {"party_resurrect"})
+        self.assertEqual(behavior.live_control_intent_timer_updates("cc_add"), {"crowd_control"})
+        self.assertEqual(behavior.live_control_intent_timer_updates("cure_priority"), {"party_cure"})
+        self.assertEqual(behavior.live_control_intent_timer_updates("unknown"), set())
+
     def test_live_control_overrides_runtime_tuning_fields(self) -> None:
         args = SimpleNamespace(
             max_target_distance=1500.0,
@@ -183,6 +205,14 @@ class AccountCsvTests(unittest.TestCase):
             set(updates),
             {"max_target_distance", "max_target_level_delta", "hunter_target_api_radius", "hunter_target_api_scout"},
         )
+
+    def test_live_control_overrides_false_string_bool_fields(self) -> None:
+        args = SimpleNamespace(hunter_target_api_scout=True)
+
+        updates = behavior.apply_live_control_overrides(args, {"hunter_target_api_scout": "false"})
+
+        self.assertFalse(args.hunter_target_api_scout)
+        self.assertEqual(updates["hunter_target_api_scout"], (True, False))
 
 
 class FakeClient:

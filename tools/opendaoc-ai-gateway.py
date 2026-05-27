@@ -13,7 +13,17 @@ from typing import Any, Callable
 
 VALID_FEATURES = {"companion_dialogue", "mob_dialogue", "event_news", "manual_test"}
 ALLOWED_CHANNELS = {"party", "say", "none"}
-ALLOWED_HINTS = {"none", "heal_priority", "resurrect_priority", "follow", "wait", "assist", "flee", "cc_add"}
+ALLOWED_HINTS = {
+    "none",
+    "heal_priority",
+    "resurrect_priority",
+    "follow",
+    "wait",
+    "assist",
+    "flee",
+    "cc_add",
+    "cure_priority",
+}
 ALLOWED_URGENCY = {"low", "normal", "high"}
 DEFAULT_FAKE_USAGE = {"prompt_tokens": 30, "completion_tokens": 12, "total_tokens": 42}
 ALLOWED_MODEL_ALIASES = {"small-dialogue"}
@@ -174,6 +184,8 @@ def sanitize_companion_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "companion_mana_band": health_band(state.get("companion_mana_band")),
             "adds": bounded_int(state.get("adds"), 0, 8),
             "party_dead": bounded_int(state.get("party_dead"), 0, 8),
+            "party_lowest_health_band": health_band(state.get("party_lowest_health_band")),
+            "party_crowd_controlled": bounded_int(state.get("party_crowd_controlled"), 0, 8),
             "player_called": bool_value(state.get("player_called")),
             "command_intent": str(state.get("command_intent") or "none").strip().lower()[:32],
         },
@@ -223,6 +235,10 @@ def normalize_intent_hint(value: Any) -> str:
         "crowd_control": "cc_add",
         "mez": "cc_add",
         "stun": "cc_add",
+        "cure": "cure_priority",
+        "cleanse": "cure_priority",
+        "purge": "cure_priority",
+        "remove_status": "cure_priority",
         "attack": "assist",
         "attack_assist": "assist",
         "escape": "flee",
@@ -236,7 +252,7 @@ def build_companion_messages(sanitized: dict[str, Any]) -> list[dict[str, str]]:
         "You write one short Korean line for a DAoC party companion. "
         "Return JSON only with say_channel, say_text, intent_hint, urgency. "
         "say_channel must be party, say, or none. "
-        "intent_hint must be one of none, heal_priority, resurrect_priority, follow, wait, assist, flee, cc_add. "
+        "intent_hint must be one of none, heal_priority, resurrect_priority, follow, wait, assist, flee, cc_add, cure_priority. "
         "urgency must be low, normal, or high. "
         "Do not include commands, coordinates, rewards, account names, or explanations."
     )
@@ -359,6 +375,7 @@ class TokenLedger:
                     "total_after": self.data["total_tokens"],
                 }
             )
+            self._append_budget_warning_if_needed(feature, model_alias)
             return reservation, ""
 
     def cancel_reservation(self, reservation: BudgetReservation, reason: str) -> None:
@@ -397,7 +414,27 @@ class TokenLedger:
                     "total_after": self.data["total_tokens"],
                 }
             )
+            self._append_budget_warning_if_needed(reservation.feature, reservation.model_alias)
         return normalized
+
+    def _append_budget_warning_if_needed(self, feature: str, model_alias: str) -> None:
+        warning_cap = int(self.config.warning_token_cap or 0)
+        if warning_cap <= 0:
+            return
+        total_after = int(self.data.get("total_tokens") or 0)
+        if total_after < warning_cap:
+            return
+        self._append_usage(
+            {
+                "ts": int(self.now),
+                "date": self.date,
+                "event": "budget_warning",
+                "feature": feature,
+                "model_alias": model_alias,
+                "warning_token_cap": warning_cap,
+                "total_after": total_after,
+            }
+        )
 
     def record(self, feature: str, model_alias: str, usage: dict[str, Any]) -> dict[str, int]:
         reservation, reason = self.reserve(feature, model_alias, self.normalize_usage(usage)["total_tokens"])
@@ -421,9 +458,11 @@ class FileLock:
         elif os.name == "nt":  # pragma: no cover - Windows-only fallback
             import msvcrt
 
+            self.handle.seek(0, os.SEEK_END)
             if self.handle.tell() == 0:
                 self.handle.write(b"\0")
                 self.handle.flush()
+            self.handle.seek(0)
             msvcrt.locking(self.handle.fileno(), msvcrt.LK_LOCK, 1)
         return self
 
@@ -459,14 +498,25 @@ class FakeDialogueProvider:
                 "intent_hint": "resurrect_priority",
                 "urgency": "high",
             }
-        elif bounded_int(state.get("adds"), 0, 8) >= 2 and role in {"support", "healer"}:
+        elif bounded_int(state.get("party_crowd_controlled"), 0, 8) > 0:
+            response = {
+                "say_channel": "party",
+                "say_text": "\uc0c1\ud0dc \uc774\uc0c1 \ud574\uc81c\ud558\uaca0\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc\ub9cc \ubc84\ud168\uc8fc\uc138\uc694.",
+                "intent_hint": "cure_priority",
+                "urgency": "high",
+            }
+        elif bounded_int(state.get("adds"), 0, 8) >= 1 and role in {"support", "healer"}:
             response = {
                 "say_channel": "party",
                 "say_text": "\ucd94\uac00 \uc801 \ubb36\uc744\uac8c\uc694. \uc9c0\uae08 \ud558\ub098\uc529 \ucc98\ub9ac\ud574\uc694.",
                 "intent_hint": "cc_add",
                 "urgency": "high",
             }
-        elif state.get("leader_health_band") in {"critical", "low"} or state.get("command_intent") == "heal_priority":
+        elif (
+            state.get("leader_health_band") in {"critical", "low"}
+            or state.get("party_lowest_health_band") in {"critical", "low"}
+            or state.get("command_intent") == "heal_priority"
+        ):
             response = {
                 "say_channel": "party",
                 "say_text": "\ubc14\ub85c \uce58\uc720\ud558\uaca0\uc2b5\ub2c8\ub2e4. \uc870\uae08\ub9cc \ubc84\ud168\uc8fc\uc138\uc694.",

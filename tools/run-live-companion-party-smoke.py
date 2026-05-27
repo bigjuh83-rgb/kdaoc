@@ -645,8 +645,15 @@ def request_status_text(row: dict[str, Any] | None) -> str:
 
 def write_live_control(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    data = {"revision": int(time.time() * 1000), **payload}
+    data = {"revision": time.time_ns(), **payload}
     path.write_text(json.dumps(data, ensure_ascii=False, sort_keys=True), encoding="utf-8")
+
+
+def validate_replace_run_dir(run_dir: Path) -> None:
+    allowed_root = (ROOT / "test-output" / "live-companion-selftest").resolve()
+    resolved = run_dir.resolve()
+    if resolved == allowed_root or allowed_root not in resolved.parents:
+        raise ValueError(f"--replace run-dir must be below {allowed_root}")
 
 
 def wait_for_leader_online(args: argparse.Namespace, leader_account: str) -> dict[str, Any]:
@@ -730,6 +737,9 @@ def summarize_encounters(run_dir: Path) -> dict[str, int]:
         "dialogue_heal_priority": 0,
         "dialogue_resurrect_priority": 0,
         "dialogue_cc_add": 0,
+        "dialogue_cure_priority": 0,
+        "dialogue_live_control_applied": 0,
+        "dialogue_live_control_say": 0,
     }
     for path in run_dir.rglob("*.jsonl"):
         if "service" not in path.parts:
@@ -763,8 +773,12 @@ def summarize_encounters(run_dir: Path) -> dict[str, int]:
                     counts["damage_done"] += amount
                 if "target_gate_rejected" in key_text or "target_rejected" in key_text:
                     counts["target_rejected"] += amount
+                if "live_control_say" in key_text:
+                    counts["dialogue_live_control_say"] += amount
             if event == "hostile_party_member_target_rejected":
                 counts["party_member_target_rejected"] += 1
+            if event == "live_control_applied":
+                counts["dialogue_live_control_applied"] += 1
     for path in run_dir.rglob("*metrics.csv"):
         if "service" not in path.parts:
             continue
@@ -788,6 +802,8 @@ def summarize_encounters(run_dir: Path) -> dict[str, int]:
                         counts["party_external_visible"] += amount
                     if "target_rejected" in key:
                         counts["target_rejected"] += amount
+                    if "live_control_say" in key:
+                        counts["dialogue_live_control_say"] += amount
     for path in run_dir.rglob("live-control.json"):
         if "service" not in path.parts:
             continue
@@ -811,6 +827,8 @@ def summarize_encounters(run_dir: Path) -> dict[str, int]:
             counts["dialogue_resurrect_priority"] += 1
         if hint == "cc_add":
             counts["dialogue_cc_add"] += 1
+        if hint == "cure_priority":
+            counts["dialogue_cure_priority"] += 1
     return counts
 
 
@@ -889,6 +907,7 @@ def main(argv: list[str] | None = None) -> int:
     args.mysql_bin = growth.resolve_mysql_bin(args.mysql_bin)
     run_dir = args.run_dir
     if args.replace and run_dir.exists() and not args.dry_run:
+        validate_replace_run_dir(run_dir)
         shutil.rmtree(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -995,6 +1014,8 @@ def main(argv: list[str] | None = None) -> int:
         return 4
     if args.dialogue_enabled and summary["dialogue_live_control"] <= 0:
         return 5
+    if args.dialogue_enabled and summary["dialogue_live_control_applied"] <= 0:
+        return 6
     if (
         summary["damage_done"] <= 0
         and summary["heal"] <= 0

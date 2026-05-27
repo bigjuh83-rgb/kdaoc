@@ -648,6 +648,97 @@ def health_band_from_percent(value: Any) -> str:
     return "high"
 
 
+def player_row(state: dict[str, Any] | None) -> dict[str, Any]:
+    player = state.get("player") if isinstance(state, dict) else None
+    return player if isinstance(player, dict) else {}
+
+
+def numeric_percent(row: dict[str, Any], *keys: str) -> float | None:
+    for key in keys:
+        value = row.get(key)
+        if value is None or value == "":
+            continue
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
+def group_member_rows(state: dict[str, Any] | None) -> list[dict[str, Any]]:
+    if not isinstance(state, dict):
+        return []
+    raw_members = state.get("groupMembers") or state.get("group_members") or state.get("partyMembers") or []
+    return [member for member in raw_members if isinstance(member, dict)]
+
+
+def party_dead_count(state: dict[str, Any] | None) -> int:
+    return sum(1 for member in group_member_rows(state) if bool(member.get("isDead")) or bool(member.get("dead")))
+
+
+def member_is_crowd_controlled(member: dict[str, Any]) -> bool:
+    return any(
+        bool(member.get(key))
+        for key in ("isCrowdControlled", "isMezzed", "isStunned", "isDiseased", "isPoisoned", "isSilenced", "isNearsighted")
+    )
+
+
+def party_crowd_controlled_count(state: dict[str, Any] | None) -> int:
+    return sum(1 for member in group_member_rows(state) if member_is_crowd_controlled(member))
+
+
+def party_lowest_health_percent(state: dict[str, Any] | None) -> float | None:
+    values = [
+        percent
+        for member in group_member_rows(state)
+        if (percent := numeric_percent(member, "healthPercent", "health_percent")) is not None
+    ]
+    return min(values) if values else None
+
+
+def estimate_add_count(state: dict[str, Any] | None) -> int:
+    if not isinstance(state, dict):
+        return 0
+    for key in ("adds", "addCount", "add_count", "nearbyAddCount", "nearby_add_count"):
+        try:
+            return max(0, int(float(state.get(key))))
+        except (TypeError, ValueError):
+            continue
+
+    target_ids: set[int] = set()
+    for member in group_member_rows(state):
+        try:
+            target_id = int(member.get("targetObjectId") or member.get("target_object_id") or 0)
+        except (TypeError, ValueError):
+            target_id = 0
+        if target_id <= 0:
+            continue
+        target_type = str(member.get("targetType") or member.get("target_type") or "").lower()
+        if "gameplayer" in target_type:
+            continue
+        target_ids.add(target_id)
+    return max(0, len(target_ids) - 1)
+
+
+def dialogue_command_intent(event_type: str) -> str:
+    event_type = str(event_type or "").strip().lower()
+    if event_type in {"player_requested_heal", "leader_critical", "party_member_low_health"}:
+        return "heal_priority"
+    if event_type == "party_member_dead":
+        return "resurrect_priority"
+    if event_type == "add_pressure":
+        return "cc_add"
+    if event_type in {"party_member_crowd_controlled", "player_crowd_controlled"}:
+        return "cure_priority"
+    if event_type == "companion_joined":
+        return "follow"
+    if event_type in {"player_requested_wait", "companion_low_mana"}:
+        return "wait"
+    if event_type in {"leader_fleeing", "companion_fleeing"}:
+        return "flee"
+    return "none"
+
+
 def companion_personality_for_role(role: Any) -> str:
     role = normalize_role(role)
     return {
@@ -663,35 +754,102 @@ def build_companion_dialogue_payload(
     companion: ActiveCompanion,
     requester_state: dict[str, Any] | None,
     event_type: str,
+    companion_state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    player = requester_state.get("player", {}) if isinstance(requester_state, dict) else {}
-    group_members = requester_state.get("groupMembers", []) if isinstance(requester_state, dict) else []
+    player = player_row(requester_state)
+    companion_player = player_row(companion_state)
     role = request_value(companion.request, "requestedRole", "RequestedRole", default="fill")
-    dead_count = sum(1 for member in group_members if isinstance(member, dict) and bool(member.get("isDead")))
+    event_type = str(event_type or "status")
     return {
         "feature": "companion_dialogue",
-        "event_type": str(event_type or "status"),
+        "event_type": event_type,
         "realm": str(request_value(companion.request, "realm", "Realm", default="unknown")),
         "role": normalize_role(role),
         "personality": companion_personality_for_role(role),
         "state": {
             "combat": bool(player.get("inCombat")),
             "leader_health_band": health_band_from_percent(player.get("healthPercent")),
-            "companion_health_band": "unknown",
-            "companion_mana_band": "unknown",
-            "adds": 0,
-            "party_dead": max(0, dead_count),
-            "player_called": str(event_type or "").startswith("player_requested_"),
-            "command_intent": "heal_priority" if event_type == "player_requested_heal" else "none",
+            "party_lowest_health_band": health_band_from_percent(party_lowest_health_percent(requester_state)),
+            "companion_health_band": health_band_from_percent(companion_player.get("healthPercent")),
+            "companion_mana_band": health_band_from_percent(
+                numeric_percent(companion_player, "manaPercent", "powerPercent", "mana_percent", "power_percent")
+            ),
+            "adds": estimate_add_count(requester_state),
+            "party_dead": max(0, party_dead_count(requester_state)),
+            "party_crowd_controlled": max(0, party_crowd_controlled_count(requester_state)),
+            "player_called": event_type.startswith("player_requested_"),
+            "command_intent": dialogue_command_intent(event_type),
         },
         "memory": "",
+    }
+
+
+SERVICE_ALLOWED_CHANNELS = {"party", "say", "none"}
+SERVICE_ALLOWED_HINTS = {
+    "none",
+    "heal_priority",
+    "resurrect_priority",
+    "follow",
+    "wait",
+    "assist",
+    "flee",
+    "cc_add",
+    "cure_priority",
+}
+SERVICE_ALLOWED_URGENCY = {"low", "normal", "high"}
+
+
+def normalize_dialogue_intent_hint(value: Any) -> str:
+    hint = str(value or "none").strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "heal": "heal_priority",
+        "healing": "heal_priority",
+        "res": "resurrect_priority",
+        "rez": "resurrect_priority",
+        "resurrect": "resurrect_priority",
+        "cc": "cc_add",
+        "crowd_control": "cc_add",
+        "mez": "cc_add",
+        "stun": "cc_add",
+        "cure": "cure_priority",
+        "cleanse": "cure_priority",
+        "purge": "cure_priority",
+        "attack": "assist",
+        "attack_assist": "assist",
+        "escape": "flee",
+    }
+    hint = aliases.get(hint, hint)
+    return hint if hint in SERVICE_ALLOWED_HINTS else "none"
+
+
+def sanitize_companion_dialogue_response(response: dict[str, Any]) -> dict[str, str] | None:
+    channel = str(response.get("say_channel") or "none").strip().lower()
+    if channel not in SERVICE_ALLOWED_CHANNELS:
+        return None
+    urgency = str(response.get("urgency") or "normal").strip().lower()
+    if urgency not in SERVICE_ALLOWED_URGENCY:
+        return None
+    text = " ".join(str(response.get("say_text") or "").split())
+    if len(text) > 80:
+        return None
+    if text.startswith("/") or "\n/" in text or " /" in text:
+        return None
+    lowered = text.lower()
+    forbidden = ("gold", "realm point", "drop rate", "ban", "gm", "보상", "골드", "추방")
+    if any(word in lowered for word in forbidden):
+        return None
+    return {
+        "say_channel": channel,
+        "say_text": text,
+        "intent_hint": normalize_dialogue_intent_hint(response.get("intent_hint")),
+        "urgency": urgency,
     }
 
 
 def write_companion_live_control(path: Path, response: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     row = {
-        "revision": int(time.time() * 1000),
+        "revision": time.time_ns(),
         "say_channel": str(response.get("say_channel") or "none"),
         "say_text": str(response.get("say_text") or ""),
         "intent_hint": str(response.get("intent_hint") or "none"),
@@ -747,7 +905,10 @@ def request_companion_dialogue(args: argparse.Namespace, payload: dict[str, Any]
     response = result.get("response")
     if not isinstance(response, dict):
         return False
-    write_companion_live_control(control_path, response)
+    sanitized = sanitize_companion_dialogue_response(response)
+    if sanitized is None:
+        return False
+    write_companion_live_control(control_path, sanitized)
     return True
 
 
@@ -760,7 +921,13 @@ def emit_companion_dialogue(
     request_id = str(request_value(companion.request, "id", "Id", default=""))
     if not request_id:
         return False
-    payload = build_companion_dialogue_payload(companion, requester_state, event_type)
+    companion_state: dict[str, Any] | None = None
+    if companion.account:
+        try:
+            companion_state = fetch_player_state_by_account(args, companion.account)
+        except Exception:
+            companion_state = None
+    payload = build_companion_dialogue_payload(companion, requester_state, event_type, companion_state)
     return request_companion_dialogue(args, payload, companion_control_path(args, request_id))
 
 
@@ -768,18 +935,28 @@ def should_emit_dialogue(dialogue_state: dict[str, float], key: str, now: float,
     previous = float(dialogue_state.get(key, 0.0) or 0.0)
     if now - previous < max(0.0, interval):
         return False
-    dialogue_state[key] = now
     return True
 
 
 def dialogue_event_for_requester_state(requester_state: dict[str, Any] | None) -> str:
-    player = requester_state.get("player", {}) if isinstance(requester_state, dict) else {}
+    player = player_row(requester_state)
     try:
         health_percent = float(player.get("healthPercent") or 100)
     except (TypeError, ValueError):
         health_percent = 100
+    if party_dead_count(requester_state) > 0:
+        return "party_member_dead"
+    if party_crowd_controlled_count(requester_state) > 0:
+        return "party_member_crowd_controlled"
+    if estimate_add_count(requester_state) > 0 and bool(player.get("inCombat")):
+        return "add_pressure"
+    if bool(player.get("inCombat")) and health_percent < 30:
+        return "leader_critical"
     if bool(player.get("inCombat")) and health_percent < 55:
         return "player_requested_heal"
+    lowest = party_lowest_health_percent(requester_state)
+    if bool(player.get("inCombat")) and lowest is not None and lowest < 55:
+        return "party_member_low_health"
     return ""
 
 
@@ -1001,14 +1178,15 @@ def poll_active(
             else:
                 event_type = dialogue_event_for_requester_state(requester_state)
                 if event_type:
-                    dialogue_key = f"{request_id}:low_health"
+                    dialogue_key = f"{request_id}:{event_type}"
                     if should_emit_dialogue(
                         dialogue_state,
                         dialogue_key,
                         time.monotonic(),
                         arg_float(args, "dialogue_min_interval", 5.0),
                     ):
-                        emit_companion_dialogue(args, companion, requester_state, event_type)
+                        if emit_companion_dialogue(args, companion, requester_state, event_type):
+                            dialogue_state[dialogue_key] = time.monotonic()
             continue
         status = "completed" if return_code == 0 else "failed"
         update_request_status(args, request_id, status, f"behavior client exited with {return_code}")

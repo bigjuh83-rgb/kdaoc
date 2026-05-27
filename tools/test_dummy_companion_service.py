@@ -363,6 +363,58 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertNotIn("player", payload)
         self.assertNotIn("x", payload["state"])
 
+    def test_companion_dialogue_payload_includes_party_pressure_and_companion_status(self) -> None:
+        service = load_service()
+        companion = service.ActiveCompanion(
+            {"id": "req1", "requesterAccount": "leader1", "requestedRole": "support", "realm": 1},
+            mock.Mock(),
+            account="albsupport",
+        )
+        requester_state = {
+            "player": {"name": "Leader", "healthPercent": 91, "inCombat": True},
+            "groupMembers": [
+                {"name": "Leader", "healthPercent": 91, "targetObjectId": 1001, "targetType": "DOL.GS.GameNPC"},
+                {"name": "Tank", "healthPercent": 22, "targetObjectId": 1002, "targetType": "DOL.GS.GameNPC"},
+                {"name": "Mezzed", "healthPercent": 80, "isMezzed": True},
+            ],
+        }
+        companion_state = {"player": {"healthPercent": 44, "manaPercent": 28}}
+
+        payload = service.build_companion_dialogue_payload(companion, requester_state, "add_pressure", companion_state)
+
+        self.assertEqual(payload["state"]["adds"], 1)
+        self.assertEqual(payload["state"]["party_lowest_health_band"], "critical")
+        self.assertEqual(payload["state"]["party_crowd_controlled"], 1)
+        self.assertEqual(payload["state"]["companion_health_band"], "low")
+        self.assertEqual(payload["state"]["companion_mana_band"], "critical")
+        self.assertEqual(payload["state"]["command_intent"], "cc_add")
+
+    def test_dialogue_event_prioritizes_dead_then_adds_then_low_health(self) -> None:
+        service = load_service()
+
+        self.assertEqual(
+            service.dialogue_event_for_requester_state(
+                {"player": {"healthPercent": 20, "inCombat": True}, "groupMembers": [{"isDead": True}]}
+            ),
+            "party_member_dead",
+        )
+        self.assertEqual(
+            service.dialogue_event_for_requester_state(
+                {
+                    "player": {"healthPercent": 90, "inCombat": True},
+                    "groupMembers": [
+                        {"targetObjectId": 1001, "targetType": "DOL.GS.GameNPC"},
+                        {"targetObjectId": 1002, "targetType": "DOL.GS.GameNPC"},
+                    ],
+                }
+            ),
+            "add_pressure",
+        )
+        self.assertEqual(
+            service.dialogue_event_for_requester_state({"player": {"healthPercent": 41, "inCombat": True}}),
+            "player_requested_heal",
+        )
+
     def test_request_companion_dialogue_disabled_does_not_call_gateway(self) -> None:
         service = load_service()
         args = mock.Mock(dialogue_enabled=False)
@@ -396,6 +448,28 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertTrue(written)
         self.assertIn('"say_channel": "party"', payload)
         self.assertIn('"intent_hint": "heal_priority"', payload)
+
+    def test_request_companion_dialogue_rejects_unsafe_allowed_response(self) -> None:
+        service = load_service()
+        args = mock.Mock(dialogue_enabled=True)
+        response = {
+            "allowed": True,
+            "response": {
+                "say_channel": "party",
+                "say_text": "/release now",
+                "intent_hint": "heal_priority",
+                "urgency": "high",
+            },
+        }
+
+        with tempfile.TemporaryDirectory() as temp_dir, mock.patch.object(
+            service, "call_ai_gateway", return_value=response
+        ):
+            control_path = Path(temp_dir) / "req1" / "live-control.json"
+            written = service.request_companion_dialogue(args, {"event_type": "player_requested_heal"}, control_path)
+
+        self.assertFalse(written)
+        self.assertFalse(control_path.exists())
 
     def test_api_request_adds_password_to_post_only(self) -> None:
         service = load_service()
@@ -504,6 +578,36 @@ class DummyCompanionServiceTests(unittest.TestCase):
         payload = request_dialogue.call_args.args[1]
         self.assertEqual(payload["event_type"], "companion_joined")
         self.assertEqual(request_dialogue.call_args.args[2], Path("runs") / "req1" / "live-control.json")
+
+    def test_poll_active_uses_event_cooldown_and_retries_failed_dialogue(self) -> None:
+        service = load_service()
+        args = mock.Mock(dialogue_enabled=True, dialogue_min_interval=5.0, run_dir="runs")
+        process = mock.Mock()
+        process.poll.return_value = None
+        active = {
+            "req1": service.ActiveCompanion(
+                {"id": "req1", "requesterAccount": "leader1", "requestedRole": "support"},
+                process,
+                account="albsupport",
+            )
+        }
+        low_health_state = {"player": {"healthPercent": 41, "inCombat": True, "isAlive": True, "isDead": False}}
+        dead_state = {
+            "player": {"healthPercent": 80, "inCombat": True, "isAlive": True, "isDead": False},
+            "groupMembers": [{"name": "DeadOne", "isDead": True}],
+        }
+        dialogue_state = {}
+
+        with mock.patch.object(service, "fetch_requester_state", side_effect=[low_health_state, low_health_state, dead_state]), mock.patch.object(
+            service, "emit_companion_dialogue", side_effect=[False, True, True]
+        ) as emit_dialogue, mock.patch.object(service, "choose_release_request_for_real_player_join", return_value=""):
+            service.poll_active(args, active, release_counts={}, dialogue_state=dialogue_state)
+            service.poll_active(args, active, release_counts={}, dialogue_state=dialogue_state)
+            service.poll_active(args, active, release_counts={}, dialogue_state=dialogue_state)
+
+        self.assertEqual(emit_dialogue.call_count, 3)
+        self.assertIn("req1:player_requested_heal", dialogue_state)
+        self.assertIn("req1:party_member_dead", dialogue_state)
 
     def test_handle_request_excludes_online_pool_accounts(self) -> None:
         service = load_service()
@@ -628,8 +732,12 @@ class DummyCompanionServiceTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (root / "service" / "req" / "companion-metrics.csv").write_text(
-                "username,damage_done,healing_done,action_party_assist,action_party_follow\n"
-                "companion,12,4,3,5\n",
+                "username,damage_done,healing_done,action_party_assist,action_party_follow,action_live_control_say\n"
+                "companion,12,4,3,5,1\n",
+                encoding="utf-8",
+            )
+            (root / "service" / "req" / "companion-encounters.jsonl").write_text(
+                '{"event":"live_control_applied","actions":{"live_control_say":1},"command_count":1}\n',
                 encoding="utf-8",
             )
             (root / "service" / "req" / "live-control.json").write_text(
@@ -646,6 +754,35 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(summary["dialogue_live_control"], 1)
         self.assertEqual(summary["dialogue_party"], 1)
         self.assertEqual(summary["dialogue_heal_priority"], 1)
+        self.assertEqual(summary["dialogue_live_control_applied"], 1)
+        self.assertEqual(summary["dialogue_live_control_say"], 2)
+
+    def test_live_control_revision_uses_nanoseconds_to_avoid_fast_collisions(self) -> None:
+        service = load_service()
+        smoke = load_smoke()
+
+        with tempfile.TemporaryDirectory() as temp_dir, mock.patch.object(service.time, "time", return_value=123.0), mock.patch.object(
+            smoke.time, "time", return_value=123.0
+        ):
+            service_path = Path(temp_dir) / "service-live-control.json"
+            smoke_path = Path(temp_dir) / "smoke-live-control.json"
+            service.write_companion_live_control(service_path, {"say_channel": "party", "say_text": "first"})
+            first_service = service_path.read_text(encoding="utf-8")
+            service.write_companion_live_control(service_path, {"say_channel": "party", "say_text": "second"})
+            second_service = service_path.read_text(encoding="utf-8")
+            smoke.write_live_control(smoke_path, {"say": "first"})
+            first_smoke = smoke_path.read_text(encoding="utf-8")
+            smoke.write_live_control(smoke_path, {"say": "second"})
+            second_smoke = smoke_path.read_text(encoding="utf-8")
+
+        self.assertNotEqual(service.json.loads(first_service)["revision"], service.json.loads(second_service)["revision"])
+        self.assertNotEqual(smoke.json.loads(first_smoke)["revision"], smoke.json.loads(second_smoke)["revision"])
+
+    def test_live_companion_party_smoke_rejects_replace_outside_test_output(self) -> None:
+        smoke = load_smoke()
+
+        with self.assertRaises(ValueError):
+            smoke.validate_replace_run_dir(Path(ROOT))
 
     def test_live_companion_party_smoke_reads_leader_errors(self) -> None:
         smoke = load_smoke()
@@ -697,7 +834,7 @@ class DummyCompanionServiceTests(unittest.TestCase):
             service.poll_active(args, active, release_counts={}, dialogue_state=dialogue_state)
 
         request_dialogue.assert_called_once()
-        self.assertIn("req1:low_health", dialogue_state)
+        self.assertIn("req1:player_requested_heal", dialogue_state)
         self.assertEqual(request_dialogue.call_args.args[2], Path("runs") / "req1" / "live-control.json")
 
     def test_poll_active_releases_low_priority_companion_when_real_player_joins(self) -> None:

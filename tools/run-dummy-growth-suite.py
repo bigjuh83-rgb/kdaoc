@@ -2675,14 +2675,15 @@ def build_live_supervisor_command(
 def command_for_metadata(command: list[str]) -> str:
     redacted: list[str] = []
     skip_next = False
+    secret_flags = {"--db-password", "--password", "--api-password"}
     for index, part in enumerate(command):
         if skip_next:
             skip_next = False
             continue
-        if part == "--db-password":
+        if part in secret_flags:
             redacted += [part, "***"]
             skip_next = True
-        elif index > 0 and command[index - 1] == "--db-password":
+        elif index > 0 and command[index - 1] in secret_flags:
             continue
         else:
             redacted.append(part)

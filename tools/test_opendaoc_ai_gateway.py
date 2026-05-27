@@ -197,6 +197,21 @@ class OpenDaocAiGatewayValidationTests(unittest.TestCase):
         self.assertTrue(result.allowed)
         self.assertEqual(result.value["intent_hint"], "heal_priority")
 
+    def test_validate_response_accepts_cure_hint_aliases(self) -> None:
+        gateway = load_gateway()
+
+        result = gateway.validate_companion_response(
+            {
+                "say_channel": "party",
+                "say_text": "I will cure that now.",
+                "intent_hint": "cure",
+                "urgency": "normal",
+            }
+        )
+
+        self.assertTrue(result.allowed)
+        self.assertEqual(result.value["intent_hint"], "cure_priority")
+
     def test_build_companion_prompt_uses_sanitized_json_only(self) -> None:
         gateway = load_gateway()
         sanitized = gateway.sanitize_companion_payload(
@@ -271,6 +286,21 @@ class OpenDaocAiGatewayGenerationTests(unittest.TestCase):
         self.assertIsNone(blocked)
         self.assertEqual(blocked_reason, "daily_token_cap_exceeded")
 
+    def test_token_ledger_logs_budget_warning_when_threshold_is_crossed(self) -> None:
+        gateway = load_gateway()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config = self.config_with_paths(temp_dir, daily_token_cap=500, warning_token_cap=40)
+
+            result = gateway.generate_dialogue({"event_type": "status"}, config)
+            usage_events = [
+                json.loads(line)
+                for line in Path(config.usage_log).read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+
+        self.assertTrue(result["allowed"])
+        self.assertTrue(any(row.get("event") == "budget_warning" for row in usage_events))
+
     def test_fake_provider_generates_valid_heal_response_and_usage_log(self) -> None:
         gateway = load_gateway()
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -293,6 +323,28 @@ class OpenDaocAiGatewayGenerationTests(unittest.TestCase):
         self.assertEqual(ledger["total_tokens"], 42)
         self.assertIn("companion_dialogue", usage_line)
         self.assertNotIn("OPENAI", usage_line)
+
+    def test_fake_provider_generates_resurrect_cc_and_join_responses(self) -> None:
+        gateway = load_gateway()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config = self.config_with_paths(temp_dir)
+
+            resurrect = gateway.generate_dialogue(
+                {"event_type": "party_member_dead", "role": "healer", "state": {"party_dead": 1}},
+                config,
+            )
+            crowd_control = gateway.generate_dialogue(
+                {"event_type": "add_pressure", "role": "support", "state": {"adds": 2, "combat": True}},
+                config,
+            )
+            joined = gateway.generate_dialogue(
+                {"event_type": "companion_joined", "role": "tank", "state": {"combat": False}},
+                config,
+            )
+
+        self.assertEqual(resurrect["response"]["intent_hint"], "resurrect_priority")
+        self.assertEqual(crowd_control["response"]["intent_hint"], "cc_add")
+        self.assertEqual(joined["response"]["intent_hint"], "follow")
 
     def test_litellm_adapter_uses_alias_model_and_validates_json(self) -> None:
         gateway = load_gateway()

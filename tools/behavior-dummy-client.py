@@ -258,6 +258,57 @@ def format_live_control_speech_command(channel: object, text: str, *, max_messag
     return ""
 
 
+LIVE_CONTROL_ALLOWED_COMMAND_PREFIXES = (
+    "/invite ",
+    "/g ",
+    "/say ",
+    "/sprint",
+    "/stick",
+    "/follow",
+    "/face",
+)
+
+
+def safe_live_control_command(command: object) -> str:
+    text = " ".join(str(command or "").split())
+    if not text.startswith("/"):
+        return ""
+    lowered = text.lower()
+    if any(lowered == prefix or lowered.startswith(prefix) for prefix in LIVE_CONTROL_ALLOWED_COMMAND_PREFIXES):
+        return text
+    return ""
+
+
+def parse_live_control_bool(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    text = str(value or "").strip().lower()
+    if text in {"0", "false", "no", "off", "disable", "disabled"}:
+        return False
+    if text in {"1", "true", "yes", "on", "enable", "enabled"}:
+        return True
+    return bool(value)
+
+
+def normalize_live_control_intent_hint(value: object) -> str:
+    return str(value or "none").strip().lower().replace("-", "_").replace(" ", "_")
+
+
+def live_control_intent_timer_updates(intent_hint: object) -> set[str]:
+    hint = normalize_live_control_intent_hint(intent_hint)
+    if hint == "heal_priority":
+        return {"party_heal"}
+    if hint == "resurrect_priority":
+        return {"party_resurrect"}
+    if hint == "cc_add":
+        return {"crowd_control"}
+    if hint == "cure_priority":
+        return {"party_cure"}
+    return set()
+
+
 LIVE_CONTROL_NUMERIC_FIELDS = {
     "combat_chase_max_distance": float,
     "combat_direct_move_distance": float,
@@ -341,7 +392,7 @@ def apply_live_control_overrides(args: argparse.Namespace, payload: dict[str, ob
     for field in LIVE_CONTROL_BOOL_FIELDS:
         if field not in normalized:
             continue
-        value = bool(normalized[field])
+        value = parse_live_control_bool(normalized[field])
         previous = getattr(args, field, None)
         if previous != value:
             setattr(args, field, value)
@@ -11578,11 +11629,24 @@ def run_dummy_round(
                         sent_commands = []
                         if isinstance(commands_to_send, list):
                             for live_command in commands_to_send:
-                                if not isinstance(live_command, str) or not live_command.strip():
+                                safe_command = safe_live_control_command(live_command)
+                                if not safe_command:
+                                    if isinstance(live_command, str) and live_command.strip():
+                                        actions += add_action(action_counts, "live_control_command_rejected")
                                     continue
-                                client.send_command(live_command.strip())
-                                sent_commands.append(live_command.strip())
+                                client.send_command(safe_command)
+                                sent_commands.append(safe_command)
                                 actions += add_action(action_counts, "live_control_command")
+                        try:
+                            accept_group_invite_session_id = int(
+                                live_payload.get("accept_group_invite_session_id", live_payload.get("accept_group_invite", 0))
+                            )
+                        except (TypeError, ValueError):
+                            accept_group_invite_session_id = 0
+                        if accept_group_invite_session_id > 0:
+                            client.accept_group_invite(accept_group_invite_session_id)
+                            sent_commands.append("accept_group_invite")
+                            actions += add_action(action_counts, "live_control_accept_group_invite")
                         old_say_payload = "say" in live_payload and "say_text" not in live_payload
                         say_text = live_payload.get("say_text", live_payload.get("say", ""))
                         say_channel = live_payload.get("say_channel", "say" if old_say_payload else None)
@@ -11592,6 +11656,19 @@ def run_dummy_round(
                                 client.send_command(speech_command)
                                 sent_commands.append(speech_command.split(" ", 1)[0])
                                 actions += add_action(action_counts, "live_control_say")
+                        intent_timer_updates = live_control_intent_timer_updates(live_payload.get("intent_hint"))
+                        if "party_heal" in intent_timer_updates:
+                            next_party_heal = min(next_party_heal, now)
+                            actions += add_action(action_counts, "live_control_intent_heal_priority")
+                        if "party_resurrect" in intent_timer_updates:
+                            next_party_resurrect = min(next_party_resurrect, now)
+                            actions += add_action(action_counts, "live_control_intent_resurrect_priority")
+                        if "party_cure" in intent_timer_updates:
+                            next_party_cure = min(next_party_cure, now)
+                            actions += add_action(action_counts, "live_control_intent_cure_priority")
+                        if "crowd_control" in intent_timer_updates:
+                            next_crowd_control = min(next_crowd_control, now)
+                            actions += add_action(action_counts, "live_control_intent_cc_add")
                         feedback_reason = str(
                             live_payload.get("behavior_feedback")
                             or live_payload.get("watcher_feedback")
@@ -11616,13 +11693,14 @@ def run_dummy_round(
                                 else:
                                     transition_to(DummyBehaviorState(behavior_state_value(feedback_state)), f"watcher_feedback_{feedback_reason}", now)
                                 actions += add_action(action_counts, "live_control_behavior_feedback")
-                        if updates or sent_commands:
+                        if updates or sent_commands or intent_timer_updates:
                             log_encounter_event(
                                 "live_control_applied",
                                 now,
                                 revision=revision,
                                 updates={key: {"old": old, "new": new} for key, (old, new) in updates.items()},
                                 command_count=len(sent_commands),
+                                intent_hints=sorted(intent_timer_updates),
                             )
 
             if objective_complete_at <= 0.0 and party_state is not None:
