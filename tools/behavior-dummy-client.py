@@ -245,6 +245,19 @@ def format_say_command(text: str, *, max_message_length: int = 120) -> str:
     return f"/say {message[:max_message_length]}"
 
 
+def format_live_control_speech_command(channel: object, text: str, *, max_message_length: int = 120) -> str:
+    message = " ".join(str(text or "").split())
+    if not message:
+        return ""
+
+    normalized_channel = "say" if channel is None else str(channel or "").strip().lower()
+    if normalized_channel == "say":
+        return format_say_command(message, max_message_length=max_message_length)
+    if normalized_channel == "party":
+        return f"/g {message[:max_message_length]}"
+    return ""
+
+
 LIVE_CONTROL_NUMERIC_FIELDS = {
     "combat_chase_max_distance": float,
     "combat_direct_move_distance": float,
@@ -11570,11 +11583,15 @@ def run_dummy_round(
                                 client.send_command(live_command.strip())
                                 sent_commands.append(live_command.strip())
                                 actions += add_action(action_counts, "live_control_command")
-                        say_text = live_payload.get("say", "")
-                        if isinstance(say_text, str) and say_text.strip():
-                            client.send_command(format_say_command(say_text))
-                            sent_commands.append("/say")
-                            actions += add_action(action_counts, "live_control_say")
+                        old_say_payload = "say" in live_payload and "say_text" not in live_payload
+                        say_text = live_payload.get("say_text", live_payload.get("say", ""))
+                        say_channel = live_payload.get("say_channel", "say" if old_say_payload else None)
+                        if isinstance(say_text, str):
+                            speech_command = format_live_control_speech_command(say_channel, say_text)
+                            if speech_command:
+                                client.send_command(speech_command)
+                                sent_commands.append(speech_command.split(" ", 1)[0])
+                                actions += add_action(action_counts, "live_control_say")
                         feedback_reason = str(
                             live_payload.get("behavior_feedback")
                             or live_payload.get("watcher_feedback")

@@ -1,0 +1,21 @@
+{
+  "provider": "litellm",
+  "daily_token_cap": 500000,
+  "warning_token_cap": 400000,
+  "feature_token_caps": {
+    "companion_dialogue": 350000,
+    "mob_dialogue": 100000,
+    "event_news": 30000,
+    "manual_test": 20000
+  },
+  "model_aliases": {
+    "small-dialogue": {
+      "provider_model": "openai/gpt-4.1-nano",
+      "features": ["companion_dialogue"],
+      "max_output_tokens": 80,
+      "temperature": 0.7
+    }
+  },
+  "usage_log": "test-output/ai-gateway/usage.jsonl",
+  "ledger_file": "test-output/ai-gateway/ledger.json"
+}
