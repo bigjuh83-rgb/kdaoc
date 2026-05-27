@@ -103,6 +103,8 @@ FROM Mob
 WHERE Region = {realm.region}
   AND Level BETWEEN {query_min} AND {query_max}
   AND Realm <> {realm.realm_id}
+  AND LOWER(Name) NOT LIKE '%dummy%'
+  AND LOWER(Name) NOT LIKE 'total:%'
 GROUP BY Name, Level, grid_x, grid_y
 HAVING mob_count >= {max(1, args.min_cluster_count)}
 ORDER BY ABS(CAST(Level AS SIGNED) - {ideal_target}), neutral_count DESC, mob_count DESC

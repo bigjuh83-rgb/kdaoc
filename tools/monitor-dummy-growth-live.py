@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import time
 from pathlib import Path
 
@@ -72,6 +73,19 @@ def recent_case_rows(case_dir: Path) -> list[dict[str, object]]:
         rows.extend(jsonl_tail(path))
     rows.sort(key=lambda row: float(row.get("elapsed", 0.0) or 0.0))
     return rows
+
+
+def primary_metrics_complete(case_dir: Path) -> bool:
+    for path in sorted(case_dir.glob("segment-*-metrics.csv")):
+        if re.fullmatch(r"segment-\d{3}-metrics\.csv", path.name) is None:
+            continue
+        try:
+            lines = [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        except OSError:
+            continue
+        if len(lines) >= 2:
+            return True
+    return False
 
 
 def row_reason(row: dict[str, object]) -> str:
@@ -222,6 +236,9 @@ def main() -> int:
         control_path.write_text("{}\n", encoding="utf-8")
 
     while time.monotonic() < end_at:
+        if primary_metrics_complete(args.case_dir):
+            print(f"{time.strftime('%H:%M:%S')} changed=0 reason=metrics_complete", flush=True)
+            return 0
         changed, reason = tune_control(args.case_dir, max_engage=args.max_engage, max_radius=args.max_radius, step=args.step)
         print(f"{time.strftime('%H:%M:%S')} changed={int(changed)} reason={reason}", flush=True)
         time.sleep(max(0.5, args.interval))

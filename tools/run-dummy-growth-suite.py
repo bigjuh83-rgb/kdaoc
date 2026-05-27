@@ -40,6 +40,9 @@ COPPER_PER_SILVER = 100
 COPPER_PER_GOLD = 10_000
 COPPER_PER_PLATINUM = 10_000_000
 TIMELINE_WRITE_LOCK = threading.Lock()
+GROWTH_SAFE_EXIT_MAX_SECONDS = 90.0
+GROWTH_SAFE_EXIT_RECENT_DAMAGE_GRACE = 12.0
+GROWTH_STARTUP_TELEPORTER_HOME_TIMEOUT = 90.0
 GROWTH_STAGE_DEFAULTS = {
     "custom": None,
     "stabilize": {"reset_level": 1, "max_level": 4, "segment_seconds": 90, "max_segments": 1},
@@ -420,7 +423,8 @@ REALMS: dict[str, RealmProfile] = {
             route_point(1, 534650, 477500, 2200, "black wolf pup,boar piglet,weak skeleton", "young cutpurse,green snake"),
             route_point(2, 534900, 478900, 2310, "small gray wolf,skeleton,black wolf pup", "young cutpurse,green snake"),
             route_point(3, 534900, 478900, 2310, "small gray wolf,skeleton,black wolf pup", "young cutpurse,green snake"),
-            route_point(5, 533895, 472812, 2654, "shady pilferer,spriggarn stalker,skeleton", "young cutpurse,river drakeling,river sprite,bear,carrion drake"),
+            route_point(5, 533895, 472812, 2654, "shady pilferer", "Pebble,Yaren,young cutpurse,green snake,spectral hound,river drakeling,river sprite,bear,carrion drake"),
+            route_point(6, 523498, 475987, 3400, "rock imp", "Pebble,Yaren,shady pilferer,young cutpurse,green snake,spectral hound,highwayman,cutpurse,bullyboy,red dwarf thief,goblin fisherman,river drakeling,river sprite,bear,carrion drake"),
             route_point(
                 8,
                 498052,
@@ -448,12 +452,12 @@ REALMS: dict[str, RealmProfile] = {
             route_point(45, 506796, 463636, 3860, teleport_destination="Lyonesse"),
             route_point(
                 50,
-                504923,
-                344510,
-                2833,
-                "Tylwyth Teg ranger",
-                "ellyll sage,cyhraeth,ravenclan giant",
-                teleport_destination="Snowdonia Fortress",
+                332701,
+                669142,
+                2712,
+                "moorlich",
+                "gabriel hound,woodeworm,peallaidh,pygmy goblin,archer,footman",
+                teleport_destination="Yarley's Farm",
             ),
         ),
         ground_z_map="tools/pathing/heightmaps/region001_client_zones.json",
@@ -538,13 +542,12 @@ REALMS: dict[str, RealmProfile] = {
             route_point(45, 674302, 736960, 5227, teleport_destination="Raumarik"),
             route_point(
                 50,
-                664136,
-                726812,
-                6510,
-                "fenrir tracker",
-                "wyvern,torpor worm,winter wolf,bone-eater clanmother,ghostly Hibernian invader",
-                teleport_destination="Vindsaul Faste",
-                objective_adds="fenrir snowscout,fenrir prophet",
+                742631,
+                668137,
+                7887,
+                "savage wyvern",
+                "winter wolf,fallen troll,fenrir shredder",
+                teleport_destination="Svasud Faste",
             ),
         ),
         ground_z_map="tools/pathing/heightmaps/region100_client_zones.json",
@@ -1074,7 +1077,9 @@ def reset_growth_characters(
     accounts: Iterable[str],
     level: int = 1,
     realm: RealmProfile | None = None,
+    party_size: int = 0,
     target_specs_by_account: dict[str, str] | None = None,
+    start_point: RoutePoint | None = None,
 ) -> None:
     account_names = [account for account in accounts if account]
     if not account_names:
@@ -1084,7 +1089,8 @@ def reset_growth_characters(
     reset_experience = experience_floor_for_level(reset_level)
     position_assignments = ""
     if realm is not None:
-        base_x, base_y, base_z = realm.start
+        effective_start_point = start_point or checkpoint_start_point(args, realm, reset_level, party_size)
+        base_x, base_y, base_z = effective_start_point.x, effective_start_point.y, effective_start_point.z
         step = int(getattr(args, "position_step", 0) or 0)
         x_cases = " ".join(
             f"WHEN {sql_quote(account)} THEN {base_x + step * index}"
@@ -1185,6 +1191,25 @@ def select_route_point(realm: RealmProfile, level: int, party_size: int = 0) -> 
     return selected
 
 
+def checkpoint_start_point(args: argparse.Namespace, realm: RealmProfile, level: int, party_size: int = 0) -> RoutePoint:
+    location = str(getattr(args, "checkpoint_start_location", "realm-start") or "realm-start").strip().lower()
+    if location == "route-home":
+        return select_route_point(realm, level, party_size)
+    if location == "teleport":
+        route = select_route_point(realm, level, party_size)
+        destination_name = nearest_teleport_destination(realm, route)
+        destination = teleport_destination_point(realm, destination_name)
+        if destination is not None:
+            x, y, z = destination
+            return RoutePoint(level=0, x=x, y=y, z=z, teleport_destination=destination_name)
+    return RoutePoint(level=0, x=realm.start[0], y=realm.start[1], z=realm.start[2])
+
+
+def skip_startup_teleport_for_checkpoint_start(args: argparse.Namespace) -> bool:
+    location = str(getattr(args, "checkpoint_start_location", "realm-start") or "realm-start").strip().lower()
+    return location in {"route-home", "teleport"}
+
+
 def route_variant_node_id(realm: RealmProfile, point: RoutePoint) -> str:
     return f"{realm.key}_{point.level}_{point.x}_{point.y}"
 
@@ -1202,19 +1227,36 @@ def route_variant_points_for_graph(realm: RealmProfile) -> list[RoutePoint]:
     return variants
 
 
-def route_variant_travel_detours(realm: RealmProfile, source_id: str, variant: RoutePoint) -> tuple[RoutePoint, ...]:
+def route_travel_detours(realm: RealmProfile, source_id: str, destination: RoutePoint) -> tuple[RoutePoint, ...]:
+    if (
+        realm.key == "alb"
+        and source_id == "alb_teleport_yarley_s_farm"
+        and destination.level == 50
+        and destination.x == 332701
+        and destination.y == 669142
+    ):
+        return (
+            RoutePoint(0, 368000, 676000, 5751),
+            RoutePoint(0, 360000, 672000, 5958),
+            RoutePoint(0, 350000, 668000, 6234),
+            RoutePoint(0, 340000, 670000, 2556),
+        )
     if (
         realm.key == "hib"
         and source_id == "hib_teleport_tir_na_mbeo"
-        and variant.level == 10
-        and variant.x == 336157
-        and variant.y == 532604
+        and destination.level == 10
+        and destination.x == 336157
+        and destination.y == 532604
     ):
         return (
             RoutePoint(0, 333500, 529000, 5278),
             RoutePoint(0, 333500, 531300, 5349),
         )
     return ()
+
+
+def route_variant_travel_detours(realm: RealmProfile, source_id: str, variant: RoutePoint) -> tuple[RoutePoint, ...]:
+    return route_travel_detours(realm, source_id, variant)
 
 
 def target_levels(level: int, party_size: int) -> tuple[int, int, int]:
@@ -1237,11 +1279,8 @@ def target_levels(level: int, party_size: int) -> tuple[int, int, int]:
             return max(1, player_level - 1), min(50, player_level + 2), 2
         return max(1, player_level - 1), min(50, player_level + 3), 3
 
-    if player_level == 5 and party_size <= 1:
-        return 4, 5, 1
-
-    if player_level == 6 and party_size <= 1:
-        return 4, 5, 1
+    if player_level in {5, 6} and party_size <= 1:
+        return 5, 5, 0
 
     if player_level <= 7 and party_size <= 1:
         target = max(1, player_level - 1)
@@ -1285,7 +1324,11 @@ def early_growth_party_slot_rotations(level: int, party_size: int) -> str:
         return "melee-basic,healer-support,melee-basic,melee-burst"
     if party_size <= 1 or level > 4:
         return ""
-    return "melee-basic,melee-burst"
+    if party_size == 2:
+        return "melee-basic,healer-support"
+    if party_size == 3:
+        return "melee-basic,healer-support,melee-basic"
+    return "melee-basic,healer-support,melee-basic,melee-burst"
 
 
 def party_min_ready(level: int, party_size: int) -> int:
@@ -1401,6 +1444,16 @@ CASTER_SPEC_NAME_TOKENS = (
     "death servant",
     "death sight",
 )
+HEALER_SPEC_NAME_TOKENS = (
+    "rejuvenation",
+    "enhancement",
+    "regrowth",
+    "nurture",
+    "mending",
+    "augmentation",
+    "pacification",
+    "healing",
+)
 CASTER_STATIONARY_CAST_HOLD_SECONDS = 3.4
 
 
@@ -1418,6 +1471,8 @@ def solo_action_rotation_for_accounts(accounts_csv: Path, party_size: int) -> st
     if not rows:
         return "melee-basic"
     spec_name = first_trainable_spec_name(rows[0].get("specs") or rows[0].get("SerializedSpecs"))
+    if spec_name and any(token in spec_name for token in HEALER_SPEC_NAME_TOKENS):
+        return "healer-support"
     if spec_name and any(token in spec_name for token in CASTER_SPEC_NAME_TOKENS):
         return "caster-basic"
     return "melee-basic"
@@ -1613,10 +1668,14 @@ def growth_flee_home_stop_distance(level: int) -> int:
 
 
 def growth_flee_safe_point_distance(level: int) -> int:
+    if level >= 45:
+        return 9000
     return 2400 if level <= 4 else 5200
 
 
 def growth_flee_critical_safe_point_distance(level: int) -> int:
+    if level >= 45:
+        return 14000
     return 4200 if level <= 4 else 9000
 
 
@@ -1661,6 +1720,22 @@ def watcher_observer_home_string(
         ground_z_offset=ground_z_offset,
     )
     return f"{x},{y},{z}"
+
+
+def watcher_observer_home_point(
+    args: argparse.Namespace,
+    realm: RealmProfile,
+    level: int,
+    party_size: int = 0,
+) -> RoutePoint:
+    x_text, y_text, z_text = watcher_observer_home_string(
+        realm,
+        level,
+        party_size,
+        observer_distance=watcher_observer_follow_distance(args),
+        ground_z_offset=args.ground_z_offset,
+    ).split(",", 2)
+    return RoutePoint(level=0, x=int(x_text), y=int(y_text), z=int(z_text))
 
 
 def resolve_root_path(value: str) -> Path:
@@ -1783,13 +1858,29 @@ def write_growth_path_graph(path: Path, *, ground_z_offset: int = 0) -> None:
                 destination = destination_nodes.get(normalize_teleport_destination(point.teleport_destination))
                 if destination is not None:
                     destination_id, destination_point = destination
+                    detours = route_travel_detours(realm, destination_id, point)
+                    last_id = destination_id
+                    last_point = destination_point
+                    for detour_index, detour in enumerate(detours, start=1):
+                        detour_id = f"{realm.key}_{destination_id}_{point.x}_{point.y}_detour_{detour_index}"
+                        add_node(detour_id, detour.x, detour.y, detour.z)
+                        add_segment(
+                            source_id=last_id,
+                            source=last_point,
+                            dest_id=detour_id,
+                            dest=detour,
+                            mid_prefix=f"{detour_id}_path",
+                            sample_mid_height=True,
+                        )
+                        last_id = detour_id
+                        last_point = detour
                     add_segment(
-                        source_id=destination_id,
-                        source=destination_point,
+                        source_id=last_id,
+                        source=last_point,
                         dest_id=node_id,
                         dest=point,
                         mid_prefix=f"{realm.key}_teleport_{normalize_identifier(point.teleport_destination)}_{point.level}",
-                        sample_mid_height=point.level >= 50,
+                        sample_mid_height=point.level >= 50 or bool(detours),
                     )
             if index > 0:
                 source = realm.points[index - 1]
@@ -2024,6 +2115,10 @@ def build_behavior_command(
         "1",
         "--hold",
         str(args.segment_seconds),
+        "--safe-exit-max-seconds",
+        str(int(GROWTH_SAFE_EXIT_MAX_SECONDS)),
+        "--safe-exit-recent-damage-grace",
+        str(int(GROWTH_SAFE_EXIT_RECENT_DAMAGE_GRACE)),
         "--ramp-up",
         str(args.ramp_up),
         "--party-size",
@@ -2205,7 +2300,7 @@ def build_behavior_command(
         "--flee-move-interval",
         "0.35",
         "--flee-movement-speed",
-        "360",
+        "280",
         "--flee-use-sprint",
         "--flee-home",
         growth_flee_home_string(realm, current_level, party_size, ground_z_offset=args.ground_z_offset),
@@ -2284,8 +2379,15 @@ def build_behavior_command(
         "--live-control-interval",
         str(getattr(args, "live_control_interval", 1.0)),
     ]
-    if action_rotation == "caster-basic":
+    if action_rotation in {"caster-basic", "healer-support", "hybrid"}:
         command += ["--stationary-cast-actions", "--cast-action-hold", f"{CASTER_STATIONARY_CAST_HOLD_SECONDS:.1f}"]
+    if party_size == 1 and action_rotation == "healer-support":
+        command += [
+            "--support-spell-chance",
+            "1.0",
+            "--healer-self-health-percent",
+            "80",
+        ]
     if realm.ground_z_map:
         command += [
             "--ground-z-map",
@@ -2312,7 +2414,8 @@ def build_behavior_command(
     elif current_level >= 50:
         command += ["--startup-train-full-specs", "--startup-train-level", str(current_level)]
     teleport_destination = nearest_teleport_destination(realm, route) if current_level >= 10 else route.teleport_destination
-    append_startup_teleport_command(command, args, teleport_destination, realm=realm)
+    if not skip_startup_teleport_for_checkpoint_start(args):
+        append_startup_teleport_command(command, args, teleport_destination, realm=realm)
     if args.nav_api_url:
         command += ["--nav-api-url", args.nav_api_url]
     if args.live_api_url:
@@ -2322,8 +2425,15 @@ def build_behavior_command(
         command += ["--require-target-name", required_target_name]
     if route.prefer:
         command += ["--prefer-target-name", route.prefer, "--target-auto-lowest-visible-level"]
-        if current_level >= 6:
-            command += ["--allow-preferred-low-con-fallback", "--preferred-low-con-min-level", str(min_target)]
+        if current_level >= 5:
+            preferred_low_con_min_level = min_target
+            if party_size <= 1 and current_level in {5, 6}:
+                preferred_low_con_min_level = max(1, min_target - 1)
+            command += [
+                "--allow-preferred-low-con-fallback",
+                "--preferred-low-con-min-level",
+                str(preferred_low_con_min_level),
+            ]
     if route.objective_adds:
         command += ["--objective-add-target-name", route.objective_adds]
     if route.avoid:
@@ -2398,6 +2508,7 @@ def build_behavior_command(
                 "35",
                 "--party-survival-backoff-distance",
                 "1000",
+                "--stop-after-required-target-removed",
             ]
         slot_rotations = early_growth_party_slot_rotations(current_level, party_size)
         if slot_rotations:
@@ -2405,6 +2516,16 @@ def build_behavior_command(
                 "--party-slot-rotations",
                 slot_rotations,
             ]
+    external_member_names = "|".join(
+        part.strip()
+        for part in re.split(r"[|,]", str(getattr(args, "party_external_member_names", "") or ""))
+        if part.strip()
+    )
+    if external_member_names:
+        command += [
+            "--party-external-member-names",
+            external_member_names,
+        ]
     return command
 
 
@@ -2495,6 +2616,10 @@ def build_watcher_command(
         "1",
         "--hold",
         str(args.segment_seconds),
+        "--safe-exit-max-seconds",
+        str(int(GROWTH_SAFE_EXIT_MAX_SECONDS)),
+        "--safe-exit-recent-damage-grace",
+        str(int(GROWTH_SAFE_EXIT_RECENT_DAMAGE_GRACE)),
         "--ramp-up",
         str(max(0.0, float(args.ramp_up) + 1.0 + watcher_index * 0.2)),
         "--party-size",
@@ -2668,7 +2793,17 @@ def build_live_supervisor_command(
         "--max-radius",
         str(getattr(args, "live_supervisor_max_radius", 5200.0)),
         "--hold",
-        str(max(1.0, args.segment_seconds + getattr(args, "startup_delay", 0.0) + 8.0)),
+        str(
+            max(
+                1.0,
+                args.segment_seconds
+                + getattr(args, "startup_delay", 0.0)
+                + getattr(args, "ramp_up", 0.0)
+                + GROWTH_STARTUP_TELEPORTER_HOME_TIMEOUT
+                + GROWTH_SAFE_EXIT_MAX_SECONDS
+                + 8.0,
+            )
+        ),
     ]
 
 
@@ -2897,6 +3032,52 @@ def paired_movement_rows(
     return pairs
 
 
+XY_STATUS_RECOVERY_STATES = {"DropAggroAndRecover", "RestRecover", "DeadReleaseRecover", "ReturnToObjective"}
+
+
+def primary_behavior_state_timeline(path: Path | None) -> list[tuple[float, str]]:
+    if path is None:
+        return []
+
+    timeline: list[tuple[float, str]] = []
+    for row in jsonl_rows(path):
+        state = str(row.get("behavior_state", "") or "")
+        timestamp = numeric(row, "t")
+        if state and timestamp > 0.0:
+            timeline.append((timestamp, state))
+    timeline.sort(key=lambda item: item[0])
+    return timeline
+
+
+def behavior_state_at(timeline: list[tuple[float, str]], timestamp: float) -> str:
+    state = ""
+    for event_time, event_state in timeline:
+        if event_time > timestamp:
+            break
+        state = event_state
+    return state
+
+
+def xy_status_deltas(
+    pairs: list[tuple[dict[str, object], dict[str, object]]],
+    raw_xy_deltas: list[float],
+    *,
+    primary_encounter_path: Path | None,
+) -> list[float]:
+    timeline = primary_behavior_state_timeline(primary_encounter_path)
+    if not timeline:
+        return raw_xy_deltas
+
+    filtered: list[float] = []
+    for (left, _right), xy_delta in zip(pairs, raw_xy_deltas):
+        state = behavior_state_at(timeline, numeric(left, "t"))
+        if state in XY_STATUS_RECOVERY_STATES:
+            continue
+        filtered.append(xy_delta)
+
+    return filtered or raw_xy_deltas
+
+
 def movement_anomaly_summary(path: Path, *, rewind_warn_distance: float) -> dict[str, object]:
     rows = jsonl_rows(path)
     max_step = 0.0
@@ -3031,10 +3212,15 @@ def primary_behavior_anomaly_summary(path: Path, *, prefer_target_name: str = ""
     last_flee_x = 0.0
     last_flee_y = 0.0
     flee_window_recovered = False
+    flee_window_active_threat_observed = False
     flee_window_aggro_not_dropped = False
     flee_window_too_short = False
     combat_attempts_by_target: dict[str, int] = {}
     weak_flee_finishes_by_target: dict[str, int] = {}
+    target_removed_finishes_by_target: dict[str, int] = {}
+    last_target_removed_finish_at: float | None = None
+    post_target_removed_pressure_pending = False
+    post_removed_pressure_window = 45.0
 
     for row in rows:
         event = str(row.get("event", ""))
@@ -3042,6 +3228,8 @@ def primary_behavior_anomaly_summary(path: Path, *, prefer_target_name: str = ""
         target_name = str(row.get("target_name") or row.get("active_target_name") or "")
 
         if event == "combat_start" and target_name:
+            last_target_removed_finish_at = None
+            post_target_removed_pressure_pending = False
             normalized_target = target_name.lower()
             combat_attempts_by_target[normalized_target] = combat_attempts_by_target.get(normalized_target, 0) + 1
 
@@ -3050,6 +3238,13 @@ def primary_behavior_anomaly_summary(path: Path, *, prefer_target_name: str = ""
             duration = numeric(row, "duration_seconds")
             damage_done = numeric(row, "damage_done")
             damage_taken = numeric(row, "damage_taken")
+            if outcome == "target_removed":
+                last_target_removed_finish_at = timestamp
+                if target_name:
+                    normalized_target = target_name.lower()
+                    target_removed_finishes_by_target[normalized_target] = (
+                        target_removed_finishes_by_target.get(normalized_target, 0) + 1
+                    )
             if (
                 target_name
                 and outcome in {"flee", "target_timeout", "target_home_leash"}
@@ -3060,11 +3255,18 @@ def primary_behavior_anomaly_summary(path: Path, *, prefer_target_name: str = ""
                 normalized_target = target_name.lower()
                 weak_flee_finishes_by_target[normalized_target] = weak_flee_finishes_by_target.get(normalized_target, 0) + 1
 
+        elif event == "combat_start":
+            last_target_removed_finish_at = None
+            post_target_removed_pressure_pending = False
+
         elif event == "flee_start":
+            if last_target_removed_finish_at is not None and timestamp - last_target_removed_finish_at <= post_removed_pressure_window:
+                post_target_removed_pressure_pending = True
             last_flee_at = timestamp
             last_flee_x = numeric(row, "x")
             last_flee_y = numeric(row, "y")
             flee_window_recovered = False
+            flee_window_active_threat_observed = False
             flee_window_aggro_not_dropped = False
             flee_window_too_short = False
 
@@ -3074,7 +3276,10 @@ def primary_behavior_anomaly_summary(path: Path, *, prefer_target_name: str = ""
             character = str(row.get("character", ""))
             active = bool(row.get("flee_threat_active") or row.get("flee_threat_has_aggro") or row.get("flee_threat_in_combat"))
             if active and threat_target and character and threat_target.lower() == character.lower() and age >= 12.0:
-                flee_window_aggro_not_dropped = True
+                flee_window_active_threat_observed = True
+                threat_distance = numeric(row, "flee_threat_distance")
+                if threat_distance <= 1200.0 or age >= 48.0:
+                    flee_window_aggro_not_dropped = True
             if active and age >= 12.0:
                 threat_distance = numeric(row, "flee_threat_distance")
                 dx = numeric(row, "x") - last_flee_x
@@ -3085,26 +3290,58 @@ def primary_behavior_anomaly_summary(path: Path, *, prefer_target_name: str = ""
 
         elif event == "flee_recovered" and last_flee_at is not None:
             flee_window_recovered = True
+            post_target_removed_pressure_pending = False
 
         elif event == "flee_finished" and last_flee_at is not None:
             if not flee_window_recovered:
-                if flee_window_aggro_not_dropped:
+                if flee_window_aggro_not_dropped or flee_window_active_threat_observed:
                     reasons.add("aggro_not_dropped")
                 if flee_window_too_short:
                     reasons.add("flee_too_short")
             last_flee_at = None
             flee_window_recovered = False
+            flee_window_active_threat_observed = False
             flee_window_aggro_not_dropped = False
             flee_window_too_short = False
 
         elif event == "low_health_rest":
             if row.get("flee_threat_active") or row.get("flee_threat_has_aggro") or row.get("flee_threat_target"):
+                if last_target_removed_finish_at is not None and timestamp - last_target_removed_finish_at <= post_removed_pressure_window:
+                    reasons.add("post_target_removed_pressure")
                 reasons.add("unsafe_rest")
             elif last_flee_at is not None:
                 last_flee_at = None
                 flee_window_recovered = False
+                flee_window_active_threat_observed = False
                 flee_window_aggro_not_dropped = False
                 flee_window_too_short = False
+                post_target_removed_pressure_pending = False
+            else:
+                post_target_removed_pressure_pending = False
+
+        elif event in {
+            "required_target_complete",
+            "required_target_complete_pending_safe_exit",
+            "required_target_complete_shared",
+        }:
+            post_target_removed_pressure_pending = False
+
+        elif event == "safe_exit_complete":
+            deadline_reached = str(row.get("safe_exit_deadline_reached", "")).lower() in {"1", "true", "yes"} or bool(
+                row.get("safe_exit_deadline_reached")
+            )
+            completed_recovered = str(row.get("safe_exit_deadline_completed_recovered", "")).lower() in {
+                "1",
+                "true",
+                "yes",
+            } or bool(row.get("safe_exit_deadline_completed_recovered"))
+            if deadline_reached and not completed_recovered:
+                reasons.add("safe_exit_deadline")
+            else:
+                post_target_removed_pressure_pending = False
+
+    if post_target_removed_pressure_pending:
+        reasons.add("post_target_removed_pressure")
 
     if last_flee_at is not None and not flee_window_recovered:
         if flee_window_aggro_not_dropped:
@@ -3113,7 +3350,10 @@ def primary_behavior_anomaly_summary(path: Path, *, prefer_target_name: str = ""
             reasons.add("flee_too_short")
 
     for target_name, weak_finishes in weak_flee_finishes_by_target.items():
-        if weak_finishes >= 1 and combat_attempts_by_target.get(target_name, 0) >= 1:
+        successful_finishes = target_removed_finishes_by_target.get(target_name, 0)
+        repeated_failed_attempts = weak_finishes >= 2
+        unresolved_failed_retries = weak_finishes >= 1 and combat_attempts_by_target.get(target_name, 0) >= 2 and successful_finishes <= 0
+        if repeated_failed_attempts or unresolved_failed_retries:
             reasons.add("target_stuck")
         if prefer_tokens and weak_finishes >= 1 and combat_attempts_by_target.get(target_name, 0) >= 2:
             if not target_name_matches_any(target_name, prefer_tokens):
@@ -3128,6 +3368,8 @@ def primary_behavior_anomaly_summary(path: Path, *, prefer_target_name: str = ""
         "primary_behavior_flee_too_short": 1 if "flee_too_short" in reasons else 0,
         "primary_behavior_target_stuck": 1 if "target_stuck" in reasons else 0,
         "primary_behavior_unsafe_rest": 1 if "unsafe_rest" in reasons else 0,
+        "primary_behavior_safe_exit_deadline": 1 if "safe_exit_deadline" in reasons else 0,
+        "primary_behavior_post_target_removed_pressure": 1 if "post_target_removed_pressure" in reasons else 0,
     }
 
 
@@ -3152,6 +3394,8 @@ def empty_primary_behavior_anomaly_summary() -> dict[str, object]:
         "primary_behavior_flee_too_short": 0,
         "primary_behavior_target_stuck": 0,
         "primary_behavior_unsafe_rest": 0,
+        "primary_behavior_safe_exit_deadline": 0,
+        "primary_behavior_post_target_removed_pressure": 0,
     }
 
 
@@ -3218,6 +3462,12 @@ def compare_watcher_pair(
     max_close_z = max(close_z_deltas) if close_z_deltas else 0.0
     max_ground_z = max(all_ground_deltas) if all_ground_deltas else 0.0
     max_xy = max(xy_deltas) if xy_deltas else 0.0
+    status_xy_deltas = xy_status_deltas(
+        pairs,
+        xy_deltas,
+        primary_encounter_path=primary_encounter_path,
+    )
+    max_status_xy = max(status_xy_deltas) if status_xy_deltas else 0.0
     rewind_events = (
         int(primary_anomaly["large_step_events"])
         + int(primary_anomaly["reverse_spike_events"])
@@ -3254,7 +3504,7 @@ def compare_watcher_pair(
         "rewind_events": rewind_events,
         "watcher_status": "warn" if len(primary_all) > 0 and (len(watcher) == 0 or samples == 0 or not close_z_deltas) else "ok",
         "z_status": "warn" if (max_ground_z if all_ground_deltas else max_close_z) > z_warn_delta else "ok",
-        "xy_status": "warn" if max_xy > xy_warn_delta else "ok",
+        "xy_status": "warn" if max_status_xy > xy_warn_delta else "ok",
         "rewind_status": "warn" if rewind_events else "ok",
         **encounter_anomaly,
         **behavior_anomaly,
@@ -3302,6 +3552,8 @@ def write_watcher_summary(path: Path, rows: list[dict[str, object]]) -> None:
         "primary_behavior_flee_too_short",
         "primary_behavior_target_stuck",
         "primary_behavior_unsafe_rest",
+        "primary_behavior_safe_exit_deadline",
+        "primary_behavior_post_target_removed_pressure",
     ]
     path.parent.mkdir(parents=True, exist_ok=True)
     existing: list[dict[str, object]] = []
@@ -3389,7 +3641,8 @@ def segment_regression_passed(metrics: dict[str, object], *, require_kill: bool)
         return False
     combat_failures = to_int(metrics.get("combat_failures"))
     if to_int(metrics.get("target_removed")) > 0:
-        combat_failures = max(0, combat_failures - to_int(metrics.get("server_los_failures")))
+        recovered_failures = to_int(metrics.get("server_los_failures")) + to_int(metrics.get("target_home_leashes"))
+        combat_failures = max(0, combat_failures - recovered_failures)
     if combat_failures > 0:
         return False
     if require_kill and to_int(metrics.get("target_removed")) <= 0:
@@ -3421,7 +3674,16 @@ def segment_requires_xp(args: argparse.Namespace, current_level: int) -> bool:
 
 
 def watcher_regression_passed(case_dir: Path, segment_index: int, watcher_pairs: list[tuple[str, str, Path]]) -> bool:
-    for watcher_index, (_primary_account, _watcher_account, _watcher_csv) in enumerate(watcher_pairs):
+    unique_watchers: list[tuple[str, Path]] = []
+    seen_watchers: set[tuple[str, str]] = set()
+    for _primary_account, watcher_account, watcher_csv in watcher_pairs:
+        key = (watcher_account, str(watcher_csv))
+        if key in seen_watchers:
+            continue
+        seen_watchers.add(key)
+        unique_watchers.append((watcher_account, watcher_csv))
+
+    for watcher_index, (_watcher_account, _watcher_csv) in enumerate(unique_watchers):
         metrics = aggregate_metrics(case_dir / f"segment-{segment_index:03d}-watcher-{watcher_index + 1:02d}-metrics.csv")
         if to_int(metrics.get("player_deaths")) > 0 or to_int(metrics.get("movement_failures")) > 0:
             return False
@@ -3897,7 +4159,7 @@ def run_case(
     account_names = [row["username"] for row in primary_rows]
     watcher_account_names = [row["username"] for row in watcher_rows]
     if not args.skip_provision and args.reset_progress and not args.dry_run and not checkpoint_levels:
-        reset_growth_characters(args, account_names + watcher_account_names, level=args.reset_level, realm=realm)
+        reset_growth_characters(args, account_names + watcher_account_names, level=args.reset_level, realm=realm, party_size=party_size)
 
     first_segment = next_segment_index(case_dir) if args.resume else 1
     last_segment = first_segment + args.max_segments - 1
@@ -3935,8 +4197,19 @@ def run_case(
                 account_names + watcher_account_names,
                 level=checkpoint_level,
                 realm=realm,
+                party_size=party_size,
                 target_specs_by_account=checkpoint_specs,
             )
+            if watcher_account_names and str(getattr(args, "checkpoint_start_location", "") or "").lower() == "route-home":
+                reset_growth_characters(
+                    args,
+                    watcher_account_names,
+                    level=checkpoint_level,
+                    realm=realm,
+                    party_size=party_size,
+                    target_specs_by_account=checkpoint_specs,
+                    start_point=watcher_observer_home_point(args, realm, checkpoint_level, party_size),
+                )
         before = {} if args.dry_run else snapshot_characters(args, account_names)
         observed_level = checkpoint_level if checkpoint_level is not None and args.dry_run else max([snap.level for snap in before.values()] or [1])
         if checkpoint_level is None and observed_level >= args.max_level:
@@ -3987,7 +4260,8 @@ def run_case(
                 watcher_csv = watcher_accounts_dir / f"watcher-{watcher_index + 1:02d}.csv"
                 write_accounts(watcher_csv, [watcher_row])
                 primary_account = account_names[0]
-                watcher_pairs.append((primary_account, watcher_row["username"], watcher_csv))
+                for observed_account in account_names:
+                    watcher_pairs.append((observed_account, watcher_row["username"], watcher_csv))
                 commands.append(
                     build_watcher_command(
                         args=args,
@@ -4255,6 +4529,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--password", default=os.environ.get("OPENDAOC_DUMMY_PASSWORD", "dummy-pass"))
     parser.add_argument("--realms", default="alb,mid,hib", help="comma-separated: alb,mid,hib")
     parser.add_argument("--party-sizes", default="1,2,4,8", help="comma-separated party sizes")
+    parser.add_argument(
+        "--party-external-member-names",
+        default="",
+        help="comma-separated real player names to include as support-only party members",
+    )
     parser.add_argument("--start", type=int, default=701)
     parser.add_argument("--start-stride", type=int, default=20)
     parser.add_argument(
@@ -4266,12 +4545,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--growth-teleport-approach-timeout", type=float, default=20.0)
     parser.add_argument("--growth-teleport-warmup-delay", type=float, default=1.6)
     parser.add_argument("--growth-teleport-wait-seconds", type=float, default=2.0)
+    parser.add_argument("--growth-teleporter-home-stop-distance", type=float, default=900.0)
+    parser.add_argument("--growth-teleporter-home-timeout", type=float, default=90.0)
     parser.add_argument("--position-step", type=int, default=80)
     parser.add_argument("--segment-seconds", type=int, default=600)
     parser.add_argument("--max-segments", type=int, default=60)
     parser.add_argument("--max-level", type=int, default=50)
     parser.add_argument("--growth-stage", choices=sorted(GROWTH_STAGE_DEFAULTS), default="custom", help="apply a checkpoint preset: stabilize(1-4), train(5), gear(6-10), long(10-50), or custom")
     parser.add_argument("--checkpoint-levels", default="", help="comma-separated forced levels for fast 1-50 checkpoint probes, e.g. 1,5,6,10,20,35,49")
+    parser.add_argument(
+        "--checkpoint-start-location",
+        choices=["realm-start", "teleport", "route-home"],
+        default="realm-start",
+        help="where checkpoint-reset characters begin; route-home skips startup teleporter for fast combat FSM repros",
+    )
     parser.add_argument("--ramp-up", type=int, default=5)
     parser.add_argument("--login-retries", type=int, default=12)
     parser.add_argument("--login-retry-delay", type=float, default=5.0)

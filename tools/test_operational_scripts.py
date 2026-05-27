@@ -41,8 +41,74 @@ assert GROWTH_MONITOR_SPEC is not None and GROWTH_MONITOR_SPEC.loader is not Non
 monitor_dummy_growth_live = importlib.util.module_from_spec(GROWTH_MONITOR_SPEC)
 GROWTH_MONITOR_SPEC.loader.exec_module(monitor_dummy_growth_live)
 
+RVR_SMOKE_SPEC = importlib.util.spec_from_file_location(
+    "run_dummy_rvr_smoke",
+    ROOT / "tools" / "run-dummy-rvr-smoke.py",
+)
+assert RVR_SMOKE_SPEC is not None and RVR_SMOKE_SPEC.loader is not None
+run_dummy_rvr_smoke = importlib.util.module_from_spec(RVR_SMOKE_SPEC)
+RVR_SMOKE_SPEC.loader.exec_module(run_dummy_rvr_smoke)
+
 
 class OperationalScriptTests(unittest.TestCase):
+    def test_rvr_smoke_behavior_command_targets_enemy_players_without_required_pve_home(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            accounts_csv = tmp_path / "alb.csv"
+            accounts_csv.write_text("username,password,realm,char_index\nrvr001,p,1,0\n", encoding="utf-8")
+            args = mock.Mock(
+                host="127.0.0.1",
+                port=10300,
+                api_port=5000,
+                hold=10,
+                ramp_up=1,
+                login_retries=1,
+                login_retry_delay=0.1,
+                enemy_player_max_distance=3600,
+            )
+
+            command = run_dummy_rvr_smoke.build_behavior_command(args, "alb", accounts_csv, tmp_path / "alb", 2)
+
+        self.assertIn("--rvr-enemy-player-hunter", command)
+        self.assertIn("--trace-observed-player-positions", command)
+        self.assertNotIn("--required-target-home", command)
+        self.assertNotIn("--require-target-name", command)
+
+    def test_rvr_smoke_uses_new_frontiers_region(self) -> None:
+        self.assertEqual(run_dummy_rvr_smoke.FRONTIER_REGION, 163)
+
+    def test_rvr_smoke_stages_realms_inside_observation_range(self) -> None:
+        points = list(run_dummy_rvr_smoke.FRONTIER_MEET_POINTS.values())
+
+        for index, first in enumerate(points):
+            for second in points[index + 1 :]:
+                dx = first[0] - second[0]
+                dy = first[1] - second[1]
+                self.assertLessEqual(dx * dx + dy * dy, 700 * 700)
+
+    def test_rvr_smoke_summary_counts_damage_when_attack_toggle_is_absent(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            case_dir = Path(temp_dir)
+            encounters = case_dir / "encounters"
+            encounters.mkdir()
+            (encounters / "dummy.jsonl").write_text(
+                "\n".join(
+                    [
+                        json.dumps({"event": "rvr_enemy_player_target_committed"}),
+                        json.dumps({"event": "tick", "action_counts": {"combat_damage_done": 3}}),
+                        json.dumps({"event": "tick", "damage_done": 250}),
+                        json.dumps({"event": "incoming_damage_player_counterattack"}),
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            summary = run_dummy_rvr_smoke.summarize_case(case_dir)
+
+        self.assertEqual(summary["enemy_target_committed"], 1)
+        self.assertEqual(summary["damage_done"], 250)
+        self.assertEqual(summary["incoming_counterattack"], 1)
+
     def test_midgard_hammer_spec_prefers_hammer_starter_weapon(self) -> None:
         rows = [
             {"TemplateID": "axe", "Item_Type": "10", "Object_Type": "13"},
@@ -171,6 +237,24 @@ class OperationalScriptTests(unittest.TestCase):
         self.assertEqual(rows[0]["watcher_behavior_critical"], 1)
         self.assertEqual(rows[0]["watcher_aggro_not_dropped"], 1)
         self.assertEqual(rows[0]["watcher_flee_too_short"], 1)
+
+    def test_growth_live_monitor_detects_completed_primary_metrics(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            case_dir = Path(temp_dir)
+            self.assertFalse(monitor_dummy_growth_live.primary_metrics_complete(case_dir))
+
+            with (case_dir / "segment-001-watcher-01-metrics.csv").open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=["username", "ok"])
+                writer.writeheader()
+                writer.writerow({"username": "watcher001", "ok": "true"})
+            self.assertFalse(monitor_dummy_growth_live.primary_metrics_complete(case_dir))
+
+            with (case_dir / "segment-001-metrics.csv").open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=["username", "ok"])
+                writer.writeheader()
+                writer.writerow({"username": "growthmid001", "ok": "true"})
+
+            self.assertTrue(monitor_dummy_growth_live.primary_metrics_complete(case_dir))
 
     def test_growth_live_monitor_does_not_expand_target_radius_while_traveling(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -550,6 +634,17 @@ class OperationalScriptTests(unittest.TestCase):
         self.assertIn("ToNpcEncounterDto", source)
         self.assertIn("targetObjectId", source)
         self.assertIn("distance = HorizontalDistance", source)
+
+    def test_dummy_combat_api_exposes_player_condition_flags_for_support_ai(self) -> None:
+        source = (ROOT / "GameServer" / "API" / "DummyCombat" / "DummyCombatRoutes.cs").read_text(encoding="utf-8")
+
+        self.assertIn("ToPlayerCombatDto", source)
+        self.assertIn("isStunned = player.IsStunned", source)
+        self.assertIn("isMezzed = player.IsMezzed", source)
+        self.assertIn("isDiseased = player.IsDiseased", source)
+        self.assertIn("isPoisoned = player.IsPoisoned", source)
+        self.assertIn("isSilenced = player.IsSilenced", source)
+        self.assertIn("isNearsighted = player.effectListComponent.ContainsEffectForEffectType(DOL.GS.eEffect.Nearsight)", source)
 
     def test_game_npc_left_hand_weapon_setter_is_not_recursive(self) -> None:
         source = (ROOT / "GameServer" / "gameobjects" / "GameNPC.cs").read_text(encoding="utf-8")

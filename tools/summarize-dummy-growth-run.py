@@ -73,6 +73,8 @@ def summarize_watcher(case_dir: Path) -> dict[str, int]:
         "watcher_flee_too_short": 0,
         "watcher_target_stuck": 0,
         "watcher_unsafe_rest": 0,
+        "watcher_safe_exit_deadline": 0,
+        "watcher_post_target_removed_pressure": 0,
     }
     for row in read_csv_rows(case_dir / "watcher-movement-summary.csv"):
         summary["watcher_rows"] += 1
@@ -89,6 +91,8 @@ def summarize_watcher(case_dir: Path) -> dict[str, int]:
         summary["watcher_flee_too_short"] += to_int(row.get("primary_behavior_flee_too_short"))
         summary["watcher_target_stuck"] += to_int(row.get("primary_behavior_target_stuck"))
         summary["watcher_unsafe_rest"] += to_int(row.get("primary_behavior_unsafe_rest"))
+        summary["watcher_safe_exit_deadline"] += to_int(row.get("primary_behavior_safe_exit_deadline"))
+        summary["watcher_post_target_removed_pressure"] += to_int(row.get("primary_behavior_post_target_removed_pressure"))
     return summary
 
 
@@ -122,6 +126,8 @@ def print_table(rows: list[dict[str, object]]) -> None:
         "watcher_flee_too_short",
         "watcher_target_stuck",
         "watcher_unsafe_rest",
+        "watcher_safe_exit_deadline",
+        "watcher_post_target_removed_pressure",
     ]
     print("\t".join(fieldnames))
     for row in rows:
@@ -144,6 +150,8 @@ def write_csv(path: Path, rows: list[dict[str, object]]) -> None:
         "watcher_flee_too_short",
         "watcher_target_stuck",
         "watcher_unsafe_rest",
+        "watcher_safe_exit_deadline",
+        "watcher_post_target_removed_pressure",
     ]
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:

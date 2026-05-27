@@ -107,6 +107,7 @@ class TargetIntent(str, Enum):
     required_retaliation = "required_retaliation"
     party_assist = "party_assist"
     party_rescue = "party_rescue"
+    enemy_player = "enemy_player"
     travel_aggro = "travel_aggro"
     avoided_add = "avoided_add"
     current_target_confirm = "current_target_confirm"
@@ -116,6 +117,8 @@ class TargetSource(str, Enum):
     hunter_selection = "hunter_selection"
     party_assist = "party_assist"
     party_rescue = "party_rescue"
+    enemy_player_hunter = "enemy_player_hunter"
+    enemy_player_assist = "enemy_player_assist"
     local_rescue = "local_rescue"
     incoming_damage_counterattack = "incoming_damage_counterattack"
     leader_target_reacquire = "leader_target_reacquire"
@@ -166,6 +169,8 @@ class TargetDecision:
     should_update_current_target: bool
     should_publish_party_leader_target: bool
     should_mark_leader_engaged: bool
+    should_publish_party_shared_target: bool = False
+    should_publish_party_shared_engaged: bool = False
 
 
 @dataclass(frozen=True)
@@ -177,11 +182,70 @@ class TargetCommitResult:
     target_object_called: bool
     current_target_updated: bool
     party_leader_target_published: bool
+    party_shared_target_published: bool = False
 
 
+@dataclass(frozen=True)
+class FleePlan:
+    priority: int = 0
+    reason: str = ""
+    locked_until: float = 0.0
+
+
+SAFE_EXIT_RECOVERY_COMBAT_OUTCOMES = {
+    "flee",
+    "safe_exit_flee",
+    "critical_health_drop_aggro",
+    "server_los_failure",
+    "combat_chase_overextended",
+    "target_timeout",
+    "target_lost",
+}
 DEFAULT_COMMANDS = ["/worldnews"]
 REALM_NAMES = {1: "Albion", 2: "Midgard", 3: "Hibernia"}
 REALM_IDS_BY_NAME = {name.lower(): realm_id for realm_id, name in REALM_NAMES.items()}
+REALM_IDS_BY_API_NAME = {
+    "_firstplayerrealm": 1,
+    "firstplayerrealm": 1,
+    "first": 1,
+    "_secondplayerrealm": 2,
+    "secondplayerrealm": 2,
+    "second": 2,
+    "_thirdplayerrealm": 3,
+    "thirdplayerrealm": 3,
+    "third": 3,
+}
+
+
+def parse_realm_id_value(value: object) -> int:
+    if isinstance(value, int):
+        return value if value in REALM_NAMES else 0
+
+    text = str(value or "").strip()
+    if not text:
+        return 0
+
+    try:
+        realm_id = int(text)
+    except ValueError:
+        realm_id = 0
+    if realm_id in REALM_NAMES:
+        return realm_id
+
+    normalized = text.lower()
+    if normalized in REALM_IDS_BY_NAME:
+        return REALM_IDS_BY_NAME[normalized]
+    if normalized in REALM_IDS_BY_API_NAME:
+        return REALM_IDS_BY_API_NAME[normalized]
+    for name, candidate_id in REALM_IDS_BY_NAME.items():
+        if name in normalized:
+            return candidate_id
+    for name, candidate_id in REALM_IDS_BY_API_NAME.items():
+        if name in normalized:
+            return candidate_id
+    return 0
+
+
 TELEPORT_DESTINATION_COORDS: dict[str, tuple[int, int, int, int]] = {
     "adribard's retreat": (1, 472348, 629103, 1724),
     "avalon marsh": (1, 462144, 633058, 1739),
@@ -463,11 +527,58 @@ class PartyAttackMessage:
 
 
 @dataclass(frozen=True)
+class PlayerConditionSnapshot:
+    name: str = ""
+    account: str = ""
+    object_id: int = 0
+    level: int = 0
+    realm: int = 0
+    health_percent: int = 100
+    x: int = 0
+    y: int = 0
+    z: int = 0
+    is_alive: bool = True
+    is_stunned: bool = False
+    is_mezzed: bool = False
+    is_diseased: bool = False
+    is_poisoned: bool = False
+    is_nearsighted: bool = False
+    is_silenced: bool = False
+    target_object_id: int = 0
+    target_name: str = ""
+
+    def curable_conditions(self) -> set[str]:
+        conditions: set[str] = set()
+        if self.is_mezzed:
+            conditions.add("mezz")
+        if self.is_diseased:
+            conditions.add("disease")
+        if self.is_poisoned:
+            conditions.add("poison")
+        if self.is_nearsighted:
+            conditions.add("nearsight")
+        if self.is_silenced:
+            conditions.add("silence")
+        return conditions
+
+
+@dataclass(frozen=True)
 class UsableSkillRef:
     use_skill_index: int
     use_skill_type: int
     name: str
     level: int
+
+
+@dataclass(frozen=True)
+class UsableAbilityRef:
+    use_skill_index: int
+    use_skill_type: int
+    name: str
+    level: int
+    ability_id: int = 0
+    internal_id: str = ""
+    category: str = ""
 
 
 @dataclass(frozen=True)
@@ -478,15 +589,41 @@ class UsableSpellRef:
     level: int
     use_skill_index: int = -1
     use_skill_type: int = 1
+    spell_type: str = ""
+    target: str = ""
+    range: int = 0
+    radius: int = 0
+    cast_time: int = 0
+    recast_delay: int = 0
+    duration: int = 0
+    damage: float = 0.0
+    is_harmful: bool = False
+    is_helpful: bool = False
+    is_healing: bool = False
+    is_buff: bool = False
+    is_debuff: bool = False
 
 
 @dataclass(frozen=True)
 class CombatUsablePlan:
     skills: list[UsableSkillRef] = field(default_factory=list)
     taunt_skills: list[UsableSkillRef] = field(default_factory=list)
+    party_protection_abilities: list[UsableAbilityRef] = field(default_factory=list)
+    guard_abilities: list[UsableAbilityRef] = field(default_factory=list)
+    protect_abilities: list[UsableAbilityRef] = field(default_factory=list)
+    intercept_abilities: list[UsableAbilityRef] = field(default_factory=list)
+    bodyguard_abilities: list[UsableAbilityRef] = field(default_factory=list)
     attack_spells: list[UsableSpellRef] = field(default_factory=list)
+    dot_spells: list[UsableSpellRef] = field(default_factory=list)
+    area_attack_spells: list[UsableSpellRef] = field(default_factory=list)
     heal_spells: list[UsableSpellRef] = field(default_factory=list)
     buff_spells: list[UsableSpellRef] = field(default_factory=list)
+    cure_spells: list[UsableSpellRef] = field(default_factory=list)
+    resurrection_spells: list[UsableSpellRef] = field(default_factory=list)
+    crowd_control_spells: list[UsableSpellRef] = field(default_factory=list)
+    debuff_spells: list[UsableSpellRef] = field(default_factory=list)
+    taunt_spells: list[UsableSpellRef] = field(default_factory=list)
+    summon_spells: list[UsableSpellRef] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -562,6 +699,26 @@ def promote_recent_finished_combat_to_target_removed(
     metric.duration += max(0.0, now - finished_at)
     metric.outcome = "target_removed"
     return True
+
+
+def target_removed_creditable(args: argparse.Namespace, active_combat: dict[str, object] | None, final_distance: float) -> bool:
+    if active_combat is None:
+        return False
+
+    if int(active_combat.get("damage_done", 0) or 0) > 0:
+        return True
+    if int(active_combat.get("attacks", 0) or 0) > 0:
+        return True
+    if int(active_combat.get("skills", 0) or 0) > 0:
+        return True
+
+    credit_distance = max(
+        float(getattr(args, "attack_range", 0.0) or 0.0),
+        float(getattr(args, "max_target_distance", 0.0) or 0.0),
+        float(getattr(args, "party_rescue_max_distance", 0.0) or 0.0),
+        float(getattr(args, "party_rescue_objective_max_distance", 0.0) or 0.0),
+    )
+    return credit_distance <= 0.0 or float(final_distance or 0.0) <= credit_distance
 
 
 @dataclass(frozen=True)
@@ -720,10 +877,13 @@ class PartyState:
         self.objective_complete_target_id = 0
         self.objective_complete_name = ""
         self.objective_completed_at = 0.0
+        self.managed_member_names: list[str] = list(member_names)
+        self.external_member_names: list[str] = []
         self.member_object_ids: dict[str, int] = {name: 0 for name in member_names}
         self.member_health_percents: dict[str, int] = {name: 100 for name in member_names}
         self.member_positions: dict[str, tuple[int, int, int]] = {name: (0, 0, 0) for name in member_names}
         self.member_roles: dict[str, str] = {name: "" for name in member_names}
+        self.member_conditions: dict[str, PlayerConditionSnapshot] = {}
         self.rescue_target_id = 0
         self.rescue_target_name = ""
         self.rescue_target_x = 0
@@ -738,6 +898,54 @@ class PartyState:
         self.encounter_death_count = 0
         self.last_encounter_death_at = 0.0
         self.updated_at = 0.0
+
+    def _ensure_member_locked(self, member_name: str, *, managed: bool = False, role: str = "") -> bool:
+        member_name = str(member_name or "").strip()
+        if not member_name:
+            return False
+
+        if member_name not in self.member_names:
+            self.member_names.append(member_name)
+            self.member_object_ids[member_name] = 0
+            self.member_health_percents[member_name] = 100
+            self.member_positions[member_name] = (0, 0, 0)
+            self.member_roles[member_name] = role
+
+        if managed:
+            if member_name not in self.managed_member_names:
+                self.managed_member_names.append(member_name)
+            if member_name in self.external_member_names:
+                self.external_member_names.remove(member_name)
+        elif member_name not in self.managed_member_names and member_name not in self.external_member_names:
+            self.external_member_names.append(member_name)
+
+        if role and not self.member_roles.get(member_name):
+            self.member_roles[member_name] = role
+
+        return True
+
+    def _update_member_actor_locked(self, member_name: str, actor, *, managed: bool, role: str = "") -> None:
+        if not self._ensure_member_locked(member_name, managed=managed, role=role):
+            return
+
+        previous_health_percent = self.member_health_percents.get(member_name, 100)
+        if hasattr(actor, "health_percent"):
+            health_percent = int(getattr(actor, "health_percent", previous_health_percent) or 0)
+        else:
+            health_percent = previous_health_percent
+        object_id = int(getattr(actor, "player_object_id", 0) or getattr(actor, "object_id", 0) or 0)
+        self.member_object_ids[member_name] = object_id
+        self.member_health_percents[member_name] = health_percent
+        self.member_positions[member_name] = (
+            int(getattr(actor, "x", 0) or 0),
+            int(getattr(actor, "y", 0) or 0),
+            int(getattr(actor, "z", 0) or 0),
+        )
+        if role:
+            self.member_roles[member_name] = role
+        if self.leader_target_id > 0 and previous_health_percent > 0 and health_percent <= 0:
+            self.encounter_death_count += 1
+            self.last_encounter_death_at = time.monotonic()
 
     def update_leader(self, client, target=None, *, engaged: bool = False) -> None:
         with self.lock:
@@ -828,31 +1036,65 @@ class PartyState:
             return True
 
     def _update_member_locked(self, member_name: str, client) -> None:
-        if member_name not in self.member_names:
+        if member_name not in self.managed_member_names:
             return
 
-        previous_health_percent = self.member_health_percents.get(member_name, 100)
-        health_percent = int(getattr(client, "health_percent", 100) or 0)
-        self.member_object_ids[member_name] = int(getattr(client, "player_object_id", 0) or 0)
-        self.member_health_percents[member_name] = health_percent
-        self.member_positions[member_name] = (
-            int(getattr(client, "x", 0) or 0),
-            int(getattr(client, "y", 0) or 0),
-            int(getattr(client, "z", 0) or 0),
-        )
-        if self.leader_target_id > 0 and previous_health_percent > 0 and health_percent <= 0:
-            self.encounter_death_count += 1
-            self.last_encounter_death_at = time.monotonic()
+        self._update_member_actor_locked(member_name, client, managed=True)
 
     def update_member(self, member_name: str, client) -> None:
         with self.lock:
             self._update_member_locked(member_name, client)
             self.updated_at = time.monotonic()
 
+    def update_external_member(self, member_name: str, actor, *, role: str = "external") -> None:
+        with self.lock:
+            self._update_member_actor_locked(member_name, actor, managed=False, role=role)
+            self.updated_at = time.monotonic()
+
     def update_member_role(self, member_name: str, role: str) -> None:
         with self.lock:
-            if member_name in self.member_names:
+            if self._ensure_member_locked(member_name, managed=member_name in self.managed_member_names, role=role):
                 self.member_roles[member_name] = role
+            self.updated_at = time.monotonic()
+
+    def update_member_condition(self, member_name: str, condition: PlayerConditionSnapshot) -> None:
+        with self.lock:
+            if member_name not in self.member_names:
+                return
+
+            self.member_conditions[member_name] = condition
+            if condition.object_id > 0:
+                self.member_object_ids[member_name] = condition.object_id
+            if condition.health_percent >= 0:
+                self.member_health_percents[member_name] = 0 if not condition.is_alive else int(condition.health_percent)
+            if condition.x or condition.y or condition.z:
+                self.member_positions[member_name] = (int(condition.x), int(condition.y), int(condition.z))
+            if normalize_target_name(member_name) == normalize_target_name(self.leader_name):
+                if condition.object_id > 0:
+                    self.leader_object_id = condition.object_id
+                if condition.x or condition.y or condition.z:
+                    self.leader_x = int(condition.x)
+                    self.leader_y = int(condition.y)
+                    self.leader_z = int(condition.z)
+                self.leader_health_percent = 0 if not condition.is_alive else int(condition.health_percent)
+                if condition.target_object_id > 0:
+                    self._update_leader_target_locked(
+                        SimpleNamespace(
+                            object_id=condition.target_object_id,
+                            name=condition.target_name or "leader target",
+                            x=0,
+                            y=0,
+                            z=0,
+                            level=0,
+                            health=0,
+                            max_health=0,
+                            health_percent=0,
+                            target="",
+                        ),
+                        engaged=True,
+                    )
+                else:
+                    self._clear_leader_target_locked()
             self.updated_at = time.monotonic()
 
     def _is_tank_role_locked(self, member_name: str) -> bool:
@@ -1009,6 +1251,35 @@ class PartyState:
                     targets.append({"name": member_name, "object_id": object_id})
 
             return targets
+
+    def resurrection_targets(self, exclude_name: str = "") -> list[dict[str, int | str]]:
+        with self.lock:
+            candidates: list[tuple[int, int, str, int, int, int, int]] = []
+
+            for order, member_name in enumerate(self.member_names):
+                if member_name == exclude_name:
+                    continue
+
+                object_id = self.member_object_ids.get(member_name, 0)
+                health_percent = self.member_health_percents.get(member_name, 100)
+                if not object_id or health_percent > 0:
+                    continue
+
+                x, y, z = self.member_positions.get(member_name, (0, 0, 0))
+                leader_priority = 0 if member_name == self.leader_name else 1
+                candidates.append((leader_priority, order, member_name, object_id, health_percent, x, y, z))
+
+            return [
+                {
+                    "name": member_name,
+                    "object_id": object_id,
+                    "health_percent": health_percent,
+                    "x": x,
+                    "y": y,
+                    "z": z,
+                }
+                for leader_priority, order, member_name, object_id, health_percent, x, y, z in sorted(candidates)
+            ]
 
     def request_rescue(
         self,
@@ -1184,7 +1455,7 @@ class PartyState:
 
     def mark_ready(self, member_name: str) -> None:
         with self.lock:
-            if member_name in self.member_names:
+            if member_name in self.managed_member_names:
                 self.ready_names.add(member_name)
             self.updated_at = time.monotonic()
 
@@ -1194,10 +1465,16 @@ class PartyState:
                 self.ready_names.discard(member_name)
             self.updated_at = time.monotonic()
 
+    def managed_invite_names(self) -> list[str]:
+        with self.lock:
+            return [member_name for member_name in self.managed_member_names if member_name != self.leader_name]
+
     def snapshot(self) -> dict[str, int | float | str]:
         with self.lock:
             active_tank = self._active_tank_locked()
             rescue_tank = self._rescue_tank_locked()
+            managed_member_names = list(self.managed_member_names)
+            external_member_names = list(self.external_member_names)
             return {
                 "leader_name": self.leader_name,
                 "leader_session_id": self.leader_session_id,
@@ -1244,6 +1521,8 @@ class PartyState:
                 "rescue_member_name": self.rescue_member_name,
                 "rescue_requested_at": self.rescue_requested_at,
                 "rescue_threats": list(self.rescue_threats.values()),
+                "managed_member_names": managed_member_names,
+                "external_member_names": external_member_names,
                 "members": [
                     {
                         "name": member_name,
@@ -1365,6 +1644,55 @@ def should_suppress_party_follower_waypoint(
     )
 
 
+def should_defer_required_home_move_for_party_anchor(
+    client,
+    args: argparse.Namespace,
+    party_state: PartyState | None,
+    *,
+    is_party_follower: bool,
+    current_target: int,
+) -> bool:
+    if (
+        not is_party_follower
+        or party_state is None
+        or current_target > 0
+        or not getattr(args, "party_assist_only", False)
+        or int(getattr(args, "party_min_ready", 0) or 0) <= 0
+    ):
+        return False
+
+    home = required_target_home_destination(args)
+    if home is None:
+        return False
+
+    snapshot = party_state.snapshot()
+    if not party_anchor_position_valid(snapshot):
+        return False
+
+    if (
+        int(snapshot.get("leader_target_id", 0) or 0) > 0
+        and float(snapshot.get("leader_target_engaged_at", 0.0) or 0.0) > 0.0
+    ):
+        return True
+
+    anchor = party_anchor_from_snapshot(snapshot)
+    anchor_home_distance = horizontal_distance_between_points(
+        int(anchor.get("x", 0) or 0),
+        int(anchor.get("y", 0) or 0),
+        home.x,
+        home.y,
+    )
+    anchor_near_home_distance = max(
+        float(getattr(args, "party_pre_pull_home_stop_distance", 0.0) or 0.0),
+        float(getattr(args, "required_target_home_stop_distance", 0.0) or 0.0),
+        float(getattr(args, "party_follow_distance", 0.0) or 0.0),
+    )
+    if anchor_home_distance <= anchor_near_home_distance:
+        return False
+
+    return True
+
+
 def initial_behavior_state_for_objective(
     client,
     args: argparse.Namespace,
@@ -1395,6 +1723,13 @@ def character_name_from_account(username: str) -> str:
         return "Dummy" + username[5:]
 
     return username[:1].upper() + username[1:]
+
+
+def probable_account_from_character_name(character_name: str) -> str:
+    name = str(character_name or "").strip()
+    if not name:
+        return ""
+    return name.lower()
 
 
 def choose_hunter_target(
@@ -1697,6 +2032,26 @@ def classify_combat_server_message(text: str) -> set[str]:
         categories.add("not_visible")
     if "피해" in normalized or "damage" in normalized or "hit" in normalized:
         categories.add("damage")
+    if (
+        "주문이 중단" in normalized
+        or "시전이 중단" in normalized
+        or "spell was interrupted" in normalized
+        or "casting was interrupted" in normalized
+        or "you are interrupted" in normalized
+    ):
+        categories.add("cast_interrupted")
+    if (
+        "주문을 시전하려면" in normalized
+        or "wait before casting" in normalized
+        or "must wait" in normalized
+    ):
+        categories.add("spell_not_ready")
+    if (
+        "같은 렐름 구성원은 공격할 수 없습니다" in normalized
+        or "same realm" in normalized
+        or "same realm member" in normalized
+    ):
+        categories.add("friendly_target")
 
     return categories
 
@@ -1914,6 +2269,12 @@ def should_reacquire_shared_objective_visible_target(
 
 
 def required_target_level_allowed(args: argparse.Namespace, npc) -> bool:
+    if getattr(args, "party_encounter_mode", "standard") != "standard" and is_required_target(args, npc):
+        min_level = getattr(args, "min_target_level", None)
+        if min_level is not None and int(getattr(npc, "level", 0) or 0) < int(min_level or 0):
+            return False
+        return True
+
     has_explicit_level_window = (
         hasattr(args, "min_target_level")
         or hasattr(args, "max_target_level")
@@ -1950,6 +2311,11 @@ def target_within_required_home(args: argparse.Namespace, npc) -> bool:
 def target_within_selection_distance(client, args: argparse.Namespace, npc) -> bool:
     max_distance = float(getattr(args, "max_target_distance", 0.0) or 0.0)
     return max_distance <= 0.0 or combat_distance_to(client, npc) <= max_distance
+
+
+def should_start_combat_after_target_commit(args: argparse.Namespace, distance: float) -> bool:
+    max_distance = float(getattr(args, "max_target_distance", 0.0) or 0.0)
+    return max_distance <= 0.0 or float(distance or 0.0) <= max_distance
 
 
 def hunter_target_ground_z_delta(
@@ -2173,6 +2539,23 @@ def should_use_engagement_gate_for_target_source(source: TargetSource | str) -> 
     return target_source_value(source) in {item.value for item in TargetSource}
 
 
+def required_target_api_candidate(
+    args: argparse.Namespace,
+    observed,
+) -> EngagementCandidate:
+    return EngagementCandidate(
+        object_id=int(getattr(observed, "object_id", 0) or 0),
+        name=str(getattr(observed, "name", "") or ""),
+        level=int(getattr(observed, "level", 0) or 0),
+        x=int(getattr(observed, "x", 0) or 0),
+        y=int(getattr(observed, "y", 0) or 0),
+        z=int(getattr(observed, "z", 0) or 0),
+        source=TargetSource.current_target_api_refresh,
+        intent=TargetIntent.required_retaliation if is_required_target(args, observed) else TargetIntent.objective,
+        npc=observed,
+    )
+
+
 def _target_gate_actor(candidate: EngagementCandidate):
     if candidate.npc is not None:
         return candidate.npc
@@ -2218,6 +2601,8 @@ def _target_decision(
     should_update_current_target: bool = False,
     should_publish_party_leader_target: bool = False,
     should_mark_leader_engaged: bool = False,
+    should_publish_party_shared_target: bool = False,
+    should_publish_party_shared_engaged: bool = False,
 ) -> TargetDecision:
     return TargetDecision(
         allowed=allowed,
@@ -2230,6 +2615,8 @@ def _target_decision(
         should_update_current_target=should_update_current_target,
         should_publish_party_leader_target=should_publish_party_leader_target,
         should_mark_leader_engaged=should_mark_leader_engaged,
+        should_publish_party_shared_target=should_publish_party_shared_target,
+        should_publish_party_shared_engaged=should_publish_party_shared_engaged,
     )
 
 
@@ -2249,6 +2636,10 @@ def _reject_engagement_candidate(
     )
 
 
+def engagement_candidate_level_allowed(args: argparse.Namespace, client, actor) -> bool:
+    return required_target_level_allowed(args, actor) or preferred_low_con_fallback_allowed(args, client, actor)
+
+
 def evaluate_engagement_candidate(
     candidate: EngagementCandidate,
     context: EngagementContext,
@@ -2260,7 +2651,74 @@ def evaluate_engagement_candidate(
     intent = candidate.intent
     intent_name = target_intent_value(intent)
     source_name = target_source_value(source)
+    leader_objective_reacquire = bool(
+        source_name == TargetSource.leader_target_reacquire.value
+        and intent_name == TargetIntent.objective.value
+        and context.is_party_leader
+    )
+    ready_objective_party_assist = bool(
+        source_name == TargetSource.party_assist.value
+        and intent_name == TargetIntent.objective.value
+        and context.is_party_follower
+        and context.leader_engaged
+    )
+    leader_engaged_objective_party_assist = bool(
+        source_name in {TargetSource.party_assist.value, TargetSource.leader_target_reacquire.value}
+        and intent_name in {TargetIntent.objective.value, TargetIntent.party_assist.value}
+        and context.is_party_follower
+        and context.leader_engaged
+    )
+    active_current_target_preserve = bool(
+        source_name == TargetSource.current_target_preserve.value
+        and int(context.current_target or 0) == int(candidate.object_id or 0)
+        and intent_name
+        in {
+            TargetIntent.objective.value,
+            TargetIntent.required_retaliation.value,
+            TargetIntent.party_assist.value,
+            TargetIntent.party_rescue.value,
+            TargetIntent.current_target_confirm.value,
+        }
+    )
     actor = _target_gate_actor(candidate)
+    leader_engaged_party_action = bool(
+        context.leader_engaged
+        and (
+            source_name
+            in {
+                TargetSource.party_assist.value,
+                TargetSource.leader_target_reacquire.value,
+                TargetSource.party_rescue.value,
+            }
+            or (
+                source_name == TargetSource.local_rescue.value
+                and intent_name
+                in {
+                    TargetIntent.party_rescue.value,
+                    TargetIntent.required_retaliation.value,
+                }
+            )
+        )
+    )
+    leader_engaged_party_rescue_target = bool(
+        leader_engaged_party_action
+        and intent_name
+        in {
+            TargetIntent.party_rescue.value,
+            TargetIntent.required_retaliation.value,
+        }
+        and should_accept_party_rescue_target(args, actor)
+    )
+    accepted_party_rescue_target = bool(
+        (
+            intent_name == TargetIntent.party_rescue.value
+            or (
+                source_name == TargetSource.party_rescue.value
+                and intent_name == TargetIntent.required_retaliation.value
+            )
+        )
+        and should_accept_party_rescue_target(args, actor)
+    )
 
     if int(candidate.object_id or 0) <= 0:
         return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="invalid_target")
@@ -2277,29 +2735,60 @@ def evaluate_engagement_candidate(
     if context.drop_aggro_active or behavior_state_value(context.behavior_state) == DummyBehaviorState.DropAggroAndRecover.value:
         return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="drop_aggro_active")
 
-    if is_objective_travel_state(context.behavior_state) and intent_name not in {
-        TargetIntent.objective.value,
-        TargetIntent.required_retaliation.value,
-        TargetIntent.current_target_confirm.value,
-    }:
+    if not can_select_hostile_target(context.behavior_state):
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="state_blocks_hostile_commit")
+
+    if should_ignore_non_objective_target(context.behavior_state, intent) and not leader_engaged_party_action:
         return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="travel_non_objective")
 
-    if not required_target_level_allowed(args, actor):
+    if (
+        context.is_party_follower
+        and bool(getattr(args, "party_assist_only", False))
+        and source_name == TargetSource.hunter_selection.value
+        and not leader_engaged_party_action
+    ):
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="party_assist_only")
+
+    if (
+        source_name in {TargetSource.party_assist.value, TargetSource.leader_target_reacquire.value}
+        and not can_party_assist(context.behavior_state)
+        and not (leader_objective_reacquire or ready_objective_party_assist)
+    ):
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="state_blocks_party_assist")
+
+    if (
+        not engagement_candidate_level_allowed(args, client, actor)
+        and not leader_engaged_party_action
+        and not accepted_party_rescue_target
+    ):
         return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="level_filter")
 
-    if not target_within_required_home(args, actor):
+    if not target_within_required_home(args, actor) and not leader_engaged_party_rescue_target:
         return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="target_home_max_distance")
 
-    if not target_within_selection_distance(client, args, actor):
+    if not target_within_selection_distance(client, args, actor) and not (
+        (
+            leader_engaged_party_rescue_target
+            or leader_engaged_objective_party_assist
+            or active_current_target_preserve
+        )
+        and target_within_combat_home_leash(args, actor)
+    ):
         return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="max_target_distance")
 
-    leash_violated, _leash_kind, _leash_distance = target_home_leash_violation(client, args, actor)
-    if leash_violated:
+    leash_violated, leash_kind, _leash_distance = target_home_leash_violation(client, args, actor)
+    if leash_violated and not (
+        (leader_engaged_party_action or accepted_party_rescue_target)
+        and leash_kind == "player"
+        and target_within_combat_home_leash(args, actor)
+    ):
         return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="combat_home_leash")
 
     if (
         required_target_home_destination(args) is not None
         and intent_name in {TargetIntent.objective.value, TargetIntent.required_retaliation.value}
+        and not leader_engaged_objective_party_assist
+        and not active_current_target_preserve
         and not (context.objective_home_reached or context.objective_hunt_ready)
     ):
         return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="objective_home_not_ready")
@@ -2307,12 +2796,14 @@ def evaluate_engagement_candidate(
     if (
         source_name in {TargetSource.party_assist.value, TargetSource.leader_target_reacquire.value}
         and not context.party_ready
+        and not leader_engaged_objective_party_assist
     ):
         return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="party_not_ready")
 
     if (
         source_name in {TargetSource.party_assist.value, TargetSource.leader_target_reacquire.value}
         and bool(getattr(args, "party_require_leader_engaged", False))
+        and context.is_party_follower
         and not context.leader_engaged
     ):
         return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="leader_not_engaged")
@@ -2348,9 +2839,176 @@ def evaluate_engagement_candidate(
     )
 
 
+def evaluate_required_target_api_observation(
+    args: argparse.Namespace,
+    observed,
+    context: EngagementContext,
+    client,
+    party_snapshot,
+) -> TargetDecision:
+    return evaluate_engagement_candidate(
+        required_target_api_candidate(args, observed),
+        context,
+        client,
+        args,
+        party_snapshot,
+    )
+
+
+def evaluate_objective_pressure_interrupt_candidate(
+    args: argparse.Namespace,
+    npc,
+    *,
+    source: TargetSource | str,
+    intent: TargetIntent | str,
+    current_health_percent: int,
+    required_home_hunt_ready: bool,
+    context: EngagementContext,
+    client,
+    party_snapshot,
+) -> TargetDecision | None:
+    if not should_interrupt_drop_aggro_for_required_objective_pressure(
+        args,
+        context.behavior_state,
+        npc,
+        intent,
+        current_health_percent=current_health_percent,
+        required_home_hunt_ready=required_home_hunt_ready,
+    ):
+        return None
+
+    interrupt_context = replace(
+        context,
+        behavior_state=DummyBehaviorState.HuntObjective,
+        drop_aggro_active=False,
+        rest_active=False,
+        flee_active=False,
+    )
+    return evaluate_engagement_candidate(
+        engagement_candidate_from_actor(npc, source=source, intent=intent),
+        interrupt_context,
+        client,
+        args,
+        party_snapshot,
+    )
+
+
+def evaluate_active_combat_focus_commit(
+    args: argparse.Namespace,
+    active_combat: dict[str, float | int | str] | None,
+    context: EngagementContext,
+    client,
+    party_snapshot,
+) -> TargetDecision:
+    actor = actor_from_active_combat(active_combat)
+    active_intent = active_combat_intent(active_combat)
+    if not active_intent or active_intent == TargetIntent.none.value:
+        active_intent = target_intent_value(context.current_target_intent)
+    if not active_intent or active_intent == TargetIntent.none.value:
+        active_intent = TargetIntent.party_rescue.value
+
+    decision = evaluate_engagement_candidate(
+        engagement_candidate_from_actor(
+            actor,
+            source=TargetSource.current_target_preserve,
+            intent=active_intent,
+        ),
+        context,
+        client,
+        args,
+        party_snapshot,
+    )
+    if not decision.allowed:
+        return decision
+
+    return replace(
+        decision,
+        should_publish_party_leader_target=False,
+        should_mark_leader_engaged=False,
+    )
+
+
+def leader_target_actor_from_snapshot(party_snapshot: dict[str, int | float | str]):
+    target_id = int(party_snapshot.get("leader_target_id", 0) or 0)
+    if target_id <= 0:
+        return None
+
+    return SimpleNamespace(
+        object_id=target_id,
+        name=str(party_snapshot.get("leader_target_name", "") or "leader target"),
+        x=int(party_snapshot.get("leader_target_x", 0) or 0),
+        y=int(party_snapshot.get("leader_target_y", 0) or 0),
+        z=int(party_snapshot.get("leader_target_z", 0) or 0),
+        level=int(party_snapshot.get("leader_target_level", 0) or 0),
+        flags=0,
+    )
+
+
+def evaluate_party_assist_leader_target(
+    args: argparse.Namespace,
+    party_snapshot: dict[str, int | float | str],
+    context: EngagementContext,
+    client,
+) -> TargetDecision:
+    return evaluate_engagement_candidate(
+        engagement_candidate_from_actor(
+            leader_target_actor_from_snapshot(party_snapshot),
+            source=TargetSource.party_assist,
+            intent=TargetIntent.party_assist,
+        ),
+        context,
+        client,
+        args,
+        party_snapshot,
+    )
+
+
 def _target_gate_reject_action_name(reason: str) -> str:
     suffix = re.sub(r"[^a-z0-9_]+", "_", str(reason or "unknown").strip().lower()).strip("_")
     return f"target_gate_rejected_{suffix or 'unknown'}"
+
+
+QUIET_TARGET_GATE_REJECT_REASONS = {"party_assist_only"}
+
+
+def leader_current_target_republish_decision(decision: TargetDecision) -> TargetDecision:
+    if not decision.allowed:
+        return decision
+
+    return replace(
+        decision,
+        should_target_object=False,
+        should_update_current_target=False,
+        should_publish_party_leader_target=True,
+        should_mark_leader_engaged=False,
+    )
+
+
+def party_shared_target_publish_decision(decision: TargetDecision, *, engaged: bool = False) -> TargetDecision:
+    if not decision.allowed:
+        return decision
+
+    return replace(
+        decision,
+        should_target_object=False,
+        should_update_current_target=False,
+        should_publish_party_leader_target=False,
+        should_mark_leader_engaged=False,
+        should_publish_party_shared_target=True,
+        should_publish_party_shared_engaged=bool(engaged),
+    )
+
+
+def mark_party_leader_target_engaged(party_state, target_id: int) -> bool:
+    if party_state is None or not hasattr(party_state, "mark_leader_target_engaged"):
+        return False
+
+    target_id = int(target_id or 0)
+    if target_id <= 0:
+        return False
+
+    party_state.mark_leader_target_engaged(target_id)
+    return True
 
 
 def commit_target(
@@ -2370,10 +3028,11 @@ def commit_target(
     candidate = decision.candidate
 
     if not decision.allowed:
-        if action_counts is not None:
+        quiet_reject = str(decision.reject_reason or "") in QUIET_TARGET_GATE_REJECT_REASONS
+        if action_counts is not None and not quiet_reject:
             add_action(action_counts, "target_gate_rejected")
             add_action(action_counts, _target_gate_reject_action_name(decision.reject_reason))
-        if log_event is not None:
+        if log_event is not None and not quiet_reject:
             log_event(
                 "target_gate_rejected",
                 now,
@@ -2392,6 +3051,7 @@ def commit_target(
             target_object_called=False,
             current_target_updated=False,
             party_leader_target_published=False,
+            party_shared_target_published=False,
         )
 
     target_object_called = False
@@ -2423,9 +3083,14 @@ def commit_target(
     if (
         decision.should_mark_leader_engaged
         and party_state is not None
-        and hasattr(party_state, "mark_leader_target_engaged")
     ):
-        party_state.mark_leader_target_engaged(candidate.object_id)
+        mark_party_leader_target_engaged(party_state, candidate.object_id)
+
+    party_shared_target_published = False
+    if decision.should_publish_party_shared_target and party_state is not None:
+        target_actor = candidate.npc if candidate.npc is not None else _target_gate_actor(candidate)
+        party_state.update_shared_target(target_actor, engaged=decision.should_publish_party_shared_engaged)
+        party_shared_target_published = True
 
     return TargetCommitResult(
         current_target=updated_current_target,
@@ -2435,6 +3100,7 @@ def commit_target(
         target_object_called=target_object_called,
         current_target_updated=current_target_updated,
         party_leader_target_published=party_leader_target_published,
+        party_shared_target_published=party_shared_target_published,
     )
 
 
@@ -2443,6 +3109,431 @@ def is_objective_travel_state(state: DummyBehaviorState | str) -> bool:
         DummyBehaviorState.TravelToObjective.value,
         DummyBehaviorState.ReturnToObjective.value,
     }
+
+
+def can_select_hostile_target(state: DummyBehaviorState | str) -> bool:
+    return behavior_state_value(state) not in {
+        DummyBehaviorState.Startup.value,
+        DummyBehaviorState.DropAggroAndRecover.value,
+        DummyBehaviorState.RestRecover.value,
+        DummyBehaviorState.DeadReleaseRecover.value,
+    }
+
+
+def can_party_assist(state: DummyBehaviorState | str) -> bool:
+    return behavior_state_value(state) == DummyBehaviorState.HuntObjective.value
+
+
+def should_ignore_non_objective_target(
+    state: DummyBehaviorState | str,
+    current_target_intent: TargetIntent | str,
+) -> bool:
+    if not is_objective_travel_state(state):
+        return False
+
+    return target_intent_value(current_target_intent) not in {
+        TargetIntent.objective.value,
+        TargetIntent.required_retaliation.value,
+        TargetIntent.party_rescue.value,
+        TargetIntent.current_target_confirm.value,
+    }
+
+
+def can_start_or_refresh_flee(state: DummyBehaviorState | str) -> bool:
+    return behavior_state_value(state) not in {
+        DummyBehaviorState.Startup.value,
+        DummyBehaviorState.DeadReleaseRecover.value,
+    }
+
+
+def can_rest_recover(state: DummyBehaviorState | str) -> bool:
+    return behavior_state_value(state) not in {
+        DummyBehaviorState.Startup.value,
+        DummyBehaviorState.DeadReleaseRecover.value,
+    }
+
+
+def should_extend_round_for_safe_exit(
+    args: argparse.Namespace,
+    state: DummyBehaviorState | str,
+    *,
+    now: float,
+    end_time: float,
+    safe_exit_deadline: float,
+    health_percent: int,
+    current_target: int,
+    last_damage_taken_at: float,
+    last_incoming_damage_at: float,
+    flee_until: float,
+    rest_until: float,
+    active_threat: bool = False,
+) -> bool:
+    if now < end_time:
+        return False
+
+    if max(0.0, float(getattr(args, "safe_exit_max_seconds", 0.0) or 0.0)) <= 0.0:
+        return False
+
+    if now >= safe_exit_deadline:
+        return False
+
+    state_value = behavior_state_value(state)
+    if state_value in {
+        DummyBehaviorState.DropAggroAndRecover.value,
+        DummyBehaviorState.HandleTravelAggro.value,
+        DummyBehaviorState.DeadReleaseRecover.value,
+    }:
+        return True
+
+    if flee_until > now:
+        return True
+
+    if current_target > 0:
+        return True
+
+    if active_threat:
+        return True
+
+    health = int(health_percent or 0)
+    resume_threshold = int(getattr(args, "low_health_rest_resume_percent", 0) or 0)
+    if health <= 0 or (resume_threshold > 0 and health < resume_threshold):
+        return True
+
+    if state_value == DummyBehaviorState.RestRecover.value and rest_until > now:
+        return True
+
+    damage_grace = max(0.0, float(getattr(args, "safe_exit_recent_damage_grace", 0.0) or 0.0))
+    if damage_grace > 0.0:
+        last_damage_at = max(float(last_damage_taken_at or 0.0), float(last_incoming_damage_at or 0.0))
+        if last_damage_at > 0.0 and 0.0 <= now - last_damage_at <= damage_grace:
+            return True
+
+    return False
+
+
+def recent_safe_exit_damage_age(
+    *,
+    now: float,
+    last_damage_taken_at: float,
+    last_incoming_damage_at: float,
+) -> float | None:
+    last_damage_at = max(float(last_damage_taken_at or 0.0), float(last_incoming_damage_at or 0.0))
+    if last_damage_at <= 0.0:
+        return None
+    return max(0.0, float(now or 0.0) - last_damage_at)
+
+
+def required_target_completion_needs_safe_exit(
+    args: argparse.Namespace,
+    *,
+    now: float,
+    health_percent: int,
+    last_damage_taken_at: float,
+    last_incoming_damage_at: float,
+) -> bool:
+    if max(0.0, float(getattr(args, "safe_exit_max_seconds", 0.0) or 0.0)) <= 0.0:
+        return False
+
+    health = int(health_percent or 0)
+    resume_threshold = int(getattr(args, "low_health_rest_resume_percent", 0) or 0)
+    if health <= 0 or (resume_threshold > 0 and health < resume_threshold):
+        return True
+
+    damage_grace = max(0.0, float(getattr(args, "safe_exit_recent_damage_grace", 0.0) or 0.0))
+    if damage_grace <= 0.0:
+        return False
+
+    recent_damage_age = recent_safe_exit_damage_age(
+        now=now,
+        last_damage_taken_at=last_damage_taken_at,
+        last_incoming_damage_at=last_incoming_damage_at,
+    )
+    return bool(recent_damage_age is not None and recent_damage_age <= damage_grace)
+
+
+def required_target_completion_safe_after_removed(
+    args: argparse.Namespace,
+    state: DummyBehaviorState | str,
+    *,
+    now: float,
+    health_percent: int,
+    current_target: int,
+    last_damage_taken_at: float,
+    last_incoming_damage_at: float,
+    flee_until: float,
+    rest_until: float,
+) -> bool:
+    if int(current_target or 0) > 0:
+        return False
+    if flee_until > now or rest_until > now:
+        return False
+    if behavior_state_value(state) in {
+        DummyBehaviorState.DropAggroAndRecover.value,
+        DummyBehaviorState.HandleTravelAggro.value,
+        DummyBehaviorState.RestRecover.value,
+        DummyBehaviorState.DeadReleaseRecover.value,
+    }:
+        return False
+
+    return not required_target_completion_needs_safe_exit(
+        args,
+        now=now,
+        health_percent=health_percent,
+        last_damage_taken_at=last_damage_taken_at,
+        last_incoming_damage_at=last_incoming_damage_at,
+    )
+
+
+def should_disengage_current_target_for_safe_exit(
+    args: argparse.Namespace,
+    state: DummyBehaviorState | str,
+    *,
+    current_target: int,
+    health_percent: int,
+    recent_damage_age_seconds: float | None,
+) -> bool:
+    if int(current_target or 0) <= 0:
+        return False
+    if not can_start_or_refresh_flee(state):
+        return False
+    if behavior_state_value(state) == DummyBehaviorState.DropAggroAndRecover.value:
+        return False
+    if not bool(getattr(args, "safe_exit_disengage_current_target", True)):
+        return False
+
+    resume_threshold = max(1, int(getattr(args, "low_health_rest_resume_percent", 0) or 0))
+    if int(health_percent or 0) < resume_threshold:
+        return True
+
+    damage_grace = max(1.0, float(getattr(args, "safe_exit_recent_damage_grace", 0.0) or 0.0))
+    if recent_damage_age_seconds is not None and float(recent_damage_age_seconds) <= damage_grace:
+        return True
+
+    return True
+
+
+def refresh_safe_exit_deadline_after_target_removed(
+    args: argparse.Namespace,
+    *,
+    safe_exit_active: bool,
+    safe_exit_deadline: float,
+    now: float,
+) -> float:
+    return refresh_safe_exit_deadline_for_recovery(
+        args,
+        safe_exit_active=safe_exit_active,
+        safe_exit_deadline=safe_exit_deadline,
+        now=now,
+    )
+
+
+def refresh_safe_exit_deadline_for_recovery(
+    args: argparse.Namespace,
+    *,
+    safe_exit_active: bool,
+    safe_exit_deadline: float,
+    now: float,
+) -> float:
+    if not safe_exit_active:
+        return safe_exit_deadline
+
+    recovery_window = max(0.0, float(getattr(args, "safe_exit_max_seconds", 0.0) or 0.0))
+    if recovery_window <= 0.0:
+        return safe_exit_deadline
+
+    return max(float(safe_exit_deadline or 0.0), float(now or 0.0) + recovery_window)
+
+
+def safe_exit_deadline_can_complete_recovered(
+    args: argparse.Namespace,
+    state: DummyBehaviorState | str,
+    *,
+    now: float,
+    health_percent: int,
+    current_target: int,
+    flee_until: float,
+    last_damage_taken_at: float,
+    last_incoming_damage_at: float,
+    rest_until: float = 0.0,
+) -> bool:
+    if int(current_target or 0) > 0 or float(flee_until or 0.0) > float(now or 0.0):
+        return False
+
+    if behavior_state_value(state) not in {
+        DummyBehaviorState.RestRecover.value,
+        DummyBehaviorState.ReturnToObjective.value,
+        DummyBehaviorState.HuntObjective.value,
+    }:
+        return False
+
+    damage_grace = max(0.0, float(getattr(args, "safe_exit_recent_damage_grace", 0.0) or 0.0))
+    recent_damage_age = recent_safe_exit_damage_age(
+        now=now,
+        last_damage_taken_at=last_damage_taken_at,
+        last_incoming_damage_at=last_incoming_damage_at,
+    )
+    if (
+        behavior_state_value(state) == DummyBehaviorState.RestRecover.value
+        and float(rest_until or 0.0) > float(now or 0.0)
+        and int(health_percent or 0) > 0
+        and (recent_damage_age is None or recent_damage_age > damage_grace)
+    ):
+        return True
+
+    recovery_floor = max(1, int(getattr(args, "low_health_rest_percent", 0) or 0))
+    if int(health_percent or 0) < recovery_floor:
+        return False
+
+    return bool(recent_damage_age is None or recent_damage_age > damage_grace)
+
+
+def should_drop_new_damage_during_safe_exit(
+    *,
+    safe_exit_active: bool,
+    current_target: int,
+    current_health_percent: int,
+    previous_health_percent: int,
+    last_damage_attacker_name: str = "",
+) -> bool:
+    return bool(
+        safe_exit_active
+        and current_target <= 0
+        and current_health_percent > 0
+        and previous_health_percent > 0
+        and current_health_percent < previous_health_percent
+        and str(last_damage_attacker_name or "").strip()
+    )
+
+
+def should_replace_flee_plan(
+    current_plan: FleePlan | None,
+    *,
+    now: float,
+    priority: int,
+) -> bool:
+    if current_plan is None:
+        return True
+    if float(current_plan.locked_until or 0.0) <= float(now or 0.0):
+        return True
+    return int(priority or 0) > int(current_plan.priority or 0)
+
+
+def flee_damage_replan_priority(args: argparse.Namespace, health_percent: int) -> int:
+    critical_threshold = int(getattr(args, "flee_critical_health_percent", 0) or 0)
+    if critical_threshold > 0 and 0 < int(health_percent or 0) <= critical_threshold:
+        return 120
+    return 100
+
+
+def _fsm_recovery_floor(args: argparse.Namespace) -> int:
+    return max(
+        int(getattr(args, "required_target_recover_before_home_health_percent", 0) or 0),
+        int(getattr(args, "low_health_rest_resume_percent", 0) or 0),
+        int(getattr(args, "party_melee_survival_resume_health_percent", 0) or 0),
+    )
+
+
+def can_objective_pressure_interrupt(
+    state: DummyBehaviorState | str,
+    health_percent: int,
+    context,
+    args: argparse.Namespace,
+) -> bool:
+    if behavior_state_value(state) != DummyBehaviorState.DropAggroAndRecover.value:
+        return False
+    if not bool(getattr(context, "required_home_hunt_ready", False)):
+        return False
+
+    commit_floor = int(getattr(args, "required_target_tank_commit_health_percent", 0) or 0)
+    if commit_floor > 0 and int(health_percent or 0) <= commit_floor:
+        return False
+
+    recovery_floor = _fsm_recovery_floor(args)
+    if recovery_floor > 0 and int(health_percent or 0) < recovery_floor:
+        return False
+
+    return int(health_percent or 0) > 0
+
+
+def can_preserve_committed_hostile_target(
+    behavior_state: DummyBehaviorState | str,
+    current_target_intent: TargetIntent | str = TargetIntent.none,
+    *,
+    flee_active: bool = False,
+    rest_active: bool = False,
+    drop_aggro_active: bool = False,
+) -> bool:
+    if flee_active or rest_active or drop_aggro_active:
+        return False
+
+    state_value = behavior_state_value(behavior_state)
+    if state_value in {
+        DummyBehaviorState.Startup.value,
+        DummyBehaviorState.DropAggroAndRecover.value,
+        DummyBehaviorState.RestRecover.value,
+        DummyBehaviorState.DeadReleaseRecover.value,
+    }:
+        return False
+
+    if is_objective_travel_state(state_value):
+        return target_intent_value(current_target_intent) in {
+            TargetIntent.objective.value,
+            TargetIntent.required_retaliation.value,
+            TargetIntent.party_rescue.value,
+            TargetIntent.current_target_confirm.value,
+        }
+
+    return True
+
+
+def can_enable_hostile_attack_mode(
+    behavior_state: DummyBehaviorState | str,
+    current_target: int,
+    current_target_intent: TargetIntent | str = TargetIntent.none,
+    *,
+    flee_active: bool = False,
+    rest_active: bool = False,
+    drop_aggro_active: bool = False,
+) -> bool:
+    if int(current_target or 0) <= 0:
+        return False
+
+    return can_preserve_committed_hostile_target(
+        behavior_state,
+        current_target_intent,
+        flee_active=flee_active,
+        rest_active=rest_active,
+        drop_aggro_active=drop_aggro_active,
+    )
+
+
+def can_commit_required_retaliation(
+    state: DummyBehaviorState | str,
+    health_percent: int,
+    context,
+    args: argparse.Namespace,
+) -> bool:
+    if behavior_state_value(state) in {
+        DummyBehaviorState.DropAggroAndRecover.value,
+        DummyBehaviorState.RestRecover.value,
+        DummyBehaviorState.DeadReleaseRecover.value,
+    }:
+        return False
+    if int(health_percent or 0) <= 0:
+        return False
+
+    required_home_hunt_ready = bool(getattr(context, "required_home_hunt_ready", False))
+    party_ready_for_objective = bool(getattr(context, "party_ready_for_objective", True))
+    direct_required_damage_to_active_tank = bool(getattr(context, "direct_required_damage_to_active_tank", False))
+    objective_pressure_active = bool(getattr(context, "objective_pressure_active", False))
+    return should_commit_required_retaliation_for_objective(
+        args,
+        state,
+        required_home_hunt_ready=required_home_hunt_ready,
+        party_ready_for_objective=party_ready_for_objective,
+        direct_required_damage_to_active_tank=direct_required_damage_to_active_tank,
+        objective_pressure_active=objective_pressure_active,
+    )
 
 
 def should_allow_scheduled_rest(behavior_state: DummyBehaviorState | str, current_target: int) -> bool:
@@ -2659,11 +3750,10 @@ def should_allow_target_selection_for_behavior_state(
     npc,
     current_target_intent: TargetIntent | str = TargetIntent.none,
 ) -> bool:
-    state = behavior_state_value(behavior_state)
-    if state in {
-        DummyBehaviorState.DropAggroAndRecover.value,
-        DummyBehaviorState.RestRecover.value,
-    }:
+    if not can_select_hostile_target(behavior_state):
+        return False
+
+    if should_ignore_non_objective_target(behavior_state, current_target_intent):
         return False
 
     if should_handle_travel_aggro_target(args, behavior_state, npc, current_target_intent):
@@ -2682,7 +3772,7 @@ def should_allow_counterattack_for_behavior_state(
 
 
 def should_allow_party_assist_for_behavior_state(behavior_state: DummyBehaviorState | str) -> bool:
-    return behavior_state_value(behavior_state) != DummyBehaviorState.DropAggroAndRecover.value
+    return can_party_assist(behavior_state)
 
 
 def should_clear_party_ready_for_behavior_state(behavior_state: DummyBehaviorState | str) -> bool:
@@ -2742,6 +3832,14 @@ def clear_party_leader_target_on_removed_object(
     if party_state is None or (not is_party_leader and not party_assist_only):
         return False
 
+    if not is_party_leader:
+        snapshot = party_state.snapshot()
+        if (
+            int(snapshot.get("leader_target_id", 0) or 0) == int(removed_object_id or 0)
+            and float(snapshot.get("leader_target_engaged_at", 0.0) or 0.0) > 0.0
+        ):
+            return False
+
     if not party_state.clear_leader_target_if_match(removed_object_id):
         return False
 
@@ -2756,21 +3854,32 @@ def should_commit_required_retaliation_for_objective(
     required_home_hunt_ready: bool,
     party_ready_for_objective: bool,
     direct_required_damage_to_active_tank: bool = False,
+    objective_pressure_active: bool = False,
 ) -> bool:
     state = behavior_state_value(behavior_state)
     if state == DummyBehaviorState.DropAggroAndRecover.value:
         return False
 
-    block_direct_tank_retaliation = (
+    block_unready_travel_retaliation = (
         bool(getattr(args, "party_block_solo_required_retaliation", False))
         and is_objective_travel_state(state)
+        and not party_ready_for_objective
     )
     allow_direct_tank_retaliation = (
         direct_required_damage_to_active_tank
         and required_home_hunt_ready
-        and not block_direct_tank_retaliation
+        and not block_unready_travel_retaliation
     )
-    if not party_ready_for_objective and not allow_direct_tank_retaliation:
+    allow_objective_pressure_retaliation = (
+        objective_pressure_active
+        and required_home_hunt_ready
+        and not block_unready_travel_retaliation
+    )
+    if (
+        not party_ready_for_objective
+        and not allow_direct_tank_retaliation
+        and not allow_objective_pressure_retaliation
+    ):
         return False
 
     if state in {
@@ -2813,6 +3922,7 @@ def should_publish_combat_start_as_leader_target(
             TargetIntent.objective.value,
             TargetIntent.required_retaliation.value,
             TargetIntent.party_rescue.value,
+            TargetIntent.enemy_player.value,
         }
     )
 
@@ -2832,8 +3942,13 @@ def publish_combat_start_as_leader_target(
     ):
         return False
 
-    party_state.update_leader(client, target, engaged=False)
-    return True
+    target_id = int(getattr(target, "object_id", 0) or 0)
+    snapshot = party_state.snapshot()
+    if target_id <= 0 or int(snapshot.get("leader_target_id", 0) or 0) != target_id:
+        return False
+
+    party_state.update_leader(client)
+    return mark_party_leader_target_engaged(party_state, target_id)
 
 
 def should_hold_initial_required_retaliation_multi_aggro(
@@ -2874,6 +3989,7 @@ def should_delay_target_selection_until_objective_ready(
     party_ready_for_objective: bool,
     is_party_follower: bool = False,
     leader_engaged: bool = True,
+    objective_pressure_active: bool = False,
 ) -> bool:
     if getattr(args, "required_target_home", None) is None:
         return False
@@ -2894,6 +4010,27 @@ def should_delay_target_selection_until_objective_ready(
 
     if (
         is_party_follower
+        and leader_engaged
+        and target_intent
+        in {
+            TargetIntent.objective.value,
+            TargetIntent.party_rescue.value,
+            TargetIntent.required_retaliation.value,
+        }
+    ):
+        return False
+
+    if (
+        objective_pressure_active
+        and required_home_hunt_ready
+        and target_intent == TargetIntent.required_retaliation.value
+    ):
+        if bool(getattr(args, "party_block_solo_required_retaliation", False)) and not party_ready_for_objective:
+            return True
+        return False
+
+    if (
+        is_party_follower
         and getattr(args, "party_require_leader_engaged", False)
         and target_intent == TargetIntent.objective.value
         and not leader_engaged
@@ -2908,15 +4045,49 @@ def should_enter_hunt_for_objective_area_rescue(
     behavior_state: DummyBehaviorState | str,
     *,
     selected_npc_is_rescue: bool,
+    selected_npc_is_required: bool = False,
+    is_party_follower: bool = False,
+    is_active_tank: bool = False,
     required_home_hunt_ready: bool,
     party_ready_for_objective: bool,
 ) -> bool:
+    if selected_npc_is_required and is_party_follower and not is_active_tank:
+        return False
+
     return bool(
         selected_npc_is_rescue
         and getattr(args, "required_target_home", None) is not None
         and is_objective_travel_state(behavior_state)
         and required_home_hunt_ready
         and party_ready_for_objective
+    )
+
+
+def should_healer_support_suppress_hostile_commit(
+    args: argparse.Namespace,
+    action_rotation: str,
+    npc,
+    selected_target_intent: TargetIntent | str,
+    party_snapshot: dict[str, int | float | str] | None,
+) -> bool:
+    if action_rotation != "healer-support":
+        return False
+    if str(getattr(args, "party_encounter_mode", "") or "").lower() != "boss":
+        return False
+    if not is_required_target(args, npc):
+        return False
+    if is_objective_add_target(args, npc):
+        return False
+    if target_intent_value(selected_target_intent) not in {
+        TargetIntent.objective.value,
+        TargetIntent.party_assist.value,
+        TargetIntent.required_retaliation.value,
+    }:
+        return False
+    snapshot = party_snapshot or {}
+    return bool(
+        int(snapshot.get("leader_target_id", 0) or 0) > 0
+        or str(snapshot.get("active_tank_name", "") or "").strip()
     )
 
 
@@ -2934,11 +4105,7 @@ def should_drop_objective_wait_for_recent_damage(
     if last_damage_taken_at <= 0.0 or now - last_damage_taken_at > max(0.0, damage_grace_seconds):
         return False
 
-    return target_intent_value(selected_target_intent) in {
-        TargetIntent.objective.value,
-        TargetIntent.required_retaliation.value,
-        TargetIntent.party_rescue.value,
-    }
+    return False
 
 
 def should_drop_required_retaliation_before_objective_ready(
@@ -3012,8 +4179,31 @@ def should_force_drop_aggro_for_critical_health(
     behavior_state: DummyBehaviorState | str,
     *,
     health_percent: int,
+    party_snapshot: dict[str, int | float | str] | None = None,
+    member_name: str = "",
+    action_rotation: str = "",
+    current_target: int = 0,
+    current_target_intent: TargetIntent | str = TargetIntent.none,
 ) -> bool:
     critical_health = int(getattr(args, "flee_critical_health_percent", 0) or 0)
+    if (
+        critical_health > 0
+        and 0 < int(health_percent or 0) <= critical_health
+        and behavior_state_value(behavior_state) == DummyBehaviorState.HuntObjective.value
+        and should_party_tank_hold_required_objective_for_healer(
+            args,
+            party_snapshot,
+            member_name,
+            {
+                "target_id": int(current_target or 0),
+                "target_name": str((party_snapshot or {}).get("leader_target_name", "") or ""),
+                "intent": target_intent_value(current_target_intent),
+            },
+            health_percent=health_percent,
+        )
+    ):
+        return False
+
     return bool(
         critical_health > 0
         and 0 < health_percent <= critical_health
@@ -3032,7 +4222,7 @@ def next_state_after_drop_aggro_recovery(
     if active_threat:
         return DummyBehaviorState.DropAggroAndRecover
 
-    clear_grace = float(getattr(args, "travel_aggro_clear_grace", 3.0) or 0.0)
+    clear_grace = drop_aggro_damage_clear_grace(args, health_percent=health_percent)
     if last_damage_taken_at > 0.0 and now - last_damage_taken_at < clear_grace:
         return DummyBehaviorState.DropAggroAndRecover
 
@@ -3042,13 +4232,25 @@ def next_state_after_drop_aggro_recovery(
     return DummyBehaviorState.ReturnToObjective
 
 
+def drop_aggro_damage_clear_grace(args: argparse.Namespace, *, health_percent: int | None = None) -> float:
+    clear_grace = float(getattr(args, "travel_aggro_clear_grace", 3.0) or 0.0)
+    if (
+        health_percent is not None
+        and clear_grace >= 20.0
+        and should_rest_after_flee_recovery(args, health_percent=health_percent)
+    ):
+        return max(clear_grace, clear_grace * 2.5)
+    return clear_grace
+
+
 def drop_aggro_clear_grace_remaining(
     args: argparse.Namespace,
     *,
     now: float,
     last_damage_taken_at: float,
+    health_percent: int | None = None,
 ) -> float:
-    clear_grace = float(getattr(args, "travel_aggro_clear_grace", 3.0) or 0.0)
+    clear_grace = drop_aggro_damage_clear_grace(args, health_percent=health_percent)
     if clear_grace <= 0.0 or last_damage_taken_at <= 0.0:
         return 0.0
 
@@ -3356,6 +4558,32 @@ def is_party_objective_add_rescue_threat(
     )
 
 
+def party_objective_add_rescue_max_distance(args: argparse.Namespace) -> float:
+    return max(
+        float(getattr(args, "party_rescue_objective_max_distance", 0.0) or 0.0),
+        float(getattr(args, "party_rescue_max_distance", 0.0) or 0.0),
+        float(getattr(args, "max_target_distance", 2200.0) or 0.0),
+    )
+
+
+def is_party_objective_add_rescue_threat_in_range(
+    client,
+    args: argparse.Namespace,
+    party_snapshot: dict[str, int | float | str] | None,
+    npc,
+    *,
+    proven_objective_add: bool = False,
+) -> bool:
+    if not proven_objective_add and not is_party_objective_add_rescue_threat(args, party_snapshot, npc):
+        return False
+
+    if is_rescue_threat_near_party_objective(args, party_snapshot, npc):
+        return True
+
+    max_distance = party_objective_add_rescue_max_distance(args)
+    return max_distance <= 0.0 or combat_distance_to(client, npc) <= max_distance
+
+
 def is_party_combat_proven_encounter_add(
     args: argparse.Namespace,
     party_snapshot: dict[str, int | float | str] | None,
@@ -3402,7 +4630,7 @@ def choose_party_rescue_attacker(
         and not is_required_target(args, npc)
         and should_accept_party_rescue_target(args, npc)
         and (
-            is_party_objective_add_rescue_threat(args, party_snapshot, npc)
+            is_party_objective_add_rescue_threat_in_range(client, args, party_snapshot, npc)
             if objective_scan_only
             else is_rescue_threat_in_range(
                 client,
@@ -3441,12 +4669,45 @@ KOREAN_INCOMING_DAMAGE_ATTACKER_PATTERN = re.compile(
 )
 
 
+INCOMING_ATTACK_ATTEMPT_PATTERNS = (
+    re.compile(
+        r"^(?P<attacker>.+?)\s+attacks\s+you\s+and\s+"
+        r"(?:hits|misses|is\s+blocked|is\s+parried|is\s+evaded)!?(?:\s+\([^)]*\))?$",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        "^(?P<attacker>.+?)(?:\uc774\\(\uac00\\)|\uac00|\uc774)\\s+"
+        "\uacf5\uaca9\ud588\uc9c0\ub9cc\\s+"
+        "\ube57\ub098\uac14\uc2b5\ub2c8\ub2e4!?(?:\\s+\\([^)]*\\))?$",
+        re.IGNORECASE,
+    ),
+)
+
+
 def parse_incoming_damage_attacker_name(text: str) -> str:
     match = KOREAN_INCOMING_DAMAGE_ATTACKER_PATTERN.match(str(text or "").strip())
     if match is None:
         return ""
 
     return match.group("attacker").strip()
+
+
+def parse_incoming_attack_attacker_name(text: str) -> str:
+    damage_attacker = parse_incoming_damage_attacker_name(text)
+    if damage_attacker:
+        return damage_attacker
+
+    normalized = str(text or "").strip()
+    for pattern in INCOMING_ATTACK_ATTEMPT_PATTERNS:
+        match = pattern.match(normalized)
+        if match is not None:
+            return match.group("attacker").strip()
+
+    return ""
+
+
+def latest_aggro_pressure_at(*, last_damage_taken_at: float, last_incoming_damage_at: float) -> float:
+    return max(float(last_damage_taken_at or 0.0), float(last_incoming_damage_at or 0.0))
 
 
 def parse_korean_incoming_damage_amount(text: str) -> int:
@@ -3694,7 +4955,16 @@ def choose_party_rescue_threat_target(
 
         objective_add = bool(threat.get("objective_add", True))
         distance = combat_distance_to(client, npc)
-        if not objective_add and max_distance > 0.0 and distance > max_distance:
+        if objective_add:
+            if not is_party_objective_add_rescue_threat_in_range(
+                client,
+                args,
+                party_snapshot,
+                npc,
+                proven_objective_add=True,
+            ):
+                continue
+        elif max_distance > 0.0 and distance > max_distance:
             continue
 
         candidates.append(
@@ -3849,14 +5119,154 @@ def current_target_is_party_rescue_target(party_snapshot: dict[str, int | float 
     return bool(current_target > 0 and int(party_snapshot.get("rescue_target_id", 0) or 0) == current_target)
 
 
+def active_combat_has_contact(active_combat: dict[str, float | int | str] | None) -> bool:
+    if active_combat is None:
+        return False
+
+    return any(
+        int(active_combat.get(key, 0) or 0) > 0
+        for key in ("attacks", "skills", "damage_done", "damage_taken")
+    )
+
+
+def active_combat_intent(active_combat: dict[str, float | int | str] | None) -> str:
+    return str((active_combat or {}).get("target_intent", "") or "")
+
+
 def current_target_bypasses_target_home_leash(
     args: argparse.Namespace,
     party_snapshot: dict[str, int | float | str],
     current_target: int,
+    *,
+    current_target_intent: TargetIntent | str = TargetIntent.none,
+    npc=None,
+    active_combat: dict[str, float | int | str] | None = None,
+    leash_reason: str = "",
 ) -> bool:
+    if not getattr(args, "party_rescue_aggro", False) or current_target <= 0:
+        return False
+
+    if leash_reason and leash_reason != "player":
+        return False
+
+    if npc is not None and not target_within_combat_home_leash(args, npc):
+        return False
+
+    if current_target_is_party_rescue_target(party_snapshot, current_target):
+        return True
+
+    current_intent = target_intent_value(current_target_intent)
+    rescue_intents = {TargetIntent.party_rescue.value, TargetIntent.required_retaliation.value}
+    leader_target_id = int(party_snapshot.get("leader_target_id", 0) or 0)
+    leader_engaged = float(party_snapshot.get("leader_target_engaged_at", 0.0) or 0.0) > 0.0
+    if leader_engaged and current_target == leader_target_id and current_intent in rescue_intents:
+        return True
+
+    active_target_id = int((active_combat or {}).get("target_id", 0) or 0)
     return bool(
-        getattr(args, "party_rescue_aggro", False)
-        and current_target_is_party_rescue_target(party_snapshot, current_target)
+        current_intent in rescue_intents
+        and active_target_id == current_target
+        and active_combat_has_contact(active_combat)
+    )
+
+
+def should_preserve_active_party_rescue_focus(
+    args: argparse.Namespace,
+    active_combat: dict[str, float | int | str] | None,
+    current_target: int,
+    current_target_intent: TargetIntent | str,
+) -> bool:
+    if not getattr(args, "party_rescue_aggro", False) or active_combat is None:
+        return False
+
+    active_target_id = int(active_combat.get("target_id", 0) or 0)
+    if active_target_id <= 0:
+        return False
+
+    if current_target > 0 and active_target_id != current_target:
+        return False
+
+    intent = target_intent_value(current_target_intent) or active_combat_intent(active_combat)
+    if intent == TargetIntent.none.value:
+        intent = active_combat_intent(active_combat)
+    if intent not in {TargetIntent.party_rescue.value, TargetIntent.required_retaliation.value} and not active_combat_matches_required_target(args, active_combat):
+        return False
+
+    return active_combat_has_contact(active_combat)
+
+
+def active_combat_matches_preferred_target(args: argparse.Namespace, active_combat: dict[str, float | int | str] | None) -> bool:
+    if active_combat is None:
+        return False
+
+    target_name = str(active_combat.get("target_name", "")).lower()
+    tokens = preferred_target_tokens(args)
+    return bool(target_name and tokens and any(required_target_name_matches(target_name, token) for token in tokens))
+
+
+def should_block_active_combat_target_switch(
+    args: argparse.Namespace,
+    active_combat: dict[str, float | int | str] | None,
+    *,
+    candidate_target_id: int,
+    candidate_target_intent: TargetIntent | str,
+    current_target: int,
+    current_target_intent: TargetIntent | str,
+    behavior_state: DummyBehaviorState | str,
+    flee_active: bool,
+    rest_active: bool,
+    drop_aggro_active: bool,
+) -> bool:
+    if not getattr(args, "party_rescue_aggro", False) or active_combat is None:
+        return False
+
+    active_target_id = int(active_combat.get("target_id", 0) or 0)
+    if active_target_id <= 0 or int(candidate_target_id or 0) <= 0:
+        return False
+    if int(candidate_target_id) == active_target_id:
+        return False
+
+    state = behavior_state_value(behavior_state)
+    if (
+        flee_active
+        or rest_active
+        or drop_aggro_active
+        or state
+        in {
+            DummyBehaviorState.DropAggroAndRecover.value,
+            DummyBehaviorState.RestRecover.value,
+            DummyBehaviorState.DeadReleaseRecover.value,
+        }
+    ):
+        return False
+
+    if not active_combat_has_contact(active_combat):
+        return False
+
+    rescue_intents = {TargetIntent.party_rescue.value, TargetIntent.required_retaliation.value}
+    active_intent = active_combat_intent(active_combat)
+    if active_intent == TargetIntent.none.value:
+        active_intent = ""
+    if not active_intent:
+        active_intent = target_intent_value(current_target_intent)
+
+    candidate_intent = target_intent_value(candidate_target_intent)
+    if (
+        active_intent == TargetIntent.objective.value
+        and active_combat_matches_preferred_target(args, active_combat)
+        and candidate_intent
+        in {
+            TargetIntent.objective.value,
+            TargetIntent.party_assist.value,
+            TargetIntent.party_rescue.value,
+            TargetIntent.current_target_confirm.value,
+        }
+    ):
+        return True
+
+    return bool(
+        active_intent in rescue_intents
+        or active_combat_matches_required_target(args, active_combat)
     )
 
 
@@ -3867,8 +5277,24 @@ def should_abandon_party_rescue_counterattack_for_flee(
     current_target: int,
     current_health_percent: int,
     previous_health_percent: int,
+    member_name: str = "",
 ) -> bool:
     health_floor = int(getattr(args, "flee_melee_counterattack_health_floor", 0) or 0)
+    target_name = ""
+    if int(party_snapshot.get("leader_target_id", 0) or 0) == int(current_target or 0):
+        target_name = str(party_snapshot.get("leader_target_name", "") or "")
+    elif int(party_snapshot.get("rescue_target_id", 0) or 0) == int(current_target or 0):
+        target_name = str(party_snapshot.get("rescue_target_name", "") or "")
+
+    critical_health = int(getattr(args, "flee_critical_health_percent", 0) or 0)
+    if (
+        name_matches_required_target(args, target_name)
+        and party_member_is_active_tank(party_snapshot, member_name)
+        and party_snapshot_has_live_healer_support(party_snapshot, exclude_name=member_name)
+        and (critical_health <= 0 or int(current_health_percent or 0) > critical_health)
+    ):
+        return False
+
     return bool(
         health_floor > 0
         and current_target_bypasses_target_home_leash(args, party_snapshot, current_target)
@@ -4041,7 +5467,16 @@ def choose_party_support_evasion_threat(
             continue
 
         distance = combat_distance_to(client, npc)
-        if not objective_add and max_distance > 0.0 and distance > max_distance:
+        if objective_add:
+            if not is_party_objective_add_rescue_threat_in_range(
+                client,
+                args,
+                party_snapshot,
+                npc,
+                proven_objective_add=True,
+            ):
+                continue
+        elif max_distance > 0.0 and distance > max_distance:
             continue
 
         candidates.append((distance, threat_id, npc))
@@ -4088,6 +5523,200 @@ def choose_follow_player(client, args: argparse.Namespace):
     return min(candidates, key=lambda player: client.distance_to(player))
 
 
+def choose_current_visible_player(players, current_target: int):
+    if int(current_target or 0) <= 0:
+        return None
+
+    return next(
+        (
+            player
+            for player in players
+            if int(getattr(player, "object_id", 0) or 0) == int(current_target)
+        ),
+        None,
+    )
+
+
+def party_snapshot_member_object_ids(party_snapshot: dict[str, object] | None) -> set[int]:
+    if not isinstance(party_snapshot, dict):
+        return set()
+
+    object_ids = {
+        int(party_snapshot.get("leader_object_id", 0) or 0),
+        int(party_snapshot.get("active_tank_object_id", 0) or 0),
+        int(party_snapshot.get("rescue_tank_object_id", 0) or 0),
+    }
+    for member in party_snapshot.get("members", []) or []:
+        if not isinstance(member, dict):
+            continue
+        object_ids.add(int(member.get("object_id", 0) or 0))
+
+    object_ids.discard(0)
+    return object_ids
+
+
+def party_snapshot_member_names(party_snapshot: dict[str, object] | None) -> set[str]:
+    if not isinstance(party_snapshot, dict):
+        return set()
+
+    names = {
+        normalize_target_name(str(party_snapshot.get("leader_name", "") or "")),
+        normalize_target_name(str(party_snapshot.get("active_tank_name", "") or "")),
+        normalize_target_name(str(party_snapshot.get("rescue_tank_name", "") or "")),
+    }
+    for member in party_snapshot.get("members", []) or []:
+        if not isinstance(member, dict):
+            continue
+        names.add(normalize_target_name(str(member.get("name", "") or "")))
+
+    return {name for name in names if name}
+
+
+def target_id_is_party_member(target_id: int, party_snapshot: dict[str, object] | None) -> bool:
+    return int(target_id or 0) > 0 and int(target_id or 0) in party_snapshot_member_object_ids(party_snapshot)
+
+
+def player_is_party_member(player, party_snapshot: dict[str, object] | None) -> bool:
+    object_id = int(getattr(player, "object_id", 0) or 0)
+    if object_id > 0 and object_id in party_snapshot_member_object_ids(party_snapshot):
+        return True
+
+    player_name = normalize_target_name(str(getattr(player, "name", "") or ""))
+    return bool(player_name and player_name in party_snapshot_member_names(party_snapshot))
+
+
+def player_is_rvr_enemy_candidate(
+    client,
+    args: argparse.Namespace,
+    player,
+    *,
+    own_realm: int,
+    party_snapshot: dict[str, object] | None = None,
+    rejected_targets: dict[int, float] | None = None,
+    now: float = 0.0,
+) -> bool:
+    object_id = int(getattr(player, "object_id", 0) or 0)
+    if object_id <= 0:
+        return False
+    if object_id == int(getattr(client, "player_object_id", 0) or 0):
+        return False
+    if rejected_targets is not None and float(rejected_targets.get(object_id, 0.0) or 0.0) > float(now or 0.0):
+        return False
+
+    player_realm = int(getattr(player, "realm", 0) or 0)
+    if player_realm <= 0 or int(own_realm or 0) <= 0 or player_realm == int(own_realm):
+        return False
+    if player_is_party_member(player, party_snapshot):
+        return False
+
+    max_distance = float(getattr(args, "rvr_enemy_player_max_distance", 0.0) or 0.0)
+    if max_distance > 0.0 and combat_distance_to(client, player) > max_distance:
+        return False
+
+    min_level = int(getattr(args, "rvr_enemy_player_min_level", 0) or 0)
+    if min_level > 0 and int(getattr(player, "level", 0) or 0) < min_level:
+        return False
+
+    max_level = int(getattr(args, "rvr_enemy_player_max_level", 0) or 0)
+    if max_level > 0 and int(getattr(player, "level", 0) or 0) > max_level:
+        return False
+
+    name_token = normalize_target_name(str(getattr(args, "rvr_enemy_player_name", "") or ""))
+    if name_token:
+        player_name = normalize_target_name(str(getattr(player, "name", "") or ""))
+        if name_token not in player_name:
+            return False
+
+    return True
+
+
+def choose_rvr_enemy_player(
+    client,
+    args: argparse.Namespace,
+    *,
+    own_realm: int,
+    party_snapshot: dict[str, object] | None = None,
+    rejected_targets: dict[int, float] | None = None,
+    now: float = 0.0,
+    prefer_object_id: int = 0,
+):
+    candidates = [
+        player
+        for player in client.visible_players(max_age=getattr(args, "player_state_max_age", 30.0))
+        if player_is_rvr_enemy_candidate(
+            client,
+            args,
+            player,
+            own_realm=own_realm,
+            party_snapshot=party_snapshot,
+            rejected_targets=rejected_targets,
+            now=now,
+        )
+    ]
+
+    preferred_id = int(prefer_object_id or 0)
+    if preferred_id > 0:
+        preferred = choose_current_visible_player(candidates, preferred_id)
+        if preferred is not None:
+            return preferred
+
+    if not candidates:
+        return None
+
+    return min(candidates, key=lambda player: client.distance_to(player))
+
+
+def choose_named_rvr_enemy_player(
+    client,
+    args: argparse.Namespace,
+    attacker_name: str,
+    *,
+    own_realm: int,
+    party_snapshot: dict[str, object] | None = None,
+    rejected_targets: dict[int, float] | None = None,
+    now: float = 0.0,
+):
+    attacker_key = normalize_target_name(attacker_name)
+    if not attacker_key:
+        return None
+
+    candidates = []
+    for player in client.visible_players(max_age=getattr(args, "player_state_max_age", 30.0)):
+        player_name = normalize_target_name(str(getattr(player, "name", "") or ""))
+        if not player_name or (player_name != attacker_key and attacker_key not in player_name):
+            continue
+        if player_is_rvr_enemy_candidate(
+            client,
+            args,
+            player,
+            own_realm=own_realm,
+            party_snapshot=party_snapshot,
+            rejected_targets=rejected_targets,
+            now=now,
+        ):
+            candidates.append(player)
+
+    if not candidates:
+        return None
+
+    return min(candidates, key=lambda player: client.distance_to(player))
+
+
+def rvr_enemy_player_actor_from_condition_snapshot(snapshot: PlayerConditionSnapshot | None):
+    if snapshot is None or not snapshot.is_alive or int(snapshot.object_id or 0) <= 0:
+        return None
+
+    return SimpleNamespace(
+        object_id=int(snapshot.object_id),
+        name=str(snapshot.name or ""),
+        level=int(snapshot.level or 0),
+        realm=int(snapshot.realm or 0),
+        x=int(snapshot.x or 0),
+        y=int(snapshot.y or 0),
+        z=int(snapshot.z or 0),
+    )
+
+
 def choose_greet_player(
     client,
     args: argparse.Namespace,
@@ -4105,6 +5734,34 @@ def choose_greet_player(
         return None
 
     return min(candidates, key=lambda player: client.distance_to(player))
+
+
+def update_external_party_members_from_visible_players(
+    party_state: PartyState | None,
+    client,
+    args: argparse.Namespace,
+) -> int:
+    if party_state is None:
+        return 0
+
+    configured_names = {
+        normalize_target_name(member_name): member_name
+        for member_name in getattr(args, "party_external_member_names", []) or []
+        if normalize_target_name(member_name)
+    }
+    if not configured_names:
+        return 0
+
+    updated = 0
+    for player in client.visible_players(max_age=getattr(args, "player_state_max_age", 30.0)):
+        configured_name = configured_names.get(normalize_target_name(getattr(player, "name", "")))
+        if not configured_name:
+            continue
+
+        party_state.update_external_member(configured_name, player, role="external")
+        updated += 1
+
+    return updated
 
 
 def choose_ai_persona_name(args: argparse.Namespace, account: DummyAccount, index: int) -> str:
@@ -4266,9 +5923,14 @@ def resolve_effective_action_rotation(
     can_use_raw_skills = bool(getattr(args, "allow_unvalidated_skills", False))
     has_attack_spell = bool(combat_plan.attack_spells) or can_use_raw_spells
     has_heal_spell = bool(combat_plan.heal_spells) or can_use_raw_spells
+    has_support_spell = bool(
+        combat_plan.buff_spells
+        or combat_plan.cure_spells
+        or combat_plan.resurrection_spells
+    )
     has_skill = bool(combat_plan.skills) or can_use_raw_skills
 
-    if requested_rotation == "healer-support" and not has_heal_spell:
+    if requested_rotation == "healer-support" and not has_heal_spell and not has_support_spell:
         if has_attack_spell:
             return "caster-basic"
         if has_skill:
@@ -4286,11 +5948,244 @@ def resolve_effective_action_rotation(
 
 
 TAUNT_SKILL_NAME_TOKENS = ("taunt", "provoke", "enrage", "draw out", "engage")
+RESURRECTION_SPELL_TYPES = {"resurrect"}
+CURE_SPELL_TYPES = {
+    "cureall",
+    "curedisease",
+    "curemezz",
+    "curenearsight",
+    "curenearsightcustom",
+    "curepoison",
+}
+CROWD_CONTROL_SPELL_TYPES = {
+    "amnesia",
+    "befriend",
+    "ceremonialbracermezz",
+    "ceremonialbracerstun",
+    "confusion",
+    "damageSpeeddecrease".lower(),
+    "damageSpeeddecreaseNoVariance".lower(),
+    "fear",
+    "mez",
+    "mesmerize",
+    "petmesmerize",
+    "preventflight",
+    "root",
+    "silence",
+    "snare",
+    "speeddecrease",
+    "styleSpeeddecrease".lower(),
+    "stun",
+    "unbreakablespeeddecrease",
+    "unresistablestun",
+    "unrresistablenonimunitystun",
+    "vampspeeddecrease",
+    "warlockspeeddecrease",
+}
+TAUNT_SPELL_TYPES = {"taunt", "styletaunt"}
+SUMMON_SPELL_TYPE_TOKENS = ("summon", "pet")
+AREA_TARGET_TYPES = {"area", "cone"}
+DOT_SPELL_TYPE_TOKENS = ("damageovertime", "damage_over_time", "dot", "bleed")
+PARTY_PROTECTION_ABILITY_IDS = {
+    7: "protect",
+    8: "guard",
+    9: "intercept",
+    64: "bodyguard",
+}
+PARTY_PROTECTION_ABILITY_NAME_TOKENS = {
+    "bodyguard": "bodyguard",
+    "guard": "guard",
+    "intercept": "intercept",
+    "protect": "protect",
+}
 
 
 def is_taunt_skill(skill: UsableSkillRef) -> bool:
     name = " ".join(str(skill.name or "").lower().split())
     return any(token in name for token in TAUNT_SKILL_NAME_TOKENS)
+
+
+def normalized_spell_type(spell_or_ref) -> str:
+    if isinstance(spell_or_ref, dict):
+        return str(spell_or_ref.get("spellType", "") or "").strip().lower()
+    return str(getattr(spell_or_ref, "spell_type", "") or "").strip().lower()
+
+
+def normalized_spell_target(spell_or_ref) -> str:
+    if isinstance(spell_or_ref, dict):
+        return str(spell_or_ref.get("target", "") or "").strip().lower()
+    return str(getattr(spell_or_ref, "target", "") or "").strip().lower()
+
+
+def is_resurrection_spell_type(spell_type: str) -> bool:
+    return spell_type in RESURRECTION_SPELL_TYPES
+
+
+def is_cure_spell_type(spell_type: str) -> bool:
+    return spell_type in CURE_SPELL_TYPES
+
+
+def is_crowd_control_spell_type(spell_type: str) -> bool:
+    return spell_type in CROWD_CONTROL_SPELL_TYPES or "root" in spell_type or spell_type.endswith("snare")
+
+
+def is_taunt_spell_type(spell_type: str) -> bool:
+    return spell_type in TAUNT_SPELL_TYPES
+
+
+def is_summon_spell_type(spell_type: str) -> bool:
+    return any(token in spell_type for token in SUMMON_SPELL_TYPE_TOKENS)
+
+
+def is_damage_over_time_spell_type(spell_type: str) -> bool:
+    normalized = str(spell_type or "").strip().lower()
+    return any(token in normalized for token in DOT_SPELL_TYPE_TOKENS)
+
+
+def is_area_spell_ref(spell: UsableSpellRef | None) -> bool:
+    if spell is None:
+        return False
+    return float(getattr(spell, "radius", 0) or 0) > 0 or normalized_spell_target(spell) in AREA_TARGET_TYPES
+
+
+def cure_spell_conditions(spell: UsableSpellRef) -> set[str]:
+    spell_type = normalized_spell_type(spell)
+    if spell_type == "cureall":
+        return {"mezz", "disease", "poison", "nearsight", "silence"}
+    if spell_type == "curemezz":
+        return {"mezz"}
+    if spell_type == "curedisease":
+        return {"disease"}
+    if spell_type == "curepoison":
+        return {"poison"}
+    if spell_type in {"curenearsight", "curenearsightcustom"}:
+        return {"nearsight", "silence"}
+    return set()
+
+
+def choose_usable_spell(
+    rng: random.Random,
+    args: argparse.Namespace,
+    spells: list[UsableSpellRef],
+) -> UsableSpellRef:
+    pool = spells[: min(len(spells), int(getattr(args, "combat_plan_spell_pool", 3) or 3))]
+    return rng.choice(pool)
+
+
+def choose_party_heal_spell(
+    args: argparse.Namespace,
+    spells: list[UsableSpellRef],
+) -> UsableSpellRef | None:
+    pool = spells[: min(len(spells), int(getattr(args, "combat_plan_spell_pool", 3) or 3))]
+    if not pool:
+        return None
+
+    return max(
+        pool,
+        key=lambda spell: (
+            int(getattr(spell, "spell_level", 0) or 0),
+            int(getattr(spell, "level", 0) or 0),
+            float(getattr(spell, "damage", 0.0) or 0.0),
+            -int(getattr(spell, "cast_time", 0) or 0),
+        ),
+    )
+
+
+def spell_duration_seconds(spell: UsableSpellRef | None, *, default: float = 18.0) -> float:
+    if spell is None:
+        return default
+
+    duration = float(getattr(spell, "duration", 0) or 0)
+    if duration <= 0:
+        return default
+    if duration > 1000:
+        duration /= 1000.0
+    return duration
+
+
+def dot_refresh_cooldown_seconds(spell: UsableSpellRef | None) -> float:
+    return max(8.0, min(45.0, spell_duration_seconds(spell) * 0.8))
+
+
+def dot_spell_still_active(
+    active_combat: dict[str, object] | None,
+    spell: UsableSpellRef,
+    now: float,
+) -> bool:
+    if active_combat is None:
+        return False
+
+    refresh_until_by_spell = active_combat.get("dot_spell_refresh_until", {})
+    if not isinstance(refresh_until_by_spell, dict):
+        return False
+
+    return float(refresh_until_by_spell.get(str(spell.name), 0.0) or 0.0) > now
+
+
+def choose_dot_spell(
+    rng: random.Random,
+    args: argparse.Namespace,
+    spells: list[UsableSpellRef],
+    *,
+    active_combat: dict[str, object] | None,
+    now: float,
+    area_enemy_count: int = 1,
+) -> UsableSpellRef | None:
+    pool = spells[: min(len(spells), int(getattr(args, "combat_plan_spell_pool", 3) or 3))]
+    available = [
+        spell
+        for spell in pool
+        if not dot_spell_still_active(active_combat, spell, now)
+        and (not is_area_spell_ref(spell) or should_use_area_attack_spells(args, area_enemy_count=area_enemy_count))
+    ]
+    if not available:
+        return None
+    return rng.choice(available)
+
+
+def mark_dot_spell_cast(
+    active_combat: dict[str, object] | None,
+    spell: UsableSpellRef,
+    now: float,
+) -> None:
+    if active_combat is None:
+        return
+
+    refresh_until_by_spell = active_combat.get("dot_spell_refresh_until")
+    if not isinstance(refresh_until_by_spell, dict):
+        refresh_until_by_spell = {}
+        active_combat["dot_spell_refresh_until"] = refresh_until_by_spell
+    refresh_until_by_spell[str(spell.name)] = now + dot_refresh_cooldown_seconds(spell)
+
+
+def area_spell_min_targets(args: argparse.Namespace) -> int:
+    return max(2, int(getattr(args, "area_spell_min_targets", 2) or 2))
+
+
+def should_use_area_attack_spells(args: argparse.Namespace, *, area_enemy_count: int) -> bool:
+    return int(area_enemy_count or 0) >= area_spell_min_targets(args)
+
+
+def choose_area_attack_spell(
+    rng: random.Random,
+    args: argparse.Namespace,
+    spells: list[UsableSpellRef],
+    *,
+    distance: float,
+) -> UsableSpellRef | None:
+    pool = spells[: min(len(spells), int(getattr(args, "combat_plan_spell_pool", 3) or 3))]
+    close_area_spells = [
+        spell
+        for spell in pool
+        if distance <= max(
+            float(getattr(spell, "range", 0) or 0),
+            float(getattr(spell, "radius", 0) or 0),
+            float(getattr(args, "attack_range", 0.0) or 0.0),
+        )
+    ]
+    if not close_area_spells:
+        return None
+    return rng.choice(close_area_spells)
 
 
 def choose_combat_skill(
@@ -4319,6 +6214,9 @@ def perform_rotation_action(
     distance: float,
     combat_plan: CombatUsablePlan | None = None,
     prefer_taunt_skill: bool = False,
+    active_combat: dict[str, object] | None = None,
+    now: float = 0.0,
+    area_enemy_count: int = 1,
 ) -> str | None:
     if rotation == "none":
         return None
@@ -4328,8 +6226,18 @@ def perform_rotation_action(
     stationary_cast = bool(getattr(args, "stationary_cast_actions", False))
     allow_unvalidated_skills = bool(getattr(args, "allow_unvalidated_skills", False))
     allow_unvalidated_spells = bool(getattr(args, "allow_unvalidated_spells", False))
+    effective_now = now if now > 0 else time.monotonic()
 
     if rotation == "melee-basic":
+        if (
+            prefer_taunt_skill
+            and combat_plan is not None
+            and combat_plan.taunt_spells
+            and distance <= args.spell_range
+        ):
+            spell = choose_usable_spell(rng, args, combat_plan.taunt_spells)
+            cast_usable_spell(client, spell, target_in_view=target_in_view, speed=movement_speed, stationary=stationary_cast)
+            return "validated_taunt_spell"
         if distance > args.attack_range:
             return None
         if combat_plan is not None and combat_plan.skills:
@@ -4348,6 +6256,15 @@ def perform_rotation_action(
         return "skill"
 
     if rotation == "melee-burst":
+        if (
+            prefer_taunt_skill
+            and combat_plan is not None
+            and combat_plan.taunt_spells
+            and distance <= args.spell_range
+        ):
+            spell = choose_usable_spell(rng, args, combat_plan.taunt_spells)
+            cast_usable_spell(client, spell, target_in_view=target_in_view, speed=movement_speed, stationary=stationary_cast)
+            return "validated_taunt_spell"
         if distance > args.attack_range:
             return None
         if combat_plan is not None and combat_plan.skills:
@@ -4368,10 +6285,40 @@ def perform_rotation_action(
     if rotation == "caster-basic":
         if distance > args.spell_range:
             return None
+        if prefer_taunt_skill and combat_plan is not None and combat_plan.taunt_spells:
+            spell = choose_usable_spell(rng, args, combat_plan.taunt_spells)
+            cast_usable_spell(client, spell, target_in_view=target_in_view, speed=movement_speed, stationary=stationary_cast)
+            return "validated_taunt_spell"
+        if combat_plan is not None and combat_plan.dot_spells:
+            spell = choose_dot_spell(
+                rng,
+                args,
+                combat_plan.dot_spells,
+                active_combat=active_combat,
+                now=effective_now,
+                area_enemy_count=area_enemy_count,
+            )
+            if spell is not None:
+                cast_usable_spell(client, spell, target_in_view=target_in_view, speed=movement_speed, stationary=stationary_cast)
+                mark_dot_spell_cast(active_combat, spell, effective_now)
+                return "validated_dot_spell"
+        if (
+            combat_plan is not None
+            and combat_plan.area_attack_spells
+            and should_use_area_attack_spells(args, area_enemy_count=area_enemy_count)
+        ):
+            spell = choose_area_attack_spell(rng, args, combat_plan.area_attack_spells, distance=distance)
+            if spell is not None:
+                cast_usable_spell(client, spell, target_in_view=target_in_view, speed=movement_speed, stationary=stationary_cast)
+                return "validated_area_spell"
         if combat_plan is not None and combat_plan.attack_spells:
-            spell = rng.choice(combat_plan.attack_spells[: min(len(combat_plan.attack_spells), args.combat_plan_spell_pool)])
+            spell = choose_usable_spell(rng, args, combat_plan.attack_spells)
             cast_usable_spell(client, spell, target_in_view=target_in_view, speed=movement_speed, stationary=stationary_cast)
             return "validated_spell"
+        if combat_plan is not None and combat_plan.debuff_spells:
+            spell = choose_usable_spell(rng, args, combat_plan.debuff_spells)
+            cast_usable_spell(client, spell, target_in_view=target_in_view, speed=movement_speed, stationary=stationary_cast)
+            return "validated_debuff_spell"
         if not allow_unvalidated_spells:
             return None
         cast_raw_spell(
@@ -4387,7 +6334,9 @@ def perform_rotation_action(
     if rotation == "healer-support":
         if client.health_percent <= args.healer_self_health_percent:
             if combat_plan is not None and combat_plan.heal_spells:
-                spell = rng.choice(combat_plan.heal_spells[: min(len(combat_plan.heal_spells), args.combat_plan_spell_pool)])
+                spell = choose_party_heal_spell(args, combat_plan.heal_spells)
+                if spell is None:
+                    return None
                 cast_usable_spell(client, spell, target_in_view=True, speed=movement_speed, stationary=stationary_cast)
                 return "validated_self_heal_spell"
             if not allow_unvalidated_spells:
@@ -4403,10 +6352,27 @@ def perform_rotation_action(
             return "self_heal_spell"
 
         if args.support_spell_chance > 0 and rng.random() < args.support_spell_chance:
+            if combat_plan is not None and combat_plan.dot_spells and distance <= args.spell_range:
+                spell = choose_dot_spell(
+                    rng,
+                    args,
+                    combat_plan.dot_spells,
+                    active_combat=active_combat,
+                    now=effective_now,
+                    area_enemy_count=area_enemy_count,
+                )
+                if spell is not None:
+                    cast_usable_spell(client, spell, target_in_view=target_in_view, speed=movement_speed, stationary=stationary_cast)
+                    mark_dot_spell_cast(active_combat, spell, effective_now)
+                    return "validated_support_dot_spell"
             if combat_plan is not None and combat_plan.attack_spells:
-                spell = rng.choice(combat_plan.attack_spells[: min(len(combat_plan.attack_spells), args.combat_plan_spell_pool)])
+                spell = choose_usable_spell(rng, args, combat_plan.attack_spells)
                 cast_usable_spell(client, spell, target_in_view=target_in_view, speed=movement_speed, stationary=stationary_cast)
                 return "validated_support_spell"
+            if combat_plan is not None and combat_plan.debuff_spells and distance <= args.spell_range:
+                spell = choose_usable_spell(rng, args, combat_plan.debuff_spells)
+                cast_usable_spell(client, spell, target_in_view=target_in_view, speed=movement_speed, stationary=stationary_cast)
+                return "validated_support_debuff_spell"
             if not allow_unvalidated_spells:
                 return None
             cast_raw_spell(
@@ -4422,6 +6388,15 @@ def perform_rotation_action(
         return None
 
     if rotation == "hybrid":
+        if (
+            prefer_taunt_skill
+            and combat_plan is not None
+            and combat_plan.taunt_spells
+            and distance <= args.spell_range
+        ):
+            spell = choose_usable_spell(rng, args, combat_plan.taunt_spells)
+            cast_usable_spell(client, spell, target_in_view=target_in_view, speed=movement_speed, stationary=stationary_cast)
+            return "validated_taunt_spell"
         if distance <= args.attack_range and rng.random() < args.hybrid_melee_chance:
             if combat_plan is not None and combat_plan.skills:
                 skill, taunt_selected = choose_combat_skill(
@@ -4439,10 +6414,36 @@ def perform_rotation_action(
             return "skill"
 
         if distance <= args.spell_range:
+            if combat_plan is not None and combat_plan.dot_spells:
+                spell = choose_dot_spell(
+                    rng,
+                    args,
+                    combat_plan.dot_spells,
+                    active_combat=active_combat,
+                    now=effective_now,
+                    area_enemy_count=area_enemy_count,
+                )
+                if spell is not None:
+                    cast_usable_spell(client, spell, target_in_view=target_in_view, speed=movement_speed, stationary=stationary_cast)
+                    mark_dot_spell_cast(active_combat, spell, effective_now)
+                    return "validated_dot_spell"
+            if (
+                combat_plan is not None
+                and combat_plan.area_attack_spells
+                and should_use_area_attack_spells(args, area_enemy_count=area_enemy_count)
+            ):
+                spell = choose_area_attack_spell(rng, args, combat_plan.area_attack_spells, distance=distance)
+                if spell is not None:
+                    cast_usable_spell(client, spell, target_in_view=target_in_view, speed=movement_speed, stationary=stationary_cast)
+                    return "validated_area_spell"
             if combat_plan is not None and combat_plan.attack_spells:
-                spell = rng.choice(combat_plan.attack_spells[: min(len(combat_plan.attack_spells), args.combat_plan_spell_pool)])
+                spell = choose_usable_spell(rng, args, combat_plan.attack_spells)
                 cast_usable_spell(client, spell, target_in_view=target_in_view, speed=movement_speed, stationary=stationary_cast)
                 return "validated_spell"
+            if combat_plan is not None and combat_plan.debuff_spells:
+                spell = choose_usable_spell(rng, args, combat_plan.debuff_spells)
+                cast_usable_spell(client, spell, target_in_view=target_in_view, speed=movement_speed, stationary=stationary_cast)
+                return "validated_debuff_spell"
             if not allow_unvalidated_spells:
                 return None
             cast_raw_spell(
@@ -4471,6 +6472,27 @@ def should_healer_self_preserve_during_rest(
         and current_health_percent > 0
         and current_health_percent <= int(getattr(args, "healer_self_health_percent", 0) or 0)
         and now >= next_self_preserve_heal
+    )
+
+
+def should_healer_self_preserve_while_fleeing(
+    args: argparse.Namespace,
+    *,
+    action_rotation: str,
+    current_health_percent: int,
+    now: float,
+    flee_until: float,
+    next_self_preserve_heal: float,
+) -> bool:
+    return bool(
+        now < flee_until
+        and should_healer_self_preserve_during_rest(
+            args,
+            action_rotation=action_rotation,
+            current_health_percent=current_health_percent,
+            now=now,
+            next_self_preserve_heal=next_self_preserve_heal,
+        )
     )
 
 
@@ -4511,6 +6533,45 @@ def should_healer_prioritize_party_heal_during_rest(
     return hurt_health <= critical_party_health
 
 
+def should_healer_abort_rest_for_party_cure(
+    args: argparse.Namespace,
+    *,
+    action_rotation: str,
+    current_health_percent: int,
+    cure_target,
+    cure_spell,
+) -> bool:
+    return bool(
+        action_rotation == "healer-support"
+        and cure_target is not None
+        and cure_spell is not None
+        and current_health_percent > int(getattr(args, "healer_self_health_percent", 0) or 0)
+    )
+
+
+def should_healer_abort_rest_for_party_resurrection(
+    args: argparse.Namespace,
+    *,
+    action_rotation: str,
+    current_health_percent: int,
+    dead_member,
+    resurrection_spells,
+) -> bool:
+    return bool(
+        action_rotation == "healer-support"
+        and dead_member is not None
+        and bool(resurrection_spells)
+        and current_health_percent > int(getattr(args, "healer_self_health_percent", 0) or 0)
+    )
+
+
+def has_party_buff_cast_source(args: argparse.Namespace, combat_plan: CombatUsablePlan | None) -> bool:
+    return bool(
+        (combat_plan is not None and getattr(combat_plan, "buff_spells", None))
+        or getattr(args, "party_buff_spell_levels", None)
+    )
+
+
 def perform_healer_self_preserve_cast(
     client,
     rng: random.Random,
@@ -4527,7 +6588,9 @@ def perform_healer_self_preserve_cast(
         client.target_object(self_object_id)
 
     if combat_plan is not None and combat_plan.heal_spells:
-        spell = rng.choice(combat_plan.heal_spells[: min(len(combat_plan.heal_spells), args.combat_plan_spell_pool)])
+        spell = choose_party_heal_spell(args, combat_plan.heal_spells)
+        if spell is None:
+            return None
         cast_usable_spell(client, spell, target_in_view=True, speed=movement_speed, stationary=stationary_cast)
         return "validated_self_preserve_heal_spell"
 
@@ -4543,6 +6606,36 @@ def perform_healer_self_preserve_cast(
         stationary=stationary_cast,
     )
     return "self_preserve_heal_spell"
+
+
+def visible_area_enemy_count(
+    client,
+    args: argparse.Namespace,
+    combat_plan: CombatUsablePlan | None,
+    active_combat: dict[str, object] | None,
+) -> int:
+    if active_combat is None or combat_plan is None or not combat_plan.area_attack_spells:
+        return 1 if active_combat is not None else 0
+
+    current_target_id = int(active_combat.get("target_id", 0) or 0)
+    area_radius = max(
+        [float(getattr(spell, "radius", 0) or 0) for spell in combat_plan.area_attack_spells]
+        + [float(getattr(args, "attack_range", 0.0) or 0.0)]
+    )
+    count = 1 if current_target_id > 0 else 0
+    for npc in client.visible_npcs(
+        max_age=float(getattr(args, "hunter_target_api_max_age", 60.0) or 60.0),
+        include_peace=False,
+    ):
+        npc_id = int(getattr(npc, "object_id", 0) or 0)
+        if npc_id <= 0 or npc_id == current_target_id:
+            continue
+        if area_radius > 0 and combat_distance_to(client, npc) > area_radius:
+            continue
+        if target_home_leash_violation(client, args, npc)[0]:
+            continue
+        count += 1
+    return count
 
 
 def perform_due_rotation_action(
@@ -4571,6 +6664,9 @@ def perform_due_rotation_action(
         distance,
         combat_plan,
         prefer_taunt_skill=prefer_taunt_skill,
+        active_combat=active_combat,
+        now=now,
+        area_enemy_count=visible_area_enemy_count(client, args, combat_plan, active_combat),
     )
 
     if rotation_action is not None and active_combat is not None:
@@ -4599,6 +6695,8 @@ def should_hold_precast_movement(
     offensive_due: bool,
     current_target_distance: float,
     tactical_backoff: bool,
+    cure_due: bool = False,
+    resurrection_due: bool = False,
 ) -> bool:
     if tactical_backoff:
         return False
@@ -4608,9 +6706,17 @@ def should_hold_precast_movement(
     if action_rotation == "healer-support":
         has_heal = bool(getattr(combat_plan, "heal_spells", None)) or allow_unvalidated_spells
         has_buff = bool(getattr(combat_plan, "buff_spells", None)) or allow_unvalidated_spells
+        has_cure = bool(getattr(combat_plan, "cure_spells", None))
+        has_resurrection = bool(getattr(combat_plan, "resurrection_spells", None))
         has_attack = bool(getattr(combat_plan, "attack_spells", None)) or allow_unvalidated_spells
         in_spell_range = current_target_distance <= float(getattr(args, "spell_range", 1500.0) or 1500.0)
-        return bool((heal_due and has_heal) or (buff_due and has_buff) or (offensive_due and has_attack and in_spell_range))
+        return bool(
+            (heal_due and has_heal)
+            or (buff_due and has_buff)
+            or (cure_due and has_cure)
+            or (resurrection_due and has_resurrection)
+            or (offensive_due and has_attack and in_spell_range)
+        )
 
     if action_rotation == "caster-basic":
         has_attack = bool(getattr(combat_plan, "attack_spells", None)) or allow_unvalidated_spells
@@ -4624,6 +6730,14 @@ def should_continue_cast_action_hold(cast_action_hold_until: float, now: float) 
     return bool(cast_action_hold_until > 0.0 and now < cast_action_hold_until)
 
 
+def should_cancel_cast_action_hold_for_message(combat_categories: set[str]) -> bool:
+    return bool({"cast_interrupted", "spell_not_ready"} & set(combat_categories or set()))
+
+
+def should_reject_current_target_for_friendly_feedback(combat_categories: set[str]) -> bool:
+    return "friendly_target" in set(combat_categories or set())
+
+
 def effective_cast_action_hold_seconds(args: argparse.Namespace, action_name: str | None) -> float:
     if not rotation_action_is_spell(action_name):
         return 0.0
@@ -4634,6 +6748,18 @@ def effective_cast_action_hold_seconds(args: argparse.Namespace, action_name: st
 
     minimum = max(0.0, float(getattr(args, "stationary_cast_min_hold", 3.4) or 3.4))
     return max(configured, minimum)
+
+
+def hostile_usable_spell_hold_seconds(
+    args: argparse.Namespace,
+    action_name: str | None,
+    spell: UsableSpellRef | None,
+) -> float:
+    hold_seconds = effective_cast_action_hold_seconds(args, action_name)
+    cast_time_ms = int(getattr(spell, "cast_time", 0) or 0)
+    if cast_time_ms > 0:
+        hold_seconds = max(hold_seconds, cast_time_ms / 1000.0 + 0.6)
+    return hold_seconds
 
 
 def combat_distance_to(client, actor) -> float:
@@ -4796,6 +6922,14 @@ def reposition_after_close_server_los_failure(
     client.send_position_update(speed=0.0, target_in_view=True)
     add_action(action_counts, "server_los_failure_reposition_move" if moved else "server_los_failure_reposition_hold")
     return moved
+
+
+def should_close_for_server_los_retry(
+    args: argparse.Namespace,
+    action_rotation: str,
+    observed_distance: float,
+) -> bool:
+    return float(observed_distance or 0.0) > server_los_retry_stop_distance(args, action_rotation) + 2.0
 
 
 def should_retry_server_los_failure(
@@ -5062,7 +7196,21 @@ def should_preserve_target_timeout_for_combat_progress(
     recent_incoming_attacker_name: str,
     last_incoming_damage_at: float,
     now: float,
+    behavior_state: DummyBehaviorState | str = DummyBehaviorState.HuntObjective,
+    current_target_intent: TargetIntent | str = TargetIntent.objective,
+    flee_active: bool = False,
+    rest_active: bool = False,
+    drop_aggro_active: bool = False,
 ) -> bool:
+    if not can_preserve_committed_hostile_target(
+        behavior_state,
+        current_target_intent,
+        flee_active=flee_active,
+        rest_active=rest_active,
+        drop_aggro_active=drop_aggro_active,
+    ):
+        return False
+
     if active_combat is None or actor is None:
         return False
 
@@ -5105,9 +7253,6 @@ def effective_attack_distance_for_recent_incoming_damage(
     last_incoming_damage_at: float,
     now: float,
 ) -> float:
-    if not is_melee_rotation(action_rotation):
-        return distance
-
     grace_seconds = float(getattr(args, "incoming_damage_melee_grace", 4.0) or 4.0)
     if not recent_incoming_damage_matches_actor(
         actor,
@@ -5205,6 +7350,24 @@ def should_follow_leader_during_required_boss(args: argparse.Namespace, action_r
         return False
 
     return leader_distance > max(args.boss_non_tank_follow_distance, combat_stop_distance(args, action_rotation))
+
+
+def should_follow_party_anchor_for_unseen_assist_target(
+    args: argparse.Namespace,
+    *,
+    current_target: int,
+    current_target_intent: TargetIntent | str,
+    target_visible: bool,
+    anchor_distance: float,
+) -> bool:
+    if current_target <= 0 or target_visible:
+        return False
+
+    intent = target_intent_value(current_target_intent)
+    if intent not in {TargetIntent.party_assist.value, TargetIntent.current_target_confirm.value}:
+        return False
+
+    return anchor_distance > max(0.0, float(getattr(args, "party_follow_distance", 0.0) or 0.0))
 
 
 def should_back_off_for_party_melee_survival(
@@ -5494,6 +7657,28 @@ def party_focus_target_backoff_distance(args: argparse.Namespace, action_rotatio
     )
 
 
+def party_focus_target_home_max_distance(args: argparse.Namespace) -> float:
+    configured_distance = float(getattr(args, "party_focus_target_home_max_distance", 0.0) or 0.0)
+    if configured_distance > 0.0:
+        return configured_distance
+
+    leash_distance = max(
+        float(getattr(args, "combat_home_leash_distance", 0.0) or 0.0),
+        float(getattr(args, "target_home_max_distance", 0.0) or 0.0),
+    )
+    if leash_distance <= 0.0:
+        return 0.0
+    return leash_distance * 0.45
+
+
+def should_hold_party_focus_target_backoff_at_home_limit(args: argparse.Namespace, client) -> bool:
+    if getattr(args, "required_target_home", None) is None:
+        return False
+
+    max_distance = party_focus_target_home_max_distance(args)
+    return max_distance > 0.0 and required_target_home_distance(client, args) >= max_distance
+
+
 def party_smooth_tactical_backoff_reason_and_distance(
     args: argparse.Namespace,
     action_rotation: str,
@@ -5603,13 +7788,38 @@ def should_preserve_party_target_on_loss(args: argparse.Namespace) -> bool:
     )
 
 
-def plan_friendly_cast_target_hold(args: argparse.Namespace, now: float, current_target: int) -> tuple[float, int]:
-    hold_seconds = max(0.0, float(getattr(args, "party_friendly_cast_target_hold", 0.0)))
+def plan_friendly_cast_target_hold(
+    args: argparse.Namespace,
+    now: float,
+    current_target: int,
+    *,
+    minimum_hold_seconds: float = 0.0,
+) -> tuple[float, int]:
+    hold_seconds = max(
+        max(0.0, float(getattr(args, "party_friendly_cast_target_hold", 0.0))),
+        max(0.0, float(minimum_hold_seconds or 0.0)),
+    )
 
     if hold_seconds <= 0:
         return 0.0, 0
 
     return now + hold_seconds, max(0, int(current_target or 0))
+
+
+def friendly_usable_spell_hold_seconds(args: argparse.Namespace, spell: UsableSpellRef | None) -> float:
+    cast_time_ms = int(getattr(spell, "cast_time", 0) or 0)
+    if cast_time_ms <= 0:
+        return max(0.0, float(getattr(args, "party_friendly_cast_target_hold", 0.0) or 0.0))
+
+    return max(
+        max(0.0, float(getattr(args, "party_friendly_cast_target_hold", 0.0) or 0.0)),
+        cast_time_ms / 1000.0 + 0.6,
+    )
+
+
+def friendly_usable_ability_hold_seconds(args: argparse.Namespace, ability: UsableAbilityRef | None) -> float:
+    del ability
+    return max(0.0, float(getattr(args, "party_friendly_cast_target_hold", 0.0) or 0.0))
 
 
 def should_hold_friendly_cast_target(
@@ -5619,6 +7829,43 @@ def should_hold_friendly_cast_target(
     tactical_backoff: bool,
 ) -> bool:
     return bool(friendly_cast_hold_until > now and not tactical_backoff)
+
+
+def should_break_friendly_cast_hold_for_party_heal(
+    party_state: PartyState | None,
+    args: argparse.Namespace,
+    *,
+    action_rotation: str,
+    is_party_follower: bool,
+    friendly_cast_hold_until: float,
+    friendly_cast_hold_reason: str,
+    now: float,
+    exclude_name: str,
+) -> bool:
+    if (
+        party_state is None
+        or not is_party_follower
+        or action_rotation != "healer-support"
+        or friendly_cast_hold_until <= now
+        or str(friendly_cast_hold_reason or "") == "party_heal"
+        or float(getattr(args, "party_heal_leader_interval", 0.0) or 0.0) <= 0.0
+    ):
+        return False
+
+    hurt_member = choose_party_heal_target(party_state, args, exclude_name=exclude_name)
+    if hurt_member is None:
+        return False
+
+    health_percent = int(hurt_member.get("health_percent", 100) or 100)
+    threshold = int(getattr(args, "party_heal_leader_health_percent", 0) or 0)
+    return bool(threshold > 0 and 0 < health_percent <= threshold)
+
+
+def is_party_support_healer_member(
+    party_state: PartyState | None,
+    action_rotation: str,
+) -> bool:
+    return bool(party_state is not None and action_rotation == "healer-support")
 
 
 def friendly_cast_hold_breaking_backoff(
@@ -5645,8 +7892,22 @@ def should_chase_last_known_shared_target(
     *,
     current_target: int,
     tactical_backoff: bool,
+    behavior_state: DummyBehaviorState | str = DummyBehaviorState.HuntObjective,
+    current_target_intent: TargetIntent | str = TargetIntent.objective,
+    flee_active: bool = False,
+    rest_active: bool = False,
+    drop_aggro_active: bool = False,
 ) -> bool:
     if tactical_backoff:
+        return False
+
+    if not can_preserve_committed_hostile_target(
+        behavior_state,
+        current_target_intent,
+        flee_active=flee_active,
+        rest_active=rest_active,
+        drop_aggro_active=drop_aggro_active,
+    ):
         return False
 
     return int(snapshot.get("leader_target_id", 0) or 0) == current_target
@@ -5672,21 +7933,6 @@ def choose_party_heal_target(
     active_tank_object_id = int(snapshot.get("active_tank_object_id", 0) or 0)
     active_tank_health = int(snapshot.get("active_tank_health_percent", 100) or 0)
 
-    if (
-        active_tank_name
-        and active_tank_name != exclude_name
-        and active_tank_object_id > 0
-        and 0 < active_tank_health <= max_health_percent
-    ):
-        return {
-            "name": active_tank_name,
-            "object_id": active_tank_object_id,
-            "health_percent": active_tank_health,
-            "x": int(snapshot.get("active_tank_x", 0) or 0),
-            "y": int(snapshot.get("active_tank_y", 0) or 0),
-            "z": int(snapshot.get("active_tank_z", 0) or 0),
-        }
-
     self_heal_threshold = int(getattr(args, "healer_self_health_percent", 0) or 0)
     if exclude_name and self_heal_threshold > 0:
         self_object_id = party_state.member_object_ids.get(exclude_name, 0)
@@ -5701,6 +7947,21 @@ def choose_party_heal_target(
                 "y": self_y,
                 "z": self_z,
             }
+
+    if (
+        active_tank_name
+        and active_tank_name != exclude_name
+        and active_tank_object_id > 0
+        and 0 < active_tank_health <= max_health_percent
+    ):
+        return {
+            "name": active_tank_name,
+            "object_id": active_tank_object_id,
+            "health_percent": active_tank_health,
+            "x": int(snapshot.get("active_tank_x", 0) or 0),
+            "y": int(snapshot.get("active_tank_y", 0) or 0),
+            "z": int(snapshot.get("active_tank_z", 0) or 0),
+        }
 
     return party_state.focused_hurt_member(
         max_health_percent,
@@ -5757,9 +8018,6 @@ def should_approach_party_heal_target(
     if action_rotation != "healer-support" or hurt_member is None:
         return False
 
-    if current_target > 0:
-        return False
-
     state = behavior_state_value(behavior_state)
     if state in {
         DummyBehaviorState.DropAggroAndRecover.value,
@@ -5797,6 +8055,623 @@ def move_towards_party_heal_target(
         target_in_view=False,
     )
     return MovementOutcome(moved=moved, arrived=not moved)
+
+
+def choose_party_resurrection_target(
+    party_state: PartyState,
+    args: argparse.Namespace,
+    *,
+    exclude_name: str = "",
+    cooldowns: dict[int, float] | None = None,
+    now: float = 0.0,
+) -> dict[str, int | str] | None:
+    del args
+    targets = party_state.resurrection_targets(exclude_name=exclude_name)
+    if cooldowns:
+        targets = [
+            target
+            for target in targets
+            if cooldowns.get(int(target.get("object_id", 0) or 0), 0.0) <= now
+        ]
+    return targets[0] if targets else None
+
+
+def party_resurrection_retry_cooldown(args: argparse.Namespace) -> float:
+    configured = float(getattr(args, "party_resurrect_target_cooldown", 0.0) or 0.0)
+    if configured > 0.0:
+        return configured
+    return max(10.0, float(getattr(args, "party_resurrect_interval", 0.0) or 0.0) * 3.0)
+
+
+def party_resurrection_target_in_cast_range(
+    client,
+    args: argparse.Namespace,
+    dead_member: dict[str, int | str] | None,
+) -> bool:
+    if dead_member is None:
+        return False
+
+    target_x = int(dead_member.get("x", 0) or 0)
+    target_y = int(dead_member.get("y", 0) or 0)
+    if target_x == 0 and target_y == 0:
+        return True
+
+    spell_range = float(getattr(args, "spell_range", 1500.0) or 1500.0)
+    buffer = max(0.0, float(getattr(args, "party_resurrect_cast_range_buffer", 200.0) or 0.0))
+    safe_spell_range = max(0.0, spell_range - buffer)
+    return horizontal_distance_between_points(int(client.x), int(client.y), target_x, target_y) <= safe_spell_range
+
+
+def party_resurrection_target_destination(dead_member: dict[str, int | str] | None) -> MovementDestination | None:
+    if dead_member is None:
+        return None
+
+    target_x = int(dead_member.get("x", 0) or 0)
+    target_y = int(dead_member.get("y", 0) or 0)
+    target_z = int(dead_member.get("z", 0) or 0)
+    if target_x == 0 and target_y == 0:
+        return None
+
+    return destination_from_point("party-resurrection-target", target_x, target_y, target_z)
+
+
+def party_resurrection_target_approach_stop_distance(args: argparse.Namespace) -> float:
+    spell_range = float(getattr(args, "spell_range", 1500.0) or 1500.0)
+    buffer = max(0.0, float(getattr(args, "party_resurrect_cast_range_buffer", 200.0) or 0.0))
+    return max(0.0, spell_range - buffer)
+
+
+def should_approach_party_resurrection_target(
+    args: argparse.Namespace,
+    *,
+    action_rotation: str,
+    dead_member: dict[str, int | str] | None,
+    current_target: int,
+    behavior_state: DummyBehaviorState | str,
+) -> bool:
+    del args
+    if action_rotation != "healer-support" or dead_member is None:
+        return False
+
+    state = behavior_state_value(behavior_state)
+    if state in {
+        DummyBehaviorState.DropAggroAndRecover.value,
+        DummyBehaviorState.DeadReleaseRecover.value,
+    }:
+        return False
+
+    return party_resurrection_target_destination(dead_member) is not None
+
+
+def move_towards_party_resurrection_target(
+    client,
+    args: argparse.Namespace,
+    path_state: PathMovementState,
+    action_counts: dict[str, int],
+    dead_member: dict[str, int | str] | None,
+) -> MovementOutcome | None:
+    del path_state, action_counts
+    destination = party_resurrection_target_destination(dead_member)
+    if destination is None:
+        return None
+
+    set_attack_mode = getattr(client, "set_attack_mode", None)
+    if callable(set_attack_mode):
+        set_attack_mode(False)
+
+    moved = client.move_towards_position(
+        destination.x,
+        destination.y,
+        destination.z,
+        step=float(getattr(args, "party_follow_step", 320.0) or 320.0),
+        stop_distance=party_resurrection_target_approach_stop_distance(args),
+        movement_speed=getattr(args, "movement_speed", None),
+        min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
+        target_in_view=False,
+    )
+    return MovementOutcome(moved=moved, arrived=not moved)
+
+
+def perform_party_resurrection_cast(
+    client,
+    spell: UsableSpellRef,
+    args: argparse.Namespace,
+    dead_member: dict[str, int | str],
+    *,
+    leader_name: str = "",
+) -> str:
+    client.target_object(int(dead_member["object_id"]))
+    cast_party_friendly_usable_spell(client, spell, args, target_in_view=True)
+    effective_leader_name = str(leader_name or getattr(args, "party_leader_name", "") or "leader")
+    return "validated_party_resurrect_leader" if str(dead_member.get("name", "")) == effective_leader_name else "validated_party_resurrect_member"
+
+
+def party_buff_target_cooldown(args: argparse.Namespace, spell: UsableSpellRef | None = None) -> float:
+    configured = float(getattr(args, "party_buff_target_cooldown", 0.0) or 0.0)
+    if configured > 0.0:
+        return configured
+    interval = float(getattr(args, "party_buff_interval", 0.0) or 0.0)
+    return max(30.0, interval * 4.0, spell_duration_seconds(spell, default=30.0) * 0.75)
+
+
+def party_buff_key(target: dict[str, int | str], spell: UsableSpellRef | None) -> tuple[int, str]:
+    return int(target.get("object_id", 0) or 0), str(getattr(spell, "name", "") if spell is not None else "raw")
+
+
+def party_buff_candidate_available(
+    target: dict[str, int | str],
+    spell: UsableSpellRef | None,
+    cooldowns: dict[tuple[int, str], float],
+    now: float,
+) -> bool:
+    key = party_buff_key(target, spell)
+    return key[0] > 0 and cooldowns.get(key, 0.0) <= now
+
+
+def choose_party_cure_target(
+    party_state: PartyState,
+    combat_plan: CombatUsablePlan,
+    *,
+    exclude_name: str = "",
+) -> tuple[dict[str, int | str], UsableSpellRef] | tuple[None, None]:
+    if not combat_plan.cure_spells:
+        return None, None
+
+    with party_state.lock:
+        candidates: list[tuple[int, int, int, str, int, int, int, int, str, UsableSpellRef]] = []
+        for order, member_name in enumerate(party_state.member_names):
+            condition = party_state.member_conditions.get(member_name)
+            if condition is None or not condition.is_alive:
+                continue
+
+            object_id = int(condition.object_id or party_state.member_object_ids.get(member_name, 0) or 0)
+            health_percent = int(condition.health_percent if condition.health_percent >= 0 else party_state.member_health_percents.get(member_name, 100))
+            if object_id <= 0 or health_percent <= 0:
+                continue
+
+            curable_conditions = condition.curable_conditions()
+            if not curable_conditions:
+                continue
+
+            if member_name == exclude_name and {"mezz", "silence"} & curable_conditions:
+                continue
+
+            matching_spells = [
+                spell
+                for spell in combat_plan.cure_spells
+                if cure_spell_conditions(spell) & curable_conditions
+            ]
+            if not matching_spells:
+                continue
+
+            condition_priority = 0
+            condition_name = sorted(curable_conditions)[0]
+            for priority, candidate_condition in enumerate(("mezz", "silence", "nearsight", "disease", "poison")):
+                if candidate_condition in curable_conditions:
+                    condition_priority = priority
+                    condition_name = candidate_condition
+                    break
+
+            spell = max(matching_spells, key=lambda item: (item.level, item.name))
+            x, y, z = party_state.member_positions.get(member_name, (0, 0, 0))
+            self_priority = 1 if member_name == exclude_name else 0
+            candidates.append((condition_priority, self_priority, order, member_name, object_id, health_percent, x, y, z, condition_name, spell))
+
+        if not candidates:
+            return None, None
+
+        _condition_priority, _self_priority, _order, member_name, object_id, _health_percent, x, y, z, condition_name, spell = min(candidates)
+        return {
+            "name": member_name,
+            "object_id": object_id,
+            "condition": condition_name,
+            "x": x,
+            "y": y,
+            "z": z,
+        }, spell
+
+
+def party_cure_target_in_cast_range(client, args: argparse.Namespace, target: dict[str, int | str] | None) -> bool:
+    return party_heal_target_in_cast_range(client, args, target)
+
+
+def perform_party_cure_cast(
+    client,
+    spell: UsableSpellRef,
+    args: argparse.Namespace,
+    target: dict[str, int | str],
+) -> str:
+    client.target_object(int(target["object_id"]))
+    cast_party_friendly_usable_spell(client, spell, args, target_in_view=True)
+    condition = re.sub(r"[^a-z0-9_]+", "_", str(target.get("condition", "condition") or "condition").lower()).strip("_")
+    return f"validated_party_cure_{condition or 'condition'}"
+
+
+def choose_party_protection_target(
+    party_state: PartyState,
+    *,
+    exclude_name: str = "",
+) -> dict[str, int | str] | None:
+    with party_state.lock:
+        focus_name = normalize_target_name(party_state.leader_target_focus_name)
+        rescue_member_name = normalize_target_name(party_state.rescue_member_name)
+        external_names = set(party_state.external_member_names)
+        candidates: list[tuple[int, int, int, int, int, str, int, int, int, int]] = []
+        for order, member_name in enumerate(party_state.member_names):
+            if member_name == exclude_name:
+                continue
+
+            object_id = party_state.member_object_ids.get(member_name, 0)
+            health_percent = party_state.member_health_percents.get(member_name, 100)
+            if not object_id or health_percent <= 0:
+                continue
+
+            role = party_state.member_roles.get(member_name, "")
+            if role == "healer-support":
+                role_priority = 0
+            elif role == "caster-basic":
+                role_priority = 1
+            elif member_name == party_state.leader_name:
+                role_priority = 2
+            else:
+                role_priority = 3
+
+            normalized_member_name = normalize_target_name(member_name)
+            pressure_priority = 0 if (
+                normalized_member_name
+                and (
+                    normalized_member_name == focus_name
+                    or normalized_member_name == rescue_member_name
+                )
+            ) else 1
+            external_priority = 0 if member_name in external_names and health_percent < 90 else 1
+            x, y, z = party_state.member_positions.get(member_name, (0, 0, 0))
+            candidates.append((
+                pressure_priority,
+                external_priority,
+                health_percent,
+                role_priority,
+                order,
+                member_name,
+                object_id,
+                x,
+                y,
+                z,
+            ))
+
+        if not candidates:
+            return None
+
+        (
+            _pressure_priority,
+            _external_priority,
+            health_percent,
+            _role_priority,
+            _order,
+            member_name,
+            object_id,
+            x,
+            y,
+            z,
+        ) = min(candidates)
+        return {
+            "name": member_name,
+            "object_id": object_id,
+            "health_percent": health_percent,
+            "x": x,
+            "y": y,
+            "z": z,
+        }
+
+
+def choose_party_protection_ability(
+    combat_plan: CombatUsablePlan,
+) -> UsableAbilityRef | None:
+    for pool in (
+        combat_plan.guard_abilities,
+        combat_plan.bodyguard_abilities,
+        combat_plan.protect_abilities,
+        combat_plan.intercept_abilities,
+        combat_plan.party_protection_abilities,
+    ):
+        if pool:
+            return pool[0]
+    return None
+
+
+def perform_party_protection_ability(
+    client,
+    ability: UsableAbilityRef,
+    target: dict[str, int | str] | None,
+) -> str | None:
+    if target is None:
+        return None
+
+    client.target_object(int(target["object_id"]))
+    client.use_skill(ability.use_skill_index, skill_type=ability.use_skill_type, speed=getattr(client, "last_position_speed", 0.0))
+    return f"validated_party_{ability.category or 'protection'}_member"
+
+
+def should_use_party_protection_ability(
+    args: argparse.Namespace,
+    combat_plan: CombatUsablePlan,
+    party_state: PartyState | None,
+    *,
+    action_rotation: str,
+    is_party_leader: bool,
+    party_member_name: str,
+    current_target: int,
+    behavior_state: DummyBehaviorState | str,
+    now: float,
+    next_party_protection: float,
+) -> bool:
+    if party_state is None or not combat_plan.party_protection_abilities:
+        return False
+    if float(getattr(args, "party_protection_interval", 0.0) or 0.0) <= 0.0 or now < next_party_protection:
+        return False
+    if action_rotation not in {"melee-basic", "melee-burst", "hybrid"}:
+        return False
+    if behavior_state_value(behavior_state) in {
+        DummyBehaviorState.DropAggroAndRecover.value,
+        DummyBehaviorState.RestRecover.value,
+        DummyBehaviorState.DeadReleaseRecover.value,
+    }:
+        return False
+    snapshot = party_state.snapshot()
+    return bool(is_party_leader or str(snapshot.get("active_tank_name", "") or "") == party_member_name)
+
+
+def should_use_crowd_control_for_multi_aggro(
+    args: argparse.Namespace,
+    combat_plan: CombatUsablePlan,
+    active_combat: dict[str, object] | None,
+    *,
+    current_target: int,
+    health_percent: int,
+    now: float,
+    next_crowd_control: float,
+    behavior_state: DummyBehaviorState | str,
+    party_snapshot: dict[str, int | float | str] | None = None,
+    observed_npcs: list[object] | None = None,
+) -> bool:
+    if not combat_plan.crowd_control_spells:
+        return False
+    if float(getattr(args, "crowd_control_interval", 0.0) or 0.0) <= 0.0 or now < next_crowd_control:
+        return False
+    if not can_select_hostile_target(behavior_state):
+        return False
+    health_floor = int(getattr(args, "crowd_control_health_floor", 0) or 0)
+    if health_floor > 0 and health_percent <= health_floor:
+        return False
+    if current_target <= 0:
+        min_threats = max(1, int(getattr(args, "crowd_control_preemptive_min_threats", 2) or 2))
+        proactive_threats = [
+            npc
+            for npc in observed_npcs or []
+            if npc_is_party_aggro_threat(npc, party_snapshot or {}, current_target=0)
+            and should_accept_party_rescue_target(args, npc)
+        ]
+        return len(proactive_threats) >= min_threats
+    if active_combat is None:
+        return False
+    if any(
+        npc_is_party_aggro_threat(npc, party_snapshot or {}, current_target=current_target)
+        for npc in observed_npcs or []
+    ):
+        return True
+    return bool(
+        int(active_combat.get("off_target_damage_taken", 0) or 0) > 0
+        or str(active_combat.get("off_target_attacker_name", "") or "").strip()
+    )
+
+
+def should_attempt_multi_aggro_crowd_control(
+    *,
+    crowd_control_due: bool,
+    multi_aggro_counterattack_hold: bool,
+) -> bool:
+    return bool(crowd_control_due and not multi_aggro_counterattack_hold)
+
+
+def crowd_control_retry_delay(args: argparse.Namespace) -> float:
+    interval = float(getattr(args, "crowd_control_interval", 0.0) or 0.0)
+    if interval <= 0.0:
+        return 1.0
+    return max(1.0, min(interval, interval * 0.5))
+
+
+def choose_multi_aggro_crowd_control_target(
+    client,
+    args: argparse.Namespace,
+    active_combat: dict[str, object] | None,
+    *,
+    current_target: int,
+    party_snapshot: dict[str, int | float | str] | None = None,
+    api_observations: list[object] | None = None,
+):
+    if active_combat is None and not api_observations:
+        return None
+
+    npcs = dedupe_npcs_by_object_id(
+        list(client.visible_npcs(
+            max_age=float(getattr(args, "hunter_target_api_max_age", 60.0) or 60.0),
+            include_peace=False,
+        ))
+        + list(api_observations or [])
+    )
+    party_snapshot = party_snapshot or {}
+    attacker_name = str(active_combat.get("off_target_attacker_name", "") or "") if active_combat is not None else ""
+    if attacker_name:
+        exact = choose_named_rescue_attacker(npcs, client, args, current_target, attacker_name)
+        if exact is not None:
+            return exact
+
+    proactive_candidates = [
+        npc
+        for npc in npcs
+        if npc_is_party_aggro_threat(npc, party_snapshot, current_target=current_target)
+        and should_accept_party_rescue_target(args, npc)
+        and not target_home_leash_violation(client, args, npc)[0]
+    ]
+    if proactive_candidates:
+        return min(
+            proactive_candidates,
+            key=lambda npc: (
+                npc_party_aggro_priority(npc, party_snapshot),
+                combat_distance_to(client, npc),
+            ),
+        )
+
+    visible_npcs = client.visible_npcs(
+        max_age=float(getattr(args, "hunter_target_api_max_age", 60.0) or 60.0),
+        include_peace=False,
+    )
+    candidates = [
+        npc
+        for npc in visible_npcs
+        if int(getattr(npc, "object_id", 0) or 0) > 0
+        and int(getattr(npc, "object_id", 0) or 0) != int(current_target or 0)
+        and should_accept_party_rescue_target(args, npc)
+        and not target_home_leash_violation(client, args, npc)[0]
+    ]
+    if not candidates:
+        return None
+
+    return min(candidates, key=lambda npc: combat_distance_to(client, npc))
+
+
+def party_member_name_keys(party_snapshot: dict[str, int | float | str] | None) -> set[str]:
+    if not party_snapshot:
+        return set()
+
+    names: set[str] = set()
+    for member in party_snapshot.get("members", []) or []:
+        if not isinstance(member, dict):
+            continue
+        object_id = int(member.get("object_id", 0) or 0)
+        health_percent = int(member.get("health_percent", 0) or 0)
+        if object_id <= 0 or health_percent <= 0:
+            continue
+        name = normalize_target_name(str(member.get("name", "") or ""))
+        if name:
+            names.add(name)
+    return names
+
+
+def npc_targets_party_member(npc, party_snapshot: dict[str, int | float | str] | None) -> bool:
+    target_name = normalize_target_name(str(getattr(npc, "target", "") or ""))
+    if not target_name:
+        return False
+
+    return any(
+        target_name == member_name or target_name in member_name or member_name in target_name
+        for member_name in party_member_name_keys(party_snapshot)
+    )
+
+
+def npc_is_party_aggro_threat(
+    npc,
+    party_snapshot: dict[str, int | float | str] | None,
+    *,
+    current_target: int,
+) -> bool:
+    if npc is None:
+        return False
+    if int(getattr(npc, "object_id", 0) or 0) <= 0:
+        return False
+    if int(getattr(npc, "object_id", 0) or 0) == int(current_target or 0):
+        return False
+    if npc_targets_party_member(npc, party_snapshot):
+        return True
+    return bool(getattr(npc, "has_aggro", False) or getattr(npc, "in_combat", False))
+
+
+def npc_party_aggro_priority(npc, party_snapshot: dict[str, int | float | str] | None) -> int:
+    if npc_targets_party_member(npc, party_snapshot):
+        return 0
+    if bool(getattr(npc, "has_aggro", False)):
+        return 1
+    if bool(getattr(npc, "in_combat", False)):
+        return 2
+    return 3
+
+
+def dedupe_npcs_by_object_id(npcs: list[object]) -> list[object]:
+    seen: set[int] = set()
+    deduped: list[object] = []
+    for npc in npcs:
+        object_id = int(getattr(npc, "object_id", 0) or 0)
+        if object_id <= 0 or object_id in seen:
+            continue
+        seen.add(object_id)
+        deduped.append(npc)
+    return deduped
+
+
+def crowd_control_spell_kind(spell: UsableSpellRef) -> str:
+    spell_type = normalized_spell_type(spell)
+    if "stun" in spell_type:
+        return "stun"
+    if "mez" in spell_type or "mesmerize" in spell_type:
+        return "mez"
+    if (
+        "root" in spell_type
+        or "speeddecrease" in spell_type
+        or spell_type.endswith("snare")
+        or spell_type in {"preventflight", "fear"}
+    ):
+        return "root"
+    if spell_type in {"amnesia", "befriend", "confusion", "silence"}:
+        return "soft"
+    return "other"
+
+
+def choose_crowd_control_spell(
+    args: argparse.Namespace,
+    spells: list[UsableSpellRef],
+    target,
+    *,
+    party_snapshot: dict[str, int | float | str] | None = None,
+) -> UsableSpellRef | None:
+    if not spells:
+        return None
+
+    pool_size = max(1, int(getattr(args, "combat_plan_spell_pool", 3) or 3))
+    pool = spells[: min(len(spells), pool_size)]
+    urgent_party_target = npc_targets_party_member(target, party_snapshot)
+    order = (
+        {"stun": 0, "mez": 1, "root": 2, "soft": 3, "other": 4}
+        if urgent_party_target
+        else {"mez": 0, "root": 1, "stun": 2, "soft": 3, "other": 4}
+    )
+
+    return min(
+        pool,
+        key=lambda spell: (
+            order.get(crowd_control_spell_kind(spell), 5),
+            max(0, int(getattr(spell, "cast_time", 0) or 0)),
+            -max(0, int(getattr(spell, "radius", 0) or 0)),
+            -int(getattr(spell, "level", 0) or 0),
+            str(getattr(spell, "name", "") or ""),
+        ),
+    )
+
+
+def perform_crowd_control_cast(
+    client,
+    spell: UsableSpellRef,
+    args: argparse.Namespace,
+    target,
+) -> str:
+    client.target_object(int(getattr(target, "object_id", 0) or 0))
+    cast_usable_spell(
+        client,
+        spell,
+        target_in_view=True,
+        speed=getattr(client, "last_position_speed", 0.0),
+        stationary=bool(getattr(args, "stationary_cast_actions", False)),
+    )
+    return "validated_crowd_control_spell"
 
 
 def should_send_target_start_commands(
@@ -5900,7 +8775,32 @@ def should_treat_disconnect_as_completed(exc: BaseException, client, death_seen:
     }
 
 
+def party_snapshot_has_external_leader(snapshot: dict[str, object]) -> bool:
+    leader_name = normalize_target_name(str(snapshot.get("leader_name", "") or ""))
+    if not leader_name:
+        return False
+    return any(
+        normalize_target_name(str(name or "")) == leader_name
+        for name in snapshot.get("external_member_names", []) or []
+    )
+
+
+def party_leader_anchor_from_snapshot(snapshot: dict[str, int | float | str]) -> dict[str, int | str]:
+    return {
+        "name": str(snapshot.get("leader_name", "")),
+        "object_id": int(snapshot.get("leader_object_id", 0) or 0),
+        "x": int(snapshot.get("leader_x", 0) or 0),
+        "y": int(snapshot.get("leader_y", 0) or 0),
+        "z": int(snapshot.get("leader_z", 0) or 0),
+    }
+
+
 def party_anchor_from_snapshot(snapshot: dict[str, int | float | str]) -> dict[str, int | str]:
+    if party_snapshot_has_external_leader(snapshot):
+        leader_anchor = party_leader_anchor_from_snapshot(snapshot)
+        if int(leader_anchor["object_id"] or 0) > 0 and (int(leader_anchor["x"] or 0) or int(leader_anchor["y"] or 0)):
+            return leader_anchor
+
     active_tank_id = int(snapshot.get("active_tank_object_id", 0) or 0)
     active_tank_x = int(snapshot.get("active_tank_x", 0) or 0)
     active_tank_y = int(snapshot.get("active_tank_y", 0) or 0)
@@ -5915,13 +8815,7 @@ def party_anchor_from_snapshot(snapshot: dict[str, int | float | str]) -> dict[s
             "z": active_tank_z,
         }
 
-    return {
-        "name": str(snapshot.get("leader_name", "")),
-        "object_id": int(snapshot.get("leader_object_id", 0) or 0),
-        "x": int(snapshot.get("leader_x", 0) or 0),
-        "y": int(snapshot.get("leader_y", 0) or 0),
-        "z": int(snapshot.get("leader_z", 0) or 0),
-    }
+    return party_leader_anchor_from_snapshot(snapshot)
 
 
 def party_anchor_position_valid(snapshot: dict[str, int | float | str]) -> bool:
@@ -5941,11 +8835,27 @@ def party_anchor_position_valid(snapshot: dict[str, int | float | str]) -> bool:
 
 
 def party_member_is_active_tank(snapshot: dict[str, int | float | str], member_name: str) -> bool:
-    return bool(member_name and str(snapshot.get("active_tank_name", "")) == member_name)
+    return bool(
+        member_name
+        and normalize_target_name(str(snapshot.get("active_tank_name", "") or ""))
+        == normalize_target_name(member_name)
+    )
 
 
 def party_member_is_rescue_tank(snapshot: dict[str, int | float | str], member_name: str) -> bool:
     return bool(member_name and str(snapshot.get("rescue_tank_name", "")) == member_name)
+
+
+def party_damage_response_snapshots(
+    party_state: PartyState | None,
+    member_name: str,
+) -> tuple[dict[str, int | float | str] | None, dict[str, int | float | str] | None]:
+    if party_state is None:
+        return None, None
+
+    snapshot = party_state.snapshot()
+    active_tank_snapshot = snapshot if party_member_is_active_tank(snapshot, member_name) else None
+    return active_tank_snapshot, snapshot
 
 
 def is_party_tank_role(action_rotation: str) -> bool:
@@ -6104,6 +9014,27 @@ def should_share_selected_target(
     return True
 
 
+def should_refresh_shared_required_target(
+    args: argparse.Namespace,
+    target_npc,
+    *,
+    is_party_leader: bool = True,
+    party_snapshot: dict[str, int | float | str] | None = None,
+) -> bool:
+    if not should_preserve_party_target_on_loss(args):
+        return False
+
+    if not is_required_target(args, target_npc):
+        return False
+
+    return should_share_selected_target(
+        args,
+        selected_npc_is_rescue=False,
+        is_party_leader=is_party_leader,
+        party_snapshot=party_snapshot,
+    )
+
+
 def should_update_party_objective_target(selected_npc_is_rescue: bool) -> bool:
     return not selected_npc_is_rescue
 
@@ -6129,11 +9060,34 @@ def should_preserve_current_party_target(
     party_state: PartyState | None,
     current_target: int,
     active_combat: dict[str, float | int | str] | None,
+    *,
+    behavior_state: DummyBehaviorState | str = DummyBehaviorState.HuntObjective,
+    current_target_intent: TargetIntent | str = TargetIntent.objective,
+    flee_active: bool = False,
+    rest_active: bool = False,
+    drop_aggro_active: bool = False,
 ) -> bool:
     if not should_preserve_party_target_on_loss(args) or current_target <= 0:
         return False
 
+    if not can_preserve_committed_hostile_target(
+        behavior_state,
+        current_target_intent,
+        flee_active=flee_active,
+        rest_active=rest_active,
+        drop_aggro_active=drop_aggro_active,
+    ):
+        return False
+
     if active_combat_matches_required_target(args, active_combat):
+        return True
+
+    if should_preserve_active_party_rescue_focus(
+        args,
+        active_combat,
+        current_target,
+        TargetIntent.none,
+    ):
         return True
 
     if active_combat is not None:
@@ -6175,12 +9129,28 @@ def should_preserve_removed_party_target(
     now: float,
     last_visible_at: float,
     preserve_count: int,
+    *,
+    behavior_state: DummyBehaviorState | str = DummyBehaviorState.HuntObjective,
+    current_target_intent: TargetIntent | str = TargetIntent.objective,
+    flee_active: bool = False,
+    rest_active: bool = False,
+    drop_aggro_active: bool = False,
 ) -> bool:
     if stop_after_removed:
         return False
 
     return (
-        should_preserve_current_party_target(args, party_state, current_target, active_combat)
+        should_preserve_current_party_target(
+            args,
+            party_state,
+            current_target,
+            active_combat,
+            behavior_state=behavior_state,
+            current_target_intent=current_target_intent,
+            flee_active=flee_active,
+            rest_active=rest_active,
+            drop_aggro_active=drop_aggro_active,
+        )
         and target_removed_preserve_allowed(args, now, last_visible_at, preserve_count)
     )
 
@@ -6189,11 +9159,32 @@ def should_preserve_unshared_party_target(
     args: argparse.Namespace,
     current_target: int,
     active_combat: dict[str, float | int | str] | None,
+    *,
+    behavior_state: DummyBehaviorState | str = DummyBehaviorState.HuntObjective,
+    current_target_intent: TargetIntent | str = TargetIntent.objective,
+    flee_active: bool = False,
+    rest_active: bool = False,
+    drop_aggro_active: bool = False,
 ) -> bool:
     return (
         should_preserve_party_target_on_loss(args)
         and current_target > 0
-        and active_combat_matches_required_target(args, active_combat)
+        and can_preserve_committed_hostile_target(
+            behavior_state,
+            current_target_intent,
+            flee_active=flee_active,
+            rest_active=rest_active,
+            drop_aggro_active=drop_aggro_active,
+        )
+        and (
+            active_combat_matches_required_target(args, active_combat)
+            or should_preserve_active_party_rescue_focus(
+                args,
+                active_combat,
+                current_target,
+                TargetIntent.none,
+            )
+        )
     )
 
 
@@ -6417,6 +9408,10 @@ def flatten_int_groups(groups: list[list[int]] | None) -> list[int]:
 
 def parse_text_list(value: str) -> list[str]:
     return [part.strip() for part in value.split("|") if part.strip()]
+
+
+def parse_name_list(value: str) -> list[str]:
+    return [part.strip() for part in re.split(r"[|,]", value) if part.strip()]
 
 
 def parse_waypoints(value: str) -> list[Waypoint]:
@@ -6678,16 +9673,229 @@ def request_nav_path(args: argparse.Namespace, region: int, start: object, goal:
     return parse_nav_path_response(payload)
 
 
-def build_combat_usable_api_url(args: argparse.Namespace, account: DummyAccount) -> str:
-    if args.combat_usable_api_url:
-        base_url = args.combat_usable_api_url
+def build_combat_usable_api_url_for_player(args: argparse.Namespace, name: str, account: str = "") -> str:
+    api_url_override = str(getattr(args, "combat_usable_api_url", "") or "")
+    if api_url_override:
+        base_url = api_url_override
     else:
-        api_host = args.host if args.host in ("127.0.0.1", "localhost", "::1") else "127.0.0.1"
-        base_url = f"http://{api_host}:{args.api_port}/api/dummy/combat/usable"
+        configured_host = str(getattr(args, "host", "127.0.0.1") or "127.0.0.1")
+        api_host = configured_host if configured_host in ("127.0.0.1", "localhost", "::1") else "127.0.0.1"
+        base_url = f"http://{api_host}:{getattr(args, 'api_port', 5000)}/api/dummy/combat/usable"
 
-    query = urllib.parse.urlencode({"name": character_name_from_account(account.username), "account": account.username})
+    query = urllib.parse.urlencode({"name": name, "account": account})
     separator = "&" if "?" in base_url else "?"
     return f"{base_url}{separator}{query}"
+
+
+def build_combat_usable_api_url(args: argparse.Namespace, account: DummyAccount) -> str:
+    return build_combat_usable_api_url_for_player(
+        args,
+        character_name_from_account(account.username),
+        account.username,
+    )
+
+
+def parse_player_condition_snapshot(payload: object) -> PlayerConditionSnapshot:
+    player = payload.get("player", {}) if isinstance(payload, dict) else {}
+    if not isinstance(player, dict):
+        player = {}
+
+    return PlayerConditionSnapshot(
+        name=str(player.get("name", "") or ""),
+        account=str(player.get("account", "") or ""),
+        object_id=int(player.get("objectId", player.get("object_id", 0)) or 0),
+        level=int(player.get("level", 0) or 0),
+        realm=parse_realm_id_value(player.get("realm", player.get("realmId", player.get("realm_id", 0)))),
+        health_percent=int(float(player.get("healthPercent", player.get("health_percent", 100)) or 0)),
+        x=int(player.get("x", 0) or 0),
+        y=int(player.get("y", 0) or 0),
+        z=int(player.get("z", 0) or 0),
+        is_alive=bool(player.get("isAlive", player.get("is_alive", True))),
+        is_stunned=bool(player.get("isStunned", player.get("is_stunned", False))),
+        is_mezzed=bool(player.get("isMezzed", player.get("is_mezzed", False))),
+        is_diseased=bool(player.get("isDiseased", player.get("is_diseased", False))),
+        is_poisoned=bool(player.get("isPoisoned", player.get("is_poisoned", False))),
+        is_nearsighted=bool(player.get("isNearsighted", player.get("is_nearsighted", False))),
+        is_silenced=bool(player.get("isSilenced", player.get("is_silenced", False))),
+        target_object_id=int(player.get("targetObjectId", player.get("target_object_id", 0)) or 0),
+        target_name=str(player.get("targetName", player.get("target_name", "")) or ""),
+    )
+
+
+def parse_player_condition_snapshots(payload: object) -> list[PlayerConditionSnapshot]:
+    if not isinstance(payload, dict):
+        return []
+
+    candidates: list[object] = []
+    player = payload.get("player", {})
+    if isinstance(player, dict):
+        candidates.append(player)
+
+    for key in ("groupMembers", "group_members", "partyMembers", "party_members"):
+        raw_members = payload.get(key, [])
+        if not isinstance(raw_members, list):
+            continue
+        candidates.extend(member for member in raw_members if isinstance(member, dict))
+
+    snapshots: list[PlayerConditionSnapshot] = []
+    seen: set[tuple[str, str]] = set()
+    for candidate in candidates:
+        snapshot = parse_player_condition_snapshot({"player": candidate})
+        if not snapshot.name and snapshot.object_id <= 0:
+            continue
+
+        name_key = normalize_target_name(snapshot.name)
+        object_key = str(snapshot.object_id) if snapshot.object_id > 0 else ""
+        dedupe_key = (object_key, name_key)
+        if dedupe_key in seen:
+            continue
+
+        seen.add(dedupe_key)
+        snapshots.append(snapshot)
+
+    return snapshots
+
+
+def fetch_player_condition_snapshot(args: argparse.Namespace, account: DummyAccount) -> PlayerConditionSnapshot | None:
+    if not args.combat_usable_api:
+        return None
+
+    request = urllib.request.Request(build_combat_usable_api_url(args, account), headers={"Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=getattr(args, "combat_usable_api_timeout", 3.0)) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception:
+        return None
+
+    return parse_player_condition_snapshot(payload)
+
+
+def fetch_player_condition_snapshot_for_player(
+    args: argparse.Namespace,
+    name: str,
+    account: str = "",
+) -> PlayerConditionSnapshot | None:
+    if not args.combat_usable_api:
+        return None
+
+    request = urllib.request.Request(
+        build_combat_usable_api_url_for_player(args, name, account),
+        headers={"Accept": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=getattr(args, "combat_usable_api_timeout", 3.0)) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception:
+        return None
+
+    return parse_player_condition_snapshot(payload)
+
+
+def fetch_player_condition_snapshots_for_player(
+    args: argparse.Namespace,
+    name: str,
+    account: str = "",
+) -> list[PlayerConditionSnapshot] | None:
+    if not getattr(args, "combat_usable_api", False):
+        return None
+
+    request = urllib.request.Request(
+        build_combat_usable_api_url_for_player(args, name, account),
+        headers={"Accept": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=getattr(args, "combat_usable_api_timeout", 3.0)) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception:
+        return None
+
+    return parse_player_condition_snapshots(payload)
+
+
+def party_state_member_name_for_condition(
+    party_state: PartyState,
+    condition: PlayerConditionSnapshot,
+    *,
+    fallback_name: str = "",
+) -> str:
+    condition_name_key = normalize_target_name(condition.name)
+    fallback_name_key = normalize_target_name(fallback_name)
+    condition_object_id = int(condition.object_id or 0)
+
+    with party_state.lock:
+        for member_name in party_state.member_names:
+            if condition_name_key and normalize_target_name(member_name) == condition_name_key:
+                return member_name
+            if condition_object_id > 0 and party_state.member_object_ids.get(member_name, 0) == condition_object_id:
+                return member_name
+
+    if condition_name_key:
+        return condition.name
+    if fallback_name_key:
+        return fallback_name
+    return ""
+
+
+def refresh_party_condition_snapshots(
+    party_state: PartyState | None,
+    args: argparse.Namespace,
+    account: DummyAccount,
+    party_member_name: str,
+    *,
+    fetch_condition=fetch_player_condition_snapshot_for_player,
+    fetch_condition_snapshots=None,
+) -> int:
+    if party_state is None or not getattr(args, "combat_usable_api", False):
+        return 0
+
+    updated = 0
+    updated_names: set[str] = set()
+    auto_external_members = bool(getattr(args, "party_auto_external_members", True))
+
+    if fetch_condition_snapshots is None and fetch_condition is fetch_player_condition_snapshot_for_player:
+        fetch_condition_snapshots = fetch_player_condition_snapshots_for_player
+
+    condition_snapshots = None
+    if callable(fetch_condition_snapshots):
+        condition_snapshots = fetch_condition_snapshots(args, party_member_name, account.username)
+
+    if condition_snapshots:
+        managed_names = set(party_state.snapshot().get("managed_member_names", []) or [])
+        for condition in condition_snapshots:
+            member_name = party_state_member_name_for_condition(
+                party_state,
+                condition,
+                fallback_name=party_member_name,
+            )
+            if not member_name:
+                continue
+
+            if member_name not in managed_names and member_name != party_member_name:
+                if not auto_external_members:
+                    continue
+                party_state.update_external_member(member_name, condition, role="external")
+
+            party_state.update_member_condition(member_name, condition)
+            updated_names.add(member_name)
+            updated += 1
+
+    if party_member_name not in updated_names:
+        condition = fetch_condition(args, party_member_name, account.username)
+        if condition is not None:
+            party_state.update_member_condition(party_member_name, condition)
+            updated_names.add(party_member_name)
+            updated += 1
+
+    for external_member_name in party_state.snapshot().get("external_member_names", []) or []:
+        if str(external_member_name) in updated_names:
+            continue
+        condition = fetch_condition(args, str(external_member_name), "")
+        if condition is None:
+            continue
+        party_state.update_member_condition(str(external_member_name), condition)
+        updated += 1
+
+    return updated
 
 
 def required_target_api_name(args: argparse.Namespace) -> str:
@@ -7171,8 +10379,6 @@ def party_rescue_actor_from_snapshot(
 ):
     if not getattr(args, "party_rescue_aggro", False):
         return None
-    if not party_member_is_active_tank(party_snapshot, member_name):
-        return None
     if not is_melee_rotation(action_rotation):
         return None
 
@@ -7184,6 +10390,8 @@ def party_rescue_actor_from_snapshot(
     if target_id <= 0:
         return None
 
+    target_name = str(party_snapshot.get("rescue_target_name", "") or "rescue target")
+
     target_x = int(party_snapshot.get("rescue_target_x", 0) or 0)
     target_y = int(party_snapshot.get("rescue_target_y", 0) or 0)
     target_z = int(party_snapshot.get("rescue_target_z", 0) or 0)
@@ -7194,9 +10402,36 @@ def party_rescue_actor_from_snapshot(
     if target_age < 0.0 or (max_age > 0.0 and target_age > max_age):
         return None
 
+    if not party_member_is_active_tank(party_snapshot, member_name):
+        objective_rescue = bool(party_snapshot.get("rescue_target_objective_add", False)) or name_matches_required_target(
+            args,
+            target_name,
+        )
+        leader_target_id = int(party_snapshot.get("leader_target_id", 0) or 0)
+        can_take_unanchored_objective_rescue = bool(
+            objective_rescue
+            and leader_target_id <= 0
+            and is_party_tank_role(action_rotation)
+        )
+        if not (
+            can_take_unanchored_objective_rescue
+            or (
+                objective_rescue
+                and should_party_member_handle_rescue_target(
+                    args,
+                    party_snapshot,
+                    member_name,
+                    action_rotation,
+                    health_percent,
+                    rescue_age=target_age,
+                )
+            )
+        ):
+            return None
+
     return SimpleNamespace(
         object_id=target_id,
-        name=str(party_snapshot.get("rescue_target_name", "") or "rescue target"),
+        name=target_name,
         x=target_x,
         y=target_y,
         z=target_z,
@@ -7215,6 +10450,7 @@ def party_objective_actor_from_snapshot_for_counterattack(
     behavior_state: DummyBehaviorState | str = DummyBehaviorState.HuntObjective,
     required_home_hunt_ready: bool = True,
     party_ready_for_objective: bool = True,
+    objective_pressure_active: bool = False,
 ):
     if not party_member_is_active_tank(party_snapshot, member_name):
         return None
@@ -7235,6 +10471,7 @@ def party_objective_actor_from_snapshot_for_counterattack(
         required_home_hunt_ready=required_home_hunt_ready,
         party_ready_for_objective=party_ready_for_objective,
         direct_required_damage_to_active_tank=True,
+        objective_pressure_active=objective_pressure_active,
     ):
         return None
 
@@ -7286,6 +10523,50 @@ def parse_usable_skill(value: object) -> UsableSkillRef | None:
         return None
 
 
+def party_protection_ability_category(value: object) -> str:
+    if not isinstance(value, dict):
+        return ""
+
+    ability_id = 0
+    try:
+        ability_id = int(value.get("id", 0) or 0)
+    except (TypeError, ValueError):
+        ability_id = 0
+    if ability_id in PARTY_PROTECTION_ABILITY_IDS:
+        return PARTY_PROTECTION_ABILITY_IDS[ability_id]
+
+    name = " ".join(str(value.get("name", "") or "").lower().split())
+    internal_id = " ".join(str(value.get("internalId", "") or "").lower().split())
+    haystack = f"{name} {internal_id}"
+    for token, category in PARTY_PROTECTION_ABILITY_NAME_TOKENS.items():
+        if token in haystack:
+            return category
+
+    return ""
+
+
+def parse_usable_ability(value: object) -> UsableAbilityRef | None:
+    if not isinstance(value, dict) or str(value.get("kind", "")) != "Ability":
+        return None
+
+    category = party_protection_ability_category(value)
+    if not category:
+        return None
+
+    try:
+        return UsableAbilityRef(
+            use_skill_index=int(value["useSkillIndex"]),
+            use_skill_type=int(value["useSkillType"]),
+            name=str(value.get("name", "")),
+            level=int(value.get("level", 0) or 0),
+            ability_id=int(value.get("id", 0) or 0),
+            internal_id=str(value.get("internalId", "") or ""),
+            category=category,
+        )
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
 def parse_usable_spell(value: object) -> tuple[str, UsableSpellRef] | None:
     if not isinstance(value, dict) or str(value.get("kind", "")) != "Spell":
         return None
@@ -7332,17 +10613,56 @@ def parse_usable_hybrid_spell(value: object) -> tuple[str, UsableSpellRef] | Non
 
 def bucket_usable_spell(spell: dict, ref: UsableSpellRef) -> tuple[str, UsableSpellRef] | None:
     is_harmful = bool(spell.get("isHarmful"))
+    is_helpful = bool(spell.get("isHelpful"))
     is_healing = bool(spell.get("isHealing"))
     is_buff = bool(spell.get("isBuff"))
+    is_debuff = bool(spell.get("isDebuff"))
     damage = float(spell.get("damage", 0) or 0)
     spell_range = int(spell.get("range", 0) or 0)
+    radius = int(spell.get("radius", 0) or 0)
+    spell_type = str(spell.get("spellType", "") or "")
+    spell_type_key = spell_type.strip().lower()
+    target = str(spell.get("target", "") or "")
+    target_key = target.strip().lower()
+    enriched_ref = replace(
+        ref,
+        spell_type=spell_type,
+        target=target,
+        range=spell_range,
+        radius=radius,
+        cast_time=int(spell.get("castTime", 0) or 0),
+        recast_delay=int(spell.get("recastDelay", 0) or 0),
+        duration=int(spell.get("duration", 0) or 0),
+        damage=damage,
+        is_harmful=is_harmful,
+        is_helpful=is_helpful,
+        is_healing=is_healing,
+        is_buff=is_buff,
+        is_debuff=is_debuff,
+    )
 
-    if is_healing:
-        return "heal", ref
+    if is_resurrection_spell_type(spell_type_key) or target_key == "corpse":
+        return "resurrection", enriched_ref
+    if is_cure_spell_type(spell_type_key):
+        return "cure", enriched_ref
+    if is_taunt_spell_type(spell_type_key):
+        return "taunt", enriched_ref
     if is_buff:
-        return "buff", ref
+        return "buff", enriched_ref
+    if is_healing:
+        return "heal", enriched_ref
+    if is_harmful and damage > 0 and is_damage_over_time_spell_type(spell_type_key):
+        return "dot", enriched_ref
+    if is_harmful and damage > 0 and (radius > 0 or target_key in AREA_TARGET_TYPES):
+        return "area_attack", enriched_ref
+    if is_harmful and is_crowd_control_spell_type(spell_type_key):
+        return "crowd_control", enriched_ref
     if is_harmful and spell_range > 0 and damage > 0:
-        return "attack", ref
+        return "attack", enriched_ref
+    if is_harmful and (is_debuff or "debuff" in spell_type_key or spell_type_key in {"disease", "nearsight", "fumblechancedebuff"}):
+        return "debuff", enriched_ref
+    if is_summon_spell_type(spell_type_key):
+        return "summon", enriched_ref
 
     return None
 
@@ -7356,9 +10676,46 @@ def parse_combat_usable_plan(payload: object) -> CombatUsablePlan:
         for raw_skill in payload.get("skills", [])
         if (skill := parse_usable_skill(raw_skill)) is not None
     ]
+    party_protection_abilities = [
+        ability
+        for raw_skill in payload.get("skills", [])
+        if (ability := parse_usable_ability(raw_skill)) is not None
+    ]
     attack_spells: list[UsableSpellRef] = []
+    dot_spells: list[UsableSpellRef] = []
+    area_attack_spells: list[UsableSpellRef] = []
     heal_spells: list[UsableSpellRef] = []
     buff_spells: list[UsableSpellRef] = []
+    cure_spells: list[UsableSpellRef] = []
+    resurrection_spells: list[UsableSpellRef] = []
+    crowd_control_spells: list[UsableSpellRef] = []
+    debuff_spells: list[UsableSpellRef] = []
+    taunt_spells: list[UsableSpellRef] = []
+    summon_spells: list[UsableSpellRef] = []
+
+    def collect_spell(bucket: str, spell: UsableSpellRef) -> None:
+        if bucket == "heal":
+            heal_spells.append(spell)
+        elif bucket == "buff":
+            buff_spells.append(spell)
+        elif bucket == "attack":
+            attack_spells.append(spell)
+        elif bucket == "dot":
+            dot_spells.append(spell)
+        elif bucket == "area_attack":
+            area_attack_spells.append(spell)
+        elif bucket == "cure":
+            cure_spells.append(spell)
+        elif bucket == "resurrection":
+            resurrection_spells.append(spell)
+        elif bucket == "crowd_control":
+            crowd_control_spells.append(spell)
+        elif bucket == "debuff":
+            debuff_spells.append(spell)
+        elif bucket == "taunt":
+            taunt_spells.append(spell)
+        elif bucket == "summon":
+            summon_spells.append(spell)
 
     for raw_skill in payload.get("skills", []):
         parsed = parse_usable_hybrid_spell(raw_skill)
@@ -7367,12 +10724,7 @@ def parse_combat_usable_plan(payload: object) -> CombatUsablePlan:
             continue
 
         bucket, spell = parsed
-        if bucket == "heal":
-            heal_spells.append(spell)
-        elif bucket == "buff":
-            buff_spells.append(spell)
-        elif bucket == "attack":
-            attack_spells.append(spell)
+        collect_spell(bucket, spell)
 
     for raw_line in payload.get("spellLines", []):
         if not isinstance(raw_line, dict):
@@ -7385,21 +10737,30 @@ def parse_combat_usable_plan(payload: object) -> CombatUsablePlan:
                 continue
 
             bucket, spell = parsed
-            if bucket == "heal":
-                heal_spells.append(spell)
-            elif bucket == "buff":
-                buff_spells.append(spell)
-            elif bucket == "attack":
-                attack_spells.append(spell)
+            collect_spell(bucket, spell)
 
     sort_key = lambda item: (item.level, item.name)
     sorted_skills = sorted(skills, key=sort_key, reverse=True)
+    sorted_party_protection_abilities = sorted(party_protection_abilities, key=sort_key, reverse=True)
     return CombatUsablePlan(
         skills=sorted_skills,
         taunt_skills=sorted([skill for skill in sorted_skills if is_taunt_skill(skill)], key=sort_key, reverse=True),
+        party_protection_abilities=sorted_party_protection_abilities,
+        guard_abilities=sorted([ability for ability in sorted_party_protection_abilities if ability.category == "guard"], key=sort_key, reverse=True),
+        protect_abilities=sorted([ability for ability in sorted_party_protection_abilities if ability.category == "protect"], key=sort_key, reverse=True),
+        intercept_abilities=sorted([ability for ability in sorted_party_protection_abilities if ability.category == "intercept"], key=sort_key, reverse=True),
+        bodyguard_abilities=sorted([ability for ability in sorted_party_protection_abilities if ability.category == "bodyguard"], key=sort_key, reverse=True),
         attack_spells=sorted(attack_spells, key=sort_key, reverse=True),
+        dot_spells=sorted(dot_spells, key=sort_key, reverse=True),
+        area_attack_spells=sorted(area_attack_spells, key=sort_key, reverse=True),
         heal_spells=sorted(heal_spells, key=sort_key, reverse=True),
         buff_spells=sorted(buff_spells, key=sort_key, reverse=True),
+        cure_spells=sorted(cure_spells, key=sort_key, reverse=True),
+        resurrection_spells=sorted(resurrection_spells, key=sort_key, reverse=True),
+        crowd_control_spells=sorted(crowd_control_spells, key=sort_key, reverse=True),
+        debuff_spells=sorted(debuff_spells, key=sort_key, reverse=True),
+        taunt_spells=sorted(taunt_spells, key=sort_key, reverse=True),
+        summon_spells=sorted(summon_spells, key=sort_key, reverse=True),
     )
 
 
@@ -7665,6 +11026,58 @@ def flee_candidate_risk(args: argparse.Namespace, candidate_x: int, candidate_y:
     return risk
 
 
+def flee_candidate_path_risk(
+    args: argparse.Namespace,
+    origin_x: int,
+    origin_y: int,
+    candidate_x: int,
+    candidate_y: int,
+    npcs: list[object],
+) -> float:
+    corridor_radius = float(getattr(args, "flee_path_threat_corridor_radius", 0.0) or 0.0)
+    if corridor_radius <= 0.0:
+        step_distance = float(getattr(args, "flee_step", 0.0) or 0.0)
+        corridor_radius = max(900.0, step_distance * 1.5)
+    if corridor_radius <= 0.0:
+        return 0.0
+
+    risk = 0.0
+    for npc in npcs:
+        npc_x = int(getattr(npc, "x", 0) or 0)
+        npc_y = int(getattr(npc, "y", 0) or 0)
+        origin_distance = horizontal_distance_between_points(origin_x, origin_y, npc_x, npc_y)
+        if origin_distance < float(getattr(args, "flee_path_origin_ignore_radius", 300.0) or 300.0):
+            continue
+        distance = point_to_segment_distance(npc_x, npc_y, origin_x, origin_y, candidate_x, candidate_y)
+        if distance > corridor_radius:
+            continue
+
+        weight = flee_threat_weight(args, npc)
+        risk += weight * (corridor_radius - distance) / corridor_radius * 4.0
+        if distance < 300.0:
+            risk += weight * (300.0 - distance) / 30.0
+
+    return risk
+
+
+def flee_candidate_total_risk(
+    args: argparse.Namespace,
+    origin_x: int,
+    origin_y: int,
+    candidate_x: int,
+    candidate_y: int,
+    npcs: list[object],
+) -> float:
+    return flee_candidate_risk(args, candidate_x, candidate_y, npcs) + flee_candidate_path_risk(
+        args,
+        origin_x,
+        origin_y,
+        candidate_x,
+        candidate_y,
+        npcs,
+    )
+
+
 def select_dynamic_flee_destination_from_npcs(args: argparse.Namespace, client, npcs: list[object]) -> MovementDestination | None:
     flee_distance = effective_flee_safe_point_distance(args, client)
     threat_radius = float(getattr(args, "flee_safe_threat_radius", 0.0) or 0.0)
@@ -7689,7 +11102,7 @@ def select_dynamic_flee_destination_from_npcs(args: argparse.Namespace, client, 
         angle = math.tau * index / directions
         candidate_x = int(origin_x + math.cos(angle) * flee_distance)
         candidate_y = int(origin_y + math.sin(angle) * flee_distance)
-        risk = flee_candidate_risk(args, candidate_x, candidate_y, npcs)
+        risk = flee_candidate_total_risk(args, origin_x, origin_y, candidate_x, candidate_y, npcs)
         candidates.append((risk, candidate_x, candidate_y))
 
     current_risk = flee_candidate_risk(args, origin_x, origin_y, npcs)
@@ -7769,8 +11182,24 @@ def dynamic_flee_safe_destination(args: argparse.Namespace, client) -> MovementD
         if pressure_destination is not None:
             if destination is None:
                 return pressure_destination
-            pressure_risk = flee_candidate_risk(args, pressure_destination.x, pressure_destination.y, combined_npcs)
-            destination_risk = flee_candidate_risk(args, destination.x, destination.y, combined_npcs)
+            origin_x = int(getattr(client, "x", 0) or 0)
+            origin_y = int(getattr(client, "y", 0) or 0)
+            pressure_risk = flee_candidate_total_risk(
+                args,
+                origin_x,
+                origin_y,
+                pressure_destination.x,
+                pressure_destination.y,
+                combined_npcs,
+            )
+            destination_risk = flee_candidate_total_risk(
+                args,
+                origin_x,
+                origin_y,
+                destination.x,
+                destination.y,
+                combined_npcs,
+            )
             if pressure_risk <= destination_risk:
                 return pressure_destination
 
@@ -7797,9 +11226,61 @@ def should_prefer_flee_home_before_dynamic(args: argparse.Namespace, client) -> 
     return critical_threshold <= 0 or health_percent <= critical_threshold
 
 
+def flee_home_egress_destination(
+    args: argparse.Namespace,
+    client,
+    home_destination: MovementDestination | None,
+) -> MovementDestination | None:
+    if home_destination is None or client is None:
+        return None
+    if not getattr(args, "flee_dynamic_safe_point", False):
+        return None
+
+    danger = getattr(args, "required_target_home", None)
+    if danger is None:
+        return None
+
+    health_percent = int(getattr(client, "health_percent", 0) or 0)
+    critical_threshold = int(getattr(args, "flee_critical_health_percent", 0) or 0)
+    if health_percent <= 0 or critical_threshold <= 0 or health_percent > critical_threshold:
+        return None
+
+    current_x = int(getattr(client, "x", 0) or 0)
+    current_y = int(getattr(client, "y", 0) or 0)
+    if current_x <= 0 or current_y <= 0:
+        return None
+
+    egress_radius = max(
+        float(getattr(args, "target_home_max_distance", 0.0) or 0.0),
+        float(getattr(args, "combat_home_leash_distance", 0.0) or 0.0),
+        float(getattr(args, "required_target_home_hunt_distance", 0.0) or 0.0),
+        float(getattr(args, "flee_safe_threat_radius", 0.0) or 0.0),
+        2400.0,
+    )
+    distance_from_danger = horizontal_distance_between_points(
+        current_x,
+        current_y,
+        int(danger.x),
+        int(danger.y),
+    )
+    if distance_from_danger > egress_radius:
+        return None
+
+    if dynamic_flee_safe_destination(args, client) is None:
+        return None
+
+    return flee_home_overrun_destination(args, client, home_destination)
+
 
 def flee_escape_destination(args: argparse.Namespace, client=None) -> MovementDestination | None:
     home = getattr(args, "flee_home", None) or getattr(args, "required_target_home", None)
+
+    if should_prefer_flee_home_before_dynamic(args, client):
+        home_destination = destination_from_point("flee-home", home.x, home.y, home.z)
+        egress_destination = flee_home_egress_destination(args, client, home_destination)
+        if egress_destination is not None:
+            return egress_destination
+        return home_destination
 
     dynamic_destination = dynamic_flee_safe_destination(args, client)
     if dynamic_destination is not None:
@@ -7809,6 +11290,13 @@ def flee_escape_destination(args: argparse.Namespace, client=None) -> MovementDe
         return None
 
     return destination_from_point("flee-home", home.x, home.y, home.z)
+
+
+def flee_escape_destination_under_pressure(args: argparse.Namespace, client=None) -> MovementDestination | None:
+    dynamic_destination = dynamic_flee_safe_destination(args, client)
+    if dynamic_destination is not None:
+        return dynamic_destination
+    return flee_escape_destination(args, client)
 
 
 def flee_escape_destination_from_active_combat(
@@ -7913,6 +11401,63 @@ def should_flee_losing_combat(
         return damage_taken > 0
 
     return damage_taken >= damage_done * ratio
+
+
+def party_snapshot_has_live_healer_support(
+    party_snapshot: dict[str, int | float | str] | None,
+    *,
+    exclude_name: str = "",
+) -> bool:
+    if not party_snapshot:
+        return False
+
+    normalized_exclude = normalize_target_name(exclude_name)
+    for member in party_snapshot.get("members", []) or []:
+        if not isinstance(member, dict):
+            continue
+        if normalize_target_name(str(member.get("name", "") or "")) == normalized_exclude:
+            continue
+        if str(member.get("role", "") or "") != "healer-support":
+            continue
+        if int(member.get("object_id", 0) or 0) <= 0:
+            continue
+        if int(member.get("health_percent", 0) or 0) <= 0:
+            continue
+        return True
+
+    return False
+
+
+def should_party_tank_hold_required_objective_for_healer(
+    args: argparse.Namespace,
+    party_snapshot: dict[str, int | float | str] | None,
+    member_name: str,
+    active_combat,
+    *,
+    health_percent: int,
+) -> bool:
+    if active_combat is None or not party_snapshot:
+        return False
+    if not party_member_is_active_tank(party_snapshot, member_name):
+        return False
+
+    active_target_name = normalize_target_name(str(active_combat.get("target_name", "") or ""))
+    if not name_matches_required_target(args, active_target_name):
+        return False
+
+    hold_floor = max(
+        int(getattr(args, "party_survival_active_tank_health_percent", 0) or 0),
+        int(getattr(args, "party_active_tank_handoff_health_percent", 0) or 0),
+    )
+    if hold_floor > 0:
+        if 0 < int(health_percent or 0) <= hold_floor:
+            return False
+    else:
+        critical_health = int(getattr(args, "flee_critical_health_percent", 0) or 0)
+        if critical_health > 0 and 0 < int(health_percent or 0) <= critical_health:
+            return False
+
+    return party_snapshot_has_live_healer_support(party_snapshot, exclude_name=member_name)
 
 
 def should_delay_early_flee_for_melee_counterattack(
@@ -8047,6 +11592,38 @@ def should_hunter_wind_down_before_segment_end(
     )
 
 
+def should_hold_required_target_untracked_flee_for_party_reaggro(
+    args: argparse.Namespace,
+    party_snapshot: dict[str, int | float | str] | None,
+    *,
+    member_name: str,
+    attacker_name: str,
+    party_ready_for_objective: bool,
+) -> bool:
+    if party_snapshot is None or not party_ready_for_objective:
+        return False
+
+    if not name_matches_required_target(args, attacker_name):
+        return False
+
+    if party_member_is_active_tank(party_snapshot, member_name):
+        return False
+
+    if int(party_snapshot.get("leader_target_id", 0) or 0) <= 0:
+        return False
+
+    active_tank_name = str(party_snapshot.get("active_tank_name", "") or "")
+    active_tank_object_id = int(party_snapshot.get("active_tank_object_id", 0) or 0)
+    if not active_tank_name and active_tank_object_id <= 0:
+        return False
+
+    return bool(
+        getattr(args, "party_focus_target_backoff", False)
+        or getattr(args, "party_focus_pressure_offtank_reaggro", False)
+        or float(getattr(args, "party_active_tank_reaggro_taunt_interval", 0.0) or 0.0) > 0.0
+    )
+
+
 def should_flee_untracked_damage(
     args: argparse.Namespace,
     *,
@@ -8058,9 +11635,25 @@ def should_flee_untracked_damage(
     party_rescue_target_id: int = 0,
     last_damage_attacker_name: str = "",
     party_ready_for_objective: bool = True,
+    allow_required_target_flee: bool = False,
     force_flee_from_health_drop: bool = False,
+    active_combat: dict[str, float | int | str] | None = None,
+    current_target_intent: TargetIntent | str = TargetIntent.none,
 ) -> bool:
     if current_target or current_health_percent <= 0 or now < flee_until:
+        return False
+
+    counterattack_floor = int(getattr(args, "flee_melee_counterattack_health_floor", 0) or 0)
+    if (
+        counterattack_floor > 0
+        and current_health_percent > counterattack_floor
+        and should_preserve_active_party_rescue_focus(
+            args,
+            active_combat,
+            int((active_combat or {}).get("target_id", 0) or 0),
+            current_target_intent,
+        )
+    ):
         return False
 
     commit_floor = int(getattr(args, "required_target_tank_commit_health_percent", 0) or 0)
@@ -8069,14 +11662,26 @@ def should_flee_untracked_damage(
         and current_health_percent > commit_floor
         and name_matches_required_target(args, last_damage_attacker_name)
         and party_ready_for_objective
+        and not allow_required_target_flee
     ):
         return False
 
-    counterattack_floor = int(getattr(args, "flee_melee_counterattack_health_floor", 0) or 0)
     if (
         party_rescue_target_id > 0
         and counterattack_floor > 0
         and current_health_percent > counterattack_floor
+        and not force_flee_from_health_drop
+    ):
+        return False
+
+    if (
+        counterattack_floor > 0
+        and current_health_percent > counterattack_floor
+        and target_intent_value(current_target_intent)
+        in {
+            TargetIntent.party_rescue.value,
+            TargetIntent.required_retaliation.value,
+        }
         and not force_flee_from_health_drop
     ):
         return False
@@ -8102,7 +11707,13 @@ def should_force_flee_from_non_required_health_drop(
     if current_health_percent <= 0 or previous_health_percent <= 0:
         return False
 
-    if name_matches_required_target(args, last_damage_attacker_name):
+    if not str(last_damage_attacker_name or "").strip():
+        return False
+
+    if name_matches_required_target(args, last_damage_attacker_name) or name_matches_objective_add_target(
+        args,
+        last_damage_attacker_name,
+    ):
         return False
 
     pressure_threshold = int(getattr(args, "flee_pressure_health_percent", 0) or 0)
@@ -8144,6 +11755,36 @@ def should_commit_required_target_from_recent_damage(
         return False
 
     return name_matches_required_target(args, last_damage_attacker_name)
+
+
+def should_interrupt_drop_aggro_for_required_objective_pressure(
+    args: argparse.Namespace,
+    behavior_state: DummyBehaviorState | str,
+    npc,
+    current_target_intent: TargetIntent | str = TargetIntent.none,
+    *,
+    current_health_percent: int,
+    required_home_hunt_ready: bool,
+) -> bool:
+    if not can_objective_pressure_interrupt(
+        behavior_state,
+        current_health_percent,
+        SimpleNamespace(required_home_hunt_ready=required_home_hunt_ready),
+        args,
+    ):
+        return False
+
+    if npc is None or not is_required_target(args, npc):
+        return False
+
+    if target_intent_value(current_target_intent) not in {
+        TargetIntent.objective.value,
+        TargetIntent.required_retaliation.value,
+        TargetIntent.party_rescue.value,
+    }:
+        return False
+
+    return current_health_percent > 0
 
 
 def should_overrun_flee_home(args: argparse.Namespace, *, health_percent: int) -> bool:
@@ -8522,6 +12163,27 @@ def target_home_leash_violation(client, args: argparse.Namespace, npc) -> tuple[
     return False, "", max(player_distance, target_distance)
 
 
+def target_home_leash_finish_outcome(leash_reason: str) -> str:
+    if str(leash_reason or "") == "target":
+        return "target_home_guard_abandon"
+    return "target_home_leash"
+
+
+def target_within_combat_home_leash(args: argparse.Namespace, npc) -> bool:
+    home = getattr(args, "required_target_home", None)
+    leash_distance = float(getattr(args, "combat_home_leash_distance", 0.0) or 0.0)
+    if home is None or leash_distance <= 0.0 or npc is None:
+        return True
+
+    target_distance = horizontal_distance_between_points(
+        int(getattr(npc, "x", 0) or 0),
+        int(getattr(npc, "y", 0) or 0),
+        int(getattr(home, "x", 0) or 0),
+        int(getattr(home, "y", 0) or 0),
+    )
+    return target_distance <= leash_distance
+
+
 def should_abort_overextended_combat(args: argparse.Namespace, active_combat, distance: float, target_age: float) -> bool:
     max_distance = float(getattr(args, "combat_chase_max_distance", 0.0) or 0.0)
     if max_distance <= 0.0 or distance <= max_distance:
@@ -8557,6 +12219,32 @@ def should_move_to_required_target_home(client, args: argparse.Namespace, *, is_
         should_approach_required_target_home(args, is_party_leader=is_party_leader, current_target=current_target)
         and not required_target_home_reached(client, args)
     )
+
+
+def should_defer_required_home_move_for_recent_objective_pressure(
+    behavior_state: DummyBehaviorState | str,
+    current_target_intent: TargetIntent | str,
+    *,
+    last_damage_taken_at: float,
+    now: float,
+    damage_grace_seconds: float = 3.0,
+) -> bool:
+    state = behavior_state_value(behavior_state)
+    if state in {
+        DummyBehaviorState.DropAggroAndRecover.value,
+        DummyBehaviorState.RestRecover.value,
+        DummyBehaviorState.DeadReleaseRecover.value,
+    }:
+        return False
+
+    if last_damage_taken_at <= 0.0 or now - last_damage_taken_at > max(0.0, damage_grace_seconds):
+        return False
+
+    return target_intent_value(current_target_intent) in {
+        TargetIntent.objective.value,
+        TargetIntent.required_retaliation.value,
+        TargetIntent.party_rescue.value,
+    }
 
 
 def should_defer_required_home_move_for_friendly_cast(
@@ -8782,7 +12470,7 @@ def move_towards_destination(
             return None
 
         party_direct_limit = max(
-            float(getattr(args, "party_follow_step", step) or step) * 64.0,
+            float(getattr(args, "party_follow_step", step) or step) * 96.0,
             float(getattr(args, "path_max_node_distance", 0.0) or 0.0) * 2.0,
             float(getattr(args, "path_last_mile_distance", 0.0) or 0.0),
         )
@@ -9584,6 +13272,8 @@ def startup_teleporter_home_search_stop_distance(args: argparse.Namespace) -> fl
 
 def startup_teleporter_home_timeout(args: argparse.Namespace, client, teleporter_home) -> float:
     configured_timeout = max(0.0, float(getattr(args, "startup_teleporter_home_timeout", 0.0) or 0.0))
+    if configured_timeout <= 0.0:
+        return 0.0
     if teleporter_home is None:
         return configured_timeout
 
@@ -9601,6 +13291,39 @@ def startup_teleporter_home_timeout(args: argparse.Namespace, client, teleporter
     movement_speed = max(1.0, movement_speed)
     estimated_seconds = (remaining_distance / movement_speed) * 3.0 + 15.0
     return max(configured_timeout, estimated_seconds)
+
+
+def should_search_startup_teleporter_home(args: argparse.Namespace, client, teleporter_home) -> bool:
+    if teleporter_home is None:
+        return False
+    if startup_teleporter_home_timeout(args, client, teleporter_home) <= 0.0:
+        return False
+
+    required_home = required_target_home_destination(args)
+    if required_home is None:
+        return True
+
+    teleporter_distance = horizontal_distance_between_points(
+        int(client.x),
+        int(client.y),
+        int(teleporter_home.x),
+        int(teleporter_home.y),
+    )
+    required_home_distance = horizontal_distance_between_points(
+        int(client.x),
+        int(client.y),
+        required_home.x,
+        required_home.y,
+    )
+    ready_distance = max(
+        float(getattr(args, "required_target_home_hunt_distance", 0.0) or 0.0),
+        float(getattr(args, "required_target_home_stop_distance", 0.0) or 0.0),
+        float(getattr(args, "target_home_max_distance", 0.0) or 0.0),
+    )
+    if ready_distance > 0.0 and required_home_distance <= ready_distance:
+        return False
+
+    return teleporter_distance < required_home_distance
 
 
 def startup_teleport_confirmed(client, teleport_destination: str) -> bool:
@@ -9759,7 +13482,11 @@ def run_startup_service_actions(
 
         candidates = scan_teleporter_candidates()
         teleporter_home = getattr(args, "startup_teleporter_home", None)
-        if not candidates and teleporter_home is not None and path_state is not None:
+        should_home_search = should_search_startup_teleporter_home(args, client, teleporter_home)
+        if not candidates and not should_home_search and teleporter_home is not None:
+            actions += add_action(action_counts, "startup_teleporter_home_skip")
+
+        if not candidates and should_home_search and path_state is not None:
             destination = destination_from_point(
                 "startup-teleporter-home",
                 int(teleporter_home.x),
@@ -10144,12 +13871,26 @@ def run_dummy_round(
                 actions += add_action(action_counts, "combat_plan_loaded")
                 if combat_plan.skills:
                     actions += add_action(action_counts, "combat_plan_has_skills")
+                if combat_plan.party_protection_abilities:
+                    actions += add_action(action_counts, "combat_plan_has_party_protection_abilities")
                 if combat_plan.attack_spells:
                     actions += add_action(action_counts, "combat_plan_has_attack_spells")
                 if combat_plan.heal_spells:
                     actions += add_action(action_counts, "combat_plan_has_heal_spells")
                 if combat_plan.buff_spells:
                     actions += add_action(action_counts, "combat_plan_has_buff_spells")
+                if combat_plan.resurrection_spells:
+                    actions += add_action(action_counts, "combat_plan_has_resurrection_spells")
+                if combat_plan.crowd_control_spells:
+                    actions += add_action(action_counts, "combat_plan_has_crowd_control_spells")
+                if combat_plan.cure_spells:
+                    actions += add_action(action_counts, "combat_plan_has_cure_spells")
+                if combat_plan.debuff_spells:
+                    actions += add_action(action_counts, "combat_plan_has_debuff_spells")
+                if combat_plan.taunt_spells:
+                    actions += add_action(action_counts, "combat_plan_has_taunt_spells")
+                if combat_plan.area_attack_spells:
+                    actions += add_action(action_counts, "combat_plan_has_area_attack_spells")
             except Exception:
                 actions += add_action(action_counts, "combat_plan_failed")
         actions += cast_precombat_self_buffs(client, args, combat_plan, action_counts)
@@ -10170,12 +13911,19 @@ def run_dummy_round(
         next_active_tank_reaggro_taunt = 0.0
         cast_action_hold_until = 0.0
         next_party_heal = time.monotonic() + rng.uniform(1.0, max(args.party_heal_leader_interval, 1.0))
+        next_party_resurrect = time.monotonic() + rng.uniform(1.0, max(args.party_resurrect_interval, 1.0))
+        next_party_cure = time.monotonic() + rng.uniform(1.0, max(args.party_cure_interval, 1.0))
+        next_party_protection = time.monotonic() + rng.uniform(1.0, max(args.party_protection_interval, 1.0))
+        next_party_condition_refresh = time.monotonic() + rng.uniform(0.5, max(args.party_condition_refresh_interval, 0.5))
+        next_crowd_control = 0.0
         next_recovery = time.monotonic() + rng.uniform(5.0, max(args.recovery_interval, 5.0))
         next_invite = time.monotonic() + rng.uniform(1.0, max(args.party_invite_interval, 1.0))
         next_accept = time.monotonic() + rng.uniform(1.5, max(args.party_accept_interval, 1.5))
         next_assist = time.monotonic() + rng.uniform(2.0, max(args.party_assist_interval, 2.0))
         next_follow = time.monotonic() + rng.uniform(0.8, max(args.party_follow_interval, 0.8))
         next_party_buff = time.monotonic() + rng.uniform(1.0, max(args.party_buff_interval, 1.0))
+        party_resurrection_cooldowns: dict[int, float] = {}
+        party_buff_cooldowns: dict[tuple[int, str], float] = {}
         next_party_rescue_request = 0.0
         next_self_preserve_heal = 0.0
         local_rescue_until = 0.0
@@ -10232,15 +13980,18 @@ def run_dummy_round(
         next_flee_move = 0.0
         next_flee_pressure_replan = 0.0
         flee_destination: MovementDestination | None = None
+        flee_plan = FleePlan()
         flee_wander_heading = heading
         flee_wander_heading_hold_until = 0.0
         last_flee_damage_replan_at = 0.0
         flee_damage_replan_suppressed_until = 0.0
         friendly_cast_hold_until = 0.0
         friendly_cast_restore_target = 0
+        friendly_cast_hold_reason = ""
         party_pull_ready_since = 0.0
         stand_after_rest = False
         last_health_percent = int(getattr(client, "health_percent", 100) or 100)
+        current_health_percent = last_health_percent
         last_damage_taken_at = 0.0
         last_incoming_damage_attacker_name = ""
         last_incoming_damage_at = 0.0
@@ -10252,14 +14003,24 @@ def run_dummy_round(
         travel_aggro_last_at = 0.0
         travel_aggro_last_name = ""
         objective_complete_at = 0.0
+        pending_required_target_complete_id = 0
+        pending_required_target_complete_name = ""
+        pending_required_target_complete_level = 0
+        pending_required_target_complete_since = 0.0
         waypoint_index = rng.randrange(0, len(args.waypoints)) if args.waypoints and args.waypoint_mode == "random" else 0
         end_time = time.monotonic() + args.hold
-        party_slot = index % max(args.party_size, 1)
-        is_party_leader = party_state is not None and party_slot == 0
-        is_party_follower = party_state is not None and party_slot != 0
+        safe_exit_deadline = end_time + max(0.0, float(getattr(args, "safe_exit_max_seconds", 0.0) or 0.0))
+        safe_exit_active = False
+        safe_exit_failed = False
+        safe_exit_error = ""
+        next_safe_exit_log = 0.0
         party_member_name = character_name_from_account(account.username)
+        party_slot = index % max(args.party_size, 1)
+        is_party_leader = party_state_member_is_leader(party_state, party_member_name)
+        is_party_follower = party_state is not None and not is_party_leader
         requested_action_rotation = resolve_action_rotation(args, party_slot)
         action_rotation = resolve_effective_action_rotation(args, requested_action_rotation, combat_plan, combat_plan_loaded)
+        is_party_support_healer = is_party_support_healer_member(party_state, action_rotation)
 
         if action_rotation != requested_action_rotation:
             actions += add_action(action_counts, f"rotation_adjusted_{requested_action_rotation}_to_{action_rotation}")
@@ -10478,6 +14239,183 @@ def run_dummy_round(
                 actions += add_action(action_counts, "party_ready_cleared")
             return True
 
+        def start_or_refresh_flee(
+            reason: str,
+            priority: int,
+            *,
+            pressure: bool = False,
+            prefer_safe: bool = True,
+            destination_override: MovementDestination | None = None,
+            now: float | None = None,
+            extend_seconds: float | None = None,
+            log_name: str = "flee_start",
+            action_name: str = "flee_start",
+            use_sprint: bool = True,
+            health_percent: int | None = None,
+            previous_health_percent: int | None = None,
+            **log_fields,
+        ) -> bool:
+            nonlocal actions, flee_until, next_flee_move, next_flee_pressure_replan
+            nonlocal flee_destination, flee_wander_heading_hold_until, flee_plan
+
+            now = time.monotonic() if now is None else now
+            if not can_start_or_refresh_flee(behavior_state):
+                actions += add_action(action_counts, "flee_policy_rejected")
+                log_encounter_event(
+                    "flee_policy_rejected",
+                    now,
+                    reason=reason,
+                    priority=int(priority or 0),
+                    pressure=bool(pressure),
+                )
+                return False
+
+            duration = (
+                float(extend_seconds)
+                if extend_seconds is not None
+                else float(getattr(args, "flee_duration", 0.0) or 0.0)
+            )
+            duration = max(duration, 1.0)
+
+            if not should_replace_flee_plan(flee_plan, now=now, priority=priority):
+                flee_until = max(flee_until, now + duration)
+                if pressure:
+                    next_flee_pressure_replan = max(
+                        next_flee_pressure_replan,
+                        now + flee_pressure_replan_cooldown(args),
+                    )
+                actions += add_action(action_counts, "flee_plan_preserved")
+                log_encounter_event(
+                    "flee_plan_preserved",
+                    now,
+                    reason=reason,
+                    priority=int(priority or 0),
+                    active_flee_reason=flee_plan.reason,
+                    active_flee_priority=flee_plan.priority,
+                    active_flee_locked_until=round(flee_plan.locked_until, 3),
+                    destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
+                )
+                return False
+
+            if destination_override is not None:
+                destination = destination_override
+            elif pressure or prefer_safe:
+                destination = flee_escape_destination_under_pressure(args, client)
+            else:
+                destination = flee_escape_destination(args, client)
+
+            flee_until = max(flee_until, now + duration)
+            next_flee_move = now
+            next_flee_pressure_replan = now + (
+                flee_pressure_replan_cooldown(args)
+                if pressure
+                else max(3.0, float(getattr(args, "flee_move_interval", 0.0) or 0.0) * 6.0)
+            )
+            flee_destination = destination
+            flee_wander_heading_hold_until = 0.0
+            lock_seconds = max(
+                0.0,
+                float(getattr(args, "flee_safe_replan_damage_grace", 0.0) or 0.0),
+                float(getattr(args, "flee_move_interval", 0.0) or 0.0) * 6.0 if pressure else 0.0,
+            )
+            flee_plan = FleePlan(priority=int(priority or 0), reason=str(reason or ""), locked_until=now + lock_seconds)
+
+            if use_sprint and getattr(args, "flee_use_sprint", True):
+                client.send_command("/sprint")
+                actions += add_action(action_counts, "sprint_escape")
+            actions += add_action(action_counts, action_name)
+            log_encounter_event(
+                log_name,
+                now,
+                reason=reason,
+                health_percent=int(health_percent if health_percent is not None else getattr(client, "health_percent", 0) or 0),
+                previous_health_percent=previous_health_percent,
+                priority=int(priority or 0),
+                pressure=bool(pressure),
+                destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
+                flee_plan_locked_until=round(flee_plan.locked_until, 3),
+                **log_fields,
+            )
+            return True
+
+        def cancel_flee_for_objective_pressure_interrupt(now: float, npc, intent: TargetIntent | str) -> None:
+            nonlocal actions, flee_until, next_flee_move, next_flee_pressure_replan, flee_destination, flee_plan
+
+            flee_until = 0.0
+            next_flee_move = 0.0
+            next_flee_pressure_replan = 0.0
+            flee_destination = None
+            flee_plan = None
+            actions += add_action(action_counts, "flee_cancel_objective_pressure_interrupt")
+            log_encounter_event(
+                "flee_cancel_objective_pressure_interrupt",
+                now,
+                target_id=int(getattr(npc, "object_id", 0) or 0),
+                target_name=str(getattr(npc, "name", "") or ""),
+                target_intent=target_intent_value(intent),
+            )
+
+        def switch_flee_to_wander(reason: str, now: float) -> None:
+            nonlocal flee_destination, next_flee_move, flee_wander_heading_hold_until, flee_plan
+
+            flee_destination = None
+            next_flee_move = now
+            flee_wander_heading_hold_until = 0.0
+            flee_plan = None
+
+        def clear_flee_destination_after_recovery(reason: str, now: float) -> None:
+            nonlocal flee_destination, flee_plan
+
+            flee_destination = None
+            flee_plan = None
+
+        def clear_flee_until_after_recovery(reason: str, now: float) -> None:
+            nonlocal flee_until, flee_plan
+
+            flee_until = 0.0
+            if flee_destination is None:
+                flee_plan = None
+
+        def schedule_next_flee_move(now: float) -> None:
+            nonlocal next_flee_move
+
+            delay = args.flee_move_interval + rng.uniform(0, args.jitter)
+            next_flee_move = now + delay
+
+        def extend_flee_until_for_clear_grace(hold_until: float, *, extend_existing: bool) -> None:
+            nonlocal flee_until
+
+            flee_until = max(flee_until, hold_until) if extend_existing else hold_until
+
+        def hold_flee_for_drop_aggro_clear_grace(
+            *,
+            now: float,
+            health_percent: int,
+            clear_remaining: float,
+            extend_existing: bool,
+            move_after_interval: bool,
+        ) -> None:
+            nonlocal actions, flee_until, next_flee_move
+
+            hold_until = now + drop_aggro_clear_hold_duration(
+                args,
+                clear_remaining=clear_remaining,
+                health_percent=health_percent,
+            )
+            extend_flee_until_for_clear_grace(hold_until, extend_existing=extend_existing)
+            if move_after_interval:
+                schedule_next_flee_move(now)
+            else:
+                next_flee_move = now
+            actions += add_action(action_counts, "flee_clear_grace_hold")
+            log_encounter_event(
+                "flee_clear_grace_hold",
+                now,
+                health_percent=health_percent,
+                clear_remaining=round(clear_remaining, 3),
+                destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
+            )
+
         def clear_shared_leader_target_on_abandon(now: float, reason: str, target_id: int = 0) -> None:
             nonlocal actions
 
@@ -10494,11 +14432,39 @@ def run_dummy_round(
                     abandoned_target_id=int(target_id or 0),
                 )
 
+        def engagement_context(
+            now: float,
+            *,
+            party_snapshot: dict[str, object] | None = None,
+            party_ready: bool | None = None,
+        ) -> EngagementContext:
+            snapshot = party_snapshot or {}
+            return EngagementContext(
+                behavior_state=behavior_state,
+                current_target=current_target,
+                current_target_intent=current_target_intent,
+                is_party_leader=is_party_leader,
+                is_party_follower=is_party_follower,
+                party_ready=(
+                    bool(party_ready)
+                    if party_ready is not None
+                    else (party_ready_for_pull(args, party_state) if party_state is not None else True)
+                ),
+                leader_engaged=float(snapshot.get("leader_target_engaged_at", 0.0) or 0.0) > 0.0,
+                current_health_percent=int(getattr(client, "health_percent", 0) or 0),
+                objective_home_reached=required_target_home_reached(client, args),
+                objective_hunt_ready=required_target_home_hunt_ready(client, args),
+                drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                rest_active=rest_until > now,
+                flee_active=flee_until > now,
+            )
+
         def refresh_required_target_from_api(
             now: float,
             party_snapshot: dict[str, object],
         ) -> RequiredTargetObservation | None:
-            nonlocal actions, current_target, current_target_since, current_target_last_visible_at, latest_required_target_api_observation, next_required_target_api
+            nonlocal actions, current_target, current_target_since, current_target_last_visible_at
+            nonlocal current_target_intent, latest_required_target_api_observation, next_required_target_api
 
             if (
                 not args.required_target_api
@@ -10562,9 +14528,41 @@ def run_dummy_round(
                     catchup_offset=round(offset, 2),
                 )
 
+            api_target_decision = evaluate_required_target_api_observation(
+                args,
+                observed,
+                engagement_context(now, party_snapshot=party_snapshot),
+                client,
+                party_snapshot,
+            )
+
             if member_may_publish:
-                party_state.update_shared_target(observed, engaged=observed.in_combat or observed.has_aggro)
-                actions += add_action(action_counts, "required_target_api_update")
+                if api_target_decision.allowed:
+                    api_publish_result = commit_target(
+                        party_shared_target_publish_decision(
+                            api_target_decision,
+                            engaged=observed.in_combat or observed.has_aggro,
+                        ),
+                        client,
+                        party_state,
+                        now=now,
+                        current_target=current_target,
+                        current_target_since=current_target_since,
+                        current_target_last_visible_at=current_target_last_visible_at,
+                        current_target_intent=current_target_intent,
+                        action_counts=action_counts,
+                        log_event=log_encounter_event,
+                    )
+                    if api_publish_result.party_shared_target_published:
+                        actions += add_action(action_counts, "required_target_api_update")
+                else:
+                    actions += add_action(action_counts, "required_target_api_publish_rejected")
+                    log_encounter_event(
+                        "required_target_api_publish_rejected",
+                        now,
+                        npc=observed,
+                        reject_reason=api_target_decision.reject_reason,
+                    )
 
             should_retarget_required_object = (
                 current_target == 0
@@ -10579,10 +14577,34 @@ def run_dummy_round(
             )
             if should_retarget_required_object:
                 if current_target != observed.object_id:
-                    current_target = observed.object_id
-                    current_target_since = now
-                current_target_last_visible_at = now
-                client.target_object(observed.object_id)
+                    should_retarget_required_object = not block_active_combat_target_switch(
+                        int(observed.object_id),
+                        TargetIntent.required_retaliation if is_required_target(args, observed) else TargetIntent.objective,
+                        str(observed.name or ""),
+                        now,
+                        "required_target_api_retarget",
+                    )
+                    if should_retarget_required_object:
+                        decision = api_target_decision
+                        result = commit_target(
+                            decision,
+                            client,
+                            party_state,
+                            now=now,
+                            current_target=current_target,
+                            current_target_since=current_target_since,
+                            current_target_last_visible_at=current_target_last_visible_at,
+                            current_target_intent=current_target_intent,
+                            action_counts=action_counts,
+                            log_event=log_encounter_event,
+                        )
+                        current_target = result.current_target
+                        current_target_since = result.current_target_since
+                        current_target_last_visible_at = result.current_target_last_visible_at
+                        current_target_intent = result.current_target_intent
+                        should_retarget_required_object = result.current_target_updated
+                if should_retarget_required_object:
+                    current_target_last_visible_at = now
 
             log_encounter_event(
                 "required_target_api_update",
@@ -10594,7 +14616,7 @@ def run_dummy_round(
                 observed_in_combat=observed.in_combat,
                 observed_has_aggro=observed.has_aggro,
                 observed_target=observed.target,
-                published=member_may_publish,
+                published=bool(member_may_publish and api_target_decision.allowed),
                 retargeted=should_retarget_required_object,
             )
             return observed
@@ -10665,6 +14687,140 @@ def run_dummy_round(
                 min(args.jitter, max(args.target_stick_command_interval * 0.5, 0.0)),
             )
 
+        def hostile_attack_mode_allowed(now: float, reason: str, *, target_id: int = 0) -> bool:
+            nonlocal actions
+
+            resolved_target_id = int(target_id or current_target or 0)
+            if party_state is not None and target_id_is_party_member(resolved_target_id, party_state.snapshot()):
+                client.set_attack_mode(False)
+                actions += add_action(action_counts, "hostile_party_member_target_rejected")
+                actions += add_action(action_counts, f"hostile_party_member_target_rejected_{reason}")
+                log_encounter_event(
+                    "hostile_party_member_target_rejected",
+                    now,
+                    reason=reason,
+                    target_id=resolved_target_id,
+                    behavior_state=behavior_state_value(behavior_state),
+                    current_target_intent=target_intent_value(current_target_intent),
+                )
+                return False
+
+            allowed = can_enable_hostile_attack_mode(
+                behavior_state,
+                resolved_target_id,
+                current_target_intent,
+                flee_active=flee_until > now,
+                rest_active=rest_until > now,
+                drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+            )
+            if allowed:
+                return True
+
+            client.set_attack_mode(False)
+            actions += add_action(action_counts, "attack_mode_policy_rejected")
+            actions += add_action(action_counts, f"attack_mode_policy_rejected_{reason}")
+            log_encounter_event(
+                "attack_mode_policy_rejected",
+                now,
+                reason=reason,
+                target_id=resolved_target_id,
+                behavior_state=behavior_state_value(behavior_state),
+                current_target_intent=target_intent_value(current_target_intent),
+                flee_active=bool(flee_until > now),
+                rest_active=bool(rest_until > now),
+            )
+            return False
+
+        def target_current_hostile_if_allowed(now: float, reason: str, *, target_id: int = 0) -> bool:
+            resolved_target_id = int(target_id or current_target or 0)
+            if not hostile_attack_mode_allowed(now, reason, target_id=resolved_target_id):
+                return False
+
+            client.target_object(resolved_target_id)
+            return True
+
+        def enable_hostile_attack_mode_if_allowed(now: float, reason: str, *, target_id: int = 0) -> bool:
+            resolved_target_id = int(target_id or current_target or 0)
+            if not hostile_attack_mode_allowed(now, reason, target_id=resolved_target_id):
+                return False
+
+            client.set_attack_mode(True)
+            return True
+
+        def block_active_combat_target_switch(
+            candidate_target_id: int,
+            candidate_target_intent: TargetIntent | str,
+            candidate_target_name: str,
+            now: float,
+            reason: str,
+        ) -> bool:
+            nonlocal actions, current_target, current_target_intent, current_target_since, current_target_last_visible_at
+
+            if not should_block_active_combat_target_switch(
+                args,
+                active_combat,
+                candidate_target_id=int(candidate_target_id or 0),
+                candidate_target_intent=candidate_target_intent,
+                current_target=current_target,
+                current_target_intent=current_target_intent,
+                behavior_state=behavior_state,
+                flee_active=flee_until > now,
+                rest_active=rest_until > now,
+                drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+            ):
+                return False
+
+            active_focus_target_id = int((active_combat or {}).get("target_id", 0) or 0)
+            party_snapshot = party_state.snapshot() if party_state is not None else {}
+            focus_decision = evaluate_active_combat_focus_commit(
+                args,
+                active_combat,
+                engagement_context(now, party_snapshot=party_snapshot),
+                client,
+                party_snapshot,
+            )
+            focus_result = commit_target(
+                focus_decision,
+                client,
+                party_state,
+                now=now,
+                current_target=current_target,
+                current_target_since=current_target_since,
+                current_target_last_visible_at=current_target_last_visible_at,
+                current_target_intent=current_target_intent,
+                action_counts=action_counts,
+                log_event=log_encounter_event,
+            )
+            current_target = focus_result.current_target
+            current_target_since = focus_result.current_target_since
+            current_target_last_visible_at = focus_result.current_target_last_visible_at
+            current_target_intent = focus_result.current_target_intent
+            if not focus_result.current_target_updated:
+                return False
+
+            if not enable_hostile_attack_mode_if_allowed(now, "active_combat_switch_blocked"):
+                return False
+            active_focus_destination = active_combat_last_known_destination(active_combat)
+            if active_focus_destination is not None:
+                face_point_for_attack(client, active_focus_destination.x, active_focus_destination.y)
+                send_face_command_if_due(now, "active_combat_switch_blocked", active_focus_destination)
+                send_stick_command_if_due(now, "active_combat_switch_blocked")
+            actions += add_action(action_counts, "active_combat_target_switch_blocked")
+            log_encounter_event(
+                "active_combat_target_switch_blocked",
+                now,
+                active_target_id=active_focus_target_id,
+                active_target_name=str((active_combat or {}).get("target_name", "") or ""),
+                active_target_intent=target_intent_value(current_target_intent),
+                blocked_target_id=int(candidate_target_id or 0),
+                blocked_target_name=str(candidate_target_name or ""),
+                blocked_target_intent=target_intent_value(candidate_target_intent),
+                reason=reason,
+            )
+            if is_party_leader and party_state is not None:
+                party_state.update_leader(client)
+            return True
+
         def speak_state_change(now: float, state: str, text: str) -> None:
             nonlocal actions, last_spoken_state, last_state_speech_at
 
@@ -10695,6 +14851,7 @@ def run_dummy_round(
                 "damage_taken": 0,
                 "off_target_damage_taken": 0,
                 "off_target_attacker_name": "",
+                "target_intent": target_intent_value(current_target_intent),
                 "last_combat_message_at": 0.0,
                 "last_damage_done_at": 0.0,
                 "server_los_failures": 0,
@@ -10717,6 +14874,7 @@ def run_dummy_round(
 
         def finish_combat(outcome: str, now: float, end_distance: float = 0.0) -> bool:
             nonlocal active_combat
+            nonlocal actions, safe_exit_deadline
 
             if active_combat is None:
                 return False
@@ -10750,6 +14908,21 @@ def run_dummy_round(
                 )
             else:
                 recent_finished_combats.pop(metric.target_id, None)
+            if outcome in SAFE_EXIT_RECOVERY_COMBAT_OUTCOMES:
+                refreshed_safe_exit_deadline = refresh_safe_exit_deadline_for_recovery(
+                    args,
+                    safe_exit_active=safe_exit_active,
+                    safe_exit_deadline=safe_exit_deadline,
+                    now=now,
+                )
+                if refreshed_safe_exit_deadline > safe_exit_deadline:
+                    safe_exit_deadline = refreshed_safe_exit_deadline
+                    actions += add_action(action_counts, "safe_exit_deadline_refresh_after_combat_recovery")
+                    log_encounter_event(
+                        "safe_exit_deadline_refresh_after_combat_recovery",
+                        now,
+                        outcome=outcome,
+                    )
             speak_state_change(
                 now,
                 f"finish:{outcome}",
@@ -10757,6 +14930,122 @@ def run_dummy_round(
             )
             active_combat = None
             return True
+
+        def commit_rvr_enemy_player_target(player, now: float, source: TargetSource | str) -> bool:
+            nonlocal current_target, current_target_since, current_target_last_visible_at
+            nonlocal current_target_intent, current_target_removed_preserve_count
+            nonlocal attack_target_in_view_primed_at, attack_target_in_view_primed_target, actions
+
+            if player is None or not getattr(args, "rvr_enemy_player_hunter", False):
+                return False
+
+            player_id = int(getattr(player, "object_id", 0) or 0)
+            if player_id <= 0:
+                return False
+
+            party_snapshot = party_state.snapshot() if party_state is not None else {}
+            if not can_select_hostile_target(behavior_state):
+                actions += add_action(action_counts, "rvr_enemy_player_state_rejected")
+                log_encounter_event(
+                    "rvr_enemy_player_state_rejected",
+                    now,
+                    npc=player,
+                    source=str(source.value if isinstance(source, TargetSource) else source),
+                )
+                return False
+
+            if player_is_party_member(player, party_snapshot):
+                actions += add_action(action_counts, "rvr_enemy_player_party_member_rejected")
+                log_encounter_event("rvr_enemy_player_party_member_rejected", now, npc=player)
+                return False
+
+            if not player_is_rvr_enemy_candidate(
+                client,
+                args,
+                player,
+                own_realm=account.realm,
+                party_snapshot=party_snapshot,
+                rejected_targets=rejected_targets,
+                now=now,
+            ):
+                actions += add_action(action_counts, "rvr_enemy_player_candidate_rejected")
+                log_encounter_event("rvr_enemy_player_candidate_rejected", now, npc=player)
+                return False
+
+            distance = combat_distance_to(client, player)
+            if current_target != player_id:
+                if should_block_active_combat_target_switch(
+                    args,
+                    active_combat,
+                    candidate_target_id=player_id,
+                    candidate_target_intent=TargetIntent.enemy_player,
+                    current_target=current_target,
+                    current_target_intent=current_target_intent,
+                    behavior_state=behavior_state,
+                    flee_active=flee_until > now,
+                    rest_active=rest_until > now,
+                    drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                ):
+                    block_active_combat_target_switch(
+                        player_id,
+                        TargetIntent.enemy_player,
+                        str(getattr(player, "name", "") or ""),
+                        now,
+                        "rvr_enemy_player_target_commit",
+                    )
+                    return False
+
+                finish_combat("target_switched", now, distance)
+                client.target_object(player_id)
+                current_target = player_id
+                current_target_since = now
+                current_target_last_visible_at = now
+                current_target_intent = TargetIntent.enemy_player
+                current_target_removed_preserve_count = 0
+                attack_target_in_view_primed_at = 0.0
+                attack_target_in_view_primed_target = 0
+                if should_start_combat_after_target_commit(args, distance):
+                    start_combat(player, distance, now)
+                else:
+                    actions += add_action(action_counts, "rvr_enemy_player_commit_wait_range")
+                actions += add_action(action_counts, "rvr_enemy_player_target")
+                log_encounter_event(
+                    "rvr_enemy_player_target_committed",
+                    now,
+                    npc=player,
+                    source=str(source.value if isinstance(source, TargetSource) else source),
+                    distance=round(distance, 2),
+                    realm=int(getattr(player, "realm", 0) or 0),
+                )
+            else:
+                current_target_last_visible_at = now
+                current_target_intent = TargetIntent.enemy_player
+                if active_combat is not None:
+                    active_combat["target_x"] = int(getattr(player, "x", 0) or 0)
+                    active_combat["target_y"] = int(getattr(player, "y", 0) or 0)
+                    active_combat["target_z"] = int(getattr(player, "z", 0) or 0)
+                actions += add_action(action_counts, "rvr_enemy_player_target_preserved")
+
+            if party_state is not None:
+                if is_party_leader:
+                    party_state.update_leader(client, player)
+                else:
+                    party_state.update_member(party_member_name, client)
+
+            transition_to(DummyBehaviorState.HuntObjective, "rvr_enemy_player_target_selected", now)
+            return True
+
+        def finish_active_combat_before_target_clear(outcome: str, now: float, target_id: int = 0) -> bool:
+            if active_combat is None:
+                return False
+
+            active_target_id = int(active_combat.get("target_id", 0) or 0)
+            if target_id and active_target_id != int(target_id):
+                return False
+
+            target_npc = current_visible_target_npc() if current_target == active_target_id else None
+            end_distance = combat_distance_to(client, target_npc) if target_npc is not None else 0.0
+            return finish_combat(outcome, now, end_distance)
 
         def reject_active_target_kind(now: float, cooldown: float) -> None:
             if active_combat is None or cooldown <= 0:
@@ -10767,7 +15056,12 @@ def run_dummy_round(
             rejected_target_kinds[(target_name, target_level)] = now + cooldown
 
         def consume_removed_objects(now: float) -> None:
-            nonlocal actions, current_target, current_target_last_visible_at, current_target_removed_preserve_count, latest_required_target_api_observation, objective_complete_at
+            nonlocal actions, current_target, current_target_since, current_target_last_visible_at
+            nonlocal current_target_intent, current_target_removed_preserve_count
+            nonlocal latest_required_target_api_observation, objective_complete_at
+            nonlocal pending_required_target_complete_id, pending_required_target_complete_name
+            nonlocal pending_required_target_complete_level, pending_required_target_complete_since
+            nonlocal safe_exit_deadline
 
             for object_id in client.consume_removed_object_ids():
                 if object_id != current_target:
@@ -10870,6 +15164,11 @@ def run_dummy_round(
                         now,
                         current_target_last_visible_at,
                         current_target_removed_preserve_count,
+                        behavior_state=behavior_state,
+                        current_target_intent=current_target_intent,
+                        flee_active=flee_until > now,
+                        rest_active=rest_until > now,
+                        drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
                     )
                 ):
                     current_target_removed_preserve_count += 1
@@ -10877,8 +15176,32 @@ def run_dummy_round(
                     if confirmation_observation is not None and confirmation_observation.is_alive:
                         preserve_destination = destination_from_actor("required-target-api", confirmation_observation)
                         client.npcs[confirmation_observation.object_id] = confirmation_observation
-                        current_target = confirmation_observation.object_id
-                        current_target_last_visible_at = now
+                        preserve_party_snapshot = party_state.snapshot() if party_state is not None else {}
+                        preserve_decision = evaluate_required_target_api_observation(
+                            args,
+                            confirmation_observation,
+                            engagement_context(now, party_snapshot=preserve_party_snapshot),
+                            client,
+                            preserve_party_snapshot,
+                        )
+                        preserve_result = commit_target(
+                            preserve_decision,
+                            client,
+                            party_state,
+                            now=now,
+                            current_target=current_target,
+                            current_target_since=current_target_since,
+                            current_target_last_visible_at=current_target_last_visible_at,
+                            current_target_intent=current_target_intent,
+                            action_counts=action_counts,
+                            log_event=log_encounter_event,
+                        )
+                        current_target = preserve_result.current_target
+                        current_target_since = preserve_result.current_target_since
+                        current_target_last_visible_at = preserve_result.current_target_last_visible_at
+                        current_target_intent = preserve_result.current_target_intent
+                        if not preserve_result.current_target_updated:
+                            continue
                     elif party_state is not None:
                         party_snapshot = party_state.snapshot()
                         if int(party_snapshot["leader_target_id"]) == current_target:
@@ -10888,8 +15211,10 @@ def run_dummy_round(
                                 int(party_snapshot["leader_target_y"]),
                                 int(party_snapshot["leader_target_z"]),
                             )
-                    client.target_object(current_target)
-                    client.set_attack_mode(True)
+                    if not target_current_hostile_if_allowed(now, "target_removed_preserved"):
+                        continue
+                    if not enable_hostile_attack_mode_if_allowed(now, "target_removed_preserved"):
+                        continue
                     send_face_command_if_due(now, "target_removed_preserved", preserve_destination)
                     send_stick_command_if_due(now, "target_removed_preserved")
                     if preserve_destination is not None:
@@ -10925,7 +15250,17 @@ def run_dummy_round(
                     )
                     continue
 
-                if should_preserve_current_party_target(args, party_state, current_target, active_combat):
+                if should_preserve_current_party_target(
+                    args,
+                    party_state,
+                    current_target,
+                    active_combat,
+                    behavior_state=behavior_state,
+                    current_target_intent=current_target_intent,
+                    flee_active=flee_until > now,
+                    rest_active=rest_until > now,
+                    drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                ):
                     actions += add_action(action_counts, "target_removed_preserve_expired")
                     log_encounter_event(
                         "target_removed_preserve_expired",
@@ -10938,12 +15273,71 @@ def run_dummy_round(
                 completed_target_name = completed_target_display_name.lower()
                 completed_target_level = int(active_combat["target_level"]) if active_combat is not None else 0
                 should_clear_removed_shared_target = not stop_after_removed
-                recorded = finish_combat("target_removed", now)
+                final_distance = float(active_combat["end_distance"]) if active_combat is not None else 0.0
+                credit_target_removed = target_removed_creditable(args, active_combat, final_distance)
+                recorded = finish_combat("target_removed" if credit_target_removed else "target_removed_uncredited", now)
                 current_target = 0
+                current_target_intent = TargetIntent.none
                 rejected_targets.pop(object_id, None)
                 if recorded:
-                    actions += add_action(action_counts, "target_removed")
-                    if stop_after_removed:
+                    if credit_target_removed:
+                        actions += add_action(action_counts, "target_removed")
+                        refreshed_safe_exit_deadline = refresh_safe_exit_deadline_after_target_removed(
+                            args,
+                            safe_exit_active=safe_exit_active,
+                            safe_exit_deadline=safe_exit_deadline,
+                            now=now,
+                        )
+                        if refreshed_safe_exit_deadline > safe_exit_deadline:
+                            safe_exit_deadline = refreshed_safe_exit_deadline
+                            actions += add_action(action_counts, "safe_exit_deadline_refresh_after_target_removed")
+                            log_encounter_event("safe_exit_deadline_refresh_after_target_removed", now)
+                    else:
+                        actions += add_action(action_counts, "target_removed_uncredited")
+                        log_encounter_event(
+                            "target_removed_uncredited",
+                            now,
+                            removed_object_id=int(object_id),
+                            final_distance=round(final_distance, 2),
+                        )
+                    if credit_target_removed and stop_after_removed and required_target_completion_needs_safe_exit(
+                        args,
+                        now=now,
+                        health_percent=current_health_percent,
+                        last_damage_taken_at=last_damage_taken_at,
+                        last_incoming_damage_at=last_incoming_damage_at,
+                    ):
+                        pending_required_target_complete_id = int(object_id)
+                        pending_required_target_complete_name = completed_target_display_name
+                        pending_required_target_complete_level = completed_target_level
+                        pending_required_target_complete_since = now
+                        client.clear_target()
+                        client.set_attack_mode(False)
+                        actions += add_action(action_counts, "required_target_complete_pending_safe_exit")
+                        log_encounter_event(
+                            "required_target_complete_pending_safe_exit",
+                            now,
+                            completed_target_name=completed_target_name,
+                            completed_target_level=completed_target_level,
+                            health_percent=current_health_percent,
+                            recent_damage_age=recent_safe_exit_damage_age(
+                                now=now,
+                                last_damage_taken_at=last_damage_taken_at,
+                                last_incoming_damage_at=last_incoming_damage_at,
+                            ),
+                        )
+                        if can_start_or_refresh_flee(behavior_state):
+                            transition_to(DummyBehaviorState.DropAggroAndRecover, "target_removed_pending_safe_exit", now)
+                            start_or_refresh_flee(
+                                reason="target_removed_pending_safe_exit",
+                                priority=95,
+                                pressure=True,
+                                prefer_safe=True,
+                                now=now,
+                                extend_seconds=drop_aggro_recovery_duration(args, health_percent=current_health_percent),
+                                health_percent=current_health_percent,
+                            )
+                    elif credit_target_removed and stop_after_removed:
                         objective_complete_at = now
                         if party_state is not None:
                             party_state.mark_objective_complete(object_id, completed_target_display_name)
@@ -10991,6 +15385,7 @@ def run_dummy_round(
             nonlocal next_party_rescue_request, local_rescue_until, boss_hazard_backoff_until
             nonlocal last_damage_taken_at, last_incoming_damage_at, last_incoming_damage_attacker_name
             nonlocal flee_until, next_flee_move, next_flee_pressure_replan, flee_destination, flee_wander_heading_hold_until
+            nonlocal cast_action_hold_until
 
             for message in client.consume_messages():
                 text = message.text.lower()
@@ -11020,6 +15415,44 @@ def run_dummy_round(
                 if "damage" in combat_categories:
                     actions += add_action(action_counts, "combat_damage_msg")
                     message_categories.append("damage")
+                if "cast_interrupted" in combat_categories:
+                    actions += add_action(action_counts, "combat_cast_interrupted_msg")
+                    message_categories.append("cast_interrupted")
+                if "spell_not_ready" in combat_categories:
+                    actions += add_action(action_counts, "combat_spell_not_ready_msg")
+                    message_categories.append("spell_not_ready")
+                if cast_action_hold_until > now and should_cancel_cast_action_hold_for_message(combat_categories):
+                    cast_action_hold_until = 0.0
+                    actions += add_action(action_counts, "cast_action_hold_cancel")
+                if "friendly_target" in combat_categories:
+                    actions += add_action(action_counts, "combat_friendly_target_msg")
+                    message_categories.append("friendly_target")
+                if current_target > 0 and should_reject_current_target_for_friendly_feedback(combat_categories):
+                    rejected_target_id = current_target
+                    rejected_targets[rejected_target_id] = now + max(5.0, float(getattr(args, "target_failure_cooldown", 5.0) or 5.0))
+                    reject_active_target_kind(
+                        now,
+                        max(30.0, float(getattr(args, "target_failure_name_cooldown", 30.0) or 30.0)),
+                    )
+                    finish_active_combat_before_target_clear("friendly_target", now, rejected_target_id)
+                    client.clear_target()
+                    client.set_attack_mode(False)
+                    current_target = 0
+                    current_target_intent = TargetIntent.none
+                    actions += add_action(action_counts, "friendly_target_rejected")
+                    log_encounter_event(
+                        "friendly_target_rejected",
+                        now,
+                        target_id=rejected_target_id,
+                        text=short_text(message.text),
+                    )
+
+                incoming_attack_attacker = parse_incoming_attack_attacker_name(message.text)
+                if incoming_attack_attacker:
+                    last_incoming_damage_at = now
+                    last_incoming_damage_attacker_name = incoming_attack_attacker
+                    actions += add_action(action_counts, "incoming_attack_msg")
+                    message_categories.append("incoming_attack")
 
                 if is_active_target_combat_contact_message(active_combat, message.text, int(getattr(message, "chat_type", 0) or 0)):
                     active_combat["last_combat_message_at"] = now
@@ -11097,7 +15530,7 @@ def run_dummy_round(
                             face_point_for_attack(client, retry_target.x, retry_target.y)
                             client.send_position_update(speed=0.0, target_in_view=True)
                             actions += add_action(action_counts, "current_target_api_face")
-                            if observed_distance > max(32.0, float(args.minimum_melee_stop_distance)):
+                            if should_close_for_server_los_retry(args, action_rotation, observed_distance):
                                 chase_speed = combat_chase_movement_speed(args, action_rotation, observed_distance)
                                 moved = client.move_towards_position(
                                     retry_target.x,
@@ -11121,7 +15554,7 @@ def run_dummy_round(
                                     action_counts,
                                 )
                         current_target_last_visible_at = now
-                        client.target_object(current_target)
+                        target_current_hostile_if_allowed(now, "server_los_failure_retry")
                         send_stick_command_if_due(now, "server_los_failure_retry")
                         client.set_attack_mode(False)
                         actions += add_action(action_counts, "server_los_failure_retry")
@@ -11138,6 +15571,7 @@ def run_dummy_round(
                         client.clear_target()
                         client.set_attack_mode(False)
                         current_target = 0
+                        current_target_intent = TargetIntent.none
                         actions += add_action(action_counts, "server_los_failure_retarget")
                         clear_shared_leader_target_on_abandon(
                             now,
@@ -11146,23 +15580,14 @@ def run_dummy_round(
                         )
                         if last_damage_taken_at > 0.0 and now - last_damage_taken_at <= args.travel_aggro_clear_grace:
                             transition_to(DummyBehaviorState.DropAggroAndRecover, "server_los_failure_drop_aggro", now)
-                            flee_until = max(
-                                flee_until,
-                                now + drop_aggro_recovery_duration(args, health_percent=current_health_percent),
-                            )
-                            next_flee_move = now
-                            next_flee_pressure_replan = now + flee_pressure_replan_cooldown(args)
-                            flee_wander_heading_hold_until = 0.0
-                            flee_destination = flee_escape_destination(args, client)
-                            if getattr(args, "flee_use_sprint", True):
-                                client.send_command("/sprint")
-                                actions += add_action(action_counts, "sprint_escape")
                             actions += add_action(action_counts, "drop_aggro_flee_start")
-                            log_encounter_event(
-                                "flee_start",
-                                now,
+                            start_or_refresh_flee(
                                 reason="server_los_failure_drop_aggro",
-                                destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
+                                priority=80,
+                                pressure=True,
+                                prefer_safe=True,
+                                now=now,
+                                extend_seconds=drop_aggro_recovery_duration(args, health_percent=current_health_percent),
                             )
 
                 boss_hazard_duration = boss_hazard_message_duration(args, message.text)
@@ -11244,6 +15669,12 @@ def run_dummy_round(
                         attacker_name = parse_incoming_damage_attacker_name(message.text)
                         if attacker_name:
                             last_incoming_damage_attacker_name = attacker_name
+                            if party_state is not None and party_state.update_leader_target_focus_from_attack(
+                                attacker_name,
+                                party_member_name,
+                            ):
+                                actions += add_action(action_counts, "party_boss_focus_damage")
+                                message_categories.append("boss_focus")
                             if active_combat is not None and not active_combat_metric_recorded:
                                 active_target_actor = actor_from_active_combat(active_combat)
                                 if recent_incoming_damage_matches_actor(
@@ -11270,6 +15701,82 @@ def run_dummy_round(
                             attacker_name,
                         ):
                             actions += add_action(action_counts, "party_rescue_damage_attacker")
+
+                        if (
+                            attacker_name
+                            and current_target <= 0
+                            and getattr(args, "rvr_enemy_player_hunter", False)
+                            and should_allow_untracked_damage_counterattack(
+                                behavior_state,
+                                flee_until=flee_until,
+                                now=now,
+                            )
+                        ):
+                            damage_party_snapshot = party_state.snapshot() if party_state is not None else {}
+                            damage_counterattack_player = choose_named_rvr_enemy_player(
+                                client,
+                                args,
+                                attacker_name,
+                                own_realm=account.realm,
+                                party_snapshot=damage_party_snapshot,
+                                rejected_targets=rejected_targets,
+                                now=now,
+                            )
+                            if damage_counterattack_player is None and getattr(args, "combat_usable_api", False):
+                                attacker_snapshot = fetch_player_condition_snapshot_for_player(args, attacker_name)
+                                if attacker_snapshot is None or int(attacker_snapshot.object_id or 0) <= 0:
+                                    attacker_snapshot = fetch_player_condition_snapshot_for_player(
+                                        args,
+                                        "",
+                                        probable_account_from_character_name(attacker_name),
+                                    )
+                                damage_counterattack_player = rvr_enemy_player_actor_from_condition_snapshot(
+                                    attacker_snapshot
+                                )
+                                if damage_counterattack_player is not None and not player_is_rvr_enemy_candidate(
+                                    client,
+                                    args,
+                                    damage_counterattack_player,
+                                    own_realm=account.realm,
+                                    party_snapshot=damage_party_snapshot,
+                                    rejected_targets=rejected_targets,
+                                    now=now,
+                                ):
+                                    actions += add_action(action_counts, "rvr_enemy_player_api_attacker_rejected")
+                                    log_encounter_event(
+                                        "rvr_enemy_player_api_attacker_rejected",
+                                        now,
+                                        npc=damage_counterattack_player,
+                                        attacker_name=attacker_name,
+                                    )
+                                    damage_counterattack_player = None
+                                if damage_counterattack_player is not None:
+                                    actions += add_action(action_counts, "rvr_enemy_player_api_attacker")
+                                else:
+                                    actions += add_action(action_counts, "rvr_enemy_player_api_attacker_miss")
+                                    log_encounter_event(
+                                        "rvr_enemy_player_api_attacker_miss",
+                                        now,
+                                        attacker_name=attacker_name,
+                                    )
+
+                            if damage_counterattack_player is not None and commit_rvr_enemy_player_target(
+                                damage_counterattack_player,
+                                now,
+                                TargetSource.incoming_damage_counterattack,
+                            ):
+                                face_target_for_attack(client, damage_counterattack_player)
+                                client.send_position_update(speed=0.0, target_in_view=True)
+                                enable_hostile_attack_mode_if_allowed(now, "incoming_damage_player_counterattack")
+                                local_rescue_until = max(local_rescue_until, now + args.party_rescue_max_age)
+                                actions += add_action(action_counts, "incoming_damage_player_counterattack")
+                                log_encounter_event(
+                                    "incoming_damage_player_counterattack",
+                                    now,
+                                    npc=damage_counterattack_player,
+                                    attacker_name=attacker_name,
+                                )
+
                         if (
                             attacker_name
                             and current_target <= 0
@@ -11303,19 +15810,26 @@ def run_dummy_round(
                                     behavior_state=behavior_state,
                                     recent_incoming_attacker_name=attacker_name,
                                 )
+                                direct_required_damage_to_active_tank = party_member_is_active_tank(
+                                    damage_party_snapshot,
+                                    party_member_name,
+                                )
+                                damage_required_home_hunt_ready = required_target_home_hunt_ready(client, args)
+                                damage_objective_pressure_active = (
+                                    damage_counterattack_intent == TargetIntent.required_retaliation
+                                    and damage_required_home_hunt_ready
+                                )
                                 if (
                                     damage_counterattack_intent == TargetIntent.required_retaliation
                                     and not should_commit_required_retaliation_for_objective(
                                         args,
                                         behavior_state,
-                                        required_home_hunt_ready=required_target_home_hunt_ready(client, args),
+                                        required_home_hunt_ready=damage_required_home_hunt_ready,
                                         party_ready_for_objective=party_ready_for_pull(args, party_state)
                                         if party_state is not None
                                         else True,
-                                        direct_required_damage_to_active_tank=party_member_is_active_tank(
-                                            damage_party_snapshot,
-                                            party_member_name,
-                                        ),
+                                        direct_required_damage_to_active_tank=direct_required_damage_to_active_tank,
+                                        objective_pressure_active=damage_objective_pressure_active,
                                     )
                                 ):
                                     actions += add_action(action_counts, "required_target_retaliation_wait_home")
@@ -11328,7 +15842,7 @@ def run_dummy_round(
                                     if should_drop_required_retaliation_before_objective_ready(
                                         args,
                                         behavior_state,
-                                        required_home_hunt_ready=required_target_home_hunt_ready(client, args),
+                                        required_home_hunt_ready=damage_required_home_hunt_ready,
                                         party_ready_for_objective=party_ready_for_pull(args, party_state)
                                         if party_state is not None
                                         else True,
@@ -11342,25 +15856,74 @@ def run_dummy_round(
                                     damage_counterattack_actor = None
 
                             if damage_counterattack_actor is not None:
-                                current_target = int(getattr(damage_counterattack_actor, "object_id", 0) or 0)
-                                current_target_intent = damage_counterattack_intent
-                                current_target_since = now
-                                current_target_last_visible_at = now
+                                if block_active_combat_target_switch(
+                                    int(getattr(damage_counterattack_actor, "object_id", 0) or 0),
+                                    damage_counterattack_intent,
+                                    str(getattr(damage_counterattack_actor, "name", "") or ""),
+                                    now,
+                                    "incoming_damage_counterattack",
+                                ):
+                                    damage_counterattack_actor = None
+
+                            if damage_counterattack_actor is not None:
+                                publish_damage_counterattack = should_publish_damage_counterattack_as_leader_target(
+                                    is_party_leader=is_party_leader,
+                                    party_state=party_state,
+                                    current_target_intent=damage_counterattack_intent,
+                                )
+                                damage_decision = evaluate_engagement_candidate(
+                                    engagement_candidate_from_actor(
+                                        damage_counterattack_actor,
+                                        source=TargetSource.incoming_damage_counterattack,
+                                        intent=damage_counterattack_intent,
+                                    ),
+                                    engagement_context(
+                                        now,
+                                        party_snapshot=damage_party_snapshot,
+                                        party_ready=party_ready_for_pull(args, party_state) if party_state is not None else True,
+                                    ),
+                                    client,
+                                    args,
+                                    damage_party_snapshot,
+                                )
+                                if damage_decision.allowed and publish_damage_counterattack:
+                                    damage_decision = replace(
+                                        damage_decision,
+                                        should_publish_party_leader_target=True,
+                                        should_mark_leader_engaged=True,
+                                    )
+                                damage_result = commit_target(
+                                    damage_decision,
+                                    client,
+                                    party_state,
+                                    now=now,
+                                    current_target=current_target,
+                                    current_target_since=current_target_since,
+                                    current_target_last_visible_at=current_target_last_visible_at,
+                                    current_target_intent=current_target_intent,
+                                    action_counts=action_counts,
+                                    log_event=log_encounter_event,
+                                )
+                                current_target = damage_result.current_target
+                                current_target_since = damage_result.current_target_since
+                                current_target_last_visible_at = damage_result.current_target_last_visible_at
+                                current_target_intent = damage_result.current_target_intent
+                                if not damage_result.current_target_updated:
+                                    damage_counterattack_actor = None
+
+                            if damage_counterattack_actor is not None:
                                 current_target_removed_preserve_count = 0
                                 target_observed_at = now
                                 attack_target_in_view_primed_at = 0.0
                                 attack_target_in_view_primed_target = 0
-                                client.target_object(current_target)
                                 face_target_for_attack(client, damage_counterattack_actor)
                                 client.send_position_update(speed=0.0, target_in_view=True)
-                                client.set_attack_mode(True)
+                                enable_hostile_attack_mode_if_allowed(now, "incoming_damage_counterattack")
                                 if should_publish_damage_counterattack_as_leader_target(
                                     is_party_leader=is_party_leader,
                                     party_state=party_state,
                                     current_target_intent=damage_counterattack_intent,
                                 ):
-                                    party_state.update_leader(client, damage_counterattack_actor)
-                                    party_state.mark_leader_target_engaged(current_target)
                                     actions += add_action(action_counts, "leader_damage_counterattack_shared")
                                 if damage_counterattack_intent in {TargetIntent.objective, TargetIntent.required_retaliation}:
                                     transition_to(
@@ -11477,13 +16040,75 @@ def run_dummy_round(
 
             return False
 
+        def refresh_committed_current_target_intent(
+            intent: TargetIntent | str,
+            reason: str,
+            now: float,
+            *,
+            target_id: int = 0,
+        ) -> bool:
+            nonlocal actions, current_target_intent
+
+            resolved_target_id = int(target_id or current_target or 0)
+            if current_target <= 0 or resolved_target_id != current_target:
+                actions += add_action(action_counts, "current_target_intent_refresh_rejected")
+                log_encounter_event(
+                    "current_target_intent_refresh_rejected",
+                    now,
+                    reason=reason,
+                    target_id=resolved_target_id,
+                    current_target=current_target,
+                    reject_reason="target_not_committed",
+                )
+                return False
+
+            if not can_preserve_committed_hostile_target(
+                behavior_state,
+                intent,
+                flee_active=flee_until > now,
+                rest_active=rest_until > now,
+                drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+            ):
+                actions += add_action(action_counts, "current_target_intent_refresh_rejected")
+                log_encounter_event(
+                    "current_target_intent_refresh_rejected",
+                    now,
+                    reason=reason,
+                    target_id=resolved_target_id,
+                    current_target=current_target,
+                    current_target_intent=target_intent_value(current_target_intent),
+                    refreshed_intent=target_intent_value(intent),
+                    reject_reason="state_blocks_current_target_intent",
+                )
+                return False
+
+            previous_intent = current_target_intent
+            current_target_intent = intent
+            if target_intent_value(previous_intent) != target_intent_value(intent):
+                actions += add_action(action_counts, "current_target_intent_refreshed")
+                log_encounter_event(
+                    "current_target_intent_refreshed",
+                    now,
+                    reason=reason,
+                    target_id=resolved_target_id,
+                    previous_intent=target_intent_value(previous_intent),
+                    current_target_intent=target_intent_value(intent),
+                )
+            return True
+
         def start_travel_aggro_drop(now: float, reason: str, *, npc=None) -> None:
-            nonlocal actions, current_target, current_target_intent, flee_until, next_flee_move
+            nonlocal actions, current_target, current_target_since, current_target_last_visible_at
+            nonlocal current_target_intent, flee_until, next_flee_move
             nonlocal next_flee_pressure_replan, flee_destination, flee_wander_heading_hold_until
             nonlocal attack_target_in_view_primed_at, attack_target_in_view_primed_target
             nonlocal travel_aggro_danger_x, travel_aggro_danger_y, travel_aggro_danger_z
             nonlocal travel_aggro_danger_until, travel_aggro_repeat_count, travel_aggro_last_at, travel_aggro_last_name
 
+            direct_required_damage_to_active_tank = (
+                party_state is not None
+                and party_member_is_active_tank(party_state.snapshot(), party_member_name)
+                and reason in {"required_retaliation_wait_home", "objective_wait_damage"}
+            )
             if (
                 npc is not None
                 and is_required_target(args, npc)
@@ -11492,15 +16117,46 @@ def run_dummy_round(
                     behavior_state,
                     required_home_hunt_ready=required_target_home_hunt_ready(client, args),
                     party_ready_for_objective=party_ready_for_pull(args, party_state) if party_state is not None else True,
+                    direct_required_damage_to_active_tank=direct_required_damage_to_active_tank,
+                    objective_pressure_active=direct_required_damage_to_active_tank,
                 )
             ):
-                current_target_intent = TargetIntent.required_retaliation
-                transition_to(DummyBehaviorState.HuntObjective, "required_target_retaliation", now)
-                return
+                party_snapshot = party_state.snapshot() if party_state is not None else {}
+                required_decision = evaluate_engagement_candidate(
+                    engagement_candidate_from_actor(
+                        npc,
+                        source=TargetSource.required_retaliation,
+                        intent=TargetIntent.required_retaliation,
+                    ),
+                    engagement_context(now, party_snapshot=party_snapshot),
+                    client,
+                    args,
+                    party_snapshot,
+                )
+                required_result = commit_target(
+                    required_decision,
+                    client,
+                    party_state,
+                    now=now,
+                    current_target=current_target,
+                    current_target_since=current_target_since,
+                    current_target_last_visible_at=current_target_last_visible_at,
+                    current_target_intent=current_target_intent,
+                    action_counts=action_counts,
+                    log_event=log_encounter_event,
+                )
+                current_target = required_result.current_target
+                current_target_since = required_result.current_target_since
+                current_target_last_visible_at = required_result.current_target_last_visible_at
+                current_target_intent = required_result.current_target_intent
+                if required_result.current_target_updated:
+                    transition_to(DummyBehaviorState.HuntObjective, "required_target_retaliation", now)
+                    return
+                actions += add_action(action_counts, "required_target_retaliation_commit_rejected")
 
             client.set_attack_mode(False)
+            finish_active_combat_before_target_clear("travel_aggro_drop", now, current_target)
             if current_target:
-                finish_combat("travel_aggro_drop", now)
                 client.clear_target()
                 current_target = 0
             current_target_intent = TargetIntent.travel_aggro
@@ -11557,17 +16213,17 @@ def run_dummy_round(
             transition_to(DummyBehaviorState.HandleTravelAggro, reason, now)
             transition_to(DummyBehaviorState.DropAggroAndRecover, "drop_aggro_and_recover", now)
             clear_shared_leader_target_on_abandon(now, reason)
-            flee_until = max(
-                flee_until,
-                now + max(args.flee_duration, float(getattr(args, "travel_aggro_clear_grace", 0.0) or 0.0)),
+            start_or_refresh_flee(
+                reason,
+                80,
+                pressure=True,
+                prefer_safe=True,
+                now=now,
+                extend_seconds=max(args.flee_duration, float(getattr(args, "travel_aggro_clear_grace", 0.0) or 0.0)),
+                target_id=int(getattr(npc, "object_id", 0) or 0) if npc is not None else 0,
+                target_name=str(getattr(npc, "name", "") or "") if npc is not None else "",
+                current_target_intent=current_target_intent.value,
             )
-            next_flee_move = now
-            next_flee_pressure_replan = now + max(3.0, args.flee_move_interval * 6.0)
-            flee_destination = flee_escape_destination(args, client)
-            flee_wander_heading_hold_until = 0.0
-            if getattr(args, "flee_use_sprint", True):
-                client.send_command("/sprint")
-                actions += add_action(action_counts, "sprint_escape")
             if flee_destination is not None:
                 outcome, flee_actions = move_towards_flee_destination(
                     client,
@@ -11583,18 +16239,8 @@ def run_dummy_round(
                 )
                 record_movement_failure(movement_failures, client, flee_destination, outcome, "travel_aggro_immediate_flee")
                 if outcome.moved:
-                    next_flee_move = now + args.flee_move_interval + rng.uniform(0, args.jitter)
+                    schedule_next_flee_move(now)
             actions += add_action(action_counts, "travel_aggro_drop")
-            actions += add_action(action_counts, "flee_start")
-            log_encounter_event(
-                "flee_start",
-                now,
-                reason=reason,
-                destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
-                target_id=int(getattr(npc, "object_id", 0) or 0) if npc is not None else 0,
-                target_name=str(getattr(npc, "name", "") or "") if npc is not None else "",
-                current_target_intent=current_target_intent.value,
-            )
             speak_state_change(now, "flee", "state: dropping travel aggro")
 
         initial_state = initial_behavior_state_for_objective(
@@ -11605,13 +16251,112 @@ def run_dummy_round(
         )
         transition_to(initial_state, "startup_complete", time.monotonic())
 
-        while time.monotonic() < end_time:
+        while True:
             now = time.monotonic()
+            if now >= end_time:
+                safe_exit_should_extend = should_extend_round_for_safe_exit(
+                    args,
+                    behavior_state,
+                    now=now,
+                    end_time=end_time,
+                    safe_exit_deadline=safe_exit_deadline,
+                    health_percent=current_health_percent,
+                    current_target=current_target,
+                    last_damage_taken_at=last_damage_taken_at,
+                    last_incoming_damage_at=last_incoming_damage_at,
+                    flee_until=flee_until,
+                    rest_until=rest_until,
+                )
+                if not safe_exit_should_extend:
+                    if safe_exit_active:
+                        deadline_reached = now >= safe_exit_deadline
+                        safe_deadline_complete = safe_exit_deadline_can_complete_recovered(
+                            args,
+                            behavior_state,
+                            now=now,
+                            health_percent=current_health_percent,
+                            current_target=current_target,
+                            flee_until=flee_until,
+                            last_damage_taken_at=last_damage_taken_at,
+                            last_incoming_damage_at=last_incoming_damage_at,
+                            rest_until=rest_until,
+                        )
+                        if deadline_reached and not safe_deadline_complete:
+                            safe_exit_failed = True
+                            safe_exit_error = "safe_exit_deadline_reached"
+                        actions += add_action(
+                            action_counts,
+                            "safe_exit_deadline_reached" if deadline_reached and not safe_deadline_complete else "safe_exit_complete",
+                        )
+                        log_encounter_event(
+                            "safe_exit_complete",
+                            now,
+                            safe_exit_deadline_reached=bool(deadline_reached),
+                            safe_exit_deadline_completed_recovered=bool(safe_deadline_complete),
+                        )
+                    break
+
+                if not safe_exit_active:
+                    safe_exit_active = True
+                    next_safe_exit_log = now + max(3.0, float(getattr(args, "encounter_log_interval", 3.0) or 3.0))
+                    actions += add_action(action_counts, "safe_exit_extend")
+                    log_encounter_event("safe_exit_extend", now)
+                    recent_damage_age = recent_safe_exit_damage_age(
+                        now=now,
+                        last_damage_taken_at=last_damage_taken_at,
+                        last_incoming_damage_at=last_incoming_damage_at,
+                    )
+                    if (
+                        should_disengage_current_target_for_safe_exit(
+                            args,
+                            behavior_state,
+                            current_target=current_target,
+                            health_percent=current_health_percent,
+                            recent_damage_age_seconds=recent_damage_age,
+                        )
+                    ):
+                        abandoned_target_id = current_target
+                        client.set_attack_mode(False)
+                        current_target = 0
+                        current_target_intent = TargetIntent.none
+                        client.clear_target()
+                        finish_combat("safe_exit_flee", now)
+                        transition_to(DummyBehaviorState.DropAggroAndRecover, "safe_exit_recent_damage", now)
+                        clear_shared_leader_target_on_abandon(now, "safe_exit_current_target", abandoned_target_id)
+                        attack_target_in_view_primed_at = 0.0
+                        attack_target_in_view_primed_target = 0
+                        actions += add_action(action_counts, "safe_exit_current_target_disengage")
+                        start_or_refresh_flee(
+                            reason="safe_exit_recent_damage",
+                            priority=110 if recent_damage_age is not None else 80,
+                            pressure=recent_damage_age is not None,
+                            prefer_safe=True,
+                            now=now,
+                            extend_seconds=drop_aggro_recovery_duration(args, health_percent=current_health_percent),
+                        )
+                elif now >= next_safe_exit_log:
+                    next_safe_exit_log = now + max(3.0, float(getattr(args, "encounter_log_interval", 3.0) or 3.0))
+                    actions += add_action(action_counts, "safe_exit_hold")
+                    log_encounter_event("safe_exit_hold", now)
+
             if party_state is not None:
                 if is_party_leader:
                     party_state.update_leader(client)
                 else:
                     party_state.update_member(party_member_name, client)
+                external_party_updates = update_external_party_members_from_visible_players(party_state, client, args)
+                for _ in range(external_party_updates):
+                    actions += add_action(action_counts, "party_external_member_visible")
+                if args.party_condition_refresh_interval > 0 and now >= next_party_condition_refresh:
+                    condition_updates = refresh_party_condition_snapshots(
+                        party_state,
+                        args,
+                        account,
+                        party_member_name,
+                    )
+                    for _ in range(condition_updates):
+                        actions += add_action(action_counts, "party_condition_refresh")
+                    next_party_condition_refresh = now + args.party_condition_refresh_interval + rng.uniform(0, args.jitter)
             consume_removed_objects(now)
             consume_messages(now)
 
@@ -11714,6 +16459,7 @@ def run_dummy_round(
                         finish_combat("party_objective_complete", now)
                         client.clear_target()
                         current_target = 0
+                        current_target_intent = TargetIntent.none
                     client.set_attack_mode(False)
                     actions += add_action(action_counts, "required_target_complete_shared")
                     log_encounter_event(
@@ -11728,6 +16474,7 @@ def run_dummy_round(
                 if current_target:
                     client.clear_target()
                     current_target = 0
+                    current_target_intent = TargetIntent.none
                 client.set_attack_mode(False)
                 send_ping_if_due(now)
                 send_position_heartbeat(now)
@@ -11739,6 +16486,47 @@ def run_dummy_round(
                 continue
 
             current_health_percent = int(getattr(client, "health_percent", 100) or 0)
+            if pending_required_target_complete_id > 0 and required_target_completion_safe_after_removed(
+                args,
+                behavior_state,
+                now=now,
+                health_percent=current_health_percent,
+                current_target=current_target,
+                last_damage_taken_at=last_damage_taken_at,
+                last_incoming_damage_at=last_incoming_damage_at,
+                flee_until=flee_until,
+                rest_until=rest_until,
+            ):
+                objective_complete_at = now
+                if party_state is not None:
+                    party_state.mark_objective_complete(
+                        pending_required_target_complete_id,
+                        pending_required_target_complete_name,
+                    )
+                if pending_required_target_complete_name and pending_required_target_complete_level:
+                    rejected_target_kinds[
+                        (
+                            pending_required_target_complete_name.lower(),
+                            int(pending_required_target_complete_level),
+                        )
+                    ] = end_time + args.target_failure_name_cooldown
+                actions += add_action(action_counts, "required_target_complete_after_safe_exit")
+                log_encounter_event(
+                    "required_target_complete_after_safe_exit",
+                    now,
+                    completed_target_id=pending_required_target_complete_id,
+                    completed_target_name=pending_required_target_complete_name,
+                    completed_target_level=pending_required_target_complete_level,
+                    pending_seconds=round(now - pending_required_target_complete_since, 3)
+                    if pending_required_target_complete_since > 0.0
+                    else 0.0,
+                    loot_wait_seconds=args.target_removed_loot_wait,
+                )
+                pending_required_target_complete_id = 0
+                pending_required_target_complete_name = ""
+                pending_required_target_complete_level = 0
+                pending_required_target_complete_since = 0.0
+
             party_snapshot_for_tick = party_state.snapshot() if party_state is not None else {}
             required_target_api_observation = refresh_required_target_from_api(now, party_snapshot_for_tick)
             if required_target_api_observation is not None and party_state is not None:
@@ -11851,21 +16639,36 @@ def run_dummy_round(
             )
             hurt_member_for_precast = (
                 choose_party_heal_target(party_state, args, exclude_name=party_member_name)
-                if is_party_follower and action_rotation == "healer-support" and args.party_heal_leader_interval > 0
+                if is_party_support_healer and args.party_heal_leader_interval > 0
+                else None
+            )
+            cure_target_for_precast, cure_spell_for_precast = (
+                choose_party_cure_target(
+                    party_state,
+                    combat_plan,
+                    exclude_name=party_member_name,
+                )
+                if is_party_support_healer
+                and args.party_cure_interval > 0
+                and party_state is not None
+                else (None, None)
+            )
+            dead_member_for_precast = (
+                choose_party_resurrection_target(party_state, args, exclude_name=party_member_name)
+                if is_party_support_healer
+                and args.party_resurrect_interval > 0
+                and party_state is not None
                 else None
             )
             healer_heal_due = (
-                is_party_follower
-                and action_rotation == "healer-support"
+                is_party_support_healer
                 and args.party_heal_leader_interval > 0
-                and now >= next_party_heal
-                and party_heal_target_in_cast_range(client, args, hurt_member_for_precast)
+                and hurt_member_for_precast is not None
             )
             healer_buff_due = (
-                is_party_follower
-                and action_rotation == "healer-support"
+                is_party_support_healer
                 and args.party_buff_interval > 0
-                and args.party_buff_spell_levels
+                and has_party_buff_cast_source(args, combat_plan)
                 and now >= next_party_buff
                 and bool(party_state.buff_targets(exclude_name=party_member_name))
             )
@@ -11875,6 +16678,8 @@ def run_dummy_round(
                 combat_plan=combat_plan,
                 heal_due=healer_heal_due,
                 buff_due=healer_buff_due,
+                cure_due=bool(cure_target_for_precast is not None and cure_spell_for_precast is not None and now >= next_party_cure),
+                resurrection_due=bool(dead_member_for_precast is not None and now >= next_party_resurrect),
                 offensive_due=bool(current_target and now >= next_skill),
                 current_target_distance=current_target_distance_for_precast,
                 tactical_backoff=(
@@ -11924,6 +16729,11 @@ def run_dummy_round(
                 args,
                 behavior_state,
                 health_percent=current_health_percent,
+                party_snapshot=party_snapshot_for_tick,
+                member_name=party_member_name,
+                action_rotation=action_rotation,
+                current_target=current_target,
+                current_target_intent=current_target_intent,
             ):
                 abandoned_target_id = current_target
                 client.set_attack_mode(False)
@@ -11935,23 +16745,16 @@ def run_dummy_round(
                 clear_shared_leader_target_on_abandon(now, "critical_health_drop_aggro", abandoned_target_id)
                 attack_target_in_view_primed_at = 0.0
                 attack_target_in_view_primed_target = 0
-                flee_until = max(flee_until, now + max(args.flee_duration, args.low_health_rest_min, 1.0))
-                next_flee_move = now
-                next_flee_pressure_replan = now + flee_pressure_replan_cooldown(args)
-                flee_destination = flee_escape_destination(args, client)
-                flee_wander_heading_hold_until = 0.0
                 actions += add_action(action_counts, "critical_health_drop_aggro")
-                if getattr(args, "flee_use_sprint", True):
-                    client.send_command("/sprint")
-                    actions += add_action(action_counts, "sprint_escape")
-                actions += add_action(action_counts, "flee_start")
-                log_encounter_event(
-                    "flee_start",
-                    now,
+                start_or_refresh_flee(
                     reason="critical_health_drop_aggro",
+                    priority=100,
+                    pressure=True,
+                    prefer_safe=True,
+                    now=now,
+                    extend_seconds=max(args.flee_duration, args.low_health_rest_min, 1.0),
                     health_percent=current_health_percent,
                     previous_health_percent=previous_health_percent,
-                    destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
                 )
                 speak_state_change(now, "flee", "state: critical health escape")
                 send_ping_if_due(now)
@@ -11974,6 +16777,8 @@ def run_dummy_round(
                 else:
                     stand_after_rest = False
                     client.send_command("/stand")
+                    if current_target <= 0:
+                        current_target_intent = TargetIntent.none
                     transition_to(
                         next_state_after_rest_recovery_completion(
                             args,
@@ -11984,6 +16789,8 @@ def run_dummy_round(
                         "rest_complete",
                         now,
                     )
+                    clear_flee_until_after_recovery("rest_complete", now)
+                    clear_flee_destination_after_recovery("rest_complete", now)
                     actions += add_action(action_counts, "stand")
 
             if should_complete_timed_rest_recovery(
@@ -11993,6 +16800,8 @@ def run_dummy_round(
                 now=now,
             ):
                 rest_until = 0.0
+                if current_target <= 0:
+                    current_target_intent = TargetIntent.none
                 transition_to(
                     next_state_after_rest_recovery_completion(
                         args,
@@ -12003,6 +16812,8 @@ def run_dummy_round(
                     "rest_complete",
                     now,
                 )
+                clear_flee_until_after_recovery("rest_complete", now)
+                clear_flee_destination_after_recovery("rest_complete", now)
                 actions += add_action(action_counts, "rest_complete")
                 log_encounter_event("rest_complete", now, health_percent=current_health_percent)
 
@@ -12024,27 +16835,21 @@ def run_dummy_round(
                     client.set_attack_mode(False)
                     abandoned_target_id = current_target
                     current_target = 0
+                    current_target_intent = TargetIntent.none
                     client.clear_target()
                     finish_combat("flee", now)
-                    flee_until = now + args.flee_duration
-                    next_flee_move = now
-                    next_flee_pressure_replan = now + max(3.0, args.flee_move_interval * 6.0)
-                    flee_destination = flee_escape_destination(args, client)
-                    flee_wander_heading_hold_until = 0.0
                     transition_to(state_after_flee_start(behavior_state), "rest_pressure", now)
                     clear_shared_leader_target_on_abandon(now, "rest_pressure", abandoned_target_id)
                     actions += add_action(action_counts, "flee_rest_pressure")
-                    if getattr(args, "flee_use_sprint", True):
-                        client.send_command("/sprint")
-                        actions += add_action(action_counts, "sprint_escape")
-                    actions += add_action(action_counts, "flee_start")
-                    log_encounter_event(
-                        "flee_start",
-                        now,
-                        reason="rest_pressure",
+                    start_or_refresh_flee(
+                        "rest_pressure",
+                        90,
+                        pressure=True,
+                        prefer_safe=True,
+                        now=now,
+                        extend_seconds=args.flee_duration,
                         health_percent=current_health_percent,
                         previous_health_percent=previous_health_percent,
-                        destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
                     )
                     speak_state_change(now, "flee", "state: fleeing to town")
                 elif (
@@ -12055,6 +16860,8 @@ def run_dummy_round(
                     rest_until = 0.0
                     stand_after_rest = False
                     client.send_command("/stand")
+                    if current_target <= 0:
+                        current_target_intent = TargetIntent.none
                     transition_to(
                         next_state_after_rest_recovery_completion(
                             args,
@@ -12065,6 +16872,8 @@ def run_dummy_round(
                         "low_health_rest_complete",
                         now,
                     )
+                    clear_flee_until_after_recovery("low_health_rest_complete", now)
+                    clear_flee_destination_after_recovery("low_health_rest_complete", now)
                     actions += add_action(action_counts, "low_health_rest_complete")
                 elif should_healer_prioritize_party_heal_during_rest(
                     args,
@@ -12083,6 +16892,42 @@ def run_dummy_round(
                         health_percent=current_health_percent,
                         heal_target=hurt_member_for_precast.get("name", "") if isinstance(hurt_member_for_precast, dict) else "",
                         heal_target_health=hurt_member_for_precast.get("health_percent", 0) if isinstance(hurt_member_for_precast, dict) else 0,
+                    )
+                elif should_healer_abort_rest_for_party_resurrection(
+                    args,
+                    action_rotation=action_rotation,
+                    current_health_percent=current_health_percent,
+                    dead_member=dead_member_for_precast,
+                    resurrection_spells=getattr(combat_plan, "resurrection_spells", None),
+                ):
+                    rest_until = 0.0
+                    stand_after_rest = False
+                    client.send_command("/stand")
+                    next_party_resurrect = min(next_party_resurrect, now)
+                    actions += add_action(action_counts, "party_resurrect_abort_rest")
+                    log_encounter_event(
+                        "party_resurrect_abort_rest",
+                        now,
+                        health_percent=current_health_percent,
+                        resurrect_target=dead_member_for_precast.get("name", "") if isinstance(dead_member_for_precast, dict) else "",
+                    )
+                elif should_healer_abort_rest_for_party_cure(
+                    args,
+                    action_rotation=action_rotation,
+                    current_health_percent=current_health_percent,
+                    cure_target=cure_target_for_precast,
+                    cure_spell=cure_spell_for_precast,
+                ):
+                    rest_until = 0.0
+                    stand_after_rest = False
+                    client.send_command("/stand")
+                    next_party_cure = min(next_party_cure, now)
+                    actions += add_action(action_counts, "party_cure_abort_rest")
+                    log_encounter_event(
+                        "party_cure_abort_rest",
+                        now,
+                        health_percent=current_health_percent,
+                        cure_target=cure_target_for_precast.get("name", "") if isinstance(cure_target_for_precast, dict) else "",
                     )
                 elif should_healer_self_preserve_during_rest(
                     args,
@@ -12146,17 +16991,23 @@ def run_dummy_round(
                 recent_damage_age_seconds=(now - last_damage_taken_at if last_damage_taken_at > 0.0 else None),
                 active_threat=flee_threat_snapshot_is_active(extend_threat_snapshot),
             ):
-                flee_until = now + max(args.flee_duration, args.low_health_rest_min, 1.0)
-                next_flee_move = now
-                next_flee_pressure_replan = now + flee_pressure_replan_cooldown(args)
-                flee_wander_heading_hold_until = 0.0
-                actions += add_action(action_counts, "flee_extend")
-                log_encounter_event("flee_extend", now, health_percent=current_health_percent)
+                start_or_refresh_flee(
+                    "flee_extend",
+                    100,
+                    pressure=flee_threat_snapshot_is_active(extend_threat_snapshot),
+                    prefer_safe=flee_destination is None,
+                    destination_override=flee_destination,
+                    now=now,
+                    extend_seconds=max(args.flee_duration, args.low_health_rest_min, 1.0),
+                    log_name="flee_extend",
+                    action_name="flee_extend",
+                    use_sprint=False,
+                    health_percent=current_health_percent,
+                )
 
-            party_snapshot_for_untracked_damage = (
-                party_state.snapshot()
-                if party_state is not None and party_member_is_active_tank(party_state.snapshot(), party_member_name)
-                else None
+            party_snapshot_for_untracked_damage, party_snapshot_for_untracked_flee = party_damage_response_snapshots(
+                party_state,
+                party_member_name,
             )
             if (
                 party_snapshot_for_untracked_damage is not None
@@ -12166,6 +17017,35 @@ def run_dummy_round(
                 and current_health_percent < previous_health_percent
             ):
                 party_ready_for_objective = party_ready_for_pull(args, party_state)
+                if should_drop_new_damage_during_safe_exit(
+                    safe_exit_active=safe_exit_active,
+                    current_target=current_target,
+                    current_health_percent=current_health_percent,
+                    previous_health_percent=previous_health_percent,
+                    last_damage_attacker_name=last_incoming_damage_attacker_name,
+                ):
+                    client.set_attack_mode(False)
+                    if current_target:
+                        client.clear_target()
+                    current_target = 0
+                    current_target_intent = TargetIntent.none
+                    transition_to(DummyBehaviorState.DropAggroAndRecover, "safe_exit_new_damage_drop_aggro", now)
+                    actions += add_action(action_counts, "safe_exit_new_damage_drop_aggro")
+                    start_or_refresh_flee(
+                        reason="safe_exit_new_damage_drop_aggro",
+                        priority=105,
+                        pressure=True,
+                        prefer_safe=True,
+                        now=now,
+                        extend_seconds=drop_aggro_recovery_duration(args, health_percent=current_health_percent),
+                        health_percent=current_health_percent,
+                        previous_health_percent=previous_health_percent,
+                    )
+                    speak_state_change(now, "flee", "state: safe exit under attack")
+                    send_ping_if_due(now)
+                    send_position_heartbeat(now)
+                    client.drain(args.tick)
+                    continue
                 force_flee_from_health_drop = should_force_flee_from_non_required_health_drop(
                     args,
                     current_health_percent=current_health_percent,
@@ -12188,13 +17068,81 @@ def run_dummy_round(
                         args,
                     )
                     if visible_required_actor is not None:
-                        current_target = int(getattr(visible_required_actor, "object_id", 0) or 0)
-                        current_target_intent = TargetIntent.required_retaliation
-                        current_target_since = now
-                        current_target_last_visible_at = now
+                        visible_required_decision = evaluate_engagement_candidate(
+                            engagement_candidate_from_actor(
+                                visible_required_actor,
+                                source=TargetSource.required_retaliation,
+                                intent=TargetIntent.required_retaliation,
+                            ),
+                            EngagementContext(
+                                behavior_state=behavior_state,
+                                current_target=current_target,
+                                current_target_intent=current_target_intent,
+                                is_party_leader=is_party_leader,
+                                is_party_follower=is_party_follower,
+                                party_ready=party_ready_for_objective,
+                                leader_engaged=float(
+                                    party_snapshot_for_untracked_damage.get("leader_target_engaged_at", 0.0) or 0.0
+                                )
+                                > 0.0,
+                                current_health_percent=current_health_percent,
+                                objective_home_reached=required_target_home_reached(client, args),
+                                objective_hunt_ready=required_target_home_hunt_ready(client, args),
+                                drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                                rest_active=rest_until > now,
+                                flee_active=flee_until > now,
+                            ),
+                            client,
+                            args,
+                            party_snapshot_for_untracked_damage,
+                        )
+                        if not visible_required_decision.allowed:
+                            commit_target(
+                                visible_required_decision,
+                                client,
+                                party_state,
+                                now=now,
+                                current_target=current_target,
+                                current_target_since=current_target_since,
+                                current_target_last_visible_at=current_target_last_visible_at,
+                                current_target_intent=current_target_intent,
+                                action_counts=action_counts,
+                                log_event=log_encounter_event,
+                            )
+                            visible_required_actor = None
+                    if visible_required_actor is not None:
+                        if block_active_combat_target_switch(
+                            int(getattr(visible_required_actor, "object_id", 0) or 0),
+                            TargetIntent.required_retaliation,
+                            str(getattr(visible_required_actor, "name", "") or ""),
+                            now,
+                            "required_target_damage_counterattack",
+                        ):
+                            visible_required_actor = None
+
+                    if visible_required_actor is not None:
+                        visible_required_result = commit_target(
+                            visible_required_decision,
+                            client,
+                            party_state,
+                            now=now,
+                            current_target=current_target,
+                            current_target_since=current_target_since,
+                            current_target_last_visible_at=current_target_last_visible_at,
+                            current_target_intent=current_target_intent,
+                            action_counts=action_counts,
+                            log_event=log_encounter_event,
+                        )
+                        current_target = visible_required_result.current_target
+                        current_target_since = visible_required_result.current_target_since
+                        current_target_last_visible_at = visible_required_result.current_target_last_visible_at
+                        current_target_intent = visible_required_result.current_target_intent
+                        if not visible_required_result.current_target_updated:
+                            visible_required_actor = None
+
+                    if visible_required_actor is not None:
                         target_observed_at = now
-                        client.target_object(current_target)
-                        client.set_attack_mode(True)
+                        enable_hostile_attack_mode_if_allowed(now, "required_target_damage_counterattack")
                         transition_to(DummyBehaviorState.HuntObjective, "required_target_retaliation", now)
                         required_target_x = int(getattr(visible_required_actor, "x", 0) or 0)
                         required_target_y = int(getattr(visible_required_actor, "y", 0) or 0)
@@ -12225,6 +17173,7 @@ def run_dummy_round(
                     behavior_state=behavior_state,
                     required_home_hunt_ready=required_target_home_hunt_ready(client, args),
                     party_ready_for_objective=party_ready_for_objective,
+                    objective_pressure_active=name_matches_required_target(args, last_incoming_damage_attacker_name),
                 )
                 if objective_counterattack_actor is not None:
                     objective_counterattack_intent = target_intent_for_selected_npc(
@@ -12250,13 +17199,81 @@ def run_dummy_round(
                         )
                         objective_counterattack_actor = None
                 if objective_counterattack_actor is not None:
-                    current_target = int(getattr(objective_counterattack_actor, "object_id", 0) or 0)
-                    current_target_intent = objective_counterattack_intent
-                    current_target_since = now
-                    current_target_last_visible_at = now
+                    objective_counterattack_decision = evaluate_engagement_candidate(
+                        engagement_candidate_from_actor(
+                            objective_counterattack_actor,
+                            source=TargetSource.required_retaliation,
+                            intent=objective_counterattack_intent,
+                        ),
+                        EngagementContext(
+                            behavior_state=behavior_state,
+                            current_target=current_target,
+                            current_target_intent=current_target_intent,
+                            is_party_leader=is_party_leader,
+                            is_party_follower=is_party_follower,
+                            party_ready=party_ready_for_objective,
+                            leader_engaged=float(
+                                party_snapshot_for_untracked_damage.get("leader_target_engaged_at", 0.0) or 0.0
+                            )
+                            > 0.0,
+                            current_health_percent=current_health_percent,
+                            objective_home_reached=required_target_home_reached(client, args),
+                            objective_hunt_ready=required_target_home_hunt_ready(client, args),
+                            drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                            rest_active=rest_until > now,
+                            flee_active=flee_until > now,
+                        ),
+                        client,
+                        args,
+                        party_snapshot_for_untracked_damage,
+                    )
+                    if not objective_counterattack_decision.allowed:
+                        commit_target(
+                            objective_counterattack_decision,
+                            client,
+                            party_state,
+                            now=now,
+                            current_target=current_target,
+                            current_target_since=current_target_since,
+                            current_target_last_visible_at=current_target_last_visible_at,
+                            current_target_intent=current_target_intent,
+                            action_counts=action_counts,
+                            log_event=log_encounter_event,
+                        )
+                        objective_counterattack_actor = None
+                if objective_counterattack_actor is not None:
+                    if block_active_combat_target_switch(
+                        int(getattr(objective_counterattack_actor, "object_id", 0) or 0),
+                        objective_counterattack_intent,
+                        str(getattr(objective_counterattack_actor, "name", "") or ""),
+                        now,
+                        "party_objective_damage_counterattack",
+                    ):
+                        objective_counterattack_actor = None
+
+                if objective_counterattack_actor is not None:
+                    objective_counterattack_result = commit_target(
+                        objective_counterattack_decision,
+                        client,
+                        party_state,
+                        now=now,
+                        current_target=current_target,
+                        current_target_since=current_target_since,
+                        current_target_last_visible_at=current_target_last_visible_at,
+                        current_target_intent=current_target_intent,
+                        action_counts=action_counts,
+                        log_event=log_encounter_event,
+                    )
+                    current_target = objective_counterattack_result.current_target
+                    current_target_since = objective_counterattack_result.current_target_since
+                    current_target_last_visible_at = objective_counterattack_result.current_target_last_visible_at
+                    current_target_intent = objective_counterattack_result.current_target_intent
+                    if not objective_counterattack_result.current_target_updated:
+                        objective_counterattack_actor = None
+
+                if objective_counterattack_actor is not None:
                     target_observed_at = now
-                    client.target_object(current_target)
-                    client.set_attack_mode(True)
+                    enable_hostile_attack_mode_if_allowed(now, "party_objective_damage_counterattack")
                     objective_target_x = int(getattr(objective_counterattack_actor, "x", 0) or 0)
                     objective_target_y = int(getattr(objective_counterattack_actor, "y", 0) or 0)
                     if objective_target_x or objective_target_y:
@@ -12292,6 +17309,66 @@ def run_dummy_round(
                         behavior_state=behavior_state,
                         recent_incoming_attacker_name=last_incoming_damage_attacker_name,
                     )
+                    rescue_counterattack_decision = None
+                    rescue_interrupt_decision = evaluate_objective_pressure_interrupt_candidate(
+                        args,
+                        rescue_counterattack_actor,
+                        source=TargetSource.party_rescue,
+                        intent=rescue_counterattack_intent,
+                        current_health_percent=current_health_percent,
+                        required_home_hunt_ready=required_target_home_hunt_ready(client, args),
+                        context=EngagementContext(
+                            behavior_state=behavior_state,
+                            current_target=current_target,
+                            current_target_intent=current_target_intent,
+                            is_party_leader=is_party_leader,
+                            is_party_follower=is_party_follower,
+                            party_ready=party_ready_for_objective,
+                            leader_engaged=float(
+                                party_snapshot_for_untracked_damage.get("leader_target_engaged_at", 0.0) or 0.0
+                            )
+                            > 0.0,
+                            current_health_percent=current_health_percent,
+                            objective_home_reached=required_target_home_reached(client, args),
+                            objective_hunt_ready=required_target_home_hunt_ready(client, args),
+                            drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                            rest_active=rest_until > now,
+                            flee_active=flee_until > now,
+                        ),
+                        client=client,
+                        party_snapshot=party_snapshot_for_untracked_damage,
+                    )
+                    if rescue_interrupt_decision is not None:
+                        if rescue_interrupt_decision.allowed:
+                            rescue_counterattack_decision = rescue_interrupt_decision
+                            cancel_flee_for_objective_pressure_interrupt(
+                                now,
+                                rescue_counterattack_actor,
+                                rescue_counterattack_intent,
+                            )
+                            transition_to(DummyBehaviorState.HuntObjective, "objective_pressure_interrupt_drop_aggro", now)
+                            actions += add_action(action_counts, "objective_pressure_interrupt_drop_aggro")
+                            log_encounter_event(
+                                "objective_pressure_interrupt_drop_aggro",
+                                now,
+                                target_id=int(getattr(rescue_counterattack_actor, "object_id", 0) or 0),
+                                target_name=str(getattr(rescue_counterattack_actor, "name", "") or ""),
+                                target_intent=target_intent_value(rescue_counterattack_intent),
+                            )
+                        else:
+                            commit_target(
+                                rescue_interrupt_decision,
+                                client,
+                                party_state,
+                                now=now,
+                                current_target=current_target,
+                                current_target_since=current_target_since,
+                                current_target_last_visible_at=current_target_last_visible_at,
+                                current_target_intent=current_target_intent,
+                                action_counts=action_counts,
+                                log_event=log_encounter_event,
+                            )
+                            rescue_counterattack_actor = None
                     if not should_allow_counterattack_for_behavior_state(
                         behavior_state,
                         args,
@@ -12308,17 +17385,119 @@ def run_dummy_round(
                         )
                         rescue_counterattack_actor = None
                 if rescue_counterattack_actor is not None:
-                    current_target = int(getattr(rescue_counterattack_actor, "object_id", 0) or 0)
-                    current_target_intent = rescue_counterattack_intent
-                    current_target_since = now
-                    current_target_last_visible_at = now
+                    if rescue_counterattack_decision is None:
+                        rescue_counterattack_decision = evaluate_engagement_candidate(
+                            engagement_candidate_from_actor(
+                                rescue_counterattack_actor,
+                                source=TargetSource.party_rescue,
+                                intent=rescue_counterattack_intent,
+                            ),
+                            EngagementContext(
+                                behavior_state=behavior_state,
+                                current_target=current_target,
+                                current_target_intent=current_target_intent,
+                                is_party_leader=is_party_leader,
+                                is_party_follower=is_party_follower,
+                                party_ready=party_ready_for_objective,
+                                leader_engaged=float(
+                                    party_snapshot_for_untracked_damage.get("leader_target_engaged_at", 0.0) or 0.0
+                                )
+                                > 0.0,
+                                current_health_percent=current_health_percent,
+                                objective_home_reached=required_target_home_reached(client, args),
+                                objective_hunt_ready=required_target_home_hunt_ready(client, args),
+                                drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                                rest_active=rest_until > now,
+                                flee_active=flee_until > now,
+                            ),
+                            client,
+                            args,
+                            party_snapshot_for_untracked_damage,
+                        )
+                    if not rescue_counterattack_decision.allowed:
+                        commit_target(
+                            rescue_counterattack_decision,
+                            client,
+                            party_state,
+                            now=now,
+                            current_target=current_target,
+                            current_target_since=current_target_since,
+                            current_target_last_visible_at=current_target_last_visible_at,
+                            current_target_intent=current_target_intent,
+                            action_counts=action_counts,
+                            log_event=log_encounter_event,
+                        )
+                        rescue_counterattack_actor = None
+                if rescue_counterattack_actor is not None:
+                    if block_active_combat_target_switch(
+                        int(getattr(rescue_counterattack_actor, "object_id", 0) or 0),
+                        rescue_counterattack_intent,
+                        str(getattr(rescue_counterattack_actor, "name", "") or ""),
+                        now,
+                        "party_rescue_damage_counterattack",
+                    ):
+                        rescue_counterattack_actor = None
+
+                if rescue_counterattack_actor is not None:
+                    publish_rescue_counterattack = should_publish_damage_counterattack_as_leader_target(
+                        is_party_leader=is_party_leader,
+                        party_state=party_state,
+                        current_target_intent=rescue_counterattack_intent,
+                    )
+                    if rescue_counterattack_decision.allowed and publish_rescue_counterattack:
+                        rescue_counterattack_decision = replace(
+                            rescue_counterattack_decision,
+                            should_publish_party_leader_target=True,
+                            should_mark_leader_engaged=True,
+                        )
+                    rescue_counterattack_result = commit_target(
+                        rescue_counterattack_decision,
+                        client,
+                        party_state,
+                        now=now,
+                        current_target=current_target,
+                        current_target_since=current_target_since,
+                        current_target_last_visible_at=current_target_last_visible_at,
+                        current_target_intent=current_target_intent,
+                        action_counts=action_counts,
+                        log_event=log_encounter_event,
+                    )
+                    current_target = rescue_counterattack_result.current_target
+                    current_target_since = rescue_counterattack_result.current_target_since
+                    current_target_last_visible_at = rescue_counterattack_result.current_target_last_visible_at
+                    current_target_intent = rescue_counterattack_result.current_target_intent
+                    if not rescue_counterattack_result.current_target_updated:
+                        rescue_counterattack_actor = None
+
+                if rescue_counterattack_actor is not None:
                     target_observed_at = now
-                    client.target_object(current_target)
-                    client.set_attack_mode(True)
+                    enable_hostile_attack_mode_if_allowed(now, "party_rescue_damage_counterattack")
                     rescue_target_x = int(getattr(rescue_counterattack_actor, "x", 0) or 0)
                     rescue_target_y = int(getattr(rescue_counterattack_actor, "y", 0) or 0)
                     if rescue_target_x or rescue_target_y:
                         face_point_for_attack(client, rescue_target_x, rescue_target_y)
+                    if should_publish_damage_counterattack_as_leader_target(
+                        is_party_leader=is_party_leader,
+                        party_state=party_state,
+                        current_target_intent=rescue_counterattack_intent,
+                    ):
+                        actions += add_action(action_counts, "leader_damage_counterattack_shared")
+                    if rescue_counterattack_intent in {
+                        TargetIntent.objective,
+                        TargetIntent.required_retaliation,
+                        TargetIntent.party_rescue,
+                    }:
+                        transition_to(
+                            DummyBehaviorState.HuntObjective,
+                            "party_rescue_counterattack"
+                            if rescue_counterattack_intent == TargetIntent.party_rescue
+                            else (
+                                "objective_target_selected"
+                                if rescue_counterattack_intent == TargetIntent.objective
+                                else "required_target_retaliation"
+                            ),
+                            now,
+                        )
                     if should_start_rescue_counterattack_combat(active_combat, current_target, rescue_counterattack_actor):
                         start_combat(
                             rescue_counterattack_actor,
@@ -12342,15 +17521,35 @@ def run_dummy_round(
                     current_target=current_target,
                     current_health_percent=current_health_percent,
                     previous_health_percent=previous_health_percent,
+                    member_name=party_member_name,
                 )
             ):
                 client.set_attack_mode(False)
+                finish_active_combat_before_target_clear("flee", now, current_target)
                 current_target = 0
+                current_target_intent = TargetIntent.none
                 client.clear_target()
                 actions += add_action(action_counts, "party_rescue_counterattack_failed_flee")
                 log_encounter_event(
                     "party_rescue_counterattack_failed_flee",
                     now,
+                    health_percent=current_health_percent,
+                )
+
+            party_ready_for_untracked_flee = party_ready_for_pull(args, party_state) if party_state is not None else True
+            hold_required_target_for_party_reaggro = should_hold_required_target_untracked_flee_for_party_reaggro(
+                args,
+                party_snapshot_for_untracked_flee,
+                member_name=party_member_name,
+                attacker_name=last_incoming_damage_attacker_name,
+                party_ready_for_objective=party_ready_for_untracked_flee,
+            )
+            if hold_required_target_for_party_reaggro and current_target <= 0:
+                actions += add_action(action_counts, "party_required_focus_flee_hold")
+                log_encounter_event(
+                    "party_required_focus_flee_hold",
+                    now,
+                    attacker_name=last_incoming_damage_attacker_name,
                     health_percent=current_health_percent,
                 )
 
@@ -12362,43 +17561,45 @@ def run_dummy_round(
                 flee_until=flee_until,
                 now=now,
                 party_rescue_target_id=(
-                    int(party_snapshot_for_untracked_damage.get("rescue_target_id", 0) or 0)
-                    if party_snapshot_for_untracked_damage is not None
+                    int(party_snapshot_for_untracked_flee.get("rescue_target_id", 0) or 0)
+                    if party_snapshot_for_untracked_flee is not None
                     else 0
                 ),
                 last_damage_attacker_name=last_incoming_damage_attacker_name,
-                party_ready_for_objective=party_ready_for_pull(args, party_state) if party_state is not None else True,
+                party_ready_for_objective=party_ready_for_untracked_flee,
+                allow_required_target_flee=bool(
+                    party_snapshot_for_untracked_flee is not None
+                    and name_matches_required_target(args, last_incoming_damage_attacker_name)
+                    and not party_member_is_active_tank(party_snapshot_for_untracked_flee, party_member_name)
+                    and not hold_required_target_for_party_reaggro
+                ),
                 force_flee_from_health_drop=should_force_flee_from_non_required_health_drop(
                     args,
                     current_health_percent=current_health_percent,
                     previous_health_percent=previous_health_percent,
                     last_damage_attacker_name=last_incoming_damage_attacker_name,
                 ),
+                active_combat=active_combat,
+                current_target_intent=current_target_intent,
             ):
                 client.set_attack_mode(False)
                 abandoned_target_id = current_target
                 current_target = 0
+                current_target_intent = TargetIntent.none
                 client.clear_target()
                 finish_combat("flee", now)
-                flee_until = now + args.flee_duration
-                next_flee_move = now
-                next_flee_pressure_replan = now + max(3.0, args.flee_move_interval * 6.0)
-                flee_destination = flee_escape_destination(args, client)
-                flee_wander_heading_hold_until = 0.0
                 transition_to(state_after_flee_start(behavior_state), "untracked_damage", now)
                 clear_shared_leader_target_on_abandon(now, "untracked_damage", abandoned_target_id)
                 actions += add_action(action_counts, "flee_untracked_damage")
-                if getattr(args, "flee_use_sprint", True):
-                    client.send_command("/sprint")
-                    actions += add_action(action_counts, "sprint_escape")
-                actions += add_action(action_counts, "flee_start")
-                log_encounter_event(
-                    "flee_start",
-                    now,
+                start_or_refresh_flee(
                     reason="untracked_damage",
+                    priority=80,
+                    pressure=True,
+                    prefer_safe=True,
+                    now=now,
+                    extend_seconds=args.flee_duration,
                     health_percent=current_health_percent,
                     previous_health_percent=previous_health_percent,
-                    destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
                 )
                 speak_state_change(now, "flee", "state: fleeing to safety")
 
@@ -12434,34 +17635,29 @@ def run_dummy_round(
                     client.set_attack_mode(False)
                     abandoned_target_id = current_target
                     current_target = 0
+                    current_target_intent = TargetIntent.none
                     client.clear_target()
                     finish_combat("flee", now)
-                    flee_until = now + args.flee_duration
-                    next_flee_move = now
-                    next_flee_pressure_replan = now + max(3.0, args.flee_move_interval * 6.0)
-                    flee_destination = flee_escape_destination(args, client)
-                    flee_wander_heading_hold_until = 0.0
                     flee_reason = "nearby_threat" if flee_threat_snapshot_is_active(threat_snapshot) else "recent_damage"
                     transition_to(state_after_flee_start(behavior_state), flee_reason, now)
                     clear_shared_leader_target_on_abandon(now, flee_reason, abandoned_target_id)
                     actions += add_action(action_counts, "flee_threat_pressure")
-                    if getattr(args, "flee_use_sprint", True):
-                        client.send_command("/sprint")
-                        actions += add_action(action_counts, "sprint_escape")
-                    actions += add_action(action_counts, "flee_start")
-                    log_encounter_event(
-                        "flee_start",
-                        now,
-                        reason="nearby_threat" if flee_threat_snapshot_is_active(threat_snapshot) else "recent_damage",
+                    start_or_refresh_flee(
+                        flee_reason,
+                        80,
+                        pressure=True,
+                        prefer_safe=True,
+                        now=now,
+                        extend_seconds=args.flee_duration,
                         health_percent=current_health_percent,
                         previous_health_percent=previous_health_percent,
                         recent_damage_age_seconds=recent_damage_age_seconds,
-                        destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
                         **(threat_snapshot or {}),
                     )
                 else:
                     client.set_attack_mode(False)
                     client.send_command("/sit")
+                    current_target_intent = TargetIntent.none
                     rest_until = now + rng.uniform(args.low_health_rest_min, args.low_health_rest_max)
                     stand_after_rest = True
                     transition_to(DummyBehaviorState.RestRecover, "low_health_rest", now)
@@ -12471,6 +17667,29 @@ def run_dummy_round(
                 send_position_heartbeat(now)
                 client.drain(args.tick)
                 continue
+
+            if should_healer_self_preserve_while_fleeing(
+                args,
+                action_rotation=action_rotation,
+                current_health_percent=current_health_percent,
+                now=now,
+                flee_until=flee_until,
+                next_self_preserve_heal=next_self_preserve_heal,
+            ):
+                heal_action = perform_healer_self_preserve_cast(client, rng, args, combat_plan)
+                if heal_action is not None:
+                    actions += add_action(action_counts, heal_action)
+                    next_self_preserve_heal = now + max(args.party_heal_leader_interval, args.party_friendly_cast_target_hold, 1.8)
+                    log_encounter_event(
+                        "flee_self_preserve_heal",
+                        now,
+                        health_percent=current_health_percent,
+                        action=heal_action,
+                    )
+                    send_ping_if_due(now)
+                    send_position_heartbeat(now)
+                    client.drain(args.tick)
+                    continue
 
             if client.is_dead:
                 if not death_seen:
@@ -12482,6 +17701,7 @@ def run_dummy_round(
                         reject_active_target_kind(now, args.target_death_cooldown)
                     finish_combat("player_death", now)
                     current_target = 0
+                    current_target_intent = TargetIntent.none
                     if (
                         is_party_leader
                         and party_state is not None
@@ -12529,23 +17749,21 @@ def run_dummy_round(
                     attack_target_in_view_primed_at = 0.0
                     attack_target_in_view_primed_target = 0
                     transition_to(DummyBehaviorState.DropAggroAndRecover, "death_recovered_escape", now)
-                    flee_until = max(
-                        flee_until,
-                        now
-                        + max(
+                    actions += add_action(action_counts, "death_recovered_escape")
+                    start_or_refresh_flee(
+                        "death_recovered_escape",
+                        70,
+                        pressure=False,
+                        prefer_safe=False,
+                        now=now,
+                        extend_seconds=max(
                             float(getattr(args, "flee_duration", 0.0) or 0.0),
                             float(getattr(args, "low_health_rest_min", 0.0) or 0.0),
                             float(getattr(args, "post_release_rest", 0.0) or 0.0),
                             1.0,
                         ),
+                        health_percent=current_health_percent,
                     )
-                    next_flee_move = now
-                    next_flee_pressure_replan = now + flee_pressure_replan_cooldown(args)
-                    flee_destination = flee_escape_destination(args, client)
-                    flee_wander_heading_hold_until = 0.0
-                    if getattr(args, "flee_use_sprint", True):
-                        client.send_command("/sprint")
-                        actions += add_action(action_counts, "sprint_escape")
                     if flee_destination is not None:
                         outcome, flee_actions = move_towards_flee_destination(
                             client,
@@ -12567,16 +17785,7 @@ def run_dummy_round(
                             "death_recovered_immediate_flee",
                         )
                         if outcome.moved:
-                            next_flee_move = now + args.flee_move_interval + rng.uniform(0, args.jitter)
-                    actions += add_action(action_counts, "death_recovered_escape")
-                    actions += add_action(action_counts, "flee_start")
-                    log_encounter_event(
-                        "flee_start",
-                        now,
-                        reason="death_recovered_escape",
-                        health_percent=current_health_percent,
-                        destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
-                    )
+                            schedule_next_flee_move(now)
                     speak_state_change(now, "flee", "state: escaping after release")
                 else:
                     rest_until = now + args.post_release_rest
@@ -12614,6 +17823,13 @@ def run_dummy_round(
                     active_combat,
                     health_percent=int(getattr(client, "health_percent", 0) or 0),
                     now=now,
+                )
+                and not should_party_tank_hold_required_objective_for_healer(
+                    args,
+                    party_state.snapshot() if party_state is not None else None,
+                    party_member_name,
+                    active_combat,
+                    health_percent=int(getattr(client, "health_percent", 0) or 0),
                 )
             )
             multi_aggro_flee_due = (
@@ -12655,6 +17871,143 @@ def run_dummy_round(
                     recent_incoming_attacker=last_incoming_damage_attacker_name,
                     multi_aggro=bool(multi_aggro_counterattack_hold),
                 )
+            multi_aggro_api_observations = (
+                fetch_flee_safe_api_observations(args, client)
+                if current_target and combat_plan.crowd_control_spells and getattr(args, "flee_safe_api_scout", False)
+                else []
+            )
+            multi_aggro_visible_observations = (
+                list(
+                    client.visible_npcs(
+                        max_age=float(getattr(args, "hunter_target_api_max_age", 60.0) or 60.0),
+                        include_peace=False,
+                    )
+                )
+                if not current_target and combat_plan.crowd_control_spells
+                else []
+            )
+            multi_aggro_observations = dedupe_npcs_by_object_id(
+                list(multi_aggro_api_observations) + list(multi_aggro_visible_observations)
+            )
+            multi_aggro_crowd_control_due = bool(
+                should_use_crowd_control_for_multi_aggro(
+                    args,
+                    combat_plan,
+                    active_combat,
+                    current_target=current_target,
+                    health_percent=int(getattr(client, "health_percent", 0) or 0),
+                    now=now,
+                    next_crowd_control=next_crowd_control,
+                    behavior_state=behavior_state,
+                    party_snapshot=party_snapshot_for_untracked_damage,
+                    observed_npcs=multi_aggro_observations,
+                )
+            )
+            if should_attempt_multi_aggro_crowd_control(
+                crowd_control_due=multi_aggro_crowd_control_due,
+                multi_aggro_counterattack_hold=multi_aggro_counterattack_hold,
+            ):
+                crowd_control_target = choose_multi_aggro_crowd_control_target(
+                    client,
+                    args,
+                    active_combat,
+                    current_target=current_target,
+                    party_snapshot=party_snapshot_for_untracked_damage,
+                    api_observations=multi_aggro_observations,
+                )
+                if crowd_control_target is not None:
+                    cc_decision = evaluate_engagement_candidate(
+                        engagement_candidate_from_actor(
+                            crowd_control_target,
+                            source=TargetSource.local_rescue,
+                            intent=TargetIntent.party_rescue,
+                        ),
+                        engagement_context(
+                            now,
+                            party_snapshot=party_snapshot_for_untracked_damage,
+                            party_ready=party_ready_for_pull(args, party_state) if party_state is not None else True,
+                        ),
+                        client,
+                        args,
+                        party_snapshot_for_untracked_damage or {},
+                    )
+                    cc_decision = replace(
+                        cc_decision,
+                        should_update_current_target=False,
+                        should_publish_party_leader_target=False,
+                        should_mark_leader_engaged=False,
+                        should_publish_party_shared_target=False,
+                        should_publish_party_shared_engaged=False,
+                    )
+                    cc_result = commit_target(
+                        cc_decision,
+                        client,
+                        party_state,
+                        now=now,
+                        current_target=current_target,
+                        current_target_since=current_target_since,
+                        current_target_last_visible_at=current_target_last_visible_at,
+                        current_target_intent=current_target_intent,
+                        action_counts=action_counts,
+                        log_event=log_encounter_event,
+                    )
+                    if cc_result.target_object_called:
+                        spell = choose_crowd_control_spell(
+                            args,
+                            combat_plan.crowd_control_spells,
+                            crowd_control_target,
+                            party_snapshot=party_snapshot_for_untracked_damage,
+                        )
+                        if spell is None:
+                            actions += add_action(action_counts, "crowd_control_spell_missing")
+                            next_crowd_control = now + crowd_control_retry_delay(args) + rng.uniform(0, args.jitter)
+                            continue
+                        cast_usable_spell(
+                            client,
+                            spell,
+                            target_in_view=True,
+                            speed=getattr(client, "last_position_speed", 0.0),
+                            stationary=bool(getattr(args, "stationary_cast_actions", False)),
+                        )
+                        if active_combat is not None:
+                            active_combat["skills"] = int(active_combat.get("skills", 0) or 0) + 1
+                        actions += add_action(action_counts, "validated_crowd_control_spell")
+                        log_encounter_event(
+                            "crowd_control_multi_aggro",
+                            now,
+                            target_id=int(getattr(crowd_control_target, "object_id", 0) or 0),
+                            target_name=str(getattr(crowd_control_target, "name", "") or ""),
+                            spell_name=spell.name,
+                            spell_type=spell.spell_type,
+                            current_target=current_target,
+                        )
+                        cc_hold_seconds = hostile_usable_spell_hold_seconds(
+                            args,
+                            "validated_crowd_control_spell",
+                            spell,
+                        )
+                        if cc_hold_seconds > 0:
+                            cast_action_hold_until = max(cast_action_hold_until, now + cc_hold_seconds)
+                            actions += add_action(action_counts, "crowd_control_cast_hold_start")
+                        else:
+                            target_current_hostile_if_allowed(now, "retarget_enemy_after_crowd_control")
+                            actions += add_action(action_counts, "retarget_enemy_after_crowd_control")
+                        next_crowd_control = now + args.crowd_control_interval + rng.uniform(0, args.jitter)
+                        multi_aggro_flee_due = False
+                    else:
+                        actions += add_action(action_counts, "crowd_control_gate_rejected")
+                        next_crowd_control = now + crowd_control_retry_delay(args) + rng.uniform(0, args.jitter)
+                        log_encounter_event(
+                            "crowd_control_gate_rejected",
+                            now,
+                            target_id=int(getattr(crowd_control_target, "object_id", 0) or 0),
+                            target_name=str(getattr(crowd_control_target, "name", "") or ""),
+                            reject_reason=cc_decision.reject_reason,
+                            next_retry_delay=round(crowd_control_retry_delay(args), 3),
+                        )
+                else:
+                    actions += add_action(action_counts, "crowd_control_target_missing")
+                    next_crowd_control = now + crowd_control_retry_delay(args) + rng.uniform(0, args.jitter)
             if (
                 (losing_combat_flee_due or multi_aggro_flee_due)
                 and not counterattack_hold
@@ -12667,33 +18020,28 @@ def run_dummy_round(
                 abandoned_target_id = current_target
                 finish_combat("flee", now)
                 current_target = 0
+                current_target_intent = TargetIntent.none
                 client.clear_target()
                 client.set_attack_mode(False)
-                flee_until = now + args.flee_duration
-                next_flee_move = now
-                next_flee_pressure_replan = now + max(3.0, args.flee_move_interval * 6.0)
-                flee_destination = next_flee_destination
-                flee_wander_heading_hold_until = 0.0
-                if next_flee_destination is not None and destination_kind(next_flee_destination) == "flee-safe":
-                    flee_damage_replan_suppressed_until = now + 10.0
-                    next_flee_pressure_replan = max(next_flee_pressure_replan, flee_damage_replan_suppressed_until)
                 flee_reason = "multi_aggro" if multi_aggro_flee_due else "losing_combat"
                 transition_to(state_after_flee_start(behavior_state), flee_reason, now)
                 clear_shared_leader_target_on_abandon(now, flee_reason, abandoned_target_id)
-                if getattr(args, "flee_use_sprint", True):
-                    client.send_command("/sprint")
-                    actions += add_action(action_counts, "sprint_escape")
-                actions += add_action(action_counts, "flee_start")
-                log_encounter_event(
-                    "flee_start",
-                    now,
+                start_or_refresh_flee(
+                    flee_reason,
+                    90,
+                    pressure=True,
+                    prefer_safe=True,
+                    destination_override=next_flee_destination,
+                    now=now,
+                    extend_seconds=args.flee_duration,
                     health_percent=int(getattr(client, "health_percent", 0) or 0),
-                    reason="multi_aggro" if multi_aggro_flee_due else "losing_combat",
-                    destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
                     recent_incoming_melee=bool(recent_incoming_melee_for_current_target),
                     recent_incoming_attacker=last_incoming_damage_attacker_name,
                     off_target_attacker=str(active_combat.get("off_target_attacker_name", "") or "") if active_combat else "",
                 )
+                if flee_destination is not None and destination_kind(flee_destination) == "flee-safe":
+                    flee_damage_replan_suppressed_until = now + 10.0
+                    next_flee_pressure_replan = max(next_flee_pressure_replan, flee_damage_replan_suppressed_until)
                 speak_state_change(now, "flee", "state: fleeing to town")
 
             if now < flee_until:
@@ -12710,44 +18058,48 @@ def run_dummy_round(
                             damage_seen_at=last_damage_taken_at,
                             last_replanned_damage_at=last_flee_damage_replan_at,
                         ) and now >= flee_damage_replan_suppressed_until:
-                            updated_destination = flee_escape_destination(args, client)
+                            updated_destination = flee_escape_destination_under_pressure(args, client)
                             if updated_destination is not None:
-                                flee_destination = updated_destination
-                                last_flee_damage_replan_at = last_damage_taken_at
-                                flee_until = max(flee_until, now + max(args.flee_duration, args.low_health_rest_min, 1.0))
-                                next_flee_pressure_replan = now + flee_pressure_replan_cooldown(args)
-                                flee_wander_heading_hold_until = 0.0
-                                actions += add_action(action_counts, "flee_damage_replan")
-                                log_encounter_event(
-                                    "flee_damage_replan",
-                                    now,
+                                if start_or_refresh_flee(
+                                    "recent_damage",
+                                    flee_damage_replan_priority(args, current_health_percent),
+                                    pressure=True,
+                                    prefer_safe=True,
+                                    destination_override=updated_destination,
+                                    now=now,
+                                    extend_seconds=max(args.flee_duration, args.low_health_rest_min, 1.0),
+                                    log_name="flee_damage_replan",
+                                    action_name="flee_damage_replan",
+                                    use_sprint=False,
                                     health_percent=current_health_percent,
                                     recent_damage_age_seconds=round(recent_flee_damage_age or 0.0, 3),
-                                    destination=destination_kind(flee_destination),
-                                )
+                                ):
+                                    last_flee_damage_replan_at = last_damage_taken_at
                         pressure_snapshot = flee_threat_snapshot(args, client, member_name=party_member_name)
                         if (
                             now >= next_flee_pressure_replan
                             and now >= flee_damage_replan_suppressed_until
                             and should_replan_flee_safe_under_pressure(
-                            args,
-                            flee_destination,
-                            health_percent=current_health_percent,
-                            threat_snapshot=pressure_snapshot,
+                                args,
+                                flee_destination,
+                                health_percent=current_health_percent,
+                                threat_snapshot=pressure_snapshot,
                             )
                         ):
-                            updated_destination = flee_escape_destination(args, client)
+                            updated_destination = flee_escape_destination_under_pressure(args, client)
                             if updated_destination is not None:
-                                flee_destination = updated_destination
-                                flee_until = max(flee_until, now + max(args.flee_duration, args.low_health_rest_min, 1.0))
-                                next_flee_pressure_replan = now + flee_pressure_replan_cooldown(args)
-                                flee_wander_heading_hold_until = 0.0
-                                actions += add_action(action_counts, "flee_threat_pressure")
-                                log_encounter_event(
+                                start_or_refresh_flee(
                                     "flee_threat_pressure",
-                                    now,
+                                    90,
+                                    pressure=True,
+                                    prefer_safe=True,
+                                    destination_override=updated_destination,
+                                    now=now,
+                                    extend_seconds=max(args.flee_duration, args.low_health_rest_min, 1.0),
+                                    log_name="flee_threat_pressure",
+                                    action_name="flee_threat_pressure",
+                                    use_sprint=False,
                                     health_percent=current_health_percent,
-                                    destination=destination_kind(flee_destination),
                                     **(pressure_snapshot or {}),
                                 )
                         outcome, flee_actions = move_towards_flee_destination(
@@ -12772,18 +18124,19 @@ def run_dummy_round(
                             ):
                                 updated_destination = flee_home_overrun_destination(args, client, flee_destination)
                                 if updated_destination is not None:
-                                    flee_destination = updated_destination
-                                    flee_until = now + max(args.flee_duration, args.low_health_rest_min, 1.0)
-                                    next_flee_move = now
-                                    next_flee_pressure_replan = now + flee_pressure_replan_cooldown(args)
-                                    flee_wander_heading_hold_until = 0.0
-                                    actions += add_action(action_counts, "flee_home_overrun")
-                                    log_encounter_event(
+                                    start_or_refresh_flee(
                                         "flee_home_overrun",
-                                        now,
+                                        80,
+                                        pressure=False,
+                                        prefer_safe=False,
+                                        destination_override=updated_destination,
+                                        now=now,
+                                        extend_seconds=max(args.flee_duration, args.low_health_rest_min, 1.0),
+                                        log_name="flee_home_overrun",
+                                        action_name="flee_home_overrun",
+                                        use_sprint=False,
                                         health_percent=health_percent,
                                         recent_damage_age_seconds=round(recent_arrival_damage_age or 0.0, 3),
-                                        destination=destination_kind(flee_destination),
                                     )
                             elif should_replan_flee_safe_after_arrival(
                                 args,
@@ -12792,22 +18145,20 @@ def run_dummy_round(
                                 previous_health_percent=previous_health_percent,
                                 recent_damage_age_seconds=recent_arrival_damage_age,
                             ):
-                                flee_destination = flee_escape_destination(args, client)
-                                flee_until = now + max(args.flee_duration, args.low_health_rest_min, 1.0)
-                                next_flee_move = now
-                                next_flee_pressure_replan = now + flee_pressure_replan_cooldown(args)
-                                flee_wander_heading_hold_until = 0.0
-                                actions += add_action(action_counts, "flee_safe_replan")
-                                log_encounter_event(
+                                start_or_refresh_flee(
                                     "flee_safe_replan",
-                                    now,
+                                    90,
+                                    pressure=True,
+                                    prefer_safe=True,
+                                    now=now,
+                                    extend_seconds=max(args.flee_duration, args.low_health_rest_min, 1.0),
+                                    log_name="flee_safe_replan",
+                                    action_name="flee_safe_replan",
+                                    use_sprint=False,
                                     health_percent=health_percent,
-                                    destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
                                 )
                             elif should_overrun_flee_home(args, health_percent=health_percent):
-                                flee_destination = None
-                                next_flee_move = now
-                                flee_wander_heading_hold_until = 0.0
+                                switch_flee_to_wander("flee_home_overrun", now)
                                 actions += add_action(action_counts, "flee_home_overrun")
                                 log_encounter_event(
                                     "flee_home_overrun",
@@ -12817,17 +18168,17 @@ def run_dummy_round(
                             else:
                                 threat_snapshot = flee_threat_snapshot(args, client, member_name=party_member_name)
                                 if should_continue_flee_for_active_threat(threat_snapshot):
-                                    flee_destination = flee_escape_destination(args, client)
-                                    flee_until = now + max(args.flee_duration, args.low_health_rest_min, 1.0)
-                                    next_flee_move = now
-                                    next_flee_pressure_replan = now + flee_pressure_replan_cooldown(args)
-                                    flee_wander_heading_hold_until = 0.0
-                                    actions += add_action(action_counts, "flee_threat_pressure")
-                                    log_encounter_event(
+                                    start_or_refresh_flee(
                                         "flee_threat_pressure",
-                                        now,
+                                        90,
+                                        pressure=True,
+                                        prefer_safe=True,
+                                        now=now,
+                                        extend_seconds=max(args.flee_duration, args.low_health_rest_min, 1.0),
+                                        log_name="flee_threat_pressure",
+                                        action_name="flee_threat_pressure",
+                                        use_sprint=False,
                                         health_percent=health_percent,
-                                        destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
                                         **threat_snapshot,
                                     )
                                 else:
@@ -12835,7 +18186,10 @@ def run_dummy_round(
                                         args,
                                         health_percent=health_percent,
                                         now=now,
-                                        last_damage_taken_at=last_damage_taken_at,
+                                        last_damage_taken_at=latest_aggro_pressure_at(
+                                            last_damage_taken_at=last_damage_taken_at,
+                                            last_incoming_damage_at=last_incoming_damage_at,
+                                        ),
                                         active_threat=False,
                                     )
                                     if (
@@ -12845,25 +18199,18 @@ def run_dummy_round(
                                         clear_remaining = drop_aggro_clear_grace_remaining(
                                             args,
                                             now=now,
-                                            last_damage_taken_at=last_damage_taken_at,
-                                        )
-                                        flee_until = max(
-                                            flee_until,
-                                            now
-                                            + drop_aggro_clear_hold_duration(
-                                                args,
-                                                clear_remaining=clear_remaining,
-                                                health_percent=health_percent,
+                                            last_damage_taken_at=latest_aggro_pressure_at(
+                                                last_damage_taken_at=last_damage_taken_at,
+                                                last_incoming_damage_at=last_incoming_damage_at,
                                             ),
-                                        )
-                                        next_flee_move = now + args.flee_move_interval + rng.uniform(0, args.jitter)
-                                        actions += add_action(action_counts, "flee_clear_grace_hold")
-                                        log_encounter_event(
-                                            "flee_clear_grace_hold",
-                                            now,
                                             health_percent=health_percent,
-                                            clear_remaining=round(clear_remaining, 3),
-                                            destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
+                                        )
+                                        hold_flee_for_drop_aggro_clear_grace(
+                                            now=now,
+                                            health_percent=health_percent,
+                                            clear_remaining=clear_remaining,
+                                            extend_existing=True,
+                                            move_after_interval=True,
                                         )
                                     elif should_rest_after_flee_recovery(args, health_percent=health_percent):
                                         client.send_command("/sit")
@@ -12876,7 +18223,7 @@ def run_dummy_round(
                                         rest_until = max(rest_until, now + max(args.low_health_rest_min, 1.0))
                                         transition_to(next_recovery_state, "flee_recovered", now)
                                     if next_recovery_state != DummyBehaviorState.DropAggroAndRecover:
-                                        flee_until = 0.0
+                                        clear_flee_until_after_recovery("flee_recovered", now)
                                         actions += add_action(action_counts, "flee_recovered")
                                         log_encounter_event("flee_recovered", now, health_percent=health_percent)
                                         speak_state_change(now, "flee_recovered", "state: reached safety")
@@ -12893,7 +18240,7 @@ def run_dummy_round(
                             min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
                         )
                         actions += add_action(action_counts, "flee_move")
-                    next_flee_move = now + args.flee_move_interval + rng.uniform(0, args.jitter)
+                    schedule_next_flee_move(now)
 
                 client.drain(args.tick)
                 continue
@@ -12905,19 +18252,19 @@ def run_dummy_round(
                     if flee_destination is not None and destination_kind(flee_destination) == "flee-home":
                         updated_destination = flee_home_overrun_destination(args, client, flee_destination)
                     else:
-                        updated_destination = flee_escape_destination(args, client)
-                    if updated_destination is not None:
-                        flee_destination = updated_destination
-                    flee_until = now + max(args.flee_duration, args.low_health_rest_min, 1.0)
-                    next_flee_move = now
-                    next_flee_pressure_replan = now + flee_pressure_replan_cooldown(args)
-                    flee_wander_heading_hold_until = 0.0
-                    actions += add_action(action_counts, "flee_threat_pressure")
-                    log_encounter_event(
+                        updated_destination = flee_escape_destination_under_pressure(args, client)
+                    start_or_refresh_flee(
                         "flee_threat_pressure",
-                        now,
+                        90,
+                        pressure=True,
+                        prefer_safe=True,
+                        destination_override=updated_destination,
+                        now=now,
+                        extend_seconds=max(args.flee_duration, args.low_health_rest_min, 1.0),
+                        log_name="flee_threat_pressure",
+                        action_name="flee_threat_pressure",
+                        use_sprint=False,
                         health_percent=current_health_percent,
-                        destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
                         **(threat_snapshot or {}),
                     )
                     client.drain(args.tick)
@@ -12937,14 +18284,17 @@ def run_dummy_round(
                     )
                     log_encounter_event("flee_recovered", now, health_percent=current_health_percent)
                     speak_state_change(now, "flee_recovered", "state: reached safety")
-                    flee_destination = None
+                    clear_flee_destination_after_recovery("flee_finished_recovery", now)
                     client.drain(args.tick)
                     continue
                 next_recovery_state = next_state_after_drop_aggro_recovery(
                     args,
                     health_percent=current_health_percent,
                     now=now,
-                    last_damage_taken_at=last_damage_taken_at,
+                    last_damage_taken_at=latest_aggro_pressure_at(
+                        last_damage_taken_at=last_damage_taken_at,
+                        last_incoming_damage_at=last_incoming_damage_at,
+                    ),
                     active_threat=False,
                 )
                 if (
@@ -12954,21 +18304,18 @@ def run_dummy_round(
                     clear_remaining = drop_aggro_clear_grace_remaining(
                         args,
                         now=now,
-                        last_damage_taken_at=last_damage_taken_at,
+                        last_damage_taken_at=latest_aggro_pressure_at(
+                            last_damage_taken_at=last_damage_taken_at,
+                            last_incoming_damage_at=last_incoming_damage_at,
+                        ),
+                        health_percent=current_health_percent,
                     )
-                    flee_until = now + drop_aggro_clear_hold_duration(
-                        args,
+                    hold_flee_for_drop_aggro_clear_grace(
+                        now=now,
+                        health_percent=current_health_percent,
                         clear_remaining=clear_remaining,
-                        health_percent=current_health_percent,
-                    )
-                    next_flee_move = now
-                    actions += add_action(action_counts, "flee_clear_grace_hold")
-                    log_encounter_event(
-                        "flee_clear_grace_hold",
-                        now,
-                        health_percent=current_health_percent,
-                        clear_remaining=round(clear_remaining, 3),
-                        destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
+                        extend_existing=False,
+                        move_after_interval=False,
                     )
                     client.drain(args.tick)
                     continue
@@ -12979,15 +18326,20 @@ def run_dummy_round(
                 speak_state_change(now, "flee_recovered", "state: reached safety")
                 actions += add_action(action_counts, "flee_finished")
                 log_encounter_event("flee_finished", now, health_percent=current_health_percent)
-                flee_destination = None
+                clear_flee_destination_after_recovery("flee_finished", now)
 
             if friendly_cast_hold_until > 0 and now >= friendly_cast_hold_until:
                 if friendly_cast_restore_target:
-                    client.target_object(friendly_cast_restore_target)
-                    actions += add_action(action_counts, "friendly_cast_retarget_enemy")
+                    if target_current_hostile_if_allowed(
+                        now,
+                        "friendly_cast_retarget_enemy",
+                        target_id=friendly_cast_restore_target,
+                    ):
+                        actions += add_action(action_counts, "friendly_cast_retarget_enemy")
 
                 friendly_cast_hold_until = 0.0
                 friendly_cast_restore_target = 0
+                friendly_cast_hold_reason = ""
 
             friendly_cast_tactical_backoff = friendly_cast_hold_breaking_backoff(
                 party_melee_survival_backoff=bool(party_melee_survival_backoff),
@@ -12997,6 +18349,22 @@ def run_dummy_round(
                 party_focus_pressure_backoff=bool(party_focus_pressure_backoff),
                 ranged_safety_backoff_due=bool(ranged_safety_backoff_due),
             )
+            if should_break_friendly_cast_hold_for_party_heal(
+                party_state,
+                args,
+                action_rotation=action_rotation,
+                is_party_follower=is_party_support_healer,
+                friendly_cast_hold_until=friendly_cast_hold_until,
+                friendly_cast_hold_reason=friendly_cast_hold_reason,
+                now=now,
+                exclude_name=party_member_name,
+            ):
+                friendly_cast_hold_until = 0.0
+                friendly_cast_restore_target = 0
+                friendly_cast_hold_reason = ""
+                next_party_heal = min(next_party_heal, now)
+                actions += add_action(action_counts, "friendly_cast_hold_break_party_heal")
+
             if should_hold_friendly_cast_target(
                 friendly_cast_hold_until=friendly_cast_hold_until,
                 now=now,
@@ -13198,6 +18566,26 @@ def run_dummy_round(
                     if fresh_hunter_target_observation(args, target_observation, now):
                         target_npc = actor_from_target_observation(target_observation)
                         actions += add_action(action_counts, "hunter_target_api_chase")
+                if target_npc is None and target_intent_value(current_target_intent) == TargetIntent.enemy_player.value:
+                    target_player = choose_current_visible_player(
+                        client.visible_players(max_age=getattr(args, "player_state_max_age", 30.0)),
+                        current_target,
+                    )
+                    if (
+                        target_player is not None
+                        and player_is_rvr_enemy_candidate(
+                            client,
+                            args,
+                            target_player,
+                            own_realm=account.realm,
+                            party_snapshot=party_state.snapshot() if party_state is not None else {},
+                            rejected_targets=None,
+                            now=now,
+                        )
+                    ):
+                        target_npc = target_player
+                        current_target_last_visible_at = now
+                        actions += add_action(action_counts, "rvr_enemy_player_visible")
                 support_evasion_threat = (
                     choose_party_support_evasion_threat(
                         client.visible_npcs(max_age=args.npc_max_age, include_peace=should_scan_peace_npcs(args)),
@@ -13248,25 +18636,36 @@ def run_dummy_round(
                 elif (
                     target_npc is not None
                     and target_home_leash_violation(client, args, target_npc)[0]
-                    and not current_target_bypasses_target_home_leash(args, party_snapshot_for_tick, current_target)
+                    and not current_target_bypasses_target_home_leash(
+                        args,
+                        party_snapshot_for_tick,
+                        current_target,
+                        current_target_intent=current_target_intent,
+                        npc=target_npc,
+                        active_combat=active_combat,
+                        leash_reason=target_home_leash_violation(client, args, target_npc)[1],
+                    )
                 ):
                     violated, leash_reason, leash_distance = target_home_leash_violation(client, args, target_npc)
                     if violated:
+                        finish_outcome = target_home_leash_finish_outcome(leash_reason)
                         rejected_targets[current_target] = now + min(args.target_failure_cooldown, 5.0)
                         abandoned_target_id = current_target
-                        finish_combat("target_home_leash", now, combat_distance_to(client, target_npc))
+                        finish_combat(finish_outcome, now, combat_distance_to(client, target_npc))
                         log_encounter_event(
                             "target_home_leash_rejected",
                             now,
                             npc=target_npc,
                             leash_reason=leash_reason,
                             leash_distance=round(leash_distance, 2),
+                            outcome=finish_outcome,
                         )
                         client.clear_target()
                         client.set_attack_mode(False)
                         current_target = 0
-                        clear_shared_leader_target_on_abandon(now, "target_home_leash", abandoned_target_id)
-                        actions += add_action(action_counts, "target_home_leash")
+                        current_target_intent = TargetIntent.none
+                        clear_shared_leader_target_on_abandon(now, finish_outcome, abandoned_target_id)
+                        actions += add_action(action_counts, finish_outcome)
                 elif target_npc is not None:
                     target_observation = server_target_observations.get(current_target)
                     refresh_interval = max(
@@ -13314,6 +18713,7 @@ def run_dummy_round(
                         client.clear_target()
                         client.set_attack_mode(False)
                         current_target = 0
+                        current_target_intent = TargetIntent.none
                         actions += add_action(action_counts, "combat_chase_overextended")
                         continue
                     party_boss_melee_backoff = should_back_off_for_party_boss_melee_limit(
@@ -13352,23 +18752,68 @@ def run_dummy_round(
                         face_target_for_attack(client, target_npc)
                     if (
                         party_state is not None
-                        and should_preserve_party_target_on_loss(args)
-                        and is_required_target(args, target_npc)
-                    ):
-                        party_state.update_shared_target(target_npc, engaged=False)
-                    if tactical_backoff:
-                        moved = move_away_from_actor(
-                            client,
+                        and should_refresh_shared_required_target(
+                            args,
                             target_npc,
-                            step=smooth_movement_step(args),
-                            min_distance=tactical_backoff_distance,
-                            args=args,
-                            target_in_view=True,
+                            is_party_leader=is_party_leader,
+                            party_snapshot=party_snapshot_for_tick,
                         )
+                    ):
+                        shared_refresh_decision = evaluate_engagement_candidate(
+                            engagement_candidate_from_actor(
+                                target_npc,
+                                source=TargetSource.current_target_preserve,
+                                intent=(
+                                    current_target_intent
+                                    if current_target_intent != TargetIntent.none
+                                    else TargetIntent.current_target_confirm
+                                ),
+                            ),
+                            engagement_context(now, party_snapshot=party_snapshot_for_tick),
+                            client,
+                            args,
+                            party_snapshot_for_tick,
+                        )
+                        shared_refresh_result = commit_target(
+                            party_shared_target_publish_decision(shared_refresh_decision, engaged=False),
+                            client,
+                            party_state,
+                            now=now,
+                            current_target=current_target,
+                            current_target_since=current_target_since,
+                            current_target_last_visible_at=current_target_last_visible_at,
+                            current_target_intent=current_target_intent,
+                            action_counts=action_counts,
+                            log_event=log_encounter_event,
+                        )
+                        if shared_refresh_result.party_shared_target_published:
+                            actions += add_action(action_counts, "shared_required_target_refresh")
+                    if tactical_backoff:
+                        hold_focus_backoff_at_home = (
+                            tactical_backoff_reason == "party_focus_target"
+                            and should_hold_party_focus_target_backoff_at_home_limit(args, client)
+                        )
+                        moved = False
+                        if not hold_focus_backoff_at_home:
+                            moved = move_away_from_actor(
+                                client,
+                                target_npc,
+                                step=smooth_movement_step(args),
+                                min_distance=tactical_backoff_distance,
+                                args=args,
+                                target_in_view=True,
+                            )
                         if tactical_backoff_reason == "boss_hazard":
                             actions += add_action(action_counts, "boss_hazard_backoff" if moved else "boss_hazard_hold")
                         elif tactical_backoff_reason == "party_focus_target":
-                            actions += add_action(action_counts, "party_focus_target_backoff" if moved else "party_focus_target_hold")
+                            actions += add_action(
+                                action_counts,
+                                (
+                                    "party_focus_target_home_leash_hold"
+                                    if hold_focus_backoff_at_home
+                                    else ("party_focus_target_backoff" if moved else "party_focus_target_hold")
+                                ),
+                            )
                         elif tactical_backoff_reason == "party_focus_pressure":
                             actions += add_action(action_counts, "party_focus_pressure_backoff" if moved else "party_focus_pressure_hold")
                         elif tactical_backoff_reason == "boss_ranged":
@@ -13452,7 +18897,7 @@ def run_dummy_round(
                     if attack_enabled:
                         face_target_for_attack(client, target_npc)
                         send_face_command_if_due(now, "attack_visible", target_destination)
-                        client.target_object(current_target)
+                        target_current_hostile_if_allowed(now, "smooth_visible_target")
                         actions += add_action(action_counts, "target_refresh_in_view")
                         client.send_position_update(speed=0.0, target_in_view=True)
                         actions += add_action(action_counts, "attack_target_in_view_update")
@@ -13478,8 +18923,10 @@ def run_dummy_round(
                             )
                             attack_enabled = False
                         else:
-                            client.set_attack_mode(True)
-                            actions += add_action(action_counts, "attack_on")
+                            if enable_hostile_attack_mode_if_allowed(now, "smooth_visible_target"):
+                                actions += add_action(action_counts, "attack_on")
+                            else:
+                                attack_enabled = False
                     else:
                         client.set_attack_mode(False)
                         actions += add_action(action_counts, "attack_off")
@@ -13502,7 +18949,7 @@ def run_dummy_round(
                             action_distance=action_distance,
                         )
                     ):
-                        party_state.mark_leader_target_engaged(current_target)
+                        mark_party_leader_target_engaged(party_state, current_target)
                     reaggro_taunt_due = should_active_tank_reaggro_taunt(
                         args,
                         party_snapshot_for_tick,
@@ -13609,18 +19056,29 @@ def run_dummy_round(
                                 "boss_hazard_last_known_backoff" if moved else "boss_hazard_last_known_hold",
                             )
                         elif party_focus_target_backoff and should_use_shared_target_backoff_point(party_snapshot, current_target):
-                            moved = move_away_from_point(
-                                client,
-                                int(party_snapshot["leader_target_x"]),
-                                int(party_snapshot["leader_target_y"]),
-                                step=smooth_movement_step(args),
-                                min_distance=party_focus_target_backoff_distance(args, action_rotation),
-                                args=args,
-                                target_in_view=False,
-                            )
+                            hold_focus_backoff_at_home = should_hold_party_focus_target_backoff_at_home_limit(args, client)
+                            moved = False
+                            if not hold_focus_backoff_at_home:
+                                moved = move_away_from_point(
+                                    client,
+                                    int(party_snapshot["leader_target_x"]),
+                                    int(party_snapshot["leader_target_y"]),
+                                    step=smooth_movement_step(args),
+                                    min_distance=party_focus_target_backoff_distance(args, action_rotation),
+                                    args=args,
+                                    target_in_view=False,
+                                )
                             actions += add_action(
                                 action_counts,
-                                "party_focus_target_last_known_backoff" if moved else "party_focus_target_last_known_hold",
+                                (
+                                    "party_focus_target_home_leash_hold"
+                                    if hold_focus_backoff_at_home
+                                    else (
+                                        "party_focus_target_last_known_backoff"
+                                        if moved
+                                        else "party_focus_target_last_known_hold"
+                                    )
+                                ),
                             )
                         elif party_focus_pressure_backoff and should_use_shared_target_backoff_point(party_snapshot, current_target):
                             moved = move_away_from_point(
@@ -13656,6 +19114,11 @@ def run_dummy_round(
                         party_snapshot,
                         current_target=current_target,
                         tactical_backoff=bool(tactical_backoff),
+                        behavior_state=behavior_state,
+                        current_target_intent=current_target_intent,
+                        flee_active=flee_until > now,
+                        rest_active=rest_until > now,
+                        drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
                     ):
                         target_destination = destination_from_point(
                             "party-target-last-known",
@@ -13663,7 +19126,7 @@ def run_dummy_round(
                             int(party_snapshot["leader_target_y"]),
                             int(party_snapshot["leader_target_z"]),
                         )
-                        client.target_object(current_target)
+                        target_current_hostile_if_allowed(now, "smooth_last_known")
                         face_point_for_attack(client, target_destination.x, target_destination.y)
                         send_face_command_if_due(now, "smooth_last_known", target_destination)
                         send_stick_command_if_due(now, "smooth_last_known")
@@ -13727,8 +19190,11 @@ def run_dummy_round(
                 next_emote = now + args.emote_interval + rng.uniform(0, args.jitter)
 
             if args.clear_target_interval > 0 and now >= next_clear_target:
+                if finish_active_combat_before_target_clear("clear_target", now, current_target):
+                    actions += add_action(action_counts, "clear_target_combat_abandon")
                 client.clear_target()
                 current_target = 0
+                current_target_intent = TargetIntent.none
                 actions += add_action(action_counts, "clear_target")
                 next_clear_target = now + args.clear_target_interval + rng.uniform(0, args.jitter)
 
@@ -13743,7 +19209,7 @@ def run_dummy_round(
                 and now >= next_invite
                 and not party_ready_for_pull(args, party_state)
             ):
-                for member_name in party_state.member_names[1:]:
+                for member_name in party_state.managed_invite_names():
                     client.send_command(f"/invite {member_name}")
                     actions += add_action(action_counts, "party_invite")
 
@@ -13806,10 +19272,34 @@ def run_dummy_round(
                 precast_movement_hold=precast_movement_hold,
                 friendly_target_pending=hurt_member_for_precast is not None,
             )
+            required_home_defer_party_anchor = should_defer_required_home_move_for_party_anchor(
+                client,
+                args,
+                party_state,
+                is_party_follower=is_party_follower,
+                current_target=current_target,
+            )
+            required_home_defer_objective_pressure = should_defer_required_home_move_for_recent_objective_pressure(
+                behavior_state,
+                current_target_intent,
+                last_damage_taken_at=last_damage_taken_at,
+                now=now,
+            )
+            if required_home_defer_party_anchor:
+                actions += add_action(action_counts, "party_follower_required_home_defer_anchor")
+            if required_home_defer_objective_pressure:
+                actions += add_action(action_counts, "required_home_defer_objective_pressure")
+                log_encounter_event(
+                    "required_home_defer_objective_pressure",
+                    now,
+                    current_target_intent=target_intent_value(current_target_intent),
+                )
             if (
                 (required_home_should_move or required_home_low_health_return)
                 and (args.move or args.hunter)
                 and not required_home_defer_friendly_cast
+                and not required_home_defer_party_anchor
+                and not required_home_defer_objective_pressure
                 and now >= next_follow
             ):
                 destination = required_target_home_destination(args)
@@ -13824,7 +19314,10 @@ def run_dummy_round(
                         danger_until=travel_aggro_danger_until,
                         danger_x=travel_aggro_danger_x,
                         danger_y=travel_aggro_danger_y,
-                        last_damage_taken_at=last_damage_taken_at,
+                        last_damage_taken_at=latest_aggro_pressure_at(
+                            last_damage_taken_at=last_damage_taken_at,
+                            last_incoming_damage_at=last_incoming_damage_at,
+                        ),
                     ):
                         actions += add_action(action_counts, "travel_aggro_avoid_memory_clear")
                         log_encounter_event(
@@ -13866,6 +19359,28 @@ def run_dummy_round(
                                 destination_y=destination.y,
                                 destination_z=destination.z,
                             )
+                    if active_combat is not None:
+                        abandon_target = current_visible_target_npc()
+                        abandon_distance = (
+                            combat_distance_to(client, abandon_target)
+                            if abandon_target is not None
+                            else float(active_combat.get("end_distance", 0.0) or 0.0)
+                        )
+                        abandoned_target_id = int(active_combat.get("target_id", 0) or 0)
+                        finish_combat("return_home", now, abandon_distance)
+                        client.clear_target()
+                        client.set_attack_mode(False)
+                        if current_target == abandoned_target_id:
+                            current_target = 0
+                        if current_target <= 0:
+                            current_target_intent = TargetIntent.none
+                        actions += add_action(action_counts, "required_home_combat_abandon")
+                        log_encounter_event(
+                            "required_home_combat_abandon",
+                            now,
+                            abandoned_target_id=abandoned_target_id,
+                            final_distance=round(abandon_distance, 2),
+                        )
                     transition_to(
                         DummyBehaviorState.ReturnToObjective
                         if behavior_state in {
@@ -13940,6 +19455,7 @@ def run_dummy_round(
                     if current_target:
                         client.clear_target()
                         current_target = 0
+                        current_target_intent = TargetIntent.none
                     actions += add_action(action_counts, "drop_aggro_party_assist_suppressed")
                 elif should_send_party_assist_command(
                     args,
@@ -13961,8 +19477,8 @@ def run_dummy_round(
                     action_rotation=action_rotation,
                     health_percent=current_health_percent,
                 ):
-                    client.target_object(current_target)
-                    client.set_attack_mode(True)
+                    target_current_hostile_if_allowed(now, "party_assist_rescue_hold")
+                    enable_hostile_attack_mode_if_allowed(now, "party_assist_rescue_hold")
                     actions += add_action(action_counts, "party_assist_rescue_hold")
                 elif should_hold_party_assist_for_local_rescue(
                     args,
@@ -13971,30 +19487,70 @@ def run_dummy_round(
                     current_target=current_target,
                     leader_target_id=leader_target_id,
                 ):
-                    client.target_object(current_target)
-                    client.set_attack_mode(True)
+                    target_current_hostile_if_allowed(now, "party_assist_local_rescue_hold")
+                    enable_hostile_attack_mode_if_allowed(now, "party_assist_local_rescue_hold")
                     actions += add_action(action_counts, "party_assist_local_rescue_hold")
                 elif (
                     leader_target_id
                     and leader_target_age >= party_role_assist_attack_delay(args, action_rotation)
                     and (not args.party_require_leader_engaged or leader_engaged)
                 ):
-                    client.target_object(leader_target_id)
-                    current_target = leader_target_id
-                    current_target_since = now
-                    actions += add_action(action_counts, "party_assist")
+                    if not block_active_combat_target_switch(
+                        leader_target_id,
+                        TargetIntent.party_assist,
+                        str(party_snapshot.get("leader_target_name", "") or ""),
+                        now,
+                        "party_assist_command_target",
+                    ):
+                        assist_decision = evaluate_party_assist_leader_target(
+                            args,
+                            party_snapshot,
+                            engagement_context(now, party_snapshot=party_snapshot),
+                            client,
+                        )
+                        assist_result = commit_target(
+                            assist_decision,
+                            client,
+                            party_state,
+                            now=now,
+                            current_target=current_target,
+                            current_target_since=current_target_since,
+                            current_target_last_visible_at=current_target_last_visible_at,
+                            current_target_intent=current_target_intent,
+                            action_counts=action_counts,
+                            log_event=log_encounter_event,
+                        )
+                        current_target = assist_result.current_target
+                        current_target_since = assist_result.current_target_since
+                        current_target_last_visible_at = assist_result.current_target_last_visible_at
+                        current_target_intent = assist_result.current_target_intent
+                        if assist_result.current_target_updated:
+                            actions += add_action(action_counts, "party_assist")
+                        else:
+                            actions += add_action(action_counts, "party_assist_target_rejected")
                 elif leader_target_id and (party_role_assist_attack_delay(args, action_rotation) > 0 or args.party_require_leader_engaged):
                     client.set_attack_mode(False)
                     actions += add_action(action_counts, "party_assist_leader_wait" if args.party_require_leader_engaged and not leader_engaged else "party_assist_delay")
                 elif args.party_assist_only and current_target:
-                    if should_preserve_unshared_party_target(args, current_target, active_combat):
-                        client.target_object(current_target)
-                        client.set_attack_mode(True)
+                    if should_preserve_unshared_party_target(
+                        args,
+                        current_target,
+                        active_combat,
+                        behavior_state=behavior_state,
+                        current_target_intent=current_target_intent,
+                        flee_active=flee_until > now,
+                        rest_active=rest_until > now,
+                        drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                    ):
+                        target_current_hostile_if_allowed(now, "party_assist_preserve_unshared")
+                        enable_hostile_attack_mode_if_allowed(now, "party_assist_preserve_unshared")
                         actions += add_action(action_counts, "party_assist_preserve_unshared")
                     else:
+                        finish_active_combat_before_target_clear("party_assist_clear", now, current_target)
                         client.clear_target()
                         client.set_attack_mode(False)
                         current_target = 0
+                        current_target_intent = TargetIntent.none
                         actions += add_action(action_counts, "party_assist_clear")
 
                 next_assist = now + args.party_assist_interval + rng.uniform(0, args.jitter)
@@ -14071,6 +19627,29 @@ def run_dummy_round(
                         actions += outcome.actions
                         record_movement_failure(movement_failures, client, anchor_destination, outcome, "boss_non_tank_regroup")
                         actions += add_action(action_counts, "boss_non_tank_regroup" if outcome.moved else "boss_non_tank_hold")
+                    elif should_follow_party_anchor_for_unseen_assist_target(
+                        args,
+                        current_target=current_target,
+                        current_target_intent=current_target_intent,
+                        target_visible=target_npc_for_spacing is not None,
+                        anchor_distance=anchor_distance,
+                    ):
+                        outcome = move_towards_destination(
+                            client,
+                            anchor_destination,
+                            step=args.party_follow_step,
+                            stop_distance=args.party_follow_distance,
+                            args=args,
+                            path_state=path_state,
+                            action_counts=action_counts,
+                            target_in_view=True,
+                        )
+                        actions += outcome.actions
+                        record_movement_failure(movement_failures, client, anchor_destination, outcome, "party_assist_anchor_regroup")
+                        actions += add_action(
+                            action_counts,
+                            "party_assist_anchor_regroup" if outcome.moved else "party_assist_anchor_hold",
+                        )
                     elif current_target and should_back_off_for_ranged_combat_follow(args, action_rotation, anchor_distance):
                         if anchor_dx == 0 and anchor_dy == 0:
                             radians = (int(client.heading) & 0x0FFF) / 4096.0 * math.pi * 2
@@ -14137,62 +19716,253 @@ def run_dummy_round(
 
                 next_follow = now + args.party_follow_interval + rng.uniform(0, args.jitter)
 
+            if should_use_party_protection_ability(
+                args,
+                combat_plan,
+                party_state,
+                action_rotation=action_rotation,
+                is_party_leader=is_party_leader,
+                party_member_name=party_member_name,
+                current_target=current_target,
+                behavior_state=behavior_state,
+                now=now,
+                next_party_protection=next_party_protection,
+            ):
+                protection_target = choose_party_protection_target(
+                    party_state,
+                    exclude_name=party_member_name,
+                )
+                protection_ability = choose_party_protection_ability(combat_plan)
+                protection_action = perform_party_protection_ability(client, protection_ability, protection_target) if protection_ability else None
+                if protection_action:
+                    actions += add_action(action_counts, protection_action)
+                    friendly_cast_hold_until, friendly_cast_restore_target = plan_friendly_cast_target_hold(
+                        args,
+                        now,
+                        current_target,
+                        minimum_hold_seconds=friendly_usable_ability_hold_seconds(args, protection_ability),
+                    )
+                    friendly_cast_hold_reason = "party_protection"
+                    actions += add_action(action_counts, "party_protection_target_hold")
+                else:
+                    actions += add_action(action_counts, "party_protection_target_missing")
+                next_party_protection = now + args.party_protection_interval + rng.uniform(0, args.jitter)
+
             if (
-                is_party_follower
-                and action_rotation == "healer-support"
+                is_party_support_healer
+                and args.party_cure_interval > 0
+                and now >= next_party_cure
+            ):
+                friendly_spell_cast = False
+                cure_target, cure_spell = choose_party_cure_target(
+                    party_state,
+                    combat_plan,
+                    exclude_name=party_member_name,
+                )
+
+                if cure_target is not None and cure_spell is not None and party_cure_target_in_cast_range(client, args, cure_target):
+                    action_name = perform_party_cure_cast(client, cure_spell, args, cure_target)
+                    actions += add_action(action_counts, action_name)
+                    friendly_spell_cast = True
+
+                    friendly_cast_hold_until, friendly_cast_restore_target = plan_friendly_cast_target_hold(
+                        args,
+                        now,
+                        current_target,
+                        minimum_hold_seconds=friendly_usable_spell_hold_seconds(args, cure_spell),
+                    )
+                    friendly_cast_hold_reason = "party_cure"
+                    if friendly_cast_hold_until > now:
+                        actions += add_action(action_counts, "party_cure_target_hold")
+                    elif current_target:
+                        target_current_hostile_if_allowed(now, "retarget_enemy_after_cure")
+                        actions += add_action(action_counts, "retarget_enemy_after_cure")
+                elif cure_target is not None:
+                    if should_approach_party_heal_target(
+                        args,
+                        action_rotation=action_rotation,
+                        hurt_member=cure_target,
+                        current_target=current_target,
+                        behavior_state=behavior_state,
+                    ):
+                        cure_destination = party_heal_target_destination(cure_target)
+                        outcome = move_towards_party_heal_target(client, args, path_state, action_counts, cure_target)
+                        if outcome is not None and cure_destination is not None:
+                            actions += outcome.actions
+                            record_movement_failure(movement_failures, client, cure_destination, outcome, "party_cure_target")
+                            actions += add_action(
+                                action_counts,
+                                "party_cure_target_approach" if outcome.moved else "party_cure_target_approach_hold",
+                            )
+                        else:
+                            actions += add_action(action_counts, "party_cure_target_too_far")
+                    else:
+                        actions += add_action(action_counts, "party_cure_target_too_far")
+
+                next_party_cure = now + args.party_cure_interval + rng.uniform(0, args.jitter)
+
+            if (
+                is_party_support_healer
+                and args.party_resurrect_interval > 0
+                and now >= next_party_resurrect
+            ):
+                friendly_spell_cast = False
+                dead_member = choose_party_resurrection_target(
+                    party_state,
+                    args,
+                    exclude_name=party_member_name,
+                    cooldowns=party_resurrection_cooldowns,
+                    now=now,
+                )
+
+                if dead_member is not None and party_resurrection_target_in_cast_range(client, args, dead_member):
+                    dead_member_id = int(dead_member.get("object_id", 0) or 0)
+                    if combat_plan.resurrection_spells:
+                        spell = choose_usable_spell(rng, args, combat_plan.resurrection_spells)
+                        action_name = perform_party_resurrection_cast(
+                            client,
+                            spell,
+                            args,
+                            dead_member,
+                            leader_name=party_state.leader_name,
+                        )
+                        actions += add_action(action_counts, action_name)
+                        friendly_spell_cast = True
+                        if dead_member_id:
+                            party_resurrection_cooldowns[dead_member_id] = now + party_resurrection_retry_cooldown(args)
+                    else:
+                        actions += add_action(action_counts, "party_resurrect_skipped_unvalidated")
+                        if dead_member_id:
+                            party_resurrection_cooldowns[dead_member_id] = now + party_resurrection_retry_cooldown(args)
+
+                    if friendly_spell_cast:
+                        friendly_cast_hold_until, friendly_cast_restore_target = plan_friendly_cast_target_hold(
+                            args,
+                            now,
+                            current_target,
+                            minimum_hold_seconds=friendly_usable_spell_hold_seconds(args, spell if combat_plan.resurrection_spells else None),
+                        )
+                        friendly_cast_hold_reason = "party_resurrect"
+                        if friendly_cast_hold_until > now:
+                            actions += add_action(action_counts, "party_resurrect_target_hold")
+                        elif current_target:
+                            target_current_hostile_if_allowed(now, "retarget_enemy_after_resurrect")
+                            actions += add_action(action_counts, "retarget_enemy_after_resurrect")
+                    elif current_target:
+                        target_current_hostile_if_allowed(now, "retarget_enemy_after_resurrect")
+                        actions += add_action(action_counts, "retarget_enemy_after_resurrect")
+                elif dead_member is not None:
+                    if should_approach_party_resurrection_target(
+                        args,
+                        action_rotation=action_rotation,
+                        dead_member=dead_member,
+                        current_target=current_target,
+                        behavior_state=behavior_state,
+                    ):
+                        resurrection_destination = party_resurrection_target_destination(dead_member)
+                        outcome = move_towards_party_resurrection_target(client, args, path_state, action_counts, dead_member)
+                        if outcome is not None and resurrection_destination is not None:
+                            actions += outcome.actions
+                            record_movement_failure(movement_failures, client, resurrection_destination, outcome, "party_resurrection_target")
+                            actions += add_action(
+                                action_counts,
+                                "party_resurrection_target_approach" if outcome.moved else "party_resurrection_target_approach_hold",
+                            )
+                        else:
+                            actions += add_action(action_counts, "party_resurrection_target_too_far")
+                    else:
+                        actions += add_action(action_counts, "party_resurrection_target_too_far")
+
+                next_party_resurrect = now + args.party_resurrect_interval + rng.uniform(0, args.jitter)
+
+            if (
+                is_party_support_healer
                 and args.party_buff_interval > 0
-                and args.party_buff_spell_levels
+                and has_party_buff_cast_source(args, combat_plan)
                 and now >= next_party_buff
             ):
                 friendly_spell_cast = False
+                buff_cooldown_blocked = False
+                spell = None
                 buff_targets = party_state.buff_targets(exclude_name=party_member_name)
 
                 if buff_targets:
                     if combat_plan.buff_spells:
-                        target = buff_targets[party_buff_index % len(buff_targets)]
-                        party_buff_index += 1
-                        spell = rng.choice(combat_plan.buff_spells[: min(len(combat_plan.buff_spells), args.combat_plan_spell_pool)])
-                        client.target_object(int(target["object_id"]))
-                        cast_party_friendly_usable_spell(
-                            client,
-                            spell,
-                            args,
-                            target_in_view=True,
-                        )
-                        actions += add_action(action_counts, "validated_party_buff_member")
-                        friendly_spell_cast = True
+                        spell_pool = combat_plan.buff_spells[: min(len(combat_plan.buff_spells), args.combat_plan_spell_pool)]
+                        candidates = [
+                            (target, spell)
+                            for target in buff_targets
+                            for spell in spell_pool
+                            if party_buff_candidate_available(target, spell, party_buff_cooldowns, now)
+                        ]
+                        if not candidates:
+                            actions += add_action(action_counts, "party_buff_target_cooldown")
+                            buff_cooldown_blocked = True
+                        else:
+                            target, spell = candidates[party_buff_index % len(candidates)]
+                            party_buff_index += 1
+                            client.target_object(int(target["object_id"]))
+                            cast_party_friendly_usable_spell(
+                                client,
+                                spell,
+                                args,
+                                target_in_view=True,
+                            )
+                            actions += add_action(action_counts, "validated_party_buff_member")
+                            party_buff_cooldowns[party_buff_key(target, spell)] = now + party_buff_target_cooldown(args, spell)
+                            friendly_spell_cast = True
                     elif getattr(args, "allow_unvalidated_spells", False):
-                        target = buff_targets[party_buff_index % len(buff_targets)]
-                        party_buff_index += 1
-                        client.target_object(int(target["object_id"]))
-                        cast_party_friendly_raw_spell(
-                            client,
-                            rng.choice(args.party_buff_spell_levels),
-                            args,
-                            spell_line_index=args.party_buff_spell_line_index,
-                            target_in_view=True,
-                        )
-                        actions += add_action(action_counts, "party_buff_member")
-                        friendly_spell_cast = True
+                        candidates = [
+                            target
+                            for target in buff_targets
+                            if party_buff_candidate_available(target, None, party_buff_cooldowns, now)
+                        ]
+                        if not candidates:
+                            actions += add_action(action_counts, "party_buff_target_cooldown")
+                            buff_cooldown_blocked = True
+                        else:
+                            target = candidates[party_buff_index % len(candidates)]
+                            party_buff_index += 1
+                            client.target_object(int(target["object_id"]))
+                            cast_party_friendly_raw_spell(
+                                client,
+                                rng.choice(args.party_buff_spell_levels),
+                                args,
+                                spell_line_index=args.party_buff_spell_line_index,
+                                target_in_view=True,
+                            )
+                            actions += add_action(action_counts, "party_buff_member")
+                            party_buff_cooldowns[party_buff_key(target, None)] = now + party_buff_target_cooldown(args, None)
+                            friendly_spell_cast = True
                     else:
                         actions += add_action(action_counts, "party_buff_skipped_unvalidated")
 
-                    if friendly_spell_cast:
-                        friendly_cast_hold_until, friendly_cast_restore_target = plan_friendly_cast_target_hold(args, now, current_target)
+                    if buff_cooldown_blocked:
+                        pass
+                    elif friendly_spell_cast:
+                        friendly_cast_hold_until, friendly_cast_restore_target = plan_friendly_cast_target_hold(
+                            args,
+                            now,
+                            current_target,
+                            minimum_hold_seconds=friendly_usable_spell_hold_seconds(
+                                args,
+                                spell if combat_plan.buff_spells else None,
+                            ),
+                        )
+                        friendly_cast_hold_reason = "party_buff"
                         if friendly_cast_hold_until > now:
                             actions += add_action(action_counts, "party_buff_target_hold")
                         elif current_target:
-                            client.target_object(current_target)
+                            target_current_hostile_if_allowed(now, "retarget_enemy_after_buff")
                             actions += add_action(action_counts, "retarget_enemy_after_buff")
                     elif current_target:
-                        client.target_object(current_target)
+                        target_current_hostile_if_allowed(now, "retarget_enemy_after_buff")
                         actions += add_action(action_counts, "retarget_enemy_after_buff")
 
                 next_party_buff = now + args.party_buff_interval + rng.uniform(0, args.jitter)
 
             if (
-                is_party_follower
-                and action_rotation == "healer-support"
+                is_party_support_healer
                 and args.party_heal_leader_interval > 0
                 and now >= next_party_heal
             ):
@@ -14206,18 +19976,31 @@ def run_dummy_round(
                 if hurt_member is not None and party_heal_target_in_cast_range(client, args, hurt_member):
                     if combat_plan.heal_spells:
                         client.target_object(int(hurt_member["object_id"]))
-                        spell = rng.choice(combat_plan.heal_spells[: min(len(combat_plan.heal_spells), args.combat_plan_spell_pool)])
-                        cast_party_friendly_usable_spell(
-                            client,
-                            spell,
-                            args,
-                            target_in_view=True,
-                        )
-                        action_name = "validated_party_heal_leader" if hurt_member["name"] == party_state.leader_name else "validated_party_heal_member"
-                        actions += add_action(action_counts, action_name)
-                        friendly_spell_cast = True
+                        spell = choose_party_heal_spell(args, combat_plan.heal_spells)
+                        if spell is None:
+                            actions += add_action(action_counts, "party_heal_skipped_unvalidated")
+                            friendly_spell_cast = False
+                        else:
+                            cast_party_friendly_usable_spell(
+                                client,
+                                spell,
+                                args,
+                                target_in_view=True,
+                            )
+                            action_name = "validated_party_heal_leader" if hurt_member["name"] == party_state.leader_name else "validated_party_heal_member"
+                            actions += add_action(action_counts, action_name)
+                            log_encounter_event(
+                                action_name,
+                                now,
+                                heal_target=str(hurt_member.get("name", "") or ""),
+                                heal_target_health=int(hurt_member.get("health_percent", 0) or 0),
+                                spell_name=str(getattr(spell, "name", "") or ""),
+                                spell_level=int(getattr(spell, "spell_level", 0) or 0),
+                            )
+                            friendly_spell_cast = True
                     elif getattr(args, "allow_unvalidated_spells", False):
                         client.target_object(int(hurt_member["object_id"]))
+                        spell = None
                         cast_party_friendly_raw_spell(
                             client,
                             rng.choice(args.heal_spell_levels),
@@ -14227,19 +20010,34 @@ def run_dummy_round(
                         )
                         action_name = "party_heal_leader" if hurt_member["name"] == party_state.leader_name else "party_heal_member"
                         actions += add_action(action_counts, action_name)
+                        log_encounter_event(
+                            action_name,
+                            now,
+                            heal_target=str(hurt_member.get("name", "") or ""),
+                            heal_target_health=int(hurt_member.get("health_percent", 0) or 0),
+                        )
                         friendly_spell_cast = True
                     else:
                         actions += add_action(action_counts, "party_heal_skipped_unvalidated")
 
                     if friendly_spell_cast:
-                        friendly_cast_hold_until, friendly_cast_restore_target = plan_friendly_cast_target_hold(args, now, current_target)
+                        friendly_cast_hold_until, friendly_cast_restore_target = plan_friendly_cast_target_hold(
+                            args,
+                            now,
+                            current_target,
+                            minimum_hold_seconds=friendly_usable_spell_hold_seconds(
+                                args,
+                                spell if combat_plan.heal_spells else None,
+                            ),
+                        )
+                        friendly_cast_hold_reason = "party_heal"
                         if friendly_cast_hold_until > now:
                             actions += add_action(action_counts, "party_heal_target_hold")
                         elif current_target:
-                            client.target_object(current_target)
+                            target_current_hostile_if_allowed(now, "retarget_enemy_after_heal")
                             actions += add_action(action_counts, "retarget_enemy_after_heal")
                     elif current_target:
-                        client.target_object(current_target)
+                        target_current_hostile_if_allowed(now, "retarget_enemy_after_heal")
                         actions += add_action(action_counts, "retarget_enemy_after_heal")
                 elif hurt_member is not None:
                     if should_approach_party_heal_target(
@@ -14264,6 +20062,18 @@ def run_dummy_round(
                         actions += add_action(action_counts, "party_heal_target_too_far")
 
                 next_party_heal = now + args.party_heal_leader_interval + rng.uniform(0, args.jitter)
+
+            if should_hold_friendly_cast_target(
+                friendly_cast_hold_until=friendly_cast_hold_until,
+                now=now,
+                tactical_backoff=bool(friendly_cast_tactical_backoff),
+            ):
+                client.set_attack_mode(False)
+                actions += add_action(action_counts, "friendly_cast_target_hold_after_support")
+                send_ping_if_due(now)
+                send_position_heartbeat(now)
+                client.drain(args.tick)
+                continue
 
             if (args.combat or args.hunter) and args.combat_interval > 0 and now >= next_combat:
                 if is_party_leader and not current_target and not party_ready_for_pull(args, party_state):
@@ -14334,7 +20144,17 @@ def run_dummy_round(
                     if current_target and now - current_target_since > args.target_timeout:
                         timeout_combat_actor = actor_from_active_combat(active_combat)
                         if (
-                            should_preserve_current_party_target(args, party_state, current_target, active_combat)
+                            should_preserve_current_party_target(
+                                args,
+                                party_state,
+                                current_target,
+                                active_combat,
+                                behavior_state=behavior_state,
+                                current_target_intent=current_target_intent,
+                                flee_active=flee_until > now,
+                                rest_active=rest_until > now,
+                                drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                            )
                             and target_removed_preserve_allowed(
                                 args,
                                 now,
@@ -14343,8 +20163,8 @@ def run_dummy_round(
                             )
                         ):
                             current_target_since = now
-                            client.target_object(current_target)
-                            client.set_attack_mode(True)
+                            target_current_hostile_if_allowed(now, "target_timeout_preserved")
+                            enable_hostile_attack_mode_if_allowed(now, "target_timeout_preserved")
                             timeout_destination = None
                             if party_state is not None:
                                 party_snapshot = party_state.snapshot()
@@ -14372,11 +20192,16 @@ def run_dummy_round(
                             recent_incoming_attacker_name=last_incoming_damage_attacker_name,
                             last_incoming_damage_at=last_incoming_damage_at,
                             now=now,
+                            behavior_state=behavior_state,
+                            current_target_intent=current_target_intent,
+                            flee_active=flee_until > now,
+                            rest_active=rest_until > now,
+                            drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
                         ):
                             current_target_since = now
                             current_target_last_visible_at = now
-                            client.target_object(current_target)
-                            client.set_attack_mode(True)
+                            target_current_hostile_if_allowed(now, "target_timeout_combat_progress")
+                            enable_hostile_attack_mode_if_allowed(now, "target_timeout_combat_progress")
                             timeout_destination = None
                             if timeout_combat_actor is not None:
                                 timeout_destination = destination_from_point(
@@ -14415,6 +20240,7 @@ def run_dummy_round(
                             log_encounter_event("target_timeout_rejected", now)
                             client.clear_target()
                             current_target = 0
+                            current_target_intent = TargetIntent.none
                             if (
                                 is_party_leader
                                 and party_state is not None
@@ -14450,7 +20276,12 @@ def run_dummy_round(
                             client.drain(args.tick)
                             continue
                         if current_target_intent == TargetIntent.none or is_required_target(args, current_visible_npc):
-                            current_target_intent = observed_intent
+                            refresh_committed_current_target_intent(
+                                observed_intent,
+                                "current_visible_target_observation",
+                                now,
+                                target_id=int(getattr(current_visible_npc, "object_id", 0) or 0),
+                            )
                     elif active_combat is not None:
                         active_target_actor = actor_from_active_combat(active_combat)
                         observed_intent = target_intent_for_selected_npc(
@@ -14491,8 +20322,51 @@ def run_dummy_round(
                             active_combat,
                             now,
                         )
+                        preserve_active_rescue_focus = should_preserve_active_party_rescue_focus(
+                            args,
+                            active_combat,
+                            current_target,
+                            current_target_intent,
+                        )
+                        if preserve_active_rescue_focus and current_target <= 0 and active_combat is not None:
+                            active_focus_target_id = int(active_combat.get("target_id", 0) or 0)
+                            if active_focus_target_id > 0:
+                                active_focus_actor = actor_from_active_combat(active_combat)
+                                active_focus_intent = active_combat_intent(active_combat) or TargetIntent.party_rescue
+                                active_focus_decision = evaluate_engagement_candidate(
+                                    engagement_candidate_from_actor(
+                                        active_focus_actor,
+                                        source=TargetSource.current_target_preserve,
+                                        intent=active_focus_intent,
+                                    ),
+                                    engagement_context(now, party_snapshot=party_snapshot),
+                                    client,
+                                    args,
+                                    party_snapshot,
+                                )
+                                active_focus_result = commit_target(
+                                    active_focus_decision,
+                                    client,
+                                    party_state,
+                                    now=now,
+                                    current_target=current_target,
+                                    current_target_since=current_target_since,
+                                    current_target_last_visible_at=current_target_last_visible_at,
+                                    current_target_intent=current_target_intent,
+                                    action_counts=action_counts,
+                                    log_event=log_encounter_event,
+                                )
+                                current_target = active_focus_result.current_target
+                                current_target_since = active_focus_result.current_target_since
+                                current_target_last_visible_at = active_focus_result.current_target_last_visible_at
+                                current_target_intent = active_focus_result.current_target_intent
+                                if active_focus_result.current_target_updated:
+                                    enable_hostile_attack_mode_if_allowed(now, "party_rescue_active_focus_retarget")
+                                    actions += add_action(action_counts, "party_rescue_active_focus_retarget")
+                                else:
+                                    preserve_active_rescue_focus = False
 
-                        if rescue_target_id and rescue_age > args.party_rescue_max_age:
+                        if rescue_target_id and rescue_age > args.party_rescue_max_age and not preserve_active_rescue_focus:
                             party_state.clear_rescue_target()
                             party_snapshot = party_state.snapshot()
                             leader_target_id = int(party_snapshot["leader_target_id"])
@@ -14528,7 +20402,7 @@ def run_dummy_round(
                                     actions += add_action(action_counts, "party_pre_objective_add_shared")
                                 actions += add_action(action_counts, "party_pre_objective_add_target")
 
-                        if selected_npc is None and rescue_objective_ready:
+                        if selected_npc is None and rescue_objective_ready and not preserve_active_rescue_focus:
                             selected_npc = choose_party_rescue_threat_target(
                                 npcs,
                                 client,
@@ -14549,6 +20423,7 @@ def run_dummy_round(
                         if (
                             selected_npc is None
                             and rescue_objective_ready
+                            and not preserve_active_rescue_focus
                             and args.party_rescue_aggro
                             and rescue_target_id
                             and rescue_age <= args.party_rescue_max_age
@@ -14576,6 +20451,7 @@ def run_dummy_round(
                         if (
                             selected_npc is None
                             and rescue_objective_ready
+                            and not preserve_active_rescue_focus
                             and local_rescue_window_active(now, local_rescue_until)
                             and should_party_member_use_local_rescue_target(args, action_rotation, current_health_percent)
                         ):
@@ -14626,7 +20502,13 @@ def run_dummy_round(
                         if should_reject_selected_target_for_required_filter(args, selected_npc, selected_npc_is_rescue):
                             selected_npc = None
                             rejected_target_id = current_target
+                            finish_active_combat_before_target_clear(
+                                "required_target_filter_clear",
+                                now,
+                                rejected_target_id,
+                            )
                             current_target = 0
+                            current_target_intent = TargetIntent.none
                             if is_party_leader and party_state is not None:
                                 party_snapshot = party_state.snapshot()
                                 if should_clear_leader_target_after_required_filter(args, party_snapshot, rejected_target_id):
@@ -14647,7 +20529,13 @@ def run_dummy_round(
 
                             if selected_npc is not None and not passes_required_target_filter(args, selected_npc):
                                 selected_npc = None
+                                finish_active_combat_before_target_clear(
+                                    "party_assist_required_target_rejected",
+                                    now,
+                                    current_target,
+                                )
                                 current_target = 0
+                                current_target_intent = TargetIntent.none
                                 client.clear_target()
                                 client.set_attack_mode(False)
                                 actions += add_action(action_counts, "party_assist_required_target_rejected")
@@ -14669,7 +20557,6 @@ def run_dummy_round(
                             )
                             if selected_npc is not None:
                                 selected_target_source = TargetSource.leader_target_reacquire
-                                party_state.update_shared_target(selected_npc)
                                 actions += add_action(action_counts, "party_assist_required_reacquire")
 
                     if (
@@ -14679,14 +20566,20 @@ def run_dummy_round(
                     ):
                         if party_state is not None:
                             party_snapshot = party_state.snapshot()
-                            selected_npc = party_rescue_actor_from_snapshot(
+                            if not should_preserve_active_party_rescue_focus(
                                 args,
-                                party_snapshot,
-                                member_name=party_member_name,
-                                action_rotation=action_rotation,
-                                health_percent=current_health_percent,
-                                now=now,
-                            )
+                                active_combat,
+                                current_target,
+                                current_target_intent,
+                            ):
+                                selected_npc = party_rescue_actor_from_snapshot(
+                                    args,
+                                    party_snapshot,
+                                    member_name=party_member_name,
+                                    action_rotation=action_rotation,
+                                    health_percent=current_health_percent,
+                                    now=now,
+                                )
                             if selected_npc is not None:
                                 selected_npc_is_rescue = True
                                 selected_target_source = TargetSource.party_rescue
@@ -14819,9 +20712,14 @@ def run_dummy_round(
                             party_snapshot,
                             current_target=current_target,
                             tactical_backoff=bool(tactical_backoff),
+                            behavior_state=behavior_state,
+                            current_target_intent=current_target_intent,
+                            flee_active=flee_until > now,
+                            rest_active=rest_until > now,
+                            drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
                         ):
-                            client.target_object(current_target)
-                            client.set_attack_mode(True)
+                            target_current_hostile_if_allowed(now, "party_target_last_known")
+                            enable_hostile_attack_mode_if_allowed(now, "party_target_last_known")
                             target_destination = destination_from_point(
                                 "party-target-last-known",
                                 int(party_snapshot["leader_target_x"]),
@@ -14854,10 +20752,19 @@ def run_dummy_round(
                         else:
                             if (
                                 not tactical_backoff
-                                and should_preserve_unshared_party_target(args, current_target, active_combat)
+                                and should_preserve_unshared_party_target(
+                                    args,
+                                    current_target,
+                                    active_combat,
+                                    behavior_state=behavior_state,
+                                    current_target_intent=current_target_intent,
+                                    flee_active=flee_until > now,
+                                    rest_active=rest_until > now,
+                                    drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                                )
                             ):
-                                client.target_object(current_target)
-                                client.set_attack_mode(True)
+                                target_current_hostile_if_allowed(now, "party_target_unshared")
+                                enable_hostile_attack_mode_if_allowed(now, "party_target_unshared")
                                 unshared_destination = None
                                 if party_state is not None:
                                     party_snapshot = party_state.snapshot()
@@ -14873,9 +20780,11 @@ def run_dummy_round(
                                 kept_current_target_without_visible_npc = True
                                 actions += add_action(action_counts, "party_target_unshared_preserved")
                             else:
+                                finish_active_combat_before_target_clear("party_assist_hold", now, current_target)
                                 client.clear_target()
                                 client.set_attack_mode(False)
                                 current_target = 0
+                                current_target_intent = TargetIntent.none
                                 actions += add_action(action_counts, "party_assist_hold")
 
                     npcs = [selected_npc] if selected_npc is not None else []
@@ -14891,7 +20800,13 @@ def run_dummy_round(
                             if rejected_target_id:
                                 rejected_targets[rejected_target_id] = now + min(args.target_failure_cooldown, 5.0)
                             if current_target == rejected_target_id:
+                                finish_active_combat_before_target_clear(
+                                    "hunter_level_filter_clear",
+                                    now,
+                                    rejected_target_id,
+                                )
                                 current_target = 0
+                                current_target_intent = TargetIntent.none
                                 client.clear_target()
                                 client.set_attack_mode(False)
                             actions += add_action(action_counts, "hunter_level_filter_clear")
@@ -14900,31 +20815,118 @@ def run_dummy_round(
                             selected_npc = None
 
                     selected_target_decision = None
+                    selection_party_snapshot = party_state.snapshot() if party_state is not None else {}
+                    selection_leader_engaged = (
+                        float(selection_party_snapshot.get("leader_target_engaged_at", 0.0) or 0.0) > 0.0
+                    )
+                    selection_required_home_reached = required_target_home_reached(client, args)
+                    selection_required_home_hunt_ready = required_target_home_hunt_ready(client, args)
+                    selection_party_ready_for_objective = (
+                        party_ready_for_pull(args, party_state) if party_state is not None else True
+                    )
                     if selected_npc is not None:
-                        selection_party_snapshot = party_state.snapshot() if party_state is not None else {}
-                        selection_leader_engaged = (
-                            float(selection_party_snapshot.get("leader_target_engaged_at", 0.0) or 0.0) > 0.0
-                        )
-                        selection_required_home_reached = required_target_home_reached(client, args)
-                        selection_required_home_hunt_ready = required_target_home_hunt_ready(client, args)
-                        selection_party_ready_for_objective = (
-                            party_ready_for_pull(args, party_state) if party_state is not None else True
-                        )
-                        if should_enter_hunt_for_objective_area_rescue(
-                            args,
-                            behavior_state,
-                            selected_npc_is_rescue=selected_npc_is_rescue,
-                            required_home_hunt_ready=selection_required_home_hunt_ready,
-                            party_ready_for_objective=selection_party_ready_for_objective,
-                        ):
-                            transition_to(DummyBehaviorState.HuntObjective, "objective_area_rescue_target_selected", now)
-
                         selected_target_intent = target_intent_for_selected_npc(
                             args,
                             selected_npc,
                             selected_npc_is_rescue=selected_npc_is_rescue,
                             behavior_state=behavior_state,
                             recent_incoming_attacker_name=last_incoming_damage_attacker_name,
+                        )
+                        if should_healer_support_suppress_hostile_commit(
+                            args,
+                            action_rotation,
+                            selected_npc,
+                            selected_target_intent,
+                            selection_party_snapshot,
+                        ):
+                            actions += add_action(action_counts, "healer_support_hostile_target_suppressed")
+                            log_encounter_event(
+                                "healer_support_hostile_target_suppressed",
+                                now,
+                                target_id=int(getattr(selected_npc, "object_id", 0) or 0),
+                                target_name=str(getattr(selected_npc, "name", "") or ""),
+                                target_intent=target_intent_value(selected_target_intent),
+                            )
+                            selected_npc = None
+                            npcs = []
+                            current_target_intent = TargetIntent.none
+
+                    if selected_npc is not None:
+                        if should_enter_hunt_for_objective_area_rescue(
+                            args,
+                            behavior_state,
+                            selected_npc_is_rescue=selected_npc_is_rescue,
+                            selected_npc_is_required=is_required_target(args, selected_npc),
+                            is_party_follower=is_party_follower,
+                            is_active_tank=party_member_is_active_tank(
+                                selection_party_snapshot,
+                                party_member_name,
+                            ),
+                            required_home_hunt_ready=selection_required_home_hunt_ready,
+                            party_ready_for_objective=selection_party_ready_for_objective,
+                        ):
+                            transition_to(DummyBehaviorState.HuntObjective, "objective_area_rescue_target_selected", now)
+
+                        selected_interrupt_decision = evaluate_objective_pressure_interrupt_candidate(
+                            args,
+                            selected_npc,
+                            source=selected_target_source,
+                            intent=selected_target_intent,
+                            current_health_percent=current_health_percent,
+                            required_home_hunt_ready=selection_required_home_hunt_ready,
+                            context=EngagementContext(
+                                behavior_state=behavior_state,
+                                current_target=current_target,
+                                current_target_intent=current_target_intent,
+                                is_party_leader=is_party_leader,
+                                is_party_follower=is_party_follower,
+                                party_ready=selection_party_ready_for_objective,
+                                leader_engaged=selection_leader_engaged,
+                                current_health_percent=current_health_percent,
+                                objective_home_reached=selection_required_home_reached,
+                                objective_hunt_ready=selection_required_home_hunt_ready,
+                                drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                                rest_active=rest_until > now,
+                                flee_active=flee_until > now,
+                            ),
+                            client=client,
+                            party_snapshot=selection_party_snapshot,
+                        )
+                        if selected_interrupt_decision is not None:
+                            if selected_interrupt_decision.allowed:
+                                selected_target_decision = selected_interrupt_decision
+                                cancel_flee_for_objective_pressure_interrupt(
+                                    now,
+                                    selected_npc,
+                                    selected_target_intent,
+                                )
+                                transition_to(DummyBehaviorState.HuntObjective, "objective_pressure_interrupt_drop_aggro", now)
+                                actions += add_action(action_counts, "objective_pressure_interrupt_drop_aggro")
+                                log_encounter_event(
+                                    "objective_pressure_interrupt_drop_aggro",
+                                    now,
+                                    target_id=int(getattr(selected_npc, "object_id", 0) or 0),
+                                    target_name=str(getattr(selected_npc, "name", "") or ""),
+                                    target_intent=target_intent_value(selected_target_intent),
+                                )
+                            else:
+                                commit_target(
+                                    selected_interrupt_decision,
+                                    client,
+                                    party_state,
+                                    now=now,
+                                    current_target=current_target,
+                                    current_target_since=current_target_since,
+                                    current_target_last_visible_at=current_target_last_visible_at,
+                                    current_target_intent=current_target_intent,
+                                    action_counts=action_counts,
+                                    log_event=log_encounter_event,
+                                )
+                        selection_objective_pressure_active = (
+                            selected_target_intent == TargetIntent.required_retaliation
+                            and selection_required_home_hunt_ready
+                            and last_damage_taken_at > 0.0
+                            and now - last_damage_taken_at <= 3.0
                         )
                         if should_delay_target_selection_until_objective_ready(
                             args,
@@ -14935,6 +20937,7 @@ def run_dummy_round(
                             party_ready_for_objective=selection_party_ready_for_objective,
                             is_party_follower=is_party_follower,
                             leader_engaged=selection_leader_engaged,
+                            objective_pressure_active=selection_objective_pressure_active,
                         ):
                             actions += add_action(action_counts, "objective_selection_wait_ready")
                             log_encounter_event(
@@ -15001,32 +21004,33 @@ def run_dummy_round(
                                 npcs = []
                                 actions += add_action(action_counts, "drop_aggro_target_selection_suppressed")
                         else:
-                            selected_target_candidate = engagement_candidate_from_actor(
-                                selected_npc,
-                                source=selected_target_source,
-                                intent=selected_target_intent,
-                            )
-                            selected_target_decision = evaluate_engagement_candidate(
-                                selected_target_candidate,
-                                EngagementContext(
-                                    behavior_state=behavior_state,
-                                    current_target=current_target,
-                                    current_target_intent=current_target_intent,
-                                    is_party_leader=is_party_leader,
-                                    is_party_follower=is_party_follower,
-                                    party_ready=selection_party_ready_for_objective,
-                                    leader_engaged=selection_leader_engaged,
-                                    current_health_percent=current_health_percent,
-                                    objective_home_reached=selection_required_home_reached,
-                                    objective_hunt_ready=selection_required_home_hunt_ready,
-                                    drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
-                                    rest_active=rest_until > now,
-                                    flee_active=flee_until > now,
-                                ),
-                                client,
-                                args,
-                                selection_party_snapshot,
-                            )
+                            if selected_target_decision is None:
+                                selected_target_candidate = engagement_candidate_from_actor(
+                                    selected_npc,
+                                    source=selected_target_source,
+                                    intent=selected_target_intent,
+                                )
+                                selected_target_decision = evaluate_engagement_candidate(
+                                    selected_target_candidate,
+                                    EngagementContext(
+                                        behavior_state=behavior_state,
+                                        current_target=current_target,
+                                        current_target_intent=current_target_intent,
+                                        is_party_leader=is_party_leader,
+                                        is_party_follower=is_party_follower,
+                                        party_ready=selection_party_ready_for_objective,
+                                        leader_engaged=selection_leader_engaged,
+                                        current_health_percent=current_health_percent,
+                                        objective_home_reached=selection_required_home_reached,
+                                        objective_hunt_ready=selection_required_home_hunt_ready,
+                                        drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                                        rest_active=rest_until > now,
+                                        flee_active=flee_until > now,
+                                    ),
+                                    client,
+                                    args,
+                                    selection_party_snapshot,
+                                )
                             if not selected_target_decision.allowed:
                                 commit_target(
                                     selected_target_decision,
@@ -15048,20 +21052,66 @@ def run_dummy_round(
                                     )
                                 selected_npc = None
                                 npcs = []
-                            else:
-                                current_target_intent = selected_target_decision.intent
+                            elif current_target == int(getattr(selected_npc, "object_id", 0) or 0):
+                                refresh_committed_current_target_intent(
+                                    selected_target_decision.intent,
+                                    "selected_current_target_observation",
+                                    now,
+                                    target_id=int(getattr(selected_npc, "object_id", 0) or 0),
+                                )
                             if (
                                 selected_target_decision is not None
                                 and selected_target_decision.allowed
-                                and selected_target_intent in {TargetIntent.objective, TargetIntent.required_retaliation}
+                                and selected_target_intent
+                                in {
+                                    TargetIntent.objective,
+                                    TargetIntent.required_retaliation,
+                                    TargetIntent.party_rescue,
+                                }
                             ):
                                 transition_to(
                                     DummyBehaviorState.HuntObjective,
-                                    "objective_target_selected"
-                                    if selected_target_intent == TargetIntent.objective
-                                    else "required_target_retaliation",
+                                    (
+                                        "objective_target_selected"
+                                        if selected_target_intent == TargetIntent.objective
+                                        else (
+                                            "party_rescue_target_selected"
+                                            if selected_target_intent == TargetIntent.party_rescue
+                                            else "required_target_retaliation"
+                                        )
+                                    ),
                                     now,
                                 )
+
+                if (
+                    args.hunter
+                    and getattr(args, "rvr_enemy_player_hunter", False)
+                    and selected_npc is None
+                    and (current_target <= 0 or target_intent_value(current_target_intent) == TargetIntent.enemy_player.value)
+                ):
+                    rvr_party_snapshot = party_state.snapshot() if party_state is not None else {}
+                    rvr_prefer_target_id = (
+                        current_target
+                        if target_intent_value(current_target_intent) == TargetIntent.enemy_player.value
+                        else 0
+                    )
+                    if is_party_follower and int(rvr_party_snapshot.get("leader_target_id", 0) or 0) > 0:
+                        rvr_prefer_target_id = int(rvr_party_snapshot.get("leader_target_id", 0) or 0)
+                    enemy_player = choose_rvr_enemy_player(
+                        client,
+                        args,
+                        own_realm=account.realm,
+                        party_snapshot=rvr_party_snapshot,
+                        rejected_targets=rejected_targets,
+                        now=now,
+                        prefer_object_id=rvr_prefer_target_id,
+                    )
+                    if enemy_player is not None:
+                        source = TargetSource.enemy_player_assist if is_party_follower and rvr_prefer_target_id else TargetSource.enemy_player_hunter
+                        if commit_rvr_enemy_player_target(enemy_player, now, source):
+                            npcs = []
+                            selected_target_decision = None
+                            actions += add_action(action_counts, "rvr_enemy_player_selected")
 
                 if npcs:
                     npc = rng.choice(npcs[: max(args.target_pool, 1)])
@@ -15069,6 +21119,32 @@ def run_dummy_round(
                     target_commit_result = None
 
                     if current_target != npc.object_id:
+                        switch_candidate_intent = (
+                            selected_target_decision.intent if selected_target_decision is not None else current_target_intent
+                        )
+                        if should_block_active_combat_target_switch(
+                            args,
+                            active_combat,
+                            candidate_target_id=int(getattr(npc, "object_id", 0) or 0),
+                            candidate_target_intent=switch_candidate_intent,
+                            current_target=current_target,
+                            current_target_intent=current_target_intent,
+                            behavior_state=behavior_state,
+                            flee_active=flee_until > now,
+                            rest_active=rest_until > now,
+                            drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                        ):
+                            block_active_combat_target_switch(
+                                int(getattr(npc, "object_id", 0) or 0),
+                                switch_candidate_intent,
+                                str(getattr(npc, "name", "") or ""),
+                                now,
+                                "selected_target_commit",
+                            )
+                            send_ping_if_due(now)
+                            send_position_heartbeat(now)
+                            client.drain(args.tick)
+                            continue
                         finish_combat("target_switched", now, distance)
                         examine = args.target_examine_chance > 0 and rng.random() < args.target_examine_chance
                         if selected_target_decision is None:
@@ -15136,7 +21212,10 @@ def run_dummy_round(
                         current_target_removed_preserve_count = 0
                         attack_target_in_view_primed_at = 0.0
                         attack_target_in_view_primed_target = 0
-                        start_combat(npc, distance, now)
+                        if should_start_combat_after_target_commit(args, distance):
+                            start_combat(npc, distance, now)
+                        else:
+                            actions += add_action(action_counts, "target_commit_wait_range")
                         actions += add_action(action_counts, "examine_target" if examine else "target")
 
                         if is_party_leader and party_state is not None and not selected_npc_is_rescue:
@@ -15147,7 +21226,21 @@ def run_dummy_round(
                             target_commit_result is not None
                             and target_commit_result.party_leader_target_published
                         ):
-                            party_state.update_leader(client, npc)
+                            if selected_target_decision is not None:
+                                leader_publish_result = commit_target(
+                                    leader_current_target_republish_decision(selected_target_decision),
+                                    client,
+                                    party_state,
+                                    now=now,
+                                    current_target=current_target,
+                                    current_target_since=current_target_since,
+                                    current_target_last_visible_at=current_target_last_visible_at,
+                                    current_target_intent=current_target_intent,
+                                    action_counts=action_counts,
+                                    log_event=log_encounter_event,
+                                )
+                                if leader_publish_result.party_leader_target_published:
+                                    actions += add_action(action_counts, "leader_target_republished")
                     elif is_party_leader:
                         party_state.update_leader(client)
                     elif (
@@ -15159,7 +21252,21 @@ def run_dummy_round(
                             party_snapshot=party_snapshot_for_tick,
                         )
                     ):
-                        party_state.update_shared_target(npc)
+                        if selected_target_decision is not None:
+                            selected_share_result = commit_target(
+                                party_shared_target_publish_decision(selected_target_decision),
+                                client,
+                                party_state,
+                                now=now,
+                                current_target=current_target,
+                                current_target_since=current_target_since,
+                                current_target_last_visible_at=current_target_last_visible_at,
+                                current_target_intent=current_target_intent,
+                                action_counts=action_counts,
+                                log_event=log_encounter_event,
+                            )
+                            if selected_share_result.party_shared_target_published:
+                                actions += add_action(action_counts, "party_shared_target_published")
 
                     if current_target == npc.object_id:
                         current_target_last_visible_at = now
@@ -15236,7 +21343,7 @@ def run_dummy_round(
                     )
                     if attack_enabled:
                         face_target_for_attack(client, npc)
-                        client.target_object(current_target)
+                        target_current_hostile_if_allowed(now, "combat_tick_visible_target")
                         actions += add_action(action_counts, "target_refresh_in_view")
                         client.send_position_update(speed=0.0, target_in_view=True)
                         actions += add_action(action_counts, "attack_target_in_view_update")
@@ -15262,8 +21369,10 @@ def run_dummy_round(
                             )
                             attack_enabled = False
                         else:
-                            client.set_attack_mode(True)
-                            actions += add_action(action_counts, "attack_on")
+                            if enable_hostile_attack_mode_if_allowed(now, "combat_tick_visible_target"):
+                                actions += add_action(action_counts, "attack_on")
+                            else:
+                                attack_enabled = False
                     else:
                         client.set_attack_mode(False)
                         actions += add_action(action_counts, "attack_off")
@@ -15296,7 +21405,7 @@ def run_dummy_round(
                             action_distance=action_distance,
                         )
                     ):
-                        party_state.mark_leader_target_engaged(npc.object_id)
+                        mark_party_leader_target_engaged(party_state, npc.object_id)
 
                     if active_combat is not None:
                         active_combat["end_distance"] = distance
@@ -15369,7 +21478,7 @@ def run_dummy_round(
                 ):
                     target_destination = active_combat_last_known_destination(active_combat)
                     if target_destination is not None:
-                        client.target_object(current_target)
+                        target_current_hostile_if_allowed(now, "target_last_known")
                         face_point_for_attack(client, target_destination.x, target_destination.y)
                         outcome = move_towards_destination(
                             client,
@@ -15399,10 +21508,14 @@ def run_dummy_round(
                             args,
                             party_snapshot_for_tick,
                             current_target,
+                            current_target_intent=current_target_intent,
+                            active_combat=active_combat,
+                            leash_reason=leash_reason,
                         ):
+                            finish_outcome = target_home_leash_finish_outcome(leash_reason)
                             rejected_targets[current_target] = now + min(args.target_failure_cooldown, 5.0)
                             abandoned_target_id = current_target
-                            finish_combat("target_home_leash", now, last_known_distance)
+                            finish_combat(finish_outcome, now, last_known_distance)
                             log_encounter_event(
                                 "target_home_leash_rejected",
                                 now,
@@ -15411,17 +21524,19 @@ def run_dummy_round(
                                 last_known_z=target_destination.z,
                                 leash_reason=leash_reason,
                                 leash_distance=round(leash_distance, 2),
+                                outcome=finish_outcome,
                             )
                             client.clear_target()
                             client.set_attack_mode(False)
                             current_target = 0
-                            clear_shared_leader_target_on_abandon(now, "target_home_leash", abandoned_target_id)
-                            actions += add_action(action_counts, "target_home_leash")
+                            current_target_intent = TargetIntent.none
+                            clear_shared_leader_target_on_abandon(now, finish_outcome, abandoned_target_id)
+                            actions += add_action(action_counts, finish_outcome)
                             attack_enabled = False
                         else:
                             attack_enabled = is_melee_rotation(action_rotation) and last_known_distance <= melee_stop_distance(args)
                         if attack_enabled:
-                            client.target_object(current_target)
+                            target_current_hostile_if_allowed(now, "combat_tick_target_last_known")
                             face_point_for_attack(client, target_destination.x, target_destination.y)
                             client.send_position_update(speed=0.0, target_in_view=True)
                             actions += add_action(action_counts, "attack_target_in_view_update")
@@ -15447,10 +21562,12 @@ def run_dummy_round(
                                 )
                                 attack_enabled = False
                             else:
-                                client.set_attack_mode(True)
-                                if active_combat is not None:
-                                    active_combat["attacks"] = int(active_combat["attacks"]) + 1
-                                actions += add_action(action_counts, "attack_on")
+                                if enable_hostile_attack_mode_if_allowed(now, "combat_tick_target_last_known"):
+                                    if active_combat is not None:
+                                        active_combat["attacks"] = int(active_combat["attacks"]) + 1
+                                    actions += add_action(action_counts, "attack_on")
+                                else:
+                                    attack_enabled = False
                         log_attack_decision(
                             now,
                             attack_enabled,
@@ -15466,7 +21583,17 @@ def run_dummy_round(
                     current_target
                     and float(getattr(args, "target_loss_grace", 0.0) or 0.0) > 0
                     and now - current_target_last_visible_at > float(getattr(args, "target_loss_grace", 0.0) or 0.0)
-                    and not should_preserve_current_party_target(args, party_state, current_target, active_combat)
+                    and not should_preserve_current_party_target(
+                        args,
+                        party_state,
+                        current_target,
+                        active_combat,
+                        behavior_state=behavior_state,
+                        current_target_intent=current_target_intent,
+                        flee_active=flee_until > now,
+                        rest_active=rest_until > now,
+                        drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                    )
                     and not fresh_hunter_target_observation(args, server_target_observations.get(current_target), now)
                 ):
                     loss_after_server_los = should_treat_target_loss_as_server_los_failure(
@@ -15492,6 +21619,7 @@ def run_dummy_round(
                     client.clear_target()
                     client.set_attack_mode(False)
                     current_target = 0
+                    current_target_intent = TargetIntent.none
                     actions += add_action(action_counts, "target_lost")
                     clear_shared_leader_target_on_abandon(
                         now,
@@ -15501,23 +21629,14 @@ def run_dummy_round(
                     if loss_after_server_los:
                         actions += add_action(action_counts, "target_lost_after_server_los_failure")
                         transition_to(DummyBehaviorState.DropAggroAndRecover, "target_loss_after_server_los_drop_aggro", now)
-                        flee_until = max(
-                            flee_until,
-                            now + drop_aggro_recovery_duration(args, health_percent=current_health_percent),
-                        )
-                        next_flee_move = now
-                        next_flee_pressure_replan = now + flee_pressure_replan_cooldown(args)
-                        flee_wander_heading_hold_until = 0.0
-                        flee_destination = flee_escape_destination(args, client)
-                        if getattr(args, "flee_use_sprint", True):
-                            client.send_command("/sprint")
-                            actions += add_action(action_counts, "sprint_escape")
                         actions += add_action(action_counts, "drop_aggro_flee_start")
-                        log_encounter_event(
-                            "flee_start",
-                            now,
+                        start_or_refresh_flee(
                             reason="target_loss_after_server_los_drop_aggro",
-                            destination=destination_kind(flee_destination) if flee_destination is not None else "wander",
+                            priority=80,
+                            pressure=True,
+                            prefer_safe=True,
+                            now=now,
+                            extend_seconds=drop_aggro_recovery_duration(args, health_percent=current_health_percent),
                         )
                 else:
                     client.set_attack_mode(False)
@@ -15553,10 +21672,10 @@ def run_dummy_round(
         return RoundMetric(
             account.username,
             round_index,
-            True,
+            not safe_exit_failed,
             actions,
             time.monotonic() - started,
-            "",
+            safe_exit_error,
             action_counts,
             combat_metrics,
             args.ai_persona_name,
@@ -16194,10 +22313,41 @@ def build_account_plans(accounts: list[DummyAccount], args: argparse.Namespace) 
     return [[account] for account in accounts[: args.concurrency]]
 
 
+def party_state_member_is_leader(party_state: PartyState | None, member_name: str) -> bool:
+    if party_state is None:
+        return False
+    return normalize_target_name(getattr(party_state, "leader_name", "")) == normalize_target_name(member_name)
+
+
 def build_party_states(account_plans: list[list[DummyAccount]], args: argparse.Namespace) -> list[PartyState | None]:
     party_states: list[PartyState | None] = [None] * len(account_plans)
+    external_member_names = [
+        member_name
+        for member_name in getattr(args, "party_external_member_names", []) or []
+        if normalize_target_name(member_name)
+    ]
 
     if args.party_size <= 1:
+        if not external_member_names:
+            return party_states
+
+        leader_name = external_member_names[0]
+        for index, plan in enumerate(account_plans):
+            if not plan:
+                continue
+            member_name = character_name_from_account(plan[0].username)
+            party_state = PartyState(
+                leader_name,
+                [member_name],
+                active_tank_handoff_health_percent=getattr(args, "party_active_tank_handoff_health_percent", 0),
+            )
+            for external_member_name in external_member_names:
+                party_state.update_external_member(
+                    external_member_name,
+                    SimpleNamespace(object_id=0, health_percent=100, x=0, y=0, z=0),
+                    role="external",
+                )
+            party_states[index] = party_state
         return party_states
 
     for party_start in range(0, len(account_plans), args.party_size):
@@ -16212,6 +22362,15 @@ def build_party_states(account_plans: list[list[DummyAccount]], args: argparse.N
             member_names,
             active_tank_handoff_health_percent=getattr(args, "party_active_tank_handoff_health_percent", 0),
         )
+        managed_member_keys = {normalize_target_name(member_name) for member_name in member_names}
+        for external_member_name in external_member_names:
+            if normalize_target_name(external_member_name) in managed_member_keys:
+                continue
+            party_state.update_external_member(
+                external_member_name,
+                SimpleNamespace(object_id=0, health_percent=100, x=0, y=0, z=0),
+                role="external",
+            )
 
         for index in range(party_start, party_end):
             party_states[index] = party_state
@@ -16311,6 +22470,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--login-retry-delay", type=float, default=1.0, help="seconds to wait before reconnecting after a transient session-id login failure")
     parser.add_argument("--concurrency", type=int, default=1)
     parser.add_argument("--hold", type=float, default=60.0)
+    parser.add_argument(
+        "--safe-exit-max-seconds",
+        type=float,
+        default=0.0,
+        help="after --hold expires, keep running this long while fleeing, resting, or recently damaged",
+    )
+    parser.add_argument(
+        "--safe-exit-recent-damage-grace",
+        type=float,
+        default=12.0,
+        help="seconds after incoming damage that still count as unsafe for finite-run shutdown",
+    )
     parser.add_argument("--rounds", type=int, default=1, help="repeat each dummy session this many times")
     parser.add_argument("--round-delay", type=float, default=5.0)
     parser.add_argument(
@@ -16702,6 +22873,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="when a followed player is already close enough, allow waypoint movement to continue instead of idling",
     )
     parser.add_argument("--player-state-max-age", type=float, default=30.0)
+    parser.add_argument("--rvr-enemy-player-hunter", action="store_true", help="target visible enemy-realm players for frontier/RvR smoke combat")
+    parser.add_argument("--rvr-enemy-player-max-distance", type=float, default=2500.0)
+    parser.add_argument("--rvr-enemy-player-min-level", type=int, default=0)
+    parser.add_argument("--rvr-enemy-player-max-level", type=int, default=0)
+    parser.add_argument("--rvr-enemy-player-name", default="", help="optional enemy player name fragment to prefer/require for RvR smoke targeting")
     parser.add_argument("--use-skills", action="store_true", help="press usable skill/style buttons while in attack range")
     parser.add_argument("--skill-interval", type=float, default=4.0)
     parser.add_argument(
@@ -16725,6 +22901,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--spell-levels", type=parse_int_list, default=parse_int_list("1,2"), help="comma-separated UseSpell levels for caster/hybrid rotations")
     parser.add_argument("--spell-line-index", type=int, default=0)
     parser.add_argument("--spell-range", type=float, default=1500.0)
+    parser.add_argument("--area-spell-min-targets", type=int, default=2, help="minimum nearby hostile targets before casting area damage spells")
     parser.add_argument("--ranged-stop-distance", type=float, default=900.0, help="distance caster/healer roles try to keep from combat targets")
     parser.add_argument("--stationary-cast-actions", action="store_true", help="send a stop-position update before spell-like actions; disabled by default because some boss tests perform worse with it")
     parser.add_argument("--cast-action-hold", type=float, default=0.0, help="seconds to suppress movement after offensive spell-like actions so casts are less likely to be interrupted")
@@ -16733,6 +22910,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--heal-spell-line-index", type=int, default=0)
     parser.add_argument("--healer-self-health-percent", type=int, default=65)
     parser.add_argument("--party-buff-interval", type=float, default=0.0, help="seconds between healer-support party member buff attempts; 0 disables")
+    parser.add_argument("--party-buff-target-cooldown", type=float, default=0.0, help="seconds before refreshing the same party buff on the same target; 0 derives from interval/duration")
     parser.add_argument("--party-buff-spell-levels", type=parse_optional_int_list, default=[], help="comma-separated UseSpell levels for party buff attempts")
     parser.add_argument("--party-buff-spell-line-index", type=int, default=0)
     parser.add_argument(
@@ -16749,6 +22927,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--death-recovery-cooldown", type=float, default=8.0)
     parser.add_argument("--post-release-rest", type=float, default=3.0)
     parser.add_argument("--party-size", type=int, default=1, help="group workers into leader/follower parties of this size")
+    parser.add_argument(
+        "--party-external-member-names",
+        type=parse_name_list,
+        default=[],
+        help="pipe- or comma-separated real player names to track as support-only party members; they are not invited or counted for dummy ready gates",
+    )
+    parser.add_argument(
+        "--party-auto-external-members",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="auto-register real players found in the server group snapshot as support-only party members",
+    )
     parser.add_argument(
         "--party-encounter-mode",
         choices=["standard", "boss", "quest", "siege"],
@@ -16871,6 +23061,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--party-heal-leader-interval", type=float, default=1.8)
     parser.add_argument("--party-heal-leader-health-percent", type=int, default=80)
     parser.add_argument("--party-heal-cast-range-buffer", type=float, default=200.0)
+    parser.add_argument("--party-resurrect-interval", type=float, default=3.0)
+    parser.add_argument("--party-resurrect-target-cooldown", type=float, default=0.0, help="seconds before retrying resurrection on the same target; 0 derives from interval")
+    parser.add_argument("--party-resurrect-cast-range-buffer", type=float, default=200.0)
+    parser.add_argument("--party-cure-interval", type=float, default=2.0)
+    parser.add_argument("--party-condition-refresh-interval", type=float, default=2.5)
+    parser.add_argument("--party-protection-interval", type=float, default=20.0)
+    parser.add_argument("--crowd-control-interval", type=float, default=8.0)
+    parser.add_argument("--crowd-control-health-floor", type=int, default=45)
+    parser.add_argument("--crowd-control-preemptive-min-threats", type=int, default=2)
     parser.add_argument(
         "--party-friendly-cast-target-hold",
         type=float,

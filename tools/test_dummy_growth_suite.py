@@ -92,8 +92,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(growth.target_levels(3, 2), (2, 4, 1))
         self.assertEqual(growth.target_levels(3, 4), (2, 5, 2))
         self.assertEqual(growth.target_levels(3, 8), (2, 6, 3))
-        self.assertEqual(growth.target_levels(5, 1), (4, 5, 1))
-        self.assertEqual(growth.target_levels(6, 1), (4, 5, 1))
+        self.assertEqual(growth.target_levels(5, 1), (5, 5, 0))
+        self.assertEqual(growth.target_levels(6, 1), (5, 5, 0))
         self.assertEqual(growth.target_levels(7, 1), (6, 6, 0))
         self.assertEqual(growth.target_levels(8, 1), (6, 6, 1))
         self.assertEqual(growth.target_levels(20, 2), (19, 21, 2))
@@ -155,9 +155,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual((route.x, route.y, route.z), (786637, 723034, 4722))
         self.assertLess(math.hypot(803612 - route.x, 726671 - route.y), 18000)
 
-    def test_alb_hib_early_gear_routes_use_nearby_level_five_mobs(self) -> None:
+    def test_alb_hib_early_gear_routes_use_nearby_xp_eligible_mobs(self) -> None:
         expected = {
-            "alb": "shady pilferer",
+            "alb": "rock imp",
             "hib": "eirebug",
         }
         for realm_key, preferred_name in expected.items():
@@ -166,8 +166,13 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 route = growth.select_route_point(realm, level=6, party_size=1)
                 distance = math.hypot(realm.start[0] - route.x, realm.start[1] - route.y)
 
-                self.assertLessEqual(distance, 10000)
+                self.assertLessEqual(distance, 13000)
                 self.assertIn(preferred_name, route.prefer)
+                if realm_key == "alb":
+                    self.assertNotIn("skeleton", route.prefer)
+                    self.assertIn("Pebble", route.avoid)
+                    self.assertIn("shady pilferer", route.avoid)
+                    self.assertEqual((route.x, route.y, route.z), (523498, 475987, 3400))
 
     def test_hib_level_eight_route_uses_db_backed_shannon_hill_toads(self) -> None:
         route = growth.select_route_point(growth.REALMS["hib"], level=8, party_size=1)
@@ -185,24 +190,23 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertIn("water beetle collector", route.avoid)
         self.assertLess(math.hypot(route.x - 350899, route.y - 531716), 2500)
 
-    def test_albion_level_fifty_route_uses_db_backed_tylwyth_cluster_away_from_sages(self) -> None:
+    def test_albion_level_fifty_route_uses_hazard_scored_moorlich_cluster(self) -> None:
         route = growth.select_route_point(growth.REALMS["alb"], level=50, party_size=2)
 
-        self.assertEqual(route.teleport_destination, "Snowdonia Fortress")
-        self.assertIn("Tylwyth Teg ranger", route.prefer)
-        self.assertIn("ellyll sage", route.avoid)
-        self.assertIn("cyhraeth", route.avoid)
-        self.assertLess(math.hypot(route.x - 504923, route.y - 344510), 2500)
+        self.assertEqual(route.teleport_destination, "Yarley's Farm")
+        self.assertIn("moorlich", route.prefer)
+        self.assertIn("gabriel hound", route.avoid)
+        self.assertLess(math.hypot(route.x - 332701, route.y - 669142), 2500)
 
     def test_mid_hib_level_fifty_routes_use_existing_reachable_teleports(self) -> None:
         mid = growth.select_route_point(growth.REALMS["mid"], level=50, party_size=2)
         hib = growth.select_route_point(growth.REALMS["hib"], level=50, party_size=2)
 
-        self.assertEqual(mid.teleport_destination, "Vindsaul Faste")
-        self.assertIn("fenrir tracker", mid.prefer)
-        self.assertIn("fenrir snowscout", mid.objective_adds)
-        self.assertLess(math.hypot(mid.x - 664136, mid.y - 726812), 2500)
-        self.assertIn("wyvern", mid.avoid)
+        self.assertEqual(mid.teleport_destination, "Svasud Faste")
+        self.assertIn("savage wyvern", mid.prefer)
+        self.assertEqual(mid.objective_adds, "")
+        self.assertLess(math.hypot(mid.x - 742631, mid.y - 668137), 2500)
+        self.assertIn("winter wolf", mid.avoid)
         self.assertEqual(hib.teleport_destination, "Innis Carthaig")
         self.assertIn("far darrig", hib.prefer)
         self.assertIn("melancholic fairy", hib.avoid)
@@ -240,6 +244,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(rows[0]["y"], 647035)
         self.assertIn("FLOOR(X / 20000)", captured_sql[0])
         self.assertIn("AND Realm <> 2", captured_sql[0])
+        self.assertIn("LOWER(Name) NOT LIKE '%dummy%'", captured_sql[0])
+        self.assertIn("LOWER(Name) NOT LIKE 'total:%'", captured_sql[0])
         self.assertIn("GROUP BY Name, Level, grid_x, grid_y", captured_sql[0])
 
     def test_hunting_ground_analyzer_prefers_reachable_dense_targets_in_level_range(self) -> None:
@@ -257,6 +263,11 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         )
 
         self.assertGreater(nearby_dense_in_range, exact_but_far)
+
+    def test_high_level_growth_uses_longer_flee_safe_points(self) -> None:
+        self.assertLess(growth.growth_flee_safe_point_distance(10), growth.growth_flee_safe_point_distance(50))
+        self.assertGreaterEqual(growth.growth_flee_safe_point_distance(50), 9000)
+        self.assertGreaterEqual(growth.growth_flee_critical_safe_point_distance(50), 14000)
 
     def test_albion_growth_two_player_party_starts_with_tank_and_healer(self) -> None:
         realm = growth.REALMS["alb"]
@@ -417,9 +428,10 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(growth.experience_floor_for_level(3), 250)
         self.assertEqual(growth.experience_floor_for_level(5), 2300)
 
-    def test_early_growth_parties_use_melee_slot_rotations(self) -> None:
-        self.assertEqual(growth.early_growth_party_slot_rotations(1, 4), "melee-basic,melee-burst")
-        self.assertEqual(growth.early_growth_party_slot_rotations(4, 8), "melee-basic,melee-burst")
+    def test_early_growth_parties_preserve_support_slot_rotations(self) -> None:
+        self.assertEqual(growth.early_growth_party_slot_rotations(1, 2), "melee-basic,healer-support")
+        self.assertEqual(growth.early_growth_party_slot_rotations(1, 4), "melee-basic,healer-support,melee-basic,melee-burst")
+        self.assertEqual(growth.early_growth_party_slot_rotations(4, 8), "melee-basic,healer-support,melee-basic,melee-burst")
         self.assertEqual(growth.early_growth_party_slot_rotations(5, 8), "")
         self.assertEqual(growth.early_growth_party_slot_rotations(1, 1), "")
 
@@ -672,6 +684,22 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                     "combat_failures": 1,
                     "server_los_failures": 1,
                     "target_home_leashes": 0,
+                },
+                require_kill=True,
+            )
+        )
+
+    def test_growth_segment_regression_allows_safe_leash_when_segment_has_kill(self) -> None:
+        self.assertTrue(
+            growth.segment_regression_passed(
+                {
+                    "player_deaths": 0,
+                    "target_removed": 1,
+                    "target_timeouts": 0,
+                    "movement_failures": 0,
+                    "combat_failures": 2,
+                    "server_los_failures": 0,
+                    "target_home_leashes": 2,
                 },
                 require_kill=True,
             )
@@ -1058,7 +1086,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertIn("hib_hib_teleport_tir_na_mbeo_336157_532604_detour_1", node_ids)
         self.assertIn("hib_hib_teleport_tir_na_mbeo_336157_532604_detour_2", node_ids)
 
-    def test_growth_path_graph_samples_midpoint_ground_height_on_steep_routes(self) -> None:
+    def test_growth_path_graph_samples_midpoint_ground_height_on_long_albion_level_fifty_routes(self) -> None:
         import dummy_pathing
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1066,7 +1094,13 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             growth.write_growth_path_graph(path)
             graph = dummy_pathing.PathGraph.from_file(path)
 
-        node = graph.nodes["alb_teleport_snowdonia_fortress_50_8"]
+        detour_path_nodes = [
+            node
+            for node_id, node in graph.nodes.items()
+            if node_id.startswith("alb_alb_teleport_yarley_s_farm_332701_669142_detour_1_path_")
+        ]
+        self.assertTrue(detour_path_nodes)
+        node = detour_path_nodes[len(detour_path_nodes) // 2]
         sampled_z = growth.sample_route_z(
             growth.REALMS["alb"],
             growth.build_realm_height_samplers(),
@@ -1078,7 +1112,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(node.z, sampled_z)
         self.assertGreater(node.z, 0)
 
-    def test_growth_path_graph_routes_through_snowdonia_steep_height_samples(self) -> None:
+    def test_albion_level_fifty_route_detours_around_cornish_giant_and_hamadryad_fields(self) -> None:
         import dummy_pathing
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1087,9 +1121,26 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             graph = dummy_pathing.PathGraph.from_file(path)
 
         safety = dummy_pathing.PathSafety(max_direct_distance=150.0, max_edge_length=1800.0, max_height_delta=900)
-        route = graph.astar("alb_teleport_snowdonia_fortress", "alb_50", safety)
+        route = graph.astar("alb_teleport_yarley_s_farm", "alb_50", safety)
+        node_ids = [node.id for node in route.nodes]
 
         self.assertTrue(route.ok, route.reason)
+        self.assertIn("alb_alb_teleport_yarley_s_farm_332701_669142_detour_1", node_ids)
+        self.assertIn("alb_alb_teleport_yarley_s_farm_332701_669142_detour_2", node_ids)
+        self.assertIn("alb_alb_teleport_yarley_s_farm_332701_669142_detour_3", node_ids)
+        self.assertIn("alb_alb_teleport_yarley_s_farm_332701_669142_detour_4", node_ids)
+        self.assertGreater(
+            min(math.hypot(node.x - 357435, node.y - 676520) for node in route.nodes),
+            5000,
+        )
+        self.assertGreater(
+            min(math.hypot(node.x - 350735, node.y - 681041) for node in route.nodes),
+            9000,
+        )
+        self.assertGreater(
+            min(math.hypot(node.x - 341378, node.y - 677453) for node in route.nodes),
+            7000,
+        )
 
     def test_mid_level_five_return_route_does_not_detour_through_level_one_variant_grid(self) -> None:
         import dummy_pathing
@@ -1133,6 +1184,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             encounter_log_interval=3.0,
             nav_api_url="http://127.0.0.1:5000",
             live_api_url="",
+            party_external_member_names="RealTank,RealHealer",
         )
 
         command = growth.build_behavior_command(
@@ -1159,6 +1211,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(command[command.index("--attack-range") + 1], "350")
         self.assertEqual(command[command.index("--combat-direct-move-distance") + 1], "1500.0")
         self.assertEqual(command[command.index("--attack-target-in-view-prime-delay") + 1], "1.1")
+        self.assertEqual(command[command.index("--party-external-member-names") + 1], "RealTank|RealHealer")
         self.assertIn("--melee-stick-attack", command)
         self.assertEqual(command[command.index("--melee-stick-attack-distance") + 1], "1800")
         self.assertEqual(command[command.index("--target-face-command-interval") + 1], "0.8")
@@ -1190,7 +1243,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(command[command.index("--flee-health-percent") + 1], "55")
         self.assertEqual(command[command.index("--flee-pressure-health-percent") + 1], "85")
         self.assertEqual(command[command.index("--flee-step") + 1], "900")
-        self.assertEqual(command[command.index("--flee-movement-speed") + 1], "360")
+        self.assertEqual(command[command.index("--flee-movement-speed") + 1], "280")
         self.assertIn("--flee-home", command)
         self.assertEqual(command[command.index("--flee-home") + 1], "345698,528897,5448")
         self.assertEqual(command[command.index("--flee-home-stop-distance") + 1], "120")
@@ -1201,6 +1254,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(command[command.index("--flee-critical-safe-point-distance") + 1], "9000")
         self.assertIn("--flee-safe-api-scout", command)
         self.assertEqual(command[command.index("--flee-safe-replan-damage-grace") + 1], "6")
+        self.assertEqual(command[command.index("--safe-exit-max-seconds") + 1], "90")
+        self.assertEqual(command[command.index("--safe-exit-recent-damage-grace") + 1], "12")
         self.assertEqual(command[command.index("--flee-town-health-percent") + 1], "99")
         self.assertEqual(command[command.index("--flee-min-combat-seconds") + 1], "4")
         self.assertEqual(command[command.index("--flee-melee-counterattack-min-attacks") + 1], "3")
@@ -1457,9 +1512,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         )
 
         self.assertEqual(command[command.index("--ideal-target-level") + 1], "5")
-        self.assertEqual(command[command.index("--min-target-level") + 1], "4")
-        self.assertEqual(command[command.index("--max-target-level") + 1], "6")
-        self.assertEqual(command[command.index("--max-target-level-delta") + 1], "1")
+        self.assertEqual(command[command.index("--min-target-level") + 1], "5")
+        self.assertEqual(command[command.index("--max-target-level") + 1], "5")
+        self.assertEqual(command[command.index("--max-target-level-delta") + 1], "0")
         self.assertEqual(command[command.index("--max-target-distance") + 1], "2800.0")
         self.assertEqual(command[command.index("--combat-direct-move-distance") + 1], "2800.0")
         self.assertEqual(command[command.index("--hunter-target-api-radius") + 1], "2800.0")
@@ -1482,6 +1537,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         command = growth.build_live_supervisor_command(args, Path("case"), current_level=6)
 
         self.assertEqual(command[command.index("--max-engage") + 1], "2800.0")
+        self.assertEqual(command[command.index("--hold") + 1], "320.0")
 
     def test_two_player_growth_party_uses_mixed_roles(self) -> None:
         args = SimpleNamespace(
@@ -1535,7 +1591,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(command[command.index("--party-rescue-objective-max-distance") + 1], "1800")
         self.assertEqual(command[command.index("--party-rescue-assist-after") + 1], "6")
         self.assertEqual(command[command.index("--party-rescue-emergency-assist-after") + 1], "2")
-        self.assertEqual(command[command.index("--party-slot-rotations") + 1], "melee-basic,melee-burst")
+        self.assertEqual(command[command.index("--party-slot-rotations") + 1], "melee-basic,healer-support")
         self.assertIn("--allow-unvalidated-skills", command)
 
     def test_level_fifty_large_party_reuses_boss_party_survival_rules(self) -> None:
@@ -1588,6 +1644,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(command[command.index("--party-melee-survival-health-percent") + 1], "45")
         self.assertIn("--party-survival-death-count", command)
         self.assertEqual(command[command.index("--party-survival-active-tank-health-percent") + 1], "35")
+        self.assertIn("--stop-after-required-target-removed", command)
         self.assertEqual(command[command.index("--party-slot-rotations") + 1], "melee-basic,healer-support,melee-basic,melee-burst")
 
     def test_level_fifty_two_player_party_keeps_growth_party_rules(self) -> None:
@@ -1630,7 +1687,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(command[command.index("--party-form-up-delay") + 1], "4")
         self.assertEqual(command[command.index("--party-rescue-assist-after") + 1], "6")
 
-    def test_level_one_large_party_uses_melee_slot_rotations(self) -> None:
+    def test_level_one_large_party_uses_support_slot_rotations(self) -> None:
         args = SimpleNamespace(
             host="127.0.0.1",
             port=10300,
@@ -1664,7 +1721,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             path_graph=Path("graph.json"),
         )
 
-        self.assertEqual(command[command.index("--party-slot-rotations") + 1], "melee-basic,melee-burst")
+        self.assertEqual(command[command.index("--party-slot-rotations") + 1], "melee-basic,healer-support,melee-basic,melee-burst")
         self.assertIn("--allow-unvalidated-skills", command)
 
     def test_solo_growth_allows_unvalidated_skills_for_melee_styles(self) -> None:
@@ -1741,9 +1798,11 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertIn("--startup-train-level", command)
         self.assertIn("5", command)
         self.assertEqual(command[command.index("--ideal-target-level") + 1], "5")
-        self.assertEqual(command[command.index("--min-target-level") + 1], "4")
-        self.assertEqual(command[command.index("--max-target-level") + 1], "6")
-        self.assertEqual(command[command.index("--max-target-level-delta") + 1], "1")
+        self.assertEqual(command[command.index("--min-target-level") + 1], "5")
+        self.assertEqual(command[command.index("--max-target-level") + 1], "5")
+        self.assertEqual(command[command.index("--max-target-level-delta") + 1], "0")
+        self.assertIn("--allow-preferred-low-con-fallback", command)
+        self.assertEqual(command[command.index("--preferred-low-con-min-level") + 1], "4")
         self.assertIn("--greet-nearby-player", command)
         self.assertIn("--speak-state-changes", command)
         self.assertEqual(command[command.index("--state-speech-min-interval") + 1], "3.0")
@@ -1792,6 +1851,52 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(command[command.index("--action-rotation") + 1], "caster-basic")
         self.assertIn("--stationary-cast-actions", command)
         self.assertEqual(command[command.index("--cast-action-hold") + 1], "3.4")
+
+    def test_solo_healing_checkpoint_uses_healer_support_from_account_specs(self) -> None:
+        args = SimpleNamespace(
+            host="127.0.0.1",
+            port=10300,
+            segment_seconds=45,
+            ramp_up=2,
+            login_retries=5,
+            login_retry_delay=3.0,
+            api_port=5000,
+            max_target_distance=5200,
+            target_home_max_distance=3000.0,
+            target_timeout=65,
+            combat_interval=1.5,
+            target_pool=5,
+            smooth_move_interval=0.2,
+            movement_speed=191.0,
+            path_last_mile_distance=1200.0,
+            ground_z_offset=0,
+            encounter_log_interval=3.0,
+            nav_api_url="http://127.0.0.1:5000",
+            live_api_url="",
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            accounts_csv = Path(temp_dir) / "accounts.csv"
+            accounts_csv.write_text(
+                "username,password,realm,char_index,class_id,specs\n"
+                "growthalb001,dummy-pass,1,0,6,Smite|1;Rejuvenation|40;Enhancement|36\n",
+                encoding="utf-8",
+            )
+
+            command = growth.build_behavior_command(
+                args=args,
+                realm=growth.REALMS["alb"],
+                accounts_csv=accounts_csv,
+                case_dir=Path(temp_dir) / "case",
+                segment_index=2,
+                party_size=1,
+                current_level=5,
+                path_graph=Path("graph.json"),
+            )
+
+        self.assertEqual(command[command.index("--action-rotation") + 1], "healer-support")
+        self.assertIn("--stationary-cast-actions", command)
+        self.assertEqual(command[command.index("--support-spell-chance") + 1], "1.0")
+        self.assertEqual(command[command.index("--healer-self-health-percent") + 1], "80")
 
     def test_growth_command_continues_training_after_level_five(self) -> None:
         args = SimpleNamespace(
@@ -2103,6 +2208,124 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertIn("Ypos = CASE AccountName", reset_sql)
         self.assertIn("Zpos = 2200", reset_sql)
         self.assertIn("Region = 1", reset_sql)
+
+    def test_checkpoint_route_home_start_resets_characters_near_selected_route_point(self) -> None:
+        args = SimpleNamespace(position_step=80, checkpoint_start_location="route-home")
+        calls: list[str] = []
+        original_run_mysql = growth.run_mysql
+        try:
+            def fake_run_mysql(_args, sql):
+                calls.append(sql)
+                if "SELECT AccountName, SerializedSpecs" in sql:
+                    return "AccountName\tSerializedSpecs\n"
+                return ""
+
+            growth.run_mysql = fake_run_mysql
+            growth.reset_growth_characters(
+                args,
+                ["growthalb100", "growthalb101"],
+                level=50,
+                realm=growth.REALMS["alb"],
+                party_size=4,
+            )
+        finally:
+            growth.run_mysql = original_run_mysql
+
+        route = growth.select_route_point(growth.REALMS["alb"], 50, 4)
+        reset_sql = calls[0]
+        self.assertIn(f"WHEN 'growthalb100' THEN {route.x}", reset_sql)
+        self.assertIn(f"WHEN 'growthalb101' THEN {route.x + 80}", reset_sql)
+        self.assertIn(f"WHEN 'growthalb100' THEN {route.y}", reset_sql)
+        self.assertIn(f"Zpos = {route.z}", reset_sql)
+
+    def test_reset_growth_characters_can_use_explicit_watcher_observer_start(self) -> None:
+        args = SimpleNamespace(position_step=80, checkpoint_start_location="route-home")
+        calls: list[str] = []
+        original_run_mysql = growth.run_mysql
+        try:
+            def fake_run_mysql(_args, sql):
+                calls.append(sql)
+                if "SELECT AccountName, SerializedSpecs" in sql:
+                    return "AccountName\tSerializedSpecs\n"
+                return ""
+
+            growth.run_mysql = fake_run_mysql
+            observer = growth.RoutePoint(level=0, x=340397, y=671327, z=2498)
+            growth.reset_growth_characters(
+                args,
+                ["growthalb109"],
+                level=50,
+                realm=growth.REALMS["alb"],
+                party_size=4,
+                start_point=observer,
+            )
+        finally:
+            growth.run_mysql = original_run_mysql
+
+        reset_sql = calls[0]
+        self.assertIn("WHEN 'growthalb109' THEN 340397", reset_sql)
+        self.assertIn("WHEN 'growthalb109' THEN 671327", reset_sql)
+        self.assertIn("Zpos = 2498", reset_sql)
+
+    def test_checkpoint_route_home_start_skips_startup_teleport_but_keeps_boss_rules(self) -> None:
+        args = SimpleNamespace(
+            host="127.0.0.1",
+            port=10300,
+            segment_seconds=120,
+            ramp_up=2,
+            login_retries=5,
+            login_retry_delay=3.0,
+            api_port=5000,
+            max_target_distance=5200,
+            target_home_max_distance=3000.0,
+            combat_home_leash_distance=1200.0,
+            target_timeout=65,
+            combat_interval=1.5,
+            target_pool=5,
+            smooth_move_interval=0.2,
+            movement_speed=191.0,
+            path_last_mile_distance=1200.0,
+            ground_z_offset=0,
+            encounter_log_interval=3.0,
+            nav_api_url="http://127.0.0.1:5000",
+            live_api_url="",
+            checkpoint_start_location="route-home",
+        )
+
+        command = growth.build_behavior_command(
+            args=args,
+            realm=growth.REALMS["alb"],
+            accounts_csv=Path("accounts.csv"),
+            case_dir=Path("case"),
+            segment_index=1,
+            party_size=4,
+            current_level=50,
+            path_graph=Path("graph.json"),
+        )
+
+        self.assertNotIn("--startup-teleport-destination", command)
+        self.assertNotIn("--startup-teleporter-home", command)
+        self.assertIn("--party-encounter-mode", command)
+        self.assertEqual(command[command.index("--party-encounter-mode") + 1], "boss")
+
+    def test_default_checkpoint_start_keeps_realm_start_and_startup_teleport(self) -> None:
+        args = growth.parse_args_for_tests(["--checkpoint-levels", "50", "--dry-run"])
+
+        self.assertEqual(args.checkpoint_start_location, "realm-start")
+
+        command = growth.build_behavior_command(
+            args=args,
+            realm=growth.REALMS["alb"],
+            accounts_csv=Path("accounts.csv"),
+            case_dir=Path("case"),
+            segment_index=1,
+            party_size=4,
+            current_level=50,
+            path_graph=Path("graph.json"),
+        )
+
+        self.assertIn("--startup-teleport-destination", command)
+        self.assertEqual(command[command.index("--startup-teleport-destination") + 1], "Yarley's Farm")
 
     def test_provision_command_uses_base_classes_for_pre_five_growth(self) -> None:
         args = SimpleNamespace(
@@ -2620,6 +2843,56 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(summary["max_xy_delta"], 10.0)
         self.assertEqual(summary["xy_status"], "ok")
 
+    def test_watcher_pair_summary_ignores_primary_recovery_return_for_xy_status(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            primary = root / "primary.jsonl"
+            watcher = root / "watcher.jsonl"
+            encounter = root / "primary-encounter.jsonl"
+            primary.write_text(
+                "\n".join(
+                    [
+                        '{"t":10.0,"event":"move_step","x":25000,"y":0,"z":100}',
+                        '{"t":20.0,"event":"move_step","x":100,"y":0,"z":100}',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            watcher.write_text(
+                "\n".join(
+                    [
+                        '{"t":10.0,"event":"move_step","x":0,"y":0,"z":100}',
+                        '{"t":20.0,"event":"move_step","x":0,"y":0,"z":100}',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            encounter.write_text(
+                "\n".join(
+                    [
+                        '{"t":9.0,"event":"behavior_state_change","behavior_state":"ReturnToObjective"}',
+                        '{"t":19.0,"event":"behavior_state_change","behavior_state":"HuntObjective"}',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            summary = growth.compare_watcher_pair(
+                primary,
+                watcher,
+                primary_encounter_path=encounter,
+                z_warn_delta=180.0,
+                xy_warn_delta=18000.0,
+                rewind_warn_distance=6500.0,
+                z_compare_xy_distance=850.0,
+            )
+
+        self.assertGreater(summary["max_xy_delta"], 18000.0)
+        self.assertEqual(summary["xy_status"], "ok")
+
     def test_watcher_summary_flags_primary_idle_with_visible_but_ineligible_targets(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -2748,6 +3021,46 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(summary["primary_behavior_anomaly_status"], "ok")
         self.assertEqual(summary["primary_behavior_anomaly_reason"], "")
 
+    def test_watcher_behavior_summary_allows_open_far_flee_window_under_clear_budget(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "encounter.jsonl"
+            path.write_text(
+                "\n".join(
+                    [
+                        '{"t":10.0,"event":"flee_start","character":"GrowthMid701","health_percent":77,"x":1000,"y":1000}',
+                        '{"t":36.0,"event":"flee_threat_pressure","character":"GrowthMid701","flee_threat_name":"huldu hunter","flee_threat_distance":2845,"flee_threat_active":true,"flee_threat_target":"GrowthMid701","x":4500,"y":5200}',
+                        '{"t":40.0,"event":"encounter_tick","character":"GrowthMid701","health_percent":70,"current_target":0,"target_visible":false}',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            summary = growth.primary_behavior_anomaly_summary(path, prefer_target_name="huldu hunter")
+
+        self.assertEqual(summary["primary_behavior_anomaly_status"], "ok")
+        self.assertEqual(summary["primary_behavior_anomaly_reason"], "")
+
+    def test_watcher_behavior_summary_flags_finished_far_active_flee_without_recovery(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "encounter.jsonl"
+            path.write_text(
+                "\n".join(
+                    [
+                        '{"t":10.0,"event":"flee_start","character":"GrowthMid701","health_percent":77,"x":1000,"y":1000}',
+                        '{"t":36.0,"event":"flee_threat_pressure","character":"GrowthMid701","flee_threat_name":"huldu hunter","flee_threat_distance":2845,"flee_threat_active":true,"flee_threat_target":"GrowthMid701","x":4500,"y":5200}',
+                        '{"t":45.0,"event":"flee_finished","character":"GrowthMid701","health_percent":74}',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            summary = growth.primary_behavior_anomaly_summary(path, prefer_target_name="huldu hunter")
+
+        self.assertEqual(summary["primary_behavior_anomaly_status"], "critical")
+        self.assertIn("aggro_not_dropped", summary["primary_behavior_anomaly_reason"])
+
     def test_watcher_behavior_summary_treats_safe_low_health_rest_as_aggro_clear(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "encounter.jsonl"
@@ -2791,6 +3104,30 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertIn("target_stuck", summary["primary_behavior_anomaly_reason"])
         self.assertIn("bad_target_choice", summary["primary_behavior_anomaly_reason"])
 
+    def test_watcher_behavior_summary_allows_weak_flee_then_successful_recovery_kill(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "encounter.jsonl"
+            path.write_text(
+                "\n".join(
+                    [
+                        '{"t":5.0,"event":"combat_start","target_name":"rock imp","target_level":5,"health_percent":100}',
+                        '{"t":32.0,"event":"combat_finish","outcome":"flee","target_name":"rock imp","target_level":5,"duration_seconds":27.0,"damage_done":30,"damage_taken":120}',
+                        '{"t":33.0,"event":"flee_start","character":"GrowthAlb701","health_percent":67}',
+                        '{"t":70.0,"event":"flee_recovered","character":"GrowthAlb701","health_percent":88}',
+                        '{"t":90.0,"event":"combat_start","target_name":"rock imp","target_level":4,"health_percent":95}',
+                        '{"t":132.0,"event":"combat_finish","outcome":"target_removed","target_name":"rock imp","target_level":4,"duration_seconds":42.0,"damage_done":90,"damage_taken":36}',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            summary = growth.primary_behavior_anomaly_summary(path, prefer_target_name="rock imp")
+
+        self.assertEqual(summary["primary_behavior_anomaly_status"], "ok")
+        self.assertEqual(summary["primary_behavior_anomaly_reason"], "")
+        self.assertEqual(summary["primary_behavior_target_stuck"], 0)
+
     def test_watcher_behavior_summary_allows_single_unpreferred_target_without_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "encounter.jsonl"
@@ -2809,6 +3146,112 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         self.assertEqual(summary["primary_behavior_anomaly_status"], "ok")
         self.assertEqual(summary["primary_behavior_anomaly_reason"], "")
+
+    def test_watcher_behavior_summary_flags_safe_exit_deadline(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "encounter.jsonl"
+            path.write_text(
+                "\n".join(
+                    [
+                        '{"t":5.0,"event":"combat_finish","outcome":"target_removed","active_target_name":"moorlich","duration_seconds":18.0}',
+                        '{"t":70.0,"event":"safe_exit_complete","safe_exit_deadline_reached":true,"health_percent":75,"behavior_state":"RestRecover"}',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            summary = growth.primary_behavior_anomaly_summary(path, prefer_target_name="moorlich")
+
+        self.assertEqual(summary["primary_behavior_anomaly_status"], "critical")
+        self.assertIn("safe_exit_deadline", summary["primary_behavior_anomaly_reason"])
+        self.assertEqual(summary["primary_behavior_safe_exit_deadline"], 1)
+
+    def test_watcher_behavior_summary_allows_deadline_recovered_safe_exit(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "encounter.jsonl"
+            path.write_text(
+                "\n".join(
+                    [
+                        '{"t":5.0,"event":"combat_finish","outcome":"target_removed","active_target_name":"moorlich","duration_seconds":18.0}',
+                        '{"t":70.0,"event":"safe_exit_complete","safe_exit_deadline_reached":true,"safe_exit_deadline_completed_recovered":true,"health_percent":88,"behavior_state":"RestRecover"}',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            summary = growth.primary_behavior_anomaly_summary(path, prefer_target_name="moorlich")
+
+        self.assertEqual(summary["primary_behavior_anomaly_status"], "ok")
+        self.assertEqual(summary["primary_behavior_anomaly_reason"], "")
+        self.assertEqual(summary["primary_behavior_safe_exit_deadline"], 0)
+
+    def test_watcher_behavior_summary_flags_pressure_after_target_removed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "encounter.jsonl"
+            path.write_text(
+                "\n".join(
+                    [
+                        '{"t":5.0,"event":"combat_finish","outcome":"target_removed","active_target_name":"moorlich","duration_seconds":18.0}',
+                        '{"t":20.0,"event":"flee_start","character":"GrowthAlb1201","reason":"untracked_damage","health_percent":42}',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            summary = growth.primary_behavior_anomaly_summary(path, prefer_target_name="moorlich")
+
+        self.assertEqual(summary["primary_behavior_anomaly_status"], "critical")
+        self.assertIn("post_target_removed_pressure", summary["primary_behavior_anomaly_reason"])
+        self.assertEqual(summary["primary_behavior_post_target_removed_pressure"], 1)
+
+    def test_watcher_behavior_summary_allows_required_target_safe_exit_after_target_removed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "encounter.jsonl"
+            path.write_text(
+                "\n".join(
+                    [
+                        '{"t":5.0,"event":"combat_finish","outcome":"target_removed","active_target_name":"moorlich","duration_seconds":18.0}',
+                        '{"t":5.1,"event":"required_target_complete_pending_safe_exit","active_target_name":"moorlich"}',
+                        '{"t":5.2,"event":"flee_start","character":"GrowthAlb1201","reason":"required_target_complete","health_percent":54}',
+                        '{"t":7.0,"event":"server_message","text":"A dead enemy hit you for 62 damage."}',
+                        '{"t":7.5,"event":"required_target_complete_shared","active_target_name":"moorlich"}',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            summary = growth.primary_behavior_anomaly_summary(path, prefer_target_name="moorlich")
+
+        self.assertEqual(summary["primary_behavior_anomaly_status"], "ok")
+        self.assertEqual(summary["primary_behavior_anomaly_reason"], "")
+        self.assertEqual(summary["primary_behavior_post_target_removed_pressure"], 0)
+
+    def test_watcher_behavior_summary_allows_safe_recovery_after_target_removed_pressure(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "encounter.jsonl"
+            path.write_text(
+                "\n".join(
+                    [
+                        '{"t":5.0,"event":"combat_finish","outcome":"target_removed","active_target_name":"black wolf pup","duration_seconds":18.0}',
+                        '{"t":20.0,"event":"flee_start","character":"GrowthAlb1201","reason":"critical_health_drop_aggro","health_percent":42}',
+                        '{"t":58.0,"event":"flee_recovered","character":"GrowthAlb1201","health_percent":54}',
+                        '{"t":60.0,"event":"low_health_rest","character":"GrowthAlb1201","health_percent":54,"current_target":0,"target_visible":false}',
+                        '{"t":95.0,"event":"encounter_tick","character":"GrowthAlb1201","health_percent":88,"current_target":0,"target_visible":false}',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            summary = growth.primary_behavior_anomaly_summary(path, prefer_target_name="black wolf pup")
+
+        self.assertEqual(summary["primary_behavior_anomaly_status"], "ok")
+        self.assertEqual(summary["primary_behavior_anomaly_reason"], "")
+        self.assertEqual(summary["primary_behavior_post_target_removed_pressure"], 0)
 
     def test_watcher_regression_fails_on_primary_behavior_anomaly_summary(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
