@@ -1,0 +1,213 @@
+using System;
+using System.Linq;
+using DOL.Events;
+using DOL.GS.LiveCompanion;
+using DOL.GS.ServerProperties;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+
+namespace DOL.GS.API.DummyCompanion
+{
+    internal static class DummyCompanionRoutes
+    {
+        public static void MapDummyCompanionRoutes(this WebApplication api)
+        {
+            api.MapGet("/api/dummy/companions/requests", (HttpContext context) =>
+            {
+                string status = Query(context, "status");
+                int limit = ParseInt(Query(context, "limit"), 100);
+                return Results.Ok(CompanionRequestService.Snapshot(status, limit));
+            });
+
+            api.MapGet("/api/dummy/companions/requests/{id}", (string id) =>
+            {
+                CompanionRequest request = CompanionRequestService.Get(id);
+                return request == null ? Results.NotFound(new { error = "RequestNotFound", id }) : Results.Ok(request);
+            });
+
+            api.MapGet("/api/dummy/companions/players/{playerName}/latest", (string playerName) =>
+            {
+                CompanionRequest request = CompanionRequestService.LatestForPlayer(playerName);
+                return request == null
+                    ? Results.NotFound(new { error = "RequestNotFound", playerName })
+                    : Results.Ok(request);
+            });
+
+            api.MapPost("/api/dummy/companions/requests", (HttpContext context) =>
+            {
+                string playerName = Query(context, "player");
+                GamePlayer player = FindPlayer(playerName);
+                if (player == null)
+                    return Results.NotFound(new { error = "PlayerNotFound", player = playerName });
+
+                CompanionRequestResult result = CompanionRequestService.CreateRequest(
+                    player,
+                    Query(context, "role", CompanionRequestRoles.Fill),
+                    Query(context, "source", "api"),
+                    Query(context, "contentType", "pve"),
+                    Query(context, "createdBy", "api"));
+
+                return result.Success ? Results.Ok(result) : Results.BadRequest(result);
+            });
+
+            api.MapPost("/api/dummy/companions/requests/claim", () =>
+            {
+                CompanionRequest request = CompanionRequestService.ClaimNextQueued();
+                return request == null ? Results.NotFound(new { error = "NoQueuedRequest" }) : Results.Ok(request);
+            });
+
+            api.MapPost("/api/dummy/companions/requests/{id}/status", (HttpContext context, string id) =>
+            {
+                CompanionRequest request = CompanionRequestService.UpdateStatus(
+                    id,
+                    Query(context, "status"),
+                    Query(context, "message"),
+                    Query(context, "companion"));
+
+                return request == null ? Results.NotFound(new { error = "RequestNotFoundOrInvalidStatus", id }) : Results.Ok(request);
+            });
+
+            api.MapPost("/api/dummy/companions/requests/{id}/attach", (HttpContext context, string id) =>
+            {
+                CompanionRequest request = CompanionRequestService.Get(id);
+                if (request == null)
+                    return Results.NotFound(new { error = "RequestNotFound", id });
+
+                GamePlayer requester = FindPlayer(request.RequesterName, request.RequesterAccount);
+                if (requester == null)
+                    return Results.NotFound(new { error = "RequesterNotFound", request.RequesterName });
+
+                GamePlayer companion = FindPlayer(Query(context, "companion"), Query(context, "account"));
+                if (companion == null)
+                    return Results.NotFound(new { error = "CompanionNotFound", companion = Query(context, "companion"), account = Query(context, "account") });
+
+                string failure = AttachCompanion(requester, companion);
+                if (!string.IsNullOrWhiteSpace(failure))
+                {
+                    CompanionRequest failed = CompanionRequestService.UpdateStatus(id, CompanionRequestStatus.Failed, failure, companion.Name);
+                    return Results.BadRequest(new { error = "AttachFailed", message = failure, request = failed });
+                }
+
+                CompanionRequest updated = CompanionRequestService.UpdateStatus(
+                    id,
+                    CompanionRequestStatus.Active,
+                    $"동료 {companion.Name} 이(가) 파티에 합류했습니다.",
+                    companion.Name);
+
+                return Results.Ok(updated);
+            });
+
+            api.MapPost("/api/dummy/companions/requests/{id}/detach", (HttpContext context, string id) =>
+            {
+                CompanionRequest request = CompanionRequestService.Get(id);
+                if (request == null)
+                    return Results.NotFound(new { error = "RequestNotFound", id });
+
+                GamePlayer companion = FindPlayer(Query(context, "companion", request.AssignedCompanionName), Query(context, "account"));
+                if (companion == null)
+                    return Results.NotFound(new { error = "CompanionNotFound", companion = request.AssignedCompanionName });
+
+                if (companion.Group != null)
+                    companion.Group.RemoveMember(companion);
+
+                CompanionRequest updated = CompanionRequestService.UpdateStatus(
+                    id,
+                    CompanionRequestStatus.Completed,
+                    $"companion {companion.Name} detached from group",
+                    companion.Name);
+
+                return Results.Ok(updated);
+            });
+
+            api.MapPost("/api/dummy/companions/requests/leave", (HttpContext context) =>
+            {
+                string playerName = Query(context, "player");
+                GamePlayer player = FindPlayer(playerName);
+                if (player == null)
+                    return Results.NotFound(new { error = "PlayerNotFound", player = playerName });
+
+                CompanionRequestResult result = CompanionRequestService.RequestLeave(
+                    player,
+                    Query(context, "source", "api"),
+                    Query(context, "createdBy", "api"));
+
+                return result.Success ? Results.Ok(result) : Results.BadRequest(result);
+            });
+        }
+
+        private static string Query(HttpContext context, string key, string defaultValue = "")
+        {
+            string value = context.Request.Query[key].FirstOrDefault();
+            return string.IsNullOrWhiteSpace(value) ? defaultValue : value.Trim();
+        }
+
+        private static int ParseInt(string value, int defaultValue)
+        {
+            return int.TryParse(value, out int parsed) ? parsed : defaultValue;
+        }
+
+        private static GamePlayer FindPlayer(string name, string account = "")
+        {
+            if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(account))
+                return null;
+
+            GamePlayer player = string.IsNullOrWhiteSpace(name) ? null : ClientService.Instance.GetPlayerByExactName(name);
+            if (IsUsablePlayer(player))
+                return player;
+
+            return ClientService.Instance.GetClients()
+                .Select(client => client.Player)
+                .FirstOrDefault(candidate => IsUsablePlayer(candidate) &&
+                                             ((!string.IsNullOrWhiteSpace(name) &&
+                                               candidate.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) ||
+                                              (!string.IsNullOrWhiteSpace(account) &&
+                                               string.Equals(candidate.Client?.Account?.Name, account, StringComparison.OrdinalIgnoreCase))));
+        }
+
+        private static bool IsUsablePlayer(GamePlayer player)
+        {
+            return player != null &&
+                   player.ObjectState is GameObject.eObjectState.Active &&
+                   player.Client?.ClientState is GameClient.eClientState.Playing;
+        }
+
+        private static string AttachCompanion(GamePlayer requester, GamePlayer companion)
+        {
+            if (requester == null)
+                return "요청자를 찾을 수 없습니다.";
+            if (companion == null)
+                return "동료를 찾을 수 없습니다.";
+            if (ReferenceEquals(requester, companion))
+                return "요청자 자신은 동료로 붙일 수 없습니다.";
+            if (!GameServer.ServerRules.IsAllowedToGroup(requester, companion, true))
+                return "같은 렐름의 동료만 파티에 합류할 수 있습니다.";
+            if (companion.Group != null)
+            {
+                if (ReferenceEquals(companion.Group, requester.Group) && requester.Group.IsInTheGroup(companion))
+                    return string.Empty;
+
+                return "동료가 이미 다른 파티에 속해 있습니다.";
+            }
+
+            if (requester.Group != null)
+            {
+                if (requester.Group.MemberCount >= Properties.GROUP_MAX_MEMBER)
+                    return "파티가 가득 차 동료를 합류시킬 수 없습니다.";
+
+                if (!requester.Group.AddMember(companion))
+                    return "동료를 파티에 합류시키지 못했습니다.";
+
+                GameEventMgr.Notify(GamePlayerEvent.AcceptGroup, companion);
+                return string.Empty;
+            }
+
+            Group group = new(requester);
+            GroupMgr.AddGroup(group);
+            if (!group.AddMember(requester) || !group.AddMember(companion))
+                return "동료 파티를 생성하지 못했습니다.";
+
+            GameEventMgr.Notify(GamePlayerEvent.AcceptGroup, companion);
+            return string.Empty;
+        }
+    }
+}

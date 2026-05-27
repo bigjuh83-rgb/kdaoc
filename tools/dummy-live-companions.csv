@@ -1,0 +1,17 @@
+username,password,realm,char_index,class_id,class_name,roles,home_x,home_y,home_z,hub
+albtest002,dummy-pass,1,0,2,Armsman,tank|dps,531504,479073,2200,albion_hub
+albtest003,dummy-pass,1,0,11,Mercenary,dps,531504,479073,2200,albion_hub
+albtest005,dummy-pass,1,0,6,Cleric,healer|support,531504,479073,2200,albion_hub
+albtest001,dummy-pass,1,0,1,Paladin,tank|support,531504,479073,2200,albion_hub
+albtest007,dummy-pass,1,0,7,Wizard,dps,531504,479073,2200,albion_hub
+albtest008,dummy-pass,1,0,5,Theurgist,support|dps,531504,479073,2200,albion_hub
+midtest001,dummy-pass,2,10,22,Warrior,tank|dps,774601,755307,4600,midgard_hub
+midtest005,dummy-pass,2,10,26,Healer,healer|support,774601,755307,4600,midgard_hub
+midtest007,dummy-pass,2,10,28,Shaman,healer|support,774601,755307,4600,midgard_hub
+midtest008,dummy-pass,2,10,29,Runemaster,dps,774601,755307,4600,midgard_hub
+midtest004,dummy-pass,2,10,24,Skald,support|dps,774601,755307,4600,midgard_hub
+hibtest001,dummy-pass,3,20,44,Hero,tank|dps,345677,490738,5200,hibernia_hub
+hibtest005,dummy-pass,3,20,47,Druid,healer|support,345677,490738,5200,hibernia_hub
+hibtest004,dummy-pass,3,20,48,Bard,healer|support,345677,490738,5200,hibernia_hub
+hibtest007,dummy-pass,3,20,40,Eldritch,dps,345677,490738,5200,hibernia_hub
+hibtest008,dummy-pass,3,20,41,Enchanter,dps,345677,490738,5200,hibernia_hub

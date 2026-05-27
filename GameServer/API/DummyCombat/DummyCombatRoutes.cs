@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using DOL.AI.Brain;
+using DOL.GS.LiveCompanion;
 using DOL.GS.Styles;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -353,18 +354,19 @@ namespace DOL.GS.API.DummyCombat
             var skills = player.GetAllUsableSkills(true);
             int nonSpecBegin = Math.Max(0, skills.FindIndex(item => item.Item1 is not Specialization));
             var spellLines = player.GetAllUsableListSpells(true);
+            object[] groupMembers = player.Group == null
+                ? Array.Empty<object>()
+                : player.Group.GetPlayersInTheGroup()
+                    .Where(IsUsablePlayer)
+                    .OrderBy(member => ReferenceEquals(member, player) ? 0 : 1)
+                    .ThenBy(member => member.Name)
+                    .Select(ToPlayerCombatDto)
+                    .ToArray();
 
             return new
             {
-                player = new
-                {
-                    name = player.Name,
-                    account = player.Client?.Account?.Name ?? string.Empty,
-                    level = player.Level,
-                    @class = player.CharacterClass?.Name ?? string.Empty,
-                    classId = player.CharacterClass?.ID ?? 0,
-                    realm = player.Realm.ToString()
-                },
+                player = ToPlayerCombatDto(player),
+                groupMembers,
                 skills = skills.Select((entry, index) => ToSkillDto(entry.Item1, entry.Item2, index, nonSpecBegin)).ToArray(),
                 spellLines = spellLines.Select((entry, lineIndex) => new
                 {
@@ -378,6 +380,46 @@ namespace DOL.GS.API.DummyCombat
                     },
                     entries = entry.Item2.Select(skill => ToSpellLineEntryDto(skill, lineIndex)).ToArray()
                 }).ToArray()
+            };
+        }
+
+        private static object ToPlayerCombatDto(GamePlayer player)
+        {
+            int maxHealth = Math.Max(1, player.MaxHealth);
+            string companionRole = CompanionRequestService.ActiveCompanionRoleFor(player.Name);
+
+            return new
+            {
+                name = player.Name,
+                account = player.Client?.Account?.Name ?? string.Empty,
+                sessionId = player.Client?.SessionID ?? 0,
+                objectId = player.ObjectID,
+                level = player.Level,
+                @class = player.CharacterClass?.Name ?? string.Empty,
+                classId = player.CharacterClass?.ID ?? 0,
+                realm = player.Realm.ToString(),
+                region = player.CurrentRegionID,
+                x = player.X,
+                y = player.Y,
+                z = player.Z,
+                health = player.Health,
+                maxHealth,
+                healthPercent = Math.Round(player.Health * 100.0 / maxHealth, 2),
+                isAlive = player.IsAlive,
+                isDead = !player.IsAlive,
+                inCombat = player.InCombat,
+                isStunned = player.IsStunned,
+                isMezzed = player.IsMezzed,
+                isCrowdControlled = player.IsCrowdControlled,
+                isDiseased = player.IsDiseased,
+                isPoisoned = player.IsPoisoned,
+                isSilenced = player.IsSilenced,
+                isNearsighted = player.effectListComponent.ContainsEffectForEffectType(DOL.GS.eEffect.Nearsight),
+                isCompanion = !string.IsNullOrWhiteSpace(companionRole),
+                companionRole,
+                targetObjectId = player.TargetObject?.ObjectID ?? 0,
+                targetName = player.TargetObject?.Name ?? string.Empty,
+                targetType = player.TargetObject?.GetType().FullName ?? string.Empty
             };
         }
 
@@ -417,6 +459,8 @@ namespace DOL.GS.API.DummyCombat
 
         private static object ToPlayerEncounterDto(GamePlayer player, GameNPC target)
         {
+            int maxHealth = Math.Max(1, player.MaxHealth);
+
             return new
             {
                 type = "player",
@@ -431,11 +475,18 @@ namespace DOL.GS.API.DummyCombat
                 z = player.Z,
                 distance = HorizontalDistance(player, target),
                 health = player.Health,
-                maxHealth = Math.Max(1, player.MaxHealth),
-                healthPercent = Math.Round(player.Health * 100.0 / Math.Max(1, player.MaxHealth), 2),
+                maxHealth,
+                healthPercent = Math.Round(player.Health * 100.0 / maxHealth, 2),
                 isAlive = player.IsAlive,
                 isDead = !player.IsAlive,
                 inCombat = player.InCombat,
+                isStunned = player.IsStunned,
+                isMezzed = player.IsMezzed,
+                isCrowdControlled = player.IsCrowdControlled,
+                isDiseased = player.IsDiseased,
+                isPoisoned = player.IsPoisoned,
+                isSilenced = player.IsSilenced,
+                isNearsighted = player.effectListComponent.ContainsEffectForEffectType(DOL.GS.eEffect.Nearsight),
                 targetObjectId = player.TargetObject?.ObjectID ?? 0,
                 targetName = player.TargetObject?.Name ?? string.Empty,
                 targetType = player.TargetObject?.GetType().FullName ?? string.Empty
