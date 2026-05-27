@@ -440,6 +440,9 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertIn("7000", command)
         self.assertIn("--use-skills", command)
         self.assertIn("--combat-usable-api", command)
+        self.assertIn("--startup-summon-pet", command)
+        self.assertIn("--startup-self-buff-count", command)
+        self.assertEqual(command[command.index("--startup-self-buff-count") + 1], "2")
         self.assertIn("--move", command)
         self.assertIn("--smooth-movement", command)
         self.assertIn("--combat-direct-move-distance", command)
@@ -1364,6 +1367,12 @@ class DummyCompanionServerSurfaceTests(unittest.TestCase):
         self.assertIn('"stealth"', combat_routes)
         self.assertIn('"resurrection"', combat_routes)
         self.assertIn('"cureDisease"', combat_routes)
+        self.assertIn('"pet"', combat_routes)
+        self.assertIn('"summon"', combat_routes)
+        self.assertIn('"charm"', combat_routes)
+        self.assertIn('"bladeturn"', combat_routes)
+        self.assertIn('"lifedrain"', combat_routes)
+        self.assertIn('"disease"', combat_routes)
 
     def test_companion_attach_requires_preassigned_companion_identity(self) -> None:
         routes = (ROOT / "GameServer" / "API" / "DummyCompanion" / "DummyCompanionRoutes.cs").read_text(

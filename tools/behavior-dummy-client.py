@@ -6023,7 +6023,12 @@ CAPABILITY_TAG_ALIASES = {
     "dot": "dot",
     "heal": "heal",
     "interrupt": "interrupt",
+    "bladeturn": "bladeturn",
+    "charm": "charm",
+    "disease": "disease",
+    "lifedrain": "lifedrain",
     "mez": "mez",
+    "pet": "pet",
     "res": "resurrection",
     "resurrect": "resurrection",
     "resurrection": "resurrection",
@@ -6033,6 +6038,7 @@ CAPABILITY_TAG_ALIASES = {
     "stealth": "stealth",
     "stealthdetection": "stealth_detection",
     "stun": "stun",
+    "summon": "summon",
     "taunt": "taunt",
 }
 PARTY_PROTECTION_ABILITY_IDS = {
@@ -11129,6 +11135,8 @@ def bucket_usable_spell(spell: dict, ref: UsableSpellRef) -> tuple[str, UsableSp
         return "speed", enriched_ref
     if spell_has_capability(capability_tags, "stealth"):
         return "stealth", enriched_ref
+    if spell_has_capability(capability_tags, "pet", "summon") or is_summon_spell_type(spell_type_key):
+        return "summon", enriched_ref
     if is_buff:
         return "buff", enriched_ref
     if spell_has_capability(capability_tags, "heal") or is_healing:
@@ -11137,14 +11145,12 @@ def bucket_usable_spell(spell: dict, ref: UsableSpellRef) -> tuple[str, UsableSp
         return "dot", enriched_ref
     if spell_has_capability(capability_tags, "aoe") or (is_harmful and damage > 0 and (radius > 0 or target_key in AREA_TARGET_TYPES)):
         return "area_attack", enriched_ref
-    if spell_has_capability(capability_tags, "crowd_control", "interrupt", "mez", "root", "stun") or (is_harmful and is_crowd_control_spell_type(spell_type_key)):
+    if spell_has_capability(capability_tags, "charm", "crowd_control", "interrupt", "mez", "root", "stun") or (is_harmful and is_crowd_control_spell_type(spell_type_key)):
         return "crowd_control", enriched_ref
-    if spell_has_capability(capability_tags, "damage") or (is_harmful and spell_range > 0 and damage > 0):
+    if spell_has_capability(capability_tags, "damage", "lifedrain") or (is_harmful and spell_range > 0 and damage > 0):
         return "attack", enriched_ref
-    if spell_has_capability(capability_tags, "debuff") or (is_harmful and (is_debuff or "debuff" in spell_type_key or spell_type_key in {"disease", "nearsight", "fumblechancedebuff"})):
+    if spell_has_capability(capability_tags, "debuff", "disease") or (is_harmful and (is_debuff or "debuff" in spell_type_key or spell_type_key in {"disease", "nearsight", "fumblechancedebuff"})):
         return "debuff", enriched_ref
-    if is_summon_spell_type(spell_type_key):
-        return "summon", enriched_ref
 
     return None
 
@@ -11366,6 +11372,9 @@ def cast_precombat_self_buffs(
         actions += add_action(action_counts, action_name)
         if delay > 0.0:
             time.sleep(delay)
+
+    if bool(getattr(args, "startup_summon_pet", True)) and combat_plan.summon_spells:
+        cast_startup_spell(combat_plan.summon_spells[0], "precombat_summon_spell")
 
     if bool(getattr(args, "startup_speed_song", True)) and combat_plan.speed_song_spells:
         cast_startup_spell(combat_plan.speed_song_spells[0], "precombat_speed_song_spell")
@@ -22991,6 +23000,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--combat-usable-api-retry-delay", type=float, default=0.5)
     parser.add_argument("--startup-self-buff-count", type=int, default=0, help="cast up to N validated self buff spells after combat usable plan load")
     parser.add_argument("--startup-self-buff-delay", type=float, default=0.8, help="seconds to wait between startup self buffs")
+    parser.add_argument("--startup-summon-pet", action=argparse.BooleanOptionalAction, default=True, help="cast a validated summon/pet spell once after combat usable plan load")
     parser.add_argument("--startup-speed-song", action=argparse.BooleanOptionalAction, default=True, help="cast a validated speed-song spell once after combat usable plan load")
     parser.add_argument("--startup-stealth", action=argparse.BooleanOptionalAction, default=False, help="cast a validated stealth spell at startup when explicitly enabled")
     parser.add_argument(

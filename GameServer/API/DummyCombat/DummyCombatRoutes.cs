@@ -728,6 +728,25 @@ namespace DOL.GS.API.DummyCombat
                 case eSpellType.StyleTaunt:
                     tags.Add("taunt");
                     break;
+                case eSpellType.Charm:
+                    tags.Add("charm");
+                    tags.Add("crowdControl");
+                    break;
+                case eSpellType.Bladeturn:
+                    tags.Add("bladeturn");
+                    tags.Add("buff");
+                    break;
+                case eSpellType.Lifedrain:
+                case eSpellType.LifedrainNoVariance:
+                case eSpellType.PetLifedrain:
+                case eSpellType.OmniLifedrain:
+                    tags.Add("lifedrain");
+                    tags.Add("damage");
+                    break;
+                case eSpellType.Disease:
+                    tags.Add("disease");
+                    tags.Add("debuff");
+                    break;
                 case eSpellType.SpeedEnhancement:
                 case eSpellType.SpeedOfTheRealm:
                 case eSpellType.SpeedWrap:
@@ -747,12 +766,25 @@ namespace DOL.GS.API.DummyCombat
 
             if (spellTypeKey.Contains("debuff") || spellTypeKey.Contains("disease") || spellTypeKey.Contains("nearsight"))
                 tags.Add("debuff");
+            if (spellTypeKey.Contains("disease"))
+                tags.Add("disease");
             if (spellTypeKey.Contains("damageovertime") || spellTypeKey.Contains("dot") || spellTypeKey.Contains("bleeding"))
                 tags.Add("dot");
             if (spellTypeKey.Contains("root") || spellTypeKey.Contains("snare"))
                 tags.Add("root");
             if (spellTypeKey.Contains("amnesia") || spellTypeKey.Contains("interrupt"))
                 tags.Add("interrupt");
+            if (spellTypeKey.Contains("summon") || spellTypeKey.Contains("pet"))
+            {
+                tags.Add("pet");
+                tags.Add("summon");
+            }
+            if (spellTypeKey.Contains("charm"))
+                tags.Add("charm");
+            if (spellTypeKey.Contains("bladeturn"))
+                tags.Add("bladeturn");
+            if (spellTypeKey.Contains("lifedrain"))
+                tags.Add("lifedrain");
 
             return tags.OrderBy(tag => tag, StringComparer.Ordinal).ToArray();
         }

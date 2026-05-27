@@ -17369,6 +17369,108 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertIn("speed_song", plan.speed_song_spells[0].capability_tags)
         self.assertIn("stealth", plan.stealth_spells[0].capability_tags)
 
+    def test_combat_plan_uses_capability_tags_for_pet_charm_and_bladeturn(self):
+        payload = {
+            "skills": [],
+            "spellLines": [
+                {
+                    "entries": [
+                        {
+                            "kind": "Spell",
+                            "lineIndex": 1,
+                            "spellLevel": 7,
+                            "name": "Call Ally",
+                            "level": 7,
+                            "spell": {
+                                "spellType": "UnknownUtility",
+                                "capabilityTags": ["pet", "summon"],
+                                "isHealing": False,
+                                "isBuff": False,
+                                "isHarmful": False,
+                                "damage": 0,
+                            },
+                        },
+                        {
+                            "kind": "Spell",
+                            "lineIndex": 2,
+                            "spellLevel": 18,
+                            "name": "Compelling Song",
+                            "level": 18,
+                            "spell": {
+                                "spellType": "UnknownControl",
+                                "capabilityTags": ["charm"],
+                                "isHealing": False,
+                                "isBuff": False,
+                                "isHarmful": True,
+                                "damage": 0,
+                                "range": 1500,
+                            },
+                        },
+                        {
+                            "kind": "Spell",
+                            "lineIndex": 3,
+                            "spellLevel": 20,
+                            "name": "Blade Barrier",
+                            "level": 20,
+                            "spell": {
+                                "spellType": "UnknownBuff",
+                                "capabilityTags": ["bladeturn"],
+                                "isHealing": False,
+                                "isBuff": True,
+                                "isHarmful": False,
+                                "damage": 0,
+                            },
+                        },
+                        {
+                            "kind": "Spell",
+                            "lineIndex": 4,
+                            "spellLevel": 22,
+                            "name": "Draining Touch",
+                            "level": 22,
+                            "spell": {
+                                "spellType": "UnknownDamage",
+                                "capabilityTags": ["lifedrain"],
+                                "isHealing": False,
+                                "isBuff": False,
+                                "isHarmful": True,
+                                "damage": 35,
+                                "range": 1500,
+                            },
+                        },
+                        {
+                            "kind": "Spell",
+                            "lineIndex": 5,
+                            "spellLevel": 24,
+                            "name": "Wasting Breath",
+                            "level": 24,
+                            "spell": {
+                                "spellType": "UnknownDebuff",
+                                "capabilityTags": ["disease"],
+                                "isHealing": False,
+                                "isBuff": False,
+                                "isHarmful": True,
+                                "damage": 0,
+                                "range": 1500,
+                            },
+                        },
+                    ]
+                }
+            ],
+        }
+
+        plan = behavior.parse_combat_usable_plan(payload)
+
+        self.assertEqual([spell.name for spell in plan.summon_spells], ["Call Ally"])
+        self.assertEqual([spell.name for spell in plan.crowd_control_spells], ["Compelling Song"])
+        self.assertEqual([spell.name for spell in plan.buff_spells], ["Blade Barrier"])
+        self.assertEqual([spell.name for spell in plan.attack_spells], ["Draining Touch"])
+        self.assertEqual([spell.name for spell in plan.debuff_spells], ["Wasting Breath"])
+        self.assertIn("pet", plan.summon_spells[0].capability_tags)
+        self.assertIn("charm", plan.crowd_control_spells[0].capability_tags)
+        self.assertIn("bladeturn", plan.buff_spells[0].capability_tags)
+        self.assertIn("lifedrain", plan.attack_spells[0].capability_tags)
+        self.assertIn("disease", plan.debuff_spells[0].capability_tags)
+
     def test_precombat_self_buffs_cast_speed_song_and_optional_stealth(self):
         client = FakeCombatClient()
         args = SimpleNamespace(
@@ -17396,6 +17498,36 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(client.spells, [(5, 4), (12, 5), (20, 6)])
         self.assertEqual(action_counts["precombat_speed_song_spell"], 1)
         self.assertEqual(action_counts["precombat_stealth_spell"], 1)
+        self.assertEqual(action_counts["precombat_self_buff_spell"], 1)
+
+    def test_precombat_self_buffs_cast_summon_before_other_startup_buffs(self):
+        client = FakeCombatClient()
+        args = SimpleNamespace(
+            startup_self_buff_count=1,
+            startup_self_buff_delay=0.0,
+            startup_summon_pet=True,
+            startup_speed_song=True,
+            startup_stealth=False,
+        )
+        plan = behavior.CombatUsablePlan(
+            summon_spells=[
+                behavior.UsableSpellRef(line_index=1, spell_level=7, name="Call Ally", level=7),
+            ],
+            speed_song_spells=[
+                behavior.UsableSpellRef(line_index=2, spell_level=5, name="Traveler's Chant", level=5),
+            ],
+            buff_spells=[
+                behavior.UsableSpellRef(line_index=3, spell_level=20, name="Blade Barrier", level=20),
+            ],
+        )
+        action_counts: dict[str, int] = {}
+
+        actions = behavior.cast_precombat_self_buffs(client, args, plan, action_counts)
+
+        self.assertEqual(actions, 3)
+        self.assertEqual(client.spells, [(7, 1), (5, 2), (20, 3)])
+        self.assertEqual(action_counts["precombat_summon_spell"], 1)
+        self.assertEqual(action_counts["precombat_speed_song_spell"], 1)
         self.assertEqual(action_counts["precombat_self_buff_spell"], 1)
 
     def test_combat_plan_classifies_cure_debuff_taunt_and_area_damage_spells(self):

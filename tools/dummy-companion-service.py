@@ -639,6 +639,11 @@ def build_behavior_command(
         "4",
         "--combat-usable-api-retry-delay",
         "0.4",
+        "--startup-summon-pet",
+        "--startup-self-buff-count",
+        "2",
+        "--startup-self-buff-delay",
+        "0.8",
         "--action-rotation",
         role_to_rotation_for_row(role, companion_row),
         *(
