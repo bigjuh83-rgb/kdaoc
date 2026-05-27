@@ -109,6 +109,25 @@ class OperationalScriptTests(unittest.TestCase):
         self.assertEqual(summary["damage_done"], 250)
         self.assertEqual(summary["incoming_counterattack"], 1)
 
+    def test_rvr_smoke_summary_counts_friendly_target_rejected_event(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            case_dir = Path(temp_dir)
+            encounters = case_dir / "encounters"
+            encounters.mkdir()
+            (encounters / "dummy.jsonl").write_text(
+                "\n".join(
+                    [
+                        json.dumps({"event": "friendly_target_rejected"}),
+                        json.dumps({"event": "friendly_target_feedback"}),
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            summary = run_dummy_rvr_smoke.summarize_case(case_dir)
+
+        self.assertEqual(summary["friendly_rejections"], 2)
+
     def test_midgard_hammer_spec_prefers_hammer_starter_weapon(self) -> None:
         rows = [
             {"TemplateID": "axe", "Item_Type": "10", "Object_Type": "13"},

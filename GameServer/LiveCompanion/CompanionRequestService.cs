@@ -15,6 +15,7 @@ namespace DOL.GS.LiveCompanion
         public const string Leaving = "leaving";
         public const string Failed = "failed";
         public const string Completed = "completed";
+        public const string Canceled = "canceled";
 
         private static readonly HashSet<string> ValidStatuses = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -24,7 +25,8 @@ namespace DOL.GS.LiveCompanion
             Active,
             Leaving,
             Failed,
-            Completed
+            Completed,
+            Canceled
         };
 
         public static bool IsValid(string status) => ValidStatuses.Contains(Normalize(status));
@@ -84,6 +86,11 @@ namespace DOL.GS.LiveCompanion
         public string CreatedBy { get; set; } = string.Empty;
         public string AssignedCompanionName { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
+        public string CloseReason { get; set; } = string.Empty;
+        public long SuppressedRealmPoints { get; set; }
+        public long SuppressedBountyPoints { get; set; }
+        public long SuppressedMoney { get; set; }
+        public long SuppressedKillCredits { get; set; }
     }
 
     public sealed class CompanionRequestResult
@@ -127,7 +134,14 @@ namespace DOL.GS.LiveCompanion
         private static readonly HashSet<string> TerminalStatuses = new(StringComparer.OrdinalIgnoreCase)
         {
             CompanionRequestStatus.Failed,
-            CompanionRequestStatus.Completed
+            CompanionRequestStatus.Completed,
+            CompanionRequestStatus.Canceled
+        };
+        private static readonly HashSet<string> CancelableStatuses = new(StringComparer.OrdinalIgnoreCase)
+        {
+            CompanionRequestStatus.Queued,
+            CompanionRequestStatus.Spawning,
+            CompanionRequestStatus.Grouping
         };
 
         public static CompanionRequestResult CreateRequest(
@@ -197,19 +211,79 @@ namespace DOL.GS.LiveCompanion
                 };
             }
 
-            CompanionRequest request = BuildRequest(
-                requester,
-                "leave",
-                source,
-                "control",
-                createdBy,
-                CurrentGroupSize(requester),
-                VacantSlots(requester));
-            request.Status = CompanionRequestStatus.Leaving;
-            request.Message = "동료 해산 요청이 접수되었습니다.";
-            AddRequest(request);
+            lock (Sync)
+            {
+                CancelPendingRequestsLocked(
+                    requester.Client?.Account?.Name ?? string.Empty,
+                    requester.Name,
+                    "leave_requested",
+                    "동료 해산으로 대기 중인 요청을 취소했습니다.");
 
-            return new CompanionRequestResult { Success = true, Message = request.Message, Request = request };
+                CompanionRequest request = BuildRequest(
+                    requester,
+                    "leave",
+                    source,
+                    "control",
+                    createdBy,
+                    CurrentGroupSize(requester),
+                    VacantSlots(requester));
+                request.Status = CompanionRequestStatus.Leaving;
+                request.Message = "동료 해산 요청이 접수되었습니다.";
+                AddRequestLocked(request);
+
+                return new CompanionRequestResult { Success = true, Message = request.Message, Request = Clone(request) };
+            }
+        }
+
+        public static CompanionRequestResult CancelPendingRequests(GamePlayer requester, string source, string createdBy)
+        {
+            if (requester == null)
+            {
+                return new CompanionRequestResult
+                {
+                    Success = false,
+                    Message = "요청할 플레이어를 찾을 수 없습니다."
+                };
+            }
+
+            lock (Sync)
+            {
+                int canceled = CancelPendingRequestsLocked(
+                    requester.Client?.Account?.Name ?? string.Empty,
+                    requester.Name,
+                    "request_canceled",
+                    "동료 요청이 취소되었습니다.");
+
+                CompanionRequest latest = LatestForPlayerLocked(requester.Name);
+                string message = canceled > 0
+                    ? $"대기 중인 동료 요청 {canceled}건을 취소했습니다."
+                    : "취소할 대기 중인 동료 요청이 없습니다.";
+                return new CompanionRequestResult
+                {
+                    Success = canceled > 0,
+                    Message = message,
+                    Request = latest == null ? null : Clone(latest)
+                };
+            }
+        }
+
+        public static CompanionRequest CancelRequest(string id, string reason, string message)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                return null;
+
+            lock (Sync)
+            {
+                CompanionRequest request = Requests.FirstOrDefault(row => row.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+                if (request == null || !CancelableStatuses.Contains(request.Status))
+                    return null;
+
+                request.Status = CompanionRequestStatus.Canceled;
+                request.CloseReason = string.IsNullOrWhiteSpace(reason) ? "request_canceled" : reason.Trim();
+                request.Message = string.IsNullOrWhiteSpace(message) ? "동료 요청이 취소되었습니다." : message.Trim();
+                request.UpdatedUtc = DateTime.UtcNow;
+                return Clone(request);
+            }
         }
 
         public static IList<CompanionRequest> Snapshot(string status = "", int limit = 100)
@@ -287,10 +361,7 @@ namespace DOL.GS.LiveCompanion
             lock (Sync)
             {
                 ExpireStaleOpenRequestsLocked(DateTime.UtcNow);
-                CompanionRequest request = Requests
-                    .Where(row => row.RequesterName.Equals(playerName, StringComparison.OrdinalIgnoreCase))
-                    .OrderByDescending(row => row.CreatedUtc)
-                    .FirstOrDefault();
+                CompanionRequest request = LatestForPlayerLocked(playerName);
                 return request == null ? null : Clone(request);
             }
         }
@@ -316,6 +387,45 @@ namespace DOL.GS.LiveCompanion
         public static bool IsActiveCompanion(string companionName)
         {
             return !string.IsNullOrWhiteSpace(ActiveCompanionRoleFor(companionName));
+        }
+
+        public static bool RecordSuppressedReward(string companionName, string rewardType, long amount)
+        {
+            if (string.IsNullOrWhiteSpace(companionName))
+                return false;
+
+            lock (Sync)
+            {
+                ExpireStaleOpenRequestsLocked(DateTime.UtcNow);
+                CompanionRequest request = Requests
+                    .Where(row => row.Status.Equals(CompanionRequestStatus.Active, StringComparison.OrdinalIgnoreCase))
+                    .Where(row => row.AssignedCompanionName.Equals(companionName, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(row => row.UpdatedUtc)
+                    .FirstOrDefault();
+                if (request == null)
+                    return false;
+
+                long clampedAmount = Math.Max(0, amount);
+                switch ((rewardType ?? string.Empty).Trim().ToLowerInvariant())
+                {
+                    case "realm_points":
+                        request.SuppressedRealmPoints += clampedAmount;
+                        break;
+                    case "bounty_points":
+                        request.SuppressedBountyPoints += clampedAmount;
+                        break;
+                    case "money":
+                        request.SuppressedMoney += clampedAmount;
+                        break;
+                    case "rvr_kill_credit":
+                        request.SuppressedKillCredits += clampedAmount;
+                        break;
+                }
+
+                request.Message = $"동료 보상 제한 기록: {rewardType} {clampedAmount}";
+                request.UpdatedUtc = DateTime.UtcNow;
+                return true;
+            }
         }
 
         public static CompanionRequest ClaimNextQueued()
@@ -444,6 +554,38 @@ namespace DOL.GS.LiveCompanion
                   request.RequesterName.Equals(requesterName, StringComparison.OrdinalIgnoreCase))));
         }
 
+        private static int CancelPendingRequestsLocked(string requesterAccount, string requesterName, string reason, string message)
+        {
+            int canceled = 0;
+            DateTime now = DateTime.UtcNow;
+            foreach (CompanionRequest request in Requests)
+            {
+                if (!CancelableStatuses.Contains(request.Status))
+                    continue;
+                bool accountMatches = !string.IsNullOrWhiteSpace(requesterAccount) &&
+                                      request.RequesterAccount.Equals(requesterAccount, StringComparison.OrdinalIgnoreCase);
+                bool nameMatches = !string.IsNullOrWhiteSpace(requesterName) &&
+                                   request.RequesterName.Equals(requesterName, StringComparison.OrdinalIgnoreCase);
+                if (!accountMatches && !nameMatches)
+                    continue;
+
+                request.Status = CompanionRequestStatus.Canceled;
+                request.CloseReason = reason;
+                request.Message = message;
+                request.UpdatedUtc = now;
+                canceled++;
+            }
+            return canceled;
+        }
+
+        private static CompanionRequest LatestForPlayerLocked(string playerName)
+        {
+            return Requests
+                .Where(row => row.RequesterName.Equals(playerName, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(row => row.UpdatedUtc == default ? row.CreatedUtc : row.UpdatedUtc)
+                .FirstOrDefault();
+        }
+
         private static bool CanTransitionStatus(string currentStatus, string nextStatus)
         {
             string current = CompanionRequestStatus.Normalize(currentStatus);
@@ -498,7 +640,12 @@ namespace DOL.GS.LiveCompanion
                 VacantSlots = request.VacantSlots,
                 CreatedBy = request.CreatedBy,
                 AssignedCompanionName = request.AssignedCompanionName,
-                Message = request.Message
+                Message = request.Message,
+                CloseReason = request.CloseReason,
+                SuppressedRealmPoints = request.SuppressedRealmPoints,
+                SuppressedBountyPoints = request.SuppressedBountyPoints,
+                SuppressedMoney = request.SuppressedMoney,
+                SuppressedKillCredits = request.SuppressedKillCredits
             };
         }
     }

@@ -53,7 +53,7 @@ namespace DOL.GS.Scripts
             SendReply(
                 player,
                 "동료 고용관입니다. 필요한 도움을 고르세요.\n" +
-                "[파티 동료] [치유 동료] [방어 동료] [공격 동료] [동료 상태] [동료 해산]");
+                "[파티 동료] [치유 동료] [방어 동료] [공격 동료] [동료 상태] [동료 요청 취소] [동료 해산]");
             return true;
         }
 
@@ -93,6 +93,12 @@ namespace DOL.GS.Scripts
                 case "status":
                     ShowStatus(player);
                     return true;
+                case "동료 요청 취소":
+                case "요청 취소":
+                case "취소":
+                case "cancel":
+                    CancelPending(player);
+                    return true;
                 case "동료 해산":
                 case "해산":
                 case "leave":
@@ -124,6 +130,16 @@ namespace DOL.GS.Scripts
                 Name);
 
             SendReply(player, result.Success ? "동료에게 귀환을 전했습니다." : "돌려보낼 동료 요청을 만들 수 없습니다.");
+        }
+
+        private void CancelPending(GamePlayer player)
+        {
+            CompanionRequestResult result = CompanionRequestService.CancelPendingRequests(
+                player,
+                "hire_npc",
+                Name);
+
+            SendReply(player, result.Message);
         }
 
         private void ShowStatus(GamePlayer player)

@@ -7,6 +7,7 @@ using DOL.Database;
 using DOL.Events;
 using DOL.GS.Housing;
 using DOL.GS.Keeps;
+using DOL.GS.LiveCompanion;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerProperties;
 using DOL.Language;
@@ -1656,6 +1657,11 @@ namespace DOL.GS.ServerRules
                     // We only care about players in range.
                     if (pair.Key is not GamePlayer player || player.ObjectState is not GameObject.eObjectState.Active || !player.IsWithinRadius(killedPlayer, WorldMgr.MAX_EXPFORKILL_DISTANCE))
                         continue;
+                    if (CompanionRequestService.IsActiveCompanion(player.Name))
+                    {
+                        CompanionRequestService.RecordSuppressedReward(player.Name, "rvr_kill_credit", 1);
+                        continue;
+                    }
 
                     ProcessDamage(player, pair.Value, player, mostDamagingPlayer, playerCountAndDamage);
 

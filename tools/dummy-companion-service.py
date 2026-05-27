@@ -233,6 +233,32 @@ def choose_release_request_for_real_player_join(
     return str(candidate.get("request_id") or "") if candidate else ""
 
 
+def choose_release_request_for_missing_group_companion(
+    active: dict[str, ActiveCompanion],
+    requester_key: str,
+    requester_state: dict[str, Any] | None,
+) -> str:
+    if not isinstance(requester_state, dict):
+        return ""
+    if not has_group_member_snapshot(requester_state):
+        return ""
+    members = group_member_rows(requester_state)
+    if not snapshot_contains_requester(members, requester_key):
+        return ""
+    if not members:
+        candidate = choose_release_candidate(active_companion_member_rows(active, requester_key))
+        return str(candidate.get("request_id") or "") if candidate else ""
+
+    group_keys: set[str] = set()
+    for member in members:
+        group_keys.update(member_identity_keys(member))
+    for row in active_companion_member_rows(active, requester_key):
+        if member_identity_keys(row) & group_keys:
+            continue
+        return str(row.get("request_id") or "")
+    return ""
+
+
 def is_leave_request(request: dict[str, Any]) -> bool:
     role = str(request_value(request, "requestedRole", "RequestedRole", default="")).strip().lower()
     status = str(request_value(request, "status", "Status", default="")).strip().lower()
@@ -673,6 +699,16 @@ def group_member_rows(state: dict[str, Any] | None) -> list[dict[str, Any]]:
     return [member for member in raw_members if isinstance(member, dict)]
 
 
+def has_group_member_snapshot(state: dict[str, Any] | None) -> bool:
+    return isinstance(state, dict) and any(key in state for key in ("groupMembers", "group_members", "partyMembers"))
+
+
+def snapshot_contains_requester(members: list[dict[str, Any]], requester_key: str) -> bool:
+    if not members or not requester_key:
+        return True
+    return any(requester_key in member_identity_keys(member) for member in members)
+
+
 def party_dead_count(state: dict[str, Any] | None) -> int:
     return sum(1 for member in group_member_rows(state) if bool(member.get("isDead")) or bool(member.get("dead")))
 
@@ -1041,6 +1077,20 @@ def attach_companion_to_request(args: argparse.Namespace, request_id: str, accou
     return True, ""
 
 
+def current_request_status(args: argparse.Namespace, request_id: str) -> str:
+    try:
+        payload = api_request(args, "GET", f"/api/dummy/companions/requests/{urllib.parse.quote(request_id)}")
+    except Exception:
+        return ""
+    if not isinstance(payload, dict):
+        return ""
+    return str(request_value(payload, "status", "Status", default="")).strip().lower()
+
+
+def request_status_is_externally_closed(status: str) -> bool:
+    return str(status or "").strip().lower() in {"canceled", "cancelled", "failed", "completed"}
+
+
 def detach_companion_from_request(args: argparse.Namespace, request_id: str, account: str) -> tuple[bool, str]:
     try:
         payload = api_request(
@@ -1194,6 +1244,24 @@ def release_companion_for_real_player(
     release_counts[requester_key] = int(release_counts.get(requester_key, 0) or 0) + 1
 
 
+def release_companion_for_party_loss(
+    args: argparse.Namespace,
+    active: dict[str, ActiveCompanion],
+    request_id: str,
+) -> None:
+    companion = active.get(request_id)
+    if companion is None:
+        return
+
+    detached, message = detach_companion_from_request(args, request_id, companion.account)
+    stop_companion(companion.process)
+    status_message = "party disbanded or companion removed; companion released"
+    if not detached and message:
+        status_message = f"{status_message}; detach warning: {message}"
+    update_request_status(args, request_id, "completed", status_message, companion.account)
+    active.pop(request_id, None)
+
+
 def refresh_active_companion_lease(
     args: argparse.Namespace,
     request_id: str,
@@ -1221,9 +1289,16 @@ def poll_active(
         process = companion.process
         return_code = process.poll()
         if return_code is None:
+            if request_status_is_externally_closed(current_request_status(args, request_id)):
+                detach_companion_from_request(args, request_id, companion.account)
+                stop_companion(process)
+                finished.append(request_id)
+                continue
+
             requester_key = request_requester_key(companion.request)
             requester_state = requester_states.setdefault(requester_key, fetch_requester_state(args, companion.request))
             if requester_state is None:
+                detach_companion_from_request(args, request_id, companion.account)
                 stop_companion(process)
                 update_request_status(args, request_id, "completed", "requester offline; companion stopped")
                 finished.append(request_id)
@@ -1248,6 +1323,11 @@ def poll_active(
         active.pop(request_id, None)
 
     for requester_key, requester_state in requester_states.items():
+        request_id = choose_release_request_for_missing_group_companion(active, requester_key, requester_state)
+        if request_id:
+            release_companion_for_party_loss(args, active, request_id)
+            continue
+
         request_id = choose_release_request_for_real_player_join(active, requester_key, requester_state, release_counts)
         if request_id:
             release_companion_for_real_player(args, active, request_id, release_counts, requester_key)

@@ -3636,6 +3636,14 @@ namespace DOL.GS
             return CompanionRequestService.IsActiveCompanion(Name);
         }
 
+        private bool SuppressLiveCompanionReward(string rewardType, long amount)
+        {
+            bool suppress = SuppressLiveCompanionReward();
+            if (suppress)
+                CompanionRequestService.RecordSuppressedReward(Name, rewardType, amount);
+            return suppress;
+        }
+
         /// <summary>
         /// Called when this player gains realm points
         /// </summary>
@@ -3668,7 +3676,7 @@ namespace DOL.GS
         {
             if (!GainRP)
                 return;
-            if (SuppressLiveCompanionReward())
+            if (SuppressLiveCompanionReward("realm_points", amount))
                 return;
 
             if (modify)
@@ -3815,7 +3823,7 @@ namespace DOL.GS
         /// <param name="sendMessage">Wether to send a message like "You have gained N bountypoints"</param>
         public virtual void GainBountyPoints(long amount, bool modify, bool sendMessage, bool notify)
         {
-            if (SuppressLiveCompanionReward())
+            if (SuppressLiveCompanionReward("bounty_points", amount))
                 return;
 
             if (modify)
@@ -6543,7 +6551,7 @@ namespace DOL.GS
 
         public virtual void AddServerIssuedMoney(long money, string messageFormat, eChatType ct, eChatLoc cl)
         {
-            if (SuppressLiveCompanionReward())
+            if (SuppressLiveCompanionReward("money", money))
                 return;
 
             AddMoney(money, messageFormat, ct, cl);

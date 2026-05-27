@@ -274,7 +274,7 @@ def summarize_case(case_dir: Path) -> dict[str, int]:
             counts["attack_on"] = max(counts["attack_on"], int(row.get("attack_on_count", 0) or 0))
             counts["skills"] = max(counts["skills"], int(row.get("skills_count", 0) or 0))
             counts["damage_done"] = max(counts["damage_done"], int(row.get("damage_done", 0) or 0))
-            if event == "friendly_target_feedback":
+            if event in {"friendly_target_feedback", "friendly_target_rejected"}:
                 counts["friendly_rejections"] += 1
             if event == "hostile_party_member_target_rejected":
                 counts["party_member_target_rejections"] += 1

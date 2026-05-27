@@ -211,6 +211,24 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         self.assertEqual(request_id, "")
 
+    def test_missing_group_companion_is_released_when_party_disbands(self) -> None:
+        service = load_service()
+        active = {
+            "dps-req": service.ActiveCompanion(
+                {"id": "dps-req", "requesterAccount": "leader1", "requestedRole": "dps"},
+                mock.Mock(),
+                account="albdps",
+            )
+        }
+
+        request_id = service.choose_release_request_for_missing_group_companion(
+            active,
+            "account:leader1",
+            {"player": {"name": "Leader"}, "groupMembers": []},
+        )
+
+        self.assertEqual(request_id, "dps-req")
+
     def test_companion_account_selection_excludes_requester_account(self) -> None:
         service = load_service()
         request = {
@@ -1123,6 +1141,61 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(active, {})
         self.assertEqual(release_counts["account:leader1"], 1)
 
+    def test_poll_active_stops_companion_when_group_membership_is_lost(self) -> None:
+        service = load_service()
+        args = mock.Mock()
+        process = mock.Mock()
+        process.poll.return_value = None
+        active = {
+            "req1": service.ActiveCompanion(
+                {"id": "req1", "requesterAccount": "leader1", "requestedRole": "healer"},
+                process,
+                account="albhealer",
+            )
+        }
+        state = {
+            "player": {"name": "Leader", "isAlive": True, "isDead": False},
+            "groupMembers": [{"name": "Leader", "account": "leader1"}],
+        }
+
+        with mock.patch.object(service, "fetch_requester_state", return_value=state), mock.patch.object(
+            service, "detach_companion_from_request", return_value=(True, "")
+        ) as detach, mock.patch.object(service, "stop_companion") as stop_companion, mock.patch.object(
+            service, "update_request_status"
+        ) as update_status:
+            service.poll_active(args, active, release_counts={}, dialogue_state={})
+
+        detach.assert_called_once_with(args, "req1", "albhealer")
+        stop_companion.assert_called_once_with(process)
+        update_status.assert_called_once_with(args, "req1", "completed", "party disbanded or companion removed; companion released", "albhealer")
+        self.assertEqual(active, {})
+
+    def test_poll_active_stops_companion_when_request_is_canceled_externally(self) -> None:
+        service = load_service()
+        args = mock.Mock()
+        process = mock.Mock()
+        process.poll.return_value = None
+        active = {
+            "req1": service.ActiveCompanion(
+                {"id": "req1", "requesterAccount": "leader1", "requestedRole": "dps"},
+                process,
+                account="albdps",
+            )
+        }
+
+        with mock.patch.object(service, "current_request_status", return_value="canceled"), mock.patch.object(
+            service, "fetch_requester_state"
+        ) as fetch_state, mock.patch.object(service, "detach_companion_from_request", return_value=(True, "")) as detach, mock.patch.object(
+            service, "stop_companion"
+        ) as stop_companion, mock.patch.object(service, "update_request_status") as update_status:
+            service.poll_active(args, active, release_counts={}, dialogue_state={})
+
+        fetch_state.assert_not_called()
+        detach.assert_called_once_with(args, "req1", "albdps")
+        stop_companion.assert_called_once_with(process)
+        update_status.assert_not_called()
+        self.assertEqual(active, {})
+
 
 class DummyCompanionServerSurfaceTests(unittest.TestCase):
     def test_gm_dummy_command_is_gm_only_and_not_player_command(self) -> None:
@@ -1145,8 +1218,10 @@ class DummyCompanionServerSurfaceTests(unittest.TestCase):
         self.assertIn("방어 동료", source)
         self.assertIn("공격 동료", source)
         self.assertIn("동료 상태", source)
+        self.assertIn("동료 요청 취소", source)
         self.assertIn("동료 해산", source)
         self.assertIn("ShowStatus", source)
+        self.assertIn("CancelPending", source)
         self.assertIn("LatestForPlayer(player.Name)", source)
         self.assertIn("new HubPlacement(1, eRealm.Albion", source)
         self.assertIn("new HubPlacement(100, eRealm.Midgard", source)
@@ -1265,6 +1340,22 @@ class DummyCompanionServerSurfaceTests(unittest.TestCase):
         self.assertIn("CanTransitionStatus", source)
         self.assertIn("if (!CanTransitionStatus(request.Status, normalizedStatus))", source)
 
+    def test_companion_request_cancel_api_releases_pending_slot(self) -> None:
+        service_source = (ROOT / "GameServer" / "LiveCompanion" / "CompanionRequestService.cs").read_text(
+            encoding="utf-8"
+        )
+        routes_source = (ROOT / "GameServer" / "API" / "DummyCompanion" / "DummyCompanionRoutes.cs").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("public const string Canceled", service_source)
+        self.assertIn("CancelPendingRequests", service_source)
+        self.assertIn("request.Status = CompanionRequestStatus.Canceled", service_source)
+        self.assertIn("CancelableStatuses", service_source)
+        self.assertIn("SlotHoldingStatuses.Contains(request.Status)", service_source)
+        self.assertIn('/api/dummy/companions/requests/{id}/cancel', routes_source)
+        self.assertIn("CompanionRequestService.CancelRequest", routes_source)
+
     def test_active_companion_lease_is_refreshed_and_expires_when_service_stops(self) -> None:
         server_source = (ROOT / "GameServer" / "LiveCompanion" / "CompanionRequestService.cs").read_text(encoding="utf-8")
         service_source = (ROOT / "tools" / "dummy-companion-service.py").read_text(encoding="utf-8")
@@ -1280,10 +1371,33 @@ class DummyCompanionServerSurfaceTests(unittest.TestCase):
 
         self.assertIn("using DOL.GS.LiveCompanion;", source)
         self.assertIn("SuppressLiveCompanionReward", source)
+        self.assertIn("RecordSuppressedReward", source)
         self.assertIn("CompanionRequestService.IsActiveCompanion(Name)", source)
         self.assertLess(source.index("SuppressLiveCompanionReward"), source.index("RealmPoints += amount;"))
         self.assertLess(source.index("SuppressLiveCompanionReward"), source.index("BountyPoints += amount;"))
         self.assertLess(source.index("SuppressLiveCompanionReward"), source.index("AddMoney(money, messageFormat, ct, cl);"))
+
+    def test_active_companion_rvr_kill_credit_is_suppressed_before_award_stats(self) -> None:
+        source = (ROOT / "GameServer" / "serverrules" / "AbstractServerRules.cs").read_text(encoding="utf-8")
+
+        self.assertIn("using DOL.GS.LiveCompanion;", source)
+        self.assertIn("CompanionRequestService.IsActiveCompanion(player.Name)", source)
+        self.assertIn("UpdateKillStatsOnPlayerKill", source)
+        gate_index = source.index("CompanionRequestService.IsActiveCompanion(player.Name)")
+        self.assertLess(
+            gate_index,
+            source.index("ProcessDamage(player, pair.Value, player, mostDamagingPlayer, playerCountAndDamage);", gate_index),
+        )
+
+    def test_combat_usable_marks_target_relation_for_companion_policy(self) -> None:
+        source = (ROOT / "GameServer" / "API" / "DummyCombat" / "DummyCombatRoutes.cs").read_text(encoding="utf-8")
+
+        self.assertIn("targetCanAttack = TargetCanAttack(player, player.TargetObject)", source)
+        self.assertIn("targetRelation = TargetRelationFor(player, player.TargetObject)", source)
+        self.assertIn("GameServer.ServerRules.IsAllowedToAttack(player, livingTarget, true)", source)
+        self.assertIn('return "party";', source)
+        self.assertIn('return "same_realm";', source)
+        self.assertIn('return TargetCanAttack(player, target) ? "enemy" : "blocked";', source)
 
 
 if __name__ == "__main__":

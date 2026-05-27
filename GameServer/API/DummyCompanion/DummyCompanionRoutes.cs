@@ -102,6 +102,20 @@ namespace DOL.GS.API.DummyCompanion
                 return request == null ? Results.NotFound(new { error = "RequestNotFoundOrInvalidStatus", id }) : Results.Ok(request);
             });
 
+            api.MapPost("/api/dummy/companions/requests/{id}/cancel", (HttpContext context, string id) =>
+            {
+                IResult denied = RequireMutationAllowed(context);
+                if (denied != null)
+                    return denied;
+
+                CompanionRequest request = CompanionRequestService.CancelRequest(
+                    id,
+                    Query(context, "reason", "request_canceled"),
+                    Query(context, "message", "동료 요청이 취소되었습니다."));
+
+                return request == null ? Results.NotFound(new { error = "RequestNotFoundOrNotCancelable", id }) : Results.Ok(request);
+            });
+
             api.MapPost("/api/dummy/companions/requests/{id}/attach", (HttpContext context, string id) =>
             {
                 IResult denied = RequireMutationAllowed(context);

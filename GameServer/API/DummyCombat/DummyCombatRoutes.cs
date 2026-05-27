@@ -419,8 +419,38 @@ namespace DOL.GS.API.DummyCombat
                 companionRole,
                 targetObjectId = player.TargetObject?.ObjectID ?? 0,
                 targetName = player.TargetObject?.Name ?? string.Empty,
-                targetType = player.TargetObject?.GetType().FullName ?? string.Empty
+                targetType = player.TargetObject?.GetType().FullName ?? string.Empty,
+                targetCanAttack = TargetCanAttack(player, player.TargetObject),
+                targetRelation = TargetRelationFor(player, player.TargetObject)
             };
+        }
+
+        private static bool TargetCanAttack(GamePlayer player, GameObject target)
+        {
+            if (target is not GameLiving livingTarget)
+                return false;
+
+            return GameServer.ServerRules.IsAllowedToAttack(player, livingTarget, true);
+        }
+
+        private static string TargetRelationFor(GamePlayer player, GameObject target)
+        {
+            if (target == null)
+                return "none";
+            if (ReferenceEquals(player, target))
+                return "self";
+
+            if (target is GamePlayer targetPlayer)
+            {
+                if (player.Group != null && player.Group.IsInTheGroup(targetPlayer))
+                    return "party";
+                if (targetPlayer.Realm == player.Realm)
+                    return "same_realm";
+
+                return TargetCanAttack(player, target) ? "enemy" : "blocked";
+            }
+
+            return TargetCanAttack(player, target) ? "hostile" : "neutral";
         }
 
         private static object ToNpcCombatDto(GameNPC npc, int nearbyNpcRadius = 0, int nearbyNpcCount = -1, int? queryX = null, int? queryY = null)
@@ -489,7 +519,9 @@ namespace DOL.GS.API.DummyCombat
                 isNearsighted = player.effectListComponent.ContainsEffectForEffectType(DOL.GS.eEffect.Nearsight),
                 targetObjectId = player.TargetObject?.ObjectID ?? 0,
                 targetName = player.TargetObject?.Name ?? string.Empty,
-                targetType = player.TargetObject?.GetType().FullName ?? string.Empty
+                targetType = player.TargetObject?.GetType().FullName ?? string.Empty,
+                targetCanAttack = TargetCanAttack(player, player.TargetObject),
+                targetRelation = TargetRelationFor(player, player.TargetObject)
             };
         }
 
