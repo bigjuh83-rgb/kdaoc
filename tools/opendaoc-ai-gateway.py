@@ -16,6 +16,8 @@ ALLOWED_CHANNELS = {"party", "say", "none"}
 ALLOWED_HINTS = {"none", "heal_priority", "resurrect_priority", "follow", "wait", "assist", "flee", "cc_add"}
 ALLOWED_URGENCY = {"low", "normal", "high"}
 DEFAULT_FAKE_USAGE = {"prompt_tokens": 30, "completion_tokens": 12, "total_tokens": 42}
+ALLOWED_MODEL_ALIASES = {"small-dialogue"}
+ALLOWED_PROVIDER_MODELS = {"fake/small-dialogue", "openai/gpt-4.1-nano", "gpt-4.1-nano"}
 
 litellm_completion: Callable[..., Any] | None = None
 
@@ -104,8 +106,15 @@ class ModelPolicy:
         self.config = config
 
     def is_allowed(self, model_alias: str, feature: str) -> bool:
-        alias = self.config.model_aliases.get(str(model_alias or ""))
-        return alias is not None and feature in alias.features and feature in VALID_FEATURES
+        alias_name = str(model_alias or "")
+        alias = self.config.model_aliases.get(alias_name)
+        return (
+            alias is not None
+            and alias_name in ALLOWED_MODEL_ALIASES
+            and alias.provider_model in ALLOWED_PROVIDER_MODELS
+            and feature in alias.features
+            and feature in VALID_FEATURES
+        )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -119,6 +128,14 @@ class ValidationResult:
 class ProviderResult:
     response: dict[str, Any]
     usage: dict[str, int]
+
+
+@dataclasses.dataclass(frozen=True)
+class BudgetReservation:
+    feature: str
+    model_alias: str
+    estimated_tokens: int
+    date: str
 
 
 def bool_value(value: Any) -> bool:
@@ -217,8 +234,12 @@ class TokenLedger:
         self.now = time.time() if now is None else now
         self.path = Path(config.ledger_file)
         self.usage_path = Path(config.usage_log)
-        self.date = time.strftime("%Y-%m-%d", time.localtime(self.now))
+        self.date = time.strftime("%Y-%m-%d", time.gmtime(self.now))
+        self.lock_path = Path(f"{config.ledger_file}.lock")
         self.data = self._load()
+
+    def _lock(self) -> "FileLock":
+        return FileLock(self.lock_path)
 
     def _load(self) -> dict[str, Any]:
         if not self.path.exists():
@@ -239,6 +260,34 @@ class TokenLedger:
     def spent_feature(self, feature: str) -> int:
         return int(self.data.get("features", {}).get(feature, 0) or 0)
 
+    def _write(self) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = self.path.with_suffix(self.path.suffix + ".tmp")
+        temp_path.write_text(json.dumps(self.data, ensure_ascii=False, sort_keys=True), encoding="utf-8")
+        temp_path.replace(self.path)
+
+    def _append_usage(self, entry: dict[str, Any]) -> None:
+        self.usage_path.parent.mkdir(parents=True, exist_ok=True)
+        with self.usage_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n")
+
+    def _apply_token_delta(self, feature: str, delta: int) -> None:
+        self.data["total_tokens"] = max(0, self.spent_total() + delta)
+        features = self.data.setdefault("features", {})
+        features[feature] = max(0, self.spent_feature(feature) + delta)
+
+    def normalize_usage(self, usage: dict[str, Any], fallback_total: int = 0) -> dict[str, int]:
+        normalized = {
+            "prompt_tokens": int(usage.get("prompt_tokens") or 0),
+            "completion_tokens": int(usage.get("completion_tokens") or 0),
+            "total_tokens": int(usage.get("total_tokens") or 0),
+        }
+        if normalized["total_tokens"] <= 0:
+            normalized["total_tokens"] = normalized["prompt_tokens"] + normalized["completion_tokens"]
+        if normalized["total_tokens"] <= 0:
+            normalized["total_tokens"] = fallback_total
+        return normalized
+
     def can_spend(self, feature: str, estimated_tokens: int) -> tuple[bool, str]:
         if self.spent_total() + estimated_tokens > self.config.daily_token_cap:
             return False, "daily_token_cap_exceeded"
@@ -247,31 +296,129 @@ class TokenLedger:
             return False, "feature_token_cap_exceeded"
         return True, ""
 
-    def record(self, feature: str, model_alias: str, usage: dict[str, Any]) -> dict[str, int]:
-        normalized = {
-            "prompt_tokens": int(usage.get("prompt_tokens") or 0),
-            "completion_tokens": int(usage.get("completion_tokens") or 0),
-            "total_tokens": int(usage.get("total_tokens") or 0),
-        }
-        if normalized["total_tokens"] <= 0:
-            normalized["total_tokens"] = normalized["prompt_tokens"] + normalized["completion_tokens"]
-        self.data["total_tokens"] = self.spent_total() + normalized["total_tokens"]
-        features = self.data.setdefault("features", {})
-        features[feature] = self.spent_feature(feature) + normalized["total_tokens"]
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(self.data, ensure_ascii=False, sort_keys=True), encoding="utf-8")
-        self.usage_path.parent.mkdir(parents=True, exist_ok=True)
-        entry = {
-            "ts": int(self.now),
-            "date": self.date,
-            "feature": feature,
-            "model_alias": model_alias,
-            "usage": normalized,
-            "total_after": self.data["total_tokens"],
-        }
-        with self.usage_path.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n")
+    def provider_disabled_reason(self) -> str:
+        with self._lock():
+            self.data = self._load()
+            disabled = self.data.get("provider_disabled") if isinstance(self.data, dict) else None
+            if isinstance(disabled, dict) and disabled.get("date") == self.date:
+                return str(disabled.get("reason") or "provider_disabled")
+            return ""
+
+    def disable_provider_for_current_window(self, reason: str) -> None:
+        with self._lock():
+            self.data = self._load()
+            self.data["provider_disabled"] = {"date": self.date, "reason": reason}
+            self._write()
+            self._append_usage(
+                {
+                    "ts": int(self.now),
+                    "date": self.date,
+                    "event": "provider_disabled",
+                    "reason": reason,
+                }
+            )
+
+    def reserve(self, feature: str, model_alias: str, estimated_tokens: int) -> tuple[BudgetReservation | None, str]:
+        with self._lock():
+            self.data = self._load()
+            allowed, reason = self.can_spend(feature, estimated_tokens)
+            if not allowed:
+                return None, reason
+            self._apply_token_delta(feature, estimated_tokens)
+            self._write()
+            reservation = BudgetReservation(feature, model_alias, estimated_tokens, self.date)
+            self._append_usage(
+                {
+                    "ts": int(self.now),
+                    "date": self.date,
+                    "event": "reserved",
+                    "feature": feature,
+                    "model_alias": model_alias,
+                    "estimated_tokens": estimated_tokens,
+                    "total_after": self.data["total_tokens"],
+                }
+            )
+            return reservation, ""
+
+    def cancel_reservation(self, reservation: BudgetReservation, reason: str) -> None:
+        with self._lock():
+            self.data = self._load()
+            if reservation.date == self.date:
+                self._apply_token_delta(reservation.feature, -reservation.estimated_tokens)
+                self._write()
+            self._append_usage(
+                {
+                    "ts": int(self.now),
+                    "date": self.date,
+                    "event": "reservation_cancelled",
+                    "feature": reservation.feature,
+                    "model_alias": reservation.model_alias,
+                    "reason": reason,
+                    "total_after": self.data["total_tokens"],
+                }
+            )
+
+    def finalize_reservation(self, reservation: BudgetReservation, usage: dict[str, Any]) -> dict[str, int]:
+        normalized = self.normalize_usage(usage, fallback_total=reservation.estimated_tokens)
+        with self._lock():
+            self.data = self._load()
+            if reservation.date == self.date:
+                self._apply_token_delta(reservation.feature, normalized["total_tokens"] - reservation.estimated_tokens)
+                self._write()
+            self._append_usage(
+                {
+                    "ts": int(self.now),
+                    "date": self.date,
+                    "event": "finalized",
+                    "feature": reservation.feature,
+                    "model_alias": reservation.model_alias,
+                    "usage": normalized,
+                    "total_after": self.data["total_tokens"],
+                }
+            )
         return normalized
+
+    def record(self, feature: str, model_alias: str, usage: dict[str, Any]) -> dict[str, int]:
+        reservation, reason = self.reserve(feature, model_alias, self.normalize_usage(usage)["total_tokens"])
+        if reservation is None:
+            raise RuntimeError(reason)
+        return self.finalize_reservation(reservation, usage)
+
+
+class FileLock:
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self.handle: Any = None
+
+    def __enter__(self) -> "FileLock":
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.handle = self.path.open("a+b")
+        if os.name == "posix":
+            import fcntl
+
+            fcntl.flock(self.handle.fileno(), fcntl.LOCK_EX)
+        elif os.name == "nt":  # pragma: no cover - Windows-only fallback
+            import msvcrt
+
+            if self.handle.tell() == 0:
+                self.handle.write(b"\0")
+                self.handle.flush()
+            msvcrt.locking(self.handle.fileno(), msvcrt.LK_LOCK, 1)
+        return self
+
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        if self.handle is None:
+            return
+        if os.name == "posix":
+            import fcntl
+
+            fcntl.flock(self.handle.fileno(), fcntl.LOCK_UN)
+        elif os.name == "nt":  # pragma: no cover - Windows-only fallback
+            import msvcrt
+
+            self.handle.seek(0)
+            msvcrt.locking(self.handle.fileno(), msvcrt.LK_UNLCK, 1)
+        self.handle.close()
 
 
 class FakeDialogueProvider:
@@ -395,17 +542,24 @@ def generate_dialogue(
     sanitized = sanitize_companion_payload(payload) if feature == "companion_dialogue" else dict(payload)
     messages = build_companion_messages(sanitized)
     ledger = TokenLedger(config)
-    allowed, reason = ledger.can_spend(feature, estimate_tokens(messages, alias.max_output_tokens))
-    if not allowed:
+    disabled_reason = ledger.provider_disabled_reason() if config.provider != "fake" else ""
+    if disabled_reason:
+        return {"allowed": False, "blocked_reason": f"provider_disabled:{disabled_reason}"}
+    reservation, reason = ledger.reserve(feature, model_alias, estimate_tokens(messages, alias.max_output_tokens))
+    if reservation is None:
         return {"allowed": False, "blocked_reason": reason}
     try:
         provider_result = provider_for(config).generate(messages, alias)
-    except RuntimeError as exc:
-        return {"allowed": False, "blocked_reason": str(exc)}
+    except Exception as exc:
+        ledger.cancel_reservation(reservation, exc.__class__.__name__)
+        reason = f"provider_error:{exc.__class__.__name__}"
+        if config.provider != "fake":
+            ledger.disable_provider_for_current_window(reason)
+        return {"allowed": False, "blocked_reason": reason}
+    usage = ledger.finalize_reservation(reservation, provider_result.usage)
     validation = validate_companion_response(provider_result.response)
     if not validation.allowed:
-        return {"allowed": False, "blocked_reason": validation.reason}
-    usage = ledger.record(feature, model_alias, provider_result.usage)
+        return {"allowed": False, "blocked_reason": validation.reason, "usage": usage}
     return {
         "allowed": True,
         "response": validation.value,

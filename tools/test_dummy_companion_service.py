@@ -58,6 +58,13 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         self.assertEqual(args.max_runtime, 30)
 
+    def test_service_accepts_api_password_for_state_changing_routes(self) -> None:
+        service = load_service()
+
+        args = service.build_parser().parse_args(["--api-password", "secret"])
+
+        self.assertEqual(args.api_password, "secret")
+
     def test_live_companion_roles_map_to_safe_rotations(self) -> None:
         service = load_service()
 
@@ -390,6 +397,20 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertIn('"say_channel": "party"', payload)
         self.assertIn('"intent_hint": "heal_priority"', payload)
 
+    def test_api_request_adds_password_to_post_only(self) -> None:
+        service = load_service()
+        args = mock.Mock(api_url="http://127.0.0.1:5000", api_timeout=1.0, api_password="secret")
+        response = mock.Mock()
+        response.__enter__ = mock.Mock(return_value=response)
+        response.__exit__ = mock.Mock(return_value=None)
+        response.read.return_value = b'{"ok": true}'
+
+        with mock.patch.object(service.urllib.request, "urlopen", return_value=response) as urlopen:
+            service.api_request(args, "POST", "/api/dummy/companions/requests/claim")
+
+        request = urlopen.call_args.args[0]
+        self.assertIn("password=secret", request.full_url)
+
     def test_call_ai_gateway_timeout_returns_blocked_result(self) -> None:
         service = load_service()
         args = mock.Mock(repo_root=str(ROOT), ai_gateway_timeout=0.1, ai_gateway_config="", ai_gateway_model_alias="small-dialogue")
@@ -679,6 +700,9 @@ class DummyCompanionServerSurfaceTests(unittest.TestCase):
         self.assertIn('/api/dummy/companions/requests/{id}/attach', routes)
         self.assertIn('/api/dummy/companions/requests/{id}/detach', routes)
         self.assertIn("AttachCompanion", routes)
+        self.assertIn("RequireMutationAllowed", routes)
+        self.assertIn("VerifyAPIPassword", routes)
+        self.assertIn("IPAddress.IsLoopback", routes)
         self.assertIn("CompanionRequestStatus.Leaving", routes + (ROOT / "GameServer" / "LiveCompanion" / "CompanionRequestService.cs").read_text(encoding="utf-8"))
         self.assertIn("UpdateStatus", routes)
         self.assertIn("sessionId", combat_routes)

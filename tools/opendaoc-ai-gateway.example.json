@@ -1,5 +1,5 @@
 {
-  "provider": "litellm",
+  "provider": "fake",
   "daily_token_cap": 500000,
   "warning_token_cap": 400000,
   "feature_token_caps": {
@@ -10,7 +10,7 @@
   },
   "model_aliases": {
     "small-dialogue": {
-      "provider_model": "openai/gpt-4.1-nano",
+      "provider_model": "fake/small-dialogue",
       "features": ["companion_dialogue"],
       "max_output_tokens": 80,
       "temperature": 0.7

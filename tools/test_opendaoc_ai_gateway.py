@@ -41,6 +41,27 @@ class OpenDaocAiGatewayConfigTests(unittest.TestCase):
         self.assertFalse(policy.is_allowed("openai/gpt-4.1", "companion_dialogue"))
         self.assertFalse(policy.is_allowed("small-dialogue", "event_news"))
 
+    def test_model_policy_rejects_configured_large_model_for_small_alias(self) -> None:
+        gateway = load_gateway()
+        config = gateway.GatewayConfig(
+            provider="litellm",
+            daily_token_cap=500_000,
+            warning_token_cap=400_000,
+            feature_token_caps={"companion_dialogue": 350_000},
+            model_aliases={
+                "small-dialogue": gateway.ModelAlias(
+                    provider_model="openai/gpt-4.1",
+                    features=("companion_dialogue",),
+                    max_output_tokens=80,
+                    temperature=0.4,
+                )
+            },
+            usage_log="usage.jsonl",
+            ledger_file="ledger.json",
+        )
+
+        self.assertFalse(gateway.ModelPolicy(config).is_allowed("small-dialogue", "companion_dialogue"))
+
     def test_config_file_overrides_caps_without_real_keys(self) -> None:
         gateway = load_gateway()
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -195,6 +216,29 @@ class OpenDaocAiGatewayGenerationTests(unittest.TestCase):
         self.assertFalse(result["allowed"])
         self.assertEqual(result["blocked_reason"], "daily_token_cap_exceeded")
 
+    def test_token_ledger_uses_utc_budget_date(self) -> None:
+        gateway = load_gateway()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config = self.config_with_paths(temp_dir)
+            ledger = gateway.TokenLedger(config, now=86399)
+
+        self.assertEqual(ledger.date, "1970-01-01")
+
+    def test_token_ledger_reservations_reload_under_lock(self) -> None:
+        gateway = load_gateway()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config = self.config_with_paths(temp_dir, daily_token_cap=100)
+            first = gateway.TokenLedger(config)
+            second = gateway.TokenLedger(config)
+
+            reservation, reason = first.reserve("companion_dialogue", "small-dialogue", 80)
+            blocked, blocked_reason = second.reserve("companion_dialogue", "small-dialogue", 30)
+
+        self.assertIsNotNone(reservation)
+        self.assertEqual(reason, "")
+        self.assertIsNone(blocked)
+        self.assertEqual(blocked_reason, "daily_token_cap_exceeded")
+
     def test_fake_provider_generates_valid_heal_response_and_usage_log(self) -> None:
         gateway = load_gateway()
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -262,6 +306,39 @@ class OpenDaocAiGatewayGenerationTests(unittest.TestCase):
         self.assertEqual(calls[0]["model"], "openai/gpt-4.1-nano")
         self.assertEqual(calls[0]["max_tokens"], 60)
         self.assertEqual(result["usage"]["total_tokens"], 15)
+
+    def test_litellm_provider_exception_fails_closed_and_disables_current_window(self) -> None:
+        gateway = load_gateway()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config = self.config_with_paths(
+                temp_dir,
+                provider="litellm",
+                model_aliases={
+                    "small-dialogue": gateway.ModelAlias(
+                        provider_model="openai/gpt-4.1-nano",
+                        features=("companion_dialogue",),
+                        max_output_tokens=60,
+                        temperature=0.4,
+                    )
+                },
+            )
+
+            def failing_completion(**kwargs):
+                raise ValueError("quota details are intentionally not exposed")
+
+            with mock.patch.object(gateway, "litellm_completion", failing_completion):
+                first = gateway.generate_dialogue({"event_type": "player_requested_heal"}, config)
+            with mock.patch.object(gateway, "litellm_completion") as completion:
+                second = gateway.generate_dialogue({"event_type": "player_requested_heal"}, config)
+
+            ledger = json.loads(Path(config.ledger_file).read_text(encoding="utf-8"))
+
+        self.assertFalse(first["allowed"])
+        self.assertEqual(first["blocked_reason"], "provider_error:ValueError")
+        self.assertFalse(second["allowed"])
+        self.assertEqual(second["blocked_reason"], "provider_disabled:provider_error:ValueError")
+        completion.assert_not_called()
+        self.assertEqual(ledger["total_tokens"], 0)
 
 
 class OpenDaocAiGatewayCliTests(unittest.TestCase):

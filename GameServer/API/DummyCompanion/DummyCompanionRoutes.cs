@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Net;
 using DOL.Events;
 using DOL.GS.LiveCompanion;
 using DOL.GS.ServerProperties;
@@ -35,6 +36,10 @@ namespace DOL.GS.API.DummyCompanion
 
             api.MapPost("/api/dummy/companions/requests", (HttpContext context) =>
             {
+                IResult denied = RequireMutationAllowed(context);
+                if (denied != null)
+                    return denied;
+
                 string playerName = Query(context, "player");
                 GamePlayer player = FindPlayer(playerName);
                 if (player == null)
@@ -50,14 +55,22 @@ namespace DOL.GS.API.DummyCompanion
                 return result.Success ? Results.Ok(result) : Results.BadRequest(result);
             });
 
-            api.MapPost("/api/dummy/companions/requests/claim", () =>
+            api.MapPost("/api/dummy/companions/requests/claim", (HttpContext context) =>
             {
+                IResult denied = RequireMutationAllowed(context);
+                if (denied != null)
+                    return denied;
+
                 CompanionRequest request = CompanionRequestService.ClaimNextQueued();
                 return request == null ? Results.NotFound(new { error = "NoQueuedRequest" }) : Results.Ok(request);
             });
 
             api.MapPost("/api/dummy/companions/requests/{id}/status", (HttpContext context, string id) =>
             {
+                IResult denied = RequireMutationAllowed(context);
+                if (denied != null)
+                    return denied;
+
                 CompanionRequest request = CompanionRequestService.UpdateStatus(
                     id,
                     Query(context, "status"),
@@ -69,6 +82,10 @@ namespace DOL.GS.API.DummyCompanion
 
             api.MapPost("/api/dummy/companions/requests/{id}/attach", (HttpContext context, string id) =>
             {
+                IResult denied = RequireMutationAllowed(context);
+                if (denied != null)
+                    return denied;
+
                 CompanionRequest request = CompanionRequestService.Get(id);
                 if (request == null)
                     return Results.NotFound(new { error = "RequestNotFound", id });
@@ -99,6 +116,10 @@ namespace DOL.GS.API.DummyCompanion
 
             api.MapPost("/api/dummy/companions/requests/{id}/detach", (HttpContext context, string id) =>
             {
+                IResult denied = RequireMutationAllowed(context);
+                if (denied != null)
+                    return denied;
+
                 CompanionRequest request = CompanionRequestService.Get(id);
                 if (request == null)
                     return Results.NotFound(new { error = "RequestNotFound", id });
@@ -121,6 +142,10 @@ namespace DOL.GS.API.DummyCompanion
 
             api.MapPost("/api/dummy/companions/requests/leave", (HttpContext context) =>
             {
+                IResult denied = RequireMutationAllowed(context);
+                if (denied != null)
+                    return denied;
+
                 string playerName = Query(context, "player");
                 GamePlayer player = FindPlayer(playerName);
                 if (player == null)
@@ -133,6 +158,24 @@ namespace DOL.GS.API.DummyCompanion
 
                 return result.Success ? Results.Ok(result) : Results.BadRequest(result);
             });
+        }
+
+        private static IResult RequireMutationAllowed(HttpContext context)
+        {
+            string configuredPassword = Properties.API_PASSWORD;
+            if (!string.IsNullOrWhiteSpace(configuredPassword))
+            {
+                if (new PasswordVerification().VerifyAPIPassword(Query(context, "password")))
+                    return null;
+
+                return Results.Problem("No bread for you!", null, 401);
+            }
+
+            IPAddress remoteAddress = context.Connection.RemoteIpAddress;
+            if (remoteAddress == null || IPAddress.IsLoopback(remoteAddress))
+                return null;
+
+            return Results.Problem("No bread for you!", null, 401);
         }
 
         private static string Query(HttpContext context, string key, string defaultValue = "")

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import subprocess
 import sys
 import time
@@ -593,7 +594,11 @@ def encode_query(query: dict[str, Any]) -> str:
 def api_request(args: argparse.Namespace, method: str, path: str, query: dict[str, Any] | None = None) -> Any:
     base = str(args.api_url).rstrip("/")
     suffix = path if path.startswith("/") else f"/{path}"
-    query_string = encode_query(query or {})
+    request_query = dict(query or {})
+    api_password = arg_string(args, "api_password", "")
+    if method.upper() != "GET" and api_password and "password" not in request_query:
+        request_query["password"] = api_password
+    query_string = encode_query(request_query)
     url = f"{base}{suffix}" + (f"?{query_string}" if query_string else "")
     request = urllib.request.Request(url, method=method)
     try:
@@ -1006,6 +1011,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run live companion behavior clients from server companion requests.")
     parser.add_argument("--api-url", default="http://127.0.0.1:5000")
     parser.add_argument("--api-timeout", type=float, default=2.0)
+    parser.add_argument("--api-password", default=os.environ.get("OPENDAOC_API_PASSWORD", ""))
     parser.add_argument("--accounts-csv", default=str(Path(__file__).resolve().with_name("dummy-live-companions.csv")))
     parser.add_argument("--run-dir", default="test-output/live-companions")
     parser.add_argument("--repo-root", default=str(Path(__file__).resolve().parents[1]))
