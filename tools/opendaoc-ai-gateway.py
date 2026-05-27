@@ -79,7 +79,7 @@ class GatewayConfig:
         config_path = Path(path)
         if not config_path.exists():
             return base
-        raw = json.loads(config_path.read_text(encoding="utf-8"))
+        raw = json.loads(config_path.read_text(encoding="utf-8-sig"))
         aliases = {
             name: ModelAlias.from_dict(row)
             for name, row in raw.get("model_aliases", {}).items()
@@ -430,10 +430,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 def load_payload(args: argparse.Namespace) -> dict[str, Any]:
     if args.payload_file:
-        return json.loads(Path(args.payload_file).read_text(encoding="utf-8"))
+        return json.loads(Path(args.payload_file).read_text(encoding="utf-8-sig"))
     if args.payload_json:
         return json.loads(args.payload_json)
-    return json.loads(sys.stdin.read())
+    return json.loads(sys.stdin.read().lstrip("\ufeff"))
 
 
 def main(argv: list[str] | None = None) -> int:

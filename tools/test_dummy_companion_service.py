@@ -390,6 +390,20 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertIn('"say_channel": "party"', payload)
         self.assertIn('"intent_hint": "heal_priority"', payload)
 
+    def test_call_ai_gateway_timeout_returns_blocked_result(self) -> None:
+        service = load_service()
+        args = mock.Mock(repo_root=str(ROOT), ai_gateway_timeout=0.1, ai_gateway_config="", ai_gateway_model_alias="small-dialogue")
+
+        with mock.patch.object(
+            service.subprocess,
+            "run",
+            side_effect=service.subprocess.TimeoutExpired(cmd=["gateway"], timeout=0.1),
+        ):
+            result = service.call_ai_gateway(args, {"event_type": "player_requested_heal"})
+
+        self.assertFalse(result["allowed"])
+        self.assertEqual(result["blocked_reason"], "gateway_timeout")
+
     def test_handle_request_rejects_dead_requester_before_spawning(self) -> None:
         service = load_service()
         args = mock.Mock(accounts_csv="accounts.csv", dry_run=False)

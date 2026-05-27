@@ -713,13 +713,18 @@ def call_ai_gateway(args: argparse.Namespace, payload: dict[str, Any]) -> dict[s
         "--payload-json",
         json.dumps(payload, ensure_ascii=False),
     ]
-    completed = subprocess.run(
-        command,
-        cwd=arg_string(args, "repo_root", str(ROOT)),
-        text=True,
-        capture_output=True,
-        timeout=arg_float(args, "ai_gateway_timeout", 5.0),
-    )
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=arg_string(args, "repo_root", str(ROOT)),
+            text=True,
+            capture_output=True,
+            timeout=arg_float(args, "ai_gateway_timeout", 5.0),
+        )
+    except subprocess.TimeoutExpired:
+        return {"allowed": False, "blocked_reason": "gateway_timeout"}
+    except OSError:
+        return {"allowed": False, "blocked_reason": "gateway_process_failed"}
     if completed.returncode != 0:
         return {"allowed": False, "blocked_reason": "gateway_process_failed"}
     try:

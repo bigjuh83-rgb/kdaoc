@@ -72,6 +72,16 @@ class OpenDaocAiGatewayConfigTests(unittest.TestCase):
         self.assertEqual(config.model_aliases["small-dialogue"].provider_model, "openai/gpt-4.1-nano")
         self.assertEqual(config.model_aliases["small-dialogue"].max_output_tokens, 64)
 
+    def test_config_file_accepts_windows_utf8_bom(self) -> None:
+        gateway = load_gateway()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "gateway.json"
+            path.write_text('{"provider": "litellm"}', encoding="utf-8-sig")
+
+            config = gateway.GatewayConfig.load(path)
+
+        self.assertEqual(config.provider, "litellm")
+
 
 class OpenDaocAiGatewayValidationTests(unittest.TestCase):
     def test_sanitize_companion_context_removes_private_fields(self) -> None:
@@ -292,6 +302,33 @@ class OpenDaocAiGatewayCliTests(unittest.TestCase):
         row = json.loads(completed.stdout)
         self.assertTrue(row["allowed"])
         self.assertEqual(row["provider"], "fake")
+
+    def test_generate_cli_accepts_payload_file_with_windows_utf8_bom(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            payload_path = Path(temp_dir) / "payload.json"
+            payload_path.write_text(
+                json.dumps({"event_type": "player_requested_heal", "role": "healer"}),
+                encoding="utf-8-sig",
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(GATEWAY_PATH),
+                    "generate",
+                    "--feature",
+                    "companion_dialogue",
+                    "--payload-file",
+                    str(payload_path),
+                ],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        row = json.loads(completed.stdout)
+        self.assertTrue(row["allowed"])
 
     def test_generate_cli_blocks_disallowed_model_alias(self) -> None:
         completed = subprocess.run(
