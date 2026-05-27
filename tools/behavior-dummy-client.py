@@ -250,7 +250,7 @@ def format_live_control_speech_command(channel: object, text: str, *, max_messag
     if not message:
         return ""
 
-    normalized_channel = "say" if channel is None else str(channel or "").strip().lower()
+    normalized_channel = str(channel or "").strip().lower()
     if normalized_channel == "say":
         return format_say_command(message, max_message_length=max_message_length)
     if normalized_channel == "party":

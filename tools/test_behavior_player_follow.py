@@ -143,6 +143,19 @@ class AccountCsvTests(unittest.TestCase):
         self.assertEqual(command, "/say hello")
         self.assertEqual(behavior.format_say_command(""), "/say ...")
 
+    def test_format_live_control_speech_command_supports_party_and_say_channels(self) -> None:
+        self.assertEqual(behavior.format_live_control_speech_command("party", "hello party"), "/g hello party")
+        self.assertEqual(behavior.format_live_control_speech_command("say", "hello there"), "/say hello there")
+
+    def test_format_live_control_speech_command_ignores_none_unknown_and_blank_channels(self) -> None:
+        self.assertEqual(behavior.format_live_control_speech_command("none", "quiet"), "")
+        self.assertEqual(behavior.format_live_control_speech_command("guild", "quiet"), "")
+        self.assertEqual(behavior.format_live_control_speech_command("", "quiet"), "")
+        self.assertEqual(behavior.format_live_control_speech_command(None, "quiet"), "")
+
+    def test_format_live_control_speech_command_preserves_old_say_channel_behavior(self) -> None:
+        self.assertEqual(behavior.format_live_control_speech_command("say", "old payload"), "/say old payload")
+
     def test_live_control_overrides_runtime_tuning_fields(self) -> None:
         args = SimpleNamespace(
             max_target_distance=1500.0,
