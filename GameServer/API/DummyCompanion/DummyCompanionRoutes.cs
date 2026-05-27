@@ -46,6 +46,16 @@ namespace DOL.GS.API.DummyCompanion
                     : Results.Ok(request);
             });
 
+            api.MapGet("/api/dummy/companions/summary", (HttpContext context) =>
+            {
+                IResult denied = RequireMutationAllowed(context);
+                if (denied != null)
+                    return denied;
+
+                int limit = ParseInt(Query(context, "limit"), 20);
+                return Results.Ok(CompanionRequestService.Summary(limit));
+            });
+
             api.MapPost("/api/dummy/companions/requests", (HttpContext context) =>
             {
                 IResult denied = RequireMutationAllowed(context);
@@ -135,7 +145,7 @@ namespace DOL.GS.API.DummyCompanion
                 CompanionRequest updated = CompanionRequestService.UpdateStatus(
                     id,
                     CompanionRequestStatus.Active,
-                    $"동료 {companion.Name} 이(가) 파티에 합류했습니다.",
+                    $"{companion.Name} 동료가 파티에 합류했습니다.",
                     companion.Name);
 
                 return Results.Ok(updated);

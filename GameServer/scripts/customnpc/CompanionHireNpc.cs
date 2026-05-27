@@ -53,7 +53,7 @@ namespace DOL.GS.Scripts
             SendReply(
                 player,
                 "동료 고용관입니다. 필요한 도움을 고르세요.\n" +
-                "[파티 동료] [치유 동료] [방어 동료] [공격 동료] [동료 해산]");
+                "[파티 동료] [치유 동료] [방어 동료] [공격 동료] [동료 상태] [동료 해산]");
             return true;
         }
 
@@ -88,6 +88,11 @@ namespace DOL.GS.Scripts
                 case "dps":
                     QueueCompanion(player, CompanionRequestRoles.Dps);
                     return true;
+                case "동료 상태":
+                case "상태":
+                case "status":
+                    ShowStatus(player);
+                    return true;
                 case "동료 해산":
                 case "해산":
                 case "leave":
@@ -119,6 +124,23 @@ namespace DOL.GS.Scripts
                 Name);
 
             SendReply(player, result.Success ? "동료에게 귀환을 전했습니다." : "돌려보낼 동료 요청을 만들 수 없습니다.");
+        }
+
+        private void ShowStatus(GamePlayer player)
+        {
+            CompanionRequest request = CompanionRequestService.LatestForPlayer(player.Name);
+            if (request == null)
+            {
+                SendReply(player, "아직 접수된 동료 요청이 없습니다.");
+                return;
+            }
+
+            string companion = string.IsNullOrWhiteSpace(request.AssignedCompanionName)
+                ? "배정 대기"
+                : request.AssignedCompanionName;
+            SendReply(
+                player,
+                $"최근 동료 요청: 상태={request.Status}, 역할={request.RequestedRole}, 동료={companion}\n{request.Message}");
         }
 
         private static void SendReply(GamePlayer player, string message)

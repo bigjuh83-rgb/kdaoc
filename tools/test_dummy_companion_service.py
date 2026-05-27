@@ -8,6 +8,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 SERVICE_PATH = ROOT / "tools" / "dummy-companion-service.py"
 SMOKE_PATH = ROOT / "tools" / "run-live-companion-party-smoke.py"
+SUMMARY_PATH = ROOT / "tools" / "summarize-live-companion-requests.py"
 LIVE_COMPANION_POOL_PATH = ROOT / "tools" / "dummy-live-companions.csv"
 
 
@@ -21,6 +22,14 @@ def load_service():
 
 def load_smoke():
     spec = importlib.util.spec_from_file_location("run_live_companion_party_smoke", SMOKE_PATH)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_summary():
+    spec = importlib.util.spec_from_file_location("summarize_live_companion_requests", SUMMARY_PATH)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -78,6 +87,30 @@ class DummyCompanionServiceTests(unittest.TestCase):
         args = smoke.build_parser().parse_args(["--dry-run"])
 
         self.assertEqual(args.api_url, "http://localhost:5000")
+
+    def test_live_companion_summary_tool_formats_operational_overview(self) -> None:
+        summary = load_summary()
+
+        lines = summary.format_summary(
+            {
+                "total": 4,
+                "statusCounts": {"queued": 1, "active": 2, "completed": 1},
+                "openCount": 3,
+                "activeCount": 2,
+                "active": [
+                    {
+                        "requesterName": "Leader",
+                        "assignedCompanionName": "Arel",
+                        "requestedRole": "healer",
+                        "message": "live companion heartbeat",
+                    }
+                ],
+            }
+        )
+
+        self.assertIn("total=4 open=3 active=2", lines[0])
+        self.assertTrue(any("queued=1" in line and "active=2" in line for line in lines))
+        self.assertTrue(any("Leader <- Arel role=healer" in line for line in lines))
 
     def test_live_companion_roles_map_to_safe_rotations(self) -> None:
         service = load_service()
@@ -1111,11 +1144,49 @@ class DummyCompanionServerSurfaceTests(unittest.TestCase):
         self.assertIn("치유 동료", source)
         self.assertIn("방어 동료", source)
         self.assertIn("공격 동료", source)
+        self.assertIn("동료 상태", source)
         self.assertIn("동료 해산", source)
+        self.assertIn("ShowStatus", source)
+        self.assertIn("LatestForPlayer(player.Name)", source)
         self.assertIn("new HubPlacement(1, eRealm.Albion", source)
         self.assertIn("new HubPlacement(100, eRealm.Midgard", source)
         self.assertIn("new HubPlacement(200, eRealm.Hibernia", source)
         self.assertNotIn("더미", source)
+        self.assertNotIn("����", source)
+        self.assertNotIn("?숇즺", source)
+        self.assertNotIn("媛숈", source)
+
+    def test_companion_server_messages_are_readable_korean(self) -> None:
+        service_source = (ROOT / "GameServer" / "LiveCompanion" / "CompanionRequestService.cs").read_text(
+            encoding="utf-8"
+        )
+        routes_source = (ROOT / "GameServer" / "API" / "DummyCompanion" / "DummyCompanionRoutes.cs").read_text(
+            encoding="utf-8"
+        )
+        combined = service_source + routes_source
+
+        self.assertIn("동료 요청이 접수되었습니다.", combined)
+        self.assertIn("동료 해산 요청이 접수되었습니다.", combined)
+        self.assertIn("동료 서비스가 요청을 처리 중입니다.", combined)
+        self.assertIn("동료가 파티에 합류했습니다.", combined)
+        self.assertNotIn("����", combined)
+        self.assertNotIn("?숇즺", combined)
+        self.assertNotIn("?붿껌", combined)
+        self.assertNotIn("媛숈", combined)
+
+    def test_companion_request_summary_api_is_registered(self) -> None:
+        service_source = (ROOT / "GameServer" / "LiveCompanion" / "CompanionRequestService.cs").read_text(
+            encoding="utf-8"
+        )
+        routes_source = (ROOT / "GameServer" / "API" / "DummyCompanion" / "DummyCompanionRoutes.cs").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("CompanionRequestSummary", service_source)
+        self.assertIn("StatusCounts", service_source)
+        self.assertIn("ActiveRequests", service_source)
+        self.assertIn("CompanionRequestService.Summary", routes_source)
+        self.assertIn('/api/dummy/companions/summary', routes_source)
 
     def test_companion_request_api_is_registered(self) -> None:
         routes = (ROOT / "GameServer" / "API" / "DummyCompanion" / "DummyCompanionRoutes.cs").read_text(

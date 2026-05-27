@@ -93,6 +93,17 @@ namespace DOL.GS.LiveCompanion
         public CompanionRequest Request { get; set; }
     }
 
+    public sealed class CompanionRequestSummary
+    {
+        public int Total { get; set; }
+        public int OpenCount { get; set; }
+        public int ActiveCount { get; set; }
+        public IDictionary<string, int> StatusCounts { get; set; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        public IList<CompanionRequest> ActiveRequests { get; set; } = new List<CompanionRequest>();
+        public IList<CompanionRequest> OpenRequests { get; set; } = new List<CompanionRequest>();
+        public IList<CompanionRequest> RecentRequests { get; set; } = new List<CompanionRequest>();
+    }
+
     public static class CompanionRequestService
     {
         private const int MaxStoredRequests = 500;
@@ -215,6 +226,43 @@ namespace DOL.GS.LiveCompanion
                     rows = rows.Where(request => request.Status.Equals(normalizedStatus, StringComparison.OrdinalIgnoreCase));
 
                 return rows.Take(Math.Clamp(limit, 1, MaxStoredRequests)).Select(Clone).ToList();
+            }
+        }
+
+        public static CompanionRequestSummary Summary(int limit = 20)
+        {
+            int boundedLimit = Math.Clamp(limit, 1, MaxStoredRequests);
+            lock (Sync)
+            {
+                ExpireStaleOpenRequestsLocked(DateTime.UtcNow);
+                List<CompanionRequest> ordered = Requests
+                    .OrderByDescending(request => request.UpdatedUtc == default ? request.CreatedUtc : request.UpdatedUtc)
+                    .ToList();
+                List<CompanionRequest> active = ordered
+                    .Where(request => request.Status.Equals(CompanionRequestStatus.Active, StringComparison.OrdinalIgnoreCase))
+                    .Take(boundedLimit)
+                    .Select(Clone)
+                    .ToList();
+                List<CompanionRequest> open = ordered
+                    .Where(request => SlotHoldingStatuses.Contains(request.Status) ||
+                                      request.Status.Equals(CompanionRequestStatus.Leaving, StringComparison.OrdinalIgnoreCase))
+                    .Take(boundedLimit)
+                    .Select(Clone)
+                    .ToList();
+
+                return new CompanionRequestSummary
+                {
+                    Total = Requests.Count,
+                    OpenCount = ordered.Count(request => SlotHoldingStatuses.Contains(request.Status) ||
+                                                         request.Status.Equals(CompanionRequestStatus.Leaving, StringComparison.OrdinalIgnoreCase)),
+                    ActiveCount = ordered.Count(request => request.Status.Equals(CompanionRequestStatus.Active, StringComparison.OrdinalIgnoreCase)),
+                    StatusCounts = ordered
+                        .GroupBy(request => CompanionRequestStatus.Normalize(request.Status), StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase),
+                    ActiveRequests = active,
+                    OpenRequests = open,
+                    RecentRequests = ordered.Take(boundedLimit).Select(Clone).ToList()
+                };
             }
         }
 
