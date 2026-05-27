@@ -647,6 +647,50 @@ class DummyCompanionServiceTests(unittest.TestCase):
         update_status.assert_called_once_with(args, "req1", "completed", "done", "companion1")
         self.assertEqual(active, {})
 
+    def test_handle_leave_request_releases_active_companions_for_requester(self) -> None:
+        service = load_service()
+        args = mock.Mock()
+        leader_process = mock.Mock()
+        other_process = mock.Mock()
+        active = {
+            "active1": service.ActiveCompanion(
+                {"id": "active1", "requesterAccount": "leader1", "requestedRole": "dps"},
+                leader_process,
+                account="albdps",
+            ),
+            "other": service.ActiveCompanion(
+                {"id": "other", "requesterAccount": "leader2", "requestedRole": "healer"},
+                other_process,
+                account="albhealer",
+            ),
+        }
+        leave_request = {"id": "leave1", "requesterAccount": "leader1", "requestedRole": "leave"}
+
+        with mock.patch.object(service, "detach_companion_from_request", return_value=(True, "")) as detach, mock.patch.object(
+            service, "stop_companion"
+        ) as stop_companion, mock.patch.object(service, "update_request_status") as update_status:
+            service.handle_request(args, leave_request, active)
+
+        detach.assert_called_once_with(args, "active1", "albdps")
+        stop_companion.assert_called_once_with(leader_process)
+        update_status.assert_has_calls(
+            [
+                mock.call(args, "active1", "completed", "leave request; companion released", "albdps"),
+                mock.call(args, "leave1", "completed", "leave request acknowledged; released 1 companion(s)"),
+            ]
+        )
+        self.assertEqual(set(active), {"other"})
+
+    def test_handle_leave_request_without_active_companion_is_completed(self) -> None:
+        service = load_service()
+        args = mock.Mock()
+        leave_request = {"id": "leave1", "requesterAccount": "leader1", "requestedRole": "leave"}
+
+        with mock.patch.object(service, "update_request_status") as update_status:
+            service.handle_request(args, leave_request, {})
+
+        update_status.assert_called_once_with(args, "leave1", "completed", "leave request acknowledged; no active companion")
+
     def test_live_companion_party_smoke_script_builds_leader_and_service_commands(self) -> None:
         smoke = load_smoke()
         args = smoke.build_parser().parse_args(
@@ -923,6 +967,14 @@ class DummyCompanionServerSurfaceTests(unittest.TestCase):
         self.assertIn("companionRole", combat_routes)
         self.assertIn("ActiveCompanionRoleFor", combat_routes)
         self.assertIn("MapDummyCompanionRoutes", host)
+
+    def test_companion_request_service_counts_pending_requests_against_party_slots(self) -> None:
+        source = (ROOT / "GameServer" / "LiveCompanion" / "CompanionRequestService.cs").read_text(encoding="utf-8")
+
+        self.assertIn("SlotHoldingStatuses", source)
+        self.assertIn("OpenRequestCountForRequesterLocked", source)
+        self.assertIn("availableSlots = Math.Max(0, vacantSlots - reservedSlots)", source)
+        self.assertIn("AddRequestLocked(request)", source)
 
 
 if __name__ == "__main__":

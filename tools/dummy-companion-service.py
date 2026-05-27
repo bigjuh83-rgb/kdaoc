@@ -1082,6 +1082,31 @@ def stop_all_active_companions(
             active.pop(request_id, None)
 
 
+def release_active_companions_for_leave_request(
+    args: argparse.Namespace,
+    active: dict[str, ActiveCompanion],
+    leave_request: dict[str, Any],
+) -> int:
+    requester_key = request_requester_key(leave_request)
+    if not requester_key:
+        return 0
+
+    released = 0
+    for request_id, companion in list(active.items()):
+        if not request_matches_requester(companion.request, requester_key):
+            continue
+
+        detached, message = detach_companion_from_request(args, request_id, companion.account)
+        stop_companion(companion.process)
+        status_message = "leave request; companion released"
+        if not detached and message:
+            status_message = f"{status_message}; detach warning: {message}"
+        update_request_status(args, request_id, "completed", status_message, companion.account)
+        active.pop(request_id, None)
+        released += 1
+    return released
+
+
 def handle_request(
     args: argparse.Namespace,
     request: dict[str, Any],
@@ -1089,7 +1114,13 @@ def handle_request(
 ) -> None:
     request_id = str(request_value(request, "id", "Id", default=""))
     if is_leave_request(request):
-        update_request_status(args, request_id, "completed", "leave request acknowledged")
+        released = release_active_companions_for_leave_request(args, active, request)
+        message = (
+            f"leave request acknowledged; released {released} companion(s)"
+            if released
+            else "leave request acknowledged; no active companion"
+        )
+        update_request_status(args, request_id, "completed", message)
         return
 
     requester_state = fetch_requester_state(args, request)

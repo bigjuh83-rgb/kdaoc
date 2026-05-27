@@ -98,6 +98,13 @@ namespace DOL.GS.LiveCompanion
         private const int MaxStoredRequests = 500;
         private static readonly object Sync = new();
         private static readonly List<CompanionRequest> Requests = new();
+        private static readonly HashSet<string> SlotHoldingStatuses = new(StringComparer.OrdinalIgnoreCase)
+        {
+            CompanionRequestStatus.Queued,
+            CompanionRequestStatus.Spawning,
+            CompanionRequestStatus.Grouping,
+            CompanionRequestStatus.Active
+        };
 
         public static CompanionRequestResult CreateRequest(
             GamePlayer requester,
@@ -127,26 +134,31 @@ namespace DOL.GS.LiveCompanion
 
             int groupSize = CurrentGroupSize(requester);
             int vacantSlots = VacantSlots(requester);
-            CompanionRequest request = BuildRequest(
-                requester,
-                normalizedRole,
-                source,
-                contentType,
-                createdBy,
-                groupSize,
-                vacantSlots);
-
-            if (vacantSlots <= 0)
+            lock (Sync)
             {
-                request.Status = CompanionRequestStatus.Failed;
-                request.Message = "파티가 가득 차 동료를 부를 수 없습니다.";
-                AddRequest(request);
-                return new CompanionRequestResult { Success = false, Message = request.Message, Request = request };
-            }
+                int reservedSlots = OpenRequestCountForRequesterLocked(requester);
+                int availableSlots = Math.Max(0, vacantSlots - reservedSlots);
+                CompanionRequest request = BuildRequest(
+                    requester,
+                    normalizedRole,
+                    source,
+                    contentType,
+                    createdBy,
+                    groupSize,
+                    availableSlots);
 
-            request.Message = "동료 요청이 접수되었습니다.";
-            AddRequest(request);
-            return new CompanionRequestResult { Success = true, Message = request.Message, Request = request };
+                if (availableSlots <= 0)
+                {
+                    request.Status = CompanionRequestStatus.Failed;
+                    request.Message = "파티가 가득 차 동료를 부를 수 없습니다.";
+                    AddRequestLocked(request);
+                    return new CompanionRequestResult { Success = false, Message = request.Message, Request = request };
+                }
+
+                request.Message = "동료 요청이 접수되었습니다.";
+                AddRequestLocked(request);
+                return new CompanionRequestResult { Success = true, Message = request.Message, Request = request };
+            }
         }
 
         public static CompanionRequestResult RequestLeave(GamePlayer requester, string source, string createdBy)
@@ -340,10 +352,27 @@ namespace DOL.GS.LiveCompanion
         {
             lock (Sync)
             {
-                Requests.Add(request);
-                if (Requests.Count > MaxStoredRequests)
-                    Requests.RemoveRange(0, Requests.Count - MaxStoredRequests);
+                AddRequestLocked(request);
             }
+        }
+
+        private static void AddRequestLocked(CompanionRequest request)
+        {
+            Requests.Add(request);
+            if (Requests.Count > MaxStoredRequests)
+                Requests.RemoveRange(0, Requests.Count - MaxStoredRequests);
+        }
+
+        private static int OpenRequestCountForRequesterLocked(GamePlayer requester)
+        {
+            string requesterName = requester?.Name ?? string.Empty;
+            string requesterAccount = requester?.Client?.Account?.Name ?? string.Empty;
+            return Requests.Count(request =>
+                SlotHoldingStatuses.Contains(request.Status) &&
+                ((!string.IsNullOrWhiteSpace(requesterAccount) &&
+                  request.RequesterAccount.Equals(requesterAccount, StringComparison.OrdinalIgnoreCase)) ||
+                 (!string.IsNullOrWhiteSpace(requesterName) &&
+                  request.RequesterName.Equals(requesterName, StringComparison.OrdinalIgnoreCase))));
         }
 
         private static CompanionRequest Clone(CompanionRequest request)
