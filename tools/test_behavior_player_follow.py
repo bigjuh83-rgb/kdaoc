@@ -17471,6 +17471,53 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertIn("lifedrain", plan.attack_spells[0].capability_tags)
         self.assertIn("disease", plan.debuff_spells[0].capability_tags)
 
+    def test_pet_prefix_spell_types_do_not_become_summons_unless_tagged(self):
+        payload = {
+            "skills": [],
+            "spellLines": [
+                {
+                    "entries": [
+                        {
+                            "kind": "Spell",
+                            "lineIndex": 1,
+                            "spellLevel": 22,
+                            "name": "Pet Drain",
+                            "level": 22,
+                            "spell": {
+                                "spellType": "PetLifedrain",
+                                "isHealing": False,
+                                "isBuff": False,
+                                "isHarmful": True,
+                                "damage": 35,
+                                "range": 1500,
+                            },
+                        },
+                        {
+                            "kind": "Spell",
+                            "lineIndex": 2,
+                            "spellLevel": 18,
+                            "name": "Pet Mesmerize",
+                            "level": 18,
+                            "spell": {
+                                "spellType": "PetMesmerize",
+                                "isHealing": False,
+                                "isBuff": False,
+                                "isHarmful": True,
+                                "damage": 0,
+                                "range": 1500,
+                            },
+                        },
+                    ]
+                }
+            ],
+        }
+
+        plan = behavior.parse_combat_usable_plan(payload)
+
+        self.assertEqual(plan.summon_spells, [])
+        self.assertEqual([spell.name for spell in plan.attack_spells], ["Pet Drain"])
+        self.assertEqual([spell.name for spell in plan.crowd_control_spells], ["Pet Mesmerize"])
+
     def test_precombat_self_buffs_cast_speed_song_and_optional_stealth(self):
         client = FakeCombatClient()
         args = SimpleNamespace(

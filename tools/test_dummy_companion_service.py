@@ -1373,6 +1373,8 @@ class DummyCompanionServerSurfaceTests(unittest.TestCase):
         self.assertIn('"bladeturn"', combat_routes)
         self.assertIn('"lifedrain"', combat_routes)
         self.assertIn('"disease"', combat_routes)
+        self.assertIn("case eSpellType.Pet:", combat_routes)
+        self.assertNotIn('spellTypeKey.Contains("summon") || spellTypeKey.Contains("pet")', combat_routes)
 
     def test_companion_attach_requires_preassigned_companion_identity(self) -> None:
         routes = (ROOT / "GameServer" / "API" / "DummyCompanion" / "DummyCompanionRoutes.cs").read_text(

@@ -6002,7 +6002,7 @@ CROWD_CONTROL_SPELL_TYPES = {
     "warlockspeeddecrease",
 }
 TAUNT_SPELL_TYPES = {"taunt", "styletaunt"}
-SUMMON_SPELL_TYPE_TOKENS = ("summon", "pet")
+SUMMON_SPELL_TYPE_TOKENS = ("summon",)
 AREA_TARGET_TYPES = {"area", "cone"}
 DOT_SPELL_TYPE_TOKENS = ("damageovertime", "damage_over_time", "dot", "bleed")
 CAPABILITY_TAG_ALIASES = {
@@ -6112,7 +6112,8 @@ def is_taunt_spell_type(spell_type: str) -> bool:
 
 
 def is_summon_spell_type(spell_type: str) -> bool:
-    return any(token in spell_type for token in SUMMON_SPELL_TYPE_TOKENS)
+    normalized = str(spell_type or "").strip().lower()
+    return normalized == "pet" or any(token in normalized for token in SUMMON_SPELL_TYPE_TOKENS)
 
 
 def is_damage_over_time_spell_type(spell_type: str) -> bool:

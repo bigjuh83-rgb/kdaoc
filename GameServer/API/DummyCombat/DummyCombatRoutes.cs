@@ -747,6 +747,10 @@ namespace DOL.GS.API.DummyCombat
                     tags.Add("disease");
                     tags.Add("debuff");
                     break;
+                case eSpellType.Pet:
+                    tags.Add("pet");
+                    tags.Add("summon");
+                    break;
                 case eSpellType.SpeedEnhancement:
                 case eSpellType.SpeedOfTheRealm:
                 case eSpellType.SpeedWrap:
@@ -774,7 +778,7 @@ namespace DOL.GS.API.DummyCombat
                 tags.Add("root");
             if (spellTypeKey.Contains("amnesia") || spellTypeKey.Contains("interrupt"))
                 tags.Add("interrupt");
-            if (spellTypeKey.Contains("summon") || spellTypeKey.Contains("pet"))
+            if (spellTypeKey.Contains("summon"))
             {
                 tags.Add("pet");
                 tags.Add("summon");
