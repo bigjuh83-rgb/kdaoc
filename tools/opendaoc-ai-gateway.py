@@ -301,7 +301,7 @@ class FakeDialogueProvider:
         elif state.get("leader_health_band") in {"critical", "low"} or state.get("command_intent") == "heal_priority":
             response = {
                 "say_channel": "party",
-                "say_text": "\ubc14\ub85c \uce58\uc720\ud558\uaca0\uc2b5\ub2c8\ub2e4. \uc870\uae08\ub9cc \ubc84\ud140\uc8fc\uc138\uc694.",
+                "say_text": "\ubc14\ub85c \uce58\uc720\ud558\uaca0\uc2b5\ub2c8\ub2e4. \uc870\uae08\ub9cc \ubc84\ud168\uc8fc\uc138\uc694.",
                 "intent_hint": "heal_priority",
                 "urgency": "high",
             }
