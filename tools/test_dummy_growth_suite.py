@@ -48,9 +48,21 @@ def load_equip_dummy_boss_gear():
     return module
 
 
+def load_provision_dummy_accounts():
+    module_path = Path(__file__).with_name("provision-dummy-accounts.py")
+    spec = importlib.util.spec_from_file_location("provision_dummy_accounts_for_tests", module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"failed to load {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 growth = load_module()
 hunting_analyzer = load_hunting_ground_analyzer()
 equip_gear = load_equip_dummy_boss_gear()
+provision_accounts = load_provision_dummy_accounts()
 
 
 def route_point_inside_zone_config(route, zone_config: dict) -> bool:
@@ -110,6 +122,45 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertIn("--exec", command)
         self.assertIn(args.mysql_bin, command)
         self.assertIn("MYSQL_PWD/u", env["WSLENV"])
+
+    def test_provision_accounts_run_mysql_wraps_wsl_mysql_binary_on_windows(self) -> None:
+        args = SimpleNamespace(
+            mysql_bin="/home/bigjuh/.local/opendaoc-mariadb/current/bin/mariadb",
+            db_password="secret",
+            db_host="127.0.0.1",
+            db_port=3306,
+            db_user="root",
+            db_name="opendaoc",
+        )
+
+        with mock.patch.object(provision_accounts.os, "name", "nt"), mock.patch.object(
+            provision_accounts.subprocess, "run"
+        ) as run:
+            run.return_value = SimpleNamespace(stdout="ok")
+            output = provision_accounts.run_mysql(args, "select 1")
+
+        command = run.call_args.args[0]
+        env = run.call_args.kwargs["env"]
+        self.assertEqual(output, "ok")
+        self.assertTrue(command[0].lower().endswith("wsl.exe"))
+        self.assertIn("--exec", command)
+        self.assertIn(args.mysql_bin, command)
+        self.assertIn("MYSQL_PWD/u", env["WSLENV"])
+        self.assertNotIn("-psecret", command)
+
+    def test_provision_accounts_accepts_wsl_mysql_binary_on_windows(self) -> None:
+        mysql_bin = "/home/bigjuh/.local/opendaoc-mariadb/current/bin/mariadb"
+
+        with mock.patch.object(provision_accounts.os, "name", "nt"), mock.patch.object(
+            provision_accounts.Path, "exists", return_value=False
+        ), mock.patch.object(provision_accounts.subprocess, "run") as run:
+            run.return_value = SimpleNamespace(returncode=0)
+            self.assertTrue(provision_accounts.mysql_bin_available(mysql_bin))
+
+        command = run.call_args.args[0]
+        self.assertTrue(command[0].lower().endswith("wsl.exe"))
+        self.assertEqual(command[1:4], ["--exec", "test", "-x"])
+        self.assertEqual(command[4], mysql_bin)
 
     def test_command_for_metadata_redacts_all_password_flags(self) -> None:
         rendered = growth.command_for_metadata(

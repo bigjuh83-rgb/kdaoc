@@ -161,8 +161,19 @@ def build_character_name(args: argparse.Namespace, number: int, offset: int, nat
 
 
 def run_mysql(args: argparse.Namespace, sql: str) -> str:
+    env = os.environ.copy()
+    env["MYSQL_PWD"] = args.db_password
+    command_prefix = [args.mysql_bin]
+    if os.name == "nt" and str(args.mysql_bin).startswith("/"):
+        wslenv = env.get("WSLENV", "")
+        parts = [part for part in wslenv.split(":") if part]
+        if "MYSQL_PWD/u" not in parts:
+            parts.append("MYSQL_PWD/u")
+        env["WSLENV"] = ":".join(parts)
+        command_prefix = [os.environ.get("WSL_EXE", r"C:\Windows\System32\wsl.exe"), "--exec", args.mysql_bin]
+
     command = [
-        args.mysql_bin,
+        *command_prefix,
         "--batch",
         "--raw",
         "--protocol=tcp",
@@ -172,13 +183,12 @@ def run_mysql(args: argparse.Namespace, sql: str) -> str:
         str(args.db_port),
         "-u",
         args.db_user,
-        f"-p{args.db_password}",
         "--default-character-set=utf8mb4",
         args.db_name,
         "-e",
         sql,
     ]
-    process = subprocess.run(command, check=True, capture_output=True, text=True)
+    process = subprocess.run(command, check=True, capture_output=True, text=True, env=env)
     return process.stdout
 
 
@@ -197,6 +207,23 @@ def resolve_mysql_bin(value: str | None) -> str:
             return found
 
     return DEFAULT_MYSQL_CANDIDATES[0]
+
+
+def mysql_bin_available(value: str) -> bool:
+    if Path(value).exists():
+        return True
+    if os.name == "nt" and str(value).startswith("/"):
+        try:
+            process = subprocess.run(
+                [os.environ.get("WSL_EXE", r"C:\Windows\System32\wsl.exe"), "--exec", "test", "-x", value],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        except OSError:
+            return False
+        return process.returncode == 0
+    return False
 
 
 def parse_mysql_rows(output: str) -> list[dict[str, str]]:
@@ -784,7 +811,7 @@ def main() -> int:
     args.spec_cycle_values = parse_cycle(args.spec_cycle, "||")
     args.ability_cycle_values = parse_cycle(args.ability_cycle, "||")
 
-    if not Path(args.mysql_bin).exists():
+    if not mysql_bin_available(args.mysql_bin):
         raise SystemExit(f"mysql client not found: {args.mysql_bin}")
 
     if not exists(args, "account", "Name", args.template_account):
