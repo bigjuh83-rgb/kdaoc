@@ -1288,6 +1288,22 @@ class DummyCompanionServerSurfaceTests(unittest.TestCase):
         self.assertIn("ActiveCompanionRoleFor", combat_routes)
         self.assertIn("MapDummyCompanionRoutes", host)
 
+    def test_combat_usable_spellinfo_exposes_role_capability_tags(self) -> None:
+        combat_routes = (ROOT / "GameServer" / "API" / "DummyCombat" / "DummyCombatRoutes.cs").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("damageType = spell.DamageType.ToString()", combat_routes)
+        self.assertIn("frequency = spell.Frequency", combat_routes)
+        self.assertIn("pulse = spell.Pulse", combat_routes)
+        self.assertIn("uninterruptible = spell.Uninterruptible", combat_routes)
+        self.assertIn("instrumentRequirement = spell.InstrumentRequirement", combat_routes)
+        self.assertIn("capabilityTags = SpellCapabilityTags(spell)", combat_routes)
+        self.assertIn('"speedSong"', combat_routes)
+        self.assertIn('"stealth"', combat_routes)
+        self.assertIn('"resurrection"', combat_routes)
+        self.assertIn('"cureDisease"', combat_routes)
+
     def test_companion_attach_requires_preassigned_companion_identity(self) -> None:
         routes = (ROOT / "GameServer" / "API" / "DummyCompanion" / "DummyCompanionRoutes.cs").read_text(
             encoding="utf-8"

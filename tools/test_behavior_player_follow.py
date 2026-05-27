@@ -17287,6 +17287,101 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual([spell.name for spell in plan.crowd_control_spells], ["Mesmerize", "Root"])
         self.assertEqual([spell.name for spell in plan.heal_spells], ["Minor Heal"])
 
+    def test_combat_plan_uses_capability_tags_for_speed_song_and_stealth(self):
+        payload = {
+            "skills": [],
+            "spellLines": [
+                {
+                    "entries": [
+                        {
+                            "kind": "Spell",
+                            "lineIndex": 1,
+                            "spellLevel": 5,
+                            "name": "Traveler's Chant",
+                            "level": 5,
+                            "spell": {
+                                "spellType": "UnknownPulseBuff",
+                                "capabilityTags": ["speedSong", "speed"],
+                                "isHealing": False,
+                                "isBuff": True,
+                                "isHarmful": False,
+                                "damage": 0,
+                            },
+                        },
+                        {
+                            "kind": "Spell",
+                            "lineIndex": 2,
+                            "spellLevel": 12,
+                            "name": "Shadow Walk",
+                            "level": 12,
+                            "spell": {
+                                "spellType": "UnknownSelfBuff",
+                                "capabilityTags": ["stealth"],
+                                "isHealing": False,
+                                "isBuff": True,
+                                "isHarmful": False,
+                                "damage": 0,
+                            },
+                        },
+                        {
+                            "kind": "Spell",
+                            "lineIndex": 3,
+                            "spellLevel": 18,
+                            "name": "Raise Ally",
+                            "level": 18,
+                            "spell": {
+                                "spellType": "UnknownHelpful",
+                                "target": "Corpse",
+                                "capabilityTags": ["resurrection"],
+                                "isHealing": False,
+                                "isBuff": False,
+                                "isHarmful": False,
+                                "damage": 0,
+                            },
+                        },
+                    ]
+                }
+            ],
+        }
+
+        plan = behavior.parse_combat_usable_plan(payload)
+
+        self.assertEqual([spell.name for spell in plan.speed_song_spells], ["Traveler's Chant"])
+        self.assertEqual([spell.name for spell in plan.speed_spells], ["Traveler's Chant"])
+        self.assertEqual([spell.name for spell in plan.stealth_spells], ["Shadow Walk"])
+        self.assertEqual([spell.name for spell in plan.resurrection_spells], ["Raise Ally"])
+        self.assertIn("speed_song", plan.speed_song_spells[0].capability_tags)
+        self.assertIn("stealth", plan.stealth_spells[0].capability_tags)
+
+    def test_precombat_self_buffs_cast_speed_song_and_optional_stealth(self):
+        client = FakeCombatClient()
+        args = SimpleNamespace(
+            startup_self_buff_count=1,
+            startup_self_buff_delay=0.0,
+            startup_speed_song=True,
+            startup_stealth=True,
+        )
+        plan = behavior.CombatUsablePlan(
+            speed_song_spells=[
+                behavior.UsableSpellRef(line_index=4, spell_level=5, name="Traveler's Chant", level=5),
+            ],
+            stealth_spells=[
+                behavior.UsableSpellRef(line_index=5, spell_level=12, name="Shadow Walk", level=12),
+            ],
+            buff_spells=[
+                behavior.UsableSpellRef(line_index=6, spell_level=20, name="Self Shield", level=20),
+            ],
+        )
+        action_counts: dict[str, int] = {}
+
+        actions = behavior.cast_precombat_self_buffs(client, args, plan, action_counts)
+
+        self.assertEqual(actions, 3)
+        self.assertEqual(client.spells, [(5, 4), (12, 5), (20, 6)])
+        self.assertEqual(action_counts["precombat_speed_song_spell"], 1)
+        self.assertEqual(action_counts["precombat_stealth_spell"], 1)
+        self.assertEqual(action_counts["precombat_self_buff_spell"], 1)
+
     def test_combat_plan_classifies_cure_debuff_taunt_and_area_damage_spells(self):
         payload = {
             "skills": [],
@@ -18152,6 +18247,42 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(snapshot.class_id, 2)
         self.assertFalse(snapshot.is_companion)
         self.assertEqual(behavior.party_role_from_condition(snapshot), "melee-basic")
+
+    def test_party_class_profile_identifies_stealth_and_speed_song_classes(self):
+        speed_classes = [
+            ("Minstrel", 4),
+            ("Skald", 24),
+            ("Bard", 48),
+        ]
+        stealth_classes = [
+            ("Scout", 3),
+            ("Infiltrator", 9),
+            ("Shadowblade", 23),
+            ("Hunter", 25),
+            ("Nightshade", 49),
+            ("Ranger", 50),
+        ]
+
+        for class_name, class_id in speed_classes:
+            with self.subTest(class_name=class_name):
+                capabilities = behavior.party_class_capabilities_from_class(class_name, class_id)
+                self.assertIn("speed_song", capabilities)
+
+        for class_name, class_id in stealth_classes:
+            with self.subTest(class_name=class_name):
+                capabilities = behavior.party_class_capabilities_from_class(class_name, class_id)
+                self.assertIn("stealth", capabilities)
+
+        minstrel_profile = behavior.party_class_role_profile_from_class("Minstrel", 4)
+        scout_profile = behavior.party_class_role_profile_from_class("Scout", 3)
+        bard_profile = behavior.party_class_role_profile_from_class("Bard", 48)
+
+        self.assertEqual(minstrel_profile.role_group, "speed-support")
+        self.assertIn("stealth", minstrel_profile.capabilities)
+        self.assertEqual(scout_profile.role_group, "stealth-scout")
+        self.assertIn("ranged", scout_profile.capabilities)
+        self.assertEqual(bard_profile.action_rotation, "healer-support")
+        self.assertEqual(behavior.party_role_from_class("Bard", 48), "healer-support")
 
     def test_party_cure_target_prefers_member_with_matching_cure_spell(self):
         state = behavior.PartyState("tank", ["tank", "cleric", "dps"])

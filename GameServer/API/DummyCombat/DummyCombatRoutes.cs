@@ -653,14 +653,108 @@ namespace DOL.GS.API.DummyCombat
                 duration = spell.Duration,
                 concentration = spell.Concentration,
                 damage = spell.Damage,
+                damageType = spell.DamageType.ToString(),
+                frequency = spell.Frequency,
+                pulse = spell.Pulse,
+                instrumentRequirement = spell.InstrumentRequirement,
+                uninterruptible = spell.Uninterruptible,
                 value = spell.Value,
                 power = spell.Power,
                 isHarmful = spell.IsHarmful,
                 isHelpful = spell.IsHelpful,
                 isHealing = spell.IsHealing,
                 isBuff = spell.IsBuff,
-                isDebuff = spell.IsDebuff
+                isDebuff = spell.IsDebuff,
+                capabilityTags = SpellCapabilityTags(spell)
             };
+        }
+
+        private static string[] SpellCapabilityTags(Spell spell)
+        {
+            HashSet<string> tags = new HashSet<string>(StringComparer.Ordinal);
+            string spellType = spell.SpellType.ToString();
+            string spellTypeKey = spellType.ToLowerInvariant();
+
+            if (spell.IsHealing)
+                tags.Add("heal");
+            if (spell.IsBuff)
+                tags.Add("buff");
+            if (spell.IsDebuff)
+                tags.Add("debuff");
+            if (spell.IsHarmful && spell.Damage > 0)
+                tags.Add("damage");
+            if (spell.Radius > 0 || string.Equals(spell.Target.ToString(), "Area", StringComparison.OrdinalIgnoreCase))
+                tags.Add("aoe");
+
+            switch (spell.SpellType)
+            {
+                case eSpellType.Resurrect:
+                    tags.Add("resurrection");
+                    break;
+                case eSpellType.CureAll:
+                    tags.Add("cure");
+                    tags.Add("cureAll");
+                    tags.Add("cureDisease");
+                    tags.Add("cureMezz");
+                    tags.Add("cureNearsight");
+                    tags.Add("curePoison");
+                    break;
+                case eSpellType.CureDisease:
+                    tags.Add("cure");
+                    tags.Add("cureDisease");
+                    break;
+                case eSpellType.CureMezz:
+                    tags.Add("cure");
+                    tags.Add("cureMezz");
+                    break;
+                case eSpellType.CureNearsightCustom:
+                    tags.Add("cure");
+                    tags.Add("cureNearsight");
+                    break;
+                case eSpellType.CurePoison:
+                    tags.Add("cure");
+                    tags.Add("curePoison");
+                    break;
+                case eSpellType.Mesmerize:
+                case eSpellType.CeremonialBracerMezz:
+                    tags.Add("mez");
+                    break;
+                case eSpellType.Stun:
+                case eSpellType.StyleStun:
+                case eSpellType.CeremonialBracerStun:
+                    tags.Add("stun");
+                    break;
+                case eSpellType.Taunt:
+                case eSpellType.StyleTaunt:
+                    tags.Add("taunt");
+                    break;
+                case eSpellType.SpeedEnhancement:
+                case eSpellType.SpeedOfTheRealm:
+                case eSpellType.SpeedWrap:
+                    tags.Add("speed");
+                    if (spell.InstrumentRequirement > 0 || spell.Pulse > 0 || spell.Frequency > 0)
+                        tags.Add("speedSong");
+                    break;
+                case eSpellType.StealthSkillBuff:
+                case eSpellType.BlanketOfCamouflage:
+                case eSpellType.Climbing:
+                    tags.Add("stealth");
+                    break;
+                case eSpellType.VampiirStealthDetection:
+                    tags.Add("stealthDetection");
+                    break;
+            }
+
+            if (spellTypeKey.Contains("debuff") || spellTypeKey.Contains("disease") || spellTypeKey.Contains("nearsight"))
+                tags.Add("debuff");
+            if (spellTypeKey.Contains("damageovertime") || spellTypeKey.Contains("dot") || spellTypeKey.Contains("bleeding"))
+                tags.Add("dot");
+            if (spellTypeKey.Contains("root") || spellTypeKey.Contains("snare"))
+                tags.Add("root");
+            if (spellTypeKey.Contains("amnesia") || spellTypeKey.Contains("interrupt"))
+                tags.Add("interrupt");
+
+            return tags.OrderBy(tag => tag, StringComparer.Ordinal).ToArray();
         }
     }
 }

@@ -18,6 +18,7 @@ import time
 import urllib.parse
 import urllib.request
 import math
+from collections.abc import Iterable
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from pathlib import Path
@@ -606,6 +607,7 @@ class UsableSpellRef:
     is_healing: bool = False
     is_buff: bool = False
     is_debuff: bool = False
+    capability_tags: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -622,6 +624,9 @@ class CombatUsablePlan:
     area_attack_spells: list[UsableSpellRef] = field(default_factory=list)
     heal_spells: list[UsableSpellRef] = field(default_factory=list)
     buff_spells: list[UsableSpellRef] = field(default_factory=list)
+    speed_spells: list[UsableSpellRef] = field(default_factory=list)
+    speed_song_spells: list[UsableSpellRef] = field(default_factory=list)
+    stealth_spells: list[UsableSpellRef] = field(default_factory=list)
     cure_spells: list[UsableSpellRef] = field(default_factory=list)
     resurrection_spells: list[UsableSpellRef] = field(default_factory=list)
     crowd_control_spells: list[UsableSpellRef] = field(default_factory=list)
@@ -5995,6 +6000,36 @@ TAUNT_SPELL_TYPES = {"taunt", "styletaunt"}
 SUMMON_SPELL_TYPE_TOKENS = ("summon", "pet")
 AREA_TARGET_TYPES = {"area", "cone"}
 DOT_SPELL_TYPE_TOKENS = ("damageovertime", "damage_over_time", "dot", "bleed")
+CAPABILITY_TAG_ALIASES = {
+    "aoe": "aoe",
+    "area": "aoe",
+    "buff": "buff",
+    "cc": "crowd_control",
+    "crowdcontrol": "crowd_control",
+    "cure": "cure",
+    "cureall": "cure_all",
+    "curedisease": "cure_disease",
+    "curemezz": "cure_mezz",
+    "curenearsight": "cure_nearsight",
+    "curenearsightcustom": "cure_nearsight",
+    "curepoison": "cure_poison",
+    "damage": "damage",
+    "debuff": "debuff",
+    "dot": "dot",
+    "heal": "heal",
+    "interrupt": "interrupt",
+    "mez": "mez",
+    "res": "resurrection",
+    "resurrect": "resurrection",
+    "resurrection": "resurrection",
+    "root": "root",
+    "speed": "speed",
+    "speedsong": "speed_song",
+    "stealth": "stealth",
+    "stealthdetection": "stealth_detection",
+    "stun": "stun",
+    "taunt": "taunt",
+}
 PARTY_PROTECTION_ABILITY_IDS = {
     7: "protect",
     8: "guard",
@@ -6007,6 +6042,29 @@ PARTY_PROTECTION_ABILITY_NAME_TOKENS = {
     "intercept": "intercept",
     "protect": "protect",
 }
+
+
+def normalize_capability_tag(value: object) -> str:
+    compact = re.sub(r"[^a-z0-9]+", "", str(value or "").strip().lower())
+    return CAPABILITY_TAG_ALIASES.get(compact, compact)
+
+
+def normalized_capability_tags(spell: dict) -> tuple[str, ...]:
+    raw_tags = spell.get("capabilityTags", spell.get("capability_tags", ()))
+    if isinstance(raw_tags, str):
+        raw_values: Iterable[object] = raw_tags.split(",")
+    elif isinstance(raw_tags, Iterable):
+        raw_values = raw_tags
+    else:
+        raw_values = ()
+
+    tags = {tag for value in raw_values if (tag := normalize_capability_tag(value))}
+    return tuple(sorted(tags))
+
+
+def spell_has_capability(capability_tags: Iterable[str], *expected: str) -> bool:
+    available = set(capability_tags)
+    return any(normalize_capability_tag(item) in available for item in expected)
 
 
 def is_taunt_skill(skill: UsableSkillRef) -> bool:
@@ -9768,9 +9826,20 @@ def build_combat_usable_api_url(args: argparse.Namespace, account: DummyAccount)
     )
 
 
+@dataclass(frozen=True)
+class PartyClassRoleProfile:
+    action_rotation: str
+    role_group: str
+    capabilities: frozenset[str] = field(default_factory=frozenset)
+
+
 SUPPORT_CLASS_IDS = {6, 10, 26, 28, 47, 48, 46}
 CASTER_CLASS_IDS = {5, 7, 8, 12, 13, 18, 27, 29, 30, 36, 39, 40, 41, 42, 51, 55, 59}
 MELEE_CLASS_IDS = {1, 2, 3, 4, 9, 11, 19, 21, 22, 23, 24, 25, 31, 32, 34, 35, 43, 44, 45, 49, 50, 52, 54, 56, 58, 60, 61, 62}
+SPEED_SONG_CLASS_IDS = {4, 24, 48}
+STEALTH_CLASS_IDS = {3, 4, 9, 23, 25, 49, 50}
+RANGED_STEALTH_CLASS_IDS = {3, 25, 50}
+ASSASSIN_STEALTH_CLASS_IDS = {9, 23, 49}
 
 SUPPORT_CLASS_NAMES = {
     "bard",
@@ -9832,15 +9901,35 @@ MELEE_CLASS_NAMES = {
     "viking",
     "warrior",
 }
+SPEED_SONG_CLASS_NAMES = {"bard", "minstrel", "skald"}
+STEALTH_CLASS_NAMES = {"hunter", "huntress", "infiltrator", "minstrel", "nightshade", "ranger", "scout", "shadowblade"}
+RANGED_STEALTH_CLASS_NAMES = {"hunter", "huntress", "ranger", "scout"}
+ASSASSIN_STEALTH_CLASS_NAMES = {"infiltrator", "nightshade", "shadowblade"}
 
 
-def party_role_from_class(class_name: str = "", class_id: int = 0) -> str:
-    normalized_name = re.sub(r"[^a-z0-9]+", "", str(class_name or "").lower())
+def normalized_party_class_name(class_name: str = "") -> str:
+    return re.sub(r"[^a-z0-9]+", "", str(class_name or "").lower())
+
+
+def normalized_party_class_id(class_id: int = 0) -> int:
     try:
-        normalized_id = int(class_id or 0)
+        return int(class_id or 0)
     except (TypeError, ValueError):
-        normalized_id = 0
+        return 0
 
+
+def party_class_matches(
+    normalized_name: str,
+    normalized_id: int,
+    names: set[str],
+    ids: set[int],
+) -> bool:
+    if normalized_name:
+        return normalized_name in names
+    return normalized_id in ids
+
+
+def party_action_rotation_from_class_key(normalized_name: str, normalized_id: int) -> str:
     if normalized_id in SUPPORT_CLASS_IDS or normalized_name in SUPPORT_CLASS_NAMES:
         return "healer-support"
     if normalized_id in CASTER_CLASS_IDS or normalized_name in CASTER_CLASS_NAMES:
@@ -9848,6 +9937,55 @@ def party_role_from_class(class_name: str = "", class_id: int = 0) -> str:
     if normalized_id in MELEE_CLASS_IDS or normalized_name in MELEE_CLASS_NAMES:
         return "melee-basic"
     return "external"
+
+
+def party_class_capabilities_from_class(class_name: str = "", class_id: int = 0) -> frozenset[str]:
+    normalized_name = normalized_party_class_name(class_name)
+    normalized_id = normalized_party_class_id(class_id)
+    capabilities: set[str] = set()
+
+    if party_class_matches(normalized_name, normalized_id, SPEED_SONG_CLASS_NAMES, SPEED_SONG_CLASS_IDS):
+        capabilities.update({"speed_song", "group_speed", "support_utility"})
+    if party_class_matches(normalized_name, normalized_id, STEALTH_CLASS_NAMES, STEALTH_CLASS_IDS):
+        capabilities.add("stealth")
+    if party_class_matches(normalized_name, normalized_id, RANGED_STEALTH_CLASS_NAMES, RANGED_STEALTH_CLASS_IDS):
+        capabilities.add("ranged")
+    if party_class_matches(normalized_name, normalized_id, ASSASSIN_STEALTH_CLASS_NAMES, ASSASSIN_STEALTH_CLASS_IDS):
+        capabilities.add("assassin")
+
+    return frozenset(sorted(capabilities))
+
+
+def party_class_role_profile_from_class(class_name: str = "", class_id: int = 0) -> PartyClassRoleProfile:
+    normalized_name = normalized_party_class_name(class_name)
+    normalized_id = normalized_party_class_id(class_id)
+    action_rotation = party_action_rotation_from_class_key(normalized_name, normalized_id)
+    capabilities = party_class_capabilities_from_class(class_name, class_id)
+
+    if "speed_song" in capabilities:
+        role_group = "speed-support"
+    elif "ranged" in capabilities:
+        role_group = "stealth-scout"
+    elif "assassin" in capabilities:
+        role_group = "stealth-assassin"
+    elif action_rotation == "healer-support":
+        role_group = "support"
+    elif action_rotation == "caster-basic":
+        role_group = "caster"
+    elif action_rotation == "melee-basic":
+        role_group = "melee"
+    else:
+        role_group = "external"
+
+    return PartyClassRoleProfile(
+        action_rotation=action_rotation,
+        role_group=role_group,
+        capabilities=capabilities,
+    )
+
+
+def party_role_from_class(class_name: str = "", class_id: int = 0) -> str:
+    return party_class_role_profile_from_class(class_name, class_id).action_rotation
 
 
 def party_role_from_condition(condition: PlayerConditionSnapshot | None) -> str:
@@ -10805,6 +10943,7 @@ def bucket_usable_spell(spell: dict, ref: UsableSpellRef) -> tuple[str, UsableSp
     spell_type_key = spell_type.strip().lower()
     target = str(spell.get("target", "") or "")
     target_key = target.strip().lower()
+    capability_tags = normalized_capability_tags(spell)
     enriched_ref = replace(
         ref,
         spell_type=spell_type,
@@ -10820,27 +10959,34 @@ def bucket_usable_spell(spell: dict, ref: UsableSpellRef) -> tuple[str, UsableSp
         is_healing=is_healing,
         is_buff=is_buff,
         is_debuff=is_debuff,
+        capability_tags=capability_tags,
     )
 
-    if is_resurrection_spell_type(spell_type_key) or target_key == "corpse":
+    if spell_has_capability(capability_tags, "resurrection") or is_resurrection_spell_type(spell_type_key) or target_key == "corpse":
         return "resurrection", enriched_ref
-    if is_cure_spell_type(spell_type_key):
+    if spell_has_capability(capability_tags, "cure", "cure_all", "cure_disease", "cure_mezz", "cure_nearsight", "cure_poison") or is_cure_spell_type(spell_type_key):
         return "cure", enriched_ref
-    if is_taunt_spell_type(spell_type_key):
+    if spell_has_capability(capability_tags, "taunt") or is_taunt_spell_type(spell_type_key):
         return "taunt", enriched_ref
+    if spell_has_capability(capability_tags, "speed_song"):
+        return "speed_song", enriched_ref
+    if spell_has_capability(capability_tags, "speed"):
+        return "speed", enriched_ref
+    if spell_has_capability(capability_tags, "stealth"):
+        return "stealth", enriched_ref
     if is_buff:
         return "buff", enriched_ref
-    if is_healing:
+    if spell_has_capability(capability_tags, "heal") or is_healing:
         return "heal", enriched_ref
-    if is_harmful and damage > 0 and is_damage_over_time_spell_type(spell_type_key):
+    if spell_has_capability(capability_tags, "dot") or (is_harmful and damage > 0 and is_damage_over_time_spell_type(spell_type_key)):
         return "dot", enriched_ref
-    if is_harmful and damage > 0 and (radius > 0 or target_key in AREA_TARGET_TYPES):
+    if spell_has_capability(capability_tags, "aoe") or (is_harmful and damage > 0 and (radius > 0 or target_key in AREA_TARGET_TYPES)):
         return "area_attack", enriched_ref
-    if is_harmful and is_crowd_control_spell_type(spell_type_key):
+    if spell_has_capability(capability_tags, "crowd_control", "interrupt", "mez", "root", "stun") or (is_harmful and is_crowd_control_spell_type(spell_type_key)):
         return "crowd_control", enriched_ref
-    if is_harmful and spell_range > 0 and damage > 0:
+    if spell_has_capability(capability_tags, "damage") or (is_harmful and spell_range > 0 and damage > 0):
         return "attack", enriched_ref
-    if is_harmful and (is_debuff or "debuff" in spell_type_key or spell_type_key in {"disease", "nearsight", "fumblechancedebuff"}):
+    if spell_has_capability(capability_tags, "debuff") or (is_harmful and (is_debuff or "debuff" in spell_type_key or spell_type_key in {"disease", "nearsight", "fumblechancedebuff"})):
         return "debuff", enriched_ref
     if is_summon_spell_type(spell_type_key):
         return "summon", enriched_ref
@@ -10867,6 +11013,9 @@ def parse_combat_usable_plan(payload: object) -> CombatUsablePlan:
     area_attack_spells: list[UsableSpellRef] = []
     heal_spells: list[UsableSpellRef] = []
     buff_spells: list[UsableSpellRef] = []
+    speed_spells: list[UsableSpellRef] = []
+    speed_song_spells: list[UsableSpellRef] = []
+    stealth_spells: list[UsableSpellRef] = []
     cure_spells: list[UsableSpellRef] = []
     resurrection_spells: list[UsableSpellRef] = []
     crowd_control_spells: list[UsableSpellRef] = []
@@ -10879,6 +11028,13 @@ def parse_combat_usable_plan(payload: object) -> CombatUsablePlan:
             heal_spells.append(spell)
         elif bucket == "buff":
             buff_spells.append(spell)
+        elif bucket == "speed":
+            speed_spells.append(spell)
+        elif bucket == "speed_song":
+            speed_song_spells.append(spell)
+            speed_spells.append(spell)
+        elif bucket == "stealth":
+            stealth_spells.append(spell)
         elif bucket == "attack":
             attack_spells.append(spell)
         elif bucket == "dot":
@@ -10936,6 +11092,9 @@ def parse_combat_usable_plan(payload: object) -> CombatUsablePlan:
         area_attack_spells=sorted(area_attack_spells, key=sort_key, reverse=True),
         heal_spells=sorted(heal_spells, key=sort_key, reverse=True),
         buff_spells=sorted(buff_spells, key=sort_key, reverse=True),
+        speed_spells=sorted(speed_spells, key=sort_key, reverse=True),
+        speed_song_spells=sorted(speed_song_spells, key=sort_key, reverse=True),
+        stealth_spells=sorted(stealth_spells, key=sort_key, reverse=True),
         cure_spells=sorted(cure_spells, key=sort_key, reverse=True),
         resurrection_spells=sorted(resurrection_spells, key=sort_key, reverse=True),
         crowd_control_spells=sorted(crowd_control_spells, key=sort_key, reverse=True),
@@ -11043,16 +11202,27 @@ def cast_precombat_self_buffs(
     action_counts: dict[str, int],
 ) -> int:
     count = max(0, int(getattr(args, "startup_self_buff_count", 0) or 0))
-    if count <= 0 or not combat_plan.buff_spells:
-        return 0
-
     actions = 0
     delay = max(0.0, float(getattr(args, "startup_self_buff_delay", 0.0) or 0.0))
-    for spell in combat_plan.buff_spells[:count]:
+
+    def cast_startup_spell(spell: UsableSpellRef, action_name: str) -> None:
+        nonlocal actions
         cast_usable_spell(client, spell, target_in_view=True, speed=0.0, stationary=True)
-        actions += add_action(action_counts, "precombat_self_buff_spell")
+        actions += add_action(action_counts, action_name)
         if delay > 0.0:
             time.sleep(delay)
+
+    if bool(getattr(args, "startup_speed_song", True)) and combat_plan.speed_song_spells:
+        cast_startup_spell(combat_plan.speed_song_spells[0], "precombat_speed_song_spell")
+
+    if bool(getattr(args, "startup_stealth", False)) and combat_plan.stealth_spells:
+        cast_startup_spell(combat_plan.stealth_spells[0], "precombat_stealth_spell")
+
+    if count <= 0 or not combat_plan.buff_spells:
+        return actions
+
+    for spell in combat_plan.buff_spells[:count]:
+        cast_startup_spell(spell, "precombat_self_buff_spell")
 
     return actions
 
@@ -22666,6 +22836,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--combat-usable-api-retry-delay", type=float, default=0.5)
     parser.add_argument("--startup-self-buff-count", type=int, default=0, help="cast up to N validated self buff spells after combat usable plan load")
     parser.add_argument("--startup-self-buff-delay", type=float, default=0.8, help="seconds to wait between startup self buffs")
+    parser.add_argument("--startup-speed-song", action=argparse.BooleanOptionalAction, default=True, help="cast a validated speed-song spell once after combat usable plan load")
+    parser.add_argument("--startup-stealth", action=argparse.BooleanOptionalAction, default=False, help="cast a validated stealth spell at startup when explicitly enabled")
     parser.add_argument(
         "--required-target-api",
         action=argparse.BooleanOptionalAction,
