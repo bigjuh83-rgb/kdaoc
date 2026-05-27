@@ -7,6 +7,7 @@ import argparse
 import csv
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -81,7 +82,11 @@ def encode_query(query: dict[str, Any] | None = None) -> str:
 def api_json(args: argparse.Namespace, method: str, path: str, query: dict[str, Any] | None = None) -> Any:
     base = str(args.api_url).rstrip("/")
     suffix = path if path.startswith("/") else f"/{path}"
-    query_string = encode_query(query)
+    request_query = dict(query or {})
+    api_password = str(getattr(args, "api_password", "") or "")
+    if method.upper() != "GET" and api_password and "password" not in request_query:
+        request_query["password"] = api_password
+    query_string = encode_query(request_query)
     url = f"{base}{suffix}" + (f"?{query_string}" if query_string else "")
     request = urllib.request.Request(url, method=method)
     try:
@@ -562,7 +567,7 @@ def build_joiner_command(
 
 
 def build_service_command(args: argparse.Namespace, service_dir: Path) -> list[str]:
-    return [
+    command = [
         sys.executable,
         "tools/dummy-companion-service.py",
         "--api-url",
@@ -584,6 +589,21 @@ def build_service_command(args: argparse.Namespace, service_dir: Path) -> list[s
         "--max-runtime",
         str(args.service_max_runtime),
     ]
+    if getattr(args, "api_password", ""):
+        command += ["--api-password", str(args.api_password)]
+    if getattr(args, "dialogue_enabled", False):
+        command.append("--dialogue-enabled")
+    if getattr(args, "ai_gateway_config", ""):
+        command += ["--ai-gateway-config", str(args.ai_gateway_config)]
+    if getattr(args, "ai_gateway_model_alias", ""):
+        command += ["--ai-gateway-model-alias", str(args.ai_gateway_model_alias)]
+    command += [
+        "--ai-gateway-timeout",
+        str(args.ai_gateway_timeout),
+        "--dialogue-min-interval",
+        str(args.dialogue_min_interval),
+    ]
+    return command
 
 
 def request_id_from_payload(payload: Any) -> str:
@@ -704,6 +724,12 @@ def summarize_encounters(run_dir: Path) -> dict[str, int]:
         "damage_done": 0,
         "target_rejected": 0,
         "party_member_target_rejected": 0,
+        "dialogue_live_control": 0,
+        "dialogue_party": 0,
+        "dialogue_say": 0,
+        "dialogue_heal_priority": 0,
+        "dialogue_resurrect_priority": 0,
+        "dialogue_cc_add": 0,
     }
     for path in run_dir.rglob("*.jsonl"):
         if "service" not in path.parts:
@@ -762,6 +788,29 @@ def summarize_encounters(run_dir: Path) -> dict[str, int]:
                         counts["party_external_visible"] += amount
                     if "target_rejected" in key:
                         counts["target_rejected"] += amount
+    for path in run_dir.rglob("live-control.json"):
+        if "service" not in path.parts:
+            continue
+        try:
+            row = json.loads(path.read_text(encoding="utf-8-sig"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(row, dict):
+            continue
+        channel = str(row.get("say_channel") or "").strip().lower()
+        hint = str(row.get("intent_hint") or "").strip().lower()
+        if channel:
+            counts["dialogue_live_control"] += 1
+        if channel == "party":
+            counts["dialogue_party"] += 1
+        if channel == "say":
+            counts["dialogue_say"] += 1
+        if hint == "heal_priority":
+            counts["dialogue_heal_priority"] += 1
+        if hint == "resurrect_priority":
+            counts["dialogue_resurrect_priority"] += 1
+        if hint == "cc_add":
+            counts["dialogue_cc_add"] += 1
     return counts
 
 
@@ -780,6 +829,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--api-url", default="http://127.0.0.1:5000")
     parser.add_argument("--api-timeout", type=float, default=2.0)
+    parser.add_argument("--api-password", default=os.environ.get("OPENDAOC_API_PASSWORD", ""))
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=10300)
     parser.add_argument("--api-port", type=int, default=5000)
@@ -815,6 +865,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--service-poll-interval", type=float, default=1.0)
     parser.add_argument("--attach-timeout", type=float, default=20.0)
     parser.add_argument("--combat-home-leash-distance", type=float, default=4500.0)
+    parser.add_argument("--dialogue-enabled", action="store_true")
+    parser.add_argument("--ai-gateway-config", default="")
+    parser.add_argument("--ai-gateway-model-alias", default="small-dialogue")
+    parser.add_argument("--ai-gateway-timeout", type=float, default=5.0)
+    parser.add_argument("--dialogue-min-interval", type=float, default=30.0)
     parser.add_argument("--target-name", default="moorlich")
     parser.add_argument("--waypoints", default=BARFOG_WAYPOINTS)
     parser.add_argument("--login-retries", type=int, default=12)
@@ -938,7 +993,14 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     if args.real_player_join and not any(status in {"completed", "leaving"} for status in release_statuses.values()):
         return 4
-    if summary["damage_done"] <= 0:
+    if args.dialogue_enabled and summary["dialogue_live_control"] <= 0:
+        return 5
+    if (
+        summary["damage_done"] <= 0
+        and summary["heal"] <= 0
+        and summary["party_assist"] <= 0
+        and summary["party_follow"] <= 0
+    ):
         return 3
     if leader_rc != 0 and errors and set(errors) == {"safe_exit_deadline_reached"}:
         print("leader_safe_exit_warning=safe_exit_deadline_reached")

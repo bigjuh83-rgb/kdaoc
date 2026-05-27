@@ -751,6 +751,19 @@ def request_companion_dialogue(args: argparse.Namespace, payload: dict[str, Any]
     return True
 
 
+def emit_companion_dialogue(
+    args: argparse.Namespace,
+    companion: ActiveCompanion,
+    requester_state: dict[str, Any] | None,
+    event_type: str,
+) -> bool:
+    request_id = str(request_value(companion.request, "id", "Id", default=""))
+    if not request_id:
+        return False
+    payload = build_companion_dialogue_payload(companion, requester_state, event_type)
+    return request_companion_dialogue(args, payload, companion_control_path(args, request_id))
+
+
 def should_emit_dialogue(dialogue_state: dict[str, float], key: str, now: float, interval: float) -> bool:
     previous = float(dialogue_state.get(key, 0.0) or 0.0)
     if now - previous < max(0.0, interval):
@@ -922,6 +935,7 @@ def handle_request(
     process = subprocess.Popen(command, cwd=args.repo_root)
     active[request_id] = ActiveCompanion(request=request, process=process, account=companion_account)
     update_request_status(args, request_id, "grouping", "live companion behavior client started; waiting for grouping")
+    companion = active[request_id]
 
     if getattr(args, "attach_group", True):
         account = wait_for_companion_online(args, companion_accounts_csv)
@@ -937,8 +951,10 @@ def handle_request(
             active.pop(request_id, None)
             update_request_status(args, request_id, "failed", f"group attach failed: {message}", account)
             return
+        emit_companion_dialogue(args, companion, requester_state, "companion_joined")
     else:
         update_request_status(args, request_id, "active", "live companion behavior client started")
+        emit_companion_dialogue(args, companion, requester_state, "companion_joined")
 
 
 def release_companion_for_real_player(
@@ -992,8 +1008,7 @@ def poll_active(
                         time.monotonic(),
                         arg_float(args, "dialogue_min_interval", 5.0),
                     ):
-                        payload = build_companion_dialogue_payload(companion, requester_state, event_type)
-                        request_companion_dialogue(args, payload, companion_control_path(args, request_id))
+                        emit_companion_dialogue(args, companion, requester_state, event_type)
             continue
         status = "completed" if return_code == 0 else "failed"
         update_request_status(args, request_id, status, f"behavior client exited with {return_code}")

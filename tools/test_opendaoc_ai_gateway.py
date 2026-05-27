@@ -167,6 +167,36 @@ class OpenDaocAiGatewayValidationTests(unittest.TestCase):
         self.assertFalse(result.allowed)
         self.assertEqual(result.reason, "slash_command_in_say_text")
 
+    def test_validate_response_downgrades_unknown_hint_to_none(self) -> None:
+        gateway = load_gateway()
+
+        result = gateway.validate_companion_response(
+            {
+                "say_channel": "party",
+                "say_text": "I am with you.",
+                "intent_hint": "protect_the_leader",
+                "urgency": "normal",
+            }
+        )
+
+        self.assertTrue(result.allowed)
+        self.assertEqual(result.value["intent_hint"], "none")
+
+    def test_validate_response_maps_common_hint_aliases(self) -> None:
+        gateway = load_gateway()
+
+        result = gateway.validate_companion_response(
+            {
+                "say_channel": "party",
+                "say_text": "I will heal now.",
+                "intent_hint": "heal",
+                "urgency": "high",
+            }
+        )
+
+        self.assertTrue(result.allowed)
+        self.assertEqual(result.value["intent_hint"], "heal_priority")
+
     def test_build_companion_prompt_uses_sanitized_json_only(self) -> None:
         gateway = load_gateway()
         sanitized = gateway.sanitize_companion_payload(
@@ -188,6 +218,8 @@ class OpenDaocAiGatewayValidationTests(unittest.TestCase):
         self.assertIn("support", combined)
         self.assertNotIn("exact coordinate", combined)
         self.assertIn("JSON", combined)
+        self.assertIn("heal_priority", combined)
+        self.assertIn("cc_add", combined)
 
 
 class OpenDaocAiGatewayGenerationTests(unittest.TestCase):

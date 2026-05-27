@@ -187,9 +187,7 @@ def validate_companion_response(row: dict[str, Any]) -> ValidationResult:
     channel = str(row.get("say_channel") or "none").strip().lower()
     if channel not in ALLOWED_CHANNELS:
         return ValidationResult(False, {}, "invalid_channel")
-    hint = str(row.get("intent_hint") or "none").strip().lower()
-    if hint not in ALLOWED_HINTS:
-        return ValidationResult(False, {}, "invalid_hint")
+    hint = normalize_intent_hint(row.get("intent_hint"))
     urgency = str(row.get("urgency") or "normal").strip().lower()
     if urgency not in ALLOWED_URGENCY:
         return ValidationResult(False, {}, "invalid_urgency")
@@ -213,10 +211,33 @@ def validate_companion_response(row: dict[str, Any]) -> ValidationResult:
     )
 
 
+def normalize_intent_hint(value: Any) -> str:
+    hint = str(value or "none").strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "heal": "heal_priority",
+        "healing": "heal_priority",
+        "res": "resurrect_priority",
+        "rez": "resurrect_priority",
+        "resurrect": "resurrect_priority",
+        "cc": "cc_add",
+        "crowd_control": "cc_add",
+        "mez": "cc_add",
+        "stun": "cc_add",
+        "attack": "assist",
+        "attack_assist": "assist",
+        "escape": "flee",
+    }
+    hint = aliases.get(hint, hint)
+    return hint if hint in ALLOWED_HINTS else "none"
+
+
 def build_companion_messages(sanitized: dict[str, Any]) -> list[dict[str, str]]:
     system = (
         "You write one short Korean line for a DAoC party companion. "
         "Return JSON only with say_channel, say_text, intent_hint, urgency. "
+        "say_channel must be party, say, or none. "
+        "intent_hint must be one of none, heal_priority, resurrect_priority, follow, wait, assist, flee, cc_add. "
+        "urgency must be low, normal, or high. "
         "Do not include commands, coordinates, rewards, account names, or explanations."
     )
     user = json.dumps(sanitized, ensure_ascii=False, sort_keys=True)

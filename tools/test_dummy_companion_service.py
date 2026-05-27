@@ -471,6 +471,40 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertIn("req1", active)
         update_status.assert_any_call(args, "req1", "grouping", "live companion behavior client started; waiting for grouping")
 
+    def test_handle_request_emits_join_dialogue_after_attach(self) -> None:
+        service = load_service()
+        args = mock.Mock(
+            accounts_csv="accounts.csv",
+            dry_run=False,
+            repo_root=str(ROOT),
+            run_dir="runs",
+            attach_group=True,
+            dialogue_enabled=True,
+        )
+        request = {"id": "req1", "requesterAccount": "leader1", "requesterName": "Leader", "requestedRole": "healer"}
+        state = {"player": {"name": "Leader", "isAlive": True, "isDead": False}}
+        process = mock.Mock()
+
+        with mock.patch.object(service, "fetch_requester_state", return_value=state), mock.patch.object(
+            service, "select_companion_accounts_csv", return_value=Path("selected.csv")
+        ), mock.patch.object(service, "build_behavior_command", return_value=["python3", "worker.py"]), mock.patch.object(
+            service.subprocess, "Popen", return_value=process
+        ), mock.patch.object(
+            service, "first_account_username", return_value="companion1"
+        ), mock.patch.object(
+            service, "wait_for_companion_online", return_value="companion1"
+        ), mock.patch.object(
+            service, "attach_companion_to_request", return_value=(True, "")
+        ), mock.patch.object(service, "update_request_status"), mock.patch.object(
+            service, "request_companion_dialogue", return_value=True
+        ) as request_dialogue:
+            service.handle_request(args, request, {})
+
+        request_dialogue.assert_called_once()
+        payload = request_dialogue.call_args.args[1]
+        self.assertEqual(payload["event_type"], "companion_joined")
+        self.assertEqual(request_dialogue.call_args.args[2], Path("runs") / "req1" / "live-control.json")
+
     def test_handle_request_excludes_online_pool_accounts(self) -> None:
         service = load_service()
         args = mock.Mock(
@@ -522,6 +556,17 @@ class DummyCompanionServiceTests(unittest.TestCase):
                 "45",
                 "--service-max-runtime",
                 "120",
+                "--api-password",
+                "secret",
+                "--dialogue-enabled",
+                "--ai-gateway-config",
+                "ai.json",
+                "--ai-gateway-model-alias",
+                "small-dialogue",
+                "--ai-gateway-timeout",
+                "3",
+                "--dialogue-min-interval",
+                "1",
             ]
         )
 
@@ -540,6 +585,30 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(service[service.index("--max-runtime") + 1], "120.0")
         self.assertIn("--accounts-csv", service)
         self.assertEqual(Path(service[service.index("--accounts-csv") + 1]), LIVE_COMPANION_POOL_PATH)
+        self.assertIn("--api-password", service)
+        self.assertEqual(service[service.index("--api-password") + 1], "secret")
+        self.assertIn("--dialogue-enabled", service)
+        self.assertEqual(service[service.index("--ai-gateway-config") + 1], "ai.json")
+        self.assertEqual(service[service.index("--ai-gateway-model-alias") + 1], "small-dialogue")
+        self.assertEqual(service[service.index("--ai-gateway-timeout") + 1], "3.0")
+        self.assertEqual(service[service.index("--dialogue-min-interval") + 1], "1.0")
+
+    def test_live_companion_party_smoke_api_json_adds_password_to_post_only(self) -> None:
+        smoke = load_smoke()
+        args = smoke.build_parser().parse_args(["--api-password", "secret"])
+        response = mock.Mock()
+        response.__enter__ = mock.Mock(return_value=response)
+        response.__exit__ = mock.Mock(return_value=None)
+        response.read.return_value = b'{"ok": true}'
+
+        with mock.patch.object(smoke.urllib.request, "urlopen", return_value=response) as urlopen:
+            smoke.api_json(args, "POST", "/api/dummy/companions/requests", {"player": "Leader"})
+            smoke.api_json(args, "GET", "/api/dummy/companions/requests", {"status": "queued"})
+
+        post_request = urlopen.call_args_list[0].args[0]
+        get_request = urlopen.call_args_list[1].args[0]
+        self.assertIn("password=secret", post_request.full_url)
+        self.assertNotIn("password=secret", get_request.full_url)
 
     def test_live_companion_party_smoke_extracts_request_id(self) -> None:
         smoke = load_smoke()
@@ -563,6 +632,10 @@ class DummyCompanionServiceTests(unittest.TestCase):
                 "companion,12,4,3,5\n",
                 encoding="utf-8",
             )
+            (root / "service" / "req" / "live-control.json").write_text(
+                '{"say_channel":"party","say_text":"I will heal now.","intent_hint":"heal_priority"}',
+                encoding="utf-8",
+            )
 
             summary = smoke.summarize_encounters(root)
 
@@ -570,6 +643,9 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(summary["heal"], 4)
         self.assertEqual(summary["party_assist"], 3)
         self.assertEqual(summary["party_follow"], 5)
+        self.assertEqual(summary["dialogue_live_control"], 1)
+        self.assertEqual(summary["dialogue_party"], 1)
+        self.assertEqual(summary["dialogue_heal_priority"], 1)
 
     def test_live_companion_party_smoke_reads_leader_errors(self) -> None:
         smoke = load_smoke()
