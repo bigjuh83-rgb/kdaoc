@@ -75,6 +75,7 @@ class ActiveCompanion:
         self.request = request
         self.process = process
         self.account = account
+        self.last_lease_refresh = time.monotonic()
 
 
 def normalize_role(role: Any) -> str:
@@ -596,7 +597,7 @@ def api_request(args: argparse.Namespace, method: str, path: str, query: dict[st
     suffix = path if path.startswith("/") else f"/{path}"
     request_query = dict(query or {})
     api_password = arg_string(args, "api_password", "")
-    if method.upper() != "GET" and api_password and "password" not in request_query:
+    if api_password and "password" not in request_query:
         request_query["password"] = api_password
     query_string = encode_query(request_query)
     url = f"{base}{suffix}" + (f"?{query_string}" if query_string else "")
@@ -1132,9 +1133,16 @@ def handle_request(
     run_dir = Path(args.run_dir) / request_id
     active_accounts = {companion.account.lower() for companion in active.values() if companion.account}
     active_accounts.update(online_accounts_from_pool(args, args.accounts_csv))
-    companion_accounts_csv = select_companion_accounts_csv(request, args.accounts_csv, run_dir, active_accounts)
-    companion_account = first_account_username(companion_accounts_csv)
-    command = build_behavior_command(args, request, companion_accounts_csv, run_dir, requester_state=requester_state)
+    try:
+        companion_accounts_csv = select_companion_accounts_csv(request, args.accounts_csv, run_dir, active_accounts)
+        companion_account = first_account_username(companion_accounts_csv)
+        if not companion_account:
+            raise ValueError("selected companion account csv has no usable account")
+        command = build_behavior_command(args, request, companion_accounts_csv, run_dir, requester_state=requester_state)
+    except (OSError, ValueError) as exc:
+        update_request_status(args, request_id, "failed", f"cannot spawn companion: {exc}")
+        return
+
     if args.dry_run:
         print(json.dumps({"request": request, "command": command}, ensure_ascii=False))
         return
@@ -1142,7 +1150,7 @@ def handle_request(
     update_request_status(args, request_id, "spawning", "starting live companion behavior client")
     process = subprocess.Popen(command, cwd=args.repo_root)
     active[request_id] = ActiveCompanion(request=request, process=process, account=companion_account)
-    update_request_status(args, request_id, "grouping", "live companion behavior client started; waiting for grouping")
+    update_request_status(args, request_id, "grouping", "live companion behavior client started; waiting for grouping", companion_account)
     companion = active[request_id]
 
     if getattr(args, "attach_group", True):
@@ -1186,6 +1194,19 @@ def release_companion_for_real_player(
     release_counts[requester_key] = int(release_counts.get(requester_key, 0) or 0) + 1
 
 
+def refresh_active_companion_lease(
+    args: argparse.Namespace,
+    request_id: str,
+    companion: ActiveCompanion,
+    now: float,
+) -> None:
+    interval = arg_float(args, "active_lease_refresh_interval", 30.0)
+    if companion.last_lease_refresh and now - companion.last_lease_refresh < max(1.0, interval):
+        return
+    update_request_status(args, request_id, "active", "live companion heartbeat", companion.account)
+    companion.last_lease_refresh = now
+
+
 def poll_active(
     args: argparse.Namespace,
     active: dict[str, ActiveCompanion],
@@ -1207,6 +1228,7 @@ def poll_active(
                 update_request_status(args, request_id, "completed", "requester offline; companion stopped")
                 finished.append(request_id)
             else:
+                refresh_active_companion_lease(args, request_id, companion, time.monotonic())
                 event_type = dialogue_event_for_requester_state(requester_state)
                 if event_type:
                     dialogue_key = f"{request_id}:{event_type}"
@@ -1233,7 +1255,7 @@ def poll_active(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run live companion behavior clients from server companion requests.")
-    parser.add_argument("--api-url", default="http://127.0.0.1:5000")
+    parser.add_argument("--api-url", default="http://localhost:5000")
     parser.add_argument("--api-timeout", type=float, default=2.0)
     parser.add_argument("--api-password", default=os.environ.get("OPENDAOC_API_PASSWORD", ""))
     parser.add_argument("--accounts-csv", default=str(Path(__file__).resolve().with_name("dummy-live-companions.csv")))
@@ -1247,6 +1269,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--poll-interval", type=float, default=3.0)
     parser.add_argument("--attach-timeout", type=float, default=15.0)
     parser.add_argument("--attach-group", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--active-lease-refresh-interval", type=float, default=30.0)
     parser.add_argument("--dialogue-enabled", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--ai-gateway-config", default="")
     parser.add_argument("--ai-gateway-model-alias", default="small-dialogue")

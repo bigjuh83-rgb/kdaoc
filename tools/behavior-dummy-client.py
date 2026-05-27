@@ -532,6 +532,8 @@ class PlayerConditionSnapshot:
     account: str = ""
     object_id: int = 0
     level: int = 0
+    class_name: str = ""
+    class_id: int = 0
     realm: int = 0
     health_percent: int = 100
     x: int = 0
@@ -546,6 +548,8 @@ class PlayerConditionSnapshot:
     is_silenced: bool = False
     target_object_id: int = 0
     target_name: str = ""
+    is_companion: bool = False
+    companion_role: str = ""
 
     def curable_conditions(self) -> set[str]:
         conditions: set[str] = set()
@@ -919,7 +923,8 @@ class PartyState:
         elif member_name not in self.managed_member_names and member_name not in self.external_member_names:
             self.external_member_names.append(member_name)
 
-        if role and not self.member_roles.get(member_name):
+        existing_role = self.member_roles.get(member_name, "")
+        if role and (not existing_role or existing_role == "external" or role != "external"):
             self.member_roles[member_name] = role
 
         return True
@@ -941,7 +946,8 @@ class PartyState:
             int(getattr(actor, "y", 0) or 0),
             int(getattr(actor, "z", 0) or 0),
         )
-        if role:
+        existing_role = self.member_roles.get(member_name, "")
+        if role and (not existing_role or existing_role == "external" or role != "external"):
             self.member_roles[member_name] = role
         if self.leader_target_id > 0 and previous_health_percent > 0 and health_percent <= 0:
             self.encounter_death_count += 1
@@ -1099,7 +1105,10 @@ class PartyState:
 
     def _is_tank_role_locked(self, member_name: str) -> bool:
         role = self.member_roles.get(member_name, "")
-        return member_name == self.leader_name or role in {"melee-basic", "melee-burst", "hybrid"}
+        tank_roles = {"melee-basic", "melee-burst", "hybrid"}
+        if member_name == self.leader_name:
+            return role in {"", "external"} or role in tank_roles
+        return role in tank_roles
 
     def _active_tank_locked(self) -> dict[str, int | str]:
         candidates: list[tuple[int, int, str, int, int, int, int]] = []
@@ -6533,6 +6542,66 @@ def should_healer_prioritize_party_heal_during_rest(
     return hurt_health <= critical_party_health
 
 
+def should_prioritize_critical_support_heal(
+    args: argparse.Namespace,
+    *,
+    action_rotation: str,
+    current_health_percent: int,
+    hurt_member,
+) -> bool:
+    if action_rotation != "healer-support" or not isinstance(hurt_member, dict):
+        return False
+
+    hurt_health = int(hurt_member.get("health_percent", 0) or 0)
+    if hurt_health <= 0:
+        return False
+
+    self_floor = max(
+        int(getattr(args, "healer_self_health_percent", 0) or 0),
+        int(getattr(args, "flee_health_percent", 0) or 0),
+    )
+    if current_health_percent > 0 and current_health_percent <= self_floor and hurt_health <= self_floor:
+        return True
+
+    heal_threshold = int(getattr(args, "party_heal_leader_health_percent", 0) or 0)
+    emergency_floor = int(getattr(args, "flee_health_percent", 0) or 0)
+    critical_party_health = max(emergency_floor, min(50, int(heal_threshold * 0.5) if heal_threshold > 0 else 35))
+    return hurt_health <= critical_party_health
+
+
+def choose_party_support_action_priority(
+    args: argparse.Namespace,
+    *,
+    action_rotation: str,
+    current_health_percent: int,
+    hurt_member,
+    heal_due: bool,
+    cure_due: bool,
+    resurrection_due: bool,
+    crowd_control_due: bool,
+) -> str:
+    if action_rotation != "healer-support":
+        return "none"
+
+    if heal_due and should_prioritize_critical_support_heal(
+        args,
+        action_rotation=action_rotation,
+        current_health_percent=current_health_percent,
+        hurt_member=hurt_member,
+    ):
+        return "heal"
+
+    if cure_due:
+        return "cure"
+    if resurrection_due:
+        return "resurrect"
+    if crowd_control_due:
+        return "crowd_control"
+    if heal_due:
+        return "heal"
+    return "none"
+
+
 def should_healer_abort_rest_for_party_cure(
     args: argparse.Namespace,
     *,
@@ -8081,6 +8150,10 @@ def party_resurrection_retry_cooldown(args: argparse.Namespace) -> float:
     if configured > 0.0:
         return configured
     return max(10.0, float(getattr(args, "party_resurrect_interval", 0.0) or 0.0) * 3.0)
+
+
+def should_apply_party_resurrection_cooldown(action_name: str | None) -> bool:
+    return str(action_name or "").startswith("validated_party_resurrect_")
 
 
 def party_resurrection_target_in_cast_range(
@@ -9695,6 +9768,104 @@ def build_combat_usable_api_url(args: argparse.Namespace, account: DummyAccount)
     )
 
 
+SUPPORT_CLASS_IDS = {6, 10, 26, 28, 47, 48, 46}
+CASTER_CLASS_IDS = {5, 7, 8, 12, 13, 18, 27, 29, 30, 36, 39, 40, 41, 42, 51, 55, 59}
+MELEE_CLASS_IDS = {1, 2, 3, 4, 9, 11, 19, 21, 22, 23, 24, 25, 31, 32, 34, 35, 43, 44, 45, 49, 50, 52, 54, 56, 58, 60, 61, 62}
+
+SUPPORT_CLASS_NAMES = {
+    "bard",
+    "cleric",
+    "druid",
+    "friar",
+    "healer",
+    "shaman",
+    "warden",
+}
+CASTER_CLASS_NAMES = {
+    "animist",
+    "bainshee",
+    "bonedancer",
+    "cabalist",
+    "eldritch",
+    "enchanter",
+    "elementalist",
+    "mage",
+    "magician",
+    "mentalist",
+    "necromancer",
+    "runemaster",
+    "sorcerer",
+    "spiritmaster",
+    "theurgist",
+    "warlock",
+    "wizard",
+}
+MELEE_CLASS_NAMES = {
+    "armsman",
+    "berserker",
+    "blademaster",
+    "champion",
+    "fighter",
+    "guardian",
+    "hero",
+    "hunter",
+    "infiltrator",
+    "mauleralb",
+    "maulerhib",
+    "maulermid",
+    "mercenary",
+    "midgardrogue",
+    "minstrel",
+    "nightshade",
+    "paladin",
+    "ranger",
+    "reaver",
+    "savage",
+    "scout",
+    "shadowblade",
+    "skald",
+    "stalker",
+    "thane",
+    "valewalker",
+    "valkyrie",
+    "vampiir",
+    "viking",
+    "warrior",
+}
+
+
+def party_role_from_class(class_name: str = "", class_id: int = 0) -> str:
+    normalized_name = re.sub(r"[^a-z0-9]+", "", str(class_name or "").lower())
+    try:
+        normalized_id = int(class_id or 0)
+    except (TypeError, ValueError):
+        normalized_id = 0
+
+    if normalized_id in SUPPORT_CLASS_IDS or normalized_name in SUPPORT_CLASS_NAMES:
+        return "healer-support"
+    if normalized_id in CASTER_CLASS_IDS or normalized_name in CASTER_CLASS_NAMES:
+        return "caster-basic"
+    if normalized_id in MELEE_CLASS_IDS or normalized_name in MELEE_CLASS_NAMES:
+        return "melee-basic"
+    return "external"
+
+
+def party_role_from_condition(condition: PlayerConditionSnapshot | None) -> str:
+    if condition is None:
+        return "external"
+
+    companion_role = str(getattr(condition, "companion_role", "") or "").strip().lower()
+    if bool(getattr(condition, "is_companion", False)) and companion_role:
+        if companion_role in {"healer", "support"}:
+            return "healer-support"
+        if companion_role == "tank":
+            return "melee-basic"
+        if companion_role == "dps":
+            return party_role_from_class(getattr(condition, "class_name", ""), getattr(condition, "class_id", 0))
+
+    return party_role_from_class(getattr(condition, "class_name", ""), getattr(condition, "class_id", 0))
+
+
 def parse_player_condition_snapshot(payload: object) -> PlayerConditionSnapshot:
     player = payload.get("player", {}) if isinstance(payload, dict) else {}
     if not isinstance(player, dict):
@@ -9705,6 +9876,8 @@ def parse_player_condition_snapshot(payload: object) -> PlayerConditionSnapshot:
         account=str(player.get("account", "") or ""),
         object_id=int(player.get("objectId", player.get("object_id", 0)) or 0),
         level=int(player.get("level", 0) or 0),
+        class_name=str(player.get("class", player.get("className", player.get("class_name", ""))) or ""),
+        class_id=int(player.get("classId", player.get("class_id", 0)) or 0),
         realm=parse_realm_id_value(player.get("realm", player.get("realmId", player.get("realm_id", 0)))),
         health_percent=int(float(player.get("healthPercent", player.get("health_percent", 100)) or 0)),
         x=int(player.get("x", 0) or 0),
@@ -9719,6 +9892,10 @@ def parse_player_condition_snapshot(payload: object) -> PlayerConditionSnapshot:
         is_silenced=bool(player.get("isSilenced", player.get("is_silenced", False))),
         target_object_id=int(player.get("targetObjectId", player.get("target_object_id", 0)) or 0),
         target_name=str(player.get("targetName", player.get("target_name", "")) or ""),
+        is_companion=parse_live_control_bool(
+            player.get("isCompanion", player.get("is_companion", player.get("isDummy", player.get("is_dummy", False))))
+        ),
+        companion_role=str(player.get("companionRole", player.get("companion_role", player.get("role", ""))) or ""),
     )
 
 
@@ -9873,7 +10050,11 @@ def refresh_party_condition_snapshots(
             if member_name not in managed_names and member_name != party_member_name:
                 if not auto_external_members:
                     continue
-                party_state.update_external_member(member_name, condition, role="external")
+                party_state.update_external_member(member_name, condition, role=party_role_from_condition(condition))
+            else:
+                condition_role = party_role_from_condition(condition)
+                if condition_role != "external":
+                    party_state.update_member_role(member_name, condition_role)
 
             party_state.update_member_condition(member_name, condition)
             updated_names.add(member_name)
@@ -17903,6 +18084,28 @@ def run_dummy_round(
                     observed_npcs=multi_aggro_observations,
                 )
             )
+            if (
+                multi_aggro_crowd_control_due
+                and choose_party_support_action_priority(
+                    args,
+                    action_rotation=action_rotation,
+                    current_health_percent=current_health_percent,
+                    hurt_member=hurt_member_for_precast,
+                    heal_due=healer_heal_due,
+                    cure_due=False,
+                    resurrection_due=False,
+                    crowd_control_due=True,
+                )
+                == "heal"
+            ):
+                multi_aggro_crowd_control_due = False
+                actions += add_action(action_counts, "crowd_control_deferred_for_critical_heal")
+                log_encounter_event(
+                    "crowd_control_deferred_for_critical_heal",
+                    now,
+                    heal_target=str(hurt_member_for_precast.get("name", "") if isinstance(hurt_member_for_precast, dict) else ""),
+                    heal_target_health=int(hurt_member_for_precast.get("health_percent", 0) if isinstance(hurt_member_for_precast, dict) else 0),
+                )
             if should_attempt_multi_aggro_crowd_control(
                 crowd_control_due=multi_aggro_crowd_control_due,
                 multi_aggro_counterattack_hold=multi_aggro_counterattack_hold,
@@ -19748,10 +19951,30 @@ def run_dummy_round(
                     actions += add_action(action_counts, "party_protection_target_missing")
                 next_party_protection = now + args.party_protection_interval + rng.uniform(0, args.jitter)
 
+            defer_cure_for_critical_heal = bool(
+                is_party_support_healer
+                and args.party_cure_interval > 0
+                and now >= next_party_cure
+                and choose_party_support_action_priority(
+                    args,
+                    action_rotation=action_rotation,
+                    current_health_percent=current_health_percent,
+                    hurt_member=hurt_member_for_precast,
+                    heal_due=healer_heal_due,
+                    cure_due=True,
+                    resurrection_due=False,
+                    crowd_control_due=False,
+                )
+                == "heal"
+            )
+            if defer_cure_for_critical_heal:
+                actions += add_action(action_counts, "party_cure_deferred_for_critical_heal")
+
             if (
                 is_party_support_healer
                 and args.party_cure_interval > 0
                 and now >= next_party_cure
+                and not defer_cure_for_critical_heal
             ):
                 friendly_spell_cast = False
                 cure_target, cure_spell = choose_party_cure_target(
@@ -19801,10 +20024,30 @@ def run_dummy_round(
 
                 next_party_cure = now + args.party_cure_interval + rng.uniform(0, args.jitter)
 
+            defer_resurrection_for_critical_heal = bool(
+                is_party_support_healer
+                and args.party_resurrect_interval > 0
+                and now >= next_party_resurrect
+                and choose_party_support_action_priority(
+                    args,
+                    action_rotation=action_rotation,
+                    current_health_percent=current_health_percent,
+                    hurt_member=hurt_member_for_precast,
+                    heal_due=healer_heal_due,
+                    cure_due=False,
+                    resurrection_due=True,
+                    crowd_control_due=False,
+                )
+                == "heal"
+            )
+            if defer_resurrection_for_critical_heal:
+                actions += add_action(action_counts, "party_resurrect_deferred_for_critical_heal")
+
             if (
                 is_party_support_healer
                 and args.party_resurrect_interval > 0
                 and now >= next_party_resurrect
+                and not defer_resurrection_for_critical_heal
             ):
                 friendly_spell_cast = False
                 dead_member = choose_party_resurrection_target(
@@ -19817,6 +20060,7 @@ def run_dummy_round(
 
                 if dead_member is not None and party_resurrection_target_in_cast_range(client, args, dead_member):
                     dead_member_id = int(dead_member.get("object_id", 0) or 0)
+                    action_name = None
                     if combat_plan.resurrection_spells:
                         spell = choose_usable_spell(rng, args, combat_plan.resurrection_spells)
                         action_name = perform_party_resurrection_cast(
@@ -19828,10 +20072,10 @@ def run_dummy_round(
                         )
                         actions += add_action(action_counts, action_name)
                         friendly_spell_cast = True
-                        if dead_member_id:
-                            party_resurrection_cooldowns[dead_member_id] = now + party_resurrection_retry_cooldown(args)
                     else:
                         actions += add_action(action_counts, "party_resurrect_skipped_unvalidated")
+
+                    if should_apply_party_resurrection_cooldown(action_name):
                         if dead_member_id:
                             party_resurrection_cooldowns[dead_member_id] = now + party_resurrection_retry_cooldown(args)
 
@@ -19875,11 +20119,26 @@ def run_dummy_round(
 
                 next_party_resurrect = now + args.party_resurrect_interval + rng.uniform(0, args.jitter)
 
+            defer_buff_for_critical_heal = bool(
+                is_party_support_healer
+                and args.party_buff_interval > 0
+                and now >= next_party_buff
+                and should_prioritize_critical_support_heal(
+                    args,
+                    action_rotation=action_rotation,
+                    current_health_percent=current_health_percent,
+                    hurt_member=hurt_member_for_precast,
+                )
+            )
+            if defer_buff_for_critical_heal:
+                actions += add_action(action_counts, "party_buff_deferred_for_critical_heal")
+
             if (
                 is_party_support_healer
                 and args.party_buff_interval > 0
                 and has_party_buff_cast_source(args, combat_plan)
                 and now >= next_party_buff
+                and not defer_buff_for_critical_heal
             ):
                 friendly_spell_cast = False
                 buff_cooldown_blocked = False

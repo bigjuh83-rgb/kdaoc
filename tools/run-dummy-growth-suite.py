@@ -725,8 +725,17 @@ def read_serverconfig_password() -> str:
 def run_mysql(args: argparse.Namespace, sql: str) -> str:
     env = os.environ.copy()
     env["MYSQL_PWD"] = args.db_password
+    command_prefix = [args.mysql_bin]
+    if os.name == "nt" and str(args.mysql_bin).startswith("/"):
+        wslenv = env.get("WSLENV", "")
+        parts = [part for part in wslenv.split(":") if part]
+        if "MYSQL_PWD/u" not in parts:
+            parts.append("MYSQL_PWD/u")
+        env["WSLENV"] = ":".join(parts)
+        command_prefix = [os.environ.get("WSL_EXE", r"C:\Windows\System32\wsl.exe"), "--exec", args.mysql_bin]
+
     command = [
-        args.mysql_bin,
+        *command_prefix,
         "--batch",
         "--raw",
         "--protocol=tcp",

@@ -65,6 +65,20 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         self.assertEqual(args.api_password, "secret")
 
+    def test_service_defaults_api_url_to_localhost_bridge(self) -> None:
+        service = load_service()
+
+        args = service.build_parser().parse_args(["--once"])
+
+        self.assertEqual(args.api_url, "http://localhost:5000")
+
+    def test_live_companion_smoke_defaults_api_url_to_localhost_bridge(self) -> None:
+        smoke = load_smoke()
+
+        args = smoke.build_parser().parse_args(["--dry-run"])
+
+        self.assertEqual(args.api_url, "http://localhost:5000")
+
     def test_live_companion_roles_map_to_safe_rotations(self) -> None:
         service = load_service()
 
@@ -471,7 +485,7 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertFalse(written)
         self.assertFalse(control_path.exists())
 
-    def test_api_request_adds_password_to_post_only(self) -> None:
+    def test_api_request_adds_password_to_all_companion_api_calls(self) -> None:
         service = load_service()
         args = mock.Mock(api_url="http://127.0.0.1:5000", api_timeout=1.0, api_password="secret")
         response = mock.Mock()
@@ -481,9 +495,12 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         with mock.patch.object(service.urllib.request, "urlopen", return_value=response) as urlopen:
             service.api_request(args, "POST", "/api/dummy/companions/requests/claim")
+            service.api_request(args, "GET", "/api/dummy/companions/requests", {"status": "queued"})
 
-        request = urlopen.call_args.args[0]
-        self.assertIn("password=secret", request.full_url)
+        post_request = urlopen.call_args_list[0].args[0]
+        get_request = urlopen.call_args_list[1].args[0]
+        self.assertIn("password=secret", post_request.full_url)
+        self.assertIn("password=secret", get_request.full_url)
 
     def test_call_ai_gateway_timeout_returns_blocked_result(self) -> None:
         service = load_service()
@@ -512,6 +529,26 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         popen.assert_not_called()
         update_status.assert_called_once_with(args, "req1", "failed", "cannot spawn companion: requester dead")
+
+    def test_handle_request_marks_failed_when_no_companion_accounts_available(self) -> None:
+        service = load_service()
+        args = mock.Mock(accounts_csv="accounts.csv", dry_run=False, run_dir="runs")
+        request = {"id": "req1", "requesterAccount": "leader1", "requesterName": "Leader"}
+        state = {"player": {"name": "Leader", "isAlive": True, "isDead": False}}
+
+        with mock.patch.object(service, "fetch_requester_state", return_value=state), mock.patch.object(
+            service, "online_accounts_from_pool", return_value=set()
+        ), mock.patch.object(
+            service,
+            "select_companion_accounts_csv",
+            side_effect=ValueError("no companion accounts left"),
+        ), mock.patch.object(service, "update_request_status") as update_status, mock.patch.object(
+            service.subprocess, "Popen"
+        ) as popen:
+            service.handle_request(args, request, {})
+
+        popen.assert_not_called()
+        update_status.assert_called_once_with(args, "req1", "failed", "cannot spawn companion: no companion accounts left")
 
     def test_handle_request_attaches_online_companion_before_active(self) -> None:
         service = load_service()
@@ -543,7 +580,7 @@ class DummyCompanionServiceTests(unittest.TestCase):
         popen.assert_called_once_with(["python3", "worker.py"], cwd=str(ROOT))
         attach.assert_called_once_with(args, "req1", "companion1")
         self.assertIn("req1", active)
-        update_status.assert_any_call(args, "req1", "grouping", "live companion behavior client started; waiting for grouping")
+        update_status.assert_any_call(args, "req1", "grouping", "live companion behavior client started; waiting for grouping", "companion1")
 
     def test_handle_request_emits_join_dialogue_after_attach(self) -> None:
         service = load_service()
@@ -741,7 +778,7 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(service[service.index("--ai-gateway-timeout") + 1], "3.0")
         self.assertEqual(service[service.index("--dialogue-min-interval") + 1], "1.0")
 
-    def test_live_companion_party_smoke_api_json_adds_password_to_post_only(self) -> None:
+    def test_live_companion_party_smoke_api_json_adds_password_to_all_calls(self) -> None:
         smoke = load_smoke()
         args = smoke.build_parser().parse_args(["--api-password", "secret"])
         response = mock.Mock()
@@ -756,7 +793,7 @@ class DummyCompanionServiceTests(unittest.TestCase):
         post_request = urlopen.call_args_list[0].args[0]
         get_request = urlopen.call_args_list[1].args[0]
         self.assertIn("password=secret", post_request.full_url)
-        self.assertNotIn("password=secret", get_request.full_url)
+        self.assertIn("password=secret", get_request.full_url)
 
     def test_live_companion_party_smoke_extracts_request_id(self) -> None:
         smoke = load_smoke()
@@ -822,6 +859,19 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertNotEqual(service.json.loads(first_service)["revision"], service.json.loads(second_service)["revision"])
         self.assertNotEqual(smoke.json.loads(first_smoke)["revision"], smoke.json.loads(second_smoke)["revision"])
 
+    def test_live_companion_party_smoke_waits_for_live_control_revision(self) -> None:
+        smoke = load_smoke()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            log_dir = Path(temp_dir)
+            revision = smoke.write_live_control(log_dir / "control.json", {"commands": ["/invite Player"]})
+            (log_dir / "leader-encounters.jsonl").write_text(
+                smoke.json.dumps({"event": "live_control_applied", "revision": revision}) + "\n",
+                encoding="utf-8",
+            )
+
+            self.assertTrue(smoke.wait_for_live_control_applied(log_dir, revision, timeout=0.1))
+
     def test_live_companion_party_smoke_rejects_replace_outside_test_output(self) -> None:
         smoke = load_smoke()
 
@@ -840,6 +890,108 @@ class DummyCompanionServiceTests(unittest.TestCase):
             )
 
             self.assertEqual(smoke.leader_errors(root), ["safe_exit_deadline_reached"])
+            self.assertTrue(smoke.safe_exit_deadline_only(smoke.leader_errors(root)))
+
+    def test_live_companion_party_smoke_reads_joiner_errors(self) -> None:
+        smoke = load_smoke()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "joiner").mkdir()
+            (root / "joiner" / "joiner-metrics.csv").write_text(
+                "username,error\njoiner,safe_exit_deadline_reached\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(smoke.joiner_errors(root), ["safe_exit_deadline_reached"])
+            self.assertTrue(smoke.safe_exit_deadline_only(smoke.joiner_errors(root)))
+
+    def test_live_companion_party_smoke_accepts_real_join_release_without_combat_activity(self) -> None:
+        smoke = load_smoke()
+
+        summary = {"damage_done": 0, "heal": 0, "party_assist": 0, "party_follow": 0}
+
+        self.assertFalse(smoke.has_companion_activity(summary))
+        self.assertTrue(smoke.release_completed({"req1": "completed"}))
+
+    def test_live_companion_party_smoke_exit_accepts_real_join_release_and_safe_joiner_exit(self) -> None:
+        smoke = load_smoke()
+
+        exit_code, notes = smoke.smoke_exit_code(
+            active_statuses={"req1": "active"},
+            release_statuses={"req1": "completed"},
+            summary={
+                "damage_done": 0,
+                "heal": 0,
+                "party_assist": 0,
+                "party_follow": 0,
+                "dialogue_live_control": 0,
+                "dialogue_live_control_applied": 0,
+            },
+            leader_errors=[],
+            joiner_errors=["safe_exit_deadline_reached"],
+            leader_rc=0,
+            service_rc=0,
+            joiner_rc=1,
+            real_player_join=True,
+            dialogue_enabled=False,
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("joiner_safe_exit_warning=safe_exit_deadline_reached", notes)
+        self.assertIn("return_codes=leader:0,service:0,joiner:0", notes)
+
+    def test_live_companion_party_smoke_exit_requires_activity_without_real_join_release(self) -> None:
+        smoke = load_smoke()
+
+        exit_code, notes = smoke.smoke_exit_code(
+            active_statuses={"req1": "active"},
+            release_statuses={},
+            summary={
+                "damage_done": 0,
+                "heal": 0,
+                "party_assist": 0,
+                "party_follow": 0,
+                "dialogue_live_control": 0,
+                "dialogue_live_control_applied": 0,
+            },
+            leader_errors=[],
+            joiner_errors=[],
+            leader_rc=0,
+            service_rc=0,
+            joiner_rc=0,
+            real_player_join=False,
+            dialogue_enabled=False,
+        )
+
+        self.assertEqual(exit_code, 3)
+        self.assertEqual(notes, [])
+
+    def test_live_companion_party_smoke_exit_keeps_service_failure_visible(self) -> None:
+        smoke = load_smoke()
+
+        exit_code, notes = smoke.smoke_exit_code(
+            active_statuses={"req1": "active"},
+            release_statuses={"req1": "completed"},
+            summary={
+                "damage_done": 0,
+                "heal": 0,
+                "party_assist": 0,
+                "party_follow": 0,
+                "dialogue_live_control": 0,
+                "dialogue_live_control_applied": 0,
+            },
+            leader_errors=[],
+            joiner_errors=["safe_exit_deadline_reached"],
+            leader_rc=0,
+            service_rc=7,
+            joiner_rc=1,
+            real_player_join=True,
+            dialogue_enabled=False,
+        )
+
+        self.assertEqual(exit_code, 7)
+        self.assertIn("return_codes=leader:0,service:7,joiner:0", notes)
 
     def test_poll_active_stops_companion_when_requester_logs_out(self) -> None:
         service = load_service()
@@ -880,6 +1032,28 @@ class DummyCompanionServiceTests(unittest.TestCase):
         request_dialogue.assert_called_once()
         self.assertIn("req1:player_requested_heal", dialogue_state)
         self.assertEqual(request_dialogue.call_args.args[2], Path("runs") / "req1" / "live-control.json")
+
+    def test_poll_active_refreshes_active_companion_lease(self) -> None:
+        service = load_service()
+        args = mock.Mock(active_lease_refresh_interval=0.0)
+        process = mock.Mock()
+        process.poll.return_value = None
+        active = {
+            "req1": service.ActiveCompanion(
+                {"id": "req1", "requesterAccount": "leader1"},
+                process,
+                account="albhealer",
+            )
+        }
+        active["req1"].last_lease_refresh = 0.0
+        state = {"player": {"healthPercent": 100, "inCombat": False, "isAlive": True, "isDead": False}}
+
+        with mock.patch.object(service, "fetch_requester_state", return_value=state), mock.patch.object(
+            service, "update_request_status"
+        ) as update_status:
+            service.poll_active(args, active, release_counts={}, dialogue_state={})
+
+        update_status.assert_called_once_with(args, "req1", "active", "live companion heartbeat", "albhealer")
 
     def test_poll_active_releases_low_priority_companion_when_real_player_joins(self) -> None:
         service = load_service()
@@ -968,6 +1142,34 @@ class DummyCompanionServerSurfaceTests(unittest.TestCase):
         self.assertIn("ActiveCompanionRoleFor", combat_routes)
         self.assertIn("MapDummyCompanionRoutes", host)
 
+    def test_companion_attach_requires_preassigned_companion_identity(self) -> None:
+        routes = (ROOT / "GameServer" / "API" / "DummyCompanion" / "DummyCompanionRoutes.cs").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("AttachCompanionMatchesRequest", routes)
+        self.assertIn("AssignedCompanionName", routes)
+        self.assertIn("UnexpectedCompanion", routes)
+
+    def test_companion_attach_requires_grouping_request_status(self) -> None:
+        routes = (ROOT / "GameServer" / "API" / "DummyCompanion" / "DummyCompanionRoutes.cs").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("RequireAttachableRequest(request)", routes)
+        self.assertIn("RequestNotAttachable", routes)
+        self.assertIn("CompanionRequestStatus.Grouping", routes)
+
+    def test_companion_request_read_api_is_protected(self) -> None:
+        routes = (ROOT / "GameServer" / "API" / "DummyCompanion" / "DummyCompanionRoutes.cs").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn('api.MapGet("/api/dummy/companions/requests", (HttpContext context)', routes)
+        self.assertIn('api.MapGet("/api/dummy/companions/requests/{id}", (HttpContext context, string id)', routes)
+        self.assertIn('api.MapGet("/api/dummy/companions/players/{playerName}/latest", (HttpContext context, string playerName)', routes)
+        self.assertGreaterEqual(routes.count("RequireMutationAllowed(context)"), 9)
+
     def test_companion_request_service_counts_pending_requests_against_party_slots(self) -> None:
         source = (ROOT / "GameServer" / "LiveCompanion" / "CompanionRequestService.cs").read_text(encoding="utf-8")
 
@@ -975,6 +1177,42 @@ class DummyCompanionServerSurfaceTests(unittest.TestCase):
         self.assertIn("OpenRequestCountForRequesterLocked", source)
         self.assertIn("availableSlots = Math.Max(0, vacantSlots - reservedSlots)", source)
         self.assertIn("AddRequestLocked(request)", source)
+
+    def test_companion_request_service_expires_stale_open_requests(self) -> None:
+        source = (ROOT / "GameServer" / "LiveCompanion" / "CompanionRequestService.cs").read_text(encoding="utf-8")
+
+        self.assertIn("StaleOpenRequestTimeout", source)
+        self.assertIn("ExpireStaleOpenRequestsLocked", source)
+        self.assertIn("CompanionRequestStatus.Failed", source)
+        self.assertIn("Snapshot(string status", source)
+        self.assertIn("ClaimNextQueued()", source)
+
+    def test_companion_request_service_rejects_terminal_status_reactivation(self) -> None:
+        source = (ROOT / "GameServer" / "LiveCompanion" / "CompanionRequestService.cs").read_text(encoding="utf-8")
+
+        self.assertIn("TerminalStatuses", source)
+        self.assertIn("CanTransitionStatus", source)
+        self.assertIn("if (!CanTransitionStatus(request.Status, normalizedStatus))", source)
+
+    def test_active_companion_lease_is_refreshed_and_expires_when_service_stops(self) -> None:
+        server_source = (ROOT / "GameServer" / "LiveCompanion" / "CompanionRequestService.cs").read_text(encoding="utf-8")
+        service_source = (ROOT / "tools" / "dummy-companion-service.py").read_text(encoding="utf-8")
+
+        self.assertIn("ActiveCompanionLeaseTimeout", server_source)
+        self.assertIn("CompanionRequestStatus.Active", server_source)
+        self.assertIn("ExpireStaleOpenRequestsLocked(DateTime.UtcNow);", server_source)
+        self.assertIn("refresh_active_companion_lease", service_source)
+        self.assertIn("active_lease_refresh_interval", service_source)
+
+    def test_active_companion_rewards_are_suppressed_server_side(self) -> None:
+        source = (ROOT / "GameServer" / "gameobjects" / "GamePlayer.cs").read_text(encoding="utf-8")
+
+        self.assertIn("using DOL.GS.LiveCompanion;", source)
+        self.assertIn("SuppressLiveCompanionReward", source)
+        self.assertIn("CompanionRequestService.IsActiveCompanion(Name)", source)
+        self.assertLess(source.index("SuppressLiveCompanionReward"), source.index("RealmPoints += amount;"))
+        self.assertLess(source.index("SuppressLiveCompanionReward"), source.index("BountyPoints += amount;"))
+        self.assertLess(source.index("SuppressLiveCompanionReward"), source.index("AddMoney(money, messageFormat, ct, cl);"))
 
 
 if __name__ == "__main__":

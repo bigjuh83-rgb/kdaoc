@@ -6145,6 +6145,98 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
+    def test_support_priority_critical_self_heal_beats_cure(self):
+        args = SimpleNamespace(healer_self_health_percent=65, flee_health_percent=35, party_heal_leader_health_percent=80)
+        hurt_member = {"name": "cleric", "health_percent": 52}
+
+        priority = behavior.choose_party_support_action_priority(
+            args,
+            action_rotation="healer-support",
+            current_health_percent=52,
+            hurt_member=hurt_member,
+            heal_due=True,
+            cure_due=True,
+            resurrection_due=False,
+            crowd_control_due=False,
+        )
+
+        self.assertEqual(priority, "heal")
+
+    def test_support_priority_active_tank_heal_beats_resurrection(self):
+        args = SimpleNamespace(healer_self_health_percent=65, flee_health_percent=35, party_heal_leader_health_percent=80)
+        hurt_member = {"name": "tank", "health_percent": 28}
+
+        priority = behavior.choose_party_support_action_priority(
+            args,
+            action_rotation="healer-support",
+            current_health_percent=92,
+            hurt_member=hurt_member,
+            heal_due=True,
+            cure_due=False,
+            resurrection_due=True,
+            crowd_control_due=False,
+        )
+
+        self.assertEqual(priority, "heal")
+
+    def test_support_priority_critical_heal_defers_crowd_control_add(self):
+        args = SimpleNamespace(healer_self_health_percent=65, flee_health_percent=35, party_heal_leader_health_percent=80)
+        hurt_member = {"name": "leader", "health_percent": 24}
+
+        priority = behavior.choose_party_support_action_priority(
+            args,
+            action_rotation="healer-support",
+            current_health_percent=88,
+            hurt_member=hurt_member,
+            heal_due=True,
+            cure_due=False,
+            resurrection_due=False,
+            crowd_control_due=True,
+        )
+
+        self.assertEqual(priority, "heal")
+
+    def test_external_leader_critical_heal_beats_external_member_cure(self):
+        state = behavior.PartyState("leader", ["leader", "cleric"])
+        state.update_member("leader", SimpleNamespace(player_object_id=10, health_percent=22, x=0, y=0, z=0))
+        state.update_member("cleric", SimpleNamespace(player_object_id=11, health_percent=100, x=0, y=0, z=0))
+        state.update_external_member(
+            "RealPlayer",
+            SimpleNamespace(object_id=90, health_percent=100, x=25, y=0, z=0),
+            role="external",
+        )
+        state.update_member_condition(
+            "RealPlayer",
+            behavior.PlayerConditionSnapshot(name="RealPlayer", object_id=90, health_percent=100, is_diseased=True),
+        )
+        args = SimpleNamespace(healer_self_health_percent=65, flee_health_percent=35, party_heal_leader_health_percent=80)
+        plan = behavior.CombatUsablePlan(
+            cure_spells=[
+                behavior.UsableSpellRef(line_index=2, spell_level=8, name="Cure Disease", level=8, spell_type="CureDisease")
+            ]
+        )
+
+        hurt_member = behavior.choose_party_heal_target(state, args, exclude_name="cleric")
+        cure_target, cure_spell = behavior.choose_party_cure_target(state, plan, exclude_name="cleric")
+        priority = behavior.choose_party_support_action_priority(
+            args,
+            action_rotation="healer-support",
+            current_health_percent=100,
+            hurt_member=hurt_member,
+            heal_due=True,
+            cure_due=cure_target is not None and cure_spell is not None,
+            resurrection_due=False,
+            crowd_control_due=False,
+        )
+
+        self.assertEqual(hurt_member["name"], "leader")
+        self.assertEqual(cure_target["name"], "RealPlayer")
+        self.assertEqual(priority, "heal")
+
+    def test_party_resurrection_without_spell_does_not_apply_retry_cooldown(self):
+        self.assertFalse(behavior.should_apply_party_resurrection_cooldown(None))
+        self.assertTrue(behavior.should_apply_party_resurrection_cooldown("validated_party_resurrect_member"))
+
     def test_healer_self_preserves_while_fleeing(self):
         args = SimpleNamespace(healer_self_health_percent=65)
 
@@ -18042,6 +18134,25 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertFalse(snapshots[1].is_alive)
         self.assertIn("mezz", snapshots[1].curable_conditions())
 
+    def test_player_condition_snapshot_keeps_combat_role_metadata(self):
+        snapshot = behavior.parse_player_condition_snapshot(
+            {
+                "player": {
+                    "name": "RealTank",
+                    "objectId": 91,
+                    "class": "Armsman",
+                    "classId": 2,
+                    "isCompanion": False,
+                    "companionRole": "",
+                }
+            }
+        )
+
+        self.assertEqual(snapshot.class_name, "Armsman")
+        self.assertEqual(snapshot.class_id, 2)
+        self.assertFalse(snapshot.is_companion)
+        self.assertEqual(behavior.party_role_from_condition(snapshot), "melee-basic")
+
     def test_party_cure_target_prefers_member_with_matching_cure_spell(self):
         state = behavior.PartyState("tank", ["tank", "cleric", "dps"])
         state.update_member("tank", SimpleNamespace(player_object_id=10, health_percent=100, x=0, y=0, z=0))
@@ -18501,6 +18612,68 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         real_member = next(member for member in snapshot["members"] if member["name"] == "RealPlayer")
         self.assertEqual(real_member["health_percent"], 35)
         self.assertIn("disease", state.member_conditions["RealPlayer"].curable_conditions())
+
+    def test_refresh_party_condition_snapshots_uses_real_player_tank_role(self):
+        args = SimpleNamespace(
+            combat_usable_api=True,
+            party_external_member_names=[],
+            party_auto_external_members=True,
+        )
+        account = behavior.DummyAccount("cleric", "", 1, 0)
+        state = behavior.PartyState("RealLeader", ["cleric"])
+        state.update_external_member(
+            "RealLeader",
+            SimpleNamespace(object_id=80, health_percent=100, x=10, y=20, z=30),
+            role="external",
+        )
+
+        def fake_fetch_many(_args, name, account_name=""):
+            self.assertEqual((name, account_name), ("cleric", "cleric"))
+            return [
+                behavior.PlayerConditionSnapshot(
+                    name="cleric",
+                    object_id=11,
+                    health_percent=100,
+                    x=1,
+                    y=2,
+                    z=3,
+                    class_name="Cleric",
+                ),
+                behavior.PlayerConditionSnapshot(
+                    name="RealLeader",
+                    object_id=80,
+                    health_percent=100,
+                    x=10,
+                    y=20,
+                    z=30,
+                    class_name="Wizard",
+                ),
+                behavior.PlayerConditionSnapshot(
+                    name="RealTank",
+                    object_id=90,
+                    health_percent=88,
+                    x=40,
+                    y=50,
+                    z=60,
+                    class_name="Armsman",
+                ),
+            ]
+
+        updated = behavior.refresh_party_condition_snapshots(
+            state,
+            args,
+            account,
+            "cleric",
+            fetch_condition=lambda *_args, **_kwargs: None,
+            fetch_condition_snapshots=fake_fetch_many,
+        )
+        snapshot = state.snapshot()
+
+        self.assertEqual(updated, 3)
+        self.assertEqual(snapshot["active_tank_name"], "RealTank")
+        roles = {member["name"]: member["role"] for member in snapshot["members"]}
+        self.assertEqual(roles["RealLeader"], "caster-basic")
+        self.assertEqual(roles["RealTank"], "melee-basic")
 
     def test_rotation_casts_hybrid_spell_refs_with_use_skill_packet(self):
         client = FakeCombatClient()

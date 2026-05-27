@@ -12,6 +12,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest import mock
 
 
 def load_module():
@@ -36,8 +37,20 @@ def load_hunting_ground_analyzer():
     return module
 
 
+def load_equip_dummy_boss_gear():
+    module_path = Path(__file__).with_name("equip-dummy-boss-gear.py")
+    spec = importlib.util.spec_from_file_location("equip_dummy_boss_gear_for_tests", module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"failed to load {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 growth = load_module()
 hunting_analyzer = load_hunting_ground_analyzer()
+equip_gear = load_equip_dummy_boss_gear()
 
 
 def route_point_inside_zone_config(route, zone_config: dict) -> bool:
@@ -54,6 +67,50 @@ def route_point_inside_zone_config(route, zone_config: dict) -> bool:
 
 
 class DummyGrowthSuiteTests(unittest.TestCase):
+    def test_run_mysql_wraps_wsl_mysql_binary_on_windows(self) -> None:
+        args = SimpleNamespace(
+            mysql_bin="/home/bigjuh/.local/opendaoc-mariadb/current/bin/mariadb",
+            db_password="secret",
+            db_host="127.0.0.1",
+            db_port=3306,
+            db_user="root",
+            db_name="opendaoc",
+        )
+
+        with mock.patch.object(growth.os, "name", "nt"), mock.patch.object(growth.subprocess, "run") as run:
+            run.return_value = SimpleNamespace(stdout="ok")
+            output = growth.run_mysql(args, "select 1")
+
+        command = run.call_args.args[0]
+        env = run.call_args.kwargs["env"]
+        self.assertEqual(output, "ok")
+        self.assertTrue(command[0].lower().endswith("wsl.exe"))
+        self.assertIn("--exec", command)
+        self.assertIn(args.mysql_bin, command)
+        self.assertIn("MYSQL_PWD/u", env["WSLENV"])
+
+    def test_equip_gear_run_mysql_wraps_wsl_mysql_binary_on_windows(self) -> None:
+        args = SimpleNamespace(
+            mysql_bin="/home/bigjuh/.local/opendaoc-mariadb/current/bin/mariadb",
+            db_password="secret",
+            db_host="127.0.0.1",
+            db_port=3306,
+            db_user="root",
+            db_name="opendaoc",
+        )
+
+        with mock.patch.object(equip_gear.os, "name", "nt"), mock.patch.object(equip_gear.subprocess, "check_output") as check_output:
+            check_output.return_value = "ok"
+            output = equip_gear.run_mysql(args, "select 1")
+
+        command = check_output.call_args.args[0]
+        env = check_output.call_args.kwargs["env"]
+        self.assertEqual(output, "ok")
+        self.assertTrue(command[0].lower().endswith("wsl.exe"))
+        self.assertIn("--exec", command)
+        self.assertIn(args.mysql_bin, command)
+        self.assertIn("MYSQL_PWD/u", env["WSLENV"])
+
     def test_command_for_metadata_redacts_all_password_flags(self) -> None:
         rendered = growth.command_for_metadata(
             [

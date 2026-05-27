@@ -96,6 +96,8 @@ namespace DOL.GS.LiveCompanion
     public static class CompanionRequestService
     {
         private const int MaxStoredRequests = 500;
+        private static readonly TimeSpan StaleOpenRequestTimeout = TimeSpan.FromMinutes(10);
+        private static readonly TimeSpan ActiveCompanionLeaseTimeout = TimeSpan.FromMinutes(5);
         private static readonly object Sync = new();
         private static readonly List<CompanionRequest> Requests = new();
         private static readonly HashSet<string> SlotHoldingStatuses = new(StringComparer.OrdinalIgnoreCase)
@@ -104,6 +106,17 @@ namespace DOL.GS.LiveCompanion
             CompanionRequestStatus.Spawning,
             CompanionRequestStatus.Grouping,
             CompanionRequestStatus.Active
+        };
+        private static readonly HashSet<string> ExpirableOpenStatuses = new(StringComparer.OrdinalIgnoreCase)
+        {
+            CompanionRequestStatus.Queued,
+            CompanionRequestStatus.Spawning,
+            CompanionRequestStatus.Grouping
+        };
+        private static readonly HashSet<string> TerminalStatuses = new(StringComparer.OrdinalIgnoreCase)
+        {
+            CompanionRequestStatus.Failed,
+            CompanionRequestStatus.Completed
         };
 
         public static CompanionRequestResult CreateRequest(
@@ -136,6 +149,7 @@ namespace DOL.GS.LiveCompanion
             int vacantSlots = VacantSlots(requester);
             lock (Sync)
             {
+                ExpireStaleOpenRequestsLocked(DateTime.UtcNow);
                 int reservedSlots = OpenRequestCountForRequesterLocked(requester);
                 int availableSlots = Math.Max(0, vacantSlots - reservedSlots);
                 CompanionRequest request = BuildRequest(
@@ -193,6 +207,7 @@ namespace DOL.GS.LiveCompanion
 
             lock (Sync)
             {
+                ExpireStaleOpenRequestsLocked(DateTime.UtcNow);
                 IEnumerable<CompanionRequest> rows = Requests
                     .OrderByDescending(request => request.CreatedUtc);
 
@@ -210,6 +225,7 @@ namespace DOL.GS.LiveCompanion
 
             lock (Sync)
             {
+                ExpireStaleOpenRequestsLocked(DateTime.UtcNow);
                 CompanionRequest request = Requests.FirstOrDefault(row => row.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
                 return request == null ? null : Clone(request);
             }
@@ -222,6 +238,7 @@ namespace DOL.GS.LiveCompanion
 
             lock (Sync)
             {
+                ExpireStaleOpenRequestsLocked(DateTime.UtcNow);
                 CompanionRequest request = Requests
                     .Where(row => row.RequesterName.Equals(playerName, StringComparison.OrdinalIgnoreCase))
                     .OrderByDescending(row => row.CreatedUtc)
@@ -237,6 +254,7 @@ namespace DOL.GS.LiveCompanion
 
             lock (Sync)
             {
+                ExpireStaleOpenRequestsLocked(DateTime.UtcNow);
                 CompanionRequest request = Requests
                     .Where(row => row.Status.Equals(CompanionRequestStatus.Active, StringComparison.OrdinalIgnoreCase))
                     .Where(row => row.AssignedCompanionName.Equals(companionName, StringComparison.OrdinalIgnoreCase))
@@ -256,6 +274,7 @@ namespace DOL.GS.LiveCompanion
         {
             lock (Sync)
             {
+                ExpireStaleOpenRequestsLocked(DateTime.UtcNow);
                 CompanionRequest request = Requests
                     .Where(row => row.Status.Equals(CompanionRequestStatus.Queued, StringComparison.OrdinalIgnoreCase) ||
                                   row.Status.Equals(CompanionRequestStatus.Leaving, StringComparison.OrdinalIgnoreCase))
@@ -288,6 +307,8 @@ namespace DOL.GS.LiveCompanion
             {
                 CompanionRequest request = Requests.FirstOrDefault(row => row.Id.Equals(id ?? string.Empty, StringComparison.OrdinalIgnoreCase));
                 if (request == null)
+                    return null;
+                if (!CanTransitionStatus(request.Status, normalizedStatus))
                     return null;
 
                 request.Status = normalizedStatus;
@@ -373,6 +394,37 @@ namespace DOL.GS.LiveCompanion
                   request.RequesterAccount.Equals(requesterAccount, StringComparison.OrdinalIgnoreCase)) ||
                  (!string.IsNullOrWhiteSpace(requesterName) &&
                   request.RequesterName.Equals(requesterName, StringComparison.OrdinalIgnoreCase))));
+        }
+
+        private static bool CanTransitionStatus(string currentStatus, string nextStatus)
+        {
+            string current = CompanionRequestStatus.Normalize(currentStatus);
+            string next = CompanionRequestStatus.Normalize(nextStatus);
+            if (current.Equals(next, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return !TerminalStatuses.Contains(current);
+        }
+
+        private static void ExpireStaleOpenRequestsLocked(DateTime now)
+        {
+            foreach (CompanionRequest request in Requests)
+            {
+                bool isActive = request.Status.Equals(CompanionRequestStatus.Active, StringComparison.OrdinalIgnoreCase);
+                if (!ExpirableOpenStatuses.Contains(request.Status) && !isActive)
+                    continue;
+
+                DateTime referenceTime = request.UpdatedUtc == default ? request.CreatedUtc : request.UpdatedUtc;
+                TimeSpan timeout = isActive ? ActiveCompanionLeaseTimeout : StaleOpenRequestTimeout;
+                if (referenceTime != default && now - referenceTime <= timeout)
+                    continue;
+
+                request.Status = CompanionRequestStatus.Failed;
+                request.UpdatedUtc = now;
+                request.Message = isActive
+                    ? "companion active lease expired"
+                    : "companion request expired before activation";
+            }
         }
 
         private static CompanionRequest Clone(CompanionRequest request)

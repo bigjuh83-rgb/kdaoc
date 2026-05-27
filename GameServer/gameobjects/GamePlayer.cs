@@ -15,6 +15,7 @@ using DOL.GS.Appeal;
 using DOL.GS.Effects;
 using DOL.GS.Housing;
 using DOL.GS.Keeps;
+using DOL.GS.LiveCompanion;
 using DOL.GS.PacketHandler;
 using DOL.GS.PacketHandler.Client.v168;
 using DOL.GS.PlayerClass;
@@ -3630,6 +3631,11 @@ namespace DOL.GS
             GainRealmPoints(amount, modify, true);
         }
 
+        private bool SuppressLiveCompanionReward()
+        {
+            return CompanionRequestService.IsActiveCompanion(Name);
+        }
+
         /// <summary>
         /// Called when this player gains realm points
         /// </summary>
@@ -3661,6 +3667,8 @@ namespace DOL.GS
         public virtual void GainRealmPoints(long amount, bool modify, bool sendMessage, bool notify, bool trackDashboardReward)
         {
             if (!GainRP)
+                return;
+            if (SuppressLiveCompanionReward())
                 return;
 
             if (modify)
@@ -3807,6 +3815,9 @@ namespace DOL.GS
         /// <param name="sendMessage">Wether to send a message like "You have gained N bountypoints"</param>
         public virtual void GainBountyPoints(long amount, bool modify, bool sendMessage, bool notify)
         {
+            if (SuppressLiveCompanionReward())
+                return;
+
             if (modify)
             {
                 //bp rate modifier
@@ -6532,6 +6543,9 @@ namespace DOL.GS
 
         public virtual void AddServerIssuedMoney(long money, string messageFormat, eChatType ct, eChatLoc cl)
         {
+            if (SuppressLiveCompanionReward())
+                return;
+
             AddMoney(money, messageFormat, ct, cl);
 
             if (money > 0 && Client?.Account?.PrivLevel == 1)

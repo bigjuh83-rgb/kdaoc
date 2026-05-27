@@ -84,7 +84,7 @@ def api_json(args: argparse.Namespace, method: str, path: str, query: dict[str, 
     suffix = path if path.startswith("/") else f"/{path}"
     request_query = dict(query or {})
     api_password = str(getattr(args, "api_password", "") or "")
-    if method.upper() != "GET" and api_password and "password" not in request_query:
+    if api_password and "password" not in request_query:
         request_query["password"] = api_password
     query_string = encode_query(request_query)
     url = f"{base}{suffix}" + (f"?{query_string}" if query_string else "")
@@ -643,10 +643,48 @@ def request_status_text(row: dict[str, Any] | None) -> str:
     return str((row or {}).get("status") or (row or {}).get("Status") or "").strip().lower()
 
 
-def write_live_control(path: Path, payload: dict[str, Any]) -> None:
+def release_completed(statuses: dict[str, str]) -> bool:
+    return any(str(status).lower() in {"completed", "leaving"} for status in statuses.values())
+
+
+def has_companion_activity(summary: dict[str, int]) -> bool:
+    return (
+        summary["damage_done"] > 0
+        or summary["heal"] > 0
+        or summary["party_assist"] > 0
+        or summary["party_follow"] > 0
+    )
+
+
+def write_live_control(path: Path, payload: dict[str, Any]) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
-    data = {"revision": time.time_ns(), **payload}
+    revision = str(time.time_ns())
+    data = {"revision": revision, **payload}
     path.write_text(json.dumps(data, ensure_ascii=False, sort_keys=True), encoding="utf-8")
+    return revision
+
+
+def wait_for_live_control_applied(log_dir: Path, revision: str, timeout: float) -> bool:
+    deadline = time.monotonic() + max(0.0, timeout)
+    seen: set[Path] = set()
+    while time.monotonic() <= deadline:
+        for path in log_dir.rglob("*.jsonl"):
+            if path in seen and path.stat().st_size == 0:
+                continue
+            try:
+                lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+            except OSError:
+                continue
+            for line in lines:
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if row.get("event") == "live_control_applied" and str(row.get("revision") or "") == str(revision):
+                    return True
+            seen.add(path)
+        time.sleep(0.2)
+    return False
 
 
 def validate_replace_run_dir(run_dir: Path) -> None:
@@ -706,7 +744,7 @@ def wait_for_real_join_release(args: argparse.Namespace, request_ids: list[str])
             row = request_status(args, request_id)
             if row:
                 statuses[request_id] = request_status_text(row)
-        if any(status in {"completed", "leaving"} for status in statuses.values()):
+        if release_completed(statuses):
             return statuses
         time.sleep(1.0)
     return statuses
@@ -832,9 +870,9 @@ def summarize_encounters(run_dir: Path) -> dict[str, int]:
     return counts
 
 
-def leader_errors(run_dir: Path) -> list[str]:
+def metrics_errors(run_dir: Path, subdir: str) -> list[str]:
     errors: list[str] = []
-    for path in (run_dir / "leader").glob("*metrics.csv"):
+    for path in (run_dir / subdir).glob("*metrics.csv"):
         with path.open(encoding="utf-8-sig", newline="") as handle:
             for row in csv.DictReader(handle):
                 error = str(row.get("error") or "").strip()
@@ -843,9 +881,60 @@ def leader_errors(run_dir: Path) -> list[str]:
     return errors
 
 
+def leader_errors(run_dir: Path) -> list[str]:
+    return metrics_errors(run_dir, "leader")
+
+
+def joiner_errors(run_dir: Path) -> list[str]:
+    return metrics_errors(run_dir, "joiner")
+
+
+def safe_exit_deadline_only(errors: list[str]) -> bool:
+    return bool(errors) and set(errors) == {"safe_exit_deadline_reached"}
+
+
+def smoke_exit_code(
+    *,
+    active_statuses: dict[str, str],
+    release_statuses: dict[str, str],
+    summary: dict[str, int],
+    leader_errors: list[str],
+    joiner_errors: list[str],
+    leader_rc: int,
+    service_rc: int,
+    joiner_rc: int,
+    real_player_join: bool,
+    dialogue_enabled: bool,
+) -> tuple[int, list[str]]:
+    notes: list[str] = []
+    if any(status.lower() != "active" for status in active_statuses.values()):
+        return 2, notes
+
+    real_join_released = real_player_join and release_completed(release_statuses)
+    if real_player_join and not real_join_released:
+        return 4, notes
+
+    if dialogue_enabled and summary["dialogue_live_control"] <= 0:
+        return 5, notes
+    if dialogue_enabled and summary["dialogue_live_control_applied"] <= 0:
+        return 6, notes
+    if not real_join_released and not has_companion_activity(summary):
+        return 3, notes
+
+    if leader_rc != 0 and safe_exit_deadline_only(leader_errors):
+        notes.append("leader_safe_exit_warning=safe_exit_deadline_reached")
+        leader_rc = 0
+    if real_player_join and joiner_rc != 0 and safe_exit_deadline_only(joiner_errors):
+        notes.append("joiner_safe_exit_warning=safe_exit_deadline_reached")
+        joiner_rc = 0
+
+    notes.append(f"return_codes=leader:{leader_rc},service:{service_rc},joiner:{joiner_rc}")
+    return max(leader_rc, service_rc, joiner_rc), notes
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--api-url", default="http://127.0.0.1:5000")
+    parser.add_argument("--api-url", default="http://localhost:5000")
     parser.add_argument("--api-timeout", type=float, default=2.0)
     parser.add_argument("--api-password", default=os.environ.get("OPENDAOC_API_PASSWORD", ""))
     parser.add_argument("--host", default="127.0.0.1")
@@ -875,6 +964,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--joiner-startup-delay", type=float, default=1.0)
     parser.add_argument("--joiner-online-timeout", type=float, default=35.0)
     parser.add_argument("--joiner-invite-delay", type=float, default=2.0)
+    parser.add_argument("--leader-control-apply-timeout", type=float, default=8.0)
     parser.add_argument("--release-timeout", type=float, default=35.0)
     parser.add_argument("--min-start-health-percent", type=float, default=90.0)
     parser.add_argument("--request-active-timeout", type=float, default=55.0)
@@ -970,14 +1060,15 @@ def main(argv: list[str] | None = None) -> int:
             if leader_session_id <= 0:
                 raise RuntimeError(f"leader session id unavailable for invite: {latest_leader_state}")
 
-            write_live_control(
+            invite_revision = write_live_control(
                 leader_control_file,
                 {
                     "commands": [f"/invite {joiner_name}"],
                     "say": f"inviting {joiner_name}",
                 },
             )
-            time.sleep(max(0.1, args.joiner_invite_delay))
+            if not wait_for_live_control_applied(run_dir / "leader", invite_revision, args.leader_control_apply_timeout):
+                time.sleep(max(0.1, args.joiner_invite_delay))
             write_live_control(
                 joiner_control_file,
                 {
@@ -1005,28 +1096,27 @@ def main(argv: list[str] | None = None) -> int:
 
     summary = summarize_encounters(run_dir)
     errors = leader_errors(run_dir)
+    joiner_error_rows = joiner_errors(run_dir)
     print(f"summary={json.dumps(summary, ensure_ascii=False, sort_keys=True)}")
     if errors:
         print(f"leader_errors={json.dumps(errors, ensure_ascii=False)}")
-    if any(status.lower() != "active" for status in statuses.values()):
-        return 2
-    if args.real_player_join and not any(status in {"completed", "leaving"} for status in release_statuses.values()):
-        return 4
-    if args.dialogue_enabled and summary["dialogue_live_control"] <= 0:
-        return 5
-    if args.dialogue_enabled and summary["dialogue_live_control_applied"] <= 0:
-        return 6
-    if (
-        summary["damage_done"] <= 0
-        and summary["heal"] <= 0
-        and summary["party_assist"] <= 0
-        and summary["party_follow"] <= 0
-    ):
-        return 3
-    if leader_rc != 0 and errors and set(errors) == {"safe_exit_deadline_reached"}:
-        print("leader_safe_exit_warning=safe_exit_deadline_reached")
-        leader_rc = 0
-    return max(leader_rc, service_rc, joiner_rc)
+    if joiner_error_rows:
+        print(f"joiner_errors={json.dumps(joiner_error_rows, ensure_ascii=False)}")
+    exit_code, notes = smoke_exit_code(
+        active_statuses=statuses,
+        release_statuses=release_statuses,
+        summary=summary,
+        leader_errors=errors,
+        joiner_errors=joiner_error_rows,
+        leader_rc=leader_rc,
+        service_rc=service_rc,
+        joiner_rc=joiner_rc,
+        real_player_join=args.real_player_join,
+        dialogue_enabled=args.dialogue_enabled,
+    )
+    for note in notes:
+        print(note)
+    return exit_code
 
 
 if __name__ == "__main__":

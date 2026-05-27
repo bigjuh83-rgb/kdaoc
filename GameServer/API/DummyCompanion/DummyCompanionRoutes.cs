@@ -15,19 +15,31 @@ namespace DOL.GS.API.DummyCompanion
         {
             api.MapGet("/api/dummy/companions/requests", (HttpContext context) =>
             {
+                IResult denied = RequireMutationAllowed(context);
+                if (denied != null)
+                    return denied;
+
                 string status = Query(context, "status");
                 int limit = ParseInt(Query(context, "limit"), 100);
                 return Results.Ok(CompanionRequestService.Snapshot(status, limit));
             });
 
-            api.MapGet("/api/dummy/companions/requests/{id}", (string id) =>
+            api.MapGet("/api/dummy/companions/requests/{id}", (HttpContext context, string id) =>
             {
+                IResult denied = RequireMutationAllowed(context);
+                if (denied != null)
+                    return denied;
+
                 CompanionRequest request = CompanionRequestService.Get(id);
                 return request == null ? Results.NotFound(new { error = "RequestNotFound", id }) : Results.Ok(request);
             });
 
-            api.MapGet("/api/dummy/companions/players/{playerName}/latest", (string playerName) =>
+            api.MapGet("/api/dummy/companions/players/{playerName}/latest", (HttpContext context, string playerName) =>
             {
+                IResult denied = RequireMutationAllowed(context);
+                if (denied != null)
+                    return denied;
+
                 CompanionRequest request = CompanionRequestService.LatestForPlayer(playerName);
                 return request == null
                     ? Results.NotFound(new { error = "RequestNotFound", playerName })
@@ -90,13 +102,28 @@ namespace DOL.GS.API.DummyCompanion
                 if (request == null)
                     return Results.NotFound(new { error = "RequestNotFound", id });
 
+                IResult notAttachable = RequireAttachableRequest(request);
+                if (notAttachable != null)
+                    return notAttachable;
+
                 GamePlayer requester = FindPlayer(request.RequesterName, request.RequesterAccount);
                 if (requester == null)
                     return Results.NotFound(new { error = "RequesterNotFound", request.RequesterName });
 
-                GamePlayer companion = FindPlayer(Query(context, "companion"), Query(context, "account"));
+                string companionName = Query(context, "companion");
+                string companionAccount = Query(context, "account");
+                if (!AttachCompanionMatchesRequest(request, companionName, companionAccount))
+                    return Results.BadRequest(new
+                    {
+                        error = "UnexpectedCompanion",
+                        expected = request.AssignedCompanionName,
+                        companion = companionName,
+                        account = companionAccount
+                    });
+
+                GamePlayer companion = FindPlayer(companionName, companionAccount);
                 if (companion == null)
-                    return Results.NotFound(new { error = "CompanionNotFound", companion = Query(context, "companion"), account = Query(context, "account") });
+                    return Results.NotFound(new { error = "CompanionNotFound", companion = companionName, account = companionAccount });
 
                 string failure = AttachCompanion(requester, companion);
                 if (!string.IsNullOrWhiteSpace(failure))
@@ -187,6 +214,31 @@ namespace DOL.GS.API.DummyCompanion
         private static int ParseInt(string value, int defaultValue)
         {
             return int.TryParse(value, out int parsed) ? parsed : defaultValue;
+        }
+
+        private static IResult RequireAttachableRequest(CompanionRequest request)
+        {
+            if (request.Status.Equals(CompanionRequestStatus.Grouping, StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            return Results.BadRequest(new
+            {
+                error = "RequestNotAttachable",
+                id = request.Id,
+                status = request.Status
+            });
+        }
+
+        private static bool AttachCompanionMatchesRequest(CompanionRequest request, string companionName, string account)
+        {
+            string expected = request?.AssignedCompanionName?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(expected))
+                return false;
+
+            return (!string.IsNullOrWhiteSpace(companionName) &&
+                    expected.Equals(companionName.Trim(), StringComparison.OrdinalIgnoreCase)) ||
+                   (!string.IsNullOrWhiteSpace(account) &&
+                    expected.Equals(account.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         private static GamePlayer FindPlayer(string name, string account = "")
