@@ -122,6 +122,67 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(service.role_to_rotation("tank"), "melee-basic")
         self.assertEqual(service.role_to_rotation("dps"), "melee-burst")
 
+    def test_class_role_hints_cover_daoc_companion_roles(self) -> None:
+        service = load_service()
+        expected = {
+            "heretic": {"healer", "support", "dps"},
+            "thane": {"tank", "dps"},
+            "valkyrie": {"tank", "support", "dps"},
+            "bonedancer": {"support", "dps"},
+            "warden": {"healer", "support", "tank", "dps"},
+            "animist": {"support", "dps"},
+            "vampiir": {"dps"},
+            "scout": {"dps"},
+            "hunter": {"dps"},
+            "ranger": {"dps"},
+        }
+
+        for class_name, roles in expected.items():
+            with self.subTest(class_name=class_name):
+                self.assertTrue(roles.issubset(service.CLASS_ROLE_HINTS.get(class_name, set())))
+
+    def test_support_behavior_command_uses_class_rotation_for_non_healer_support(self) -> None:
+        service = load_service()
+        request = {
+            "id": "req1",
+            "requesterName": "LiveLeader",
+            "requestedRole": "support",
+            "realm": 1,
+        }
+        args = mock.Mock(host="127.0.0.1", port=10300, api_port=5000)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            account_csv = Path(temp_dir) / "accounts.csv"
+            account_csv.write_text(
+                "username,password,realm,char_index,class_id,class_name,roles,home_x,home_y,home_z\n"
+                "albsorc,dummy-pass,1,0,8,Sorcerer,support,531504,479073,2200\n",
+                encoding="utf-8",
+            )
+            command = service.build_behavior_command(args, request, account_csv, Path(temp_dir) / "run")
+
+        self.assertEqual(command[command.index("--action-rotation") + 1], "caster-basic")
+
+    def test_stealth_companion_command_enables_startup_stealth(self) -> None:
+        service = load_service()
+        request = {
+            "id": "req1",
+            "requesterName": "LiveLeader",
+            "requestedRole": "dps",
+            "realm": 1,
+        }
+        args = mock.Mock(host="127.0.0.1", port=10300, api_port=5000)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            account_csv = Path(temp_dir) / "accounts.csv"
+            account_csv.write_text(
+                "username,password,realm,char_index,class_id,class_name,roles,home_x,home_y,home_z\n"
+                "albscout,dummy-pass,1,0,3,Scout,dps,531504,479073,2200\n",
+                encoding="utf-8",
+            )
+            command = service.build_behavior_command(args, request, account_csv, Path(temp_dir) / "run")
+
+        self.assertIn("--startup-stealth", command)
+
     def test_party_vacancy_clamps_to_available_slots(self) -> None:
         service = load_service()
 

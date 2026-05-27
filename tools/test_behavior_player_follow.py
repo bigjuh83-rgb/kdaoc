@@ -8138,6 +8138,22 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(behavior.resolve_action_rotation(args, 2), "healer-support")
         self.assertEqual(behavior.resolve_action_rotation(args, 4), "melee-burst")
 
+    def test_auto_rotation_uses_account_class_profile_before_slot_mix(self):
+        args = SimpleNamespace(
+            party_slot_rotations=[],
+            action_rotation="auto",
+            party_size=4,
+            party_role_strategy="mixed",
+            behavior_profile="custom",
+        )
+        cleric = behavior.DummyAccount("cleric", "pass", 1, 0, class_id=6, class_name="Cleric")
+        wizard = behavior.DummyAccount("wizard", "pass", 1, 0, class_id=7, class_name="Wizard")
+        thane = behavior.DummyAccount("thane", "pass", 2, 0, class_id=21, class_name="Thane")
+
+        self.assertEqual(behavior.resolve_action_rotation(args, 0, account=cleric), "healer-support")
+        self.assertEqual(behavior.resolve_action_rotation(args, 0, account=wizard), "caster-basic")
+        self.assertEqual(behavior.resolve_action_rotation(args, 0, account=thane), "hybrid")
+
     def test_effective_rotation_replaces_healer_without_heal_spells_with_caster(self):
         args = SimpleNamespace(allow_unvalidated_spells=False, allow_unvalidated_skills=False)
         plan = behavior.CombatUsablePlan(
@@ -18283,6 +18299,27 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertIn("ranged", scout_profile.capabilities)
         self.assertEqual(bard_profile.action_rotation, "healer-support")
         self.assertEqual(behavior.party_role_from_class("Bard", 48), "healer-support")
+
+    def test_party_class_profile_covers_core_daoc_class_features(self):
+        expected = {
+            "Paladin": {"tank", "shield", "melee_dps", "buff", "chant", "resurrection"},
+            "Theurgist": {"caster", "pet", "crowd_control", "bladeturn"},
+            "Sorcerer": {"caster", "crowd_control", "charm", "debuff"},
+            "Heretic": {"healer", "resurrection", "caster", "debuff"},
+            "Bonedancer": {"caster", "pet", "lifedrain"},
+            "Healer": {"healer", "resurrection", "cure", "crowd_control"},
+            "Shaman": {"healer", "resurrection", "cure", "buff", "disease"},
+            "Valkyrie": {"tank", "shield", "melee_dps", "healer", "caster"},
+            "Animist": {"caster", "pet", "turret", "crowd_control"},
+            "Druid": {"healer", "resurrection", "cure", "buff", "pet"},
+            "Warden": {"healer", "resurrection", "cure", "buff", "bladeturn"},
+            "Vampiir": {"melee_dps", "caster", "buff", "debuff", "stealth_detection"},
+        }
+
+        for class_name, tags in expected.items():
+            with self.subTest(class_name=class_name):
+                capabilities = behavior.party_class_capabilities_from_class(class_name)
+                self.assertTrue(tags.issubset(capabilities), f"{class_name}: {tags - capabilities}")
 
     def test_party_cure_target_prefers_member_with_matching_cure_spell(self):
         state = behavior.PartyState("tank", ["tank", "cleric", "dps"])

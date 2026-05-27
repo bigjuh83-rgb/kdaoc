@@ -5900,13 +5900,18 @@ def apply_behavior_profile(args: argparse.Namespace) -> None:
         setattr(args, name.replace("-", "_"), value)
 
 
-def resolve_action_rotation(args: argparse.Namespace, party_slot: int) -> str:
+def resolve_action_rotation(args: argparse.Namespace, party_slot: int, account: DummyAccount | None = None) -> str:
     if args.party_slot_rotations:
         rotations = args.party_slot_rotations
         return rotations[party_slot % len(rotations)]
 
     if args.action_rotation != "auto":
         return args.action_rotation
+
+    if account is not None:
+        profile = party_class_role_profile_from_class(account.class_name, account.class_id or 0)
+        if profile.action_rotation != "external":
+            return profile.action_rotation
 
     if args.party_size > 1 and args.party_role_strategy == "mixed":
         if party_slot == 0:
@@ -9905,6 +9910,134 @@ SPEED_SONG_CLASS_NAMES = {"bard", "minstrel", "skald"}
 STEALTH_CLASS_NAMES = {"hunter", "huntress", "infiltrator", "minstrel", "nightshade", "ranger", "scout", "shadowblade"}
 RANGED_STEALTH_CLASS_NAMES = {"hunter", "huntress", "ranger", "scout"}
 ASSASSIN_STEALTH_CLASS_NAMES = {"infiltrator", "nightshade", "shadowblade"}
+CLASS_PROFILE_ID_KEYS = {
+    1: "paladin",
+    2: "armsman",
+    3: "scout",
+    4: "minstrel",
+    5: "theurgist",
+    6: "cleric",
+    7: "wizard",
+    8: "sorcerer",
+    9: "infiltrator",
+    10: "friar",
+    11: "mercenary",
+    12: "necromancer",
+    13: "cabalist",
+    14: "fighter",
+    15: "elementalist",
+    16: "acolyte",
+    17: "albionrogue",
+    18: "mage",
+    19: "reaver",
+    20: "disciple",
+    21: "thane",
+    22: "warrior",
+    23: "shadowblade",
+    24: "skald",
+    25: "hunter",
+    26: "healer",
+    27: "spiritmaster",
+    28: "shaman",
+    29: "runemaster",
+    30: "bonedancer",
+    31: "berserker",
+    32: "savage",
+    33: "heretic",
+    34: "valkyrie",
+    35: "viking",
+    36: "mystic",
+    37: "seer",
+    38: "midgardrogue",
+    39: "bainshee",
+    40: "eldritch",
+    41: "enchanter",
+    42: "mentalist",
+    43: "blademaster",
+    44: "hero",
+    45: "champion",
+    46: "warden",
+    47: "druid",
+    48: "bard",
+    49: "nightshade",
+    50: "ranger",
+    51: "magician",
+    52: "guardian",
+    53: "naturalist",
+    54: "stalker",
+    55: "animist",
+    56: "valewalker",
+    57: "forester",
+    58: "vampiir",
+    59: "warlock",
+    60: "mauleralb",
+    61: "maulermid",
+    62: "maulerhib",
+}
+CLASS_PROFILE_HINTS = {
+    "acolyte": ("healer-support", "support", {"healer", "buff"}),
+    "albionrogue": ("hybrid", "stealth-scout", {"melee_dps", "ranged", "stealth"}),
+    "armsman": ("melee-basic", "tank", {"tank", "shield", "melee_dps", "ranged", "siege"}),
+    "animist": ("caster-basic", "pet-caster", {"caster", "pet", "turret", "crowd_control", "siege"}),
+    "bainshee": ("caster-basic", "caster", {"caster", "ranged", "debuff", "crowd_control"}),
+    "bard": ("healer-support", "speed-support", {"healer", "resurrection", "cure", "buff", "speed_song", "group_speed", "crowd_control", "support_utility"}),
+    "berserker": ("melee-basic", "melee", {"melee_dps"}),
+    "blademaster": ("melee-basic", "melee", {"melee_dps", "shield"}),
+    "bonedancer": ("caster-basic", "pet-caster", {"caster", "pet", "healer", "lifedrain", "support_utility"}),
+    "cabalist": ("caster-basic", "pet-caster", {"caster", "pet", "debuff", "disease", "dot"}),
+    "champion": ("hybrid", "hybrid", {"tank", "shield", "melee_dps", "caster", "debuff"}),
+    "cleric": ("healer-support", "support", {"healer", "resurrection", "cure", "buff", "caster"}),
+    "disciple": ("hybrid", "hybrid", {"melee_dps", "buff", "debuff"}),
+    "druid": ("healer-support", "support", {"healer", "resurrection", "cure", "buff", "pet"}),
+    "eldritch": ("caster-basic", "caster", {"caster", "ranged", "debuff", "crowd_control"}),
+    "elementalist": ("caster-basic", "caster", {"caster", "ranged"}),
+    "enchanter": ("caster-basic", "pet-caster", {"caster", "pet", "debuff", "buff"}),
+    "fighter": ("melee-basic", "tank", {"tank", "shield", "melee_dps"}),
+    "forester": ("hybrid", "stealth-scout", {"ranged", "stealth", "melee_dps", "pet"}),
+    "friar": ("healer-support", "support", {"healer", "resurrection", "cure", "buff", "melee_dps"}),
+    "guardian": ("melee-basic", "tank", {"tank", "shield", "melee_dps"}),
+    "healer": ("healer-support", "support", {"healer", "resurrection", "cure", "buff", "crowd_control"}),
+    "heretic": ("healer-support", "support", {"healer", "resurrection", "caster", "debuff", "utility"}),
+    "hero": ("melee-basic", "tank", {"tank", "shield", "melee_dps"}),
+    "hunter": ("hybrid", "stealth-scout", {"ranged", "stealth", "pet", "melee_dps"}),
+    "infiltrator": ("melee-basic", "stealth-assassin", {"stealth", "assassin", "melee_dps", "debuff"}),
+    "mage": ("caster-basic", "caster", {"caster", "ranged", "pet"}),
+    "magician": ("caster-basic", "caster", {"caster", "ranged", "pet"}),
+    "mauleralb": ("hybrid", "hybrid", {"melee_dps", "tank", "buff", "debuff"}),
+    "maulerhib": ("hybrid", "hybrid", {"melee_dps", "tank", "buff", "debuff"}),
+    "maulermid": ("hybrid", "hybrid", {"melee_dps", "tank", "buff", "debuff"}),
+    "mentalist": ("caster-basic", "caster", {"caster", "crowd_control", "charm", "healer", "dot"}),
+    "mercenary": ("melee-basic", "melee", {"melee_dps", "shield"}),
+    "midgardrogue": ("hybrid", "stealth-scout", {"melee_dps", "ranged", "stealth"}),
+    "minstrel": ("hybrid", "speed-support", {"speed_song", "group_speed", "crowd_control", "charm", "stealth", "melee_dps", "support_utility"}),
+    "mystic": ("caster-basic", "caster", {"caster", "pet", "ranged"}),
+    "naturalist": ("healer-support", "support", {"healer", "resurrection", "cure", "buff", "speed_song"}),
+    "necromancer": ("caster-basic", "pet-caster", {"caster", "pet", "lifedrain", "debuff"}),
+    "nightshade": ("hybrid", "stealth-assassin", {"stealth", "assassin", "melee_dps", "debuff", "caster"}),
+    "paladin": ("melee-basic", "tank", {"tank", "shield", "melee_dps", "buff", "chant", "speed_song", "group_speed", "resurrection"}),
+    "ranger": ("hybrid", "stealth-scout", {"ranged", "stealth", "melee_dps"}),
+    "reaver": ("hybrid", "hybrid", {"tank", "shield", "melee_dps", "debuff", "lifedrain"}),
+    "runemaster": ("caster-basic", "caster", {"caster", "ranged", "debuff", "bladeturn"}),
+    "savage": ("melee-basic", "melee", {"melee_dps", "buff"}),
+    "scout": ("hybrid", "stealth-scout", {"ranged", "shield", "stealth", "melee_dps"}),
+    "seer": ("healer-support", "support", {"healer", "resurrection", "cure", "buff", "crowd_control"}),
+    "shadowblade": ("melee-basic", "stealth-assassin", {"stealth", "assassin", "melee_dps", "debuff"}),
+    "shaman": ("healer-support", "support", {"healer", "resurrection", "cure", "buff", "debuff", "disease"}),
+    "skald": ("hybrid", "speed-support", {"speed_song", "group_speed", "melee_dps", "crowd_control", "buff", "support_utility"}),
+    "sorcerer": ("caster-basic", "caster", {"caster", "crowd_control", "charm", "debuff", "pet"}),
+    "spiritmaster": ("caster-basic", "pet-caster", {"caster", "pet", "crowd_control", "lifedrain"}),
+    "stalker": ("hybrid", "stealth-scout", {"stealth", "ranged", "melee_dps"}),
+    "thane": ("hybrid", "hybrid", {"tank", "shield", "melee_dps", "caster", "ranged"}),
+    "theurgist": ("caster-basic", "pet-caster", {"caster", "pet", "crowd_control", "bladeturn", "debuff"}),
+    "valewalker": ("hybrid", "hybrid", {"melee_dps", "caster", "debuff"}),
+    "valkyrie": ("hybrid", "hybrid", {"tank", "shield", "melee_dps", "healer", "caster"}),
+    "vampiir": ("hybrid", "hybrid", {"melee_dps", "caster", "buff", "debuff", "stealth_detection", "self_sustain"}),
+    "viking": ("melee-basic", "tank", {"tank", "shield", "melee_dps", "speed_song"}),
+    "warden": ("healer-support", "support", {"healer", "resurrection", "cure", "buff", "bladeturn", "melee_dps"}),
+    "warlock": ("caster-basic", "caster", {"caster", "debuff", "crowd_control", "burst", "utility"}),
+    "warrior": ("melee-basic", "tank", {"tank", "shield", "melee_dps"}),
+    "wizard": ("caster-basic", "caster", {"caster", "ranged", "debuff"}),
+}
 
 
 def normalized_party_class_name(class_name: str = "") -> str:
@@ -9929,7 +10062,17 @@ def party_class_matches(
     return normalized_id in ids
 
 
+def party_class_profile_key(normalized_name: str, normalized_id: int) -> str:
+    if normalized_name in CLASS_PROFILE_HINTS:
+        return normalized_name
+    return CLASS_PROFILE_ID_KEYS.get(normalized_id, "")
+
+
 def party_action_rotation_from_class_key(normalized_name: str, normalized_id: int) -> str:
+    profile_key = party_class_profile_key(normalized_name, normalized_id)
+    if profile_key:
+        return CLASS_PROFILE_HINTS[profile_key][0]
+
     if normalized_id in SUPPORT_CLASS_IDS or normalized_name in SUPPORT_CLASS_NAMES:
         return "healer-support"
     if normalized_id in CASTER_CLASS_IDS or normalized_name in CASTER_CLASS_NAMES:
@@ -9943,6 +10086,10 @@ def party_class_capabilities_from_class(class_name: str = "", class_id: int = 0)
     normalized_name = normalized_party_class_name(class_name)
     normalized_id = normalized_party_class_id(class_id)
     capabilities: set[str] = set()
+    profile_key = party_class_profile_key(normalized_name, normalized_id)
+
+    if profile_key:
+        capabilities.update(CLASS_PROFILE_HINTS[profile_key][2])
 
     if party_class_matches(normalized_name, normalized_id, SPEED_SONG_CLASS_NAMES, SPEED_SONG_CLASS_IDS):
         capabilities.update({"speed_song", "group_speed", "support_utility"})
@@ -9961,6 +10108,14 @@ def party_class_role_profile_from_class(class_name: str = "", class_id: int = 0)
     normalized_id = normalized_party_class_id(class_id)
     action_rotation = party_action_rotation_from_class_key(normalized_name, normalized_id)
     capabilities = party_class_capabilities_from_class(class_name, class_id)
+    profile_key = party_class_profile_key(normalized_name, normalized_id)
+
+    if profile_key:
+        return PartyClassRoleProfile(
+            action_rotation=action_rotation,
+            role_group=CLASS_PROFILE_HINTS[profile_key][1],
+            capabilities=capabilities,
+        )
 
     if "speed_song" in capabilities:
         role_group = "speed-support"
@@ -14369,7 +14524,7 @@ def run_dummy_round(
         party_slot = index % max(args.party_size, 1)
         is_party_leader = party_state_member_is_leader(party_state, party_member_name)
         is_party_follower = party_state is not None and not is_party_leader
-        requested_action_rotation = resolve_action_rotation(args, party_slot)
+        requested_action_rotation = resolve_action_rotation(args, party_slot, account=account)
         action_rotation = resolve_effective_action_rotation(args, requested_action_rotation, combat_plan, combat_plan_loaded)
         is_party_support_healer = is_party_support_healer_member(party_state, action_rotation)
 

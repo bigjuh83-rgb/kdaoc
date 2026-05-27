@@ -32,28 +32,93 @@ RELEASE_PRIORITY = {
 }
 CLASS_ROLE_HINTS = {
     "armsman": {"tank", "dps"},
-    "hero": {"tank", "dps"},
-    "paladin": {"tank", "support"},
-    "warrior": {"tank", "dps"},
+    "animist": {"support", "dps"},
+    "bainshee": {"support", "dps"},
+    "berserker": {"dps"},
+    "blademaster": {"dps"},
+    "bonedancer": {"support", "dps"},
+    "cabalist": {"support", "dps"},
+    "champion": {"dps", "tank"},
     "cleric": {"healer", "support"},
     "druid": {"healer", "support"},
+    "eldritch": {"support", "dps"},
+    "enchanter": {"support", "dps"},
     "friar": {"healer", "support", "dps"},
     "healer": {"healer", "support"},
+    "heretic": {"healer", "support", "dps"},
+    "hero": {"tank", "dps"},
+    "paladin": {"tank", "support"},
+    "hunter": {"dps"},
+    "infiltrator": {"dps"},
+    "mauleralb": {"tank", "dps"},
+    "maulerhib": {"tank", "dps"},
+    "maulermid": {"tank", "dps"},
+    "mentalist": {"support", "dps"},
+    "mercenary": {"dps"},
+    "minstrel": {"support", "dps"},
+    "necromancer": {"support", "dps"},
+    "nightshade": {"dps"},
+    "ranger": {"dps"},
+    "reaver": {"tank", "dps"},
+    "runemaster": {"support", "dps"},
+    "savage": {"dps"},
+    "scout": {"dps"},
+    "shadowblade": {"dps"},
     "shaman": {"healer", "support"},
     "bard": {"healer", "support"},
     "skald": {"support", "dps"},
-    "berserker": {"dps"},
-    "blademaster": {"dps"},
-    "cabalist": {"dps"},
-    "champion": {"dps", "tank"},
-    "eldritch": {"dps"},
-    "enchanter": {"dps"},
-    "mercenary": {"dps"},
-    "minstrel": {"support", "dps"},
-    "runemaster": {"dps"},
     "sorcerer": {"support", "dps"},
+    "spiritmaster": {"support", "dps"},
+    "thane": {"tank", "dps"},
     "theurgist": {"support", "dps"},
+    "valewalker": {"dps"},
+    "valkyrie": {"tank", "support", "dps"},
+    "vampiir": {"dps"},
+    "warden": {"healer", "support", "tank", "dps"},
+    "warlock": {"support", "dps"},
+    "warrior": {"tank", "dps"},
     "wizard": {"dps"},
+}
+CLASS_ROTATION_HINTS = {
+    "animist": "caster-basic",
+    "bainshee": "caster-basic",
+    "bard": "healer-support",
+    "bonedancer": "caster-basic",
+    "cabalist": "caster-basic",
+    "cleric": "healer-support",
+    "druid": "healer-support",
+    "eldritch": "caster-basic",
+    "enchanter": "caster-basic",
+    "friar": "healer-support",
+    "healer": "healer-support",
+    "heretic": "healer-support",
+    "mentalist": "caster-basic",
+    "minstrel": "hybrid",
+    "necromancer": "caster-basic",
+    "runemaster": "caster-basic",
+    "shaman": "healer-support",
+    "skald": "hybrid",
+    "sorcerer": "caster-basic",
+    "spiritmaster": "caster-basic",
+    "thane": "hybrid",
+    "theurgist": "caster-basic",
+    "valewalker": "hybrid",
+    "valkyrie": "hybrid",
+    "vampiir": "hybrid",
+    "warden": "healer-support",
+    "warlock": "caster-basic",
+    "wizard": "caster-basic",
+}
+CLASS_CAPABILITY_HINTS = {
+    "bard": {"speed_song"},
+    "hunter": {"stealth"},
+    "infiltrator": {"stealth"},
+    "minstrel": {"speed_song", "stealth"},
+    "nightshade": {"stealth"},
+    "ranger": {"stealth"},
+    "scout": {"stealth"},
+    "shadowblade": {"stealth"},
+    "skald": {"speed_song"},
 }
 LIVE_COMPANION_FLEE_FLAGS = [
     "--flee-dynamic-safe-point",
@@ -280,13 +345,53 @@ def split_words(value: Any) -> set[str]:
     }
 
 
+def normalize_class_key(value: Any) -> str:
+    return "".join(ch for ch in str(value or "").strip().lower() if ch.isalnum())
+
+
+def companion_row_class_key(row: dict[str, Any]) -> str:
+    return normalize_class_key(row.get("class_name") or row.get("class") or row.get("ClassName"))
+
+
+def first_account_row(account_csv: str | Path) -> dict[str, Any]:
+    try:
+        with Path(account_csv).open(encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            for row in reader:
+                return row
+    except OSError:
+        return {}
+    return {}
+
+
 def companion_row_roles(row: dict[str, Any]) -> set[str]:
     explicit = split_words(row.get("role") or row.get("roles"))
     if explicit:
         return {normalize_role(role) for role in explicit}
 
-    class_name = str(row.get("class_name") or row.get("class") or "").strip().lower()
-    return set(CLASS_ROLE_HINTS.get(class_name, set()))
+    return set(CLASS_ROLE_HINTS.get(companion_row_class_key(row), set()))
+
+
+def companion_row_capabilities(row: dict[str, Any]) -> set[str]:
+    explicit = split_words(row.get("capabilities") or row.get("capability_tags"))
+    class_capabilities = set(CLASS_CAPABILITY_HINTS.get(companion_row_class_key(row), set()))
+    return explicit | class_capabilities
+
+
+def role_to_rotation_for_row(role: Any, row: dict[str, Any] | None = None) -> str:
+    normalized_role = normalize_role(role)
+    class_key = companion_row_class_key(row or {})
+    class_rotation = CLASS_ROTATION_HINTS.get(class_key, "")
+    class_roles = CLASS_ROLE_HINTS.get(class_key, set())
+
+    if normalized_role == "fill" and class_rotation:
+        return class_rotation
+    if normalized_role == "support" and class_rotation and "healer" not in class_roles:
+        return class_rotation
+    if normalized_role == "dps" and class_rotation in {"caster-basic", "hybrid"}:
+        return class_rotation
+
+    return role_to_rotation(normalized_role)
 
 
 def row_matches_request_realm(row: dict[str, Any], request: dict[str, Any]) -> bool:
@@ -474,6 +579,7 @@ def build_behavior_command(
     combat_home = str(getattr(args, "combat_home_leash_distance", 4500))
     leader_waypoint = request_waypoint(request)
     companion_home_waypoint = first_account_home_waypoint(account_csv)
+    companion_row = first_account_row(account_csv)
     player_level = requester_player_level(request, requester_state)
 
     command = [
@@ -534,7 +640,7 @@ def build_behavior_command(
         "--combat-usable-api-retry-delay",
         "0.4",
         "--action-rotation",
-        role_to_rotation(role),
+        role_to_rotation_for_row(role, companion_row),
         *(
             [
                 "--player-level",
@@ -581,6 +687,8 @@ def build_behavior_command(
         "--trace-movement-log",
         str(run_path / f"{request_id}-{{username}}-{{round}}-movement.jsonl"),
     ]
+    if "stealth" in companion_row_capabilities(companion_row):
+        command.append("--startup-stealth")
     if leader_waypoint:
         command += [
             "--waypoints",
