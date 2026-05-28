@@ -51,6 +51,37 @@ RVR_SMOKE_SPEC.loader.exec_module(run_dummy_rvr_smoke)
 
 
 class OperationalScriptTests(unittest.TestCase):
+    def test_live_companion_player_facing_korean_text_is_readable(self) -> None:
+        hire_npc = (ROOT / "GameServer" / "scripts" / "customnpc" / "CompanionHireNpc.cs").read_text(encoding="utf-8")
+        gm_dummy = (ROOT / "GameServer" / "commands" / "gmcommands" / "dummy.cs").read_text(encoding="utf-8")
+        companion_api = (ROOT / "GameServer" / "API" / "DummyCompanion" / "DummyCompanionRoutes.cs").read_text(
+            encoding="utf-8"
+        )
+
+        for expected in [
+            "동료 고용관",
+            "[파티 동료] [치유 동료] [방어 동료] [공격 동료] [동료 상태] [동료 요청 취소] [동료 해산]",
+            "동료에게 연락을 넣었습니다.",
+            "지금 가능한 동료가 없습니다.",
+            "최근 동료 요청: 상태=",
+        ]:
+            self.assertIn(expected, hire_npc)
+
+        for expected in [
+            "역할은 healer, tank, dps, support 중 하나여야 합니다.",
+            "플레이어를 찾을 수 없습니다:",
+            "동료 요청 상태",
+        ]:
+            self.assertIn(expected, gm_dummy)
+
+        for expected in [
+            "동료 요청이 취소되었습니다.",
+            "동료가 파티에 합류했습니다.",
+            "동료를 찾을 수 없습니다.",
+            "동료가 이미 다른 파티에 속해 있습니다.",
+        ]:
+            self.assertIn(expected, companion_api)
+
     def test_rvr_smoke_behavior_command_targets_enemy_players_without_required_pve_home(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -721,6 +752,47 @@ class OperationalScriptTests(unittest.TestCase):
 
         self.assertIn("OPENDAOC_PAUSE_ON_EXIT", script)
         self.assertNotIn("\npause >nul\nexit /b", script.lower())
+
+    def test_live_companion_visible_launcher_uses_standard_wsl_service_runner(self) -> None:
+        script = (ROOT / "start-live-companion-service-visible.bat").read_text(encoding="utf-8")
+
+        self.assertIn("OpenDAoC Companion Service", script)
+        self.assertIn("wsl.exe -d Ubuntu", script)
+        self.assertIn("tools/start-live-companion-service.sh", script)
+        self.assertIn("OPENDAOC_COMPANION_PAUSE_ON_EXIT", script)
+        self.assertNotIn("\npause >nul\nexit /b", script.lower())
+
+    def test_live_companion_service_runner_uses_safe_operational_defaults(self) -> None:
+        script = (ROOT / "tools" / "start-live-companion-service.sh").read_text(encoding="utf-8")
+
+        self.assertIn('API_URL="${OPENDAOC_COMPANION_API_URL:-http://127.0.0.1:5000}"', script)
+        self.assertIn('ACCOUNTS_CSV="${OPENDAOC_COMPANION_ACCOUNTS:-tools/dummy-live-companions.csv}"', script)
+        self.assertIn('RUN_DIR="${OPENDAOC_COMPANION_RUN_DIR:-test-output/live-companion-service}"', script)
+        self.assertIn('MAX_RUNTIME="${OPENDAOC_COMPANION_MAX_RUNTIME:-0}"', script)
+        self.assertIn("tools/dummy-companion-service.py", script)
+        self.assertIn("--max-runtime", script)
+        self.assertIn("OPENDAOC_COMPANION_ONCE", script)
+        self.assertIn("OPENDAOC_COMPANION_DRY_RUN", script)
+        self.assertIn('if [[ "$DIALOGUE_ENABLED" == "1" ]]', script)
+        self.assertIn("--ai-gateway-model-alias", script)
+        self.assertIn("small-dialogue", script)
+        self.assertNotIn("OPENAI_API_KEY=", script)
+        self.assertNotIn("sk-", script.lower())
+
+    def test_live_companion_windows_wrapper_calls_visible_launcher(self) -> None:
+        script = (ROOT / "tools" / "windows-open-visible-companion-service.cmd").read_text(encoding="utf-8")
+
+        self.assertIn("start-live-companion-service-visible.bat", script)
+
+    def test_live_companion_request_model_carries_explicit_objective_target(self) -> None:
+        service = (ROOT / "GameServer" / "LiveCompanion" / "CompanionRequestService.cs").read_text(encoding="utf-8")
+        api = (ROOT / "GameServer" / "API" / "DummyCompanion" / "DummyCompanionRoutes.cs").read_text(encoding="utf-8")
+
+        self.assertIn("public string ObjectiveTarget { get; set; }", service)
+        self.assertIn("string objectiveTarget = \"\"", service)
+        self.assertIn("ObjectiveTarget = string.IsNullOrWhiteSpace(objectiveTarget)", service)
+        self.assertIn("ObjectiveTarget = request.ObjectiveTarget", service)
+        self.assertIn('Query(context, "objectiveTarget"', api)
 
     def test_windows_cleanup_rechecks_cmd_windows_after_wsl_bridge_cleanup(self) -> None:
         script = (ROOT / "tools" / "cleanup-main-server-windows.ps1").read_text(encoding="utf-8")

@@ -74,6 +74,7 @@ namespace DOL.GS.LiveCompanion
         public string RequestedRole { get; set; } = CompanionRequestRoles.Fill;
         public string RequestedCapabilities { get; set; } = string.Empty;
         public string ContentType { get; set; } = "pve";
+        public string ObjectiveTarget { get; set; } = string.Empty;
         public string RequesterName { get; set; } = string.Empty;
         public string RequesterAccount { get; set; } = string.Empty;
         public int Realm { get; set; }
@@ -155,7 +156,8 @@ namespace DOL.GS.LiveCompanion
             int objectiveX = 0,
             int objectiveY = 0,
             int objectiveZ = 0,
-            string requestedCapabilities = "")
+            string requestedCapabilities = "",
+            string objectiveTarget = "")
         {
             if (requester == null)
             {
@@ -195,7 +197,8 @@ namespace DOL.GS.LiveCompanion
                     objectiveX,
                     objectiveY,
                     objectiveZ,
-                    requestedCapabilities);
+                    requestedCapabilities,
+                    objectiveTarget);
 
                 if (availableSlots <= 0)
                 {
@@ -517,7 +520,8 @@ namespace DOL.GS.LiveCompanion
             int objectiveX = 0,
             int objectiveY = 0,
             int objectiveZ = 0,
-            string requestedCapabilities = "")
+            string requestedCapabilities = "",
+            string objectiveTarget = "")
         {
             DateTime now = DateTime.UtcNow;
             bool hasObjectiveLocation = objectiveX != 0 || objectiveY != 0 || objectiveZ != 0;
@@ -532,6 +536,7 @@ namespace DOL.GS.LiveCompanion
                 RequestedRole = requestedRole,
                 RequestedCapabilities = string.IsNullOrWhiteSpace(requestedCapabilities) ? string.Empty : requestedCapabilities.Trim().ToLowerInvariant(),
                 ContentType = string.IsNullOrWhiteSpace(contentType) ? "pve" : contentType.Trim().ToLowerInvariant(),
+                ObjectiveTarget = string.IsNullOrWhiteSpace(objectiveTarget) ? string.Empty : objectiveTarget.Trim(),
                 RequesterName = requester.Name,
                 RequesterAccount = requester.Client?.Account?.Name ?? string.Empty,
                 Realm = (int) requester.Realm,
@@ -648,6 +653,7 @@ namespace DOL.GS.LiveCompanion
                 RequestedRole = request.RequestedRole,
                 RequestedCapabilities = request.RequestedCapabilities,
                 ContentType = request.ContentType,
+                ObjectiveTarget = request.ObjectiveTarget,
                 RequesterName = request.RequesterName,
                 RequesterAccount = request.RequesterAccount,
                 Realm = request.Realm,

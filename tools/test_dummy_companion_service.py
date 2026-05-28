@@ -784,6 +784,39 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertNotIn("--follow-player-required-for-objective-move", command)
         self.assertIn("--follow-player-hold-allows-waypoint", command)
 
+    def test_behavior_command_prefers_explicit_objective_target(self) -> None:
+        service = load_service()
+        request = {
+            "id": "req1",
+            "requesterName": "LiveLeader",
+            "requestedRole": "tank",
+            "realm": 1,
+            "region": 1,
+            "contentType": "pve:old-target",
+            "objectiveTarget": "moorlich",
+            "x": 111,
+            "y": 222,
+            "z": 333,
+        }
+        args = mock.Mock(host="127.0.0.1", port=10300, api_port=5000, combat_home_leash_distance=4500.0)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            account_csv = Path(temp_dir) / "accounts.csv"
+            account_csv.write_text(
+                "username,password,realm,char_index,class_id,class_name,roles,home_x,home_y,home_z\n"
+                "albtank,dummy-pass,1,0,2,Armsman,tank,531504,479073,2200\n",
+                encoding="utf-8",
+            )
+            command = service.build_behavior_command(
+                args,
+                request,
+                account_csv,
+                Path(temp_dir) / "run",
+                requester_state={"player": {"level": 50}},
+            )
+
+        self.assertEqual(command[command.index("--require-target-name") + 1], "moorlich")
+
     def test_dps_companion_waits_for_assist_instead_of_claiming_objective_boss(self) -> None:
         service = load_service()
         request = {
@@ -1427,7 +1460,8 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         self.assertEqual(request_id, "req1")
         query = api_json.call_args.args[3]
-        self.assertEqual(query["contentType"], "pve:moorlich")
+        self.assertEqual(query["contentType"], "pve")
+        self.assertEqual(query["objectiveTarget"], "moorlich")
         self.assertEqual(query["requestedCapabilities"], "speed_song|stealth")
         self.assertEqual((query["x"], query["y"], query["z"]), smoke.BARFOG_HOME)
 

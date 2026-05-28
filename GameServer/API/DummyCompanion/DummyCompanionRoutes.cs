@@ -77,7 +77,8 @@ namespace DOL.GS.API.DummyCompanion
                     ParseInt(Query(context, "x"), 0),
                     ParseInt(Query(context, "y"), 0),
                     ParseInt(Query(context, "z"), 0),
-                    Query(context, "requestedCapabilities", Query(context, "capabilities", Query(context, "capability"))));
+                    Query(context, "requestedCapabilities", Query(context, "capabilities", Query(context, "capability"))),
+                    Query(context, "objectiveTarget", Query(context, "targetName", Query(context, "objectiveName"))));
 
                 return result.Success ? Results.Ok(result) : Results.BadRequest(result);
             });
