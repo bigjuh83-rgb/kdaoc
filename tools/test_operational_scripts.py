@@ -71,11 +71,27 @@ class OperationalScriptTests(unittest.TestCase):
 
         self.assertIn("--rvr-enemy-player-hunter", command)
         self.assertIn("--trace-observed-player-positions", command)
+        self.assertIn("--startup-train-full-specs", command)
+        self.assertIn("--startup-train-level", command)
         self.assertNotIn("--required-target-home", command)
         self.assertNotIn("--require-target-name", command)
 
     def test_rvr_smoke_uses_new_frontiers_region(self) -> None:
         self.assertEqual(run_dummy_rvr_smoke.FRONTIER_REGION, 163)
+
+    def test_rvr_smoke_reads_account_rows_for_level50_promotion(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "accounts.csv"
+            path.write_text(
+                "username,password,realm,char_index,class_id,class_name,specs\n"
+                "growthalb1,p,1,0,1,Paladin,Slash|39\n",
+                encoding="utf-8",
+            )
+
+            rows = run_dummy_rvr_smoke.account_rows_from_csv(path)
+
+        self.assertEqual(rows[0]["username"], "growthalb1")
+        self.assertEqual(rows[0]["class_id"], "1")
 
     def test_rvr_smoke_stages_realms_inside_observation_range(self) -> None:
         points = list(run_dummy_rvr_smoke.FRONTIER_MEET_POINTS.values())

@@ -24,9 +24,13 @@ TOOLS = ROOT / "tools"
 DEFAULT_LEADER_CANDIDATES = TOOLS / "dummy-party-albion-pve8.csv"
 DEFAULT_COMPANION_POOL = TOOLS / "dummy-live-companions.csv"
 BARFOG_HOME = (332701, 669142, 2660)
+BARFOG_STAGING_HOME = (343893, 672100, 2659)
 BARFOG_WAYPOINTS = "332701,669142,2660|333061,669142,2668|333061,669502,2702|332701,669502,2694"
 ALBION_SAFE_FLEE_HOME = "369957,679721,5540"
 DEFAULT_ROLES = ["tank", "healer", "dps"]
+LEADER_SAFE_EXIT_MAX_SECONDS = 30.0
+COMPANION_LEADER_EXIT_BUFFER_SECONDS = 45.0
+SERVICE_LEADER_EXIT_BUFFER_SECONDS = 75.0
 
 
 def load_module(path: Path, name: str):
@@ -179,7 +183,7 @@ def reset_live_accounts(args: argparse.Namespace, leader_account: str, joiner_ac
     accounts += [account for account in companion_accounts if account not in accounts]
     db_args = build_db_args(args)
     realm = growth.REALMS["alb"]
-    start_point = growth.RoutePoint(50, *BARFOG_HOME)
+    start_point = growth.RoutePoint(50, *BARFOG_STAGING_HOME)
     growth.reset_growth_characters(db_args, accounts, level=50, realm=realm, party_size=len(accounts), start_point=start_point)
 
 
@@ -252,7 +256,7 @@ def build_leader_command(
         "--hold",
         str(args.leader_hold),
         "--safe-exit-max-seconds",
-        "30",
+        str(LEADER_SAFE_EXIT_MAX_SECONDS),
         "--safe-exit-recent-damage-grace",
         "8",
         "--party-size",
@@ -427,6 +431,10 @@ def build_leader_command(
         "20",
         "--flee-damage-taken-ratio",
         "1.5",
+        "--flee-melee-counterattack-health-floor",
+        "45",
+        "--required-target-tank-commit-health-percent",
+        "45",
         "--think-min",
         "0.25",
         "--think-max",
@@ -566,7 +574,27 @@ def build_joiner_command(
     ]
 
 
+def effective_companion_hold(args: argparse.Namespace) -> float:
+    return max(
+        float(args.companion_hold),
+        float(args.leader_hold) + COMPANION_LEADER_EXIT_BUFFER_SECONDS,
+    )
+
+
+def effective_service_max_runtime(args: argparse.Namespace) -> float:
+    return max(
+        float(args.service_max_runtime),
+        float(args.leader_startup_delay) + float(args.leader_hold) + SERVICE_LEADER_EXIT_BUFFER_SECONDS,
+    )
+
+
+def service_wait_timeout(args: argparse.Namespace) -> float:
+    return max(effective_service_max_runtime(args) + 20.0, 20.0)
+
+
 def build_service_command(args: argparse.Namespace, service_dir: Path) -> list[str]:
+    companion_hold = effective_companion_hold(args)
+    service_max_runtime = effective_service_max_runtime(args)
     command = [
         sys.executable,
         "tools/dummy-companion-service.py",
@@ -579,7 +607,7 @@ def build_service_command(args: argparse.Namespace, service_dir: Path) -> list[s
         "--accounts-csv",
         str(args.companion_accounts_csv),
         "--hold",
-        str(args.companion_hold),
+        str(companion_hold),
         "--poll-interval",
         str(args.service_poll_interval),
         "--attach-timeout",
@@ -587,7 +615,7 @@ def build_service_command(args: argparse.Namespace, service_dir: Path) -> list[s
         "--combat-home-leash-distance",
         str(args.combat_home_leash_distance),
         "--max-runtime",
-        str(args.service_max_runtime),
+        str(service_max_runtime),
     ]
     if getattr(args, "api_password", ""):
         command += ["--api-password", str(args.api_password)]
@@ -624,7 +652,12 @@ def create_companion_request(args: argparse.Namespace, leader_name: str, role: s
             "player": leader_name,
             "role": role,
             "source": source,
-            "contentType": "pve",
+            "contentType": f"pve:{args.target_name}",
+            "requestedCapabilities": args.requested_capabilities,
+            "region": 1,
+            "x": BARFOG_HOME[0],
+            "y": BARFOG_HOME[1],
+            "z": BARFOG_HOME[2],
             "createdBy": "codex-live-smoke",
         },
     )
@@ -722,6 +755,35 @@ def wait_for_player_online(args: argparse.Namespace, account: str, timeout: floa
     raise RuntimeError(f"{label} did not become online: {last_state}")
 
 
+def player_group_member_names(state: dict[str, Any] | None) -> set[str]:
+    if not isinstance(state, dict):
+        return set()
+    names: set[str] = set()
+    for member in state.get("groupMembers", []) or []:
+        if not isinstance(member, dict):
+            continue
+        name = str(member.get("name") or member.get("Name") or "").strip()
+        if name:
+            names.add(name.lower())
+    return names
+
+
+def player_is_grouped_with(args: argparse.Namespace, account: str, member_name: str) -> bool:
+    member_key = str(member_name or "").strip().lower()
+    if not member_key:
+        return False
+    return member_key in player_group_member_names(fetch_state(args, account=account))
+
+
+def wait_for_player_grouped_with(args: argparse.Namespace, account: str, member_name: str, timeout: float) -> bool:
+    deadline = time.monotonic() + max(0.0, timeout)
+    while time.monotonic() <= deadline:
+        if player_is_grouped_with(args, account, member_name):
+            return True
+        time.sleep(0.5)
+    return False
+
+
 def wait_for_requests_active(args: argparse.Namespace, request_ids: list[str]) -> dict[str, str]:
     deadline = time.monotonic() + max(1.0, args.request_active_timeout)
     statuses = {request_id: "" for request_id in request_ids}
@@ -778,7 +840,10 @@ def summarize_encounters(run_dir: Path) -> dict[str, int]:
         "dialogue_cure_priority": 0,
         "dialogue_live_control_applied": 0,
         "dialogue_live_control_say": 0,
+        "death": 0,
     }
+    death_events = 0
+    death_metrics = 0
     for path in run_dir.rglob("*.jsonl"):
         if "service" not in path.parts:
             continue
@@ -817,6 +882,8 @@ def summarize_encounters(run_dir: Path) -> dict[str, int]:
                 counts["party_member_target_rejected"] += 1
             if event == "live_control_applied":
                 counts["dialogue_live_control_applied"] += 1
+            if event == "death_detected":
+                death_events += 1
     for path in run_dir.rglob("*metrics.csv"):
         if "service" not in path.parts:
             continue
@@ -825,6 +892,7 @@ def summarize_encounters(run_dir: Path) -> dict[str, int]:
                 counts["damage_done"] += int(float(row.get("damage_done") or 0))
                 counts["heal"] += int(float(row.get("healing_done") or 0))
                 counts["resurrect"] += int(float(row.get("action_party_resurrect") or 0))
+                death_metrics += int(float(row.get("action_death_detected") or row.get("death_count") or 0))
                 for key, value in row.items():
                     if not key.startswith("action_"):
                         continue
@@ -867,12 +935,13 @@ def summarize_encounters(run_dir: Path) -> dict[str, int]:
             counts["dialogue_cc_add"] += 1
         if hint == "cure_priority":
             counts["dialogue_cure_priority"] += 1
+    counts["death"] = max(death_events, death_metrics)
     return counts
 
 
 def metrics_errors(run_dir: Path, subdir: str) -> list[str]:
     errors: list[str] = []
-    for path in (run_dir / subdir).glob("*metrics.csv"):
+    for path in (run_dir / subdir).rglob("*metrics.csv"):
         with path.open(encoding="utf-8-sig", newline="") as handle:
             for row in csv.DictReader(handle):
                 error = str(row.get("error") or "").strip()
@@ -885,8 +954,43 @@ def leader_errors(run_dir: Path) -> list[str]:
     return metrics_errors(run_dir, "leader")
 
 
+def companion_errors(run_dir: Path) -> list[str]:
+    return metrics_errors(run_dir, "service")
+
+
+def missing_companion_metrics(run_dir: Path, request_ids: list[str]) -> list[str]:
+    missing: list[str] = []
+    for request_id in request_ids:
+        request_dir = run_dir / "service" / request_id
+        if not request_dir.exists():
+            missing.append(f"{request_id}: service log directory missing")
+            continue
+        if not any(request_dir.rglob("*metrics.csv")):
+            missing.append(f"{request_id}: companion metrics missing")
+    return missing
+
+
 def joiner_errors(run_dir: Path) -> list[str]:
     return metrics_errors(run_dir, "joiner")
+
+
+def death_count_in_subdir(run_dir: Path, subdir: str) -> int:
+    root = run_dir / subdir
+    death_events = 0
+    death_metrics = 0
+    for path in root.rglob("*.jsonl"):
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if str(row.get("event") or "") == "death_detected":
+                death_events += 1
+    for path in root.rglob("*metrics.csv"):
+        with path.open(encoding="utf-8-sig", newline="") as handle:
+            for row in csv.DictReader(handle):
+                death_metrics += int(float(row.get("action_death_detected") or row.get("death_count") or 0))
+    return max(death_events, death_metrics)
 
 
 def safe_exit_deadline_only(errors: list[str]) -> bool:
@@ -905,6 +1009,9 @@ def smoke_exit_code(
     joiner_rc: int,
     real_player_join: bool,
     dialogue_enabled: bool,
+    companion_errors: list[str] | None = None,
+    leader_deaths: int = 0,
+    joiner_deaths: int = 0,
 ) -> tuple[int, list[str]]:
     notes: list[str] = []
     if any(status.lower() != "active" for status in active_statuses.values()):
@@ -918,6 +1025,18 @@ def smoke_exit_code(
         return 5, notes
     if dialogue_enabled and summary["dialogue_live_control_applied"] <= 0:
         return 6, notes
+    if int(summary.get("death", 0) or 0) > 0:
+        notes.append(f"companion_death_detected={int(summary.get('death', 0) or 0)}")
+        return 8, notes
+    if leader_deaths > 0:
+        notes.append(f"leader_death_detected={leader_deaths}")
+        return 10, notes
+    if real_player_join and joiner_deaths > 0:
+        notes.append(f"joiner_death_detected={joiner_deaths}")
+        return 11, notes
+    if companion_errors:
+        notes.append(f"companion_errors={json.dumps(companion_errors, ensure_ascii=False)}")
+        return 9, notes
     if not real_join_released and not has_companion_activity(summary):
         return 3, notes
 
@@ -964,6 +1083,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--joiner-startup-delay", type=float, default=1.0)
     parser.add_argument("--joiner-online-timeout", type=float, default=35.0)
     parser.add_argument("--joiner-invite-delay", type=float, default=2.0)
+    parser.add_argument("--joiner-accept-attempts", type=int, default=4)
+    parser.add_argument("--joiner-accept-confirm-timeout", type=float, default=3.0)
     parser.add_argument("--leader-control-apply-timeout", type=float, default=8.0)
     parser.add_argument("--release-timeout", type=float, default=35.0)
     parser.add_argument("--min-start-health-percent", type=float, default=90.0)
@@ -979,6 +1100,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--ai-gateway-timeout", type=float, default=5.0)
     parser.add_argument("--dialogue-min-interval", type=float, default=30.0)
     parser.add_argument("--target-name", default="moorlich")
+    parser.add_argument("--requested-capabilities", default="", help="optional pipe/comma-separated live companion capability filter, e.g. speed_song|stealth")
     parser.add_argument("--waypoints", default=BARFOG_WAYPOINTS)
     parser.add_argument("--login-retries", type=int, default=12)
     parser.add_argument("--login-retry-delay", type=float, default=3.0)
@@ -1069,20 +1191,32 @@ def main(argv: list[str] | None = None) -> int:
             )
             if not wait_for_live_control_applied(run_dir / "leader", invite_revision, args.leader_control_apply_timeout):
                 time.sleep(max(0.1, args.joiner_invite_delay))
-            write_live_control(
-                joiner_control_file,
-                {
-                    "accept_group_invite_session_id": leader_session_id,
-                    "say": f"joining {leader_name}",
-                },
-            )
+            grouped_with_leader = player_is_grouped_with(args, joiner_account, leader_name)
+            for attempt in range(max(1, int(args.joiner_accept_attempts or 1))):
+                if grouped_with_leader:
+                    break
+                write_live_control(
+                    joiner_control_file,
+                    {
+                        "accept_group_invite_session_id": leader_session_id,
+                        "say": f"joining {leader_name}" if attempt == 0 else "",
+                    },
+                )
+                grouped_with_leader = wait_for_player_grouped_with(
+                    args,
+                    joiner_account,
+                    leader_name,
+                    args.joiner_accept_confirm_timeout,
+                )
+                if not grouped_with_leader:
+                    time.sleep(max(0.1, args.joiner_invite_delay))
             release_statuses = wait_for_real_join_release(args, request_ids)
             print(f"real_join_release={release_statuses}")
 
         if joiner_process is not None:
             joiner_rc = joiner_process.wait(timeout=max(args.joiner_hold + args.joiner_startup_delay + 30.0, 30.0))
         leader_rc = leader_process.wait(timeout=max(args.leader_hold + args.leader_startup_delay + 60.0, 60.0))
-        service_rc = service_process.wait(timeout=max(args.service_max_runtime + 20.0, 20.0))
+        service_rc = service_process.wait(timeout=service_wait_timeout(args))
     finally:
         if joiner_process is not None and joiner_process.poll() is None:
             joiner_process.terminate()
@@ -1096,10 +1230,16 @@ def main(argv: list[str] | None = None) -> int:
 
     summary = summarize_encounters(run_dir)
     errors = leader_errors(run_dir)
+    companion_error_rows = companion_errors(run_dir)
+    companion_error_rows.extend(missing_companion_metrics(run_dir, request_ids))
     joiner_error_rows = joiner_errors(run_dir)
+    leader_deaths = death_count_in_subdir(run_dir, "leader")
+    joiner_deaths = death_count_in_subdir(run_dir, "joiner") if args.real_player_join else 0
     print(f"summary={json.dumps(summary, ensure_ascii=False, sort_keys=True)}")
     if errors:
         print(f"leader_errors={json.dumps(errors, ensure_ascii=False)}")
+    if companion_error_rows:
+        print(f"companion_errors={json.dumps(companion_error_rows, ensure_ascii=False)}")
     if joiner_error_rows:
         print(f"joiner_errors={json.dumps(joiner_error_rows, ensure_ascii=False)}")
     exit_code, notes = smoke_exit_code(
@@ -1108,11 +1248,14 @@ def main(argv: list[str] | None = None) -> int:
         summary=summary,
         leader_errors=errors,
         joiner_errors=joiner_error_rows,
+        companion_errors=companion_error_rows,
         leader_rc=leader_rc,
         service_rc=service_rc,
         joiner_rc=joiner_rc,
         real_player_join=args.real_player_join,
         dialogue_enabled=args.dialogue_enabled,
+        leader_deaths=leader_deaths,
+        joiner_deaths=joiner_deaths,
     )
     for note in notes:
         print(note)

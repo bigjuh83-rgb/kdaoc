@@ -110,15 +110,68 @@ CLASS_ROTATION_HINTS = {
     "wizard": "caster-basic",
 }
 CLASS_CAPABILITY_HINTS = {
-    "bard": {"speed_song"},
-    "hunter": {"stealth"},
-    "infiltrator": {"stealth"},
-    "minstrel": {"speed_song", "stealth"},
-    "nightshade": {"stealth"},
-    "ranger": {"stealth"},
-    "scout": {"stealth"},
-    "shadowblade": {"stealth"},
-    "skald": {"speed_song"},
+    "animist": {"caster_dps", "offensive_support"},
+    "bainshee": {"caster_dps", "dedicated_dps"},
+    "bard": {"speed_song", "group_support"},
+    "berserker": {"dedicated_dps", "melee_dps"},
+    "blademaster": {"dedicated_dps", "melee_dps"},
+    "bonedancer": {"caster_dps", "offensive_support"},
+    "cabalist": {"caster_dps", "offensive_support"},
+    "eldritch": {"caster_dps", "dedicated_dps"},
+    "enchanter": {"caster_dps", "dedicated_dps"},
+    "friar": {"self_sustain"},
+    "hunter": {"dedicated_dps", "ranged_dps", "stealth"},
+    "infiltrator": {"dedicated_dps", "melee_dps", "stealth"},
+    "mauleralb": {"melee_dps", "self_sustain"},
+    "maulerhib": {"melee_dps", "self_sustain"},
+    "maulermid": {"melee_dps", "self_sustain"},
+    "mentalist": {"caster_dps", "offensive_support"},
+    "mercenary": {"dedicated_dps", "melee_dps"},
+    "minstrel": {"crowd_control", "speed_song", "stealth"},
+    "necromancer": {"caster_dps", "offensive_support"},
+    "nightshade": {"dedicated_dps", "melee_dps", "stealth"},
+    "paladin": {"defensive_tank", "group_support", "self_sustain"},
+    "ranger": {"dedicated_dps", "ranged_dps", "stealth"},
+    "reaver": {"defensive_tank"},
+    "runemaster": {"caster_dps", "dedicated_dps"},
+    "savage": {"dedicated_dps", "melee_dps"},
+    "scout": {"dedicated_dps", "ranged_dps", "stealth"},
+    "shadowblade": {"dedicated_dps", "melee_dps", "stealth"},
+    "skald": {"speed_song", "melee_dps"},
+    "sorcerer": {"caster_dps", "crowd_control", "offensive_support"},
+    "spiritmaster": {"caster_dps", "offensive_support"},
+    "theurgist": {"caster_dps", "crowd_control", "offensive_support"},
+    "valewalker": {"melee_dps"},
+    "valkyrie": {"defensive_tank", "self_sustain"},
+    "vampiir": {"dedicated_dps", "melee_dps", "self_sustain"},
+    "warden": {"defensive_tank", "group_support", "self_sustain"},
+    "warlock": {"caster_dps", "offensive_support"},
+    "wizard": {"caster_dps", "dedicated_dps"},
+}
+DEFAULT_TANK_CAPABILITY_WEIGHTS = {
+    "defensive_tank": 30,
+    "self_sustain": 20,
+    "group_support": 10,
+}
+DEFAULT_DPS_CAPABILITY_WEIGHTS = {
+    "dedicated_dps": 30,
+    "melee_dps": 20,
+    "caster_dps": 20,
+    "ranged_dps": 15,
+    "self_sustain": 5,
+    "offensive_support": 5,
+}
+BOSS_DPS_CAPABILITY_WEIGHTS = {
+    "caster_dps": 30,
+    "ranged_dps": 25,
+    "offensive_support": 10,
+    "crowd_control": 10,
+    "melee_dps": -15,
+}
+CAPABILITY_ALIASES = {
+    "groupspeed": "group_speed",
+    "scout": "stealth",
+    "speedsong": "speed_song",
 }
 LIVE_COMPANION_FLEE_FLAGS = [
     "--flee-dynamic-safe-point",
@@ -126,11 +179,52 @@ LIVE_COMPANION_FLEE_FLAGS = [
     "--flee-pressure-health-percent",
     "90",
     "--flee-safe-threat-radius",
-    "6500",
+    "9000",
     "--flee-safe-point-distance",
-    "7000",
+    "10500",
     "--flee-duration",
-    "14",
+    "28",
+    "--flee-step",
+    "1200",
+    "--flee-move-interval",
+    "0.30",
+    "--flee-movement-speed",
+    "280",
+]
+LIVE_COMPANION_PARTY_COORDINATION_FLAGS = [
+    "--party-rescue-aggro",
+    "--party-rescue-before-objective-engaged",
+    "--party-block-solo-required-retaliation",
+    "--party-rescue-max-distance",
+    "6500",
+    "--party-rescue-objective-max-distance",
+    "6500",
+    "--party-rescue-max-age",
+    "16",
+    "--party-active-tank-handoff-health-percent",
+    "100",
+    "--party-focus-target-backoff",
+    "--party-focus-pressure-offtank-reaggro",
+    "--party-active-tank-reaggro-taunt-interval",
+    "0.8",
+    "--party-protection-interval",
+    "4",
+    "--party-focus-target-max-age",
+    "6",
+    "--party-target-loss-grace",
+    "12",
+    "--party-target-removed-preserve-limit",
+    "12",
+    "--flee-melee-counterattack-health-floor",
+    "45",
+    "--required-target-tank-commit-health-percent",
+    "25",
+    "--current-target-api-refresh",
+    "--reject-target-on-server-los-failure",
+    "--server-los-failure-grace",
+    "12",
+    "--server-los-failure-max-retries-after-hit",
+    "16",
 ]
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -150,6 +244,187 @@ def normalize_role(role: Any) -> str:
 
 def role_to_rotation(role: Any) -> str:
     return ROLE_ROTATIONS[normalize_role(role)]
+
+
+def live_companion_uses_hostile_assist(role: Any, action_rotation: str) -> bool:
+    return not (normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support")
+
+
+def live_companion_party_assist_interval(role: Any, action_rotation: str) -> str:
+    return "0.6" if live_companion_uses_hostile_assist(role, action_rotation) else "0"
+
+
+def live_companion_party_assist_attack_delay(role: Any, action_rotation: str) -> str:
+    if not live_companion_uses_hostile_assist(role, action_rotation):
+        return "0"
+    if live_companion_claims_objective_target(role, action_rotation):
+        return "0.3"
+    if action_rotation.startswith("caster"):
+        return "1.0"
+    return "8.0"
+
+
+def live_companion_ranged_assist_extra_delay(role: Any, action_rotation: str) -> str:
+    if normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support":
+        return "0"
+    if action_rotation.startswith("caster"):
+        return "0"
+    return "0"
+
+
+def live_companion_follow_distance(role: Any, action_rotation: str) -> str:
+    if normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support":
+        return "1800"
+    if action_rotation.startswith("caster"):
+        return "1000"
+    return "450"
+
+
+def live_companion_follow_hold_allows_waypoint(role: Any, action_rotation: str) -> bool:
+    return not (normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support")
+
+
+def live_companion_requires_follow_anchor_before_objective(role: Any, action_rotation: str) -> bool:
+    normalized_role = normalize_role(role)
+    return normalized_role in {"healer", "support"} or action_rotation.startswith("caster")
+
+
+def live_companion_waypoint_stop_distance(role: Any, action_rotation: str) -> str:
+    if normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support":
+        return "3500"
+    if action_rotation.startswith("caster"):
+        return "1500"
+    return "650"
+
+
+def live_companion_required_home_stop_distance(role: Any, action_rotation: str) -> str:
+    if normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support":
+        return "3500"
+    if action_rotation.startswith("caster"):
+        return "1400"
+    return "900"
+
+
+def live_companion_required_home_hunt_distance(role: Any, action_rotation: str) -> str:
+    if normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support":
+        return "3600"
+    if action_rotation.startswith("caster"):
+        return "3200"
+    return "2800"
+
+
+def live_companion_claims_objective_target(role: Any, action_rotation: str) -> bool:
+    normalized_role = normalize_role(role)
+    if normalized_role == "tank":
+        return True
+    return normalized_role == "fill" and action_rotation in {"melee-basic", "hybrid"}
+
+
+def live_companion_boss_role_flags(role: Any, action_rotation: str) -> list[str]:
+    flags = [
+        "--party-require-leader-engaged",
+        "--party-mark-pull-engaged",
+        "--party-pull-engage-distance",
+        "1800",
+        "--boss-hazard-message-backoff-duration",
+        "9",
+        "--boss-hazard-message-backoff-distance",
+        "2400",
+        "--party-focus-target-backoff-distance",
+        "1400",
+        "--party-melee-survival-health-percent",
+        "45",
+        "--party-melee-survival-resume-health-percent",
+        "80",
+        "--party-melee-survival-backoff-duration",
+        "12",
+        "--party-survival-death-count",
+        "1",
+        "--party-survival-death-window",
+        "75",
+        "--party-survival-active-tank-health-percent",
+        "25",
+        "--party-survival-backoff-distance",
+        "1200",
+    ]
+    if live_companion_claims_objective_target(role, action_rotation):
+        flags.extend(
+            [
+                "--party-rescue-assist-after",
+                "3",
+                "--party-rescue-emergency-assist-after",
+                "2",
+                "--party-active-tank-last-known-stop-distance",
+                "25",
+            ]
+        )
+    elif action_rotation.startswith("melee") or action_rotation == "hybrid":
+        flags.extend(
+            [
+                "--party-rescue-assist-after",
+                "0",
+                "--party-rescue-emergency-assist-after",
+                "0",
+                "--party-boss-non-tank-melee-backoff",
+                "--party-boss-non-tank-melee-backoff-distance",
+                "1400",
+                "--party-focus-pressure-melee-backoff",
+                "--party-burn-required-target-health-percent",
+                "20",
+            ]
+        )
+    if action_rotation == "caster-basic":
+        flags.extend(
+            [
+                "--party-rescue-assist-after",
+                "0",
+                "--party-rescue-emergency-assist-after",
+                "0",
+                "--boss-ranged-safe-distance",
+                "1400",
+                "--party-preengage-ranged-safe-distance",
+                "1500",
+                "--boss-non-tank-follow-distance",
+                "1200",
+                "--stationary-cast-actions",
+                "--stationary-cast-min-hold",
+                "3.4",
+            ]
+        )
+    elif action_rotation == "healer-support":
+        flags.extend(
+            [
+                "--party-rescue-assist-after",
+                "0",
+                "--party-rescue-emergency-assist-after",
+                "0",
+                "--boss-ranged-safe-distance",
+                "3500",
+                "--party-preengage-ranged-safe-distance",
+                "3500",
+                "--boss-non-tank-follow-distance",
+                "1200",
+            ]
+        )
+    return flags
+
+
+def live_companion_role_flags(role: Any, action_rotation: str) -> list[str]:
+    flags: list[str] = []
+    if normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support":
+        flags.extend(
+            [
+                "--healer-self-health-percent",
+                "92",
+                "--party-heal-leader-health-percent",
+                "95",
+                "--party-heal-leader-interval",
+                "1.0",
+                "--self-preserve-heal-min-interval",
+                "8.0",
+            ]
+        )
+    return flags
 
 
 def party_vacancy(max_members: Any, group_size: Any) -> int:
@@ -345,6 +620,34 @@ def split_words(value: Any) -> set[str]:
     }
 
 
+def normalize_capability_key(value: Any) -> str:
+    raw = str(value or "").strip().lower().replace("-", "_")
+    compact = "".join(ch for ch in raw if ch.isalnum())
+    return CAPABILITY_ALIASES.get(compact, raw)
+
+
+def split_capabilities(value: Any) -> set[str]:
+    return {normalized for part in split_words(value) if (normalized := normalize_capability_key(part))}
+
+
+def request_capabilities(request: dict[str, Any]) -> set[str]:
+    capabilities: set[str] = set()
+    for key in (
+        "requestedCapability",
+        "RequestedCapability",
+        "requestedCapabilities",
+        "RequestedCapabilities",
+        "capability",
+        "Capability",
+        "capabilities",
+        "Capabilities",
+        "capabilityTags",
+        "CapabilityTags",
+    ):
+        capabilities.update(split_capabilities(request.get(key)))
+    return capabilities
+
+
 def normalize_class_key(value: Any) -> str:
     return "".join(ch for ch in str(value or "").strip().lower() if ch.isalnum())
 
@@ -373,9 +676,33 @@ def companion_row_roles(row: dict[str, Any]) -> set[str]:
 
 
 def companion_row_capabilities(row: dict[str, Any]) -> set[str]:
-    explicit = split_words(row.get("capabilities") or row.get("capability_tags"))
+    explicit = split_capabilities(row.get("capabilities") or row.get("capability_tags"))
     class_capabilities = set(CLASS_CAPABILITY_HINTS.get(companion_row_class_key(row), set()))
     return explicit | class_capabilities
+
+
+def default_role_capability_score(
+    requested_role: str,
+    row: dict[str, Any],
+    request: dict[str, Any] | None = None,
+) -> int:
+    role = normalize_role(requested_role)
+    weights = {
+        "tank": DEFAULT_TANK_CAPABILITY_WEIGHTS,
+        "dps": DEFAULT_DPS_CAPABILITY_WEIGHTS,
+    }.get(role)
+    if not weights:
+        return 0
+
+    capabilities = companion_row_capabilities(row)
+    score = sum(weight for capability, weight in weights.items() if capability in capabilities)
+    if role == "dps" and request is not None and request_is_boss_or_objective_content(request):
+        score += sum(
+            weight
+            for capability, weight in BOSS_DPS_CAPABILITY_WEIGHTS.items()
+            if capability in capabilities
+        )
+    return score
 
 
 def role_to_rotation_for_row(role: Any, row: dict[str, Any] | None = None) -> str:
@@ -425,6 +752,44 @@ def request_position(request: dict[str, Any]) -> tuple[int, int, int] | None:
     if x == 0 and y == 0 and z == 0:
         return None
     return (x, y, z)
+
+
+def request_region(request: dict[str, Any]) -> int:
+    return parse_int(request_value(request, "region", "Region", default=0))
+
+
+def request_objective_target_name(request: dict[str, Any]) -> str:
+    explicit = str(
+        request_value(
+            request,
+            "targetName",
+            "TargetName",
+            "objectiveName",
+            "ObjectiveName",
+            "objectiveTarget",
+            "ObjectiveTarget",
+            default="",
+        )
+        or ""
+    ).strip()
+    if explicit:
+        return explicit
+
+    content_type = str(request_value(request, "contentType", "ContentType", default="") or "").strip()
+    if ":" not in content_type:
+        return ""
+    prefix, suffix = content_type.split(":", 1)
+    if prefix.strip().lower() not in {"pve", "boss", "objective"}:
+        return ""
+    return suffix.strip()
+
+
+def request_is_boss_or_objective_content(request: dict[str, Any]) -> bool:
+    content_type = str(request_value(request, "contentType", "ContentType", default="") or "").strip()
+    if not content_type:
+        return False
+    prefix = content_type.split(":", 1)[0].strip().lower()
+    return prefix in {"boss", "objective", "pve"}
 
 
 def first_account_home_waypoint(account_csv: str | Path) -> str:
@@ -478,6 +843,26 @@ def rank_companion_rows(request: dict[str, Any], rows: list[dict[str, Any]]) -> 
     role_rows = [row for row in rows if row_matches_requested_role(row, requested_role)]
     if role_rows:
         rows = role_rows
+
+    desired_capabilities = request_capabilities(request)
+    if desired_capabilities:
+        capability_rows = [
+            row
+            for row in rows
+            if desired_capabilities.issubset(companion_row_capabilities(row))
+        ]
+        if capability_rows:
+            rows = capability_rows
+
+    if requested_role in {"tank", "dps"} and not desired_capabilities:
+        indexed_rows = list(enumerate(rows))
+        rows = [
+            row
+            for _, row in sorted(
+                indexed_rows,
+                key=lambda item: (-default_role_capability_score(requested_role, item[1], request), item[0]),
+            )
+        ]
 
     target_position = request_position(request)
     if target_position is None:
@@ -578,8 +963,11 @@ def build_behavior_command(
     hold = str(getattr(args, "hold", 3600))
     combat_home = str(getattr(args, "combat_home_leash_distance", 4500))
     leader_waypoint = request_waypoint(request)
+    objective_target_name = request_objective_target_name(request)
     companion_home_waypoint = first_account_home_waypoint(account_csv)
     companion_row = first_account_row(account_csv)
+    action_rotation = role_to_rotation_for_row(role, companion_row)
+    hostile_assist = live_companion_uses_hostile_assist(role, action_rotation)
     player_level = requester_player_level(request, requester_state)
 
     command = [
@@ -605,24 +993,27 @@ def build_behavior_command(
         leader_name,
         "--party-auto-external-members",
         "--party-assist-only",
-        "--party-use-assist-command",
+        "--party-encounter-mode",
+        "boss",
         "--party-assist-interval",
-        "0.6",
+        live_companion_party_assist_interval(role, action_rotation),
         "--party-assist-attack-delay",
-        "0.3",
+        live_companion_party_assist_attack_delay(role, action_rotation),
+        "--party-ranged-assist-extra-delay",
+        live_companion_ranged_assist_extra_delay(role, action_rotation),
         "--party-follow-interval",
         "0.25",
         "--party-follow-step",
         "360",
         "--party-follow-distance",
-        "450",
+        live_companion_follow_distance(role, action_rotation),
         "--follow-nearby-player",
         "--follow-player-name",
         leader_name,
         "--follow-player-max-distance",
         "12000",
-        "--follow-player-hold-allows-waypoint",
         "--combat",
+        "--hunter",
         "--move",
         "--smooth-movement",
         "--smooth-move-interval",
@@ -645,7 +1036,7 @@ def build_behavior_command(
         "--startup-self-buff-delay",
         "0.8",
         "--action-rotation",
-        role_to_rotation_for_row(role, companion_row),
+        action_rotation,
         *(
             [
                 "--player-level",
@@ -658,6 +1049,15 @@ def build_behavior_command(
             if player_level > 0
             else []
         ),
+        *(
+            [
+                "--startup-train-full-specs",
+                "--startup-train-level",
+                str(player_level),
+            ]
+            if player_level > 0 and str(companion_row.get("specs", "") or "").strip()
+            else []
+        ),
         "--auto-release-on-death",
         "--speak-state-changes",
         "--no-auto-loot",
@@ -665,6 +1065,10 @@ def build_behavior_command(
         combat_home,
         "--attack-range",
         "350",
+        "--combat-interval",
+        "0.6",
+        "--skill-interval",
+        "1.0",
         "--combat-direct-move-distance",
         "2200",
         "--melee-stick-attack",
@@ -677,11 +1081,15 @@ def build_behavior_command(
         "--minimum-melee-stop-distance",
         "60",
         "--target-loss-grace",
-        "2",
+        "8",
+        "--target-timeout",
+        "65",
         "--live-control-file",
         str(run_path / "live-control.json"),
         "--live-control-interval",
         "0.5",
+        *LIVE_COMPANION_PARTY_COORDINATION_FLAGS,
+        *live_companion_boss_role_flags(role, action_rotation),
         *LIVE_COMPANION_FLEE_FLAGS,
         "--metrics-csv",
         str(run_path / f"{request_id}-metrics.csv"),
@@ -692,8 +1100,28 @@ def build_behavior_command(
         "--trace-movement-log",
         str(run_path / f"{request_id}-{{username}}-{{round}}-movement.jsonl"),
     ]
+    if live_companion_requires_follow_anchor_before_objective(role, action_rotation):
+        command.append("--follow-player-required-for-objective-move")
+    if live_companion_follow_hold_allows_waypoint(role, action_rotation):
+        command.append("--follow-player-hold-allows-waypoint")
+    if hostile_assist:
+        command.append("--party-use-assist-command")
+    command.extend(live_companion_role_flags(role, action_rotation))
+    if objective_target_name and hostile_assist and live_companion_claims_objective_target(role, action_rotation):
+        command += [
+            "--require-target-name",
+            objective_target_name,
+            "--prefer-target-name",
+            objective_target_name,
+            "--allow-avoid-target-fallback",
+        ]
+        region = request_region(request)
+        if region > 0:
+            command += ["--path-region", str(region)]
     if "stealth" in companion_row_capabilities(companion_row):
         command.append("--startup-stealth")
+    if "speed_song" in companion_row_capabilities(companion_row):
+        command.append("--startup-speed-song")
     if leader_waypoint:
         command += [
             "--waypoints",
@@ -703,7 +1131,15 @@ def build_behavior_command(
             "--waypoint-step",
             "520",
             "--waypoint-stop-distance",
-            "650",
+            live_companion_waypoint_stop_distance(role, action_rotation),
+            "--required-target-home",
+            leader_waypoint,
+            "--required-target-home-stop-distance",
+            live_companion_required_home_stop_distance(role, action_rotation),
+            "--required-target-home-hunt-distance",
+            live_companion_required_home_hunt_distance(role, action_rotation),
+            "--target-home-max-distance",
+            str(max(arg_float(args, "combat_home_leash_distance", 4500.0), 4500.0)),
         ]
         if companion_home_waypoint:
             command += [

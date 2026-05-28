@@ -1034,6 +1034,23 @@ class RequiredTargetApiTests(unittest.TestCase):
         self.assertIn("region=1", url)
         self.assertIn("limit=20", url)
 
+    def test_build_required_target_api_url_can_filter_around_origin(self) -> None:
+        args = self.make_args(
+            required_target_api_name="moorlich",
+            required_target_api_region=1,
+            required_target_api_x=333061,
+            required_target_api_y=669142,
+            required_target_api_radius=6500,
+        )
+
+        url = behavior.build_required_target_api_url(args, region=73)
+
+        self.assertIn("name=moorlich", url)
+        self.assertIn("region=1", url)
+        self.assertIn("x=333061", url)
+        self.assertIn("y=669142", url)
+        self.assertIn("radius=6500", url)
+
 
 class PathClient:
     def __init__(self) -> None:
@@ -2154,6 +2171,191 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
+    def test_party_tank_hold_uses_commit_floor_not_handoff_threshold(self):
+        args = SimpleNamespace(
+            require_target_name="moorlich",
+            flee_critical_health_percent=65,
+            party_active_tank_handoff_health_percent=92,
+            required_target_tank_commit_health_percent=45,
+        )
+        active_combat = {"target_name": "moorlich", "damage_done": 145, "damage_taken": 1185}
+        snapshot = {
+            "active_tank_name": "tank",
+            "members": [
+                {"name": "tank", "object_id": 1, "health_percent": 63, "role": "melee-basic"},
+                {"name": "cleric", "object_id": 2, "health_percent": 100, "role": "healer-support"},
+            ],
+        }
+
+        self.assertTrue(
+            behavior.should_party_tank_hold_required_objective_for_healer(
+                args,
+                snapshot,
+                "tank",
+                active_combat,
+                health_percent=63,
+            )
+        )
+        self.assertFalse(
+            behavior.should_party_tank_hold_required_objective_for_healer(
+                args,
+                snapshot,
+                "tank",
+                active_combat,
+                health_percent=45,
+            )
+        )
+
+    def test_focus_pressure_offtank_holds_required_objective_for_healer(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            party_focus_pressure_offtank_reaggro=True,
+            party_focus_target_max_age=5.0,
+            require_target_name="moorlich",
+            flee_critical_health_percent=65,
+            party_active_tank_handoff_health_percent=92,
+            required_target_tank_commit_health_percent=45,
+        )
+        active_combat = {"target_name": "moorlich", "damage_done": 145, "damage_taken": 1185}
+        snapshot = {
+            "active_tank_name": "Dummy040",
+            "leader_target_focus_name": "Albtest002",
+            "leader_target_focus_updated_at": 100.0,
+            "members": [
+                {"name": "Dummy040", "object_id": 1, "health_percent": 100, "role": "melee-basic"},
+                {"name": "Albtest002", "object_id": 2, "health_percent": 63, "role": "melee-basic"},
+                {"name": "Albtest005", "object_id": 3, "health_percent": 100, "role": "healer-support"},
+            ],
+        }
+
+        self.assertTrue(
+            behavior.should_party_tank_hold_required_objective_for_healer(
+                args,
+                snapshot,
+                "Albtest002",
+                active_combat,
+                health_percent=63,
+                now=102.0,
+            )
+        )
+
+    def test_focus_pressure_offtank_holds_required_objective_when_healer_role_unknown(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            party_encounter_mode="boss",
+            party_focus_pressure_offtank_reaggro=True,
+            party_focus_target_max_age=5.0,
+            party_active_tank_reaggro_taunt_interval=1.2,
+            require_target_name="moorlich",
+            flee_critical_health_percent=65,
+            required_target_tank_commit_health_percent=45,
+        )
+        active_combat = {"target_name": "moorlich", "damage_done": 0, "damage_taken": 1185}
+        snapshot = {
+            "leader_target_id": 23191,
+            "leader_target_name": "moorlich",
+            "active_tank_name": "Dummy040",
+            "leader_target_focus_name": "Albtest005",
+            "leader_target_focus_updated_at": 100.0,
+            "members": [
+                {"name": "Dummy040", "object_id": 1, "health_percent": 100, "role": "external"},
+                {"name": "Albtest002", "object_id": 2, "health_percent": 63, "role": "external"},
+                {"name": "Albtest005", "object_id": 3, "health_percent": 100, "role": "external"},
+            ],
+        }
+
+        self.assertTrue(
+            behavior.should_party_tank_hold_required_objective_for_healer(
+                args,
+                snapshot,
+                "Albtest002",
+                active_combat,
+                health_percent=63,
+                now=102.0,
+                action_rotation="melee-basic",
+            )
+        )
+        self.assertFalse(
+            behavior.should_party_tank_hold_required_objective_for_healer(
+                args,
+                snapshot,
+                "Albtest002",
+                active_combat,
+                health_percent=45,
+                now=102.0,
+                action_rotation="melee-basic",
+            )
+        )
+
+    def test_active_tank_holds_required_objective_when_shared_target_id_temporarily_missing(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            party_encounter_mode="boss",
+            party_focus_pressure_offtank_reaggro=True,
+            party_active_tank_reaggro_taunt_interval=1.2,
+            require_target_name="moorlich",
+            flee_critical_health_percent=65,
+            required_target_tank_commit_health_percent=45,
+        )
+        active_combat = {"target_name": "moorlich", "damage_done": 316, "damage_taken": 1805}
+        snapshot = {
+            "leader_target_id": 0,
+            "leader_target_name": "",
+            "active_tank_name": "Albtest002",
+            "members": [
+                {"name": "Albtest002", "object_id": 2, "health_percent": 60, "role": "external"},
+                {"name": "Albtest005", "object_id": 3, "health_percent": 100, "role": "external"},
+            ],
+        }
+
+        self.assertTrue(
+            behavior.should_party_tank_hold_required_objective_for_healer(
+                args,
+                snapshot,
+                "Albtest002",
+                active_combat,
+                health_percent=60,
+                now=54.0,
+                action_rotation="melee-basic",
+            )
+        )
+
+    def test_melee_basic_tank_holds_required_objective_even_when_active_tank_snapshot_is_wrong(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            party_encounter_mode="boss",
+            party_focus_pressure_offtank_reaggro=True,
+            party_active_tank_reaggro_taunt_interval=1.2,
+            require_target_name="moorlich",
+            flee_critical_health_percent=65,
+            required_target_tank_commit_health_percent=45,
+        )
+        active_combat = {"target_name": "moorlich", "damage_done": 403, "damage_taken": 2513}
+        snapshot = {
+            "leader_target_id": 23241,
+            "leader_target_name": "moorlich",
+            "active_tank_name": "Albtest003",
+            "leader_target_focus_name": "Albtest005",
+            "leader_target_focus_updated_at": 100.0,
+            "members": [
+                {"name": "Albtest002", "object_id": 2, "health_percent": 61, "role": "external"},
+                {"name": "Albtest003", "object_id": 3, "health_percent": 100, "role": "melee-burst"},
+                {"name": "Albtest005", "object_id": 5, "health_percent": 88, "role": "external"},
+            ],
+        }
+
+        self.assertTrue(
+            behavior.should_party_tank_hold_required_objective_for_healer(
+                args,
+                snapshot,
+                "Albtest002",
+                active_combat,
+                health_percent=61,
+                now=102.0,
+                action_rotation="melee-basic",
+            )
+        )
+
     def test_active_tank_match_is_case_insensitive(self):
         snapshot = {"active_tank_name": "Growthalb1301"}
 
@@ -2850,15 +3052,21 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
-    def test_party_reaggro_holds_non_tank_required_target_generic_flee(self):
+    def test_party_reaggro_holds_only_offtank_required_target_generic_flee(self):
         args = SimpleNamespace(
             require_target_name="frost spectre",
+            party_assist_only=True,
+            party_encounter_mode="boss",
             party_focus_target_backoff=True,
+            party_focus_pressure_offtank_reaggro=True,
+            party_focus_target_max_age=5.0,
             party_active_tank_reaggro_taunt_interval=0.8,
         )
         snapshot = {
             "leader_target_id": 200,
             "leader_target_name": "frost spectre",
+            "leader_target_focus_name": "Cleric",
+            "leader_target_focus_updated_at": 10.0,
             "active_tank_name": "Tank",
             "active_tank_object_id": 10,
         }
@@ -2867,9 +3075,81 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             behavior.should_hold_required_target_untracked_flee_for_party_reaggro(
                 args,
                 snapshot,
+                member_name="Mercenary",
+                attacker_name="frost spectre",
+                party_ready_for_objective=True,
+                action_rotation="melee-basic",
+                now=11.0,
+            )
+        )
+        self.assertFalse(
+            behavior.should_hold_required_target_untracked_flee_for_party_reaggro(
+                args,
+                snapshot,
                 member_name="Cleric",
                 attacker_name="frost spectre",
                 party_ready_for_objective=True,
+                action_rotation="healer-support",
+                now=11.0,
+            )
+        )
+
+    def test_party_reaggro_hold_stops_below_recovery_floor(self):
+        args = SimpleNamespace(
+            require_target_name="frost spectre",
+            party_assist_only=True,
+            party_encounter_mode="boss",
+            party_focus_target_backoff=True,
+            party_focus_pressure_offtank_reaggro=True,
+            party_focus_target_max_age=5.0,
+            party_active_tank_reaggro_taunt_interval=0.8,
+            required_target_tank_commit_health_percent=45,
+            low_health_rest_resume_percent=88,
+            flee_critical_health_percent=65,
+        )
+        snapshot = {
+            "leader_target_id": 200,
+            "leader_target_name": "frost spectre",
+            "leader_target_focus_name": "Mercenary",
+            "leader_target_focus_updated_at": 10.0,
+            "active_tank_name": "Tank",
+            "active_tank_object_id": 10,
+        }
+
+        self.assertTrue(
+            behavior.should_hold_required_target_untracked_flee_for_party_reaggro(
+                args,
+                snapshot,
+                member_name="Mercenary",
+                attacker_name="frost spectre",
+                party_ready_for_objective=True,
+                action_rotation="melee-basic",
+                now=11.0,
+                current_health_percent=90,
+            )
+        )
+        self.assertFalse(
+            behavior.should_hold_required_target_untracked_flee_for_party_reaggro(
+                args,
+                snapshot,
+                member_name="Mercenary",
+                attacker_name="frost spectre",
+                party_ready_for_objective=True,
+                action_rotation="melee-basic",
+                now=11.0,
+                current_health_percent=87,
+            )
+        )
+        self.assertFalse(
+            behavior.should_hold_required_target_untracked_flee_for_party_reaggro(
+                args,
+                snapshot,
+                member_name="Mercenary",
+                attacker_name="frost spectre",
+                party_ready_for_objective=True,
+                action_rotation="melee-basic",
+                now=11.0,
+                current_health_percent=45,
             )
         )
 
@@ -2953,6 +3233,237 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertIsNotNone(actor)
         self.assertEqual(actor.object_id, 123)
         self.assertEqual((actor.x, actor.y, actor.z), (0, 0, 0))
+
+    def test_party_rescue_snapshot_actor_falls_back_to_recent_threat_after_leader_target_clears(self):
+        args = SimpleNamespace(
+            party_rescue_aggro=True,
+            party_rescue_max_age=10.0,
+            flee_melee_counterattack_health_floor=55,
+            require_target_name="moorlich",
+            party_encounter_mode="standard",
+            party_rescue_assist_after=0.0,
+            party_assist_rescue_target=False,
+            party_local_rescue_target=False,
+        )
+        snapshot = {
+            "active_tank_name": "Tank",
+            "leader_target_id": 0,
+            "rescue_target_id": 0,
+            "rescue_threats": [
+                {
+                    "object_id": 9458,
+                    "name": "moorlich",
+                    "x": 333966,
+                    "y": 669529,
+                    "z": 2707,
+                    "level": 48,
+                    "objective_add": True,
+                    "member_name": "Healer",
+                    "requested_at": 95.0,
+                }
+            ],
+        }
+
+        actor = behavior.party_rescue_actor_from_snapshot(
+            args,
+            snapshot,
+            member_name="Tank",
+            action_rotation="melee-basic",
+            health_percent=82,
+            now=100.0,
+        )
+
+        self.assertIsNotNone(actor)
+        self.assertEqual(actor.object_id, 9458)
+        self.assertEqual(actor.name, "moorlich")
+        self.assertEqual((actor.x, actor.y, actor.z), (333966, 669529, 2707))
+
+    def test_party_assist_only_rescue_snapshot_actor_allows_tank_reacquire(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            party_rescue_aggro=True,
+            party_rescue_max_age=10.0,
+            flee_melee_counterattack_health_floor=55,
+            require_target_name="moorlich",
+            party_encounter_mode="standard",
+            party_rescue_assist_after=0.0,
+            party_assist_rescue_target=False,
+            party_local_rescue_target=False,
+        )
+        snapshot = {
+            "active_tank_name": "Tank",
+            "leader_target_id": 0,
+            "rescue_target_id": 0,
+            "rescue_threats": [
+                {
+                    "object_id": 9458,
+                    "name": "moorlich",
+                    "objective_add": True,
+                    "member_name": "Healer",
+                    "requested_at": 95.0,
+                }
+            ],
+        }
+
+        actor = behavior.party_assist_only_rescue_snapshot_actor(
+            args,
+            snapshot,
+            is_party_follower=True,
+            member_name="Tank",
+            action_rotation="melee-basic",
+            health_percent=82,
+            now=100.0,
+            active_combat=None,
+            current_target=0,
+            current_target_intent=behavior.TargetIntent.none,
+        )
+
+        self.assertIsNotNone(actor)
+        self.assertEqual(actor.object_id, 9458)
+
+    def test_live_rescue_snapshot_actor_allows_combat_only_active_tank_reacquire(self):
+        args = SimpleNamespace(
+            party_rescue_aggro=True,
+            party_rescue_max_age=10.0,
+            flee_melee_counterattack_health_floor=55,
+            require_target_name="moorlich",
+            party_encounter_mode="standard",
+            party_rescue_assist_after=0.0,
+            party_assist_rescue_target=False,
+            party_local_rescue_target=False,
+        )
+        snapshot = {
+            "active_tank_name": "DpsTank",
+            "leader_target_id": 0,
+            "rescue_target_id": 9458,
+            "rescue_target_name": "moorlich",
+            "rescue_target_x": 333966,
+            "rescue_target_y": 669529,
+            "rescue_target_z": 2707,
+            "rescue_target_level": 48,
+            "rescue_target_objective_add": True,
+            "rescue_member_name": "Healer",
+            "rescue_requested_at": 95.0,
+        }
+
+        actor = behavior.party_live_rescue_snapshot_actor(
+            args,
+            snapshot,
+            is_party_follower=True,
+            member_name="DpsTank",
+            action_rotation="melee-burst",
+            health_percent=100,
+            now=100.0,
+            active_combat=None,
+            current_target=0,
+            current_target_intent=behavior.TargetIntent.none,
+        )
+
+        self.assertIsNotNone(actor)
+        self.assertEqual(actor.object_id, 9458)
+        self.assertEqual((actor.x, actor.y, actor.z), (333966, 669529, 2707))
+
+    def test_party_rescue_same_target_refreshes_recent_victim(self):
+        state = behavior.PartyState("Leader", ["Leader", "Tank", "Healer"])
+        attacker = SimpleNamespace(object_id=9458, name="moorlich", x=333966, y=669529, z=2707, level=48)
+
+        self.assertTrue(state.request_rescue("Leader", attacker, leader_target_id=0, objective_add=True))
+        self.assertEqual(state.snapshot()["rescue_member_name"], "Leader")
+        self.assertTrue(state.request_rescue("Healer", attacker, leader_target_id=0, objective_add=True))
+
+        snapshot = state.snapshot()
+        self.assertEqual(snapshot["rescue_target_id"], 9458)
+        self.assertEqual(snapshot["rescue_member_name"], "Healer")
+
+    def test_friendly_cast_hold_breaks_for_live_rescue_reacquire(self):
+        args = SimpleNamespace(
+            party_rescue_aggro=True,
+            party_rescue_max_age=10.0,
+            flee_melee_counterattack_health_floor=55,
+            require_target_name="moorlich",
+            party_encounter_mode="standard",
+            party_rescue_assist_after=0.0,
+            party_assist_rescue_target=False,
+            party_local_rescue_target=False,
+        )
+        snapshot = {
+            "active_tank_name": "DpsTank",
+            "leader_target_id": 0,
+            "rescue_target_id": 9458,
+            "rescue_target_name": "moorlich",
+            "rescue_target_x": 333966,
+            "rescue_target_y": 669529,
+            "rescue_target_z": 2707,
+            "rescue_target_level": 48,
+            "rescue_target_objective_add": True,
+            "rescue_member_name": "Healer",
+            "rescue_requested_at": 95.0,
+        }
+
+        self.assertTrue(
+            behavior.should_break_friendly_cast_hold_for_party_rescue(
+                args,
+                snapshot,
+                is_party_follower=True,
+                member_name="DpsTank",
+                action_rotation="melee-burst",
+                health_percent=100,
+                friendly_cast_hold_until=105.0,
+                now=100.0,
+                active_combat=None,
+                current_target=0,
+                current_target_intent=behavior.TargetIntent.none,
+            )
+        )
+
+    def test_live_rescue_snapshot_actor_retargets_preserved_active_focus_when_target_cleared(self):
+        args = SimpleNamespace(
+            party_rescue_aggro=True,
+            party_rescue_max_age=10.0,
+            flee_melee_counterattack_health_floor=55,
+            require_target_name="moorlich",
+            party_encounter_mode="standard",
+            party_rescue_assist_after=0.0,
+            party_assist_rescue_target=False,
+            party_local_rescue_target=False,
+        )
+        snapshot = {
+            "active_tank_name": "Tank",
+            "leader_target_id": 0,
+            "rescue_target_id": 9458,
+            "rescue_target_name": "moorlich",
+            "rescue_target_objective_add": True,
+            "rescue_member_name": "Healer",
+            "rescue_requested_at": 95.0,
+        }
+        active_combat = {
+            "target_id": 9458,
+            "target_name": "moorlich",
+            "target_x": 333966,
+            "target_y": 669529,
+            "target_z": 2707,
+            "target_level": 48,
+            "intent": behavior.TargetIntent.party_rescue.value,
+            "damage_done": 120,
+            "damage_taken": 20,
+        }
+
+        actor = behavior.party_live_rescue_snapshot_actor(
+            args,
+            snapshot,
+            is_party_follower=True,
+            member_name="Tank",
+            action_rotation="melee-basic",
+            health_percent=90,
+            now=100.0,
+            active_combat=active_combat,
+            current_target=0,
+            current_target_intent=behavior.TargetIntent.none,
+        )
+
+        self.assertIsNotNone(actor)
+        self.assertEqual(actor.object_id, 9458)
+        self.assertEqual((actor.x, actor.y, actor.z), (333966, 669529, 2707))
 
     def test_party_rescue_snapshot_actor_allows_melee_to_recover_unanchored_objective_pressure(self):
         args = SimpleNamespace(
@@ -3522,6 +4033,165 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertFalse(behavior.should_approach_required_target_home(args, is_party_leader=False, current_target=0))
         self.assertFalse(behavior.should_approach_required_target_home(args, is_party_leader=False, current_target=77))
+
+    def test_active_tank_does_not_use_self_as_party_anchor(self):
+        snapshot = {
+            "leader_name": "PlayerOne",
+            "leader_object_id": 101,
+            "leader_x": 1000,
+            "leader_y": 2000,
+            "leader_z": 300,
+            "active_tank_name": "Albtest002",
+            "active_tank_object_id": 202,
+            "active_tank_x": 9000,
+            "active_tank_y": 9000,
+            "active_tank_z": 300,
+            "external_member_names": ["PlayerOne"],
+        }
+
+        anchor = behavior.party_anchor_from_snapshot(snapshot, member_name="Albtest002")
+
+        self.assertEqual(anchor["name"], "PlayerOne")
+        self.assertEqual(anchor["x"], 1000)
+        self.assertTrue(behavior.party_anchor_position_valid(snapshot, member_name="Albtest002"))
+
+    def test_active_tank_self_anchor_is_not_valid_without_leader_position(self):
+        snapshot = {
+            "leader_name": "PlayerOne",
+            "leader_object_id": 0,
+            "leader_x": 0,
+            "leader_y": 0,
+            "leader_z": 0,
+            "active_tank_name": "Albtest002",
+            "active_tank_object_id": 202,
+            "active_tank_x": 9000,
+            "active_tank_y": 9000,
+            "active_tank_z": 300,
+        }
+
+        self.assertFalse(behavior.party_anchor_position_valid(snapshot, member_name="Albtest002"))
+
+    def test_active_tank_required_home_move_is_not_deferred_by_own_anchor(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            party_min_ready=2,
+            party_size=2,
+            required_target_home=behavior.Waypoint(100, 100, 0),
+            party_pre_pull_home_stop_distance=900.0,
+            required_target_home_stop_distance=900.0,
+            party_follow_distance=450.0,
+        )
+        snapshot = {
+            "leader_target_id": 0,
+            "leader_target_engaged_at": 0.0,
+            "active_tank_name": "Albtest002",
+            "active_tank_object_id": 202,
+            "active_tank_x": 9000,
+            "active_tank_y": 9000,
+            "active_tank_z": 300,
+        }
+        party_state = SimpleNamespace(snapshot=lambda: snapshot)
+        client = SimpleNamespace(x=9000, y=9000, z=300)
+
+        self.assertFalse(
+            behavior.should_defer_required_home_move_for_party_anchor(
+                client,
+                args,
+                party_state,
+                is_party_follower=True,
+                current_target=0,
+                member_name="Albtest002",
+            )
+        )
+
+    def test_active_tank_live_companion_defers_required_home_until_leader_anchor_near_home(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            party_min_ready=4,
+            party_size=4,
+            required_target_home=behavior.Waypoint(1000, 1000, 0),
+            party_pre_pull_home_stop_distance=1800.0,
+            required_target_home_stop_distance=900.0,
+            party_follow_distance=500.0,
+        )
+        snapshot = {
+            "leader_name": "LiveLeader",
+            "leader_object_id": 101,
+            "leader_x": 9000,
+            "leader_y": 9000,
+            "leader_z": 300,
+            "leader_target_id": 0,
+            "leader_target_engaged_at": 0.0,
+            "active_tank_name": "Albtest002",
+            "active_tank_object_id": 202,
+            "active_tank_x": 9000,
+            "active_tank_y": 9000,
+            "active_tank_z": 300,
+        }
+        party_state = SimpleNamespace(snapshot=lambda: snapshot)
+        client = SimpleNamespace(x=9000, y=9000, z=300)
+
+        self.assertTrue(
+            behavior.should_defer_required_home_move_for_party_anchor(
+                client,
+                args,
+                party_state,
+                is_party_follower=True,
+                current_target=0,
+                member_name="Albtest002",
+            )
+        )
+
+        snapshot["leader_x"] = 1600
+        snapshot["leader_y"] = 1000
+        self.assertFalse(
+            behavior.should_defer_required_home_move_for_party_anchor(
+                client,
+                args,
+                party_state,
+                is_party_follower=True,
+                current_target=0,
+                member_name="Albtest002",
+            )
+        )
+
+    def test_live_companion_leader_engaged_gate_defers_required_home_without_min_ready(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            party_min_ready=0,
+            party_require_leader_engaged=True,
+            required_target_home=behavior.Waypoint(1000, 1000, 0),
+            party_pre_pull_home_stop_distance=1800.0,
+            required_target_home_stop_distance=900.0,
+            party_follow_distance=500.0,
+        )
+        snapshot = {
+            "leader_name": "LiveLeader",
+            "leader_object_id": 101,
+            "leader_x": 9000,
+            "leader_y": 9000,
+            "leader_z": 300,
+            "leader_target_id": 0,
+            "leader_target_engaged_at": 0.0,
+            "active_tank_name": "Albtest002",
+            "active_tank_object_id": 202,
+            "active_tank_x": 9000,
+            "active_tank_y": 9000,
+            "active_tank_z": 300,
+        }
+        party_state = SimpleNamespace(snapshot=lambda: snapshot)
+        client = SimpleNamespace(x=9000, y=9000, z=300)
+
+        self.assertTrue(
+            behavior.should_defer_required_home_move_for_party_anchor(
+                client,
+                args,
+                party_state,
+                is_party_follower=True,
+                current_target=0,
+                member_name="Albtest002",
+            )
+        )
 
     def test_party_leader_does_not_idle_wander_while_holding_required_home(self):
         args = SimpleNamespace(
@@ -5533,6 +6203,116 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertTrue(behavior.party_member_ready_for_pull(client, args))
 
+    def test_live_companion_defers_objective_move_until_party_anchor_seen(self):
+        state = behavior.PartyState("leader", ["member"])
+        state.update_member(
+            "member",
+            SimpleNamespace(player_object_id=20, health_percent=100, x=900, y=1800, z=300),
+        )
+        args = SimpleNamespace(
+            follow_player_required_for_objective_move=True,
+            follow_nearby_player=True,
+            player_state_max_age=30.0,
+            party_state_max_age=30.0,
+            player_follow_interval=2.0,
+        )
+
+        self.assertTrue(
+            behavior.should_defer_objective_move_until_follow_anchor(
+                args,
+                state,
+                is_party_follower=True,
+                current_target=0,
+                follow_player_last_visible_at=0.0,
+                now=100.0,
+            )
+        )
+
+        state.update_leader(
+            SimpleNamespace(
+                session_id=1,
+                player_object_id=10,
+                health_percent=100,
+                x=1000,
+                y=2000,
+                z=300,
+                heading=0,
+            )
+        )
+
+        self.assertFalse(
+            behavior.should_defer_objective_move_until_follow_anchor(
+                args,
+                state,
+                is_party_follower=True,
+                current_target=0,
+                follow_player_last_visible_at=0.0,
+                now=100.0,
+            )
+        )
+
+    def test_live_companion_defers_objective_move_until_follow_player_seen(self):
+        args = SimpleNamespace(
+            follow_player_required_for_objective_move=True,
+            follow_nearby_player=True,
+            player_state_max_age=30.0,
+            party_state_max_age=30.0,
+            player_follow_interval=2.0,
+        )
+
+        self.assertTrue(
+            behavior.should_defer_objective_move_until_follow_anchor(
+                args,
+                None,
+                is_party_follower=False,
+                current_target=0,
+                follow_player_last_visible_at=0.0,
+                now=100.0,
+            )
+        )
+        self.assertFalse(
+            behavior.should_defer_objective_move_until_follow_anchor(
+                args,
+                None,
+                is_party_follower=False,
+                current_target=0,
+                follow_player_last_visible_at=95.0,
+                now=100.0,
+            )
+        )
+
+    def test_follow_anchor_wait_destination_prefers_flee_home(self):
+        args = SimpleNamespace(
+            flee_home=behavior.Waypoint(531504, 479073, 2200),
+            required_target_home=behavior.Waypoint(332701, 669142, 2712),
+        )
+
+        destination = behavior.follow_anchor_wait_destination(args)
+
+        self.assertIsNotNone(destination)
+        self.assertEqual(behavior.destination_kind(destination), "follow-anchor-wait")
+        self.assertEqual((destination.x, destination.y, destination.z), (531504, 479073, 2200))
+
+    def test_follow_anchor_wait_destination_holds_when_staging_is_already_safe(self):
+        args = SimpleNamespace(
+            flee_home=behavior.Waypoint(531504, 479073, 2200),
+            required_target_home=behavior.Waypoint(332701, 669142, 2712),
+            flee_safe_threat_radius=6000.0,
+            target_home_max_distance=2800.0,
+            required_target_home_hunt_distance=3600.0,
+            combat_home_leash_distance=2800.0,
+        )
+        client = SimpleNamespace(x=343893, y=672100, z=2659)
+
+        self.assertIsNone(behavior.follow_anchor_wait_destination(args, client))
+
+        client.x = 332941
+        client.y = 669382
+        destination = behavior.follow_anchor_wait_destination(args, client)
+
+        self.assertIsNotNone(destination)
+        self.assertEqual(behavior.destination_kind(destination), "follow-anchor-wait")
+
     def test_party_follower_moves_to_pre_pull_home_ring_until_ready(self):
         state = behavior.PartyState("leader", ["leader", "member"])
         state.update_leader(SimpleNamespace(session_id=1, player_object_id=10, health_percent=100, x=-800, y=0, z=0, heading=0))
@@ -5973,6 +6753,16 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 behavior_state=behavior.DummyBehaviorState.RestRecover,
             )
         )
+        self.assertTrue(
+            behavior.should_approach_party_heal_target(
+                args,
+                action_rotation="healer-support",
+                hurt_member=hurt_member,
+                current_target=0,
+                behavior_state=behavior.DummyBehaviorState.DropAggroAndRecover,
+                critical_flee_interrupt=True,
+            )
+        )
         self.assertFalse(
             behavior.should_approach_party_heal_target(
                 args,
@@ -6029,6 +6819,49 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 current_health_percent=20,
                 now=10.0,
                 next_self_preserve_heal=11.0,
+            )
+        )
+
+    def test_healer_self_preserves_under_direct_focus_before_low_health_floor(self):
+        args = SimpleNamespace(healer_self_health_percent=65, healer_focused_self_health_percent=85)
+        snapshot = {"leader_target_focus_name": "cleric", "rescue_member_name": "", "rescue_target_id": 0}
+
+        self.assertTrue(
+            behavior.should_healer_self_preserve_during_party_support(
+                args,
+                action_rotation="healer-support",
+                current_health_percent=81,
+                party_member_name="cleric",
+                party_snapshot=snapshot,
+                now=10.0,
+                next_self_preserve_heal=9.0,
+            )
+        )
+        self.assertFalse(
+            behavior.should_healer_self_preserve_during_party_support(
+                args,
+                action_rotation="healer-support",
+                current_health_percent=81,
+                party_member_name="cleric",
+                party_snapshot={"leader_target_focus_name": "tank", "rescue_member_name": "", "rescue_target_id": 0},
+                now=10.0,
+                next_self_preserve_heal=9.0,
+            )
+        )
+
+    def test_healer_self_preserves_under_rescue_pressure_before_low_health_floor(self):
+        args = SimpleNamespace(healer_self_health_percent=65, healer_focused_self_health_percent=85)
+        snapshot = {"leader_target_focus_name": "", "rescue_member_name": "cleric", "rescue_target_id": 99}
+
+        self.assertTrue(
+            behavior.should_healer_self_preserve_during_party_support(
+                args,
+                action_rotation="healer-support",
+                current_health_percent=78,
+                party_member_name="cleric",
+                party_snapshot=snapshot,
+                now=10.0,
+                next_self_preserve_heal=9.0,
             )
         )
 
@@ -6145,6 +6978,84 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
+    def test_healer_prioritizes_critical_party_heal_while_fleeing_above_self_emergency(self):
+        args = SimpleNamespace(
+            flee_health_percent=35,
+            flee_self_preserve_emergency_health_percent=35,
+            party_heal_leader_health_percent=95,
+        )
+        hurt_member = {"name": "tank", "health_percent": 24}
+
+        self.assertTrue(
+            behavior.should_healer_prioritize_party_heal_while_fleeing(
+                args,
+                action_rotation="healer-support",
+                current_health_percent=38,
+                hurt_member=hurt_member,
+            )
+        )
+        self.assertFalse(
+            behavior.should_healer_prioritize_party_heal_while_fleeing(
+                args,
+                action_rotation="healer-support",
+                current_health_percent=34,
+                hurt_member=hurt_member,
+            )
+        )
+
+    def test_healer_interrupts_drop_aggro_flee_for_due_critical_party_heal(self):
+        args = SimpleNamespace(
+            flee_health_percent=35,
+            flee_self_preserve_emergency_health_percent=35,
+            party_heal_leader_health_percent=95,
+        )
+        hurt_member = {"name": "tank", "health_percent": 24}
+
+        self.assertTrue(
+            behavior.should_healer_interrupt_flee_for_party_heal(
+                args,
+                action_rotation="healer-support",
+                behavior_state=behavior.DummyBehaviorState.DropAggroAndRecover,
+                current_health_percent=38,
+                hurt_member=hurt_member,
+                now=10.0,
+                next_party_heal=9.5,
+            )
+        )
+        self.assertFalse(
+            behavior.should_healer_interrupt_flee_for_party_heal(
+                args,
+                action_rotation="healer-support",
+                behavior_state=behavior.DummyBehaviorState.HuntObjective,
+                current_health_percent=38,
+                hurt_member=hurt_member,
+                now=10.0,
+                next_party_heal=9.5,
+            )
+        )
+        self.assertFalse(
+            behavior.should_healer_interrupt_flee_for_party_heal(
+                args,
+                action_rotation="healer-support",
+                behavior_state=behavior.DummyBehaviorState.DropAggroAndRecover,
+                current_health_percent=34,
+                hurt_member=hurt_member,
+                now=10.0,
+                next_party_heal=9.5,
+            )
+        )
+        self.assertFalse(
+            behavior.should_healer_interrupt_flee_for_party_heal(
+                args,
+                action_rotation="healer-support",
+                behavior_state=behavior.DummyBehaviorState.DropAggroAndRecover,
+                current_health_percent=38,
+                hurt_member=hurt_member,
+                now=9.0,
+                next_party_heal=9.5,
+            )
+        )
+
     def test_support_priority_critical_self_heal_beats_cure(self):
         args = SimpleNamespace(healer_self_health_percent=65, flee_health_percent=35, party_heal_leader_health_percent=80)
         hurt_member = {"name": "cleric", "health_percent": 52}
@@ -6233,6 +7144,20 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(cure_target["name"], "RealPlayer")
         self.assertEqual(priority, "heal")
 
+    def test_healer_under_rescue_pressure_prioritizes_self_heal_before_leader(self):
+        state = behavior.PartyState("leader", ["leader", "cleric", "tank"])
+        state.update_member("leader", SimpleNamespace(player_object_id=10, health_percent=70, x=0, y=0, z=0))
+        state.update_member("cleric", SimpleNamespace(player_object_id=11, health_percent=78, x=1, y=0, z=0))
+        state.update_member("tank", SimpleNamespace(player_object_id=12, health_percent=95, x=2, y=0, z=0))
+        attacker = FakeNpc(99, "moorlich", 48, 100.0)
+        state.request_rescue("cleric", attacker, leader_target_id=0, min_hold=0.0, objective_add=True)
+        args = SimpleNamespace(healer_self_health_percent=65, party_heal_leader_health_percent=80)
+
+        hurt_member = behavior.choose_party_heal_target(state, args, exclude_name="cleric")
+
+        self.assertEqual(hurt_member["name"], "cleric")
+        self.assertEqual(hurt_member["health_percent"], 78)
+
     def test_party_resurrection_without_spell_does_not_apply_retry_cooldown(self):
         self.assertFalse(behavior.should_apply_party_resurrection_cooldown(None))
         self.assertTrue(behavior.should_apply_party_resurrection_cooldown("validated_party_resurrect_member"))
@@ -6258,6 +7183,123 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 now=20.0,
                 flee_until=30.0,
                 next_self_preserve_heal=10.0,
+            )
+        )
+
+    def test_healer_self_preserve_while_fleeing_defers_after_recent_damage(self):
+        args = SimpleNamespace(healer_self_health_percent=65, flee_safe_replan_damage_grace=6.0)
+
+        self.assertFalse(
+            behavior.should_healer_self_preserve_while_fleeing(
+                args,
+                action_rotation="healer-support",
+                current_health_percent=50,
+                now=20.0,
+                flee_until=30.0,
+                next_self_preserve_heal=10.0,
+                recent_damage_age_seconds=2.0,
+            )
+        )
+        self.assertTrue(
+            behavior.should_healer_self_preserve_while_fleeing(
+                args,
+                action_rotation="healer-support",
+                current_health_percent=30,
+                now=20.0,
+                flee_until=30.0,
+                next_self_preserve_heal=10.0,
+                recent_damage_age_seconds=2.0,
+            )
+        )
+
+    def test_healer_self_preserve_while_fleeing_defers_under_active_threat(self):
+        args = SimpleNamespace(healer_self_health_percent=65, flee_safe_replan_damage_grace=6.0)
+
+        self.assertTrue(
+            behavior.should_defer_flee_self_preserve_for_escape(
+                args,
+                current_health_percent=50,
+                recent_damage_age_seconds=None,
+                active_threat=True,
+            )
+        )
+        self.assertFalse(
+            behavior.should_healer_self_preserve_while_fleeing(
+                args,
+                action_rotation="healer-support",
+                current_health_percent=50,
+                now=20.0,
+                flee_until=30.0,
+                next_self_preserve_heal=10.0,
+                active_threat=True,
+            )
+        )
+        self.assertTrue(
+            behavior.should_healer_self_preserve_while_fleeing(
+                args,
+                action_rotation="healer-support",
+                current_health_percent=30,
+                now=20.0,
+                flee_until=30.0,
+                next_self_preserve_heal=10.0,
+                active_threat=True,
+            )
+        )
+
+    def test_self_preserve_heal_retry_delay_respects_server_cooldown_floor(self):
+        args = SimpleNamespace(
+            party_heal_leader_interval=1.8,
+            party_friendly_cast_target_hold=2.6,
+            self_preserve_heal_min_interval=3.5,
+        )
+
+        self.assertEqual(behavior.self_preserve_heal_retry_delay(args), 3.5)
+
+    def test_friendly_spell_retry_delay_includes_cast_hold_and_buffer(self):
+        args = SimpleNamespace(
+            party_friendly_cast_target_hold=2.6,
+            party_friendly_spell_retry_buffer=2.0,
+        )
+        spell = behavior.UsableSpellRef(line_index=2, spell_level=7, name="Heal", level=5, cast_time=3000)
+
+        self.assertAlmostEqual(
+            behavior.friendly_spell_retry_delay(args, spell, configured_interval=1.8),
+            5.6,
+        )
+
+    def test_self_preserve_retry_uses_spell_cast_hold_and_buffer(self):
+        args = SimpleNamespace(
+            combat_plan_spell_pool=1,
+            party_heal_leader_interval=1.8,
+            party_friendly_cast_target_hold=2.6,
+            party_friendly_spell_retry_buffer=2.0,
+            self_preserve_heal_min_interval=3.5,
+        )
+        plan = behavior.CombatUsablePlan(
+            heal_spells=[behavior.UsableSpellRef(line_index=2, spell_level=7, name="Heal", level=5, cast_time=3000)]
+        )
+
+        self.assertAlmostEqual(behavior.healer_self_preserve_spell_retry_delay(args, plan), 5.6)
+
+    def test_flee_self_preserve_cast_keeps_moving_by_default(self):
+        args = SimpleNamespace(flee_self_preserve_hold_movement=False, flee_self_preserve_emergency_health_percent=35)
+
+        self.assertFalse(
+            behavior.should_hold_flee_movement_after_self_preserve_cast(
+                args,
+                "validated_self_preserve_heal_spell",
+                current_health_percent=50,
+            )
+        )
+
+    def test_flee_self_preserve_cast_holds_at_emergency_health(self):
+        args = SimpleNamespace(flee_self_preserve_hold_movement=False, flee_self_preserve_emergency_health_percent=35)
+
+        self.assertTrue(
+            behavior.should_hold_flee_movement_after_self_preserve_cast(
+                args,
+                "validated_self_preserve_heal_spell",
+                current_health_percent=30,
             )
         )
 
@@ -8277,6 +9319,42 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertFalse(behavior.should_preserve_unshared_party_target(args, 0, active))
         self.assertFalse(behavior.should_preserve_unshared_party_target(args, 77, {"target_name": "forest add"}))
 
+    def test_leader_abandon_preserves_shared_target_for_active_tank_companion(self):
+        args = SimpleNamespace(require_target_name="", objective_add_target_name="")
+        snapshot = {
+            "leader_name": "Dummy040",
+            "leader_target_id": 77,
+            "leader_target_name": "moorlich",
+            "active_tank_name": "Albtest002",
+            "active_tank_object_id": 11,
+        }
+
+        self.assertTrue(
+            behavior.should_preserve_shared_target_for_active_tank_on_leader_abandon(
+                args,
+                snapshot,
+                target_id=77,
+            )
+        )
+
+    def test_leader_abandon_does_not_preserve_when_leader_is_active_tank(self):
+        args = SimpleNamespace(require_target_name="", objective_add_target_name="")
+        snapshot = {
+            "leader_name": "Dummy040",
+            "leader_target_id": 77,
+            "leader_target_name": "moorlich",
+            "active_tank_name": "Dummy040",
+            "active_tank_object_id": 10,
+        }
+
+        self.assertFalse(
+            behavior.should_preserve_shared_target_for_active_tank_on_leader_abandon(
+                args,
+                snapshot,
+                target_id=77,
+            )
+        )
+
     def test_active_party_rescue_focus_survives_empty_shared_party_target(self):
         args = SimpleNamespace(
             party_assist_only=True,
@@ -8929,6 +10007,29 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertIsNone(attack)
 
+    def test_parse_party_member_join_message_supports_korean_group_join(self):
+        self.assertEqual(
+            behavior.parse_party_member_join_message("Albtest005이(가) 그룹에 참가했습니다."),
+            "Albtest005",
+        )
+
+    def test_party_state_tracks_joined_member_for_later_focus_attack_messages(self):
+        state = behavior.PartyState("Dummy040", ["Dummy040", "Albtest002"])
+        joined = behavior.parse_party_member_join_message("Albtest005이(가) 그룹에 참가했습니다.")
+        state.update_external_member(joined, SimpleNamespace(object_id=0, health_percent=100, x=0, y=0, z=0))
+        boss = FakeNpc(10, "moorlich", 48, 1000.0)
+        state.update_shared_target(boss, engaged=True)
+
+        attack = behavior.parse_party_attack_message(
+            "moorlich attacks Albtest005 and hits!",
+            list(state.member_names),
+        )
+
+        self.assertIsNotNone(attack)
+        self.assertEqual(attack.victim_name, "Albtest005")
+        self.assertTrue(state.update_leader_target_focus_from_attack(attack.attacker_name, attack.victim_name))
+        self.assertEqual(state.snapshot()["leader_target_focus_name"], "Albtest005")
+
     def test_attack_message_rescue_accepts_message_proven_add_outside_close_distance(self):
         boss = FakeNpc(10, "Moran the Mighty", 73, 100.0)
         add = FakeNpc(20, "granite giant oracle", 60, 800.0)
@@ -8947,22 +10048,42 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertEqual(selected.object_id, 20)
 
-    def test_attack_message_rescue_rejects_required_boss_attack(self):
+    def test_attack_message_rescue_records_required_boss_as_threat(self):
         boss = FakeNpc(10, "Moran the Mighty", 73, 100.0)
+        same_name_add = FakeNpc(20, "Moran the Mighty", 73, 50.0)
         args = SimpleNamespace(
             require_target_name="moran the mighty",
             party_rescue_max_distance=1400.0,
         )
 
         selected = behavior.choose_attack_message_rescue_attacker(
-            [boss],
-            FakeClient(npcs=[boss]),
+            [same_name_add, boss],
+            FakeClient(npcs=[same_name_add, boss]),
             args,
             leader_target_id=10,
             attacker_name="Moran the Mighty",
         )
 
-        self.assertIsNone(selected)
+        self.assertEqual(selected.object_id, 10)
+
+    def test_attack_message_rescue_prefers_existing_same_name_rescue_target(self):
+        current_boss = FakeNpc(10, "moorlich", 48, 600.0)
+        nearer_clone = FakeNpc(20, "moorlich", 48, 100.0)
+        args = SimpleNamespace(
+            require_target_name="moorlich",
+            party_rescue_max_distance=1400.0,
+        )
+
+        selected = behavior.choose_attack_message_rescue_attacker(
+            [nearer_clone, current_boss],
+            FakeClient(npcs=[nearer_clone, current_boss]),
+            args,
+            leader_target_id=0,
+            attacker_name="moorlich",
+            preferred_target_id=10,
+        )
+
+        self.assertEqual(selected.object_id, 10)
 
     def test_named_rescue_attacker_accepts_korean_damage_attacker(self):
         boss = FakeNpc(10, "Gjalpinulva", 80, 100.0)
@@ -9212,6 +10333,51 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
+    def test_pre_objective_travel_aggro_rescue_does_not_enter_hunt(self):
+        args = SimpleNamespace(required_target_home=SimpleNamespace(x=1000, y=1000, z=500))
+
+        self.assertFalse(
+            behavior.should_enter_hunt_for_objective_area_rescue(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                selected_npc_is_rescue=True,
+                selected_target_intent=behavior.TargetIntent.travel_aggro,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=True,
+            )
+        )
+
+    def test_pre_objective_follower_rescue_waits_for_leader_engaged_when_required(self):
+        args = SimpleNamespace(
+            required_target_home=SimpleNamespace(x=1000, y=1000, z=500),
+            party_require_leader_engaged=True,
+        )
+
+        self.assertFalse(
+            behavior.should_enter_hunt_for_objective_area_rescue(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                selected_npc_is_rescue=True,
+                selected_target_intent=behavior.TargetIntent.party_rescue,
+                is_party_follower=True,
+                leader_engaged=False,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=True,
+            )
+        )
+        self.assertTrue(
+            behavior.should_enter_hunt_for_objective_area_rescue(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                selected_npc_is_rescue=True,
+                selected_target_intent=behavior.TargetIntent.party_rescue,
+                is_party_follower=True,
+                leader_engaged=True,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=True,
+            )
+        )
+
     def test_pre_objective_required_rescue_waits_for_active_tank_not_dps_follower(self):
         args = SimpleNamespace(required_target_home=SimpleNamespace(x=1000, y=1000, z=500))
 
@@ -9370,6 +10536,40 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         )
         self.assertFalse(
             behavior.should_treat_disconnect_as_completed(BrokenPipeError(), SimpleNamespace(is_dead=False), False)
+        )
+
+    def test_post_objective_disconnect_is_completed_round(self):
+        self.assertTrue(
+            behavior.should_treat_disconnect_as_completed(
+                BrokenPipeError(),
+                SimpleNamespace(is_dead=False),
+                False,
+                action_counts={"target_removed": 1},
+            )
+        )
+        self.assertTrue(
+            behavior.should_treat_disconnect_as_completed(
+                ConnectionResetError(),
+                SimpleNamespace(is_dead=False),
+                False,
+                combat_metrics=[behavior.CombatMetric(1, "moorlich", 48, "target_removed", 12.0)],
+            )
+        )
+        self.assertFalse(
+            behavior.should_treat_disconnect_as_completed(
+                BrokenPipeError(),
+                SimpleNamespace(is_dead=False),
+                False,
+                action_counts={"target_removed": 1, "death_detected": 1},
+            )
+        )
+        self.assertFalse(
+            behavior.should_treat_disconnect_as_completed(
+                ValueError("not a socket disconnect"),
+                SimpleNamespace(is_dead=False),
+                False,
+                action_counts={"target_removed": 1},
+            )
         )
 
     def test_party_rescue_target_respects_min_hold(self):
@@ -10605,6 +11805,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             "drop_aggro_active": state == behavior.DummyBehaviorState.DropAggroAndRecover,
             "rest_active": False,
             "flee_active": False,
+            "is_active_tank": False,
         }
         values.update(overrides)
         return behavior.EngagementContext(**values)
@@ -11046,6 +12247,36 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertFalse(decision.allowed)
         self.assertEqual(decision.reject_reason, "travel_non_objective")
 
+    def test_engagement_gate_rejects_follower_required_objective_before_leader_engaged(self):
+        npc = FakeNpc(352, "moorlich", 48, 350.0)
+        args = SimpleNamespace(
+            require_target_name="moorlich",
+            max_target_distance=1500.0,
+            party_require_leader_engaged=True,
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.incoming_damage_counterattack,
+                intent=behavior.TargetIntent.required_retaliation,
+            ),
+            self._engagement_context(
+                state=behavior.DummyBehaviorState.TravelToObjective,
+                is_party_follower=True,
+                party_ready=True,
+                leader_engaged=False,
+                objective_home_reached=True,
+                objective_hunt_ready=True,
+            ),
+            FakeClient(npcs=[npc]),
+            args,
+            {},
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reject_reason, "leader_not_engaged_objective")
+
     def test_engagement_gate_rejects_engaged_party_assist_during_travel(self):
         npc = FakeNpc(332, "fenrir snowscout", 37, 350.0)
         args = SimpleNamespace(
@@ -11117,6 +12348,108 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             client,
             args,
             {},
+        )
+
+        self.assertTrue(decision.allowed)
+
+    def test_engagement_gate_allows_active_tank_reaggro_outside_target_home_during_travel(self):
+        npc = FakeNpc(348, "moorlich", 48, 500.0)
+        npc.x = 900
+        npc.y = 0
+        client = FakeClient(npcs=[npc])
+        client.x = 1200
+        client.y = 0
+        args = SimpleNamespace(
+            min_target_level=46,
+            max_target_level=50,
+            player_level=50,
+            max_target_level_delta=2,
+            max_target_distance=500.0,
+            party_require_leader_engaged=True,
+            party_encounter_mode="boss",
+            required_target_home=SimpleNamespace(x=0, y=0, z=0),
+            target_home_max_distance=400.0,
+            combat_home_leash_distance=1200.0,
+            require_target_name="moorlich",
+            prefer_target_name="moorlich",
+            avoid_target_name="",
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.party_assist,
+                intent=behavior.TargetIntent.party_assist,
+            ),
+            self._engagement_context(
+                state=behavior.DummyBehaviorState.TravelToObjective,
+                is_party_follower=True,
+                is_active_tank=True,
+                party_ready=False,
+                leader_engaged=True,
+                objective_home_reached=False,
+                objective_hunt_ready=False,
+            ),
+            client,
+            args,
+            {
+                "leader_target_id": npc.object_id,
+                "leader_target_name": npc.name,
+                "leader_target_engaged_at": 10.0,
+                "active_tank_name": "Tank",
+                "active_tank_object_id": 22,
+            },
+        )
+
+        self.assertTrue(decision.allowed)
+
+    def test_engagement_gate_allows_active_tank_reaggro_when_shared_target_position_unknown(self):
+        npc = FakeNpc(23203, "moorlich", 48, 1600.0)
+        client = FakeClient(npcs=[npc])
+        client.x = 333080
+        client.y = 669513
+        args = SimpleNamespace(
+            min_target_level=46,
+            max_target_level=50,
+            player_level=50,
+            max_target_level_delta=2,
+            max_target_distance=500.0,
+            party_require_leader_engaged=True,
+            party_encounter_mode="boss",
+            required_target_home=SimpleNamespace(x=333061, y=669142, z=2668),
+            target_home_max_distance=400.0,
+            combat_home_leash_distance=1200.0,
+            require_target_name="moorlich",
+            prefer_target_name="moorlich",
+            avoid_target_name="",
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.party_assist,
+                intent=behavior.TargetIntent.party_assist,
+            ),
+            self._engagement_context(
+                state=behavior.DummyBehaviorState.HuntObjective,
+                is_party_follower=True,
+                is_active_tank=True,
+                party_ready=True,
+                leader_engaged=True,
+                objective_home_reached=False,
+                objective_hunt_ready=False,
+            ),
+            client,
+            args,
+            {
+                "leader_target_id": npc.object_id,
+                "leader_target_name": npc.name,
+                "leader_target_engaged_at": 10.0,
+                "leader_target_x": 0,
+                "leader_target_y": 0,
+                "active_tank_name": "Tank",
+                "active_tank_object_id": 22,
+            },
         )
 
         self.assertTrue(decision.allowed)
@@ -11697,6 +13030,46 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertFalse(decision.allowed)
         self.assertEqual(decision.reject_reason, "target_home_max_distance")
 
+    def test_engagement_gate_allows_engaged_party_assist_target_inside_combat_home_leash(self):
+        npc = FakeNpc(345, "moorlich", 48, 900.0)
+        npc.x = 900
+        npc.y = 0
+        client = FakeClient(npcs=[npc])
+        client.x = 1300
+        client.y = 0
+        args = SimpleNamespace(
+            min_target_level=46,
+            max_target_level=50,
+            player_level=50,
+            max_target_level_delta=2,
+            max_target_distance=300.0,
+            required_target_home=SimpleNamespace(x=0, y=0, z=0),
+            target_home_max_distance=400.0,
+            combat_home_leash_distance=1200.0,
+            party_encounter_mode="boss",
+            require_target_name="",
+            preferred_target_name="",
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.party_assist,
+                intent=behavior.TargetIntent.objective,
+            ),
+            self._engagement_context(
+                state=behavior.DummyBehaviorState.HuntObjective,
+                is_party_follower=True,
+                party_ready=True,
+                leader_engaged=True,
+            ),
+            client,
+            args,
+            {"leader_target_id": 345, "leader_target_name": "moorlich", "leader_target_engaged_at": 10.0},
+        )
+
+        self.assertTrue(decision.allowed)
+
     def test_engagement_gate_allows_accepted_party_rescue_when_follower_trails_combat_home(self):
         npc = FakeNpc(343, "fenrir snowscout", 37, 350.0)
         npc.x = 400
@@ -12108,6 +13481,46 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
+    def test_party_assist_follower_enters_hunt_after_leader_engaged_at_objective(self):
+        args = SimpleNamespace(party_assist_only=True, required_target_home=SimpleNamespace(x=1, y=2, z=3))
+
+        self.assertTrue(
+            behavior.should_enter_hunt_for_party_assist_leader_target(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                is_party_follower=True,
+                action_rotation="caster-basic",
+                leader_target_id=44,
+                leader_engaged=True,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=True,
+            )
+        )
+        self.assertFalse(
+            behavior.should_enter_hunt_for_party_assist_leader_target(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                is_party_follower=True,
+                action_rotation="caster-basic",
+                leader_target_id=44,
+                leader_engaged=False,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=True,
+            )
+        )
+        self.assertFalse(
+            behavior.should_enter_hunt_for_party_assist_leader_target(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                is_party_follower=True,
+                action_rotation="healer-support",
+                leader_target_id=44,
+                leader_engaged=True,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=True,
+            )
+        )
+
     def test_leader_abandon_clears_shared_party_target(self):
         state = behavior.PartyState("leader", ["leader", "member"])
         client = SimpleNamespace(session_id=1, player_object_id=7, health_percent=76, x=10, y=20, z=30, heading=40)
@@ -12399,6 +13812,399 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
+    def test_healer_under_direct_boss_pressure_drops_aggro_before_critical_floor(self):
+        args = SimpleNamespace(
+            flee_critical_health_percent=45,
+            healer_focused_self_health_percent=85,
+        )
+        snapshot = {
+            "rescue_target_id": 23203,
+            "rescue_member_name": "cleric",
+            "leader_target_focus_name": "",
+            "active_tank_name": "tank",
+            "active_tank_health_percent": 100,
+        }
+
+        self.assertTrue(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=75,
+                party_snapshot=snapshot,
+                member_name="cleric",
+                action_rotation="healer-support",
+            )
+        )
+
+    def test_healer_without_direct_boss_pressure_waits_for_normal_critical_floor(self):
+        args = SimpleNamespace(
+            flee_critical_health_percent=45,
+            healer_focused_self_health_percent=85,
+        )
+        snapshot = {
+            "rescue_target_id": 23203,
+            "rescue_member_name": "wizard",
+            "leader_target_focus_name": "",
+            "active_tank_name": "tank",
+            "active_tank_health_percent": 100,
+        }
+
+        self.assertFalse(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=75,
+                party_snapshot=snapshot,
+                member_name="cleric",
+                action_rotation="healer-support",
+            )
+        )
+
+    def test_critical_health_keeps_focus_pressure_offtank_on_required_boss_above_commit_floor(self):
+        args = SimpleNamespace(
+            require_target_name="moorlich",
+            party_assist_only=True,
+            party_focus_pressure_offtank_reaggro=True,
+            party_focus_target_max_age=5.0,
+            flee_critical_health_percent=65,
+            required_target_tank_commit_health_percent=45,
+            party_active_tank_handoff_health_percent=92,
+        )
+        snapshot = {
+            "leader_target_id": 77,
+            "leader_target_name": "moorlich",
+            "active_tank_name": "Dummy040",
+            "leader_target_focus_name": "Albtest002",
+            "leader_target_focus_updated_at": 100.0,
+            "members": [
+                {"name": "Dummy040", "object_id": 1, "health_percent": 100, "role": "melee-basic"},
+                {"name": "Albtest002", "object_id": 2, "health_percent": 63, "role": "melee-basic"},
+                {"name": "Albtest005", "object_id": 3, "health_percent": 100, "role": "healer-support"},
+            ],
+        }
+
+        self.assertFalse(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=63,
+                party_snapshot=snapshot,
+                member_name="Albtest002",
+                action_rotation="melee-basic",
+                current_target=77,
+                current_target_intent=behavior.TargetIntent.objective,
+                now=102.0,
+            )
+        )
+        self.assertTrue(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=44,
+                party_snapshot=snapshot,
+                member_name="Albtest002",
+                action_rotation="melee-basic",
+                current_target=77,
+                current_target_intent=behavior.TargetIntent.objective,
+                now=102.0,
+            )
+        )
+
+    def test_critical_health_keeps_focus_pressure_offtank_when_party_roles_unknown(self):
+        args = SimpleNamespace(
+            require_target_name="moorlich",
+            party_assist_only=True,
+            party_encounter_mode="boss",
+            party_focus_pressure_offtank_reaggro=True,
+            party_focus_target_max_age=5.0,
+            party_active_tank_reaggro_taunt_interval=1.2,
+            flee_critical_health_percent=65,
+            required_target_tank_commit_health_percent=45,
+        )
+        snapshot = {
+            "leader_target_id": 77,
+            "leader_target_name": "moorlich",
+            "active_tank_name": "Dummy040",
+            "leader_target_focus_name": "Albtest005",
+            "leader_target_focus_updated_at": 100.0,
+            "members": [
+                {"name": "Dummy040", "object_id": 1, "health_percent": 100, "role": "external"},
+                {"name": "Albtest002", "object_id": 2, "health_percent": 63, "role": "external"},
+                {"name": "Albtest005", "object_id": 3, "health_percent": 100, "role": "external"},
+            ],
+        }
+
+        self.assertFalse(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=63,
+                party_snapshot=snapshot,
+                member_name="Albtest002",
+                action_rotation="melee-basic",
+                current_target=77,
+                current_target_intent=behavior.TargetIntent.objective,
+                now=102.0,
+            )
+        )
+
+    def test_critical_health_uses_active_combat_when_shared_target_name_missing(self):
+        args = SimpleNamespace(
+            require_target_name="moorlich",
+            party_assist_only=True,
+            party_encounter_mode="boss",
+            party_focus_pressure_offtank_reaggro=True,
+            party_focus_target_max_age=5.0,
+            party_active_tank_reaggro_taunt_interval=1.2,
+            flee_critical_health_percent=65,
+            required_target_tank_commit_health_percent=45,
+        )
+        snapshot = {
+            "leader_target_id": 0,
+            "leader_target_name": "",
+            "active_tank_name": "Albtest002",
+            "members": [
+                {"name": "Albtest002", "object_id": 2, "health_percent": 60, "role": "external"},
+                {"name": "Albtest005", "object_id": 3, "health_percent": 100, "role": "external"},
+            ],
+        }
+
+        self.assertFalse(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=60,
+                party_snapshot=snapshot,
+                member_name="Albtest002",
+                action_rotation="melee-basic",
+                current_target=77,
+                current_target_intent=behavior.TargetIntent.party_assist,
+                now=54.0,
+                active_combat={"target_id": 77, "target_name": "moorlich"},
+            )
+        )
+
+    def test_critical_health_keeps_melee_basic_objective_without_active_combat_cache(self):
+        args = SimpleNamespace(
+            require_target_name="moorlich",
+            party_assist_only=True,
+            party_encounter_mode="boss",
+            flee_critical_health_percent=65,
+            required_target_tank_commit_health_percent=45,
+        )
+
+        self.assertFalse(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=52,
+                party_snapshot={"active_tank_name": "Albtest003"},
+                member_name="Albtest002",
+                action_rotation="melee-basic",
+                current_target=23241,
+                current_target_intent=behavior.TargetIntent.objective,
+                now=54.0,
+                active_combat=None,
+            )
+        )
+        self.assertTrue(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=45,
+                party_snapshot={"active_tank_name": "Albtest003"},
+                member_name="Albtest002",
+                action_rotation="melee-basic",
+                current_target=23241,
+                current_target_intent=behavior.TargetIntent.objective,
+                now=54.0,
+                active_combat=None,
+            )
+        )
+
+    def test_critical_health_keeps_melee_basic_after_recent_required_target_loss(self):
+        args = SimpleNamespace(
+            require_target_name="moorlich",
+            party_assist_only=True,
+            party_encounter_mode="boss",
+            flee_critical_health_percent=65,
+            required_target_tank_commit_health_percent=45,
+        )
+        snapshot = {"leader_target_name": "moorlich"}
+
+        self.assertFalse(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=51,
+                party_snapshot=snapshot,
+                member_name="Albtest002",
+                action_rotation="melee-basic",
+                current_target=0,
+                current_target_intent=behavior.TargetIntent.none,
+                current_target_removed_preserve_count=2,
+                last_damage_attacker_name="moorlich",
+            )
+        )
+        self.assertTrue(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=45,
+                party_snapshot=snapshot,
+                member_name="Albtest002",
+                action_rotation="melee-basic",
+                current_target=0,
+                current_target_intent=behavior.TargetIntent.none,
+                current_target_removed_preserve_count=2,
+                last_damage_attacker_name="moorlich",
+            )
+        )
+
+    def test_critical_health_keeps_supported_active_tank_on_rescue_target_above_commit_floor(self):
+        args = SimpleNamespace(
+            require_target_name="",
+            party_assist_only=True,
+            party_encounter_mode="standard",
+            flee_critical_health_percent=65,
+            required_target_tank_commit_health_percent=45,
+            party_survival_active_tank_health_percent=35,
+        )
+        snapshot = {
+            "leader_target_id": 0,
+            "leader_target_name": "",
+            "active_tank_name": "tank",
+            "rescue_target_id": 77,
+            "rescue_target_name": "moorlich",
+            "members": [
+                {"name": "tank", "object_id": 1, "health_percent": 63, "role": "melee-basic"},
+            ],
+        }
+
+        self.assertFalse(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=63,
+                party_snapshot=snapshot,
+                member_name="tank",
+                action_rotation="melee-basic",
+                current_target=77,
+                current_target_intent=behavior.TargetIntent.party_rescue,
+            )
+        )
+        self.assertTrue(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=44,
+                party_snapshot=snapshot,
+                member_name="tank",
+                action_rotation="melee-basic",
+                current_target=77,
+                current_target_intent=behavior.TargetIntent.party_rescue,
+            )
+        )
+
+    def test_healer_under_rescue_pressure_holds_position_above_commit_floor(self):
+        args = SimpleNamespace(
+            flee_critical_health_percent=65,
+            flee_melee_counterattack_health_floor=45,
+            required_target_tank_commit_health_percent=45,
+        )
+        snapshot = {
+            "active_tank_name": "tank",
+            "active_tank_health_percent": 80,
+            "rescue_target_id": 77,
+            "rescue_target_name": "moorlich",
+            "rescue_member_name": "cleric",
+        }
+
+        self.assertFalse(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=58,
+                party_snapshot=snapshot,
+                member_name="cleric",
+                action_rotation="healer-support",
+            )
+        )
+        self.assertTrue(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=34,
+                party_snapshot=snapshot,
+                member_name="cleric",
+                action_rotation="healer-support",
+            )
+        )
+
+    def test_rescue_victim_holds_during_active_tank_handoff_above_stabilize_floor(self):
+        args = SimpleNamespace(
+            flee_critical_health_percent=65,
+            flee_melee_counterattack_health_floor=45,
+            required_target_tank_commit_health_percent=45,
+        )
+        snapshot = {
+            "active_tank_name": "dps",
+            "active_tank_health_percent": 96,
+            "rescue_target_id": 77,
+            "rescue_target_name": "moorlich",
+            "rescue_member_name": "tank",
+        }
+
+        self.assertFalse(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=57,
+                party_snapshot=snapshot,
+                member_name="tank",
+                action_rotation="melee-basic",
+                current_target=77,
+                current_target_intent=behavior.TargetIntent.party_rescue,
+            )
+        )
+        self.assertTrue(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=34,
+                party_snapshot=snapshot,
+                member_name="tank",
+                action_rotation="melee-basic",
+                current_target=77,
+                current_target_intent=behavior.TargetIntent.party_rescue,
+            )
+        )
+
+    def test_healer_holds_position_above_commit_floor_while_tank_controls_rescue_target(self):
+        args = SimpleNamespace(
+            flee_critical_health_percent=65,
+            flee_melee_counterattack_health_floor=45,
+            required_target_tank_commit_health_percent=45,
+        )
+        snapshot = {
+            "active_tank_name": "tank",
+            "active_tank_health_percent": 80,
+            "rescue_target_id": 77,
+            "rescue_target_name": "moorlich",
+            "rescue_member_name": "leader",
+        }
+
+        self.assertFalse(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=62,
+                party_snapshot=snapshot,
+                member_name="cleric",
+                action_rotation="healer-support",
+            )
+        )
+
     def test_required_retaliation_waits_for_home_and_party_ready_while_traveling(self):
         args = SimpleNamespace()
 
@@ -12424,6 +14230,32 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 behavior.DummyBehaviorState.TravelToObjective,
                 required_home_hunt_ready=True,
                 party_ready_for_objective=True,
+            )
+        )
+
+    def test_follower_required_retaliation_waits_for_leader_engaged_even_when_party_ready(self):
+        args = SimpleNamespace(party_require_leader_engaged=True)
+
+        self.assertFalse(
+            behavior.should_commit_required_retaliation_for_objective(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=True,
+                direct_required_damage_to_active_tank=True,
+                is_party_follower=True,
+                leader_engaged=False,
+            )
+        )
+        self.assertTrue(
+            behavior.should_commit_required_retaliation_for_objective(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=True,
+                direct_required_damage_to_active_tank=True,
+                is_party_follower=True,
+                leader_engaged=True,
             )
         )
 
@@ -13238,6 +15070,20 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 behavior.DummyBehaviorState.HuntObjective,
                 required_home_hunt_ready=False,
                 party_ready_for_objective=True,
+            )
+        )
+
+    def test_required_retaliation_before_leader_engaged_drops_aggro_while_traveling(self):
+        args = SimpleNamespace(party_require_leader_engaged=True)
+
+        self.assertTrue(
+            behavior.should_drop_required_retaliation_before_objective_ready(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=True,
+                is_party_follower=True,
+                leader_engaged=False,
             )
         )
 
@@ -14529,6 +16375,228 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(snapshot["active_tank_object_id"], 11)
         self.assertEqual(snapshot["active_tank_health_percent"], 90)
 
+    def test_party_state_handoff_prefers_dedicated_tank_over_healthier_dps(self):
+        state = behavior.PartyState(
+            "leader",
+            ["tank", "leader", "dps", "cleric"],
+            active_tank_handoff_health_percent=92,
+        )
+        state.update_member_role("leader", "external")
+        state.update_member_role("tank", "melee-basic")
+        state.update_member_role("dps", "melee-burst")
+        state.update_member_role("cleric", "healer-support")
+        state.update_member("leader", SimpleNamespace(player_object_id=10, health_percent=68, x=1, y=2, z=3))
+        state.update_member("tank", SimpleNamespace(player_object_id=11, health_percent=90, x=4, y=5, z=6))
+        state.update_member("dps", SimpleNamespace(player_object_id=12, health_percent=99, x=7, y=8, z=9))
+        state.update_member("cleric", SimpleNamespace(player_object_id=13, health_percent=100, x=10, y=11, z=12))
+
+        snapshot = state.snapshot()
+
+        self.assertEqual(snapshot["active_tank_name"], "tank")
+        self.assertEqual(snapshot["active_tank_object_id"], 11)
+        self.assertEqual(snapshot["active_tank_health_percent"], 90)
+
+    def test_party_state_hands_off_critical_dedicated_tank_to_healthy_melee_dps(self):
+        state = behavior.PartyState(
+            "leader",
+            ["tank", "leader", "dps", "cleric"],
+            active_tank_handoff_health_percent=92,
+        )
+        state.update_member_role("leader", "external")
+        state.update_member_role("tank", "melee-basic")
+        state.update_member_role("dps", "melee-burst")
+        state.update_member_role("cleric", "healer-support")
+        state.update_member("leader", SimpleNamespace(player_object_id=10, health_percent=72, x=1, y=2, z=3))
+        state.update_member("tank", SimpleNamespace(player_object_id=11, health_percent=58, x=4, y=5, z=6))
+        state.update_member("dps", SimpleNamespace(player_object_id=12, health_percent=96, x=7, y=8, z=9))
+        state.update_member("cleric", SimpleNamespace(player_object_id=13, health_percent=100, x=10, y=11, z=12))
+
+        snapshot = state.snapshot()
+
+        self.assertEqual(snapshot["active_tank_name"], "dps")
+        self.assertEqual(snapshot["active_tank_object_id"], 12)
+        self.assertEqual(snapshot["active_tank_health_percent"], 96)
+
+    def test_party_state_keeps_low_dedicated_tank_without_healthy_backup(self):
+        state = behavior.PartyState(
+            "leader",
+            ["tank", "leader", "dps", "cleric"],
+            active_tank_handoff_health_percent=92,
+        )
+        state.update_member_role("leader", "external")
+        state.update_member_role("tank", "melee-basic")
+        state.update_member_role("dps", "melee-burst")
+        state.update_member_role("cleric", "healer-support")
+        state.update_member("leader", SimpleNamespace(player_object_id=10, health_percent=72, x=1, y=2, z=3))
+        state.update_member("tank", SimpleNamespace(player_object_id=11, health_percent=58, x=4, y=5, z=6))
+        state.update_member("dps", SimpleNamespace(player_object_id=12, health_percent=55, x=7, y=8, z=9))
+        state.update_member("cleric", SimpleNamespace(player_object_id=13, health_percent=100, x=10, y=11, z=12))
+
+        snapshot = state.snapshot()
+
+        self.assertEqual(snapshot["active_tank_name"], "tank")
+        self.assertEqual(snapshot["active_tank_object_id"], 11)
+        self.assertEqual(snapshot["active_tank_health_percent"], 58)
+
+    def test_companion_dps_condition_keeps_melee_dps_out_of_tank_role(self):
+        condition = behavior.PlayerConditionSnapshot(
+            name="Albtest003",
+            class_name="Mercenary",
+            class_id=11,
+            is_companion=True,
+            companion_role="dps",
+        )
+
+        self.assertEqual(behavior.party_role_from_condition(condition), "melee-burst")
+
+    def test_active_tank_counterattacks_party_objective_attacker_without_required_name(self):
+        npc = FakeNpc(99, "moorlich", 48, 250.0)
+        client = FakeClient(npcs=[npc])
+        args = SimpleNamespace(
+            party_rescue_aggro=True,
+            flee_melee_counterattack_health_floor=40,
+            player_level=50,
+            party_encounter_mode="standard",
+            max_target_level=-1,
+            max_target_level_delta=2,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            max_target_distance=0.0,
+            combat_home_leash_distance=0.0,
+            require_target_name="",
+            objective_add_target_name="",
+        )
+        party_snapshot = {
+            "active_tank_name": "Albtest002",
+            "leader_target_id": 99,
+            "leader_target_name": "moorlich",
+        }
+
+        actor = behavior.choose_incoming_damage_counterattack_target(
+            [npc],
+            client,
+            args,
+            party_snapshot,
+            member_name="Albtest002",
+            action_rotation="melee-basic",
+            health_percent=95,
+            attacker_name="moorlich",
+            current_target=0,
+            behavior_state=behavior.DummyBehaviorState.HuntObjective,
+        )
+
+        self.assertIs(actor, npc)
+
+    def test_active_tank_counterattacks_active_combat_attacker_after_leader_target_clear(self):
+        npc = FakeNpc(99, "moorlich", 48, 250.0)
+        client = FakeClient(npcs=[npc])
+        args = SimpleNamespace(
+            party_rescue_aggro=True,
+            flee_melee_counterattack_health_floor=40,
+            player_level=50,
+            party_encounter_mode="standard",
+            max_target_level=-1,
+            max_target_level_delta=2,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            max_target_distance=0.0,
+            combat_home_leash_distance=0.0,
+            require_target_name="",
+            objective_add_target_name="",
+        )
+        party_snapshot = {
+            "active_tank_name": "Albtest002",
+            "leader_target_id": 0,
+            "leader_target_name": "",
+        }
+
+        actor = behavior.choose_incoming_damage_counterattack_target(
+            [npc],
+            client,
+            args,
+            party_snapshot,
+            member_name="Albtest002",
+            action_rotation="melee-basic",
+            health_percent=95,
+            attacker_name="moorlich",
+            current_target=0,
+            behavior_state=behavior.DummyBehaviorState.HuntObjective,
+            active_combat={"target_id": 99, "target_name": "moorlich"},
+        )
+
+        self.assertIs(actor, npc)
+
+    def test_active_tank_counterattack_prefers_existing_rescue_target_for_same_name_attacker(self):
+        rescue_target = FakeNpc(99, "moorlich", 48, 700.0)
+        nearer_clone = FakeNpc(41, "moorlich", 48, 150.0)
+        client = FakeClient(npcs=[nearer_clone, rescue_target])
+        args = SimpleNamespace(
+            party_rescue_aggro=True,
+            flee_melee_counterattack_health_floor=40,
+            player_level=50,
+            party_encounter_mode="standard",
+            max_target_level=-1,
+            max_target_level_delta=2,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            max_target_distance=0.0,
+            combat_home_leash_distance=0.0,
+            require_target_name="moorlich",
+            objective_add_target_name="",
+        )
+        party_snapshot = {
+            "active_tank_name": "Albtest002",
+            "leader_target_id": 0,
+            "leader_target_name": "",
+            "rescue_target_id": 99,
+            "rescue_target_name": "moorlich",
+        }
+
+        actor = behavior.choose_incoming_damage_counterattack_target(
+            [nearer_clone, rescue_target],
+            client,
+            args,
+            party_snapshot,
+            member_name="Albtest002",
+            action_rotation="melee-basic",
+            health_percent=95,
+            attacker_name="moorlich",
+            current_target=0,
+            behavior_state=behavior.DummyBehaviorState.HuntObjective,
+            active_combat={"target_id": 99, "target_name": "moorlich"},
+        )
+
+        self.assertIs(actor, rescue_target)
+
+    def test_party_objective_damage_prevents_active_tank_untracked_flee_above_commit_floor(self):
+        args = SimpleNamespace(
+            flee_melee_counterattack_health_floor=40,
+            required_target_tank_commit_health_percent=45,
+            flee_health_percent=90,
+            low_health_rest_percent=0,
+            flee_pressure_health_percent=0,
+            require_target_name="",
+            objective_add_target_name="",
+        )
+
+        self.assertFalse(
+            behavior.should_flee_untracked_damage(
+                args,
+                current_health_percent=80,
+                last_health_percent=95,
+                current_target=0,
+                flee_until=0.0,
+                now=100.0,
+                last_damage_attacker_name="moorlich",
+                party_ready_for_objective=True,
+                party_objective_damage=True,
+            )
+        )
+
+    def test_party_tank_helpers_are_none_safe(self):
+        self.assertFalse(behavior.party_member_is_active_tank(None, "Albtest002"))
+        self.assertFalse(behavior.party_member_is_rescue_tank(None, "Albtest002"))
+
     def test_party_state_does_not_promote_focused_non_tank_as_active_tank(self):
         state = behavior.PartyState("leader", ["leader", "wizard"])
         state.update_member_role("leader", "melee-basic")
@@ -15338,6 +17406,62 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
+    def test_engaged_party_assist_leader_target_bypasses_only_player_home_leash(self):
+        args = SimpleNamespace(
+            party_rescue_aggro=True,
+            required_target_home=SimpleNamespace(x=0, y=0, z=0),
+            combat_home_leash_distance=500.0,
+        )
+        target = FakeNpc(200, "moorlich", 48, 200.0)
+        target.x = 250
+        snapshot = {
+            "rescue_target_id": 0,
+            "leader_target_id": 200,
+            "leader_target_engaged_at": 10.0,
+        }
+
+        self.assertTrue(
+            behavior.current_target_bypasses_target_home_leash(
+                args,
+                snapshot,
+                200,
+                current_target_intent=behavior.TargetIntent.objective,
+                npc=target,
+                leash_reason="player",
+            )
+        )
+        self.assertTrue(
+            behavior.current_target_bypasses_target_home_leash(
+                args,
+                snapshot,
+                200,
+                current_target_intent=behavior.TargetIntent.party_assist,
+                npc=target,
+                leash_reason="player",
+            )
+        )
+        self.assertFalse(
+            behavior.current_target_bypasses_target_home_leash(
+                args,
+                snapshot,
+                200,
+                current_target_intent=behavior.TargetIntent.party_assist,
+                npc=target,
+                leash_reason="target",
+            )
+        )
+        target.x = 700
+        self.assertFalse(
+            behavior.current_target_bypasses_target_home_leash(
+                args,
+                snapshot,
+                200,
+                current_target_intent=behavior.TargetIntent.party_assist,
+                npc=target,
+                leash_reason="player",
+            )
+        )
+
     def test_active_party_rescue_focus_preserves_contact_target(self):
         args = SimpleNamespace(party_rescue_aggro=True)
         active = {
@@ -15957,6 +18081,42 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
+    def test_focus_target_backoff_does_not_pull_offtank_reaggro_role_away(self):
+        snapshot = {
+            "leader_target_id": 100,
+            "leader_target_focus_name": "merc",
+            "leader_target_focus_updated_at": 100.0,
+            "active_tank_name": "leader",
+        }
+        args = SimpleNamespace(
+            party_focus_target_backoff=True,
+            party_focus_pressure_offtank_reaggro=True,
+            party_focus_target_max_age=5.0,
+            party_assist_only=True,
+            require_target_name="moorlich",
+            party_encounter_mode="boss",
+        )
+
+        self.assertFalse(
+            behavior.should_back_off_for_party_focus_target(
+                args,
+                snapshot,
+                "merc",
+                now=102.0,
+                action_rotation="melee-basic",
+            )
+        )
+        snapshot["leader_target_focus_name"] = "cleric"
+        self.assertTrue(
+            behavior.should_back_off_for_party_focus_target(
+                args,
+                snapshot,
+                "cleric",
+                now=102.0,
+                action_rotation="healer-support",
+            )
+        )
+
     def test_focus_pressure_offtank_reaggro_taunt_is_due_for_melee_basic(self):
         args = SimpleNamespace(
             party_assist_only=True,
@@ -15999,6 +18159,110 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 "melee-basic",
                 now=102.0,
                 next_taunt=101.0,
+            )
+        )
+
+    def test_focus_pressure_reaggro_queue_requires_shared_objective(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            require_target_name="moorlich",
+            party_active_tank_reaggro_taunt_interval=1.2,
+            party_focus_pressure_offtank_reaggro=True,
+            party_focus_target_max_age=5.0,
+        )
+        snapshot = {
+            "active_tank_name": "Dummy040",
+            "leader_target_id": 23191,
+            "leader_target_focus_name": "Albtest005",
+            "leader_target_focus_updated_at": 100.0,
+        }
+
+        self.assertTrue(
+            behavior.should_queue_party_focus_reaggro(
+                args,
+                snapshot,
+                "Albtest002",
+                "melee-basic",
+                now=102.0,
+            )
+        )
+        snapshot["leader_target_id"] = 0
+        self.assertFalse(
+            behavior.should_queue_party_focus_reaggro(
+                args,
+                snapshot,
+                "Albtest002",
+                "melee-basic",
+                now=102.0,
+            )
+        )
+
+    def test_focus_pressure_offtank_reaggro_actor_uses_shared_objective(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            party_rescue_aggro=True,
+            party_focus_pressure_offtank_reaggro=True,
+            party_focus_target_max_age=5.0,
+            flee_melee_counterattack_health_floor=45,
+            require_target_name="moorlich",
+        )
+        snapshot = {
+            "active_tank_name": "Dummy040",
+            "leader_target_id": 23185,
+            "leader_target_name": "moorlich",
+            "leader_target_x": 333315,
+            "leader_target_y": 669899,
+            "leader_target_z": 2732,
+            "leader_target_focus_name": "Albtest005",
+            "leader_target_focus_updated_at": 100.0,
+        }
+
+        selected = behavior.party_live_rescue_snapshot_actor(
+            args,
+            snapshot,
+            is_party_follower=True,
+            member_name="Albtest002",
+            action_rotation="melee-basic",
+            health_percent=95,
+            now=102.0,
+            active_combat=None,
+            current_target=0,
+            current_target_intent=behavior.TargetIntent.none,
+        )
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, 23185)
+        self.assertEqual(selected.name, "moorlich")
+
+    def test_focus_pressure_reaggro_actor_ignores_non_tank_roles(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            party_rescue_aggro=True,
+            party_focus_pressure_offtank_reaggro=True,
+            party_focus_target_max_age=5.0,
+            flee_melee_counterattack_health_floor=45,
+            require_target_name="moorlich",
+        )
+        snapshot = {
+            "active_tank_name": "Dummy040",
+            "leader_target_id": 23185,
+            "leader_target_name": "moorlich",
+            "leader_target_focus_name": "Albtest005",
+            "leader_target_focus_updated_at": 100.0,
+        }
+
+        self.assertIsNone(
+            behavior.party_live_rescue_snapshot_actor(
+                args,
+                snapshot,
+                is_party_follower=True,
+                member_name="Albtest003",
+                action_rotation="melee-burst",
+                health_percent=95,
+                now=102.0,
+                active_combat=None,
+                current_target=0,
+                current_target_intent=behavior.TargetIntent.none,
             )
         )
 
@@ -16177,15 +18441,203 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
+    def test_healer_support_suppresses_leader_target_commit_without_required_name(self):
+        args = SimpleNamespace(
+            party_encounter_mode="standard",
+            require_target_name="",
+            objective_add_target_name="",
+        )
+        npc = FakeNpc(77, "moorlich", 48, 500.0)
+
+        self.assertTrue(
+            behavior.should_healer_support_suppress_hostile_commit(
+                args,
+                "healer-support",
+                npc,
+                behavior.TargetIntent.party_assist,
+                {
+                    "leader_target_id": 77,
+                    "leader_target_name": "moorlich",
+                    "active_tank_name": "Albtest002",
+                },
+            )
+        )
+
+    def test_healer_support_suppresses_required_target_offensive_rotation_with_active_tank(self):
+        client = FakeCombatClient()
+        args = SimpleNamespace(
+            attack_range=350.0,
+            spell_range=1500.0,
+            healer_self_health_percent=45,
+            support_spell_chance=1.0,
+            allow_unvalidated_spells=False,
+            stationary_cast_actions=False,
+            combat_plan_spell_pool=3,
+            area_spell_min_targets=2,
+            party_encounter_mode="standard",
+            require_target_name="moorlich",
+            objective_add_target_name="",
+        )
+        combat_plan = behavior.CombatUsablePlan(
+            attack_spells=[
+                behavior.UsableSpellRef(line_index=2, spell_level=22, name="Supreme Judgement", level=22),
+            ],
+        )
+
+        action = behavior.perform_rotation_action(
+            client,
+            random.Random(1),
+            args,
+            "healer-support",
+            900.0,
+            combat_plan,
+            active_combat={"target_name": "moorlich"},
+            party_snapshot={"leader_target_id": 77, "active_tank_name": "Albtest002"},
+        )
+
+        self.assertIsNone(action)
+        self.assertEqual(client.spells, [])
+
+    def test_healer_support_suppresses_object_active_combat_target(self):
+        client = FakeCombatClient()
+        args = SimpleNamespace(
+            attack_range=350.0,
+            spell_range=1500.0,
+            healer_self_health_percent=45,
+            support_spell_chance=1.0,
+            allow_unvalidated_spells=False,
+            stationary_cast_actions=False,
+            combat_plan_spell_pool=3,
+            area_spell_min_targets=2,
+            party_encounter_mode="standard",
+            require_target_name="",
+            objective_add_target_name="",
+        )
+        combat_plan = behavior.CombatUsablePlan(
+            attack_spells=[
+                behavior.UsableSpellRef(line_index=2, spell_level=22, name="Supreme Judgement", level=22),
+            ],
+        )
+
+        action = behavior.perform_rotation_action(
+            client,
+            random.Random(1),
+            args,
+            "healer-support",
+            900.0,
+            combat_plan,
+            active_combat=SimpleNamespace(target_name="moorlich"),
+            party_snapshot={
+                "leader_target_id": 77,
+                "leader_target_name": "moorlich",
+                "active_tank_name": "Albtest002",
+            },
+        )
+
+        self.assertIsNone(action)
+        self.assertEqual(client.spells, [])
+
+    def test_healer_support_suppresses_leader_target_offense_without_required_name(self):
+        client = FakeCombatClient()
+        args = SimpleNamespace(
+            attack_range=350.0,
+            spell_range=1500.0,
+            healer_self_health_percent=45,
+            support_spell_chance=1.0,
+            allow_unvalidated_spells=False,
+            stationary_cast_actions=False,
+            combat_plan_spell_pool=3,
+            area_spell_min_targets=2,
+            party_encounter_mode="standard",
+            require_target_name="",
+            objective_add_target_name="",
+        )
+        combat_plan = behavior.CombatUsablePlan(
+            attack_spells=[
+                behavior.UsableSpellRef(line_index=2, spell_level=22, name="Supreme Judgement", level=22),
+            ],
+        )
+
+        action = behavior.perform_rotation_action(
+            client,
+            random.Random(1),
+            args,
+            "healer-support",
+            900.0,
+            combat_plan,
+            active_combat={"target_name": "moorlich"},
+            party_snapshot={
+                "leader_target_id": 77,
+                "leader_target_name": "moorlich",
+                "active_tank_name": "Albtest002",
+            },
+        )
+
+        self.assertIsNone(action)
+        self.assertEqual(client.spells, [])
+
+    def test_healer_support_suppresses_precast_offense_from_leader_snapshot(self):
+        client = FakeCombatClient()
+        args = SimpleNamespace(
+            attack_range=350.0,
+            spell_range=1500.0,
+            healer_self_health_percent=45,
+            support_spell_chance=1.0,
+            allow_unvalidated_spells=False,
+            stationary_cast_actions=False,
+            combat_plan_spell_pool=3,
+            area_spell_min_targets=2,
+            party_encounter_mode="standard",
+            require_target_name="",
+            objective_add_target_name="",
+        )
+        combat_plan = behavior.CombatUsablePlan(
+            attack_spells=[
+                behavior.UsableSpellRef(line_index=2, spell_level=22, name="Supreme Judgement", level=22),
+            ],
+        )
+
+        action = behavior.perform_rotation_action(
+            client,
+            random.Random(1),
+            args,
+            "healer-support",
+            900.0,
+            combat_plan,
+            active_combat=None,
+            party_snapshot={
+                "leader_target_id": 77,
+                "leader_target_name": "moorlich",
+                "active_tank_name": "Dummy040",
+            },
+        )
+
+        self.assertIsNone(action)
+        self.assertEqual(client.spells, [])
+
     def test_party_heal_spell_prefers_strongest_spell_in_pool(self):
         args = SimpleNamespace(combat_plan_spell_pool=3)
-        weak = behavior.UsableSpellRef(0, 12, "Minor Heal", 12, damage=80.0, cast_time=2500)
-        slow = behavior.UsableSpellRef(0, 44, "Slow Big Heal", 44, damage=330.0, cast_time=4000)
-        strong = behavior.UsableSpellRef(0, 44, "Fast Big Heal", 44, damage=330.0, cast_time=2500)
+        weak = behavior.UsableSpellRef(0, 47, "Minor Refocillation", 47, value=50.0, cast_time=2000)
+        slow = behavior.UsableSpellRef(0, 32, "Slow Big Heal", 32, value=330.0, cast_time=4000)
+        strong = behavior.UsableSpellRef(0, 32, "Fast Big Heal", 32, value=330.0, cast_time=2500)
 
         self.assertIs(
             behavior.choose_party_heal_spell(args, [weak, slow, strong]),
             strong,
+        )
+
+    def test_party_heal_spell_ignores_self_only_for_party_target(self):
+        args = SimpleNamespace(combat_plan_spell_pool=3)
+        self_only = behavior.UsableSpellRef(0, 40, "Self Restoration", 40, target="SELF", value=500.0)
+        ally_heal = behavior.UsableSpellRef(0, 30, "Major Restoration", 30, target="REALM", value=300.0)
+
+        self.assertIs(
+            behavior.choose_party_heal_spell(args, [self_only, ally_heal]),
+            ally_heal,
+        )
+        self.assertIs(
+            behavior.choose_party_heal_spell(args, [self_only, ally_heal], target_self=True),
+            self_only,
         )
 
     def test_party_heal_target_prioritizes_wounded_active_tank_over_lower_focused_member(self):
@@ -16236,6 +18688,27 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertIsNotNone(target)
         self.assertEqual(target["name"], "wizard")
 
+    def test_party_heal_target_prioritizes_critical_member_over_wounded_active_tank(self):
+        state = behavior.PartyState(
+            "leader",
+            ["tank", "leader", "dps", "cleric"],
+            active_tank_handoff_health_percent=92,
+        )
+        state.update_member_role("leader", "external")
+        state.update_member_role("tank", "melee-basic")
+        state.update_member_role("dps", "melee-burst")
+        state.update_member_role("cleric", "healer-support")
+        state.update_member("leader", SimpleNamespace(player_object_id=10, health_percent=100, x=1, y=2, z=3))
+        state.update_member("tank", SimpleNamespace(player_object_id=11, health_percent=23, x=4, y=5, z=6))
+        state.update_member("dps", SimpleNamespace(player_object_id=12, health_percent=93, x=7, y=8, z=9))
+        state.update_member("cleric", SimpleNamespace(player_object_id=13, health_percent=100, x=10, y=11, z=12))
+        args = SimpleNamespace(party_heal_leader_health_percent=95, flee_health_percent=35)
+
+        target = behavior.choose_party_heal_target(state, args, exclude_name="cleric")
+
+        self.assertIsNotNone(target)
+        self.assertEqual(target["name"], "tank")
+
     def test_healer_breaks_non_heal_friendly_hold_for_wounded_active_tank(self):
         state = behavior.PartyState("leader", ["leader", "cleric"])
         state.update_member("leader", SimpleNamespace(player_object_id=1, health_percent=75, x=0, y=0, z=0))
@@ -16269,6 +18742,25 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 is_party_follower=True,
                 friendly_cast_hold_until=12.0,
                 friendly_cast_hold_reason="party_heal",
+                now=10.0,
+                exclude_name="cleric",
+            )
+        )
+
+    def test_healer_keeps_existing_self_preserve_hold_until_cast_can_land(self):
+        state = behavior.PartyState("leader", ["leader", "cleric"])
+        state.update_member("leader", SimpleNamespace(player_object_id=1, health_percent=40, x=0, y=0, z=0))
+        state.update_member("cleric", SimpleNamespace(player_object_id=2, health_percent=64, x=0, y=0, z=0))
+        args = SimpleNamespace(party_heal_leader_interval=1.8, party_heal_leader_health_percent=80)
+
+        self.assertFalse(
+            behavior.should_break_friendly_cast_hold_for_party_heal(
+                state,
+                args,
+                action_rotation="healer-support",
+                is_party_follower=True,
+                friendly_cast_hold_until=12.0,
+                friendly_cast_hold_reason="self_preserve_heal",
                 now=10.0,
                 exclude_name="cleric",
             )
@@ -16544,6 +19036,34 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             160.0,
         )
 
+    def test_active_tank_uses_faster_reaggro_chase_for_rescue_snapshot_before_focus_updates(self):
+        args = SimpleNamespace(
+            attack_range=350,
+            require_target_name="golestandt",
+            party_focus_target_max_age=5.0,
+        )
+        snapshot = {
+            "active_tank_name": "leader",
+            "leader_target_focus_name": "",
+            "rescue_member_name": "cleric",
+            "rescue_target_id": 10,
+        }
+        boss = FakeNpc(10, "Golestandt", 80, 1800.0)
+
+        self.assertEqual(
+            behavior.active_tank_reaggro_chase_step(
+                args,
+                snapshot,
+                "leader",
+                "melee-basic",
+                boss,
+                distance=1800.0,
+                base_step=40.0,
+                now=100.0,
+            ),
+            160.0,
+        )
+
     def test_active_tank_reaggro_chase_keeps_normal_step_when_boss_focuses_tank(self):
         args = SimpleNamespace(
             attack_range=350,
@@ -16598,6 +19118,28 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 tactical_backoff=False,
             )
         )
+
+    def test_last_known_chase_allows_matching_rescue_target_when_leader_target_cleared(self):
+        snapshot = {
+            "leader_target_id": 0,
+            "rescue_target_id": 77,
+            "rescue_target_x": 123,
+            "rescue_target_y": 456,
+            "rescue_target_z": 7,
+        }
+
+        self.assertTrue(
+            behavior.should_chase_last_known_shared_target(
+                snapshot,
+                current_target=77,
+                tactical_backoff=False,
+                current_target_intent=behavior.TargetIntent.party_rescue,
+            )
+        )
+        destination = behavior.shared_target_last_known_destination(snapshot, 77)
+
+        self.assertIsNotNone(destination)
+        self.assertEqual((destination.x, destination.y, destination.z), (123, 456, 7))
 
     def test_shared_target_backoff_point_allows_empty_current_target(self):
         snapshot = {"leader_target_id": 77}
@@ -16665,6 +19207,31 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 "melee-basic",
                 now=12.0,
                 next_taunt=13.0,
+            )
+        )
+
+    def test_active_tank_reaggro_taunt_is_due_for_rescue_snapshot_before_focus_updates(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            require_target_name="moran the mighty",
+            party_active_tank_reaggro_taunt_interval=1.2,
+            party_focus_target_max_age=5.0,
+        )
+        snapshot = {
+            "active_tank_name": "leader",
+            "leader_target_focus_name": "",
+            "rescue_member_name": "cleric",
+            "rescue_target_id": 44,
+        }
+
+        self.assertTrue(
+            behavior.should_active_tank_reaggro_taunt(
+                args,
+                snapshot,
+                "leader",
+                "melee-basic",
+                now=12.0,
+                next_taunt=11.5,
             )
         )
 
@@ -16766,6 +19333,130 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertFalse(behavior.should_back_off_from_required_home_before_engage(args, "caster-basic", 1250, current_target=0))
         self.assertFalse(behavior.should_back_off_from_required_home_before_engage(args, "caster-basic", 900, current_target=77))
         self.assertFalse(behavior.should_back_off_from_required_home_before_engage(args, "melee-basic", 900, current_target=0))
+
+    def test_healer_defers_noncritical_support_until_preengage_position_is_safe(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            require_target_name="barfog",
+            party_encounter_mode="boss",
+            party_preengage_ranged_safe_distance=3000,
+            boss_ranged_safe_distance=2500,
+            attack_range=350,
+            melee_range_buffer=250,
+            minimum_melee_stop_distance=85,
+            ranged_stop_distance=900,
+            spell_range=1500,
+            healer_self_health_percent=65,
+            flee_health_percent=35,
+            party_heal_leader_health_percent=95,
+            required_target_home=behavior.PathPoint(1000, 1000, 0),
+        )
+        client = SimpleNamespace(x=2000, y=1000)
+        hurt_member = {"name": "tank", "health_percent": 61}
+
+        self.assertTrue(
+            behavior.should_defer_party_support_for_preengage_position(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                "healer-support",
+                client,
+                current_health_percent=100,
+                hurt_member=hurt_member,
+            )
+        )
+
+    def test_healer_defers_critical_support_when_preengage_position_is_too_deep(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            require_target_name="barfog",
+            party_encounter_mode="boss",
+            party_preengage_ranged_safe_distance=3000,
+            boss_ranged_safe_distance=2500,
+            attack_range=350,
+            melee_range_buffer=250,
+            minimum_melee_stop_distance=85,
+            ranged_stop_distance=900,
+            spell_range=1500,
+            healer_self_health_percent=65,
+            flee_health_percent=35,
+            party_heal_leader_health_percent=95,
+            required_target_home=behavior.PathPoint(1000, 1000, 0),
+        )
+        client = SimpleNamespace(x=2000, y=1000)
+        hurt_member = {"name": "tank", "health_percent": 45}
+
+        self.assertTrue(
+            behavior.should_defer_party_support_for_preengage_position(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                "healer-support",
+                client,
+                current_health_percent=100,
+                hurt_member=hurt_member,
+            )
+        )
+
+    def test_healer_allows_wounded_tank_support_near_preengage_safe_position(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            require_target_name="barfog",
+            party_encounter_mode="boss",
+            party_preengage_ranged_safe_distance=3000,
+            boss_ranged_safe_distance=2500,
+            attack_range=350,
+            melee_range_buffer=250,
+            minimum_melee_stop_distance=85,
+            ranged_stop_distance=900,
+            spell_range=1500,
+            healer_self_health_percent=65,
+            flee_health_percent=35,
+            party_heal_leader_health_percent=95,
+            required_target_home=behavior.PathPoint(1000, 1000, 0),
+        )
+        client = SimpleNamespace(x=3400, y=1000)
+        hurt_member = {"name": "tank", "health_percent": 61}
+
+        self.assertFalse(
+            behavior.should_defer_party_support_for_preengage_position(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                "healer-support",
+                client,
+                current_health_percent=100,
+                hurt_member=hurt_member,
+            )
+        )
+
+    def test_healer_allows_critical_support_near_preengage_safe_position(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            require_target_name="barfog",
+            party_encounter_mode="boss",
+            party_preengage_ranged_safe_distance=3000,
+            boss_ranged_safe_distance=2500,
+            attack_range=350,
+            melee_range_buffer=250,
+            minimum_melee_stop_distance=85,
+            ranged_stop_distance=900,
+            spell_range=1500,
+            healer_self_health_percent=65,
+            flee_health_percent=35,
+            party_heal_leader_health_percent=95,
+            required_target_home=behavior.PathPoint(1000, 1000, 0),
+        )
+        client = SimpleNamespace(x=3400, y=1000)
+        hurt_member = {"name": "tank", "health_percent": 45}
+
+        self.assertFalse(
+            behavior.should_defer_party_support_for_preengage_position(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                "healer-support",
+                client,
+                current_health_percent=100,
+                hurt_member=hurt_member,
+            )
+        )
 
     def test_required_boss_non_tanks_regroup_near_leader(self):
         args = SimpleNamespace(
@@ -16982,9 +19673,55 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertFalse(
             behavior.should_force_flee_from_non_required_health_drop(
                 args,
+                current_health_percent=64,
+                previous_health_percent=85,
+                last_damage_attacker_name="fenrir snowscout",
+                party_objective_damage=True,
+            )
+        )
+        self.assertFalse(
+            behavior.should_force_flee_from_non_required_health_drop(
+                args,
                 current_health_percent=74,
                 previous_health_percent=84,
                 last_damage_attacker_name="frost spectre",
+            )
+        )
+
+    def test_party_rescue_intent_holds_losing_combat_above_commit_floor(self):
+        args = SimpleNamespace(
+            required_target_tank_commit_health_percent=45,
+            flee_health_percent=90,
+            low_health_rest_percent=0,
+            flee_pressure_health_percent=90,
+            flee_critical_health_percent=0,
+            flee_min_combat_seconds=0.0,
+            flee_min_damage_taken=0,
+            flee_damage_taken_ratio=0.0,
+            require_target_name="",
+        )
+        active = {
+            "target_name": "moorlich",
+            "target_intent": behavior.TargetIntent.party_rescue.value,
+            "started": 10.0,
+            "damage_done": 0,
+            "damage_taken": 120,
+        }
+
+        self.assertFalse(
+            behavior.should_flee_losing_combat(
+                args,
+                active,
+                health_percent=88,
+                now=12.0,
+            )
+        )
+        self.assertTrue(
+            behavior.should_flee_losing_combat(
+                args,
+                active,
+                health_percent=40,
+                now=12.0,
             )
         )
 
@@ -17225,6 +19962,58 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(plan.heal_spells[0].use_skill_index, 12)
         self.assertEqual(plan.heal_spells[0].line_index, -1)
 
+    def test_combat_plan_sorts_heal_spells_by_heal_value_before_level(self):
+        payload = {
+            "skills": [],
+            "spellLines": [
+                {
+                    "entries": [
+                        {
+                            "kind": "Spell",
+                            "lineIndex": 1,
+                            "spellLevel": 47,
+                            "name": "Minor Refocillation",
+                            "level": 47,
+                            "spell": {
+                                "spellType": "Heal",
+                                "target": "REALM",
+                                "isHealing": True,
+                                "isBuff": False,
+                                "isHarmful": False,
+                                "value": 50,
+                                "damage": 0,
+                                "range": 1500,
+                                "castTime": 2000,
+                            },
+                        },
+                        {
+                            "kind": "Spell",
+                            "lineIndex": 1,
+                            "spellLevel": 32,
+                            "name": "Major Restoration",
+                            "level": 32,
+                            "spell": {
+                                "spellType": "Heal",
+                                "target": "REALM",
+                                "isHealing": True,
+                                "isBuff": False,
+                                "isHarmful": False,
+                                "value": 330,
+                                "damage": 0,
+                                "range": 1500,
+                                "castTime": 2500,
+                            },
+                        },
+                    ]
+                }
+            ],
+        }
+
+        plan = behavior.parse_combat_usable_plan(payload)
+
+        self.assertEqual([spell.name for spell in plan.heal_spells], ["Major Restoration", "Minor Refocillation"])
+        self.assertEqual(plan.heal_spells[0].value, 330.0)
+
     def test_combat_plan_parses_resurrection_and_crowd_control_spells(self):
         payload = {
             "skills": [],
@@ -17254,6 +20043,23 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                             "level": 23,
                             "spell": {
                                 "spellType": "Mesmerize",
+                                "isHealing": False,
+                                "isBuff": False,
+                                "isHarmful": True,
+                                "damage": 0,
+                                "range": 1500,
+                                "radius": 350,
+                            },
+                        },
+                        {
+                            "kind": "Spell",
+                            "lineIndex": 5,
+                            "spellLevel": 31,
+                            "name": "Area Mesmerize",
+                            "level": 31,
+                            "spell": {
+                                "spellType": "Mesmerize",
+                                "capabilityTags": ["aoe", "mez"],
                                 "isHealing": False,
                                 "isBuff": False,
                                 "isHarmful": True,
@@ -17300,7 +20106,8 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         plan = behavior.parse_combat_usable_plan(payload)
 
         self.assertEqual([spell.name for spell in plan.resurrection_spells], ["Resurrection"])
-        self.assertEqual([spell.name for spell in plan.crowd_control_spells], ["Mesmerize", "Root"])
+        self.assertEqual([spell.name for spell in plan.crowd_control_spells], ["Area Mesmerize", "Mesmerize", "Root"])
+        self.assertNotIn("Area Mesmerize", [spell.name for spell in plan.area_attack_spells])
         self.assertEqual([spell.name for spell in plan.heal_spells], ["Minor Heal"])
 
     def test_combat_plan_uses_capability_tags_for_speed_song_and_stealth(self):
@@ -17576,6 +20383,80 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(action_counts["precombat_summon_spell"], 1)
         self.assertEqual(action_counts["precombat_speed_song_spell"], 1)
         self.assertEqual(action_counts["precombat_self_buff_spell"], 1)
+
+    def test_self_utility_spells_refresh_speed_song_and_stealth_when_safe(self):
+        client = FakeCombatClient()
+        client.last_position_speed = 180.0
+        args = SimpleNamespace(
+            startup_speed_song=True,
+            startup_stealth=True,
+            speed_song_refresh_interval=45.0,
+            stealth_refresh_interval=30.0,
+        )
+        plan = behavior.CombatUsablePlan(
+            speed_song_spells=[
+                behavior.UsableSpellRef(line_index=4, spell_level=5, name="Traveler's Chant", level=5),
+            ],
+            stealth_spells=[
+                behavior.UsableSpellRef(line_index=5, spell_level=12, name="Shadow Walk", level=12),
+            ],
+        )
+        action_counts: dict[str, int] = {}
+
+        actions, next_speed, next_stealth = behavior.maintain_self_utility_spells(
+            client,
+            args,
+            plan,
+            action_counts,
+            now=100.0,
+            next_speed_song=99.0,
+            next_stealth=99.0,
+            in_combat=False,
+            is_dead=False,
+        )
+
+        self.assertEqual(actions, 2)
+        self.assertEqual(client.spells, [(5, 4), (12, 5)])
+        self.assertEqual(client.spell_calls[0]["speed"], 180.0)
+        self.assertEqual(client.spell_calls[1]["speed"], 0.0)
+        self.assertEqual(next_speed, 145.0)
+        self.assertEqual(next_stealth, 130.0)
+        self.assertEqual(action_counts["maintain_speed_song_spell"], 1)
+        self.assertEqual(action_counts["maintain_stealth_spell"], 1)
+
+    def test_self_utility_spells_do_not_refresh_while_dead_or_in_combat(self):
+        args = SimpleNamespace(
+            startup_speed_song=True,
+            startup_stealth=True,
+            speed_song_refresh_interval=45.0,
+            stealth_refresh_interval=30.0,
+        )
+        plan = behavior.CombatUsablePlan(
+            speed_song_spells=[behavior.UsableSpellRef(line_index=4, spell_level=5, name="Traveler's Chant", level=5)],
+            stealth_spells=[behavior.UsableSpellRef(line_index=5, spell_level=12, name="Shadow Walk", level=12)],
+        )
+
+        for in_combat, is_dead in ((True, False), (False, True)):
+            with self.subTest(in_combat=in_combat, is_dead=is_dead):
+                client = FakeCombatClient()
+                action_counts: dict[str, int] = {}
+
+                actions, next_speed, next_stealth = behavior.maintain_self_utility_spells(
+                    client,
+                    args,
+                    plan,
+                    action_counts,
+                    now=100.0,
+                    next_speed_song=99.0,
+                    next_stealth=99.0,
+                    in_combat=in_combat,
+                    is_dead=is_dead,
+                )
+
+                self.assertEqual(actions, 0)
+                self.assertEqual(client.spells, [])
+                self.assertEqual((next_speed, next_stealth), (99.0, 99.0))
+                self.assertEqual(action_counts, {})
 
     def test_combat_plan_classifies_cure_debuff_taunt_and_area_damage_spells(self):
         payload = {
@@ -18292,7 +21173,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         state.update_member_role("cleric", "healer-support")
         state.update_member_role("dps", "melee-burst")
         state.update_member("tank", SimpleNamespace(player_object_id=10, health_percent=100, x=0, y=0, z=0))
-        state.update_member("cleric", SimpleNamespace(player_object_id=11, health_percent=100, x=0, y=0, z=0))
+        state.update_member("cleric", SimpleNamespace(player_object_id=11, health_percent=82, x=0, y=0, z=0))
         state.update_member("dps", SimpleNamespace(player_object_id=12, health_percent=100, x=0, y=0, z=0))
         ability = behavior.UsableAbilityRef(use_skill_index=8, use_skill_type=1, name="Guard", level=5, category="guard")
 
@@ -18303,6 +21184,67 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(action, "validated_party_guard_member")
         self.assertEqual(client.target_calls, [11])
         self.assertEqual(client.skills, [(8, 1)])
+
+    def test_party_protection_ability_ignores_safe_full_health_party(self):
+        state = behavior.PartyState("tank", ["tank", "cleric", "dps"])
+        state.update_member_role("tank", "melee-basic")
+        state.update_member_role("cleric", "healer-support")
+        state.update_member_role("dps", "melee-burst")
+        state.update_member("tank", SimpleNamespace(player_object_id=10, health_percent=100, x=0, y=0, z=0))
+        state.update_member("cleric", SimpleNamespace(player_object_id=11, health_percent=100, x=0, y=0, z=0))
+        state.update_member("dps", SimpleNamespace(player_object_id=12, health_percent=100, x=0, y=0, z=0))
+
+        self.assertIsNone(behavior.choose_party_protection_target(state, exclude_name="tank"))
+
+    def test_party_protection_ability_targets_focused_full_health_support_member(self):
+        state = behavior.PartyState("tank", ["tank", "cleric", "dps"])
+        state.update_member_role("tank", "melee-basic")
+        state.update_member_role("cleric", "healer-support")
+        state.update_member_role("dps", "melee-burst")
+        state.update_member("tank", SimpleNamespace(player_object_id=10, health_percent=100, x=0, y=0, z=0))
+        state.update_member("cleric", SimpleNamespace(player_object_id=11, health_percent=100, x=0, y=0, z=0))
+        state.update_member("dps", SimpleNamespace(player_object_id=12, health_percent=100, x=0, y=0, z=0))
+        with state.lock:
+            state.leader_target_id = 99
+            state.leader_target_name = "moorlich"
+        state.update_leader_target_focus_from_attack("moorlich", "cleric")
+
+        target = behavior.choose_party_protection_target(state, exclude_name="tank")
+
+        self.assertIsNotNone(target)
+        self.assertEqual(target["name"], "cleric")
+
+    def test_party_protection_approaches_member_before_using_close_range_guard(self):
+        client = PathClient()
+        args = SimpleNamespace(
+            party_follow_step=320.0,
+            party_protection_close_distance=220.0,
+            movement_speed=None,
+            movement_update_interval=0.0,
+        )
+        target = {"name": "cleric", "object_id": 11, "x": 1000, "y": 0, "z": 0}
+
+        self.assertTrue(behavior.should_approach_party_protection_target(client, args, target))
+        outcome = behavior.move_towards_party_protection_target(
+            client,
+            args,
+            behavior.PathMovementState(None, 1, None),
+            {},
+            target,
+        )
+
+        self.assertIsNotNone(outcome)
+        self.assertTrue(outcome.moved)
+        self.assertEqual(client.moves[-1], (1000, 0, 0, 320.0, 220.0))
+
+    def test_party_protection_does_not_approach_member_already_close(self):
+        client = PathClient()
+        client.x = 900
+        args = SimpleNamespace(party_protection_close_distance=220.0)
+        target = {"name": "cleric", "object_id": 11, "x": 1000, "y": 0, "z": 0}
+
+        self.assertFalse(behavior.should_approach_party_protection_target(client, args, target))
+        self.assertTrue(behavior.party_protection_target_in_close_range(client, args, target))
 
     def test_party_protection_can_run_while_tank_has_enemy_target(self):
         state = behavior.PartyState("tank", ["tank", "cleric"])
@@ -18325,6 +21267,117 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 behavior_state=behavior.DummyBehaviorState.HuntObjective,
                 now=30.0,
                 next_party_protection=20.0,
+            )
+        )
+
+    def test_party_protection_waits_while_active_tank_must_reaggro_boss_focus(self):
+        state = behavior.PartyState("tank", ["tank", "cleric"])
+        state.update_member_role("tank", "melee-basic")
+        state.update_member_role("cleric", "healer-support")
+        state.update_member("tank", SimpleNamespace(player_object_id=10, health_percent=100, x=0, y=0, z=0))
+        state.update_member("cleric", SimpleNamespace(player_object_id=11, health_percent=100, x=1000, y=0, z=0))
+        state.update_shared_target(
+            behavior.RequiredTargetObservation(
+                object_id=100,
+                name="moorlich",
+                x=10,
+                y=20,
+                z=30,
+                level=48,
+                target="cleric",
+            ),
+            engaged=True,
+        )
+        ability = behavior.UsableAbilityRef(use_skill_index=8, use_skill_type=1, name="Guard", level=5, category="guard")
+        plan = behavior.CombatUsablePlan(party_protection_abilities=[ability])
+
+        self.assertFalse(
+            behavior.should_use_party_protection_ability(
+                SimpleNamespace(party_protection_interval=10.0, party_focus_target_max_age=5.0),
+                plan,
+                state,
+                action_rotation="melee-basic",
+                is_party_leader=False,
+                party_member_name="tank",
+                current_target=100,
+                current_target_intent=behavior.TargetIntent.objective,
+                behavior_state=behavior.DummyBehaviorState.HuntObjective,
+                now=float(state.snapshot()["leader_target_focus_updated_at"]),
+                next_party_protection=0.0,
+            )
+        )
+
+    def test_party_protection_waits_before_active_tank_commits_boss_focus_target(self):
+        state = behavior.PartyState("tank", ["tank", "cleric"])
+        state.update_member_role("tank", "melee-basic")
+        state.update_member_role("cleric", "healer-support")
+        state.update_member("tank", SimpleNamespace(player_object_id=10, health_percent=100, x=0, y=0, z=0))
+        state.update_member("cleric", SimpleNamespace(player_object_id=11, health_percent=100, x=1000, y=0, z=0))
+        state.update_shared_target(
+            behavior.RequiredTargetObservation(
+                object_id=100,
+                name="moorlich",
+                x=10,
+                y=20,
+                z=30,
+                level=48,
+                target="cleric",
+            ),
+            engaged=True,
+        )
+        ability = behavior.UsableAbilityRef(use_skill_index=8, use_skill_type=1, name="Guard", level=5, category="guard")
+        plan = behavior.CombatUsablePlan(party_protection_abilities=[ability])
+
+        self.assertFalse(
+            behavior.should_use_party_protection_ability(
+                SimpleNamespace(party_protection_interval=10.0, party_focus_target_max_age=5.0),
+                plan,
+                state,
+                action_rotation="melee-basic",
+                is_party_leader=False,
+                party_member_name="tank",
+                current_target=0,
+                current_target_intent=behavior.TargetIntent.none,
+                behavior_state=behavior.DummyBehaviorState.HuntObjective,
+                now=float(state.snapshot()["leader_target_focus_updated_at"]),
+                next_party_protection=0.0,
+            )
+        )
+
+    def test_party_protection_waits_while_active_tank_has_uncommitted_shared_target(self):
+        state = behavior.PartyState("tank", ["tank", "cleric"])
+        state.update_member_role("tank", "melee-basic")
+        state.update_member_role("cleric", "healer-support")
+        state.update_member("tank", SimpleNamespace(player_object_id=10, health_percent=100, x=0, y=0, z=0))
+        state.update_member("cleric", SimpleNamespace(player_object_id=11, health_percent=100, x=1000, y=0, z=0))
+        state.update_shared_target(
+            behavior.RequiredTargetObservation(
+                object_id=100,
+                name="moorlich",
+                x=0,
+                y=0,
+                z=0,
+                level=48,
+                target="",
+            ),
+            engaged=True,
+        )
+        ability = behavior.UsableAbilityRef(use_skill_index=8, use_skill_type=1, name="Guard", level=5, category="guard")
+        plan = behavior.CombatUsablePlan(party_protection_abilities=[ability])
+
+        self.assertFalse(
+            behavior.should_use_party_protection_ability(
+                SimpleNamespace(party_protection_interval=10.0, party_focus_target_max_age=5.0),
+                plan,
+                state,
+                action_rotation="melee-basic",
+                is_party_leader=False,
+                party_member_name="tank",
+                current_target=0,
+                current_target_intent=behavior.TargetIntent.none,
+                behavior_state=behavior.DummyBehaviorState.HuntObjective,
+                now=30.0,
+                next_party_protection=0.0,
             )
         )
 
@@ -18478,6 +21531,19 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertIn("ranged", scout_profile.capabilities)
         self.assertEqual(bard_profile.action_rotation, "healer-support")
         self.assertEqual(behavior.party_role_from_class("Bard", 48), "healer-support")
+
+    def test_party_class_profile_does_not_overstate_speed_song(self):
+        non_speed_song_classes = [
+            ("Paladin", 1),
+            ("Viking", 35),
+            ("Naturalist", 53),
+        ]
+
+        for class_name, class_id in non_speed_song_classes:
+            with self.subTest(class_name=class_name):
+                capabilities = behavior.party_class_capabilities_from_class(class_name, class_id)
+                self.assertNotIn("speed_song", capabilities)
+                self.assertNotIn("group_speed", capabilities)
 
     def test_party_class_profile_covers_core_daoc_class_features(self):
         expected = {
@@ -18658,6 +21724,57 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertFalse(behavior.party_buff_candidate_available(target, spell, cooldowns, now=20.0))
         self.assertTrue(behavior.party_buff_candidate_available(target, spell, cooldowns, now=41.0))
+
+    def test_party_buff_target_uses_safe_cast_range_buffer(self):
+        client = FakeClient()
+        args = SimpleNamespace(spell_range=1500.0, party_heal_cast_range_buffer=200.0)
+
+        self.assertTrue(
+            behavior.party_buff_target_in_cast_range(
+                client,
+                args,
+                {"name": "RealPlayer", "object_id": 90, "x": 1300, "y": 0, "z": 0},
+            )
+        )
+        self.assertFalse(
+            behavior.party_buff_target_in_cast_range(
+                client,
+                args,
+                {"name": "RealPlayer", "object_id": 90, "x": 1301, "y": 0, "z": 0},
+            )
+        )
+
+    def test_party_buff_target_can_be_approached_before_casting(self):
+        client = FakeClient()
+        moves = []
+        attack_modes = []
+        client.move_towards_position = lambda x, y, z, **kwargs: moves.append((x, y, z, kwargs)) or True
+        client.set_attack_mode = lambda value: attack_modes.append(value) or 0
+        args = SimpleNamespace(
+            spell_range=1500.0,
+            party_heal_cast_range_buffer=200.0,
+            party_follow_step=360.0,
+            movement_speed=280.0,
+            movement_update_interval=0.1,
+        )
+        target = {"name": "RealPlayer", "object_id": 90, "x": 2500, "y": 100, "z": 20}
+
+        self.assertTrue(
+            behavior.should_approach_party_buff_target(
+                args,
+                action_rotation="healer-support",
+                target=target,
+                current_target=0,
+                behavior_state=behavior.DummyBehaviorState.HuntObjective,
+            )
+        )
+        outcome = behavior.move_towards_party_buff_target(client, args, SimpleNamespace(), {}, target)
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual(attack_modes, [False])
+        self.assertEqual(moves[0][0:3], (2500, 100, 20))
+        self.assertEqual(moves[0][3]["stop_distance"], 1300.0)
+        self.assertEqual(moves[0][3]["target_in_view"], False)
 
     def test_external_party_visible_player_update_uses_configured_name_and_preserves_health(self):
         args = SimpleNamespace(party_external_member_names=["RealPlayer"], player_state_max_age=5.0)

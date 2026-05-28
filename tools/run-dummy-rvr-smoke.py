@@ -54,6 +54,11 @@ def accounts_from_csv(path: Path) -> list[str]:
         return [row["username"] for row in csv.DictReader(handle) if row.get("username")]
 
 
+def account_rows_from_csv(path: Path) -> list[dict[str, str]]:
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
 def run_command(command: list[str], *, dry_run: bool) -> int:
     print(growth.command_for_metadata(command))
     if dry_run:
@@ -192,6 +197,9 @@ def build_behavior_command(
         "6",
         "--startup-command",
         "/sprint",
+        "--startup-train-full-specs",
+        "--startup-train-level",
+        "50",
         "--greet-nearby-player",
         "--player-greet-chance",
         "0.05",
@@ -356,6 +364,7 @@ def main(argv: list[str] | None = None) -> int:
                 party_size=count,
                 start_point=start_point,
             )
+            growth.promote_growth_classes_for_level(args, account_rows_from_csv(accounts_csv), 50)
         if count >= 2 and not args.skip_gear:
             rc = run_command(growth.build_level50_party_gear_command(args, accounts_csv), dry_run=args.dry_run)
             if rc != 0:
@@ -401,6 +410,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if aggregate["enemy_target_committed"] <= 0 or (aggregate["attack_on"] <= 0 and aggregate["damage_done"] <= 0):
         print("rvr smoke failed: no enemy player target commit or combat damage")
+        return 1
+    if aggregate["skills"] <= 0:
+        print("rvr smoke failed: no class skill/style usage observed")
         return 1
     if aggregate["friendly_rejections"] > 0 or aggregate["party_member_target_rejections"] > 0:
         print("rvr smoke failed: friendly/party-member hostile target rejection observed")

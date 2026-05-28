@@ -72,6 +72,7 @@ namespace DOL.GS.LiveCompanion
         public string Status { get; set; } = CompanionRequestStatus.Queued;
         public string Source { get; set; } = string.Empty;
         public string RequestedRole { get; set; } = CompanionRequestRoles.Fill;
+        public string RequestedCapabilities { get; set; } = string.Empty;
         public string ContentType { get; set; } = "pve";
         public string RequesterName { get; set; } = string.Empty;
         public string RequesterAccount { get; set; } = string.Empty;
@@ -149,7 +150,12 @@ namespace DOL.GS.LiveCompanion
             string requestedRole,
             string source,
             string contentType,
-            string createdBy)
+            string createdBy,
+            ushort objectiveRegion = 0,
+            int objectiveX = 0,
+            int objectiveY = 0,
+            int objectiveZ = 0,
+            string requestedCapabilities = "")
         {
             if (requester == null)
             {
@@ -184,7 +190,12 @@ namespace DOL.GS.LiveCompanion
                     contentType,
                     createdBy,
                     groupSize,
-                    availableSlots);
+                    availableSlots,
+                    objectiveRegion,
+                    objectiveX,
+                    objectiveY,
+                    objectiveZ,
+                    requestedCapabilities);
 
                 if (availableSlots <= 0)
                 {
@@ -501,9 +512,16 @@ namespace DOL.GS.LiveCompanion
             string contentType,
             string createdBy,
             int groupSize,
-            int vacantSlots)
+            int vacantSlots,
+            ushort objectiveRegion = 0,
+            int objectiveX = 0,
+            int objectiveY = 0,
+            int objectiveZ = 0,
+            string requestedCapabilities = "")
         {
             DateTime now = DateTime.UtcNow;
+            bool hasObjectiveLocation = objectiveX != 0 || objectiveY != 0 || objectiveZ != 0;
+            ushort requestRegion = objectiveRegion > 0 ? objectiveRegion : requester.CurrentRegionID;
             return new CompanionRequest
             {
                 Id = Guid.NewGuid().ToString("N"),
@@ -512,14 +530,15 @@ namespace DOL.GS.LiveCompanion
                 Status = CompanionRequestStatus.Queued,
                 Source = string.IsNullOrWhiteSpace(source) ? "unknown" : source.Trim(),
                 RequestedRole = requestedRole,
+                RequestedCapabilities = string.IsNullOrWhiteSpace(requestedCapabilities) ? string.Empty : requestedCapabilities.Trim().ToLowerInvariant(),
                 ContentType = string.IsNullOrWhiteSpace(contentType) ? "pve" : contentType.Trim().ToLowerInvariant(),
                 RequesterName = requester.Name,
                 RequesterAccount = requester.Client?.Account?.Name ?? string.Empty,
                 Realm = (int) requester.Realm,
-                Region = requester.CurrentRegionID,
-                X = requester.X,
-                Y = requester.Y,
-                Z = requester.Z,
+                Region = hasObjectiveLocation ? requestRegion : requester.CurrentRegionID,
+                X = hasObjectiveLocation ? objectiveX : requester.X,
+                Y = hasObjectiveLocation ? objectiveY : requester.Y,
+                Z = hasObjectiveLocation ? objectiveZ : requester.Z,
                 GroupId = requester.Group == null ? string.Empty : requester.Group.GetHashCode().ToString(CultureInfo.InvariantCulture),
                 GroupSize = groupSize,
                 VacantSlots = vacantSlots,
@@ -627,6 +646,7 @@ namespace DOL.GS.LiveCompanion
                 Status = request.Status,
                 Source = request.Source,
                 RequestedRole = request.RequestedRole,
+                RequestedCapabilities = request.RequestedCapabilities,
                 ContentType = request.ContentType,
                 RequesterName = request.RequesterName,
                 RequesterAccount = request.RequesterAccount,

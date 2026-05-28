@@ -72,7 +72,12 @@ namespace DOL.GS.API.DummyCompanion
                     Query(context, "role", CompanionRequestRoles.Fill),
                     Query(context, "source", "api"),
                     Query(context, "contentType", "pve"),
-                    Query(context, "createdBy", "api"));
+                    Query(context, "createdBy", "api"),
+                    ParseUShort(Query(context, "region"), 0),
+                    ParseInt(Query(context, "x"), 0),
+                    ParseInt(Query(context, "y"), 0),
+                    ParseInt(Query(context, "z"), 0),
+                    Query(context, "requestedCapabilities", Query(context, "capabilities", Query(context, "capability"))));
 
                 return result.Success ? Results.Ok(result) : Results.BadRequest(result);
             });
@@ -238,6 +243,11 @@ namespace DOL.GS.API.DummyCompanion
         private static int ParseInt(string value, int defaultValue)
         {
             return int.TryParse(value, out int parsed) ? parsed : defaultValue;
+        }
+
+        private static ushort ParseUShort(string value, ushort defaultValue)
+        {
+            return ushort.TryParse(value, out ushort parsed) ? parsed : defaultValue;
         }
 
         private static IResult RequireAttachableRequest(CompanionRequest request)
