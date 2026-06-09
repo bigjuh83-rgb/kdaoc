@@ -27,7 +27,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&repair",
 		ePrivLevel.Player,
-		"You can repair an item when you are a crafter",
+		"제작자라면 아이템을 수리할 수 있습니다.",
 		"/repair")]
 	public class RepairCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

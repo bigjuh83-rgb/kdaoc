@@ -24,7 +24,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&dismount",
 		ePrivLevel.Player,
-		"Dismount your steed",
+		"탈것에서 내립니다.",
 		"/dismount")]
 	public class RideDismountCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

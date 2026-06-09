@@ -140,7 +140,23 @@ class HeadlessPlayerObservationTests(unittest.TestCase):
         self.assertEqual(packets[2][0], headless.CLIENT_PACKETS["move_item"])
         self.assertEqual(packets[2][1], struct.pack(">HHHH", 0, 100, 40, 1))
         self.assertEqual(packets[3][0], headless.CLIENT_PACKETS["dialog_response"])
-        self.assertEqual(packets[3][1], b"\x00\x00\x00\x01\x00\x00\x01\x01")
+        self.assertEqual(packets[3][1], b"\x00\x00\x00\x01\x00\x00\x06\x01")
+
+    def test_send_command_encodes_korean_chat_as_cp949(self):
+        client = self.make_client()
+        packets = []
+
+        def capture_packet(packet_id, data):
+            packets.append((packet_id, data))
+
+        client.send_packet = capture_packet
+        client.read_packets_for = lambda seconds: []
+
+        client.send_command("/g 따라가겠습니다")
+
+        self.assertEqual(packets[0][0], headless.CLIENT_PACKETS["command"])
+        self.assertEqual(packets[0][1], b"\x00&g " + "따라가겠습니다".encode("cp949") + b"\x00")
+        self.assertNotIn("따라가겠습니다".encode("utf-8"), packets[0][1])
 
     def test_status_update_marks_self_dead_at_zero_health(self):
         client = self.make_client()
@@ -446,6 +462,52 @@ class HeadlessPlayerObservationTests(unittest.TestCase):
         self.assertEqual((client.x, client.y, client.z), (0, 55, 222))
         self.assertEqual(sampled, [(0, 55, 2)])
 
+    def test_movement_can_prefer_target_z_over_stale_ground_sample(self):
+        client = self.make_client()
+        client.x = 0
+        client.y = 0
+        client.z = 100
+        client.zone_id = 2
+        client.send_heading = lambda *_args, **_kwargs: 0
+        client.send_position_update = lambda *_args, **_kwargs: 0
+        client.ground_z_sampler = lambda _x, _y, _zone_id: 222
+
+        moved = client.move_towards_position(
+            0,
+            1000,
+            300,
+            step=55,
+            stop_distance=0,
+            movement_speed=220.0,
+            prefer_target_z=True,
+        )
+
+        self.assertTrue(moved)
+        self.assertEqual((client.x, client.y, client.z), (0, 55, 300))
+
+    def test_movement_rejects_implausible_target_z_when_ground_sample_exists(self):
+        client = self.make_client()
+        client.x = 0
+        client.y = 0
+        client.z = 2400
+        client.zone_id = 2
+        client.send_heading = lambda *_args, **_kwargs: 0
+        client.send_position_update = lambda *_args, **_kwargs: 0
+        client.ground_z_sampler = lambda _x, _y, _zone_id: 2400
+
+        moved = client.move_towards_position(
+            0,
+            1000,
+            2200,
+            step=55,
+            stop_distance=0,
+            movement_speed=220.0,
+            prefer_target_z=True,
+        )
+
+        self.assertTrue(moved)
+        self.assertEqual((client.x, client.y, client.z), (0, 55, 2400))
+
     def test_heading_from_delta_matches_server_dol_grid(self):
         self.assertEqual(headless.heading_from_delta(0, 100), 0)
         self.assertEqual(headless.heading_from_delta(-100, 0), 1024)
@@ -476,6 +538,95 @@ class HeadlessPlayerObservationTests(unittest.TestCase):
 
         self.assertEqual((client.x, client.y), (1100, 1000))
         self.assertEqual(events, ["position"])
+
+    def test_wander_samples_ground_z_after_move(self):
+        client = self.make_client()
+        client.x = 561900
+        client.y = 357450
+        client.z = 4826
+
+        def sample_ground_z(x: int, y: int, zone_id: int) -> int | None:
+            self.assertEqual((x, y), (562000, 357450))
+            return 4868
+
+        client.ground_z_sampler = sample_ground_z
+        client.send_position_update = lambda **kwargs: 0
+        client.wander(3072, step=100, movement_speed=220.0)
+
+        self.assertEqual(client.z, 4868)
+
+    def test_wander_accepts_elapsed_movement_time_kwargs(self):
+        client = self.make_client()
+        client.x = 1000
+        client.y = 1000
+        client.z = 0
+        speeds: list[float] = []
+
+        def capture_position_update(speed: float = 0.0, target_in_view: bool = False):
+            speeds.append(speed)
+            client.last_position_speed = speed
+            return 0
+
+        client.send_position_update = capture_position_update
+
+        client.wander(
+            3072,
+            step=100,
+            movement_speed=220.0,
+            use_elapsed_movement_time=True,
+            max_elapsed_movement_seconds=1.0,
+        )
+
+        self.assertEqual((client.x, client.y), (1100, 1000))
+        self.assertEqual(speeds, [220.0])
+
+    def test_refresh_ground_z_here_snaps_spawn_z(self):
+        client = self.make_client()
+        client.x = 561900
+        client.y = 357450
+        client.z = 4826
+        client.ground_z_sampler = lambda x, y, zone_id: 4868
+
+        self.assertTrue(client.refresh_ground_z_here())
+        self.assertEqual(client.z, 4868)
+
+    def test_send_position_update_coerces_legacy_packet_speed(self):
+        client = self.make_client()
+        client.x = 1000
+        client.y = 1000
+        client.z = 100
+        client.last_sent_position = (900, 900, 100)
+        sent_speeds: list[float] = []
+
+        def capture_packet(code: int, data: bytes = b"", session_id: int | None = None) -> None:
+            if code == headless.CLIENT_PACKETS["position"]:
+                sent_speeds.append(struct.unpack_from("<f", data, 12)[0])
+
+        client.send_packet = capture_packet
+        client.drain = lambda seconds=0.05: 0
+        client.send_position_update(speed=48896.0, target_in_view=False)
+
+        self.assertEqual(sent_speeds, [191.0])
+        self.assertEqual(client.last_position_speed, 191.0)
+
+    def test_send_position_update_zeros_speed_when_xy_unchanged(self):
+        client = self.make_client()
+        client.x = 1000
+        client.y = 1000
+        client.z = 100
+        client.last_sent_position = (1000, 1000, 100)
+        sent_speeds: list[float] = []
+
+        def capture_packet(code: int, data: bytes = b"", session_id: int | None = None) -> None:
+            if code == headless.CLIENT_PACKETS["position"]:
+                sent_speeds.append(struct.unpack_from("<f", data, 12)[0])
+
+        client.send_packet = capture_packet
+        client.drain = lambda seconds=0.05: 0
+        client.send_position_update(speed=191.0, target_in_view=True)
+
+        self.assertEqual(sent_speeds, [0.0])
+        self.assertEqual(client.last_position_speed, 0.0)
 
     def test_action_payload_reuses_last_position_speed(self):
         client = self.make_client()
@@ -535,19 +686,18 @@ class HeadlessPlayerObservationTests(unittest.TestCase):
             min_position_send_interval=10.0,
         )
 
-        self.assertTrue(moved)
-        self.assertEqual((client.x, client.y), (0, 55))
+        self.assertFalse(moved)
+        self.assertEqual((client.x, client.y), (0, 0))
         self.assertEqual(events, [])
 
-    def test_movement_respects_elapsed_speed_between_throttled_updates(self):
+    def test_movement_uses_fixed_step_not_elapsed_catchup(self):
         client = self.make_client()
         client.x = 0
         client.y = 0
         client.z = 100
         now = time.monotonic()
-        client.last_local_move_at = now - 0.05
-        client.last_position_speed = 220.0
-        client.last_position_update_sent_at = now - 0.05
+        client.last_local_move_at = now - 0.5
+        client.last_position_update_sent_at = now - 0.5
 
         client.send_heading = lambda *_args, **_kwargs: 0
         client.send_position_update = lambda *_args, **_kwargs: 0
@@ -559,14 +709,15 @@ class HeadlessPlayerObservationTests(unittest.TestCase):
             step=55,
             stop_distance=0,
             movement_speed=220.0,
-            min_position_send_interval=10.0,
+            movement_step_seconds=0.05,
+            min_position_send_interval=0.0,
         )
 
         self.assertTrue(moved)
         self.assertGreaterEqual(client.y, 8)
         self.assertLessEqual(client.y, 15)
 
-    def test_movement_uses_elapsed_time_when_loop_is_delayed(self):
+    def test_movement_does_not_catch_up_after_long_loop_delay(self):
         client = self.make_client()
         client.x = 0
         client.y = 0
@@ -583,11 +734,102 @@ class HeadlessPlayerObservationTests(unittest.TestCase):
             step=55,
             stop_distance=0,
             movement_speed=220.0,
-            min_position_send_interval=10.0,
+            movement_step_seconds=0.05,
+            min_position_send_interval=0.0,
         )
 
         self.assertTrue(moved)
-        self.assertGreaterEqual(client.y, 95)
+        self.assertGreaterEqual(client.y, 8)
+        self.assertLessEqual(client.y, 15)
+
+    def test_movement_uses_elapsed_time_for_continuing_packet_speed_run(self):
+        client = self.make_client()
+        client.x = 0
+        client.y = 0
+        client.z = 100
+        now = time.monotonic()
+        client.last_local_move_at = now - 0.5
+        client.last_position_update_sent_at = now - 0.5
+        client.last_position_speed = 220.0
+
+        client.send_heading = lambda *_args, **_kwargs: 0
+        client.send_position_update = lambda *_args, **_kwargs: 0
+
+        moved = client.move_towards_position(
+            0,
+            1000,
+            100,
+            step=250,
+            stop_distance=0,
+            movement_speed=220.0,
+            packet_speed=220.0,
+            movement_step_seconds=0.05,
+            min_position_send_interval=0.0,
+        )
+
+        self.assertTrue(moved)
+        self.assertGreaterEqual(client.y, 90)
+        self.assertLessEqual(client.y, 130)
+
+    def test_movement_does_not_elapsed_catchup_from_stopped_state(self):
+        client = self.make_client()
+        client.x = 0
+        client.y = 0
+        client.z = 100
+        now = time.monotonic()
+        client.last_local_move_at = now - 0.5
+        client.last_position_update_sent_at = now - 0.5
+        client.last_position_speed = 0.0
+
+        client.send_heading = lambda *_args, **_kwargs: 0
+        client.send_position_update = lambda *_args, **_kwargs: 0
+
+        moved = client.move_towards_position(
+            0,
+            1000,
+            100,
+            step=250,
+            stop_distance=0,
+            movement_speed=220.0,
+            packet_speed=220.0,
+            movement_step_seconds=0.05,
+            min_position_send_interval=0.0,
+        )
+
+        self.assertTrue(moved)
+        self.assertGreaterEqual(client.y, 8)
+        self.assertLessEqual(client.y, 15)
+
+    def test_movement_final_trim_uses_effective_packet_speed(self):
+        client = self.make_client()
+        client.x = 0
+        client.y = 0
+        client.z = 100
+        now = time.monotonic()
+        client.last_local_move_at = now - 0.8
+        client.last_position_update_sent_at = now - 0.8
+        client.last_position_speed = 191.0
+        sent_speeds: list[float] = []
+
+        client.send_heading = lambda *_args, **_kwargs: 0
+        client.send_position_update = lambda speed=0.0, target_in_view=False: sent_speeds.append(float(speed)) or 0
+
+        moved = client.move_towards_position(
+            0,
+            456,
+            100,
+            step=500,
+            stop_distance=455,
+            movement_speed=191.0,
+            packet_speed=191.0,
+            movement_step_seconds=0.18,
+            min_position_send_interval=0.0,
+        )
+
+        self.assertTrue(moved)
+        self.assertEqual(client.y, 1)
+        self.assertEqual(len(sent_speeds), 1)
+        self.assertLess(sent_speeds[0], 5.0)
 
     def test_movement_stops_when_integer_quantization_blocks_last_small_step(self):
         client = self.make_client()
@@ -710,6 +952,46 @@ class HeadlessPlayerObservationTests(unittest.TestCase):
         self.assertEqual(len(messages), 1)
         self.assertEqual(messages[0].chat_type, 18)
         self.assertEqual(messages[0].text, text)
+
+
+class HeadlessGracefulDisconnectTests(unittest.TestCase):
+    class _ClosingSocket:
+        def __init__(self) -> None:
+            self.sent: list[bytes] = []
+            self.closed = False
+            self.timeout = None
+            self.recv_calls = 0
+
+        def settimeout(self, value) -> None:
+            self.timeout = value
+
+        def sendall(self, payload: bytes) -> None:
+            self.sent.append(payload)
+
+        def recv(self, _size: int) -> bytes:
+            self.recv_calls += 1
+            return b""
+
+        def close(self) -> None:
+            self.closed = True
+
+    def test_disconnect_gracefully_sends_quit_and_waits_for_close(self):
+        client = headless.HeadlessDaocClient("127.0.0.1", 10300, 1.0, verbose=False)
+        mock = self._ClosingSocket()
+        client.session_id = 42
+        client.sequence = 1
+        client.x = 523520
+        client.y = 490520
+        client.z = 2543
+        client.sock = mock
+
+        self.assertTrue(client.disconnect_gracefully(timeout=1.0))
+        self.assertIsNone(client.sock)
+
+        payloads = b"".join(mock.sent)
+        self.assertIn(b"&sit\x00", payloads)
+        self.assertIn(b"&quit\x00", payloads)
+        self.assertTrue(mock.closed)
 
 
 if __name__ == "__main__":

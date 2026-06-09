@@ -41,6 +41,7 @@ namespace DOL.GS.Scripts
 			switch(str)
 			{
 				//alb
+                case "애버메나이 알비온":
                 case "AbermenaiAlb":
                     if (!t.InCombat)
                     {
@@ -49,6 +50,7 @@ namespace DOL.GS.Scripts
                     else { SendCannotPortInCombat(t); }
                     break;
 
+                case "시드랭키 알비온":
                 case "ThidrankiAlb":
 	                if (!t.InCombat)
 	                {
@@ -57,6 +59,7 @@ namespace DOL.GS.Scripts
 	                else { SendCannotPortInCombat(t); }
 	                break;
 
+                case "머다이건 알비온":
                 case "MurdaigeanAlb":
 	                if (!t.InCombat)
 	                {
@@ -65,6 +68,7 @@ namespace DOL.GS.Scripts
 	                else { SendCannotPortInCombat(t); }
 	                break;
 
+                case "칼레도니아 알비온":
                 case "CaledoniaAlb":
 	                if (!t.InCombat)
 	                {
@@ -73,6 +77,7 @@ namespace DOL.GS.Scripts
 	                else { SendCannotPortInCombat(t); }
 	                break;
                 //mid
+                case "애버메나이 미드가르드":
                 case "AbermenaiMid":
 	                if (!t.InCombat)
 	                {
@@ -81,6 +86,7 @@ namespace DOL.GS.Scripts
 	                else { SendCannotPortInCombat(t); }
 	                break;
 
+                case "시드랭키 미드가르드":
                 case "ThidrankiMid":
 	                if (!t.InCombat)
 	                {
@@ -89,6 +95,7 @@ namespace DOL.GS.Scripts
 	                else { SendCannotPortInCombat(t); }
 	                break;
 
+                case "머다이건 미드가르드":
                 case "MurdaigeanMid":
 	                if (!t.InCombat)
 	                {
@@ -97,6 +104,7 @@ namespace DOL.GS.Scripts
 	                else { SendCannotPortInCombat(t); }
 	                break;
 
+                case "칼레도니아 미드가르드":
                 case "CaledoniaMid":
 	                if (!t.InCombat)
 	                {
@@ -105,6 +113,7 @@ namespace DOL.GS.Scripts
 	                else { SendCannotPortInCombat(t); }
 	                break;
                 //hib
+				case "애버메나이 하이버니아":
 				case "AbermenaiHib":
 					if (!t.InCombat)
 					{
@@ -113,6 +122,7 @@ namespace DOL.GS.Scripts
 					else { SendCannotPortInCombat(t); }
 					break;
 
+				case "시드랭키 하이버니아":
 				case "ThidrankiHib":
 					if (!t.InCombat)
 					{
@@ -121,6 +131,7 @@ namespace DOL.GS.Scripts
 					else { SendCannotPortInCombat(t); }
 					break;
 
+				case "머다이건 하이버니아":
 				case "MurdaigeanHib":
 					if (!t.InCombat)
 					{
@@ -129,6 +140,7 @@ namespace DOL.GS.Scripts
 					else { SendCannotPortInCombat(t); }
 					break;
 
+				case "칼레도니아 하이버니아":
 				case "CaledoniaHib":
 					if (!t.InCombat)
 					{

@@ -18,8 +18,8 @@ namespace DOL.GS.Commands
 		"&gc",
 		new string[] { "&guildcommand" },
 		ePrivLevel.Player,
-		"Guild command (use /gc help for options)",
-		"/gc <option>")]
+		"길드 명령어입니다. 옵션을 보려면 /gc help를 사용하세요.",
+		"/gc <옵션>")]
 	public class GuildCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 
@@ -596,7 +596,8 @@ namespace DOL.GS.Commands
 							{
 								foreach (AbstractGameKeep keep in client.Player.Guild.ClaimedKeeps)
 								{
-									client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Player.Guild.Keep", keep.Name), eChatType.CT_Guild, eChatLoc.CL_SystemWindow);
+									client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Player.Guild.Keep",
+										LanguageMgr.GetTranslatedKeepName(client.Account.Language, keep.Name)), eChatType.CT_Guild, eChatLoc.CL_SystemWindow);
 								}
 							}
 						}
@@ -1523,7 +1524,7 @@ namespace DOL.GS.Commands
 							}
 						}
 						if (ind > WhoCommandHandler.MAX_LIST_SIZE && ind < onlineGuildMembers.Count)
-							client.Out.SendMessage(string.Format(WhoCommandHandler.MESSAGE_LIST_TRUNCATED, onlineGuildMembers.Count), eChatType.CT_Guild, eChatLoc.CL_SystemWindow);
+							client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "PLCommands.Who.ListTruncated", onlineGuildMembers.Count), eChatType.CT_Guild, eChatLoc.CL_SystemWindow);
 						else client.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Player.Guild.TotalMembersOnline", ind), eChatType.CT_Guild, eChatLoc.CL_SystemWindow);
 
 						break;

@@ -3,7 +3,7 @@
 ## Player Events
 Skill.Ability.CannotUseDead:	    사망 상태에서는 사용할 수 없습니다!
 Skill.Ability.CannotUseMezzed:	    메즈 상태에서는 사용할 수 없습니다!
-Skill.Ability.CannotUseStunned:	    마비 상태에서는 사용할 수 없습니다!
+Skill.Ability.CannotUseStunned:	    기절 상태에서는 사용할 수 없습니다!
 Skill.Ability.CannotUseStanding:	이 능력을 사용하려면 서 있어야 합니다!
 Skill.Ability.CannotUseSnared:	    이동 방해 상태에서는 이 능력을 사용할 수 없습니다!
 Skill.Ability.CannotUseNoTarget:	이 능력을 사용하려면 대상이 필요합니다!
@@ -31,7 +31,7 @@ Effects.BerserkEffect.GoBerserkerFrenzy:                광전사의 분노에 �
 Effects.BerserkEffect.BerserkerFrenzyEnds:              광전사의 분노가 끝났습니다.
 
 ## Camouflage
-Effects.CamouflageEffect.Name:					위장
+Effects.CamouflageEffect.Name:					카모플라주
 Effects.CamouflageEffect.InfoEffect:			궁수 계열이 사용할 수 있습니다. 일정 시간 동안 은신 감지 렐름 능력에 탐지되지 않게 합니다. 무기를 꺼내거나 전투에 들어가면 효과가 취소되고 모습이 드러납니다. 은신 기술 자체를 변경하지는 않습니다.
 Effects.CamouflageEffect.YouAreCamouflaged:		위장했습니다!
 Effects.CamouflageEffect.YourCFIsGone:			위장이 사라졌습니다.
@@ -56,7 +56,7 @@ Skill.Ability.CriticalShot.SwitchToRegular:	일반 사격으로 전환합니다!
 GamePlayer.Attack.CantCritical:				대상에게 치명 사격을 사용할 수 없어 일반 사격으로 전환합니다.
 
 ## Dirty Tricks
-Skill.Ability.DirtyTricks.Name:	비열한 속임수
+Skill.Ability.DirtyTricks.Name:	더티 트릭스
 Skill.Ability.DirtyTricks.Description:	적의 얼굴에 흙을 던져 잠시 동안 공격 실패 확률을 증가시킵니다.
 Skill.Ability.DirtyTricks.DelveString:	대상의 공격 실패 확률을 증가시킵니다.
 Effects.DirtyTricks.EffectCancel:	                    다시 앞이 또렷하게 보입니다.
@@ -67,13 +67,13 @@ Skill.Ability.DirtyTricks.EffectStart:                  {0}이(가) 당신의 �
 Skill.Ability.DirtyTricks.EffectCancel:                 다시 앞이 또렷하게 보입니다.
 
 ## Engage
-Effects.EngageEffect.Name:						견제
+Effects.EngageEffect.Name:						인게이지
 Effects.EngageEffect.InfoEffect:				지구력을 소모하는 대신 방패 막기 확률을 크게 높입니다. 견제는 거리가 있거나 공격하기 위해 접근 중일 때만 사용할 수 있습니다. 직접 공격하면 해제됩니다.
 Effects.EngageEffect.ConcOnBlockingX:			{0}의 공격을 막는 데 집중합니다!
 Effects.EngageEffect.YouNoConcOnBlock:			더 이상 공격을 막는 데 집중하지 않습니다!
 Effects.EngageEffect.YouNoAttemptToEngageT:		더 이상 대상을 견제하려 하지 않습니다!
 Effects.EngageEffect.XEngagesY:					{0}이(가) {1}을(를) 견제합니다
-Effects.EngageEffect.EngageName:				견제: {0}
+Effects.EngageEffect.EngageName:				인게이지: {0}
 Skill.Ability.Engage.CannotUseDead:	누운 상태에서는 전투 모드에 들어갈 수 없습니다!
 Skill.Ability.Engage.CannotUseStanding:	앉은 상태에서는 전투 모드에 들어갈 수 없습니다!
 Skill.Ability.Engage.CannotUseNoCaCWeapons:	발사 무기로는 근접 전투 모드에 들어갈 수 없습니다!
@@ -97,7 +97,7 @@ Effects.GuardEffect.YourNoLongerGuardingY:		더 이상 {0}을(를) 보호하지 
 Effects.GuardEffect.XNoLongerGuardingYoy:		{0}은(는) 더 이상 당신을 보호하지 않습니다.
 Effects.GuardEffect.InfoEffect:					성공하면 대상에게 향하는 공격을 대신 막습니다. 대상 대신 방패로 막아냅니다.
 Effects.GuardEffect.GuardedByName:				{0}, {1}의 보호를 받음
-Effects.GuardEffect.Name:						보호
+Effects.GuardEffect.Name:						가드
 Effects.GuardEffect.XIsGuardingY:				{0}이(가) {1}을(를) 보호합니다
 Skill.Ability.Guard.CancelTargetNull:	더 이상 아무도 보호하지 않습니다.
 Skill.Ability.Guard.CannotUse.GuardTargetIsGuardSource:	자기 자신은 보호할 수 없습니다!
@@ -107,7 +107,7 @@ GameLiving.AttackData.BlocksYou:		{0}이(가) {1}의 공격으로부터 당신�
 GameLiving.AttackData.YouBlock:			{1}을(를) 향한 {0}의 공격을 막아냈습니다!
 
 ## Intercept
-Effects.InterceptEffect.Name:					가로막기
+Effects.InterceptEffect.Name:					인터셉트
 Effects.InterceptEffect.InfoEffect:				성공하면 대상에게 향하는 공격을 가로막습니다. 대상 대신 피해를 받습니다.
 Effects.InterceptEffect.YouAttemptInterceptYBut:	이제 {0}을(를) 향한 공격을 가로막으려 합니다. 하지만 더 가까이 서 있어야 합니다.
 Effects.InterceptEffect.XAttemptInterceptYouBut:	{0}이(가) 이제 당신을 향한 공격을 가로막으려 합니다. 하지만 더 가까이 서 있어야 합니다.
@@ -125,7 +125,7 @@ GameLiving.AttackData.YouStepInFront:		{0}의 앞으로 뛰어들어 공격을 �
 GameLiving.AttackData.StepsInFront:		{0}이(가) 당신 앞으로 뛰어들어 공격을 대신 맞았습니다!
 
 ## Protect
-Effects.ProtectEffect.Name:						엄호
+Effects.ProtectEffect.Name:						프로텍트
 Effects.ProtectEffect.InfoEffect:				성공하면 능력 대상을 보호하여 행동으로 발생할 위협도를 줄입니다.
 Effects.ProtectEffect.YouProtectingYBut:		이제 {0}을(를) 엄호합니다. 하지만 더 가까이 서 있어야 합니다.
 Effects.ProtectEffect.XProtectingYouBut:		{0}이(가) 이제 당신을 엄호합니다. 하지만 더 가까이 서 있어야 합니다.
@@ -152,26 +152,26 @@ Skill.Ability.QuickCast.CannotUseInMeleeCombat:	근접 전투 중에는 주문�
 Skill.Ability.QuickCast.CannotUseChangeTick:	퀵캐스트를 다시 사용하려면 {0}초 더 기다려야 합니다!
 
 ## Rapid Fire
-Effects.RapidFireEffect.Name:					속사
-Effects.RapidFireEffect.YouSwitchRFMode:		속사 모드로 전환합니다!
-Skill.Ability.RapidFire.CannotUseDead:	사망 상태에서는 속사로 전환할 수 없습니다!
+Effects.RapidFireEffect.Name:					래피드 파이어
+Effects.RapidFireEffect.YouSwitchRFMode:		래피드 파이어 모드로 전환합니다!
+Skill.Ability.RapidFire.CannotUseDead:	사망 상태에서는 래피드 파이어로 전환할 수 없습니다!
 
 ## Spirit of the Hunt
-Effects.StagEffect.Name:						사냥의 영혼
+Effects.StagEffect.Name:						스피릿 오브 더 헌트
 Effects.StagEffect.InfoEffect:					히어로 전용 능력입니다. 플레이어를 사슴 머리 사냥꾼으로 변신시키며 30초 동안 생명력이 크게 증가합니다. 30분마다 한 번 사용할 수 있습니다. 입문자 = 생명력 20%, 회원 = 30%, 지도자 = 40%, 마스터 = 50% 보너스.
 Effects.StagEffect.HuntsSpiritChannel:			사냥의 영혼을 불러냅니다!
 Effects.StagEffect.YourHuntsSpiritEnds:			사냥의 영혼이 끝났습니다.
 
 ## Sprint
-Effects.SprintEffect.Name:						질주
-GamePlayer.Sprint.CantSprintDead:			사망 상태에서는 질주할 수 없습니다!
-GamePlayer.Sprint.CantSprintHidden:			숨어 있는 동안에는 질주할 수 없습니다!
-GamePlayer.Sprint.NoLongerReady:			더 이상 질주 준비 상태가 아닙니다.
-GamePlayer.Sprint.PrepareSprint:			질주할 준비를 합니다!
-GamePlayer.Sprint.TooFatigued:				너무 지쳐서 질주할 수 없습니다!
+Effects.SprintEffect.Name:						Sprint
+GamePlayer.Sprint.CantSprintDead:			사망 상태에서는 Sprint할 수 없습니다!
+GamePlayer.Sprint.CantSprintHidden:			숨어 있는 동안에는 Sprint할 수 없습니다!
+GamePlayer.Sprint.NoLongerReady:			더 이상 Sprint 준비 상태가 아닙니다.
+GamePlayer.Sprint.PrepareSprint:			Sprint할 준비를 합니다!
+GamePlayer.Sprint.TooFatigued:				너무 지쳐서 Sprint할 수 없습니다!
 
 ## Stealth
-Effects.StealthEffect.Name:						은신
+Effects.StealthEffect.Name:						스텔스
 Skill.Ability.Stealth.CannotUseToCloseAnEnemy:	적과 너무 가까워 숨을 수 없습니다!
 Skill.Ability.Stealth.CannotUseStunned:	기절 상태에서는 숨을 수 없습니다!
 Skill.Ability.Stealth.CannotUseMezzed:	메즈 상태에서는 숨을 수 없습니다!
@@ -185,9 +185,9 @@ GamePlayer.Stealth.NoLongerHidden:				더 이상 숨어 있지 않습니다!
 GamePlayer.Stealth.NowHidden:					이제 숨어 있습니다!
 
 ## Sure Shot
-Effects.SureShotEffect.Name:					확실한 사격
-Effects.SureShotEffect.YouSwitchToSSMode:		확실한 사격 모드로 전환합니다!
-Skill.Ability.SureShot.CannotUseDead:	사망 상태에서는 확실한 사격으로 전환할 수 없습니다!
+Effects.SureShotEffect.Name:					슈어 샷
+Effects.SureShotEffect.YouSwitchToSSMode:		슈어 샷 모드로 전환합니다!
+Skill.Ability.SureShot.CannotUseDead:	사망 상태에서는 슈어 샷으로 전환할 수 없습니다!
 Skill.Ability.CannotUseWhileVolleyActive:	발리가 활성화된 동안에는 {0}을(를) 사용할 수 없습니다!
 Skill.Ability.TrueShot.Prepare:	트루샷을 준비합니다!
 
@@ -196,7 +196,7 @@ Effects.Necro.TauntEffect.SeemsChange:			{0}의 태도가 바뀌어 이전보다
 Effects.Necro.TauntEffect.SeemsLessAgg:			{0}이(가) 이전보다 덜 공격적으로 보입니다.
 
 ## Triple Wield
-Effects.TripleWieldEffect.Name:					삼중 무기술
+Effects.TripleWieldEffect.Name:					트리플 윌드
 Effects.TripleWieldEffect.InfoEffect:			추가 피해를 주는 마법의 칼날입니다.
 Effects.TripleWieldEffect.MBHitsExtraDamage:	마법의 칼날이 {0}에게 추가로 {1} 피해를 입혔습니다!
 Effects.TripleWieldEffect.XMBExtraDamageToYou:	{0}의 마법의 칼날이 당신에게 추가로 {1} 피해를 입혔습니다!
@@ -212,3 +212,8 @@ Effects.BodyguardEffect.XIsBodyguardingY:		{0}이(가) {1}을(를) 경호합니�
 Effects.BodyguardEffect.BodyguardedByName:		{0}, {1}의 경호를 받음
 Effects.BodyguardEffect.Name:					경호
 Effects.BodyguardEffect.InfoEffect:				성공하면 능력 대상에게 향한 공격을 대신 막습니다. 대상 대신 방패로 막게 됩니다.
+
+## Skill Names
+Skill.Name.Ruby_Slash: 루비 슬래쉬
+Skill.Name.Cross_Slash: 크로스 슬래쉬
+Skill.Name.Aura_of_Protection: 오라 오브 프로텍션

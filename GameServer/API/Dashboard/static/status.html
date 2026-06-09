@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KDAOC 미니 상태</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111110;
+      --surface: #1f1d19;
+      --line: #34302a;
+      --text: #f1efe8;
+      --muted: #aaa399;
+      --accent: #d7af54;
+      --albion: #d64a4a;
+      --midgard: #5f8ee8;
+      --hibernia: #50ad6f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+    }
+
+    main {
+      width: min(640px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 22px 0 32px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .eyebrow,
+    .updated {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #24211d, var(--surface));
+      padding: 16px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .status strong {
+      color: var(--accent);
+      font-size: 18px;
+    }
+
+    .total {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .metric span,
+    .realm span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 26px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .realms {
+      display: grid;
+      gap: 8px;
+    }
+
+    .realm {
+      display: grid;
+      grid-template-columns: 88px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .realm-bar {
+      height: 7px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .realm-fill {
+      height: 100%;
+      width: var(--value, 0%);
+      min-width: 4px;
+      border-radius: inherit;
+      background: var(--color, var(--accent));
+    }
+
+    .realm strong {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .links {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    a {
+      flex: 1 1 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    @media (max-width: 520px) {
+      header,
+      .status,
+      .links {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .total {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <div class="eyebrow">KDAOC LIVE</div>
+        <h1>서버 미니 상태</h1>
+      </div>
+      <div id="updated" class="updated">갱신 -</div>
+    </header>
+
+    <section class="card">
+      <div class="status">
+        <strong id="statusText">확인 중</strong>
+        <span id="uptime">-</span>
+      </div>
+      <div class="total">
+        <div class="metric"><span>현재 접속자</span><strong id="totalPlayers">0</strong></div>
+        <div class="metric"><span>24시간 피크</span><strong id="peakPlayers">0</strong></div>
+        <div class="metric"><span>수신 대역폭</span><strong id="receivedBandwidth">0 KB/s</strong></div>
+        <div class="metric"><span>송신 대역폭</span><strong id="sentBandwidth">0 KB/s</strong></div>
+      </div>
+      <div id="realms" class="realms" aria-live="polite"></div>
+      <div class="links">
+        <a href="/dashboard#live">라이브 현황</a>
+        <a href="/status/badge.png">배너 이미지</a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const colors = new Map([
+      ["Albion", "#d64a4a"],
+      ["Midgard", "#5f8ee8"],
+      ["Hibernia", "#50ad6f"]
+    ]);
+    const labels = new Map([
+      ["Albion", "알비온"],
+      ["Midgard", "미드가드"],
+      ["Hibernia", "하이버니아"]
+    ]);
+
+    function number(value) {
+      return Number(value || 0).toLocaleString("ko-KR");
+    }
+
+    function statusText(status) {
+      return status === "online" ? "정상 운영 중" : "상태 확인 필요";
+    }
+
+    function bandwidth(value) {
+      const kbps = Math.max(0, Number(value || 0));
+
+      if (kbps >= 1024) {
+        return `${(kbps / 1024).toLocaleString("ko-KR", { maximumFractionDigits: 1 })} MB/s`;
+      }
+
+      return `${kbps.toLocaleString("ko-KR", { maximumFractionDigits: kbps >= 10 ? 0 : 1 })} KB/s`;
+    }
+
+    async function refresh() {
+      const response = await fetch("/api/status/summary", { cache: "no-store" });
+      const data = await response.json();
+      document.getElementById("statusText").textContent = statusText(data.status);
+      document.getElementById("totalPlayers").textContent = number(data.totalPlayers);
+      document.getElementById("peakPlayers").textContent = number(data.peakPlayers24h);
+      document.getElementById("receivedBandwidth").textContent = bandwidth(data.performance?.networkReceivedKbps);
+      document.getElementById("sentBandwidth").textContent = bandwidth(data.performance?.networkSentKbps);
+      document.getElementById("uptime").textContent = `가동 ${data.uptime || "-"}`;
+      document.getElementById("updated").textContent = `갱신 ${new Date(data.updatedAt).toLocaleTimeString("ko-KR")}`;
+
+      const max = Math.max(1, ...(data.realms || []).map(realm => Number(realm.players || 0)));
+      const container = document.getElementById("realms");
+      container.innerHTML = "";
+      (data.realms || []).forEach((realm) => {
+        const row = document.createElement("div");
+        row.className = "realm";
+
+        const name = document.createElement("span");
+        name.textContent = labels.get(realm.realmName) || realm.realmName || "-";
+
+        const bar = document.createElement("div");
+        bar.className = "realm-bar";
+
+        const fill = document.createElement("div");
+        fill.className = "realm-fill";
+        fill.style.setProperty("--value", `${Math.max(4, Number(realm.players || 0) / max * 100)}%`);
+        fill.style.setProperty("--color", colors.get(realm.realmName) || "#d7af54");
+        bar.appendChild(fill);
+
+        const value = document.createElement("strong");
+        value.textContent = number(realm.players);
+
+        row.append(name, bar, value);
+        container.appendChild(row);
+      });
+    }
+
+    refresh().catch(() => {
+      document.getElementById("statusText").textContent = "상태 불러오기 실패";
+    });
+    setInterval(refresh, 30000);
+  </script>
+</body>
+</html>

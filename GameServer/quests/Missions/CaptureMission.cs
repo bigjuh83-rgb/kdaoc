@@ -138,7 +138,8 @@ namespace DOL.GS.Quests
 			{
 				if (m_keep == null)
 					return LanguageMgr.GetTranslation(MissionLanguage, "Mission.Description.KeepNull");
-				else return LanguageMgr.GetTranslation(MissionLanguage, "Mission.Description.CaptureKeep", m_keep.Name);
+				else return LanguageMgr.GetTranslation(MissionLanguage, "Mission.Description.CaptureKeep",
+					LanguageMgr.GetTranslatedKeepName(MissionLanguage, m_keep.Name));
 			}
 		}
 

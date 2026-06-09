@@ -250,6 +250,7 @@ GamePlayer.GainRealmPoints.YouGet:				You get {0} realm points!
 GameNPC.DropLoot.AdditionalMoney:			You find an additional {0} thanks to your realm owning outposts!
 GameNPC.DropLoot.ItemAdditionalMoney:		You get an additional {0} thanks to your equipment!
 GameNPC.DropLoot.Drops:						{0} drops {1}.
+GameNPC.DropLoot.MoneyBag:                   bag of coins
 GamePlayer.PickupObject.Autosplit:				(Autosplit) {0} goes to {1}.
 GamePlayer.PickupObject.BackpackFull:			Your backpack is full. You must drop something first.
 GamePlayer.PickupObject.GroupMemberPicksUp:		{0} picks up {1}.

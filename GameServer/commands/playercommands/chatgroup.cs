@@ -9,8 +9,8 @@ namespace DOL.GS.Commands
 		"&chat",
 		new string[] { "&c" },
 		ePrivLevel.Player,
-		"Chat group command",
-		"/c <text>")]
+		"채팅 그룹 명령어입니다.",
+		"/c <메시지>")]
 	public class ChatGroupCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)
@@ -58,8 +58,8 @@ namespace DOL.GS.Commands
 		"&chatgroup",
 		new string[] { "&cg" },
 		ePrivLevel.Player,
-		"Chat group command",
-		"/cg <option>")]
+		"채팅 그룹 명령어입니다.",
+		"/cg <옵션>")]
 	public class ChatGroupSetupCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

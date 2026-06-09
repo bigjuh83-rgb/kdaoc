@@ -6,8 +6,8 @@ namespace DOL.GS.Commands
     [CmdAttribute("&makeleader",
          new string[] { "&m" },
          ePrivLevel.Player,
-         "Set a new group leader (can be used by current leader).",
-         "/m <playerName>")]
+         "새 그룹장을 지정합니다. 현재 그룹장만 사용할 수 있습니다.",
+         "/m <플레이어이름>")]
 
     public class MakeLeaderCommandHandler : ICommandHandler
     {

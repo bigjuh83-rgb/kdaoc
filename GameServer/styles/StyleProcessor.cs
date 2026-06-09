@@ -214,7 +214,7 @@ namespace DOL.GS.Styles
 						|| lastAD.Style == null
 						|| lastAD.Style.ID != style.OpeningRequirementValue)
 					{
-						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.PerformStyleBefore", preRequireStyle.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+						player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.PerformStyleBefore", LanguageMgr.GetTranslatedSkillName(player.Client.Account.Language, preRequireStyle.Name)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 						return;
 					}
 				}
@@ -222,7 +222,7 @@ namespace DOL.GS.Styles
 				player.styleComponent.NextCombatStyle = style;
 				player.styleComponent.NextCombatBackupStyle = null;
 				player.styleComponent.NextCombatStyleTime = GameLoop.GameLoopTime;
-				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.PreparePerform", style.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+				player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.PreparePerform", LanguageMgr.GetTranslatedSkillName(player.Client.Account.Language, style.Name)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
 				if (player.IsEngaging)
 				{
@@ -251,7 +251,7 @@ namespace DOL.GS.Styles
 						if (player.styleComponent.CancelStyle)
 						{
 							// If yes, we cancel the style.
-							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.NoLongerPreparing", player.styleComponent.NextCombatStyle.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+							player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.NoLongerPreparing", LanguageMgr.GetTranslatedSkillName(player.Client.Account.Language, player.styleComponent.NextCombatStyle.Name)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							player.styleComponent.NextCombatStyle = null;
 							player.styleComponent.NextCombatBackupStyle = null;
 						}
@@ -269,7 +269,7 @@ namespace DOL.GS.Styles
 								|| lastAD.Style == null
 								|| lastAD.Style.ID != style.OpeningRequirementValue)
 							{
-								player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.PerformStyleBefore", preRequireStyle.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+								player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.PerformStyleBefore", LanguageMgr.GetTranslatedSkillName(player.Client.Account.Language, preRequireStyle.Name)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 								return;
 							}
 						}
@@ -277,9 +277,9 @@ namespace DOL.GS.Styles
 							// If no, set the secondary backup style.
 							player.styleComponent.NextCombatBackupStyle = style;
 							if(automaticStyleUsed || style == player.styleComponent.AutomaticBackupStyle)
-								player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.AutoBackupStyle", style.Name, player.styleComponent.NextCombatStyle.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+								player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.AutoBackupStyle", LanguageMgr.GetTranslatedSkillName(player.Client.Account.Language, style.Name), LanguageMgr.GetTranslatedSkillName(player.Client.Account.Language, player.styleComponent.NextCombatStyle.Name)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 							else
-								player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.BackupStyle", style.Name, player.styleComponent.NextCombatStyle.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+								player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.TryToUseStyle.BackupStyle", LanguageMgr.GetTranslatedSkillName(player.Client.Account.Language, style.Name), LanguageMgr.GetTranslatedSkillName(player.Client.Account.Language, player.styleComponent.NextCombatStyle.Name)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 					}
 				}
 			}
@@ -310,7 +310,7 @@ namespace DOL.GS.Styles
 			if (!CanUseStyle(lastAttackData, living, style, weapon))
 			{
 				perfect = false;
-				player?.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.ExecuteStyle.ExecuteFail", style.Name), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
+				player?.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "StyleProcessor.ExecuteStyle.ExecuteFail", LanguageMgr.GetTranslatedSkillName(player.Client.Account.Language, style.Name)), eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
 			}
 			else
 			{

@@ -125,10 +125,11 @@ namespace DOL.GS
 				InventoryLogging.LogInventoryAction(this, player, eInventoryActionType.Merchant, template, amountToBuy);
 				//Generate the buy message
 				string message;
+				string itemName = LanguageMgr.GetTranslatedItemName(player.Client.Account.Language, template);
 				if (amountToBuy > 1)
-					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.BoughtPieces", amountToBuy, template.GetName(1, false), Money.GetString(totalValue));
+					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.BoughtPieces", amountToBuy, itemName, Money.GetString(totalValue));
 				else
-					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.Bought", template.GetName(1, false), Money.GetString(totalValue));
+					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.Bought", itemName, Money.GetString(totalValue));
 
 				// Check if player has enough money and subtract the money
 				if (!player.RemoveMoney(totalValue, message, eChatType.CT_Merchant, eChatLoc.CL_SystemWindow))
@@ -180,10 +181,11 @@ namespace DOL.GS
 				InventoryLogging.LogInventoryAction(this, player, eInventoryActionType.Merchant, template, amountToBuy);
 				//Generate the buy message
 				string message;
+				string itemName = LanguageMgr.GetTranslatedItemName(player.Client.Account.Language, template);
 				if (amountToBuy > 1)
-					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.BoughtPieces", amountToBuy, template.GetName(1, false), Money.GetString(totalValue));
+					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.BoughtPieces", amountToBuy, itemName, Money.GetString(totalValue));
 				else
-					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.Bought", template.GetName(1, false), Money.GetString(totalValue));
+					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.Bought", itemName, Money.GetString(totalValue));
 
 				// Check if player has enough money and subtract the money
 				if (!player.RemoveMoney(totalValue, message, eChatType.CT_Merchant, eChatLoc.CL_SystemWindow))
@@ -239,10 +241,11 @@ namespace DOL.GS
 				InventoryLogging.LogInventoryAction("(TRADEITEMS;" + TradeItems.ItemsListID + ")", player, eInventoryActionType.Merchant, template, amountToBuy);
 				//Generate the buy message
 				string message;
+				string itemName = LanguageMgr.GetTranslatedItemName(player.Client.Account.Language, template);
 				if (amountToBuy > 1)
-					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.BoughtPieces", amountToBuy, template.GetName(1, false), Money.GetString(totalValue));
+					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.BoughtPieces", amountToBuy, itemName, Money.GetString(totalValue));
 				else
-					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.Bought", template.GetName(1, false), Money.GetString(totalValue));
+					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.Bought", itemName, Money.GetString(totalValue));
 
 				// Check if player has enough money and subtract the money
 				if (!player.RemoveMoney(totalValue, message, eChatType.CT_Merchant, eChatLoc.CL_SystemWindow))
@@ -535,10 +538,11 @@ namespace DOL.GS
 				InventoryLogging.LogInventoryAction(this, player, eInventoryActionType.Merchant, template, amountToBuy);
 				//Generate the buy message
 				string message;
+				string itemName = LanguageMgr.GetTranslatedItemName(player.Client.Account.Language, template);
 				if (number > 1)
-					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.BoughtPiecesBP", totalValue, template.GetName(1, false));
+					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.BoughtPiecesBP", totalValue, itemName);
 				else
-					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.BoughtBP", template.GetName(1, false), totalValue);
+					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.BoughtBP", itemName, totalValue);
 				player.BountyPoints -= totalValue;
 				player.Out.SendUpdatePoints();
 				player.Out.SendMessage(message, eChatType.CT_Merchant, eChatLoc.CL_SystemWindow);
@@ -704,10 +708,11 @@ namespace DOL.GS
 				InventoryLogging.LogInventoryAction(this, player, eInventoryActionType.Merchant, template, amountToBuy);
 				//Generate the buy message
 				string message;
+				string itemName = LanguageMgr.GetTranslatedItemName(player.Client.Account.Language, template);
 				if (amountToBuy > 1)
-					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.BoughtPieces2", amountToBuy, template.GetName(1, false), totalValue, MoneyItemName);
+					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.BoughtPieces2", amountToBuy, itemName, totalValue, MoneyItemName);
 				else
-					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.Bought2", template.GetName(1, false), totalValue, MoneyItemName);
+					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.Bought2", itemName, totalValue, MoneyItemName);
 
 				var items = player.Inventory.GetItemRange(eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack);
 				int removed = 0;

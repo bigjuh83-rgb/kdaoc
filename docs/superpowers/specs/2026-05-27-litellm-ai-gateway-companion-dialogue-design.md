@@ -31,7 +31,7 @@ Companions never bypass existing FSM and target gates.
 - Initial mapped provider model: `openai/gpt-4.1-nano`.
 - Daily hard cap: 500K total tokens.
 - Daily soft warning: 400K total tokens.
-- Player-facing companion term: `동료`.
+- Player-facing companion term: `용병`.
 - Internal code may continue using `dummy`.
 - GameServer and C# code must not read OpenAI or provider API keys.
 - Repository files must not contain real API keys.
@@ -364,7 +364,7 @@ Dialogue sources:
 
 2. Player-triggered:
    - companion name;
-   - `동료`;
+   - `용병`;
    - `힐`, `치유`, `살려`, `부활`;
    - `도와줘`, `지원`;
    - `공격`, `잡아`;

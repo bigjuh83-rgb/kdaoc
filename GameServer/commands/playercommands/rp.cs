@@ -25,7 +25,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&rp",
 		ePrivLevel.Player,
-		"toggle receiving realm points",
+		"렐름 포인트 획득을 켜거나 끕니다.",
 		"/rp <on/off>")]
 	public class RPCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

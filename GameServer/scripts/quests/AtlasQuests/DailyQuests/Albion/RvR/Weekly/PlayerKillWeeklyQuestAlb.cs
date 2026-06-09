@@ -283,7 +283,7 @@ namespace DOL.GS.WeeklyQuests.Albion
 		//Set quest name
 		public override string Name
 		{
-			get { return questTitle; }
+			get { return DOL.Language.LanguageMgr.GetTranslatedQuestTitle(m_questPlayer?.Client?.Account?.Language, questTitle); }
 		}
 
 		// Define Steps

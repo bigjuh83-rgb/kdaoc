@@ -28,6 +28,16 @@ namespace DOL.GS.PacketHandler
 			icons = 1;
 		}
 
+		protected string GetItemNameForClient(DbInventoryItem item)
+		{
+			return item == null ? string.Empty : LanguageMgr.GetTranslatedItemName(m_gameClient?.Account?.Language, item);
+		}
+
+		protected string GetTemplateNameForClient(DbItemTemplate template)
+		{
+			return template == null ? string.Empty : LanguageMgr.GetTranslatedItemName(m_gameClient?.Account?.Language, template);
+		}
+
 		public override void SendKeepInfo(IGameKeep keep)
 		{
 			if (m_gameClient.Player == null)
@@ -736,10 +746,11 @@ namespace DOL.GS.PacketHandler
 					pak.WriteShort(0); // unknown
 					pak.WriteByte(4); // unknown flags?
 					pak.WriteShort(0); // unknown
+					string itemName = GetItemNameForClient(item);
 					if (item.Count > 1)
-						pak.WritePascalString(item.Count + " " + item.Name);
+						pak.WritePascalString(item.Count + " " + itemName);
 					else
-						pak.WritePascalString(item.Name);
+						pak.WritePascalString(itemName);
 				}
 				pak.WritePascalString(name + " (" + siegeWeapon.CurrentState.ToString() + ")");
 				SendTCP(pak);
@@ -838,7 +849,7 @@ namespace DOL.GS.PacketHandler
 
 		protected override void WriteGroupMemberMapUpdate(GSTCPPacketOut pak, GameLiving living)
 		{
-			if (living.CurrentSpeed != 0)
+			if (living.CurrentRegion == m_gameClient.Player.CurrentRegion)
 			{
 				Zone zone = living.CurrentZone;
 				if (zone == null)
@@ -1003,7 +1014,7 @@ namespace DOL.GS.PacketHandler
 				pak.WritePascalString(spell_name2);
 			}
 			pak.WriteShort((ushort)item.Effect); // item effect changed to short
-			string name = item.Name;
+			string name = GetItemNameForClient(item);
 			if (item.Count > 1)
 				name = item.Count + " " + name;
 			if (item.SellPrice > 0)
@@ -1105,10 +1116,11 @@ namespace DOL.GS.PacketHandler
 				pak.WriteShort((ushort)template.Color);
 			pak.WriteByte((byte)template.Flags);
 			pak.WriteShort((ushort)template.Effect);
+			string name = GetTemplateNameForClient(template);
 			if (count > 1)
-				pak.WritePascalString(String.Format("{0} {1}", count, template.Name));
+				pak.WritePascalString(String.Format("{0} {1}", count, name));
 			else
-				pak.WritePascalString(template.Name);
+				pak.WritePascalString(name);
 		}
 
 		public override void SendGroupMemberUpdate(bool updateIcons, bool updateMap, GameLiving living)

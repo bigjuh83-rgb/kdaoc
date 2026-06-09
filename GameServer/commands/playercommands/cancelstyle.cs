@@ -23,7 +23,7 @@ using DOL.Language;
 
 namespace DOL.GS.Commands
 {
-	[CmdAttribute("&cancelstyle", ePrivLevel.Player, "Toggle cancelstyle flag.", "/cancelstyle")]
+	[CmdAttribute("&cancelstyle", ePrivLevel.Player, "스타일 취소 설정을 켜거나 끕니다.", "/cancelstyle")]
 	public class CancelStyleCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

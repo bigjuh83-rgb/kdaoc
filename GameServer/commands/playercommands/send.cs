@@ -5,7 +5,7 @@ namespace DOL.GS.Commands
         new [] { "&tell", "&t" },
         ePrivLevel.Player,
         // Displays next to the command when '/cmd' is entered
-        "Sends a private message to the target player.",
+        "대상 플레이어에게 귓속말을 보냅니다.",
         "PLCommands.SendMessage.Syntax.Send")]
     public class SendCommandHandler : AbstractCommandHandler, ICommandHandler
     {

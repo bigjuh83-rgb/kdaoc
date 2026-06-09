@@ -320,14 +320,16 @@ namespace DOL.GS
 
                         if (ServerProperties.Properties.CONSIGNMENT_USE_BP)
                         {
-                            ChatUtil.SendMerchantMessage(player, "GameMerchant.OnPlayerBuy.BoughtBP", item.GetName(1, false), purchasePrice);
+                            string itemName = LanguageMgr.GetTranslatedItemMessageName(player.Client.Account.Language, item, 1, false);
+                            ChatUtil.SendMerchantMessage(player, "GameMerchant.OnPlayerBuy.BoughtBP", itemName, purchasePrice);
                             player.BountyPoints -= purchasePrice;
                             player.Out.SendUpdatePoints();
                         }
                         else if (player.RemoveMoney(purchasePrice))
                         {
                             InventoryLogging.LogInventoryAction(player, merchant, eInventoryActionType.Merchant, purchasePrice);
-                            ChatUtil.SendMerchantMessage(player, "GameMerchant.OnPlayerBuy.Bought", item.GetName(1, false), Money.GetString(purchasePrice));
+                            string itemName = LanguageMgr.GetTranslatedItemMessageName(player.Client.Account.Language, item, 1, false);
+                            ChatUtil.SendMerchantMessage(player, "GameMerchant.OnPlayerBuy.Bought", itemName, Money.GetString(purchasePrice));
                         }
                         else
                             return;

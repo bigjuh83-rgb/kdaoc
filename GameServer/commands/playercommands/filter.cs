@@ -25,7 +25,7 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&filter",
         ePrivLevel.Player,
-        "Turns off the bad word filter.",
+        "비속어 필터를 끕니다.",
         "/filter")]
     public class FilterCommandHandler : AbstractCommandHandler, ICommandHandler
     {

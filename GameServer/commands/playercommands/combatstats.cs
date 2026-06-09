@@ -5,7 +5,7 @@ namespace DOL.GS.Commands {
 	[CmdAttribute(
 		"&combatstats",
 		ePrivLevel.Player,
-		"Toggle detailed combat log",
+		"상세 전투 로그를 켜거나 끕니다.",
 		"/combatstats <on/off>")]
 	public class CombatStatsCommandHandler : AbstractCommandHandler, ICommandHandler {
 		public void OnCommand(GameClient client, string[] args)

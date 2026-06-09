@@ -7,11 +7,11 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&housefriend",
         ePrivLevel.Player,
-        "Invite a specified player to your house",
+        "지정한 플레이어를 내 집에 초대합니다.",
         "/housefriend all",
-        "/housefriend player <player>",
-        "/housefriend account <player>",
-        "/housefriend guild <guild> (If there are two or more words enclose them with \" \")")]
+        "/housefriend player <플레이어>",
+        "/housefriend account <플레이어>",
+        "/housefriend guild <길드> (두 단어 이상이면 \" \"로 감싸세요)")]
     public class HousefriendCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)

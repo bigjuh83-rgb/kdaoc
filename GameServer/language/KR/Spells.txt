@@ -383,7 +383,7 @@ Masterlevel.Spymaster.CamouflageFadesCasting:	주문을 시전하여 위장이 �
 Masterlevel.Spymaster.CamouflageFadesMoving:	움직여서 위장이 해제되었습니다!
 SiegeArrow.TargetMustBeKeepComponent:	대상은 킵 구조물이어야 합니다!
 SiegeArrow.PrepareShot:	{0}을(를) 준비합니다.
-CCSpellHandler.TargetImmune:	대상이 이 효과에 면역입니다!
+CCSpellHandler.TargetImmune:	대상이 cc 이뮤니티 상태입니다!
 CCSpellHandler.TargetMovingTooFast:	대상이 너무 빠르게 움직여 이 주문이 효과를 발휘하지 못했습니다!
 CCSpellHandler.TargetEnraged:	대상이 격분하여 주문에 저항했습니다!
 CCSpellHandler.ItemInterceptsMesmerize:	아이템 효과가 메즈 주문을 막고 사라졌습니다!

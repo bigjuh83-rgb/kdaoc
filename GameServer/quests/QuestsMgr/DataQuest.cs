@@ -692,7 +692,7 @@ namespace DOL.GS.Quests
 		{
 			get
 			{
-				return m_dataQuest.Name;
+				return GetTranslatedDataQuestText(t => t.Name, m_dataQuest.Name);
 			}
 		}
 
@@ -763,7 +763,8 @@ namespace DOL.GS.Quests
 		{
 			get
             {
-                return BehaviourUtils.GetPersonalizedMessage(m_dataQuest.FinishText, m_questPlayer);
+                string finishText = GetTranslatedDataQuestText(t => t.FinishText, m_dataQuest.FinishText);
+                return BehaviourUtils.GetPersonalizedMessage(finishText, m_questPlayer);
             }
 		}
 
@@ -823,7 +824,7 @@ namespace DOL.GS.Quests
 		/// </summary>
 		public virtual List<string> StepTexts
 		{
-			get { return m_stepTexts; }
+			get { return GetTranslatedDataQuestList(t => t.StepText, m_stepTexts); }
 		}
 
 
@@ -878,7 +879,8 @@ namespace DOL.GS.Quests
 					}
 					else
 					{
-                        return BehaviourUtils.GetPersonalizedMessage(m_dataQuest.Description, m_questPlayer);
+                        string description = GetTranslatedDataQuestText(t => t.Description, m_dataQuest.Description);
+                        return BehaviourUtils.GetPersonalizedMessage(description, m_questPlayer);
 					}
 				}
 				else
@@ -898,7 +900,8 @@ namespace DOL.GS.Quests
 				if (m_sourceTexts.Count > 0)
 				{
                     // BehaviorUtils will personalize this message in the packet handlers
-                    return m_sourceTexts[0];
+                    List<string> sourceTexts = GetTranslatedDataQuestList(t => t.SourceText, m_sourceTexts);
+                    return sourceTexts.Count > 0 ? sourceTexts[0] : string.Empty;
 				}
 				else
 				{
@@ -947,6 +950,26 @@ namespace DOL.GS.Quests
 		#endregion Properties
 
 		#region Utility
+
+		private DbLanguageDataQuest GetDataQuestTranslation()
+		{
+			string language = m_questPlayer?.Client?.Account?.Language ?? LanguageMgr.DefaultLanguage;
+			return LanguageMgr.GetLanguageDataObject(language, ID.ToString(), LanguageDataObject.eTranslationIdentifier.eDataQuest) as DbLanguageDataQuest;
+		}
+
+		private string GetTranslatedDataQuestText(Func<DbLanguageDataQuest, string> selector, string fallback)
+		{
+			DbLanguageDataQuest translation = GetDataQuestTranslation();
+			string translated = translation == null ? string.Empty : selector(translation);
+			return !string.IsNullOrEmpty(translated) ? translated : fallback;
+		}
+
+		private List<string> GetTranslatedDataQuestList(Func<DbLanguageDataQuest, string> selector, List<string> fallback)
+		{
+			DbLanguageDataQuest translation = GetDataQuestTranslation();
+			string translated = translation == null ? string.Empty : selector(translation);
+			return string.IsNullOrEmpty(translated) ? fallback : new List<string>(translated.Split('|'));
+		}
 
 		/// <summary>
 		/// Get or create the CharacterXDataQuest for this player
@@ -1089,7 +1112,8 @@ namespace DOL.GS.Quests
 			{
 				try
 				{
-					return m_sourceTexts[Step - 1];
+					List<string> sourceTexts = GetTranslatedDataQuestList(t => t.SourceText, m_sourceTexts);
+					return sourceTexts[Step - 1];
 				}
 				catch (Exception ex)
 				{
@@ -1155,13 +1179,14 @@ namespace DOL.GS.Quests
 			{
 				try
 				{
-					if (m_targetTexts.Count > 0)
+					List<string> targetTexts = GetTranslatedDataQuestList(t => t.TargetText, m_targetTexts);
+					if (targetTexts.Count > 0)
 					{
 						if (Step < 1)
 						{
-							return m_targetTexts[0];
+							return targetTexts[0];
 						}
-						return m_targetTexts[Step - 1];
+						return targetTexts[Step - 1];
 					}
 					else
 					{
@@ -1235,9 +1260,10 @@ namespace DOL.GS.Quests
                         }
 
                         return text;
-                    }
+					}
 
-					return m_stepTexts[Step - 1];
+					List<string> stepTexts = GetTranslatedDataQuestList(t => t.StepText, m_stepTexts);
+					return stepTexts[Step - 1];
 				}
 				catch (Exception ex)
 				{
@@ -3096,16 +3122,16 @@ namespace DOL.GS.Quests
 			{
 				m_questPlayer.Out.SendSoundEffect(11, 0, 0, 0, 0, 0);
 			}
-			if (!string.IsNullOrEmpty(m_dataQuest.FinishText)) // Give users option to have 'finish' text with rewardquest too
+			if (!string.IsNullOrEmpty(FinishText)) // Give users option to have 'finish' text with rewardquest too
 			{
 				if (obj != null && obj.Realm == eRealm.None)
 				{
 					// mobs and other non realm objects send chat text and not popup text.
-					SendMessage(m_questPlayer, m_dataQuest.FinishText, 0, eChatType.CT_Say, eChatLoc.CL_ChatWindow);
+					SendMessage(m_questPlayer, FinishText, 0, eChatType.CT_Say, eChatLoc.CL_ChatWindow);
 				}
 				else
 				{
-					SendMessage(m_questPlayer, m_dataQuest.FinishText, 0, eChatType.CT_System, eChatLoc.CL_PopupWindow);
+					SendMessage(m_questPlayer, FinishText, 0, eChatType.CT_System, eChatLoc.CL_PopupWindow);
 				}
 			}
 

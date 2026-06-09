@@ -5,7 +5,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&discard",
 		ePrivLevel.Player,
-		"Discard card # from your hand, or discard all cards.",
+		"손패의 지정한 카드를 버리거나 모든 카드를 버립니다.",
 		"/discard <#|all>")]
 	public class DiscardCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

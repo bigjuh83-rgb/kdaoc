@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DOL.Database;
 using DOL.GS.PacketHandler;
+using DOL.GS.WorldAI;
 using DOL.Language;
 
 namespace DOL.GS
@@ -16,6 +17,7 @@ namespace DOL.GS
     public class GamePlayerInventory : GameLivingInventory
     {
         private static readonly Logging.Logger Log = Logging.LoggerManager.Create(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        private bool m_suppressItemAcquiredNotification;
 
         #region Constructor/Declaration/LoadDatabase/SaveDatabase
 
@@ -289,7 +291,31 @@ namespace DOL.GS
                 m_player.OnItemEquipped(item, eInventorySlot.Invalid);
 
             (item as IGameInventoryItem)?.OnReceive(m_player);
+            if (!m_suppressItemAcquiredNotification)
+                DynamicQuestRuntimeService.Instance.HandleItemAcquired(m_player, item);
+
             return true;
+        }
+
+        public override bool AddTemplate(DbInventoryItem sourceItem, int count, eInventorySlot minSlot, eInventorySlot maxSlot)
+        {
+            bool wasSuppressed = m_suppressItemAcquiredNotification;
+            m_suppressItemAcquiredNotification = true;
+
+            bool added;
+            try
+            {
+                added = base.AddTemplate(sourceItem, count, minSlot, maxSlot);
+            }
+            finally
+            {
+                m_suppressItemAcquiredNotification = wasSuppressed;
+            }
+
+            if (added && !wasSuppressed)
+                DynamicQuestRuntimeService.Instance.HandleItemAcquired(m_player, sourceItem);
+
+            return added;
         }
 
         public override bool RemoveItem(DbInventoryItem item)
@@ -733,19 +759,21 @@ namespace DOL.GS
             if (item == null)
                 return true;
 
+            string itemMessageName = GetItemMessageName(item);
+
             switch (slot)
             {
                 case eInventorySlot.Mythical:
                 {
                     if ((eInventorySlot) item.Item_Type is not eInventorySlot.Mythical)
                     {
-                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", itemMessageName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
                     if (item.Type_Damage > m_player.ChampionLevel)
                     {
-                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.NeedChampionLevel", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.NeedChampionLevel", itemMessageName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -755,7 +783,7 @@ namespace DOL.GS
                 {
                     if ((eInventorySlot) item.Item_Type is not eInventorySlot.HorseBarding)
                     {
-                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantPutActiveBarding", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantPutActiveBarding", itemMessageName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -765,7 +793,7 @@ namespace DOL.GS
                 {
                     if ((eInventorySlot) item.Item_Type is not eInventorySlot.HorseArmor)
                     {
-                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantPutActiveHorseArmor", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantPutActiveHorseArmor", itemMessageName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -775,7 +803,7 @@ namespace DOL.GS
                 {
                     if ((eInventorySlot) item.Item_Type is not eInventorySlot.Horse)
                     {
-                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantPutActiveMount", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantPutActiveMount", itemMessageName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -786,7 +814,7 @@ namespace DOL.GS
                     if ((eObjectType) item.Object_Type is eObjectType.Shield ||
                         ((eInventorySlot) item.Item_Type is not eInventorySlot.RightHandWeapon and not eInventorySlot.LeftHandWeapon))
                     {
-                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", itemMessageName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
                     else if (!m_player.HasAbilityToUseItem(item.Template))
@@ -802,7 +830,7 @@ namespace DOL.GS
                     if ((eObjectType) item.Object_Type is eObjectType.Shield ||
                         ((eInventorySlot) item.Item_Type is not eInventorySlot.RightHandWeapon and not eInventorySlot.LeftHandWeapon and not eInventorySlot.TwoHandWeapon && (eObjectType) item.Object_Type is not eObjectType.Instrument))
                     {
-                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", itemMessageName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
                     else if (!m_player.HasAbilityToUseItem(item.Template))
@@ -818,7 +846,7 @@ namespace DOL.GS
                     if ((eInventorySlot) item.Item_Type != slot ||
                         ((eObjectType) item.Object_Type is not eObjectType.Shield && !m_player.attackComponent.CanUseLefthandedWeapon))
                     {
-                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", itemMessageName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
                     else if (!m_player.HasAbilityToUseItem(item.Template))
@@ -833,7 +861,7 @@ namespace DOL.GS
                 {
                     if ((eInventorySlot) item.Item_Type != slot && (eObjectType) item.Object_Type is not eObjectType.Instrument)
                     {
-                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", itemMessageName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
                     else if (!m_player.HasAbilityToUseItem(item.Template))
@@ -853,7 +881,7 @@ namespace DOL.GS
                 {
                     if ((eInventorySlot) item.Item_Type != slot)
                     {
-                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", itemMessageName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
                     else if (!m_player.HasAbilityToUseItem(item.Template))
@@ -871,7 +899,7 @@ namespace DOL.GS
                 {
                     if ((eInventorySlot) item.Item_Type != slot)
                     {
-                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", itemMessageName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -882,7 +910,7 @@ namespace DOL.GS
                 {
                     if (item.Item_Type is not Slot.RIGHTWRIST and not Slot.LEFTWRIST)
                     {
-                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", itemMessageName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -893,7 +921,7 @@ namespace DOL.GS
                 {
                     if (item.Item_Type is not Slot.LEFTRING and not Slot.RIGHTRING)
                     {
-                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", item.GetName(0, true)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantGoThere", itemMessageName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -906,7 +934,7 @@ namespace DOL.GS
                 {
                     if ((eObjectType) item.Object_Type is not eObjectType.Arrow and not eObjectType.Bolt)
                     {
-                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantPutQuiver", item.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                        m_player.Out.SendMessage(LanguageMgr.GetTranslation(m_player.Client.Account.Language, "Inventory.Item.CantPutQuiver", LanguageMgr.GetTranslatedItemName(m_player.Client.Account.Language, item)), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         return false;
                     }
 
@@ -915,6 +943,11 @@ namespace DOL.GS
             }
 
             return true;
+        }
+
+        private string GetItemMessageName(DbInventoryItem item)
+        {
+            return LanguageMgr.GetTranslatedItemMessageName(m_player.Client.Account.Language, item, 0, true);
         }
 
         #endregion Move Item

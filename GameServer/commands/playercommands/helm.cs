@@ -21,7 +21,7 @@ namespace DOL.GS.Commands
 {
 	[CmdAttribute("&helm", //command to handle
 		ePrivLevel.Player, //minimum privelege level
-	 "Toggles the helm on and off when wearing an helm.", //command description
+	 "투구를 착용 중일 때 표시를 켜거나 끕니다.", //command description
 	  "/helm")] //usage
 	public class HelmCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

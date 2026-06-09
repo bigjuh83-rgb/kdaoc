@@ -27,27 +27,27 @@ GameKeepGuard.GetPronoun.She:			그녀
 GameLiving.AttackData.Fumbled:			{0}의 공격이 헛나갔습니다!
 GameLiving.AttackData.Misses:			{0}이(가) 당신의 {1}을(를) 공격했지만 빗나갔습니다!
 GameLiving.AttackData.Blocked:			{0}이(가) 당신의 {1}을(를) 공격했지만 막혔습니다!
-GameLiving.AttackData.Parried:			{0}이(가) 당신의 {1}을(를) 공격했지만 받아쳐졌습니다!
+GameLiving.AttackData.Parried:			{0}이(가) 당신의 {1}을(를) 공격했지만 패리되었습니다!
 GameLiving.AttackData.CriticallyHitsForDamage:	{0}이(가) 당신의 {1}에게 치명타를 입혀 추가로 {2} 피해를 줬습니다.
 GameLiving.AttackData.Evaded:			{0}이(가) 당신의 {1}을(를) 공격했지만 회피되었습니다!
-GameLiving.AttackData.HitsForDamage:		{0}이(가) 당신의 {1}에게 {2}{3} 피해를 입혔습니다.
+GameLiving.AttackData.HitsForDamage:		{0}이(가) 당신의 {1}에 {2}{3} 피해를 입혔습니다.
 GameLiving.AttackData.YourCriticallyHits:	당신의 {0}이(가) {1}에게 치명타를 입혀 추가로 {2} 피해를 줬습니다!
 GameLiving.AttackData.YourHits:			당신의 {0}이(가) {1} {2} 후 {3}{4} 피해를 입혔습니다!
 GamePlayer.CommandNpcAttack.TooFarAwayForPet:		대상이 너무 멀어 펫으로 공격할 수 없습니다!
 
 ## Attack Data (Attacker)
 GamePlayer.Attack.Blocked:					{0}이(가) 당신의 공격을 막았습니다!
-GamePlayer.Attack.Parried:					{0}이(가) 당신의 공격을 받아쳤습니다!
+GamePlayer.Attack.Parried:					{0}이(가) 당신의 공격을 패리했습니다!
 GamePlayer.Attack.Evaded:					{0}이(가) 당신의 공격을 회피했습니다!
 GamePlayer.Attack.Missed:					{0}이(가) 공격했지만 빗나갔습니다!
 GamePlayer.Attack.HitsYou:					{0}이(가) 당신에게 {1}{2} 피해를 입혔습니다!
 GamePlayer.Attack.HitsYouCritical:			{0}이(가) 당신에게 치명타를 입혀 추가로 {1} 피해를 줬습니다!
-GamePlayer.Attack.HitsYour:					{0}이(가) 당신의 {1}에게 {2}{3} 피해를 입혔습니다!
+GamePlayer.Attack.HitsYour:					{0}이(가) 당신의 {1}에 {2}{3} 피해를 입혔습니다!
 
 ## Intercept (Other)
 GamePlayer.Attack.Intercepted:				{0}이(가) {1} 앞에 뛰어들어 공격을 대신 맞았습니다!
-GamePlayer.Attack.InterceptedHit:			{0}이(가) {1}{2}했지만 {3}에게 {4}{5} 피해를 입혔습니다!
-GamePlayer.Attack.InterceptHit:				{0}이(가) {1}{2}하여 {3}{4} 피해를 입혔습니다!
+GamePlayer.Attack.InterceptedHit:			{1}을(를){2}으로 {0}했지만 {3}에게 {4}{5} 피해를 입혔습니다!
+GamePlayer.Attack.InterceptHit:				{1}을(를){2}으로 {0}하여 {3}{4} 피해를 입혔습니다!
 
 ## Pet Commands
 GamePlayer.CommandNpcGoTarget.MustSelectDestination:조종 중인 생물의 목적지를 선택해야 합니다.

@@ -5,8 +5,8 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 	  "&boot",
 	  ePrivLevel.Player,
-	   "Kicks a player out of your house",
-		 "Useage: /boot [playername]")]
+	   "플레이어를 내 집에서 내보냅니다.",
+		 "사용법: /boot [플레이어이름]")]
 	public class BootCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

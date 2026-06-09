@@ -16,8 +16,9 @@ namespace DOL.GS.Commands
             if (args.Length > 1)
             {
                 string playerName = string.Empty;
+                string command = args[1].Equals("플레이어", StringComparison.OrdinalIgnoreCase) ? "player" : args[1];
 
-                if (args[1].Equals("player", StringComparison.OrdinalIgnoreCase))
+                if (command.Equals("player", StringComparison.OrdinalIgnoreCase))
                 {
                     if (args.Length > 2)
                         playerName = args[2];
@@ -25,7 +26,7 @@ namespace DOL.GS.Commands
                         playerName = client.Player.TargetObject.Name;
                 }
 
-                client.Player.Statistics.DisplayServerStatistics(client, args[1], playerName);
+                client.Player.Statistics.DisplayServerStatistics(client, command, playerName);
             }
             else
                 DisplayMessage(client, client.Player.Statistics.GetStatisticsMessage());

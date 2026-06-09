@@ -129,6 +129,72 @@ namespace DOL.GS.Tests
         }
     }
 
+    internal sealed class FakeDynamicQuestProgressRepository : IDynamicQuestProgressRepository
+    {
+        public readonly Dictionary<string, DbDynamicQuestProgress> Rows = new();
+
+        public bool Add(DbDynamicQuestProgress row)
+        {
+            Rows[row.ProgressId] = row;
+            return true;
+        }
+
+        public DbDynamicQuestProgress Find(string progressId)
+        {
+            Rows.TryGetValue(progressId, out DbDynamicQuestProgress row);
+            return row;
+        }
+
+        public IList<DbDynamicQuestProgress> GetActive(int limit)
+        {
+            limit = Math.Clamp(limit <= 0 ? 100 : limit, 1, 500);
+            return Rows.Values
+                .Where(row => row.IsActive && !row.Failed)
+                .OrderByDescending(row => row.UpdatedAt)
+                .Take(limit)
+                .ToList();
+        }
+
+        public IList<DbDynamicQuestProgress> GetActiveForDifferentWorldRevision(string currentWorldRevision)
+        {
+            return Rows.Values
+                .Where(row =>
+                    row.IsActive &&
+                    !row.Failed &&
+                    !string.IsNullOrWhiteSpace(row.WorldRevision) &&
+                    !string.Equals(row.WorldRevision, currentWorldRevision, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(row => row.AcceptedAt)
+                .ToList();
+        }
+
+        public IList<DbDynamicQuestProgress> GetActiveForMissingQuestIds(ISet<string> activeQuestIds)
+        {
+            HashSet<string> normalizedActiveQuestIds = new(activeQuestIds ?? new HashSet<string>(), StringComparer.OrdinalIgnoreCase);
+            return Rows.Values
+                .Where(row =>
+                    row.IsActive &&
+                    !row.Failed &&
+                    !string.IsNullOrWhiteSpace(row.QuestId) &&
+                    !normalizedActiveQuestIds.Contains(row.QuestId))
+                .OrderBy(row => row.AcceptedAt)
+                .ToList();
+        }
+
+        public IList<DbDynamicQuestProgress> GetByPlayer(string playerKey)
+        {
+            return Rows.Values
+                .Where(row => string.Equals(row.PlayerKey, playerKey, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(row => row.AcceptedAt)
+                .ToList();
+        }
+
+        public bool Save(DbDynamicQuestProgress row)
+        {
+            Rows[row.ProgressId] = row;
+            return true;
+        }
+    }
+
     internal sealed class InvalidLlmResultGenerator : ILlmResultGenerator
     {
         public string Generate(DbLlmJob job, DbWorldEventLog worldEvent)

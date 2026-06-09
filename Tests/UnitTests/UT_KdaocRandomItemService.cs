@@ -44,6 +44,23 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void ValidateGeneratedItem_AllowsInstrumentInRangedSlot()
+        {
+            DbItemTemplate item = new()
+            {
+                Name = "training lute",
+                Item_Type = Slot.RANGED,
+                Object_Type = (int)eObjectType.Instrument,
+                DPS_AF = 0,
+                SPD_ABS = 0,
+                Type_Damage = 0,
+                Model = 665
+            };
+
+            Assert.That(KdaocRandomItemService.ValidateGeneratedItem(item, out string reason), Is.True, reason);
+        }
+
+        [Test]
         public void ValidateGeneratedItem_RejectsJewelryWithWeaponStats()
         {
             DbItemTemplate item = new()
@@ -82,11 +99,33 @@ namespace DOL.GS.Tests
 
             Assert.Multiple(() =>
             {
-                Assert.That(item.Name, Does.StartWith("전설:"));
+                Assert.That(item.Name, Does.StartWith("Legendary:"));
                 Assert.That(item.Quality, Is.GreaterThanOrEqualTo(99));
                 Assert.That(item.Bonus, Is.GreaterThanOrEqualTo(30));
                 Assert.That(item.Level, Is.EqualTo(50));
             });
+        }
+
+        [Test]
+        public void ApplyTierBonuses_DoesNotDowngradeLevelFiftyOneWhenMaxAllowsIt()
+        {
+            DbItemTemplate item = new()
+            {
+                Name = "asterite sword",
+                Level = 51,
+                Quality = 95,
+                Bonus = 20,
+                Item_Type = Slot.RIGHTHAND,
+                Object_Type = (int)eObjectType.SlashingWeapon,
+                DPS_AF = 165,
+                SPD_ABS = 35,
+                Type_Damage = (int)eDamageType.Slash,
+                Model = 10
+            };
+
+            KdaocRandomItemService.ApplyTierBonuses(item, KdaocRandomItemTier.Magic, KdaocRandomMobRank.Named, 51);
+
+            Assert.That(item.Level, Is.EqualTo(51));
         }
 
         [Test]
@@ -241,6 +280,24 @@ namespace DOL.GS.Tests
             });
 
             Assert.That(resolved, Is.Null);
+        }
+
+        [Test]
+        public void ShouldSkipLegacyRandomItemGeneratorForTest_SkipsROG()
+        {
+            Assert.That(LootMgr.ShouldSkipLegacyRandomItemGeneratorForTest("DOL.GS.ROGMobGenerator"), Is.True);
+        }
+
+        [Test]
+        public void ShouldSkipLegacyRandomItemGeneratorForTest_SkipsShortROGClassName()
+        {
+            Assert.That(LootMgr.ShouldSkipLegacyRandomItemGeneratorForTest("ROGMobGenerator"), Is.True);
+        }
+
+        [Test]
+        public void ShouldSkipLegacyRandomItemGeneratorForTest_DoesNotSkipTemplateGenerator()
+        {
+            Assert.That(LootMgr.ShouldSkipLegacyRandomItemGeneratorForTest("DOL.GS.LootGeneratorTemplate"), Is.False);
         }
     }
 }

@@ -5,7 +5,7 @@ namespace DOL.GS.Commands
 {
     [CmdAttribute("&level",
     ePrivLevel.Player,
-    "Allows you to level 20 instantly if you have a level 50", "/level")]
+    "50레벨 캐릭터가 있으면 즉시 20레벨이 될 수 있습니다.", "/level")]
     public class LevelCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)

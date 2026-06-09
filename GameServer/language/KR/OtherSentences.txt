@@ -320,18 +320,18 @@ GameTeleporter.UniPortalSpellNotFound:       유니 포털 주문을 찾을 수 
 PlayerStyleComponent.BackupStyleCleared:     {0}은(는) 현재 특성 레벨에서 더 이상 유효한 백업 스타일이 아니므로 해제되었습니다.
 TeleportArea.DestinationUnavailable:         이 목적지는 현재 이용할 수 없습니다: {0}.
 WorldInventoryItem.MayPickUp:                이제 {0}을(를) 주울 수 있습니다!
-InlandTeleporter.Intro.Albion:               안녕하세요, {0} 님. 에너지를 모아 먼 곳으로 보내드릴 수 있습니다. 목적지를 선택하세요.\n\n[Castle Sauvage] 소바쥬 성 - 카멜롯 힐스\n[Snowdonia Fortress] 스노도니아 요새 - 블랙 마운틴 북부\n[Avalon Marsh] 아발론 습지 - 선착장\n[Gothwaite Harbor] 고스웨이트 항구 - 슈라우디드 아일스\n[Camelot] 카멜롯 - 수도\n[Entrance] 주택 지역 입구\n[Housing] 주택 메뉴\n[towns] 알비온 주요 마을
-InlandTeleporter.Intro.Midgard:              안녕하세요, {0} 님. 에너지를 모아 먼 곳으로 보내드릴 수 있습니다. 목적지를 선택하세요.\n\n[Svasud Faste] 스바수드 파스테 - 물란\n[Vindsaul Faste] 빈드사울 파스테 - 웨스트 스벨란드\n[Gotar] 고타르 - 나일리텐 해변\n[Aegirhamn] 에기르함 - 슈라우디드 아일스\n[Jordheim] 요르드하임 - 수도\n[Entrance] 주택 지역 입구\n[Housing] 주택 메뉴\n[towns] 미드가드 주요 마을
-InlandTeleporter.Intro.Hibernia:             안녕하세요, {0} 님. 에너지를 모아 먼 곳으로 보내드릴 수 있습니다. 목적지를 선택하세요.\n\n[Druim Ligen] 드루임 리겐 - 코나흐트\n[Druim Cain] 드루임 케인 - 브리 레이스\n[Shannon Estuary] 섀넌 하구 - 감시탑\n[Domnann] 돔난 - 슈라우디드 아일스\n[Tir na Nog] 티르 나 노그 - 수도\n[Entrance] 주택 지역 입구\n[Housing] 주택 메뉴\n[towns] 하이버니아 주요 마을
+InlandTeleporter.Intro.Albion:               안녕하세요, {0} 님. 에너지를 모아 먼 곳으로 보내드릴 수 있습니다. 목적지를 선택하세요.\n\n[소바쥬 성] 소바쥬 성 - 카멜롯 힐스\n[스노도니아 요새] 스노도니아 요새 - 블랙 마운틴 북부\n[아발론 습지] 아발론 습지 - 선착장\n[고스웨이트 항구] 고스웨이트 항구 - 슈라우디드 아일스\n[카멜롯] 카멜롯 - 수도\n[입구] 주택 지역 입구\n[주택] 주택 메뉴\n[마을] 알비온 주요 마을
+InlandTeleporter.Intro.Midgard:              안녕하세요, {0} 님. 에너지를 모아 먼 곳으로 보내드릴 수 있습니다. 목적지를 선택하세요.\n\n[스바수드 파스테] 스바수드 파스테 - 물란\n[빈드사울 파스테] 빈드사울 파스테 - 웨스트 스벨란드\n[고타르] 고타르 - 나일리텐 해변\n[에기르함] 에기르함 - 슈라우디드 아일스\n[요르드하임] 요르드하임 - 수도\n[입구] 주택 지역 입구\n[주택] 주택 메뉴\n[마을] 미드가르드 주요 마을
+InlandTeleporter.Intro.Hibernia:             안녕하세요, {0} 님. 에너지를 모아 먼 곳으로 보내드릴 수 있습니다. 목적지를 선택하세요.\n\n[드루임 리겐] 드루임 리겐 - 코나흐트\n[드루임 케인] 드루임 케인 - 브리 레이스\n[섀넌 하구] 섀넌 하구 - 감시탑\n[돔난] 돔난 - 슈라우디드 아일스\n[티르 나 노그] 티르 나 노그 - 수도\n[입구] 주택 지역 입구\n[주택] 주택 메뉴\n[마을] 하이버니아 주요 마을
 InlandTeleporter.NoRealm:                    렐름이 설정되어 있지 않아 안내할 목적지를 알 수 없습니다.
-InlandTeleporter.EpicDungeonPrompt:          [Epic Dungeon] 에픽 던전의 도전에 나서 보시겠습니까?
-InlandTeleporter.ShroudedIsles.Albion:       아발론 섬은 훌륭한 선택입니다. [Gothwaite] 고스웨이트로 가시겠습니까, 아니면 [Wearyall Village] 위어리얼 마을, [Gwyntell] 귄텔 요새, [Caer Diogel] 케어 디오겔 같은 외곽 마을로 가시겠습니까?
-InlandTeleporter.ShroudedIsles.Midgard:      에기르 섬은 훌륭한 선택입니다. 도시 [Aegirhamn] 에기르함으로 가시겠습니까, 아니면 [Bjarken] 비야르켄, [Hagall] 하갈, [Knarr] 크나르 같은 외곽 마을로 가시겠습니까?
-InlandTeleporter.ShroudedIsles.Hibernia:     하이 브라질 섬은 훌륭한 선택입니다. [Domnann] 돔난 숲으로 가시겠습니까, 아니면 [Droighaid] 드로하이드, [Aalid Feie] 알리드 페이, [Necht] 네흐트 같은 외곽 마을로 가시겠습니까?
-InlandTeleporter.Housing:                    [personal] 개인 주택이나 [guild] 길드 주택으로 보내드릴 수 있습니다. 개인 주택이 없다면 주택 [entrance] 입구 또는 주택 [hearth] 귀환 위치로 이동할 수 있습니다.
-InlandTeleporter.Towns.Albion:               다음 지역으로 보내드릴 수 있습니다:\n[Cotswold Village] 코츠월드 마을\n[Prydwen Keep] 프리드웬 성채\n[Caer Ulfwych] 케어 울프위치\n[Campacorentin Station] 캄파코렌틴 기지\n[Adribard's Retreat] 아드리바드 은거지\n[Yarley's Farm] 야를리 농장
-InlandTeleporter.Towns.Midgard:              다음 지역으로 보내드릴 수 있습니다:\n[Mularn] 물란\n[Fort Veldon] 벨돈 요새\n[Audliten] 아우들리텐\n[Huginfell] 후긴펠\n[Fort Atla] 아틀라 요새\n[West Skona] 웨스트 스코나
-InlandTeleporter.Towns.Hibernia:             다음 지역으로 보내드릴 수 있습니다:\n[Mag Mell] 마그 멜\n[Tir na mBeo] 티르 나 므베오\n[Ardagh] 아르다\n[Howth] 호스\n[Connla] 콘라\n[Innis Carthaig] 이니스 카르사이그
+InlandTeleporter.EpicDungeonPrompt:          [에픽 던전] 에픽 던전의 도전에 나서 보시겠습니까?
+InlandTeleporter.ShroudedIsles.Albion:       아발론 섬은 훌륭한 선택입니다. [고스웨이트] 고스웨이트로 가시겠습니까, 아니면 [위어리얼 마을] 위어리얼 마을, [귄텔 요새] 귄텔 요새, [케어 디오겔] 케어 디오겔 같은 외곽 마을로 가시겠습니까?
+InlandTeleporter.ShroudedIsles.Midgard:      에기르 섬은 훌륭한 선택입니다. 도시 [에기르함] 에기르함으로 가시겠습니까, 아니면 [비야르켄] 비야르켄, [하갈] 하갈, [크나르] 크나르 같은 외곽 마을로 가시겠습니까?
+InlandTeleporter.ShroudedIsles.Hibernia:     하이 브라질 섬은 훌륭한 선택입니다. [돔난] 돔난 숲으로 가시겠습니까, 아니면 [드로하이드] 드로하이드, [알리드 페이] 알리드 페이, [네흐트] 네흐트 같은 외곽 마을로 가시겠습니까?
+InlandTeleporter.Housing:                    [개인 주택] 개인 주택이나 [길드 주택] 길드 주택으로 보내드릴 수 있습니다. 개인 주택이 없다면 주택 [입구] 입구 또는 주택 [귀환 위치] 귀환 위치로 이동할 수 있습니다.
+InlandTeleporter.Towns.Albion:               다음 지역으로 보내드릴 수 있습니다:\n[코츠월드 마을] 코츠월드 마을\n[프리드웬 성채] 프리드웬 성채\n[케어 울프위치] 케어 울프위치\n[캄파코렌틴 기지] 캄파코렌틴 기지\n[아드리바드 은거지] 아드리바드 은거지\n[야를리 농장] 야를리 농장
+InlandTeleporter.Towns.Midgard:              다음 지역으로 보내드릴 수 있습니다:\n[물란] 물란\n[벨돈 요새] 벨돈 요새\n[아우들리텐] 아우들리텐\n[후긴펠] 후긴펠\n[아틀라 요새] 아틀라 요새\n[웨스트 스코나] 웨스트 스코나
+InlandTeleporter.Towns.Hibernia:             다음 지역으로 보내드릴 수 있습니다:\n[마그 멜] 마그 멜\n[티르 나 므베오] 티르 나 므베오\n[아르다] 아르다\n[호스] 호스\n[콘라] 콘라\n[이니스 카르사이그] 이니스 카르사이그
 InlandTeleporter.NoGuildHouse:               죄송합니다. {0} 길드는 길드 하우스를 보유하고 있지 않습니다.
 InlandTeleporter.Teleporting:                {0}: "{1}(으)로 이동시켜 드리겠습니다."
 OFTeleporter.PortMessage.Albion:             젖은 대지에서 달빛이 비치는 곳까지, 이 원 안의 모든 이들을 아름다운 카멜롯의 빛이 닿지 않는 잃어버린 땅으로 보내노라!
@@ -480,16 +480,16 @@ ThroneRoomTeleporter.Whisper.GiveStone:      좋습니다. 여기 개인 귀환�
 ThroneRoomTeleporter.Error.ThroneRoomNotFound: 서버 오류: 왕좌방을 찾을 수 없습니다.
 ThroneRoomTeleporter.Error.ExitNotFoundMoveBind: 서버 오류: 이 왕좌방의 출구를 찾을 수 없습니다. 마지막 바인드 위치로 이동합니다.
 ThroneRoomTeleporter.Error.TeleportLocationNotFound: 서버 오류: 왕좌방 텔레포트 위치를 찾을 수 없습니다.
-AlbionTeleporter.Interact.Menu:              안녕하세요, {0}님. 목적지를 선택하세요:\n\n[Castle Sauvage] 소바쥬 성 - 카멜롯 힐스\n[Snowdonia Fortress] 스노도니아 요새 - 블랙 마운틴 북부\n[Avalon Marsh] 아발론 습지 - 부두\n[Gothwaite Harbor] 고스웨이트 항구 - 슈라우디드 아일스\n[Camelot] 카멜롯 - 수도\n[Entrance] 주택 지역 입구\n[Housing] 주택 메뉴\n[towns] 알비온 주요 마을
-MidgardTeleporter.Interact.Menu:             안녕하세요, {0}님. 목적지를 선택하세요:\n\n[Svasud Faste] 스바수드 파스테 - 물란\n[Vindsaul Faste] 빈드사울 파스테 - 웨스트 스벨란드\n[Gotar] 고타르 - 나일리텐 해변\n[Aegirhamn] 에기르함 - 슈라우디드 아일스\n[Jordheim] 요르드하임 - 수도\n[Entrance] 주택 지역 입구\n[Housing] 주택 메뉴\n[towns] 미드가드 주요 마을
-HiberniaTeleporter.Interact.Menu:            안녕하세요, {0}님. 목적지를 선택하세요:\n\n[Druim Ligen] 드루임 리겐 - 코나흐트\n[Druim Cain] 드루임 케인 - 브리 레이스\n[Shannon Estuary] 섀넌 하구 - 감시탑\n[Domnann] 돔난 - 슈라우디드 아일스\n[Tir na Nog] 티르 나 노그 - 수도\n[Entrance] 주택 지역 입구\n[Housing] 주택 메뉴\n[towns] 하이버니아 주요 마을
-AlbionTeleporter.SubSelection.ShroudedIslesPrompt: 아발론 섬은 훌륭한 선택입니다. [Gothwaite] 고스웨이트로 가시겠습니까, 아니면 [Wearyall Village] 위어리얼 마을, [Gwyntell] 귄텔 요새, [Caer Diogel] 케어 디오겔 같은 외곽 마을로 가시겠습니까?
-MidgardTeleporter.SubSelection.ShroudedIslesPrompt: 에기르 섬은 훌륭한 선택입니다. [Aegirhamn] 에기르함으로 가시겠습니까, 아니면 [Bjarken] 비야르켄, [Hagall] 하갈, [Knarr] 크나르 같은 외곽 마을로 가시겠습니까?
-HiberniaTeleporter.SubSelection.ShroudedIslesPrompt: 하이 브라질 섬은 훌륭한 선택입니다. [Domnann] 돔난 숲으로 가시겠습니까, 아니면 [Droighaid] 드로하이드, [Aalid Feie] 알리드 페이, [Necht] 네흐트 같은 외곽 마을로 가시겠습니까?
-RealmTeleporter.SubSelection.HousingPrompt:  [personal] 개인 주택 또는 [guild] 길드 주택으로 보내드릴 수 있습니다. 개인 주택이 없다면 주택 [entrance] 입구나 주택 [hearth] 귀환 위치로 이동할 수 있습니다.
-AlbionTeleporter.SubSelection.TownsPrompt:  다음 장소로 보내드릴 수 있습니다:\n[Cotswold Village] 코츠월드 마을\n[Prydwen Keep] 프리드웬 성채\n[Caer Ulfwych] 케어 울프위치\n[Campacorentin Station] 캄파코렌틴 기지\n[Adribard's Retreat] 아드리바드 은거지\n[Yarley's Farm] 야를리 농장
-MidgardTeleporter.SubSelection.TownsPrompt: 다음 장소로 보내드릴 수 있습니다:\n[Mularn] 물란\n[Fort Veldon] 벨돈 요새\n[Audliten] 아우들리텐\n[Huginfell] 후긴펠\n[Fort Atla] 아틀라 요새\n[West Skona] 웨스트 스코나
-HiberniaTeleporter.SubSelection.TownsPrompt:다음 장소로 보내드릴 수 있습니다:\n[Mag Mell] 마그 멜\n[Tir na mBeo] 티르 나 므베오\n[Ardagh] 아르다\n[Howth] 호스\n[Connla] 콘라\n[Innis Carthaig] 이니스 카르사이그
+AlbionTeleporter.Interact.Menu:              안녕하세요, {0}님. 목적지를 선택하세요:\n\n[소바쥬 성] 소바쥬 성 - 카멜롯 힐스\n[스노도니아 요새] 스노도니아 요새 - 블랙 마운틴 북부\n[아발론 습지] 아발론 습지 - 부두\n[고스웨이트 항구] 고스웨이트 항구 - 슈라우디드 아일스\n[카멜롯] 카멜롯 - 수도\n[입구] 주택 지역 입구\n[주택] 주택 메뉴\n[마을] 알비온 주요 마을
+MidgardTeleporter.Interact.Menu:             안녕하세요, {0}님. 목적지를 선택하세요:\n\n[스바수드 파스테] 스바수드 파스테 - 물란\n[빈드사울 파스테] 빈드사울 파스테 - 웨스트 스벨란드\n[고타르] 고타르 - 나일리텐 해변\n[에기르함] 에기르함 - 슈라우디드 아일스\n[요르드하임] 요르드하임 - 수도\n[입구] 주택 지역 입구\n[주택] 주택 메뉴\n[마을] 미드가르드 주요 마을
+HiberniaTeleporter.Interact.Menu:            안녕하세요, {0}님. 목적지를 선택하세요:\n\n[드루임 리겐] 드루임 리겐 - 코나흐트\n[드루임 케인] 드루임 케인 - 브리 레이스\n[섀넌 하구] 섀넌 하구 - 감시탑\n[돔난] 돔난 - 슈라우디드 아일스\n[티르 나 노그] 티르 나 노그 - 수도\n[입구] 주택 지역 입구\n[주택] 주택 메뉴\n[마을] 하이버니아 주요 마을
+AlbionTeleporter.SubSelection.ShroudedIslesPrompt: 아발론 섬은 훌륭한 선택입니다. [고스웨이트] 고스웨이트로 가시겠습니까, 아니면 [위어리얼 마을] 위어리얼 마을, [귄텔 요새] 귄텔 요새, [케어 디오겔] 케어 디오겔 같은 외곽 마을로 가시겠습니까?
+MidgardTeleporter.SubSelection.ShroudedIslesPrompt: 에기르 섬은 훌륭한 선택입니다. [에기르함] 에기르함으로 가시겠습니까, 아니면 [비야르켄] 비야르켄, [하갈] 하갈, [크나르] 크나르 같은 외곽 마을로 가시겠습니까?
+HiberniaTeleporter.SubSelection.ShroudedIslesPrompt: 하이 브라질 섬은 훌륭한 선택입니다. [돔난] 돔난 숲으로 가시겠습니까, 아니면 [드로하이드] 드로하이드, [알리드 페이] 알리드 페이, [네흐트] 네흐트 같은 외곽 마을로 가시겠습니까?
+RealmTeleporter.SubSelection.HousingPrompt:  [개인 주택] 개인 주택 또는 [길드 주택] 길드 주택으로 보내드릴 수 있습니다. 개인 주택이 없다면 주택 [입구] 입구나 주택 [귀환 위치] 귀환 위치로 이동할 수 있습니다.
+AlbionTeleporter.SubSelection.TownsPrompt:  다음 장소로 보내드릴 수 있습니다:\n[코츠월드 마을] 코츠월드 마을\n[프리드웬 성채] 프리드웬 성채\n[케어 울프위치] 케어 울프위치\n[캄파코렌틴 기지] 캄파코렌틴 기지\n[아드리바드 은거지] 아드리바드 은거지\n[야를리 농장] 야를리 농장
+MidgardTeleporter.SubSelection.TownsPrompt: 다음 장소로 보내드릴 수 있습니다:\n[물란] 물란\n[벨돈 요새] 벨돈 요새\n[아우들리텐] 아우들리텐\n[후긴펠] 후긴펠\n[아틀라 요새] 아틀라 요새\n[웨스트 스코나] 웨스트 스코나
+HiberniaTeleporter.SubSelection.TownsPrompt:다음 장소로 보내드릴 수 있습니다:\n[마그 멜] 마그 멜\n[티르 나 므베오] 티르 나 므베오\n[아르다] 아르다\n[호스] 호스\n[콘라] 콘라\n[이니스 카르사이그] 이니스 카르사이그
 RealmTeleporter.Destination.NotAvailable:    이 목적지는 이용할 수 없습니다.
 RealmTeleporter.Destination.Teleporting:     {0}(으)로 순간이동시켜 드리겠습니다.
 SimpleTeleporter.Setup.NeedsGuildName:       설정이 올바르지 않습니다. 작동하려면 길드 이름이 필요합니다.
@@ -499,16 +499,16 @@ SimpleTeleporter.Setup.NeedsTeleportLocations:설정이 올바르지 않습니�
 SITeleporter.Interact.Prompt:                안녕하세요. 어디로 보내드릴까요?
 Teleporter.SafeJourney:                      안전한 여행 되십시오!
 AllRealmsTeleporter.Response.GreatCityAwaits:위대한 도시가 당신을 기다립니다!
-AllRealmsTeleporter.Menu.Albion:             어디로 순간이동하시겠습니까?\n[카멜롯]\n[알비온 프론티어] 또는 [전장]\n[알비온 다크니스 폴스]\n[알비온 본토]\n[알비온 던전]\n[알비온 슈라우디드 아일스]\n[알비온 오세아누스]\n[주택]\n[하이버니아] 또는 [미드가드]
-AllRealmsTeleporter.Menu.Midgard:            어디로 순간이동하시겠습니까?\n[요르드하임]\n[미드가드 프론티어] 또는 [전장]\n[미드가드 다크니스 폴스]\n[미드가드 본토]\n[미드가드 던전]\n[미드가드 슈라우디드 아일스]\n[미드가드 오세아누스]\n[주택]\n[알비온] 또는 [하이버니아]
-AllRealmsTeleporter.Menu.Hibernia:           어디로 순간이동하시겠습니까?\n[티르 나 노그]\n[하이버니아 프론티어] 또는 [전장]\n[하이버니아 다크니스 폴스]\n[하이버니아 본토]\n[하이버니아 던전]\n[하이버니아 슈라우디드 아일스]\n[하이버니아 오세아누스]\n[주택]\n[알비온] 또는 [미드가드]
+AllRealmsTeleporter.Menu.Albion:             어디로 순간이동하시겠습니까?\n[카멜롯]\n[알비온 프론티어] 또는 [전장]\n[알비온 다크니스 폴스]\n[알비온 본토]\n[알비온 던전]\n[알비온 슈라우디드 아일스]\n[알비온 오세아누스]\n[주택]\n[하이버니아] 또는 [미드가르드]
+AllRealmsTeleporter.Menu.Midgard:            어디로 순간이동하시겠습니까?\n[요르드하임]\n[미드가르드 프론티어] 또는 [전장]\n[미드가르드 다크니스 폴스]\n[미드가르드 본토]\n[미드가르드 던전]\n[미드가르드 슈라우디드 아일스]\n[미드가르드 오세아누스]\n[주택]\n[알비온] 또는 [하이버니아]
+AllRealmsTeleporter.Menu.Hibernia:           어디로 순간이동하시겠습니까?\n[티르 나 노그]\n[하이버니아 프론티어] 또는 [전장]\n[하이버니아 다크니스 폴스]\n[하이버니아 본토]\n[하이버니아 던전]\n[하이버니아 슈라우디드 아일스]\n[하이버니아 오세아누스]\n[주택]\n[알비온] 또는 [미드가르드]
 AllRealmsTeleporter.Menu.AlbionFrontiers:    프론티어의 어느 곳으로 가시겠습니까?\n[소바쥬 숲]\n[소바쥬 성]\n[스노도니아 요새]\n[알비온 아그라몬]
 AllRealmsTeleporter.Menu.AlbionMainland.Header:알비온의 어느 지역으로 가시겠습니까?\n
 AllRealmsTeleporter.Menu.AlbionMainland.Body:[코츠월드 마을] (레벨 10-14)\n[프리드웬 성채] (레벨 15-19)\n[케어 울프위치] (레벨 20-24)\n[캄파코렌틴 기지] (레벨 25-29)\n[아드리바드 은거지] (레벨 30-34)\n[콘월 기지] (레벨 35+)\n[스완턴 성채] (레벨 35+)\n[라이오네스] (레벨 45+)\n[다트무어] (레벨 45+)\n[인코뉴 납골당]
 AllRealmsTeleporter.Menu.AlbionDungeons:     어느 던전으로 이동하시겠습니까?\n[미트라 무덤] (레벨 10-18)\n[켈토이 포구] (레벨 18-26)\n[테폭 광산] (레벨 26-34)\n[카르도바 지하묘지] (레벨 34-42)\n[스톤헨지 고분] (레벨 42-50)\n[크론돈] (레벨 50+)\n[아발론 시티] (에픽)\n[케어 시디] (에픽)
 AllRealmsTeleporter.Menu.AlbionShroudedIsles:아발론의 어느 지역으로 가시겠습니까?\n[케어 고스웨이트]\n[위어리얼 마을]\n[귄텔 요새]\n[케어 디오겔]
-AllRealmsTeleporter.Menu.MidgardFrontiers:   프론티어의 어느 곳으로 가시겠습니까?\n[업플란드]\n[스바수드 파스테]\n[빈드사울 파스테]\n[미드가드 아그라몬]
-AllRealmsTeleporter.Menu.MidgardMainland.Header:미드가드의 어느 지역으로 가시겠습니까?\n
+AllRealmsTeleporter.Menu.MidgardFrontiers:   프론티어의 어느 곳으로 가시겠습니까?\n[업플란드]\n[스바수드 파스테]\n[빈드사울 파스테]\n[미드가르드 아그라몬]
+AllRealmsTeleporter.Menu.MidgardMainland.Header:미드가르드의 어느 지역으로 가시겠습니까?\n
 AllRealmsTeleporter.Menu.MidgardMainland.Body:[물란] (레벨 10-14)\n[벨돈 요새] (레벨 15-19)\n[아우들리텐] (레벨 20-24)\n[후긴펠] (레벨 25-29)\n[아틀라 요새] (레벨 30-34)\n[그나 파스테] (레벨 35+)\n[빈드사울 파스테] (레벨 35+)\n[라우마리크] (레벨 45+)\n[말모후스] (레벨 45+)\n[코볼드 지하도시]
 AllRealmsTeleporter.Menu.MidgardDungeons:    어느 던전으로 이동하시겠습니까?\n[니스의 소굴] (레벨 10-18)\n[저주받은 무덤] (레벨 18-26)\n[벤도 동굴] (레벨 26-34)\n[바룰브함] (레벨 34-42)\n[스핀델할라] (레벨 42-50)\n[이아른비디우르의 소굴] (레벨 50+)\n[트롤하임] (에픽)\n[투스카렌 빙하] (에픽)
 AllRealmsTeleporter.Menu.MidgardShroudedIsles:에기르의 어느 지역으로 가시겠습니까?\n[에기르함]\n[비야르켄]\n[하갈]\n[크나르]
@@ -545,10 +545,10 @@ AncientBoundDjinn.SubSelection.Stygia:        스티지아의 모래빛 안식�
 AncientBoundDjinn.SubSelection.Volcanus:      볼카누스의 안식처에서 [티폰의 영역]으로 접근하겠습니까, 아니면 [투시아 네소스], [아폴로]의 신전, [바줄의 요새], 혹은 [키메라] 본인을 노리는 더 큰 계획이 있습니까?
 AncientBoundDjinn.SubSelection.Aerus:         [초록 숲] 바깥의 에어러스 안식처를 찾습니까, 아니면 [탈로스]의 신전으로 가겠습니까?
 AncientBoundDjinn.SubSelection.Dungeons:      [소베카이트 이터널], [황혼] 신전, [대피라미드], [마아티의 전당], 볼카누스의 [심연], 또는 에어러스의 [도시]로 들어갈 수 있게 해드릴 수 있습니다.
-AncientBoundDjinn.SubSelection.Twilight:      그 어두운 신전의 위대한 여인들 중 한 명을 만나고 싶습니까? [Moirai], [Kepa], [Casta], [Laodameia], [Antioos], [Sinovia], 심지어 [Medusa]도 당신을 저녁 식사에 초대하고 싶어할 겁니다.
-AncientBoundDjinn.SubSelection.HallsOfMaati:  어디에 관심이 있습니까? [입구], [아누바이트] 쪽, [An-Uat] 쪽? 아니면 이미 [암무트의 방]에서 마지막 운명을 마주할 준비가 되었습니까?
-AncientBoundDjinn.SubSelection.Deep:          [남서쪽] 또는 [북동쪽] 홀의 중재자를 만나겠습니까, [Katorii's] 시선을 마주하겠습니까, 아니면 [티폰 본인] 같은 존재와 싸울 만큼 무모합니까?
-AncientBoundDjinn.SubSelection.City:          [포털] 근처 입구, 위대한 통합자 [Lethos], 명성만으로 기억되는 [고대 왕들], 유명한 스승 [Nelos], 가장 잘 알려지고 존경받는 아브리엘 [Katri], 또는 [Phoenix]에게도 보내드릴 수 있습니다.
+AncientBoundDjinn.SubSelection.Twilight:      그 어두운 신전의 위대한 여인들 중 한 명을 만나고 싶습니까? [모이라이], [케파], [카스타], [라오다메이아], [안티오스], [시노비아], 심지어 [메두사]도 당신을 저녁 식사에 초대하고 싶어할 겁니다.
+AncientBoundDjinn.SubSelection.HallsOfMaati:  어디에 관심이 있습니까? [입구], [아누바이트] 쪽, [안우아트] 쪽? 아니면 이미 [암무트의 방]에서 마지막 운명을 마주할 준비가 되었습니까?
+AncientBoundDjinn.SubSelection.Deep:          [남서쪽] 또는 [북동쪽] 홀의 중재자를 만나겠습니까, [카토리의] 시선을 마주하겠습니까, 아니면 [티폰 본인] 같은 존재와 싸울 만큼 무모합니까?
+AncientBoundDjinn.SubSelection.City:          [포털] 근처 입구, 위대한 통합자 [레토스], 명성만으로 기억되는 [고대 왕들], 유명한 스승 [넬로스], 가장 잘 알려지고 존경받는 아브리엘 [카트리], 또는 [피닉스]에게도 보내드릴 수 있습니다.
 AncientBoundDjinn.Say:                        {0}이(가) 말합니다, "{1}"
 GameKeepDoor.Examine.Select:                  {0}을(를) 선택했습니다.
 GameKeepDoor.Examine.YourRealm:               당신의 렐름 소유입니다.
@@ -567,7 +567,7 @@ PlayerCommand.NoSuchCommand:                  그런 명령어가 없습니다({
 Housing.Lockbox.Deposit:                      보관함에 {0}을(를) 넣었습니다.
 Housing.Lockbox.Balance:                      보관함에는 현재 {0}이(가) 있습니다. 주간 유지비는 {1}입니다.
 Housing.Lockbox.Prepaid:                      주택 유지비가 앞으로 {0}회분 선납되었습니다.
-PlayerStatistics.Usage:                       사용법: /stats [rp | lrp | kills | deathblows | irs | heal | rez | player <이름|대상>]
+PlayerStatistics.Usage:                       사용법: /stats [rp | 시간당rp | 처치 | 결정타 | irs | 회복 | 부활 | 플레이어 <이름|대상>]
 PlayerStatistics.Header:                      이번 세션의 {0} 통계:
 PlayerStatistics.TotalRp:                     총 RP: {0}
 PlayerStatistics.RpFromKills:                 처치로 획득한 RP: {0}
@@ -590,6 +590,8 @@ PlayerStatistics.TopHealers:                  회복 상위 20명\n{0}
 PlayerStatistics.TopResurrectors:             부활 상위 20명\n{0}
 PlayerStatistics.NoPlayerFound:               {0} 이름의 플레이어를 찾을 수 없습니다!
 PlayerStatistics.PrivateStats:                {0}님은 자신의 통계 열람을 허용하지 않았습니다.
+PlayerStatistics.StatsAnon.Hidden:            이제 다른 플레이어가 내 통계를 볼 수 없습니다.
+PlayerStatistics.StatsAnon.Visible:           이제 다른 플레이어가 내 통계를 볼 수 있습니다.
 SummonedDjinn.Say.Greeting:                  안녕하십니까, 위대한 분이여.
 SummonedDjinn.Say.TimeDone:                  이곳에서의 제 시간은 끝났습니다.
 
@@ -630,9 +632,9 @@ CustomTeleporter.Boss.RequireLevelGroup:  이 텔레포터를 사용하려면 50
 CustomTeleporter.Boss.Greeting:           반갑습니다, {0}.\n\n자신 있다면 [보스 투기장]으로 보내드릴 수 있습니다.
 CustomTeleporter.Battle.Greeting:         반갑습니다, {0}.\n\n비밀을 지키겠다고 약속한다면 [결투장]으로 보내드릴 수 있습니다.
 CustomTeleporter.CannotPortInCombat:      전투 중에는 이동할 수 없습니다.
-EpicTeleporter.Interact.Celestius:        안녕하세요, {0}! [Celestius]로 보내드릴 수 있습니다.
-EpicTeleporter.Teleport.Celestius:        Celestius로 이동시켜 드리겠습니다.
-BGTeleporter.Interact.Menu:               안녕하세요, {0}! 다음 전장으로 보내드릴 수 있습니다:\n\n[AbermenaiAlb], [ThidrankiAlb], [MurdaigeanAlb], [CaledoniaAlb]\n\n[AbermenaiMid], [ThidrankiMid], [MurdaigeanMid], [CaledoniaMid]\n\n[AbermenaiHib], [ThidrankiHib], [MurdaigeanHib], [CaledoniaHib]
+EpicTeleporter.Interact.Celestius:        안녕하세요, {0}! [셀레스티우스]로 보내드릴 수 있습니다.
+EpicTeleporter.Teleport.Celestius:        셀레스티우스로 이동시켜 드리겠습니다.
+BGTeleporter.Interact.Menu:               안녕하세요, {0}! 다음 전장으로 보내드릴 수 있습니다:\n\n[애버메나이 알비온], [시드랭키 알비온], [머다이건 알비온], [칼레도니아 알비온]\n\n[애버메나이 미드가르드], [시드랭키 미드가르드], [머다이건 미드가르드], [칼레도니아 미드가르드]\n\n[애버메나이 하이버니아], [시드랭키 하이버니아], [머다이건 하이버니아], [칼레도니아 하이버니아]
 InstantLevelNPC.Interact.Menu:            안녕하세요, {0}. 알파 테스트 동안 캐릭터 경험치를 도와드릴 수 있습니다.\n\n[10], [20], [30], [40], [50] 중 어느 레벨이 좋으신가요?\n\n원하시면 캐릭터 레벨을 1로 [초기화]할 수도 있습니다.
 InstantLevelNPC.LevelAlreadyHigher:       이미 그보다 높은 레벨입니다.
 InstantLevelNPC.LevelGranted:             레벨 {0}에 도달할 만큼의 경험치를 드렸습니다!
@@ -641,7 +643,7 @@ InstantRRNPC.Interact.FreeRealmRank:      반갑습니다, {0}. 알파 테스트
 InstantRRNPC.Interact.Disabled:           죄송합니다, {0}. 더 이상 무료 렐름 랭크를 지급하지 말라는 지시를 받았습니다!
 InstantRRNPC.Admin.Menu:                  무료 렐름 랭크를 얼마로 설정할까요?\n
 LordOfBattle.Interact.Greeting:           반갑습니다, {0}.\n\n원하시면 당신 렐름의 [이벤트 지역]으로 돌려보내드릴 수 있습니다.
-LordOfBattle.Resurrected:                 Mordred가 당신의 영혼을 부활할 가치가 있다고 판단했습니다!
+LordOfBattle.Resurrected:                 모드레드가 당신의 영혼을 부활할 가치가 있다고 판단했습니다!
 LordOfBattle.Cowardice:                   이 투기장에서는 비겁함을 용납하지 않습니다.
 BuffMerchantEvent.Interact.Greeting:      반갑습니다, {0}.\n당신이 용맹하게 영지를 지킬 수 있도록 강화하라는 지시를 받았습니다. 원하는 강화 토큰을 건네주시면 그에 맞게 힘을 불어넣어 드리겠습니다.
 BuffMerchantEvent.FightWell:              잘 싸우십시오, {0}.
@@ -702,18 +704,18 @@ CustomNPC.EffectNPC.Option.Effect.HammerPurpleGlow: 해머 - 보라 광채
 CustomNPC.EffectNPC.Option.Effect.HammerBlueAura: 해머 - 파란 오라
 CustomNPC.EffectNPC.Option.Effect.HammerBlueGlow: 해머 - 파란 광채
 CustomNPC.EffectNPC.Option.Effect.HammerArcsFromHeadToHandle: 해머 - 머리부터 손잡이까지 번개
-CustomNPC.EffectNPC.Option.Effect.CrushArcingHalo: 둔기 - 번개 고리
-CustomNPC.EffectNPC.Option.Effect.CrushCenterArcing: 둔기 - 중앙 번개
-CustomNPC.EffectNPC.Option.Effect.CrushSmallerArcingHalo: 둔기 - 작은 번개 고리
-CustomNPC.EffectNPC.Option.Effect.CrushHotOrangeCoreGlow: 둔기 - 뜨거운 주황 중심 광채
-CustomNPC.EffectNPC.Option.Effect.CrushOrangeAura: 둔기 - 주황 오라
-CustomNPC.EffectNPC.Option.Effect.CrushSubtleAuraWithSparks: 둔기 - 희미한 오라와 불꽃입자
-CustomNPC.EffectNPC.Option.Effect.CrushYellowFlame: 둔기 - 노란 불꽃
-CustomNPC.EffectNPC.Option.Effect.CrushManaFlame: 둔기 - 마나 불꽃
-CustomNPC.EffectNPC.Option.Effect.CrushHotGreenGlow: 둔기 - 뜨거운 초록 광채
-CustomNPC.EffectNPC.Option.Effect.CrushHotRedGlow: 둔기 - 뜨거운 붉은 광채
-CustomNPC.EffectNPC.Option.Effect.CrushHotPurpleGlow: 둔기 - 뜨거운 보라 광채
-CustomNPC.EffectNPC.Option.Effect.CrushColdVapor: 둔기 - 차가운 안개
+CustomNPC.EffectNPC.Option.Effect.CrushArcingHalo: 크러쉬 - 번개 고리
+CustomNPC.EffectNPC.Option.Effect.CrushCenterArcing: 크러쉬 - 중앙 번개
+CustomNPC.EffectNPC.Option.Effect.CrushSmallerArcingHalo: 크러쉬 - 작은 번개 고리
+CustomNPC.EffectNPC.Option.Effect.CrushHotOrangeCoreGlow: 크러쉬 - 뜨거운 주황 중심 광채
+CustomNPC.EffectNPC.Option.Effect.CrushOrangeAura: 크러쉬 - 주황 오라
+CustomNPC.EffectNPC.Option.Effect.CrushSubtleAuraWithSparks: 크러쉬 - 희미한 오라와 불꽃입자
+CustomNPC.EffectNPC.Option.Effect.CrushYellowFlame: 크러쉬 - 노란 불꽃
+CustomNPC.EffectNPC.Option.Effect.CrushManaFlame: 크러쉬 - 마나 불꽃
+CustomNPC.EffectNPC.Option.Effect.CrushHotGreenGlow: 크러쉬 - 뜨거운 초록 광채
+CustomNPC.EffectNPC.Option.Effect.CrushHotRedGlow: 크러쉬 - 뜨거운 붉은 광채
+CustomNPC.EffectNPC.Option.Effect.CrushHotPurpleGlow: 크러쉬 - 뜨거운 보라 광채
+CustomNPC.EffectNPC.Option.Effect.CrushColdVapor: 크러쉬 - 차가운 안개
 CustomNPC.EffectNPC.Option.Effect.AxeBasicFlame: 도끼 - 기본 불꽃
 CustomNPC.EffectNPC.Option.Effect.AxeOrangeFlame: 도끼 - 주황 불꽃
 CustomNPC.EffectNPC.Option.Effect.AxeSlowOrangeFlameWithSparks: 도끼 - 느린 주황 불꽃과 불꽃입자
@@ -749,11 +751,11 @@ CustomNPC.EffectNPC.Option.Effect.LuggedSpearOrangeFlameWithSparks: 러그드 �
 CustomNPC.EffectNPC.Option.Effect.LuggedSpearOrangeToPurpleFlame: 러그드 스피어 - 주황에서 보라로 변하는 불꽃
 CustomNPC.EffectNPC.Option.Effect.LuggedSpearHotPurpleFlame: 러그드 스피어 - 뜨거운 보라 불꽃
 CustomNPC.EffectNPC.Option.Effect.LuggedSpearSilveryGlow: 러그드 스피어 - 은빛 광채
-CustomNPC.EffectNPC.Option.Effect.StaffBlueGlow: 지팡이 - 파란 광채
-CustomNPC.EffectNPC.Option.Effect.StaffBlueGlowWithTwinkles: 지팡이 - 반짝이는 파란 광채
-CustomNPC.EffectNPC.Option.Effect.StaffGoldGlow: 지팡이 - 금빛 광채
-CustomNPC.EffectNPC.Option.Effect.StaffGoldGlowWithTwinkles: 지팡이 - 반짝이는 금빛 광채
-CustomNPC.EffectNPC.Option.Effect.StaffFaintRedGlow: 지팡이 - 희미한 붉은 광채
+CustomNPC.EffectNPC.Option.Effect.StaffBlueGlow: 스태프 - 파란 광채
+CustomNPC.EffectNPC.Option.Effect.StaffBlueGlowWithTwinkles: 스태프 - 반짝이는 파란 광채
+CustomNPC.EffectNPC.Option.Effect.StaffGoldGlow: 스태프 - 금빛 광채
+CustomNPC.EffectNPC.Option.Effect.StaffGoldGlowWithTwinkles: 스태프 - 반짝이는 금빛 광채
+CustomNPC.EffectNPC.Option.Effect.StaffFaintRedGlow: 스태프 - 희미한 붉은 광채
 CustomNPC.EffectNPC.Option.Dye.White: 흰색
 CustomNPC.EffectNPC.Option.Dye.OldRed: 오래된 빨강
 CustomNPC.EffectNPC.Option.Dye.OldGreen: 오래된 초록
@@ -904,45 +906,45 @@ CustomNPC.ItemModel.ModelChanged:         아이템 모델을 변경했습니다
 CustomNPC.ItemModel.Confused:             죄송합니다. 처리 중 혼선이 생긴 것 같습니다. 처음부터 다시 진행해 주세요.\n이 메시지가 반복된다면 재현 방법과 함께 버그 티켓을 남겨 주세요.
 CustomNPC.ItemModel.PadsLimitedSlots:     죄송하지만 패드는 상의, 장갑, 신발 방어구에만 적용할 수 있습니다.
 CustomNPC.ItemModel.ExtensionChanged:     후원 감사합니다. 아이템 확장을 변경했으니 이제 사용할 수 있습니다.\n\n다음에도 찾아주시길 바랍니다.
-CustomNPC.ItemModel.HelmMenu:             훌륭한 머리 장비군요.\n다음 스킨을 적용할 수 있습니다:\n\n***** 카타콤 모델 전용 *****\n[Dragonslayer Helm]\n[Dragonsworn Helm]\n***** 카타콤 전용 끝 *****\n\n[Crown of Zahur]\n[Crown of Zahur variant]\n[Winged Helm]\n[Oceanus Helm]\n[Stygia Helm]\n[Volcanus Helm]\n[Aerus Helm]\n
-CustomNPC.ItemModel.HelmWizardOption:     [Wizard Hat]\n
+CustomNPC.ItemModel.HelmMenu:             훌륭한 머리 장비군요.\n다음 스킨을 적용할 수 있습니다:\n\n***** 카타콤 모델 전용 *****\n[드래곤슬레이어 헬름]\n[드래곤스원 헬름]\n***** 카타콤 전용 끝 *****\n\n[자후르의 왕관]\n[자후르의 왕관 변형]\n[날개 헬름]\n[오세아누스 헬름]\n[스티지아 헬름]\n[볼카누스 헬름]\n[에어러스 헬름]\n
+CustomNPC.ItemModel.HelmWizardOption:     [위저드 모자]\n
 CustomNPC.ItemModel.HelmRealmPrompt:      \n추가로 왕국별 머리 장비도 준비되어 있습니다:
-CustomNPC.ItemModel.HelmAlbionOptions:    [Robin Hood Hat]\n[Tarboosh]\n[Jester Hat]\n
-CustomNPC.ItemModel.HelmHiberniaOptions:  [Robin Hood Hat]\n[Leaf Hat]\n[Stag Helm]\n
-CustomNPC.ItemModel.HelmMidgardOptions:   [Fur Cap]\n[Wing Hat]\n[Wolf Helm]\n
-CustomNPC.ItemModel.TorsoMenu:            제법 몸을 잘 지켜준 장비로 보이는군요.\n다음 스킨을 적용할 수 있습니다:\n\n***** 카타콤 모델 전용 *****\n[Dragonslayer Breastplate]\n[Dragonsworn Breastplate]\n[Good Shar Breastplate]\n[Possessed Shar Breastplate]\n[Good Inconnu Breastplate]\n[Possessed Inconnu Breastplate]\n[Good Realm Breastplate]\n[Possessed Realm Breastplate]\n[Mino Breastplate]\n***** 카타콤 전용 끝 *****\n\n[Class Epic Chestpiece]\n[Eirene's Chest]\n[Naliah's Robe]\n[Guard of Valor]\n[Golden Scarab Vest]\n[Oceanus Breastplate]\n[Stygia Breastplate]\n[Volcanus Breastplate]\n[Aerus Breastplate]\n
+CustomNPC.ItemModel.HelmAlbionOptions:    [로빈 후드 모자]\n[타부시]\n[광대 모자]\n
+CustomNPC.ItemModel.HelmHiberniaOptions:  [로빈 후드 모자]\n[잎 모자]\n[수사슴 헬름]\n
+CustomNPC.ItemModel.HelmMidgardOptions:   [털모자]\n[날개 모자]\n[늑대 헬름]\n
+CustomNPC.ItemModel.TorsoMenu:            제법 몸을 잘 지켜준 장비로 보이는군요.\n다음 스킨을 적용할 수 있습니다:\n\n***** 카타콤 모델 전용 *****\n[드래곤슬레이어 흉갑]\n[드래곤스원 흉갑]\n[선한 샤르 흉갑]\n[빙의된 샤르 흉갑]\n[선한 인코뉴 흉갑]\n[빙의된 인코뉴 흉갑]\n[선한 렐름 흉갑]\n[빙의된 렐름 흉갑]\n[미노 흉갑]\n***** 카타콤 전용 끝 *****\n\n[직업 에픽 흉갑]\n[에이레네의 흉갑]\n[날리아의 로브]\n[용맹의 수호갑]\n[황금 스카라브 조끼]\n[오세아누스 흉갑]\n[스티지아 흉갑]\n[볼카누스 흉갑]\n[에어러스 흉갑]\n
 CustomNPC.ItemModel.ArmorPadPrompt:       [장식 패드] 옵션도 제공할 수 있습니다.
-CustomNPC.ItemModel.ArmsMenu:             제법 몸을 잘 지켜준 장비로 보이는군요.\n다음 스킨을 적용할 수 있습니다:\n\n***** 카타콤 모델 전용 *****\n[Dragonslayer Sleeves]\n[Dragonsworn Sleeves]\n[Good Shar Sleeves]\n[Possessed Shar Sleeves]\n[Good Inconnu Sleeves]\n[Possessed Inconnu Sleeves]\n[Good Realm Sleeves]\n[Possessed Realm Sleeves]\n[Mino Sleeves]\n***** 카타콤 전용 끝 *****\n\n[Foppish Sleeves]\n[Arms of the Wind]\n[Oceanus Sleeves]\n[Stygia Sleeves]\n[Volcanus Sleeves]\n[Aerus Sleeves]\n
-CustomNPC.ItemModel.LegsMenu:             제법 몸을 잘 지켜준 장비로 보이는군요.\n다음 스킨을 적용할 수 있습니다:\n\n***** 카타콤 모델 전용 *****\n[Dragonslayer Pants]\n[Dragonsworn Pants]\n[Good Shar Pants]\n[Possessed Shar Pants]\n[Good Inconnu Pants]\n[Possessed Inconnu Pants]\n[Good Realm Pants]\n[Possessed Realm Pants]\n[Mino Pants]\n***** 카타콤 전용 끝 *****\n\n[날개 잠수]\n[Alvarus' Leggings]\n[Oceanus Pants]\n[Stygia Pants]\n[Volcanus Pants]\n[Aerus Pants]\n
-CustomNPC.ItemModel.HandsMenu:            제법 몸을 잘 지켜준 장비로 보이는군요.\n다음 스킨을 적용할 수 있습니다:\n\n***** 카타콤 모델 전용 *****\n[Dragonslayer Gloves]\n[Dragonsworn Gloves]\n[Good Shar Gloves]\n[Possessed Shar Gloves]\n[Good Inconnu Gloves]\n[Possessed Inconnu Gloves]\n[Good Realm Gloves]\n[Possessed Realm Gloves]\n[Mino Gloves]\n***** 카타콤 전용 끝 *****\n\n[Maddening Scalars]\n[Sharkskin Gloves]\n[Oceanus Gloves]\n[Stygia Gloves]\n[Volcanus Gloves]\n[Aerus Gloves]\n
-CustomNPC.ItemModel.FeetMenu:             제법 몸을 잘 지켜준 장비로 보이는군요.\n다음 스킨을 적용할 수 있습니다:\n\n***** 카타콤 모델 전용 *****\n[Dragonslayer Boots]\n[Dragonsworn Boots]\n[Good Shar Boots]\n[Possessed Shar Boots]\n[Good Inconnu Boots]\n[Possessed Inconnu Boots]\n[Good Realm Boots]\n[Possessed Realm Boots]\n[Mino Boots]\n***** 카타콤 전용 끝 *****\n\n[Enyalio's Boots]\n[Flamedancer's Boots]\n[Oceanus Boots]\n[Stygia Boots]\n[Volcanus Boots]\n[Aerus Boots]\n
-CustomNPC.ItemModel.CloakMenu:            제법 몸을 잘 지켜준 장비로 보이는군요.\n다음 스킨을 적용할 수 있습니다:\n\n***** 카타콤 모델 전용 *****\n[Realm Cloak]\n[Dragonslayer Cloak]\n[Dragonsworn Cloak]\n[Valentines Cloak]\n[Winter Cloak]\n[Clean Leather Cloak]\n[Corrupt Leather Cloak]\n***** 카타콤 전용 끝 *****\n\n[Cloudsong]\n[Shades of Mist]\n[Harpy Feather Cloak]\n[Healer's Embrace]\n[Oceanus Cloak]\n[Magma Cloak]\n[Stygian Cloak]\n[Aerus Cloak]\n[Collared Cloak]\n
+CustomNPC.ItemModel.ArmsMenu:             제법 몸을 잘 지켜준 장비로 보이는군요.\n다음 스킨을 적용할 수 있습니다:\n\n***** 카타콤 모델 전용 *****\n[드래곤슬레이어 소매]\n[선한 샤르 소매]\n[빙의된 샤르 소매]\n[선한 인코뉴 소매]\n[빙의된 인코뉴 소매]\n[선한 렐름 소매]\n[빙의된 렐름 소매]\n[미노 소매]\n***** 카타콤 전용 끝 *****\n\n[멋쟁이 소매]\n[바람의 팔보호구]\n[오세아누스 소매]\n[스티지아 소매]\n[볼카누스 소매]\n[에어러스 소매]\n
+CustomNPC.ItemModel.LegsMenu:             제법 몸을 잘 지켜준 장비로 보이는군요.\n다음 스킨을 적용할 수 있습니다:\n\n***** 카타콤 모델 전용 *****\n[드래곤슬레이어 바지]\n[선한 샤르 바지]\n[빙의된 샤르 바지]\n[선한 인코뉴 바지]\n[빙의된 인코뉴 바지]\n[선한 렐름 바지]\n[빙의된 렐름 바지]\n[미노 바지]\n***** 카타콤 전용 끝 *****\n\n[날개 잠수]\n[알바루스의 레깅스]\n[오세아누스 바지]\n[스티지아 바지]\n[볼카누스 바지]\n[에어러스 바지]\n
+CustomNPC.ItemModel.HandsMenu:            제법 몸을 잘 지켜준 장비로 보이는군요.\n다음 스킨을 적용할 수 있습니다:\n\n***** 카타콤 모델 전용 *****\n[드래곤슬레이어 장갑]\n[선한 샤르 장갑]\n[빙의된 샤르 장갑]\n[선한 인코뉴 장갑]\n[빙의된 인코뉴 장갑]\n[선한 렐름 장갑]\n[빙의된 렐름 장갑]\n[미노 장갑]\n***** 카타콤 전용 끝 *****\n\n[매드닝 스칼라]\n[상어가죽 장갑]\n[오세아누스 장갑]\n[스티지아 장갑]\n[볼카누스 장갑]\n[에어러스 장갑]\n
+CustomNPC.ItemModel.FeetMenu:             제법 몸을 잘 지켜준 장비로 보이는군요.\n다음 스킨을 적용할 수 있습니다:\n\n***** 카타콤 모델 전용 *****\n[드래곤슬레이어 부츠]\n[선한 샤르 부츠]\n[빙의된 샤르 부츠]\n[선한 인코뉴 부츠]\n[빙의된 인코뉴 부츠]\n[선한 렐름 부츠]\n[빙의된 렐름 부츠]\n[미노 부츠]\n***** 카타콤 전용 끝 *****\n\n[엔얄리오의 부츠]\n[플레임댄서의 부츠]\n[오세아누스 부츠]\n[스티지아 부츠]\n[볼카누스 부츠]\n[에어러스 부츠]\n
+CustomNPC.ItemModel.CloakMenu:            제법 몸을 잘 지켜준 장비로 보이는군요.\n다음 스킨을 적용할 수 있습니다:\n\n***** 카타콤 모델 전용 *****\n[렐름 망토]\n[드래곤슬레이어 망토]\n[드래곤스원 망토]\n[밸런타인 망토]\n[겨울 망토]\n[깨끗한 가죽 망토]\n[타락한 가죽 망토]\n***** 카타콤 전용 끝 *****\n\n[클라우드송]\n[안개의 그림자]\n[하피 깃털 망토]\n[힐러의 포옹]\n[오세아누스 망토]\n[마그마 망토]\n[스티지안 망토]\n[에어러스 망토]\n[칼라 망토]\n
 CustomNPC.ItemModel.WeaponMenuHeader:     치명적인 무기를 알아보는 눈은 있습니다.\n다음 스킨을 적용할 수 있습니다:\n\n
-CustomNPC.ItemModel.FistMenu:             [Snakecharmer's Fist]\n[Scorched Fist]\n[Dragonsworn Fist]\n
-CustomNPC.ItemModel.WhipMenu:             [Snakecharmer's Whip]\n[Scorched Whip]\n[Dragonsworn Whip]\n
-CustomNPC.ItemModel.Thrust1HMenu:         [Traitor's Dagger 1h]\n[Croc Tooth Dagger 1h]\n[Golden Spear 1h]\n[Wakazashi]\n
+CustomNPC.ItemModel.FistMenu:             [스네이크차머 피스트]\n[그을린 피스트]\n[드래곤스원 피스트]\n
+CustomNPC.ItemModel.WhipMenu:             [스네이크차머 채찍]\n[그을린 채찍]\n[드래곤스원 채찍]\n
+CustomNPC.ItemModel.Thrust1HMenu:         [트레이터 단검 1손]\n[크록 이빨 단검 1손]\n[황금 창 1손]\n[와키자시]\n
 CustomNPC.ItemModel.Hilt1HPrompt:         아니면 [손잡이 1손]만 원하실 수도 있겠군요.\n
-CustomNPC.ItemModel.Crush1HMenu:          [Battler Hammer 1h]\n[Malice Hammer 1h]\n[Bruiser Hammer 1h]\n[Scepter of the Meritorious]\n[Rolling Pin]\n[Stein]\n[Turkey Leg]\n
-CustomNPC.ItemModel.Slash1HMenu:          [Croc Tooth Axe 1h]\n[Traitor's Axe 1h]\n[Malice Axe 1h]\n[Battler Sword 1h]\n[Khopesh]\n[Cleaver]\n[Wakazashi]\n
+CustomNPC.ItemModel.Crush1HMenu:          [배틀러 해머 1손]\n[말리스 해머 1손]\n[브루저 해머 1손]\n[공훈의 홀]\n[밀대]\n[맥주잔]\n[칠면조 다리]\n
+CustomNPC.ItemModel.Slash1HMenu:          [크록 이빨 도끼 1손]\n[트레이터 도끼 1손]\n[말리스 도끼 1손]\n[배틀러 검 1손]\n[코페쉬]\n[클리버]\n[와키자시]\n
 CustomNPC.ItemModel.ClassEpic1HPrompt:    추가로 [직업 에픽 1손] {0} 스킨도 적용할 수 있습니다.\n
-CustomNPC.ItemModel.ShieldMenu:           적의 공격을 막아낼 튼튼한 방벽이군요.\n다음 스킨을 적용할 수 있습니다:\n\n[Aten's Shield]\n[Cyclop's Eye]\n[Shield of Khaos]\n[Oceanus Shield]\n[Aerus Shield]\n[Magma Shield]\n[Minotaur Shield]\n
-CustomNPC.ItemModel.StaffMenu:            [Dragonsworn Staff]\n[Traldor's Oracle]\n[Trident of the Gods]\n[Tartaros Gift]\n[Scorched Staff]\n
-CustomNPC.ItemModel.ScytheMenu:           [Dragonsworn Scythe]\n[Scythe of Kings]\n[Snakechamer's Scythe]\n[Magma Scythe]\n[Scorched Scythe]\n
-CustomNPC.ItemModel.PoleMenu:             [Dragonsworn Pole]\n[Pole of Kings]\n[Golden Pole]\n[Scorched Pole]\n
-CustomNPC.ItemModel.Spear2HMenu:          [Golden Spear 2h]\n[Dragon Spear 2h]\n[Scorched Spear 2h]\n[Trident Spear 2h]\n
-CustomNPC.ItemModel.Thrust2HMenu:         [Scorched Thrust 2h]\n[Dragon Thrust 2h]\n[Katana 2h]\n[Pickaxe]\n
+CustomNPC.ItemModel.ShieldMenu:           적의 공격을 막아낼 튼튼한 방벽이군요.\n다음 스킨을 적용할 수 있습니다:\n\n[아텐의 방패]\n[사이클롭스의 눈]\n[카오스의 방패]\n[오세아누스 방패]\n[에어러스 방패]\n[마그마 방패]\n[미노타우르 방패]\n
+CustomNPC.ItemModel.StaffMenu:            [드래곤스원 스태프]\n[트랄도르의 오라클]\n[신들의 삼지창]\n[타르타로스의 선물]\n[그을린 스태프]\n
+CustomNPC.ItemModel.ScytheMenu:           [드래곤스원 사이드]\n[왕들의 사이드]\n[스네이크차머 사이드]\n[마그마 사이드]\n[그을린 사이드]\n
+CustomNPC.ItemModel.PoleMenu:             [드래곤스원 폴암]\n[왕들의 폴암]\n[황금 폴암]\n[그을린 폴암]\n
+CustomNPC.ItemModel.Spear2HMenu:          [황금 창 2손]\n[드래곤 창 2손]\n[그을린 창 2손]\n[삼지창 2손]\n
+CustomNPC.ItemModel.Thrust2HMenu:         [그을린 쓰러스트 2손]\n[드래곤 쓰러스트 2손]\n[카타나 2손]\n[곡괭이]\n
 CustomNPC.ItemModel.Hilt2HPrompt:         아니면 [손잡이 2손]만 원하실 수도 있겠군요.\n
-CustomNPC.ItemModel.Crush2HMenu:          [Battler Hammer 2h]\n[Malice Hammer 2h]\n[Bruiser Hammer 2h]\n[Scorched Hammer 2h]\n[Magma Hammer 2h]\n[Pickaxe]\n
-CustomNPC.ItemModel.Slash2HMenu:          [Malice Axe 2h]\n[Scorched Axe 2h]\n[Magma Axe 2h]\n[Battler Sword 2h]\n[Scorched Sword 2h]\n[Katana 2h]\n
+CustomNPC.ItemModel.Crush2HMenu:          [배틀러 해머 2손]\n[말리스 해머 2손]\n[브루저 해머 2손]\n[그을린 해머 2손]\n[마그마 해머 2손]\n[곡괭이]\n
+CustomNPC.ItemModel.Slash2HMenu:          [말리스 도끼 2손]\n[그을린 도끼 2손]\n[마그마 도끼 2손]\n[배틀러 검 2손]\n[그을린 검 2손]\n[카타나 2손]\n
 CustomNPC.ItemModel.ClassEpic2HPrompt:    추가로 [직업 에픽 2손] 스킨도 적용할 수 있습니다.\n
-CustomNPC.ItemModel.InstrumentMenu:       아름다운 음악을 연주할 수 있을 것 같군요.\n다음 스킨을 적용할 수 있습니다:\n\n[Class Epic Harp]\n[Labyrinth Harp]\n
-CustomNPC.ItemModel.BowMenu:              멀리서 죽음을 가져오는 것만 한 게 없죠.\n다음 스킨을 적용할 수 있습니다:\n\n[Class Epic Bow]\n[Braggart's Bow]\n[Fool's Bow]\n[Labyrinth Bow]\n
+CustomNPC.ItemModel.InstrumentMenu:       아름다운 음악을 연주할 수 있을 것 같군요.\n다음 스킨을 적용할 수 있습니다:\n\n[직업 에픽 하프]\n[라비린스 하프]\n
+CustomNPC.ItemModel.BowMenu:              멀리서 죽음을 가져오는 것만 한 게 없죠.\n다음 스킨을 적용할 수 있습니다:\n\n[직업 에픽 활]\n[브래거트의 활]\n[풀의 활]\n[라비린스 활]\n
 CustomNPC.ItemModel.ConfirmModelPrompt:   둘러보기를 마치셨다면 [모델 확정]이라고 말씀해 주세요.
-CustomNPC.DPSDummy.Greeting:              안녕하세요. [방어구]와 [저항]을 쉽게 변경할 수 있습니다. 다시 기본값으로 되돌리려면 저를 우클릭하세요.\n\n귓속말로도 다음 형식의 설정을 사용할 수 있습니다:\n\n개별 저항 변경: /whisper <resist> <percent> (예: /whisper body 10)\n\n저항 수치는 0에서 70 사이여야 합니다.\n\n사용 가능한 저항 이름: body, cold, crush, energy, heat, matter, slash, spirit, thrust\n\n모든 저항 변경: /whisper allresist <percent> (예: /whisper allresist 20)\n\n개별 방어 변경: /whisper <defense> <percent> (예: /whisper evade 30)\n\n사용 가능한 방어 이름: evade, block, parry\n\n모든 방어 변경: /whisper alldefense <percent> (예: /whisper alldefense 20)
+CustomNPC.DPSDummy.Greeting:              안녕하세요. [방어구]와 [저항]을 쉽게 변경할 수 있습니다. 다시 기본값으로 되돌리려면 저를 우클릭하세요.\n\n귓속말로도 다음 형식의 설정을 사용할 수 있습니다:\n\n개별 저항 변경: /whisper <저항> <수치> (예: /whisper 크러쉬 10)\n\n저항 수치는 0에서 100 사이여야 합니다.\n\n사용 가능한 저항 이름: 바디, 콜드, 크러쉬, 에너지, 히트, 매터, 슬래쉬, 스피릿, 쓰러스트\n\n모든 저항 변경: /whisper 모든저항 <수치> (예: /whisper 모든저항 20)\n\n개별 방어 변경: /whisper <방어> <수치> (예: /whisper 이베이드 30)\n\n사용 가능한 방어 이름: 이베이드, 블록, 패리\n\n모든 방어 변경: /whisper 모든방어 <수치> (예: /whisper 모든방어 20)
 CustomNPC.DPSDummy.InvalidNumber:         숫자 형식이 올바르지 않습니다.
 CustomNPC.DPSDummy.NumberRange:           숫자는 0에서 100 사이여야 합니다.
 CustomNPC.DPSDummy.ArmorPrompt:           어떤 방어구 세트를 입을까요?\n[천]\n[가죽]\n[스터디드]\n[체인]\n[플레이트]\n[강화가죽]\n또는 [스케일]?
-CustomNPC.DPSDummy.ResistancePrompt:      원하는 저항 종류와 값을 귓속말로 알려주세요. 예: '/whisper Body 10'은 Body 저항을 +10%로 설정합니다.\n또한 'allresist #' 형식으로 모든 저항을 같은 값으로 설정할 수 있습니다.
+CustomNPC.DPSDummy.ResistancePrompt:      원하는 저항 종류와 값을 귓속말로 알려주세요. 예: '/whisper 크러쉬 10'은 크러쉬 저항을 +10%로 설정합니다.\n또한 '모든저항 #' 형식으로 모든 저항을 같은 값으로 설정할 수 있습니다.
 Quest.Common.ThankContribution:           기여해 주셔서 감사합니다!
 Quest.Common.ClearInventorySlots:         보상을 받으려면 인벤토리 공간을 {0}칸 비워 주세요.
 Quest.Common.NotEnoughInventorySpace:     인벤토리 공간이 부족합니다!
@@ -966,7 +968,7 @@ Quest.Hibernia.TheLostSeed.Terod.Step5:   잔드로스가 당신이 트리언트
 Quest.Hibernia.TheLostSeed.Terod.Step6:   뭐라고 말해야 할지 모르겠군요. 정말 대단합니다! 이 빛나는 붉은 보석을 잔드로스에게 가져가세요. 그가 무엇을 해야 할지 알고 있습니다.
 Quest.Hibernia.TheLostSeed.Terod.Step7:   돌아오셨군요, 하이버니아의 영웅이여. 이제 당신의 [보상]을 받을 때가 된 것 같습니다!
 Quest.Hibernia.TheLostSeed.Kredril.Intro: 안녕하세요 {0}님, 오늘은 아름다운 날입니다. 당신에게도 그렇기를 바랍니다.
-Quest.Hibernia.TheLostSeed.Kredril.TheLostSeed: 하이버니아의 농부들이 코스롬 협곡에서 저주받은 씨앗들을 발견했습니다. 몇몇 씨앗은 파괴되었지만, 하나는 사라졌습니다. 알리드 페이의 [Jandros]를 찾아가 보세요. 농부들이 그 씨앗들을 어디서 발견했는지 알지도 모릅니다.
+Quest.Hibernia.TheLostSeed.Kredril.TheLostSeed: 하이버니아의 농부들이 코스롬 협곡에서 저주받은 씨앗들을 발견했습니다. 몇몇 씨앗은 파괴되었지만, 하나는 사라졌습니다. 알리드 페이의 [잔드로스]를 찾아가 보세요. 농부들이 그 씨앗들을 어디서 발견했는지 알지도 모릅니다.
 Quest.Hibernia.TheLostSeed.Kredril.Jandros: 드로하이드의 에몰리아에게 가세요. 그녀가 당신을 알리드 페이로 순간이동시켜 줄 겁니다. 잔드로스는 그곳의 큰 나무들 중 하나에서 찾을 수 있습니다. 제가 보냈다고 말하면 이해할 겁니다.
 Quest.Hibernia.TheLostSeed.Kredril.Step1: 안녕하세요 모험가님, 잃어버린 씨앗에 대해 들어보셨습니까? 드로하이드의 테로드를 찾아가세요. 그가 더 자세히 말해줄 겁니다.
 Quest.Hibernia.TheLostSeed.Kredril.Step2: 안녕하세요 {0}님, 테로드가 [잃어버린 씨앗]에 대해 말해주었습니까?
@@ -983,14 +985,14 @@ Quest.Hibernia.TheLostSeed.Emolia.Step7:  안녕하세요 모험가님, 코스�
 Quest.Hibernia.TheLostSeed.Jandros.Intro: 안녕하세요 {0}님, 알리드 페이에는 비가 훨씬 더 자주 내렸으면 좋겠습니다. 그 소리와 느낌을 사랑하거든요.
 Quest.Hibernia.TheLostSeed.Jandros.Kredril: 당신의 용기와 도움에 감사드립니다. 사실 [잃어버린 씨앗]을 찾으려면 전사와 마법사의 도움이 필요합니다.
 Quest.Hibernia.TheLostSeed.Jandros.TheLostSeed: 크레드릴이 이미 저주받은 마법 씨앗을 발견한 농부들 이야기를 해주었을 겁니다. 그 씨앗 때문에 많은 이들이 [죽었습니다].
-Quest.Hibernia.TheLostSeed.Jandros.Died:  몇몇 레인저들이 농부들이 죽은 장소 근처로 갔다가, 그곳에서 이상한 일이 벌어지고 있다고 보고했습니다. 그들은 트리언트를 보았고 [Feairna-Athar]라고 이름 붙였습니다. 이 일이 잃어버린 씨앗과 관련이 있다고 생각합니다!
+Quest.Hibernia.TheLostSeed.Jandros.Died:  몇몇 레인저들이 농부들이 죽은 장소 근처로 갔다가, 그곳에서 이상한 일이 벌어지고 있다고 보고했습니다. 그들은 트리언트를 보았고 [페아르나-아타르]라고 이름 붙였습니다. 이 일이 잃어버린 씨앗과 관련이 있다고 생각합니다!
 Quest.Hibernia.TheLostSeed.Jandros.FeairnaAthar: 코스롬 협곡을 향해 북쪽 길을 따라가세요. 숲에 들어서면 서쪽으로 향하세요. 그곳에서 트리언트 페아르나-아타르를 찾을 수 있습니다. 그를 처치하고 증거를 가져오세요.
 Quest.Hibernia.TheLostSeed.Jandros.ReturnToTerod: 드로하이드로 돌아가 테로드에게 이 일을 전해주세요!
 Quest.Hibernia.TheLostSeed.Jandros.ReceiveJewel: 고맙습니다 {0}님, 드로하이드로 돌아가 테로드에게 이 일을 전해주세요!
 Quest.Hibernia.TheLostSeed.Jandros.Step1: 안녕하세요 {0}님, 알리드 페이에서 몇 번 본 적이 있습니다. 드로하이드에는 가보셨습니까? 아름다운 곳입니다. 제 친구 크레드릴과 테로드가 그곳에 살고 있습니다.
 Quest.Hibernia.TheLostSeed.Jandros.Step2: 안녕하세요 {0}님, 제가 산만해 보였다면 미안합니다. 잃어버린 씨앗의 흔적을 찾았습니다.
 Quest.Hibernia.TheLostSeed.Jandros.Step3: 안녕하세요 {0}님, 에몰리아가 보내셨습니까? 이렇게 빨리 올 줄은 몰랐습니다.
-Quest.Hibernia.TheLostSeed.Jandros.Step4: 안녕하세요 {0}님, 와주셔서 기쁩니다. [Kredril]이 보냈습니까?
+Quest.Hibernia.TheLostSeed.Jandros.Step4: 안녕하세요 {0}님, 와주셔서 기쁩니다. [크레드릴]이 보냈습니까?
 Quest.Hibernia.TheLostSeed.Jandros.Step5: 안녕하세요 {0}님, 코스롬 협곡을 향해 북쪽 길을 따라가세요. 숲에 들어서면 서쪽으로 향하세요. 그곳에서 트리언트 페아르나-아타르를 찾을 수 있습니다. 그를 처치하고 증거를 가져오세요.
 Quest.Hibernia.TheLostSeed.Jandros.Step6: {0}님, 당신은 정말 무모하군요. 그래도 해낼 거라는 걸 압니다! 제게 [보석]을 건네주세요.
 Quest.Hibernia.TheLostSeed.Jandros.Step7: 안녕하세요 {0}님, 드로하이드의 테로드는 만나 보셨습니까? 꼭 만나세요. 그는 이 일을 알아야 합니다.
@@ -1122,7 +1124,7 @@ Quest.PlayTheLastSong.Name:               [추모] 마지막 노래
 Quest.PlayTheLastSong.SubscribePrompt:    바이킹 덱스츠를 도와주시겠습니까? ([추모] 마지막 노래)
 Quest.PlayTheLastSong.Title:              노래의 가호
 Quest.PlayTheLastSong.Viking.Greeting:    안녕하세요, {0}님. 저는 덱스츠입니다. 아주 위험한 일이지만 당신이 도와줄 수 있기를 바랍니다. 저는 새로 자라나는 힐러들을 도와야 해서 요르드하임을 떠날 수 없습니다.\n\n[토르 보요 지원]을 해 주시고 업플란드에 있는 프레야의 무덤을 확인해 주시겠습니까?
-Quest.PlayTheLastSong.Viking.Step1:       잘 오셨습니다, {0}님. 제 임무는 쉽지 않습니다! 작년에 우리는 훌륭하고 친절한 스칼드를 잃었습니다. 그녀는 괴물 무리로부터 미드가드를 지켰고, 프론티어에서도 용감한 병사였습니다. 그녀의 노력 덕분에 미드가드는 번영했습니다. [Freeya]는 여러 차례 발할라의 뿔까지 지켜냈지요... 참 선한 영혼이었습니다.
+Quest.PlayTheLastSong.Viking.Step1:       잘 오셨습니다, {0}님. 제 임무는 쉽지 않습니다! 작년에 우리는 훌륭하고 친절한 스칼드를 잃었습니다. 그녀는 괴물 무리로부터 미드가드를 지켰고, 프론티어에서도 용감한 병사였습니다. 그녀의 노력 덕분에 미드가드는 번영했습니다. [프레야]는 여러 차례 발할라의 뿔까지 지켜냈지요... 참 선한 영혼이었습니다.
 Quest.PlayTheLastSong.Viking.Step2:       {0}님, 스바수드 파스테 북서쪽 언덕에서 프레야의 무덤을 찾을 수 있을 겁니다. 그곳이 무사한지 확인해 주세요.
 Quest.PlayTheLastSong.Viking.Step3:       세상의 선한 영들에게 버림받은 게 분명하군요! 프레야를 보셨다고요? 토르 보요와 추방된 베이티르가 미드가드의 전설에게 깊은 경의를 표한다고 전해 주세요!\n편히 쉬게, 친구여.
 Quest.PlayTheLastSong.Viking.Freeya:      프레야는 뛰어난 집행자이자 좋은 친구였습니다. 매일 그녀가 그립습니다. 지금도 그녀의 도움이 필요할 때가 많습니다. 국경에는 끊임없는 지원이 필요하고, 북쪽에서 커지는 위협이 있다는 소식도 들려옵니다.
@@ -1131,7 +1133,7 @@ Quest.PlayTheLastSong.Viking.HelpMe:      감사합니다, {0}님. 정말 친절
 Quest.PlayTheLastSong.Freeya.Step1:       안녕하세요, 모험가님. 덱스츠를 아시나요? 그는 좋은 친구입니다. 그를 찾아가 주세요!
 Quest.PlayTheLastSong.Freeya.Step2Friend: {0}... 다시 이곳에서 보니 반갑습니다, 친구여. 당신이 제 대신 렐름을 지키고 있다는 것을 압니다. 오딘의 전당에서 당신을 지켜보며 힘을 보태고 있으니 자신 있게 싸우세요! 제 [미드가드의 마지막 노래]를 함께 불러 주시겠습니까?
 Quest.PlayTheLastSong.Freeya.Step2:       잘 오셨습니다, {0}님. 당신이 오는 것을 느낄 수 있었습니다. 겁내지 마세요, 저는 해치지 않습니다! 제 친구 덱스츠는 자주 저를 찾아오곤 했습니다. 그가 당신을 보내 제 안부를 확인하게 했다면 특별한 이유가 있겠지요! 그를 다시 한번 보고 싶었지만, 대신 제 [미드가드의 마지막 노래]를 연주하도록 도와주실 수 있나요?
-Quest.PlayTheLastSong.Freeya.Step3:       좋습니다, {0}님. 제게 "song"이라고 말하기만 하면 의식을 시작하겠습니다!
+Quest.PlayTheLastSong.Freeya.Step3:       좋습니다, {0}님. 제게 "노래"라고 말하기만 하면 의식을 시작하겠습니다!
 Quest.PlayTheLastSong.Freeya.OtherRealmGreeting: 안녕하세요, 모험가님. 덱스츠를 아시나요? 한때 그와 정말 좋은 시간을 보냈습니다! 그는 가장 훌륭한 힐러였습니다. 언젠가 그를 만나길 바랍니다.\n누군가의 짐을 덜어 주는 사람은 이 세상에서 결코 쓸모없는 사람이 아니라는 것을 잊지 마세요.
 Quest.PlayTheLastSong.Freeya.MidgardGreeting: 안녕하세요, {0}님. 누군가의 짐을 덜어 주는 사람은 이 세상에서 결코 쓸모없는 사람이 아니라는 것을 잊지 마세요.
 Quest.PlayTheLastSong.Freeya.LastSongs:   {0}님, 당신의 말에 맞춰 의식을 시작하겠습니다.
@@ -1150,26 +1152,26 @@ Quest.PlayTheLastSong.Spell.Resistance.Name: 프레야의 에너지 약화 노�
 Quest.PlayTheLastSong.Spell.Resistance.Message1: 에너지로부터 보호받고 있습니다!
 Quest.PlayTheLastSong.Description.Step1:  바이킹 덱스츠와 이야기해 더 많은 정보를 얻으세요.
 Quest.PlayTheLastSong.Description.Step2:  스바수드 파스테 북서쪽 업플란드 언덕에서 프레야의 무덤을 찾으세요.\n(Loc: X:42850 Y:39926 Z:8691)
-Quest.PlayTheLastSong.Description.Step3:  프레야가 마지막 노래를 연주하도록 도우세요. (/whisper "song")
+Quest.PlayTheLastSong.Description.Step3:  프레야가 마지막 노래를 연주하도록 도우세요. (/whisper "노래")
 Quest.PlayTheLastSong.Description.Step4:  프레야의 의식을 들으세요!
 Quest.PlayTheLastSong.Description.Step5:  편히 쉬세요, 프레야! (퀘스트 완료)
-LordOfBoss.NeedGroup:                     외로운 {0} 혼자 감당하기에는 너무 큰 도전입니다. 그룹을 모아 다시 오세요!\n동료를 찾는 동안 [돌아가기]로 보내드릴 수 있습니다.
+LordOfBoss.NeedGroup:                     외로운 {0} 혼자 감당하기에는 너무 큰 도전입니다. 그룹을 모아 다시 오세요!\n용병을 찾는 동안 [돌아가기]로 보내드릴 수 있습니다.
 LordOfBoss.NotGroupLeader:                당신은 그룹장이 아닙니다, {0}. 시작하려면 그룹장이 저와 대화해야 합니다.
 LordOfBoss.BattleInProgress:              이미 전투가 진행 중입니다, {0}. 아직 새 전투를 시작할 수 없습니다.\n\n원하시면 투기장을 [초기화]할 수 있습니다.
 LordOfBoss.Greeting:                      반갑습니다, {0}.\n\n도전을 받아들일 준비가 되었기를 바랍니다.
-LordOfBoss.Minions.CaerSidi:              [Caer Sidi]의 부하들을 준비해 두었습니다.
-LordOfBoss.Minions.TuscarenGlacier:       [Tuscaren Glacier]의 부하들을 준비해 두었습니다.
-LordOfBoss.Minions.Galladoria:            [Galladoria]의 부하들을 준비해 두었습니다.
+LordOfBoss.Minions.CaerSidi:              [케어 시디]의 부하들을 준비해 두었습니다.
+LordOfBoss.Minions.TuscarenGlacier:       투스카렌 빙하의 부하 메뉴는 아직 준비 중입니다.
+LordOfBoss.Minions.Galladoria:            [갈라도리아]의 부하들을 준비해 두었습니다.
 LordOfBoss.Minions.DarknessFalls:         [다크니스 폴스]의 악마들도 많이 준비되어 있습니다.
 LordOfBoss.BackPrompt:                    아직 준비되지 않았다면 [돌아가기]로 보내드릴 수 있습니다.
-LordOfBoss.Menu.CaerSidi:                 Caer Sidi에서 다음 보스들을 소환할 수 있습니다:\n\n1. [Skeletal Sacristan]\n2. [Spectral Provisioner]\n3. [Lich Lord Ilron]\n4. [Warlord Dorinakka]\n5. [Soul Reckoner]\n6. [Crypt Lord]\n7. [Silencer]\n8. [Lord Sanguis]\n
-LordOfBoss.Menu.Galladoria:               Galladoria에서 다음 보스들을 소환할 수 있습니다:\n\n1. [Easmarach]\n2. [Organic Energy Mechanism]\n3. [Giant Sporite Cluster]\n4. [Conservator]\n5. [Xaga]\n6. [Spindler Broodmother]\n7. [Olcasar Geomancer]\n8. [Aroon the Urlamhai]\n9. [Hurionthex]\n
+LordOfBoss.Menu.CaerSidi:                 케어 시디에서 다음 보스들을 소환할 수 있습니다:\n\n1. [스켈레탈 새크리스턴]\n2. [스펙트럴 프로비저너]\n3. [리치 로드 일론]\n4. [워로드 도리나카]\n5. [소울 레커너]\n6. [크립트 로드]\n7. [사일런서]\n8. [로드 생귀스]\n
+LordOfBoss.Menu.Galladoria:               갈라도리아에서 다음 보스들을 소환할 수 있습니다:\n\n1. [이스마라크]\n2. [유기 에너지 장치]\n3. [거대 스포라이트 군집]\n4. [컨서베이터]\n5. [자가]\n6. [스핀들러 브루드마더]\n7. [올카사르 지오맨서]\n8. [아룬 더 우를람하이]\n9. [휴리온텍스]\n
 LordOfBoss.DarknessFallsUnavailable:      악마는 붙잡아 두기 까다롭습니다. 나중에 다시 시도하세요.
 LordOfBoss.AlreadySummoned:               이미 보스를 소환했습니다!
 LiveTeleporter.NoRealm:                   렐름이 설정되어 있지 않아 안내할 목적지를 알 수 없습니다.
-LiveTeleporter.EpicDungeonPrompt:         \n\n[Epic Dungeon] 에픽 던전의 도전을 원하시나요?
+LiveTeleporter.EpicDungeonPrompt:         \n\n[에픽 던전] 에픽 던전의 도전을 원하시나요?
 LiveTeleporter.GuildHouseMissing:         죄송하지만 {0} 길드는 길드 하우스를 소유하고 있지 않습니다.
-LiveTeleporter.UniPortalSpellNotFound:    Uni-Portal 주문을 찾을 수 없습니다.
+LiveTeleporter.UniPortalSpellNotFound:    유니 포털 주문을 찾을 수 없습니다.
 AccountVaultKeeper.HardcoreDenied:        죄송합니다 {0}, 제 금고는 하드코어 캐릭터에게 적합하지 않습니다.
 AccountVaultKeeper.Interact.Greeting:     반갑습니다 {0}, 만나서 기쁩니다.\n기꺼이 서비스를 제공해 드리겠습니다.\n\n계정 금고의 [첫 번째] 또는 [두 번째] 페이지를 열람할 수 있습니다.
 SINeckBoss.Cowards:                       비겁한 자들...
@@ -1216,8 +1218,8 @@ Siege.Summon.TooFar:                      {0}을(를) 공격하기에는 너무 
 Siege.Summon.TooClose:                    {0}을(를) 공격하기에는 너무 가깝습니다.
 Siege.Summon.TooManyRams:                 이 지역에는 램이 너무 많아 더 소환할 수 없습니다!
 Siege.Summon.TooCloseTrebuchetCatapult:   다른 트레뷰셋이나 투석기에 너무 가까워 이곳에는 소환할 수 없습니다!
-NamedMob.KingTuscar.DamageHeals:          당신의 공격이 King Tuscar를 회복시키고 있습니다!
-NamedMob.QueenKula.DamageHeals:           당신의 공격이 Queen Kula를 회복시키고 있습니다!
+NamedMob.KingTuscar.DamageHeals:          당신의 공격이 투스카 왕을 회복시키고 있습니다!
+NamedMob.QueenKula.DamageHeals:           당신의 공격이 쿨라 여왕을 회복시키고 있습니다!
 
 ## Minotaur relics
 MinotaurRelic.CantPickupLocked:           {0}을(를) 집을 수 없습니다. 잠겨 있습니다!
@@ -1610,9 +1612,9 @@ Quest.Hardcore.HuntOnlyOneEats:           사냥하거나, 사냥당하거나. �
 Quest.Hardcore.DoneToday:                 오늘 할 일은 모두 끝났습니다.
 Quest.Hardcore.KillPlayerDescription:     죽지 않고 다른 플레이어를 처치하세요.\n빼앗은 목숨: ({0} | {1})
 Quest.Hardcore.KillNpcDescription:        프론티어 지역에서 몬스터 25마리를 처치하세요.\n처치한 생명체: ({0} | {1})
-Quest.Hardcore.ReturnToSucciAlb:          음울한 보상을 받으려면 캐슬 소베지의 Succi에게 돌아가세요.
-Quest.Hardcore.ReturnToSucciMid:          음울한 보상을 받으려면 스바수드 파스테의 Succi에게 돌아가세요.
-Quest.Hardcore.ReturnToSucciHib:          음울한 보상을 받으려면 드루임 리겐의 Succi에게 돌아가세요.
+Quest.Hardcore.ReturnToSucciAlb:          음울한 보상을 받으려면 캐슬 소베지의 수치에게 돌아가세요.
+Quest.Hardcore.ReturnToSucciMid:          음울한 보상을 받으려면 스바수드 파스테의 수치에게 돌아가세요.
+Quest.Hardcore.ReturnToSucciHib:          음울한 보상을 받으려면 드루임 리겐의 수치에게 돌아가세요.
 Quest.Hardcore.EnemyKilled:               [하드코어] 적 처치: ({0} | {1})
 Quest.Common.DailyMonsterKilled:          [일일] 몬스터 처치: ({0} | {1})
 Quest.Common.WeeklyNamedKilled:           [주간] {0} 처치: ({1} | {2})
@@ -1626,8 +1628,8 @@ Quest.Common.BattlegroundPlayersKilled:   배틀그라운드에서 알맞은 플
 Quest.Common.FrontierOrBattlegroundPlayersKilled: 프론티어 또는 배틀그라운드에서 알맞은 플레이어를 찾을 수 있습니다.\n플레이어 처치: ({0} | {1})
 Quest.Common.PlacePlayersKilled:          {0}에서 알맞은 플레이어를 찾을 수 있습니다.\n플레이어 처치: ({1} | {2})
 Quest.Common.KeepCaptureDescription:      전장으로 가서 킵을 점령하세요.\n킵 점령: ({0} | {1})
-Quest.Common.ReturnToPazz:                보상을 받으려면 {0}의 Pazz에게 돌아가세요.
-Quest.Common.BGKillIntro:                 안녕하세요 {0}님, 저는 Pazz입니다. 제 주인 Fen이 진행 중인 일에 쓸 뼈를 모으라고 지시했습니다. 알맞은 적을 처치하고 필요한 것을 가져와 주세요.
+Quest.Common.ReturnToPazz:                보상을 받으려면 {0}의 파즈에게 돌아가세요.
+Quest.Common.BGKillIntro:                 안녕하세요 {0}님, 저는 파즈입니다. 제 주인 펜이 진행 중인 일에 쓸 뼈를 모으라고 지시했습니다. 알맞은 적을 처치하고 필요한 것을 가져와 주세요.
 Quest.Common.BGKeepIntro:                 {0}님, 바로 본론으로 들어가겠습니다. 전장에는 킵을 점령할 만큼 대담한 사람이 필요합니다. 킵 하나를 점령하고 보상을 받으러 돌아오세요.
 Quest.Common.WeeklyDFMonsterTooLow:       [주간] 다크니스 폴스 몬스터 처치 - 더 높은 레벨의 몬스터를 처치해야 카운트됩니다
 Quest.Common.WeeklyDFMonstersKilled:      [주간] 다크니스 폴스 몬스터 처치: ({0} | {1})
@@ -1642,15 +1644,15 @@ Quest.Common.ReturnToNpcLocation:         보상을 받으려면 {1}의 {0}에�
 Quest.Common.HelpNpcWithQuest:            {0}을(를) 도와 {1} 퀘스트를 진행하시겠습니까?
 Quest.Common.HelpNpcQuest:                {0}을(를) 도와 {1} 퀘스트를 진행하시겠습니까?
 Quest.Common.DidYouToken:                 안녕하세요 {0}님, {1}를 완료하셨나요?
-Quest.Common.ReyDailyBonesIntro:          안녕하세요 {0}님, 저는 Rey입니다. 제 주인 Fen이 진행 중인 일에 쓸 뼈를 모으라고 지시했습니다. 할당량이 밀려 있어서 도움이 필요합니다.
-Quest.Common.ReyExoticBonesIntro:         안녕하세요 {0}님, 저는 Rey입니다. 제 주인 Fen에게 색다른 뼈가 필요합니다. 프론티어로 가서 필요한 것을 가져와 주세요.
+Quest.Common.ReyDailyBonesIntro:          안녕하세요 {0}님, 저는 레이입니다. 제 주인 펜이 진행 중인 일에 쓸 뼈를 모으라고 지시했습니다. 할당량이 밀려 있어서 도움이 필요합니다.
+Quest.Common.ReyExoticBonesIntro:         안녕하세요 {0}님, 저는 레이입니다. 제 주인 펜에게 색다른 뼈가 필요합니다. 프론티어로 가서 필요한 것을 가져와 주세요.
 Quest.Common.ReyWeeklyBonesIntro:         믿기 어렵겠지만 {0}님, 색다른 뼈가 대량으로 필요합니다. 적의 프론티어로 진입해 그 병력을 처치하세요.
 Quest.Common.EpicFrontierIntro:           안녕하세요 {0}님, 저는 {1}입니다. 우리 프론티어의 보급로를 거대한 몬스터들이 막고 있습니다. 그것들을 처리하는 데 도움이 필요합니다.
-Quest.Common.EpicFrontierIntroFriends:    안녕하세요 {0}님, 저는 {1}입니다. 우리 프론티어의 보급로를 거대한 몬스터들이 막고 있습니다. 그것들을 처리하는 데 도움이 필요합니다.\n이번 일은 동료를 모으는 편이 좋을 겁니다. 이미 많은 훌륭한 병사를 잃었습니다.\n\n{2}을(를) 위해 프론티어의 [에픽 생명체 처치]를 해주시겠습니까?
+Quest.Common.EpicFrontierIntroFriends:    안녕하세요 {0}님, 저는 {1}입니다. 우리 프론티어의 보급로를 거대한 몬스터들이 막고 있습니다. 그것들을 처리하는 데 도움이 필요합니다.\n이번 일은 용병을 고용하는 편이 좋을 겁니다. 이미 많은 훌륭한 병사를 잃었습니다.\n\n{2}을(를) 위해 프론티어의 [에픽 생명체 처치]를 해주시겠습니까?
 Quest.Common.EpicFrontierReminder:        프론티어의 에픽 몬스터들을 찾아 처치한 뒤 보상을 받으러 돌아오세요.
 Quest.Common.EpicFrontierDescription:     위험한 에픽 몬스터 셋을 찾아 처치하세요!\n{0}: ({1} | {2})\n{3}: ({4} | {5})\n{6}: ({7} | {8})
 Quest.Common.ReyWeeklyBonesFlavor:        믿기 어렵겠지만 {0}님, 색다른 뼈가 대량으로 필요합니다. 일이 너무 많아서 임금 인상을 요구해야겠군요. 물론 그 전에 [발가락뼈 한 무더기]를 가져와 주셔야 합니다.\n\n어쨌든 처리해야 할 주문이 있으니까요...
-Quest.Common.ReyExoticBonesFlavor:        안녕하세요 {0}님, 저는 Rey입니다. 제 주인 Fen에게 색다른 뼈가 필요합니다. 이런 건 {1}에서는 구하기 어렵죠, 무슨 뜻인지 아시겠지요.\n\n적에게서 [발가락뼈]를 가져와 주시겠습니까?
+Quest.Common.ReyExoticBonesFlavor:        안녕하세요 {0}님, 저는 레이입니다. 제 주인 펜에게 색다른 뼈가 필요합니다. 이런 건 {1}에서는 구하기 어렵죠, 무슨 뜻인지 아시겠지요.\n\n적에게서 [발가락뼈]를 가져와 주시겠습니까?
 Quest.Common.SlayEnemyForcesSpecific:     적의 프론티어로 진입해 그 병력을 처치하세요. {0}와(과) {1}의 적은 많으니 찾을 수 있을 겁니다.
 Quest.Common.WeeklyBossQuestIntro:        안녕하세요 {0}님, 저는 {1}입니다. 잠입자의 보고에 따르면 {2}의 세력이 공격을 준비하고 있습니다.\n기회를 잡기 전에 먼저 움직여 [음모 저지]를 끝내야 합니다. 도와주시겠습니까?
 Quest.Common.WeeklyBossQuestDescription:  {0}(으)로 가서 강력한 적들을 처치하세요.\n{0} 보스 처치: ({1} | {2})
@@ -1662,7 +1664,7 @@ Quest.Common.DFMonsterDescription:        다크니스 폴스로 가서 {0}을(�
 Quest.Common.DragonIntro:                 안녕하세요 {0}님, 저는 {1}입니다. 오늘 슬픈 소식을 전하게 되었습니다. 지난밤 {2}이(가) {3}의 작은 정착지를 불태웠습니다.\n희생자들의 원수를 갚고 {4}을(를) {2}의 영향에서 지키도록 왕을 도와주세요.\n\n{4}을(를) 위해 [드래곤 처치]를 해주시겠습니까?
 Quest.Common.DragonReminder:              {0}에서 드래곤을 찾아 우리 렐름을 지켜 주세요.
 Quest.Common.DragonDescription:           {0}(으)로 가서 {2}을(를) 위해 {1}을(를) 처치하세요.\n{1} 처치: ({3} | {4})
-Quest.Common.ReyWeeklyPlayerKillIntro:    이런, {0}님. Fen에게 뼈가 더 필요한 모양입니다. 해골을 좀 부수고 필요한 것을 가져와 주세요.
+Quest.Common.ReyWeeklyPlayerKillIntro:    이런, {0}님. 펜에게 뼈가 더 필요한 모양입니다. 해골을 좀 부수고 필요한 것을 가져와 주세요.
 Quest.Common.DFEnemyPrompt:               다크니스 폴스로 가서 {0}의 적들에게서 재료를 거둬 오세요!
 Quest.Common.DFEnemyIntro:                오, {0}님, 드디어 돌아오셨군요. 보스가 [악마의 기운]에 절인 뼈가 필요한 새 조리법을 만들었습니다.\n그게 무슨 뜻인지 당신이라면 알 거라 믿습니다. 저는 잘 모르겠군요. 제 생각엔 다크니스 폴스에서 찾아보는 게 좋겠습니다.
 Quest.Common.DFEnemyReminder:             다크니스 폴스에서 우리 렐름의 적을 찾아 처치하고 보상을 받으세요.
@@ -1694,6 +1696,7 @@ Quest.Common.TeamBuildingMystic:          미스틱 계열
 Quest.Common.MonthlyFrontierPrompt:       안녕하세요 {0}님, [성채 점령과 적 처치]에 성공하셨나요?
 Quest.Common.MonthlyFrontierIntro:        안녕하세요 {0}님. 프론티어에는 질서와 안전이 필요합니다. {1}을(를) 위해 적을 처치하고 킵을 점령한 뒤 보상을 받으러 돌아오세요.
 Quest.Common.MonthlyFrontierThanks:       도와주셔서 감사합니다! {0}이(가) 당신의 기여에 감사할 것입니다.
+Quest.Common.MonthlyFrontierStep1:        안녕하세요, {0}. 적은 {1}, {2}, 그리고 우리 땅에서도 찾을 수 있습니다. 충분한 적을 처치하고 안전을 위해 킵을 점령한 뒤 돌아오세요.
 Quest.Common.DecidedToHelp:               돕기로 결정해 주셔서 감사합니다.
 Quest.Common.MonthlyFrontierDescription:  렐름을 지키세요!\n프론티어에서 적을 처치하고 {0}을(를) 위해 킵을 점령하세요.\n플레이어 처치: ({1} | {2})\n킵 점령: ({3} | {4})
 Quest.Common.MonthlyEpicIntro:            안녕하세요 {0}님, 저는 {1}입니다. 몇 달 전부터 {2}의 상황이 달라졌습니다. 위험한 에픽 생명체들이 더 대담해졌고, 질서를 되찾기 위해 도움이 필요합니다.
@@ -1717,9 +1720,9 @@ Quest.Common.AbortingQuestRestart:        {0} 퀘스트를 포기했습니다. �
 Quest.Common.AbortingQuest:               {0} 퀘스트를 포기했습니다.
 Quest.Hardcore.OrangeIntro:               {0}님, 당신이 죽는 환영을 보았습니다. 강대한 적의 일격에 짓눌리고, 영원의 바위에 부서지는 모습입니다.\n그 운명을 거스르겠습니까? 똑바로 서서 영혼들에게 [오늘은 그날이 아닙니다]라고 알리세요.
 Quest.Hardcore.OrangeDescription:         오렌지색 난이도 이상의 몬스터를 처치하세요.\n오렌지색 몬스터 처치: ({0} | {1})
-Quest.Hardcore.ReturnToSucciAlbReward:    보상을 받으려면 캐슬 소베지의 Succi에게 돌아가세요.
-Quest.Hardcore.ReturnToSucciMidReward:    보상을 받으려면 스바수드 파스테의 Succi에게 돌아가세요.
-Quest.Hardcore.ReturnToSucciHibReward:    보상을 받으려면 드루임 리겐의 Succi에게 돌아가세요.
+Quest.Hardcore.ReturnToSucciAlbReward:    보상을 받으려면 캐슬 소베지의 수치에게 돌아가세요.
+Quest.Hardcore.ReturnToSucciMidReward:    보상을 받으려면 스바수드 파스테의 수치에게 돌아가세요.
+Quest.Hardcore.ReturnToSucciHibReward:    보상을 받으려면 드루임 리겐의 수치에게 돌아가세요.
 
 # Albion classic quests
 Quest.Albion.ImmediateResolution.GuardAssist: 우리 방어를 돕고 싶다면 환영하겠소.
@@ -1732,12 +1735,12 @@ Quest.Albion.ImmediateResolution.SubscribePrompt: 이 임무를 수락하시겠�
 Quest.Albion.ImmediateResolution.AbortDeclined: 좋습니다. 이제 나가서 맡은 일을 끝내세요!
 Quest.Albion.ImmediateResolution.AbortingQuest: {0} 퀘스트를 포기했습니다. 원한다면 다시 시작할 수 있습니다.
 Quest.Albion.ImmediateResolution.DeclineQuest: 아쉽군요. 마음이 바뀌면 다시 찾아오세요!
-Quest.Albion.ImmediateResolution.AcceptQuest: 좋습니다! Humberton을 내려다보는 성채에서 Steward Willie를 찾으세요!
-Quest.Albion.ImmediateResolution.Description1: Humberton을 내려다보는 성채에서 Steward Willie를 찾으세요!
-Quest.Albion.ImmediateResolution.Description2: Humberton 바로 동쪽의 다리를 지키는 경비병들을 찾으세요. 밀봉된 쪽지를 그들에게 전달하세요. 지체하지 마세요!
+Quest.Albion.ImmediateResolution.AcceptQuest: 좋습니다! 험버턴을 내려다보는 성채에서 집사 윌리를 찾으세요!
+Quest.Albion.ImmediateResolution.Description1: 험버턴을 내려다보는 성채에서 집사 윌리를 찾으세요!
+Quest.Albion.ImmediateResolution.Description2: 험버턴 바로 동쪽의 다리를 지키는 경비병들을 찾으세요. 밀봉된 쪽지를 그들에게 전달하세요. 지체하지 마세요!
 Quest.Albion.ImmediateResolution.MoneyReward: 봉사에 대한 보상으로 {0}을(를) 받았습니다.
 Quest.Albion.WolfPeltCloak.StewardHasFur: 아, 잘했소! 무리의 망할 짐승이 하나 줄었다는 소식을 들으면 영주님께서 기뻐하실 거요! 그 털가죽을 주시오. 다른 것들과 함께 처리하겠소.
-Quest.Albion.WolfPeltCloak.StewardHasToken: 그 증표를 Ludlow의 Seamstress Lynnet에게 가져가시오. 그녀가 보상을 줄 거요. 영주님을 위해 훌륭히 봉사해 줘서 고맙소.
+Quest.Albion.WolfPeltCloak.StewardHasToken: 그 증표를 러들로의 재봉사 리넷에게 가져가시오. 그녀가 보상을 줄 거요. 영주님을 위해 훌륭히 봉사해 줘서 고맙소.
 Quest.Albion.WolfPeltCloak.StewardInProgress: 좋아! 자네를 믿을 수 있겠군. 그 사악한 짐승 중 하나에게서 털가죽을 가져오면 보상하겠네!
 Quest.Albion.WolfPeltCloak.StewardGreeting: 오, 안녕하시오! 우리 [문제]를 도우러 온 건가?
 Quest.Albion.WolfPeltCloak.Problem: 뭐라고? 아직 못 들었나? 흐음, 그렇다면 혹시 [도울 의향이 있는지] 궁금하군.
@@ -1752,268 +1755,273 @@ Quest.Albion.WolfPeltCloak.AbortDeclined: 좋습니다. 이제 나가서 맡은 
 Quest.Albion.WolfPeltCloak.AbortingQuest: {0} 퀘스트를 포기했습니다. 원한다면 다시 시작할 수 있습니다.
 Quest.Albion.WolfPeltCloak.DeclineQuest: 아쉽군요. 마음이 바뀌면 다시 찾아오세요!
 Quest.Albion.WolfPeltCloak.Description1: [1단계] 들판으로 나가 새끼 늑대를 사냥하고 털가죽을 벗기세요.
-Quest.Albion.WolfPeltCloak.Description2: [2단계] 그 털가죽을 Humberton Fort의 Steward Willie에게 가져가세요.
-Quest.Albion.WolfPeltCloak.Description3: [3단계] Ludlow의 Seamstress Lynnet에게 가서 늑대 머리 증표를 가져다주세요.
+Quest.Albion.WolfPeltCloak.Description2: [2단계] 그 털가죽을 험버턴 요새의 집사 윌리에게 가져가세요.
+Quest.Albion.WolfPeltCloak.Description3: [3단계] 러들로의 재봉사 리넷에게 가서 늑대 머리 증표를 가져다주세요.
 Quest.Albion.WolfPeltCloak.BrotherDonThanks: 감사합니다! 교회를 위한 당신의 봉사는 기록될 것입니다!
 Quest.Albion.WolfPeltCloak.BrotherDonComplete: 잘하셨습니다! 아이들이 혹독한 겨울을 이겨 내는 데 큰 도움이 되었습니다.
 Quest.Albion.WolfPeltCloak.WolfKilled: {0}을(를) 처치하고 털가죽을 벗겼습니다!
-Quest.Albion.WolfPeltCloak.StewardTakeToken: 영주님께서 내리신 이 증표를 받으시오. Ludlow의 Seamstress Lynnet에게 가져가면 보상을 줄 것이오. 영주님을 위해 훌륭히 봉사해 줘서 고맙소.
+Quest.Albion.WolfPeltCloak.StewardTakeToken: 영주님께서 내리신 이 증표를 받으시오. 러들로의 재봉사 리넷에게 가져가면 보상을 줄 것이오. 영주님을 위해 훌륭히 봉사해 줘서 고맙소.
 Quest.Albion.WolfPeltCloak.LynnetReward: 잘하셨어요! 여기 훌륭한 늑대가죽 망토입니다. 영주님을 도왔다는 자부심을 가지고 입으세요.
 Quest.Albion.WolfPeltCloak.MoneyReward: 봉사에 대한 보상으로 {0}을(를) 받았습니다.
-Quest.Albion.LostStoneOfArawn.Description1: Wearyall Village의 Honayt'rt와 대화하세요.
-Quest.Albion.LostStoneOfArawn.Description2: Wearyall Village의 N'chever와 대화하세요.
-Quest.Albion.LostStoneOfArawn.Description3: Caer Diogel의 O'honat와 대화하세요.
-Quest.Albion.LostStoneOfArawn.Description4: Caer Diogel을 나와 마을 서쪽으로 향하세요. 해안에 도착하면 북쪽으로 도세요. 우리가 처치해야 할 악마는 보통 Plains of Gwyddneau를 배회합니다.
-Quest.Albion.LostStoneOfArawn.Description5: Caer Diogel로 돌아가 O'honat에게 돌을 건네세요.
+Quest.Albion.LostStoneOfArawn.Description1: 위어리얼 마을의 호나이트르트와 대화하세요.
+Quest.Albion.LostStoneOfArawn.Description2: 위어리얼 마을의 엔체버와 대화하세요.
+Quest.Albion.LostStoneOfArawn.Description3: 케어 디오겔의 오호나트와 대화하세요.
+Quest.Albion.LostStoneOfArawn.Description4: 케어 디오겔을 나와 마을 서쪽으로 향하세요. 해안에 도착하면 북쪽으로 도세요. 우리가 처치해야 할 악마는 보통 귄드네우 평원를 배회합니다.
+Quest.Albion.LostStoneOfArawn.Description5: 케어 디오겔로 돌아가 오호나트에게 돌을 건네세요.
 Quest.Albion.LostStoneOfArawn.Description6: 연설문을 읽어 누구에게 보내는 것인지 확인한 뒤, 보상을 받으러 돌려주세요.
 Quest.Albion.LostStoneOfArawn.NoRoomForStone: {0}을(를) 넣을 공간이 부족해 땅에 떨어집니다.
-Quest.Albion.LostStoneOfArawn.EnterDemonArea: 이곳은 Marw Gwlad입니다. 발밑의 땅은 갈라지고 그을렸으며, 공기에는 희미한 유황 냄새가 감돕니다.
-Quest.Albion.LostStoneOfArawn.NyaeghaAmbush: Nyaegha가 당신을 기습합니다!
-Quest.Albion.LostStoneOfArawn.HonaytrtStep1: 도와줘서 고마워요! N'chever, O'honat 그리고 저는 오랫동안 이 돌을 찾고 있었어요.\nWearyall Village의 N'chever와 대화하세요. 그가 [아로운의 돌]에 대해 더 말해 줄 거예요.
-Quest.Albion.LostStoneOfArawn.HonaytrtStep2: {0}, 아직 N'chever를 만나지 않았나요? 그는 Wearyall 근처에서 찾을 수 있어요.
-Quest.Albion.LostStoneOfArawn.HonaytrtStep3: 안녕하세요. O'honat에게 가는 중이라고 들었어요. 그녀라면 우리가 찾는 것을 찾아내는 데 도움이 될 거예요.
-Quest.Albion.LostStoneOfArawn.HonaytrtStep4: 와, O'honat가 정말 뭔가를 찾아냈군요?\n역시 믿을 만하다니까요!
-Quest.Albion.LostStoneOfArawn.HonaytrtStep5: 세상에, 정말 그 돌을 찾은 건가요?\n먼저 O'honat에게 가져가 주세요. 그녀가 꼭 봐야 해요!
+Quest.Albion.LostStoneOfArawn.EnterDemonArea: 이곳은 마르우 글라드입니다. 발밑의 땅은 갈라지고 그을렸으며, 공기에는 희미한 유황 냄새가 감돕니다.
+Quest.Albion.LostStoneOfArawn.NyaeghaAmbush: 냐에가가 당신을 기습합니다!
+Quest.Albion.LostStoneOfArawn.HonaytrtStep1: 도와줘서 고마워요! 엔체버, 오호나트 그리고 저는 오랫동안 이 돌을 찾고 있었어요.\n위어리얼 마을의 엔체버와 대화하세요. 그가 [아로운의 돌]에 대해 더 말해 줄 거예요.
+Quest.Albion.LostStoneOfArawn.HonaytrtStep2: {0}, 아직 엔체버를 만나지 않았나요? 그는 위어리얼 근처에서 찾을 수 있어요.
+Quest.Albion.LostStoneOfArawn.HonaytrtStep3: 안녕하세요. 오호나트에게 가는 중이라고 들었어요. 그녀라면 우리가 찾는 것을 찾아내는 데 도움이 될 거예요.
+Quest.Albion.LostStoneOfArawn.HonaytrtStep4: 와, 오호나트가 정말 뭔가를 찾아냈군요?\n역시 믿을 만하다니까요!
+Quest.Albion.LostStoneOfArawn.HonaytrtStep5: 세상에, 정말 그 돌을 찾은 건가요?\n먼저 오호나트에게 가져가 주세요. 그녀가 꼭 봐야 해요!
 Quest.Albion.LostStoneOfArawn.HonaytrtStep6: 얼마나 기쁜지 말로 다 설명할 수 없어요. 도와줘서 고마워요, {0}!\n여기 당신의 [보상]입니다.
 Quest.Albion.LostStoneOfArawn.HonaytrtGreeting: 안녕하세요 {0}. 우리는 어두운 시대를 살고 있고, 잃어버린 아로운의 돌을 찾아야만 구원받을 수 있어요.\n몇 년 동안 찾아왔지만 운이 없었죠. 혹시 그 돌을 되찾는 일을 [도와주기] 하실 수 있을까요?
-Quest.Albion.LostStoneOfArawn.SubscribePrompt: Honayt'rt를 도와 [잃어버린 아로운의 돌]을 되찾으시겠습니까?
-Quest.Albion.LostStoneOfArawn.HonaytrtStoneOfArawn: Wearyall Village 북쪽에서 N'chever를 찾을 수 있어요. 가서 그와 대화하세요.
-Quest.Albion.LostStoneOfArawn.NcheverStep1: 안녕 {0}, Wearyall Village에 온 걸 환영하네. 쉬고 싶다면 마구간에 들러 보게.\n거기서 내 소중한 친구 Honayt'rt도 만날 수 있을 거야. 둘이 잘 맞을 것 같군!
-Quest.Albion.LostStoneOfArawn.NcheverStep2: 안녕하세요. 이미 Honayt'rt에게 우리 임무에 대해 들은 모양이군요. 우리는 [돌]을 찾고 있습니다. 도와주시겠습니까?
-Quest.Albion.LostStoneOfArawn.NcheverStep3: {0}, 아직 O'honat를 만나지 않았나요? 그녀는 Caer Diogel의 성벽 근처에서 찾을 수 있습니다.
-Quest.Albion.LostStoneOfArawn.NcheverStep4: 믿기지 않는군요. O'honat가 정말 뭔가를 찾아냈다고요?\n멋진 일이군요!
-Quest.Albion.LostStoneOfArawn.NcheverStep5: 이 돌을 O'honat에게 가져가세요. 다음에 무엇을 해야 할지 그녀가 알 겁니다.
-Quest.Albion.LostStoneOfArawn.NcheverStep6: 돌을 보여줘서 고맙습니다. 이제 마구간에 있는 Honayt'rt에게 가져가세요. 그녀가 보상해 줄 겁니다.
+Quest.Albion.LostStoneOfArawn.SubscribePrompt: 호나이트르트를 도와 [잃어버린 아로운의 돌]을 되찾으시겠습니까?
+Quest.Albion.LostStoneOfArawn.HonaytrtStoneOfArawn: 위어리얼 마을 북쪽에서 엔체버를 찾을 수 있어요. 가서 그와 대화하세요.
+Quest.Albion.LostStoneOfArawn.NcheverStep1: 안녕 {0}, 위어리얼 마을에 온 걸 환영하네. 쉬고 싶다면 마구간에 들러 보게.\n거기서 내 소중한 친구 호나이트르트도 만날 수 있을 거야. 둘이 잘 맞을 것 같군!
+Quest.Albion.LostStoneOfArawn.NcheverStep2: 안녕하세요. 이미 호나이트르트에게 우리 임무에 대해 들은 모양이군요. 우리는 [돌]을 찾고 있습니다. 도와주시겠습니까?
+Quest.Albion.LostStoneOfArawn.NcheverStep3: {0}, 아직 오호나트를 만나지 않았나요? 그녀는 케어 디오겔의 성벽 근처에서 찾을 수 있습니다.
+Quest.Albion.LostStoneOfArawn.NcheverStep4: 믿기지 않는군요. 오호나트가 정말 뭔가를 찾아냈다고요?\n멋진 일이군요!
+Quest.Albion.LostStoneOfArawn.NcheverStep5: 이 돌을 오호나트에게 가져가세요. 다음에 무엇을 해야 할지 그녀가 알 겁니다.
+Quest.Albion.LostStoneOfArawn.NcheverStep6: 돌을 보여줘서 고맙습니다. 이제 마구간에 있는 호나이트르트에게 가져가세요. 그녀가 보상해 줄 겁니다.
 Quest.Albion.LostStoneOfArawn.NcheverGreeting: 안녕하세요. 정말 완벽한 날이지 않습니까?
-Quest.Albion.LostStoneOfArawn.NcheverStone: Caer Diogel의 O'honat를 찾아가 [잃어버린 아로운의 돌]에 대해 물어보세요. 그녀는 보통 성벽 근처에서 찾을 수 있다고 들었습니다.
-Quest.Albion.LostStoneOfArawn.NcheverLostStone: Caer Diogel의 O'honat를 찾아가세요!
-Quest.Albion.LostStoneOfArawn.OhonatStep1: 안녕하세요, 모험가님. 저는 {0}입니다! Wearyall Village에는 가 보셨나요?\n그곳에는 제 친구 Honayt'rt와 N'chever가 있으니 편하게 이야기해 보세요.
-Quest.Albion.LostStoneOfArawn.OhonatStep2: Honayt'rt나 N'chever를 만나 보셨나요? 정말 좋은 사람들이에요.
-Quest.Albion.LostStoneOfArawn.OhonatStep3: N'chever가 보냈나요?\n맞아요, 우리는 잃어버린 아로운의 돌을 찾는 임무를 수행 중입니다. 동물과 다른 생명체를 고문하기를 즐기며 점점 강해지는 악마가 [Gwyddneau]에 있다는 소식을 들었습니다. 즉시 손쓰지 않으면 알비온에는 너무 늦을 거예요!
-Quest.Albion.LostStoneOfArawn.OhonatStep4: Caer Diogel을 나와 마을 서쪽으로 향하세요. 해안에 도착하면 북쪽으로 도세요. 우리가 처치해야 할 악마는 보통 Plains of Gwyddneau를 배회합니다.\n그 악마를 처치하고 돌을 가져오세요!
+Quest.Albion.LostStoneOfArawn.NcheverStone: 케어 디오겔의 오호나트를 찾아가 [잃어버린 아로운의 돌]에 대해 물어보세요. 그녀는 보통 성벽 근처에서 찾을 수 있다고 들었습니다.
+Quest.Albion.LostStoneOfArawn.NcheverLostStone: 케어 디오겔의 오호나트를 찾아가세요!
+Quest.Albion.LostStoneOfArawn.OhonatStep1: 안녕하세요, 모험가님. 저는 {0}입니다! 위어리얼 마을에는 가 보셨나요?\n그곳에는 제 친구 호나이트르트와 엔체버가 있으니 편하게 이야기해 보세요.
+Quest.Albion.LostStoneOfArawn.OhonatStep2: 호나이트르트나 엔체버를 만나 보셨나요? 정말 좋은 사람들이에요.
+Quest.Albion.LostStoneOfArawn.OhonatStep3: 엔체버가 보냈나요?\n맞아요, 우리는 잃어버린 아로운의 돌을 찾는 임무를 수행 중입니다. 동물과 다른 생명체를 고문하기를 즐기며 점점 강해지는 악마가 [귄드네우]에 있다는 소식을 들었습니다. 즉시 손쓰지 않으면 알비온에는 너무 늦을 거예요!
+Quest.Albion.LostStoneOfArawn.OhonatStep4: 케어 디오겔을 나와 마을 서쪽으로 향하세요. 해안에 도착하면 북쪽으로 도세요. 우리가 처치해야 할 악마는 보통 귄드네우 평원를 배회합니다.\n그 악마를 처치하고 돌을 가져오세요!
 Quest.Albion.LostStoneOfArawn.OhonatStep5: {0}, 당신이야말로 우리가 필요로 하던 영웅입니다. 저는 정말 [불가능]할 거라고 생각했어요.
-Quest.Albion.LostStoneOfArawn.OhonatStep6: Honayt'rt가 무척 기뻐할 겁니다. 그 연설문을 그녀에게 가져가세요!
+Quest.Albion.LostStoneOfArawn.OhonatStep6: 호나이트르트가 무척 기뻐할 겁니다. 그 연설문을 그녀에게 가져가세요!
 Quest.Albion.LostStoneOfArawn.OhonatGreeting: 안녕하세요, 모험가님. 필요한 것이 있다면 우리 상인관에서 자유롭게 물건을 사세요.
-Quest.Albion.LostStoneOfArawn.OhonatImpossible: 고마워요, {0}. 이제 이 두루마리를 Honayt'rt에게 가져가세요. 그녀가 최대한 빨리 읽어야 합니다!\n[작별], 알비온의 영웅이여!
+Quest.Albion.LostStoneOfArawn.OhonatImpossible: 고마워요, {0}. 이제 이 두루마리를 호나이트르트에게 가져가세요. 그녀가 최대한 빨리 읽어야 합니다!\n[작별], 알비온의 영웅이여!
 Quest.Albion.LostStoneOfArawn.AbortDeclined: 좋습니다. 이제 나가서 맡은 일을 끝내세요!
 Quest.Albion.LostStoneOfArawn.AbortingQuest: {0} 퀘스트를 포기했습니다. 원한다면 다시 시작할 수 있습니다.
 Quest.Albion.LostStoneOfArawn.DeclineQuest: 우리 임무를 도울 준비가 되면 다시 오세요.
 Quest.Albion.LostStoneOfArawn.AcceptQuest: 고마워요. 그 돌에 대해 더 이야기해 봅시다!
 Quest.Albion.LostStoneOfArawn.MoneyReward: 보상으로 {0}을(를) 받았습니다.
 Quest.Epic.Academy50.Name:                부서진 상징 (레벨 50 아카데미 에픽)
-Quest.Epic.Academy50.Step1Reminder:       알비온의 운명이 당신 손에 달려 있습니다. 라이오네스의 무너진 탑에서 [Morgana]를 찾으세요!
+Quest.Epic.Academy50.Step1Reminder:       알비온의 운명이 당신 손에 달려 있습니다. 라이오네스의 무너진 탑에서 [모르가나]를 찾으세요!
 Quest.Epic.Academy50.Step2Reminder:       맡겨진 임무를 [완수]하셨습니까? 알비온의 운명이 당신 손에 달려 있습니다.
 Quest.Epic.Academy50.Intro:               다시 만나 반갑습니다. 당신의 활약에 대한 소문이 알비온 전역에 퍼졌지만, 우리에게는 다시 한번 당신의 [도움]이 필요합니다!
-Quest.Epic.Academy50.Subscribe:           Ferowl을 도와 [아카데미 50레벨 에픽]을 진행하시겠습니까?
-Quest.Epic.Academy50.Morgana:             그녀에 대해 들어보셨을 겁니다. King Arthur의 사악한 누이이며 왕좌를 빼앗으려 했지요. 그녀는 반드시 [저지]되어야 합니다!
-Quest.Epic.Academy50.Stopped:             Morgana가 군대를 소환하면 모든 것이 끝장입니다. 서둘러 그녀의 불경한 의식을 막으세요. 강력한 두 악마 Silcharde와 Bechard의 도움으로 그녀는 원하는 만큼 하수인을 소환할 수 있습니다. 그들을 처치하면 그녀의 [의식]을 막기에 충분할 겁니다.
-Quest.Epic.Academy50.Ritual:              Morgana는 아마 Lyonesse의 무너진 탑에서 의식을 치르고 있을 겁니다. 그곳에 가려면 Danaoian 농부 무리를 지나 Telamon 길을 따라가다가 [무너진 탑]이 보일 때까지 이동하세요.
-Quest.Epic.Academy50.FallenTower:         현명하게 행동하세요. Morgana에게 곧장 달려드는 불필요한 위험은 감수하지 마십시오. 당신이 강한 {0}일지는 몰라도 Morgana 본인에게는 상대가 되지 않습니다. 그녀의 악마들을 처치하고 제게 돌아오세요. 그 뒤에는 때가 왔을 때 우리가 나머지를 처리하겠습니다.
-Quest.Epic.Academy50.Fulfill:             무너진 탑 근처에서 무언가를 찾았습니까? 그렇다면 [제게 주세요]. Morgana에 맞선 성전에 어떤 단서라도 필요합니다.
+Quest.Epic.Academy50.Subscribe:           페롤을 도와 [아카데미 50레벨 에픽]을 진행하시겠습니까?
+Quest.Epic.Academy50.Morgana:             그녀에 대해 들어보셨을 겁니다. 아서 왕의 사악한 누이이며 왕좌를 빼앗으려 했지요. 그녀는 반드시 [저지]되어야 합니다!
+Quest.Epic.Academy50.Stopped:             모르가나가 군대를 소환하면 모든 것이 끝장입니다. 서둘러 그녀의 불경한 의식을 막으세요. 강력한 두 악마 실카르드와 베카르드의 도움으로 그녀는 원하는 만큼 하수인을 소환할 수 있습니다. 그들을 처치하면 그녀의 [의식]을 막기에 충분할 겁니다.
+Quest.Epic.Academy50.Ritual:              모르가나는 아마 라이오네스의 무너진 탑에서 의식을 치르고 있을 겁니다. 그곳에 가려면 다나오인 농부 무리를 지나 텔라몬 길을 따라가다가 [무너진 탑]이 보일 때까지 이동하세요.
+Quest.Epic.Academy50.FallenTower:         현명하게 행동하세요. 모르가나에게 곧장 달려드는 불필요한 위험은 감수하지 마십시오. 당신이 강한 {0}일지는 몰라도 모르가나 본인에게는 상대가 되지 않습니다. 그녀의 악마들을 처치하고 제게 돌아오세요. 그 뒤에는 때가 왔을 때 우리가 나머지를 처리하겠습니다.
+Quest.Epic.Academy50.Fulfill:             무너진 탑 근처에서 무언가를 찾았습니까? 그렇다면 [제게 주세요]. 모르가나에 맞선 성전에 어떤 단서라도 필요합니다.
 Quest.Epic.Academy50.AbortDecline:        좋습니다. 이제 나가서 당신의 일을 마무리하세요!
 Quest.Epic.Academy50.Decline:             신께서는 당신의 게으름을 용서하시겠지만, 벼락은 조심하세요.
-Quest.Epic.Academy50.Accept:              마녀 [Morgana]가 강대한 카멜롯을 짓밟기 위해 악마 군대를 소환하려 한다는 소문을 들었습니다!
-Quest.Epic.Academy50.Description1:        Lyonesse의 무너진 탑에서 Bechard와 Silcharde를 찾아 처치하고, 소환된 악마들도 함께 처치하세요!\nBechard 처치: ({0} | 1)\nSilcharde 처치: ({1} | 1)\n소환된 악마 처치: ({2} | 20)
-Quest.Epic.Academy50.Description2:        보상을 받으려면 주머니를 Ferowl에게 돌려주세요!
+Quest.Epic.Academy50.Accept:              마녀 [모르가나]가 강대한 카멜롯을 짓밟기 위해 악마 군대를 소환하려 한다는 소문을 들었습니다!
+Quest.Epic.Academy50.Description1:        라이오네스의 무너진 탑에서 베카르드와 실카르드를 찾아 처치하고, 소환된 악마들도 함께 처치하세요!\n베카르드 처치: ({0} | 1)\n실카르드 처치: ({1} | 1)\n소환된 악마 처치: ({2} | 20)
+Quest.Epic.Academy50.Description2:        보상을 받으려면 주머니를 페롤에게 돌려주세요!
 Quest.Epic.Academy50.MorganaYell:         여기서는 날 막았을지 몰라도, 난 돌아올 것이다! 알비온은 내 것이 될 거야!
 Quest.Epic.Academy50.Calm:                평온한 기운이 당신을 감쌉니다!
 Quest.Epic.Academy50.TakePouch:           주머니를 {0}에게 가져가세요
 Quest.Epic.Church50.Name:                 영원으로 가는 길 (레벨 50 교회 에픽)
 Quest.Epic.Church50.Intro:                문양이 완성될 때 그 자리에 있던 이들이 [환영]을 본 것 같습니다.
-Quest.Epic.Church50.LyonesseReminder:     {0}님, 이런 일이 일어나게 두어서는 안 됩니다! 저는 [Lyonesse]를 잘 압니다. 이 일을 성공하려면 강력한 모험가 무리를 모으는 것이 좋겠습니다!
-Quest.Epic.Church50.DefeatReminder:       어둠의 군주 Arawn의 교단을 [격파]하셨습니까?
-Quest.Epic.Church50.Vision:               그들은 Lyonesse 경계 안에 있는 무너진 대성당에 대해 말합니다. 문양은 그 대성당의 새로운 [거주자들]을 보여주었습니다.
+Quest.Epic.Church50.LyonesseReminder:     {0}님, 이런 일이 일어나게 두어서는 안 됩니다! 저는 [라이오네스]를 잘 압니다. 이 일을 성공하려면 강력한 모험가 무리를 모으는 것이 좋겠습니다!
+Quest.Epic.Church50.DefeatReminder:       어둠의 군주 아로운의 교단을 [격파]하셨습니까?
+Quest.Epic.Church50.Vision:               그들은 라이오네스 경계 안에 있는 무너진 대성당에 대해 말합니다. 문양은 그 대성당의 새로운 [거주자들]을 보여주었습니다.
 Quest.Epic.Church50.Occupants:            알비온의 교회가 아닌 어둠의 군주 아라운을 숭배하는 자들입니다! 마법사 액스턴은 당신이 무리를 모아 이 어둠의 제자들의 지도자를 처치해 주길 요청했습니다. 그녀는 아라운의 숭배자들이 [카멜롯의 빛 꺾기]를 이루고 우리 렐름 안에 자신들의 종교를 세우려 한다고 믿고 있습니다.
-Quest.Epic.Church50.Subscribe:            Roben을 도와 [교회 50레벨 에픽]을 진행하시겠습니까?
-Quest.Epic.Church50.Lyonesse:             Axton이 말한 대성당은 그 땅의 깊은 중심부, Pikeman 뒤쪽과 Trees 맞은편에 있습니다. 남은 벽은 낮 동안 멀리서도 보이니 놓치지 않을 겁니다. 저도 함께 가고 싶지만 제 도움이 다른 곳에 필요합니다. 무운을 빕니다, {0}.
+Quest.Epic.Church50.Subscribe:            로벤을 도와 [교회 50레벨 에픽]을 진행하시겠습니까?
+Quest.Epic.Church50.Lyonesse:             액스턴이 말한 대성당은 그 땅의 깊은 중심부, 파이크맨 뒤쪽과 나무들 맞은편에 있습니다. 남은 벽은 낮 동안 멀리서도 보이니 놓치지 않을 겁니다. 저도 함께 가고 싶지만 제 도움이 다른 곳에 필요합니다. 무운을 빕니다, {0}.
 Quest.Epic.Church50.AbortDecline:         좋습니다. 이제 나가서 당신의 일을 마무리하세요!
 Quest.Epic.Church50.Decline:              신께서는 당신의 게으름을 용서하시겠지만, 벼락은 조심하세요.
-Quest.Epic.Church50.Description1:         강력한 모험가 무리를 모아 Arawn의 고대 사원으로 가세요. 이 사원은 Lyonesse 안에 있으며 어둠의 사제들에게 둘러싸여 있습니다. 그들의 지도자를 처치해야만 이 악을 멈출 수 있습니다!
-Quest.Epic.Church50.Description2:         보상을 받으려면 Arawn의 조각상을 Roben Fraomar에게 돌려주세요!
-Quest.Epic.Church50.FindStatue:           Sister Blythe의 시신을 수색하던 중 신성한 {0}을(를) 발견했습니다. 성공의 증거로 {1}에게 가져가세요.
-Quest.Epic.Defenders50.Name:              타락한 자의 연회 (레벨 50 Albion 수호자 에픽)
-Quest.Epic.Defenders50.MaulerUnavailable: 이 퀘스트는 아직 Mauler에게 제공되지 않습니다.
-Quest.Epic.Defenders50.Step1Reminder:     Lyonesse에서 Cailleach Uragaig를 찾아 처치하세요! 하급 텔라몬을 지나 남서쪽 길을 따라 Lyonesse로 들어가세요. 창병과 피그미 고블린이 있는 두 집을 지나 계속 가면, 서쪽 공터에 기둥 폐허가 보입니다. cailleach 자매단은 그 폐허를 보금자리로 삼고 있습니다.
-Quest.Epic.Defenders50.Step2Reminder:     {0}님, Cailleach Uragaig를 [처치]하셨습니까?
+Quest.Epic.Church50.Description1:         강력한 모험가 무리를 모아 아로운의 고대 사원으로 가세요. 이 사원은 라이오네스 안에 있으며 어둠의 사제들에게 둘러싸여 있습니다. 그들의 지도자를 처치해야만 이 악을 멈출 수 있습니다!
+Quest.Epic.Church50.Description2:         보상을 받으려면 아로운의 조각상을 로벤 프라오마르에게 돌려주세요!
+Quest.Epic.Church50.FindStatue:           블라이스 수녀의 시신을 수색하던 중 신성한 {0}을(를) 발견했습니다. 성공의 증거로 {1}에게 가져가세요.
+Quest.Epic.Defenders50.Name:              타락한 자의 연회 (레벨 50 알비온 수호자 에픽)
+Quest.Epic.Defenders50.MaulerUnavailable: 이 퀘스트는 아직 마울러에게 제공되지 않습니다.
+Quest.Epic.Defenders50.Step1Reminder:     라이오네스에서 카일리치 우라가이그를 찾아 처치하세요! 하급 텔라몬을 지나 남서쪽 길을 따라 라이오네스로 들어가세요. 창병과 피그미 고블린이 있는 두 집을 지나 계속 가면, 서쪽 공터에 기둥 폐허가 보입니다. 카일리치 자매단은 그 폐허를 보금자리로 삼고 있습니다.
+Quest.Epic.Defenders50.Step2Reminder:     {0}님, 카일리치 우라가이그를 [처치]하셨습니까?
 Quest.Epic.Defenders50.Intro:             알비온에는 당신의 [도움]이 필요합니다.
-Quest.Epic.Defenders50.Subscribe:         Lidmann을 도와 [알비온 수호자 50레벨 에픽]을 진행하시겠습니까?
+Quest.Epic.Defenders50.Subscribe:         리드만을 도와 [알비온 수호자 50레벨 에픽]을 진행하시겠습니까?
 Quest.Epic.Defenders50.AbortDecline:      좋습니다. 이제 나가서 당신의 일을 마무리하세요!
 Quest.Epic.Defenders50.Decline:           신께서는 당신의 게으름을 용서하시겠지만, 벼락은 조심하세요.
-Quest.Epic.Defenders50.Accept:            Lyonesse에서 Cailleach Uragaig를 처치하세요!
-Quest.Epic.Defenders50.Description1:      Lyonesse에서 Cailleach Uragaig를 찾아 처치하세요!\nLyonesse의 서쪽 공터에 기둥 폐허가 보입니다. cailleach 자매단은 그 폐허를 보금자리로 삼고 있습니다.
-Quest.Epic.Defenders50.Description2:      봉인된 주머니를 Adribard's Retreat의 Lidmann Halsey에게 건네주세요.
-Quest.Epic.Defenders50.TakePouch:         주머니를 Lidmann Halsey에게 가져가세요
+Quest.Epic.Defenders50.Accept:            라이오네스에서 카일리치 우라가이그를 처치하세요!
+Quest.Epic.Defenders50.Description1:      라이오네스에서 카일리치 우라가이그를 찾아 처치하세요!\n라이오네스의 서쪽 공터에 기둥 폐허가 보입니다. 카일리치 자매단은 그 폐허를 보금자리로 삼고 있습니다.
+Quest.Epic.Defenders50.Description2:      봉인된 주머니를 아드리바드 은거지의 리드만 할지에게 건네주세요.
+Quest.Epic.Defenders50.TakePouch:         주머니를 리드만 할지에게 가져가세요
 Quest.Epic.Shadows50.Name:                타락한 자의 연회 (레벨 50 그림자 길드 에픽)
-Quest.Epic.Shadows50.Step1Reminder:       Lyonesse에서 Cailleach Uragaig를 찾아 처치하세요! 하급 텔라몬을 지나 남서쪽 길을 따라 Lyonesse로 들어가세요. 창병과 피그미 고블린이 있는 두 집을 지나 계속 가면, 서쪽 공터에 기둥 폐허가 보입니다. cailleach 자매단은 그 폐허를 보금자리로 삼고 있습니다.
-Quest.Epic.Shadows50.Step2Reminder:       {0}님, Cailleach Uragaig를 [처치]하셨습니까?
+Quest.Epic.Shadows50.Step1Reminder:       라이오네스에서 카일리치 우라가이그를 찾아 처치하세요! 하급 텔라몬을 지나 남서쪽 길을 따라 라이오네스로 들어가세요. 창병과 피그미 고블린이 있는 두 집을 지나 계속 가면, 서쪽 공터에 기둥 폐허가 보입니다. 카일리치 자매단은 그 폐허를 보금자리로 삼고 있습니다.
+Quest.Epic.Shadows50.Step2Reminder:       {0}님, 카일리치 우라가이그를 [처치]하셨습니까?
 Quest.Epic.Shadows50.Intro:               알비온에는 당신의 [도움]이 필요합니다
-Quest.Epic.Shadows50.Subscribe:           Lidmann을 도와 [알비온 수호자 50레벨 에픽]을 진행하시겠습니까?
+Quest.Epic.Shadows50.Subscribe:           리드만을 도와 [알비온 수호자 50레벨 에픽]을 진행하시겠습니까?
 Quest.Epic.Shadows50.AbortDecline:        좋습니다. 이제 나가서 당신의 일을 마무리하세요!
 Quest.Epic.Shadows50.Decline:             신께서는 당신의 게으름을 용서하시겠지만, 벼락은 조심하세요.
-Quest.Epic.Shadows50.Accept:              Lyonesse loc 29k, 33k에서 Cailleach Uragaig를 처치하세요!
-Quest.Epic.Shadows50.Description1:        Lyonesse에서 Cailleach Uragaig를 찾아 처치하세요!\nLyonesse의 서쪽 공터에 기둥 폐허가 보입니다. cailleach 자매단은 그 폐허를 보금자리로 삼고 있습니다.
-Quest.Epic.Shadows50.Description2:        봉인된 주머니를 Adribard's Retreat의 Lidmann Halsey에게 건네주세요.
-Quest.Epic.Shadows50.TakePouch:           주머니를 Lidmann Halsey에게 가져가세요
+Quest.Epic.Shadows50.Accept:              라이오네스 위치 29k, 33k에서 카일리치 우라가이그를 처치하세요!
+Quest.Epic.Shadows50.Description1:        라이오네스에서 카일리치 우라가이그를 찾아 처치하세요!\n라이오네스의 서쪽 공터에 기둥 폐허가 보입니다. 카일리치 자매단은 그 폐허를 보금자리로 삼고 있습니다.
+Quest.Epic.Shadows50.Description2:        봉인된 주머니를 아드리바드 은거지의 리드만 할지에게 건네주세요.
+Quest.Epic.Shadows50.TakePouch:           주머니를 리드만 할지에게 가져가세요
 Quest.Epic.Essence50.Name:                월장석 쌍둥이 (레벨 50 정수의 길 에픽)
-Quest.Epic.Essence50.Step1Reminder:       Cursed Forest에서 Far Dorocha를 찾아 처치해 거대 Caithor를 불러내세요! 거대 Caithor를 처치한 뒤 진짜 Caithor를 찾아 처치하세요!
+Quest.Epic.Essence50.Step1Reminder:       저주받은 숲에서 파르 도로카를 찾아 처치해 거대 카이토르를 불러내세요! 거대 카이토르를 처치한 뒤 진짜 카이토르를 찾아 처치하세요!
 Quest.Epic.Essence50.Step2Reminder:       맡겨진 임무를 [완수]하셨습니까?
-Quest.Epic.Essence50.Intro:               Hibernia에는 당신의 [도움]이 필요합니다
-Quest.Epic.Essence50.Subscribe:           Brigit을 도와 [정수의 길 50레벨 에픽]을 진행하시겠습니까?
+Quest.Epic.Essence50.Intro:               하이버니아에는 당신의 [도움]이 필요합니다
+Quest.Epic.Essence50.Subscribe:           브리짓을 도와 [정수의 길 50레벨 에픽]을 진행하시겠습니까?
 Quest.Epic.Essence50.AbortDecline:        좋습니다. 이제 나가서 당신의 일을 마무리하세요!
 Quest.Epic.Essence50.Decline:             신께서는 당신의 게으름을 용서하시겠지만, 벼락은 조심하세요.
-Quest.Epic.Essence50.Accept:              Cursed Forest에서 Caithor를 처치하세요!
-Quest.Epic.Essence50.Description1:        Cursed Forest에서 Far Dorocha를 찾아 처치해 거대 Caithor를 불러내세요! 거대 Caithor를 처치한 뒤 진짜 Caithor를 찾아 처치하세요!
-Quest.Epic.Essence50.Description2:        Brigit에게 돌아가 Moonstone을 건네주세요!
-Quest.Epic.Essence50.CollectMoonstone:    Caithor에게서 Moonstone을 얻었습니다
+Quest.Epic.Essence50.Accept:              저주받은 숲에서 카이토르를 처치하세요!
+Quest.Epic.Essence50.Description1:        저주받은 숲에서 파르 도로카를 찾아 처치해 거대 카이토르를 불러내세요! 거대 카이토르를 처치한 뒤 진짜 카이토르를 찾아 처치하세요!
+Quest.Epic.Essence50.Description2:        브리짓에게 돌아가 월장석을 건네주세요!
+Quest.Epic.Essence50.CollectMoonstone:    카이토르에게서 월장석을 얻었습니다
 Quest.Epic.Focus50.Name:                  부자연스러운 힘 (레벨 50 집중의 길 에픽)
-Quest.Epic.Focus50.MaulerUnavailable:     이 퀘스트는 아직 Mauler에게 제공되지 않습니다.
-Quest.Epic.Focus50.Step1Reminder:         Cursed Forest에서 Green Maw를 찾아 처치하세요. Green Maw는 노파들과 유령 학살자들의 보호를 받고 있습니다.
+Quest.Epic.Focus50.MaulerUnavailable:     이 퀘스트는 아직 마울러에게 제공되지 않습니다.
+Quest.Epic.Focus50.Step1Reminder:         저주받은 숲에서 그린 모를 찾아 처치하세요. 그린 모는 노파들과 유령 학살자들의 보호를 받고 있습니다.
 Quest.Epic.Focus50.Step2Reminder:         맡겨진 임무를 [완수]하셨습니까?
-Quest.Epic.Focus50.Intro:                 Hibernia에는 당신의 [도움]이 필요합니다!
-Quest.Epic.Focus50.Subscribe:             Ainrebh를 도와 [집중의 길 50레벨 에픽]을 진행하시겠습니까?
+Quest.Epic.Focus50.Intro:                 하이버니아에는 당신의 [도움]이 필요합니다!
+Quest.Epic.Focus50.Subscribe:             아인레브를 도와 [집중의 길 50레벨 에픽]을 진행하시겠습니까?
 Quest.Epic.Focus50.AbortDecline:          좋습니다. 이제 나가서 당신의 일을 마무리하세요!
 Quest.Epic.Focus50.Decline:               신께서는 당신의 게으름을 용서하시겠지만, 벼락은 조심하세요.
-Quest.Epic.Focus50.Accept:                Cursed Forest loc 37k, 38k에서 Green Maw를 처치하세요!
-Quest.Epic.Focus50.Description1:          Cursed Forest에서 Green Maw를 찾아 처치하세요!
-Quest.Epic.Focus50.Description2:          Ainrebh에게 돌아가 Green Maw's Key를 건네주세요!
-Quest.Epic.Focus50.CollectKey:            Green Maw's Key를 얻었습니다
+Quest.Epic.Focus50.Accept:                저주받은 숲 위치 37k, 38k에서 그린 모를 처치하세요!
+Quest.Epic.Focus50.Description1:          저주받은 숲에서 그린 모를 찾아 처치하세요!
+Quest.Epic.Focus50.Description2:          아인레브에게 돌아가 그린 모의 열쇠를 건네주세요!
+Quest.Epic.Focus50.CollectKey:            그린 모의 열쇠를 얻었습니다
 Quest.Epic.Harmony50.Name:                뿔 쌍둥이 (레벨 50 조화의 길 에픽)
-Quest.Epic.Harmony50.Step1Reminder:       Cursed Forest에서 Cailean을 찾아 처치하세요. Cailean은 강 건너 Granny Fort 북서쪽에서 찾을 수 있는 공포의 나무입니다.
+Quest.Epic.Harmony50.Step1Reminder:       저주받은 숲에서 카일린을 찾아 처치하세요. 카일린은 강 건너 그래니 요새 북서쪽에서 찾을 수 있는 공포의 나무입니다.
 Quest.Epic.Harmony50.Step2Reminder:       맡겨진 임무를 [완수]하셨습니까?
-Quest.Epic.Harmony50.Intro:               Hibernia에는 당신의 [도움]이 필요합니다
-Quest.Epic.Harmony50.Subscribe:           Revelin을 도와 [조화의 길 50레벨 에픽]을 진행하시겠습니까?
+Quest.Epic.Harmony50.Intro:               하이버니아에는 당신의 [도움]이 필요합니다
+Quest.Epic.Harmony50.Subscribe:           레벨린을 도와 [조화의 길 50레벨 에픽]을 진행하시겠습니까?
 Quest.Epic.Harmony50.AbortDecline:        좋습니다. 이제 나가서 당신의 일을 마무리하세요!
 Quest.Epic.Harmony50.Decline:             신께서는 당신의 게으름을 용서하시겠지만, 벼락은 조심하세요.
-Quest.Epic.Harmony50.Accept:              Cursed Forest에서 Cailean을 처치하세요.
-Quest.Epic.Harmony50.Description1:        Cursed Forest에서 Cailean을 찾아 처치하세요! Cailean은 북서쪽 숲 한가운데에 있습니다
-Quest.Epic.Harmony50.Description2:        Revelin에게 돌아가 Horn을 건네주세요!
-Quest.Epic.Harmony50.CollectHorn:         Cailean에게서 Horn을 얻었습니다
-Quest.Epic.MidgardRogue50.Name:           끝난 전쟁 (레벨 50 Rogue 에픽)
-Quest.Epic.MidgardRogue50.Step1Reminder:  Raumarik에서 Oona를 찾아 처치하세요! Raumarik에 들어가면 서쪽 강으로 가서 강이 갈라질 때까지 남쪽으로 따라가세요.
-Quest.Epic.MidgardRogue50.Step2Reminder:  돌아왔군요! Oona의 머리를 제게 주고 {0}을(를) 찾아가 [봉인된 주머니]를 전해주세요!
+Quest.Epic.Harmony50.Accept:              저주받은 숲에서 카일린을 처치하세요.
+Quest.Epic.Harmony50.Description1:        저주받은 숲에서 카일린을 찾아 처치하세요! 카일린은 북서쪽 숲 한가운데에 있습니다
+Quest.Epic.Harmony50.Description2:        레벨린에게 돌아가 뿔을 건네주세요!
+Quest.Epic.Harmony50.CollectHorn:         카일린에게서 뿔을 얻었습니다
+Quest.Epic.MidgardRogue50.Name:           끝난 전쟁 (레벨 50 로그 에픽)
+Quest.Epic.MidgardRogue50.Step1Reminder:  라우마리크에서 오나를 찾아 처치하세요! 라우마리크에 들어가면 서쪽 강으로 가서 강이 갈라질 때까지 남쪽으로 따라가세요.
+Quest.Epic.MidgardRogue50.Step2Reminder:  돌아왔군요! 오나의 머리를 제게 주고 {0}을(를) 찾아가 [봉인된 주머니]를 전해주세요!
 Quest.Epic.MidgardRogue50.Step3Reminder:  안녕하세요 {0}님, 이미 {1}을(를) 찾아가 보셨습니까?
 Quest.Epic.MidgardRogue50.Intro:          미드가드에는 당신의 [도움]이 필요합니다
-Quest.Epic.MidgardRogue50.Subscribe:      Masrim을 도와 [로그 50레벨 에픽]을 진행하시겠습니까?
+Quest.Epic.MidgardRogue50.Subscribe:      마스림을 도와 [로그 50레벨 에픽]을 진행하시겠습니까?
 Quest.Epic.MidgardRogue50.TakePouch:      보상을 받으려면 이 봉인된 주머니를 요르드하임의 몰린 칸에게 가져가세요!
 Quest.Epic.MidgardRogue50.FulfillReminder: 맡겨진 임무를 [완수]하셨습니까?
 Quest.Epic.MidgardRogue50.AbortDecline:   좋습니다. 이제 나가서 당신의 일을 마무리하세요!
 Quest.Epic.MidgardRogue50.Decline:        신께서는 당신의 게으름을 용서하시겠지만, 벼락은 조심하세요.
-Quest.Epic.MidgardRogue50.Accept:         Raumarik에서 Oona를 처치하세요!
-Quest.Epic.MidgardRogue50.Description1:   Raumarik에서 Oona를 찾아 처치하세요! Raumarik에 들어가면 서쪽 강으로 가서 강이 갈라질 때까지 남쪽으로 따라가세요.
-Quest.Epic.MidgardRogue50.Description2:   Masrim에게 돌아가 Oona's Head를 건네주세요!
+Quest.Epic.MidgardRogue50.Accept:         라우마리크에서 오나를 처치하세요!
+Quest.Epic.MidgardRogue50.Description1:   라우마리크에서 오나를 찾아 처치하세요! 라우마리크에 들어가면 서쪽 강으로 가서 강이 갈라질 때까지 남쪽으로 따라가세요.
+Quest.Epic.MidgardRogue50.Description2:   마스림에게 돌아가 오나의 머리를 건네주세요!
 Quest.Epic.MidgardRogue50.Description3:   요르드하임의 몰린 칸에게 가서 보상을 받기 위해 봉인된 주머니를 건네주세요!
-Quest.Epic.MidgardRogue50.CollectHead:    Oona's Head를 얻었습니다
-Quest.Epic.Seer50.Name:                   신의 욕망 (레벨 50 Seer 에픽)
-Quest.Epic.Seer50.Step1Reminder:          {0}님, Raumarik으로 가서 Loken을 찾으세요!
+Quest.Epic.MidgardRogue50.CollectHead:    오나의 머리를 얻었습니다
+Quest.Epic.Seer50.Name:                   신의 욕망 (레벨 50 시어 에픽)
+Quest.Epic.Seer50.Step1Reminder:          {0}님, 라우마리크로 가서 로켄을 찾으세요!
 Quest.Epic.Seer50.Step2Reminder:          다시 오셨군요 {0}님, 제게 [줄 물건]이 있습니까?
 Quest.Epic.Seer50.Step3Reminder:          {0}님, 요르드하임의 미리를 찾아가 [봉인된 주머니]를 전해주세요!
 Quest.Epic.Seer50.Intro:                  미드가드에는 당신의 [도움]이 필요합니다.
-Quest.Epic.Seer50.Subscribe:              Inaksha를 도와 [시어 50레벨 에픽]을 진행하시겠습니까?
+Quest.Epic.Seer50.Subscribe:              이낙샤를 도와 [시어 50레벨 에픽]을 진행하시겠습니까?
 Quest.Epic.Seer50.VisitMiri:              좋습니다! 이제 요르드하임의 미리를 찾아가 [봉인된 주머니]를 전해주세요.
 Quest.Epic.Seer50.TakePouch:              보상을 받으려면 이 봉인된 주머니를 요르드하임의 미리에게 가져가세요!
 Quest.Epic.Seer50.FulfillReminder:        맡겨진 임무를 [완수]하셨습니까?
-Quest.Epic.Seer50.MiriIntro:              Danica와 저는 Raumarik에서 Loken을 찾아 처치하는 데 당신의 도움이 필요합니다!
+Quest.Epic.Seer50.MiriIntro:              다니카와 저는 라우마리크에서 로켄을 찾아 처치하는 데 당신의 도움이 필요합니다!
 Quest.Epic.Seer50.AbortDecline:           좋습니다. 이제 나가서 당신의 일을 마무리하세요!
 Quest.Epic.Seer50.Decline:                신께서는 당신의 게으름을 용서하시겠지만, 벼락은 조심하세요.
 Quest.Epic.Seer50.Accept:                 좋습니다. 이제 가서 그를 처치하세요!
-Quest.Epic.Seer50.Description1:           Raumarik에서 Loken을 찾아 처치하세요!
-Quest.Epic.Seer50.Description2:           Inaksha에게 돌아가 Ball of Flame을 건네주세요!
-Quest.Epic.Seer50.Description3:           Inaksha와 Loken의 최후에 대해 이야기하세요!
+Quest.Epic.Seer50.Description1:           라우마리크에서 로켄을 찾아 처치하세요!
+Quest.Epic.Seer50.Description2:           이낙샤에게 돌아가 불꽃 구체를 건네주세요!
+Quest.Epic.Seer50.Description3:           이낙샤와 로켄의 최후에 대해 이야기하세요!
 Quest.Epic.Seer50.Description4:           요르드하임의 미리에게 가서 보상을 받기 위해 봉인된 주머니를 건네주세요!
 Quest.Epic.Seer50.GetFlame:               불꽃 구체를 얻었습니다
-Quest.Epic.Mystic50.Name:                 클랜 구원 (레벨 50 Mystic 에픽)
-Quest.Epic.Mystic50.FaceKelicDetail:      그래요, 그를 맞서 쓰러뜨려야 합니다! 지도 구석에 적힌 쪽지에는 Kelic이 죽어서도 강하다고 쓰여 있습니다. 그는 영혼 상태에서도 자신을 지키기 위해 추종자들을 모았고, 공격받으면 그들이 도우러 올 것입니다. 당신의 실력이 많이 늘었더라도 Kelic을 상대하려면 동료를 데려가는 것을 강력히 권합니다. 제가 주문을 끝내려면 그를 처치하고 그가 지닌 토템을 반드시 가져와야 합니다. 지도에 따르면 Kelic은 Raumarik에 있습니다. Raumarik의 강으로 가서 북쪽으로 이동하세요. 끝에 도달하면 다음 강까지 북서쪽으로 가십시오. 강을 건너 서쪽으로 향하고, 나무 무리가 보일 때까지 설선을 따라가세요. 그곳에서 Kelic과 그의 추종자들을 찾을 수 있습니다. 토템을 얻으면 제게 돌아오세요. 모든 신들이 함께하길 바랍니다.
-Quest.Epic.Mystic50.TotemReminder:        Kelic에게서 살아남을 만큼 강했다니 반갑습니다. 당신에게 지배의 토템이 있는 것이 느껴집니다. 지금 Kelic의 [토템]을 제게 주세요! 서두르세요!
-Quest.Epic.Mystic50.RewardReady:          저주는 깨졌고 클랜은 안전합니다. 그들은 당신에게 빚을 졌지만, Arnfinn이 당신에게 어울리는 보상을 마련한 것 같습니다. 보상은 여섯 부분이니 반드시 공간을 마련하세요. 준비가 되면 알려주세요. 그러면 우리의 감사와 함께 [받기] 할 수 있습니다!
-Quest.Epic.Mystic50.Intro:                아, 이것은 Jango와 그의 탈영병들이 Kelic을 처리하려고 어디로 데려갔는지 정확히 보여줍니다. Kelic이 실제로 얼마나 강했는지도 적혀 있군요. 그 점이 [걱정]됩니다.
-Quest.Epic.Mystic50.WorriesMe:            그래요, 걱정됩니다. 하지만 이제 당신은 Kelic과 그의 하수인들을 [켈릭과 맞서기]할 준비가 되었다고 생각합니다.
-Quest.Epic.Mystic50.Subscribe:            Kelic에게 맞서 [미스틱 50레벨 에픽]을 진행하시겠습니까?
+Quest.Epic.Mystic50.Name:                 클랜 구원 (레벨 50 미스틱 에픽)
+Quest.Epic.Mystic50.FaceKelicDetail:      그래요, 그를 맞서 쓰러뜨려야 합니다! 지도 구석에 적힌 쪽지에는 켈릭이 죽어서도 강하다고 쓰여 있습니다. 그는 영혼 상태에서도 자신을 지키기 위해 추종자들을 모았고, 공격받으면 그들이 도우러 올 것입니다. 당신의 실력이 많이 늘었더라도 켈릭을 상대하려면 용병을 데려가는 것을 강력히 권합니다. 제가 주문을 끝내려면 그를 처치하고 그가 지닌 토템을 반드시 가져와야 합니다. 지도에 따르면 켈릭은 라우마리크에 있습니다. 라우마리크의 강으로 가서 북쪽으로 이동하세요. 끝에 도달하면 다음 강까지 북서쪽으로 가십시오. 강을 건너 서쪽으로 향하고, 나무 무리가 보일 때까지 설선을 따라가세요. 그곳에서 켈릭과 그의 추종자들을 찾을 수 있습니다. 토템을 얻으면 제게 돌아오세요. 모든 신들이 함께하길 바랍니다.
+Quest.Epic.Mystic50.TotemReminder:        켈릭에게서 살아남을 만큼 강했다니 반갑습니다. 당신에게 지배의 토템이 있는 것이 느껴집니다. 지금 켈릭의 [토템]을 제게 주세요! 서두르세요!
+Quest.Epic.Mystic50.RewardReady:          저주는 깨졌고 클랜은 안전합니다. 그들은 당신에게 빚을 졌지만, 아른핀이 당신에게 어울리는 보상을 마련한 것 같습니다. 보상은 여섯 부분이니 반드시 공간을 마련하세요. 준비가 되면 알려주세요. 그러면 우리의 감사와 함께 [받기] 할 수 있습니다!
+Quest.Epic.Mystic50.Intro:                아, 이것은 장고와 그의 탈영병들이 켈릭을 처리하려고 어디로 데려갔는지 정확히 보여줍니다. 켈릭이 실제로 얼마나 강했는지도 적혀 있군요. 그 점이 [걱정]됩니다.
+Quest.Epic.Mystic50.WorriesMe:            그래요, 걱정됩니다. 하지만 이제 당신은 켈릭과 그의 하수인들을 [켈릭과 맞서기]할 준비가 되었다고 생각합니다.
+Quest.Epic.Mystic50.Subscribe:            켈릭에게 맞서 [미스틱 50레벨 에픽]을 진행하시겠습니까?
 Quest.Epic.Mystic50.BreakCurse:           아, 그가 토템에 저주를 어떻게 둘렀는지 보입니다. 이제 클랜을 파괴하는 저주를 깨뜨릴 수 있습니다!
 Quest.Epic.Mystic50.AbortDecline:         좋습니다. 이제 나가서 당신의 일을 마무리하세요!
 Quest.Epic.Mystic50.Decline:              신께서는 당신의 게으름을 용서하시겠지만, 벼락은 조심하세요.
-Quest.Epic.Mystic50.Description1:         Raumarik에서 Kelic을 찾으세요. 강으로 가서 북쪽으로 이동하세요. 끝에서 다음 강까지 북서쪽으로 가고, 강을 건너 서쪽으로 향하세요. 나무 무리에 도달할 때까지 설선을 따라가세요.
-Quest.Epic.Mystic50.Description2:         Danica에게 돌아가 토템을 건네주세요!
-Quest.Epic.Mystic50.Description3:         보상을 받으려면 Danica와 대화하세요!
-Quest.Epic.Mystic50.CollectTotem:         Kelic이 Totem을 떨어뜨렸고 당신이 집어 들었습니다!
+Quest.Epic.Mystic50.Description1:         라우마리크에서 켈릭을 찾으세요. 강으로 가서 북쪽으로 이동하세요. 끝에서 다음 강까지 북서쪽으로 가고, 강을 건너 서쪽으로 향하세요. 나무 무리에 도달할 때까지 설선을 따라가세요.
+Quest.Epic.Mystic50.Description2:         다니카에게 돌아가 토템을 건네주세요!
+Quest.Epic.Mystic50.Description3:         보상을 받으려면 다니카와 대화하세요!
+Quest.Epic.Mystic50.CollectTotem:         켈릭이 토템을 떨어뜨렸고 당신이 집어 들었습니다!
 Quest.Epic.Mystic50.Finish:               미드가드의 역사를 지키는 데 도움을 주었다는 사실과 함께, 그것이 당신에게 잘 쓰이길 바랍니다!
-Quest.Epic.Viking50.Name:                 단검의 끝 (레벨 50 Viking 에픽)
-Quest.Epic.Viking50.MaulerUnavailable:    이 퀘스트는 아직 Mauler에게 제공되지 않습니다.
-Quest.Epic.Viking50.Step1Reminder:        Vanern Swamp에서 Ydenia를 찾아 처치하세요. 늪의 한 섬에서 그녀를 찾을 수 있습니다.
+Quest.Epic.Viking50.Name:                 단검의 끝 (레벨 50 바이킹 에픽)
+Quest.Epic.Viking50.MaulerUnavailable:    이 퀘스트는 아직 마울러에게 제공되지 않습니다.
+Quest.Epic.Viking50.Step1Reminder:        바네른 늪에서 이드니아를 찾아 처치하세요. 늪의 한 섬에서 그녀를 찾을 수 있습니다.
 Quest.Epic.Viking50.Step2Reminder:        안녕하세요 모험가님, 제게 [줄 물건]이 있습니까?
 Quest.Epic.Viking50.Step3Reminder:        {0}님, 물란의 엘리자베스를 찾아가세요. 힐러 하우스에서 찾을 수 있습니다. 그녀에게 [봉인된 주머니]를 가져다주세요!
 Quest.Epic.Viking50.Step4Reminder:        {0}님, 물란의 엘리자베스를 이미 찾아가 보셨습니까?
-Quest.Epic.Viking50.Intro:                아, 이것은 Jango와 그의 탈영병들이 Ydenia를 처리하려고 어디로 데려갔는지 정확히 보여줍니다. Ydenia가 실제로 얼마나 강했는지도 적혀 있군요. 그 점이 [걱정]됩니다.
-Quest.Epic.Viking50.WorriesMe:            그래요, 걱정됩니다. 하지만 이제 당신은 Ydenia와 그녀의 하수인들을 [이드니아와 맞서기]할 준비가 되었다고 생각합니다.
-Quest.Epic.Viking50.Subscribe:            Ydenia에게 맞서 [바이킹 50레벨 에픽]을 진행하시겠습니까?
+Quest.Epic.Viking50.Intro:                아, 이것은 장고와 그의 탈영병들이 이드니아를 처리하려고 어디로 데려갔는지 정확히 보여줍니다. 이드니아가 실제로 얼마나 강했는지도 적혀 있군요. 그 점이 [걱정]됩니다.
+Quest.Epic.Viking50.WorriesMe:            그래요, 걱정됩니다. 하지만 이제 당신은 이드니아와 그녀의 하수인들을 [이드니아와 맞서기]할 준비가 되었다고 생각합니다.
+Quest.Epic.Viking50.Subscribe:            이드니아에게 맞서 [바이킹 50레벨 에픽]을 진행하시겠습니까?
 Quest.Epic.Viking50.VisitElizabeth:       좋습니다! 물란의 엘리자베스를 찾아가 [봉인된 주머니]를 전해주세요.
 Quest.Epic.Viking50.FindElizabeth:        엘리자베스는 물란의 힐러 하우스에서 찾을 수 있습니다.
 Quest.Epic.Viking50.TakePouchToken:       보상을 받으려면 이 [봉인된 주머니]를 물란의 엘리자베스에게 가져가세요!
-Quest.Epic.Viking50.ElizabethPouch:       안녕하세요, Lynnleigh가 [봉인된 주머니]와 함께 당신을 보냈지요?
+Quest.Epic.Viking50.ElizabethPouch:       안녕하세요, 린리가 [봉인된 주머니]와 함께 당신을 보냈지요?
 Quest.Epic.Viking50.RewardReadyGreeting:  안녕하세요. 보상은 여섯 부분이니 반드시 공간을 마련하세요. 준비가 되면 알려주세요. 그러면 우리의 감사와 함께 [받기] 할 수 있습니다!
 Quest.Epic.Viking50.RewardReady:          보상은 여섯 부분이니 반드시 공간을 마련하세요. 준비가 되면 알려주세요. 그러면 우리의 감사와 함께 [받기] 할 수 있습니다!
 Quest.Epic.Viking50.AbortDecline:         좋습니다. 이제 나가서 당신의 일을 마무리하세요!
 Quest.Epic.Viking50.Decline:              신께서는 당신의 게으름을 용서하시겠지만, 벼락은 조심하세요.
-Quest.Epic.Viking50.FaceYdeniaDetail:     그래요, 그를 맞서 쓰러뜨려야 합니다! 지도 구석에 적힌 쪽지에는 Ydenia가 죽어서도 강하다고 쓰여 있습니다. 그는 영혼 상태에서도 자신을 지키기 위해 추종자들을 모았고, 공격받으면 그들이 도우러 올 것입니다. 당신의 실력이 많이 늘었더라도 Ydenia를 상대하려면 동료를 데려가는 것을 강력히 권합니다. 제가 주문을 끝내려면 그를 처치하고 그가 지닌 토템을 반드시 가져와야 합니다. 지도에 따르면 Ydenia는 Raumarik에 있습니다. Raumarik의 강으로 가서 북쪽으로 이동하세요. 끝에 도달하면 다음 강까지 북서쪽으로 가십시오. 강을 건너 서쪽으로 향하고, 나무 무리가 보일 때까지 설선을 따라가세요. 그곳에서 Ydenia와 그의 추종자들을 찾을 수 있습니다. 토템을 얻으면 제게 돌아오세요. 모든 신들이 함께하길 바랍니다.
-Quest.Epic.Viking50.Description1:         Vanern Swamp에서 Ydenia를 찾아 처치하세요!
-Quest.Epic.Viking50.Description2:         Lynnleigh에게 돌아가 Tome of Enchantments를 건네주세요!
+Quest.Epic.Viking50.FaceYdeniaDetail:     그래요, 이드니아를 맞서 쓰러뜨려야 합니다! 지도 구석에 적힌 쪽지에는 이드니아가 죽어서도 강하다고 쓰여 있습니다. 이드니아는 영혼 상태에서도 자신을 지키기 위해 추종자들을 모았고, 공격받으면 그들이 도우러 올 것입니다. 당신의 실력이 많이 늘었더라도 이드니아를 상대하려면 용병을 데려가는 것을 강력히 권합니다. 제가 주문을 끝내려면 이드니아를 처치하고 그가 지닌 토템을 반드시 가져와야 합니다. 지도에 따르면 이드니아는 라우마리크에 있습니다. 라우마리크의 강으로 가서 북쪽으로 이동하세요. 끝에 도달하면 다음 강까지 북서쪽으로 가십시오. 강을 건너 서쪽으로 향하고, 나무 무리가 보일 때까지 설선을 따라가세요. 그곳에서 이드니아와 추종자들을 찾을 수 있습니다. 토템을 얻으면 제게 돌아오세요. 모든 신들이 함께하길 바랍니다.
+Quest.Epic.Viking50.Description1:         바네른 늪에서 이드니아를 찾아 처치하세요!
+Quest.Epic.Viking50.Description2:         린리에게 돌아가 마법부여의 서를 건네주세요!
 Quest.Epic.Viking50.Description3:         봉인된 주머니를 물란의 엘리자베스에게 가져가세요!
-Quest.Epic.Viking50.Description4:         보상을 받으려면 Elizabeth와 대화하세요!
-Quest.Epic.Viking50.CollectTome:          Ydenia가 Tome of Enchantments를 떨어뜨렸고 당신이 집어 들었습니다!
+Quest.Epic.Viking50.Description4:         보상을 받으려면 엘리자베스와 대화하세요!
+Quest.Epic.Viking50.CollectTome:          이드니아가 마법부여의 서를 떨어뜨렸고 당신이 집어 들었습니다!
 Quest.Epic.Viking50.TakePouch:            보상을 받으려면 이 봉인된 주머니를 물란의 엘리자베스에게 가져가세요!
 Quest.Hibernia.WildWilderness.Name:       거친 야생
-Quest.Hibernia.WildWilderness.Description1: Miach에게 lunger에 대해 물어보세요.
-Quest.Hibernia.WildWilderness.Description2: lunger를 처치해 꼬리를 구하세요. Domnann 관문 바로 밖에서 찾을 수 있습니다.
-Quest.Hibernia.WildWilderness.Description3: 꼬리를 Grove of Domnann의 Resalg에게 가져가 [제조법]에 대해 이야기하세요.
-Quest.Hibernia.WildWilderness.MiachTailRequest: 좋습니다! 가는 김에 lunger 꼬리 하나를 Resalg에게 가져다주세요. 그가 후하게 보상할 겁니다. 물약을 만들려는 중이라 제가 [꼬리]를 구해 주겠다고 했습니다.
-Quest.Hibernia.WildWilderness.MiachFindLungers: 안녕하세요 {0}님, lunger를 찾아 꼬리를 Resalg에게 가져다주세요!
-Quest.Hibernia.WildWilderness.MiachBringTail: 오, 꼬리를 구했군요. Resalg에게 가져다주세요.
-Quest.Hibernia.WildWilderness.MiachIntro: 한때 Hy Brasil의 모든 것은 온순했습니다. 이제는 두려워할 이유가 없던 짐승들까지 사나워졌습니다. 그들은 먹기 위해서만이 아니라 즐기듯 죽이고, 원래의 사냥감만 노리지도 않습니다. 이제 그들은 우리를 [사냥]합니다.
-Quest.Hibernia.WildWilderness.MiachHunt: 맞습니다. 원래 이런 짐승들이 아닙니다. Fomorian의 사악한 손길 때문이라고 믿습니다! 그들이 많은 생명체의 터전과 사냥터를 망가뜨렸고, 일부는 뒤틀린 괴물이 되었습니다. 제가 말하는 짐승은 우리 마을 가까이에 있는 lunger입니다. 반드시 없애야 합니다!
-Quest.Hibernia.WildWilderness.Subscribe:  이 지역의 어린 lunger들을 몰아내는 일을 도와주시겠습니까?
-Quest.Hibernia.WildWilderness.FindTail:   lunger를 찾아 꼬리 하나를 Resalg에게 가져다주세요!
+Quest.Hibernia.WildWilderness.Description1: 미아흐에게 렁거에 대해 물어보세요.
+Quest.Hibernia.WildWilderness.Description2: 렁거를 처치해 꼬리를 구하세요. 돔난 관문 바로 밖에서 찾을 수 있습니다.
+Quest.Hibernia.WildWilderness.Description3: 꼬리를 돔난 숲의 레살그에게 가져가 [제조법]에 대해 이야기하세요.
+Quest.Hibernia.WildWilderness.MiachTailRequest: 좋습니다! 가는 김에 렁거 꼬리 하나를 레살그에게 가져다주세요. 그가 후하게 보상할 겁니다. 물약을 만들려는 중이라 제가 [꼬리]를 구해 주겠다고 했습니다.
+Quest.Hibernia.WildWilderness.MiachFindLungers: 안녕하세요 {0}님, 렁거를 찾아 꼬리를 레살그에게 가져다주세요!
+Quest.Hibernia.WildWilderness.MiachBringTail: 오, 꼬리를 구했군요. 레살그에게 가져다주세요.
+Quest.Hibernia.WildWilderness.MiachIntro: 한때 하이 브라질의 모든 것은 온순했습니다. 이제는 두려워할 이유가 없던 짐승들까지 사나워졌습니다. 그들은 먹기 위해서만이 아니라 즐기듯 죽이고, 원래의 사냥감만 노리지도 않습니다. 이제 그들은 우리를 [사냥]합니다.
+Quest.Hibernia.WildWilderness.MiachHunt: 맞습니다. 원래 이런 짐승들이 아닙니다. 포모리안의 사악한 손길 때문이라고 믿습니다! 그들이 많은 생명체의 터전과 사냥터를 망가뜨렸고, 일부는 뒤틀린 괴물이 되었습니다. 제가 말하는 짐승은 우리 마을 가까이에 있는 렁거입니다. 반드시 없애야 합니다!
+Quest.Hibernia.WildWilderness.Subscribe:  이 지역의 어린 렁거들을 몰아내는 일을 도와주시겠습니까?
+Quest.Hibernia.WildWilderness.FindTail:   렁거를 찾아 꼬리 하나를 레살그에게 가져다주세요!
 Quest.Hibernia.WildWilderness.ResalgGreeting: 모험가님, 무엇을 도와드릴까요?
-Quest.Hibernia.WildWilderness.ResalgTailQuestion: Forester님, Miach가 제게 꼬리를 가져다달라고 하던가요?
+Quest.Hibernia.WildWilderness.ResalgTailQuestion: 포레스터님, 미아흐가 제게 꼬리를 가져다달라고 하던가요?
 Quest.Hibernia.WildWilderness.ResalgClassGreeting: 훌륭한 {0}님, 무엇을 도와드릴까요?
-Quest.Hibernia.WildWilderness.ResalgFormulaIntro: 아! lunger 꼬리를 가져오셨군요! 이게 효과가 있을지는 확신할 수 없지만, 될 것 같습니다. 저는 특별한 [제조법]을 만들고 있습니다.
-Quest.Hibernia.WildWilderness.ResalgFormula: 그렇습니다. 미쳐 날뛰는 동물들을 진정시킬 수 있을 겁니다. 확신은 못 하지만 기대하고 있습니다. Fomorian이 온 뒤로 일부 동물은 변이까지 일어났습니다. 저는 그 사악한 종족 탓이라고 봅니다. Sylvan을 돕고 이 황폐한 땅이 회복되는 모습을 보고 싶습니다. 여기, 이 꼬리에 대한 보상입니다. 좋은 하루 되세요, 친구여!
+Quest.Hibernia.WildWilderness.ResalgFormulaIntro: 아! 렁거 꼬리를 가져오셨군요! 이게 효과가 있을지는 확신할 수 없지만, 될 것 같습니다. 저는 특별한 [제조법]을 만들고 있습니다.
+Quest.Hibernia.WildWilderness.ResalgFormula: 그렇습니다. 미쳐 날뛰는 동물들을 진정시킬 수 있을 겁니다. 확신은 못 하지만 기대하고 있습니다. 포모리안이 온 뒤로 일부 동물은 변이까지 일어났습니다. 저는 그 사악한 종족 탓이라고 봅니다. 실반을 돕고 이 황폐한 땅이 회복되는 모습을 보고 싶습니다. 여기, 이 꼬리에 대한 보상입니다. 좋은 하루 되세요, 친구여!
 Quest.Hibernia.WildWilderness.Decline:    아쉽군요... 마음이 바뀌면 다시 찾아와 주세요!
 Quest.Hibernia.WildWilderness.MoneyReward: 보상으로 {0}을(를) 받았습니다.
 PLCommands.Buff.Help:                     이 명령어에는 버프 목록이 필요합니다.\n아래 약어를 쉼표 하나로 구분해 입력하세요.
+PLCommands.Buff.AreaRequired:             이 명령어는 여기서 사용할 수 없습니다. 우호적인 킵 2500 유닛 이내, 주요 도시, 보더 킵, 주택 지역 안에서 사용해야 합니다.
+PLCommands.Buff.NeedTarget:               대상이 필요합니다!
+PLCommands.Buff.TargetNotSeen:            이 근처에서 {0}을(를) 볼 수 없습니다!
+PLCommands.Buff.InvalidShortcut:          "{0}"은(는) 유효한 단축어가 아닙니다.
+PLCommands.Buff.NoCastableBuff:           "{0}"에 해당하는 시전 가능한 버프가 없습니다.
 Tasks.AbstractTask.NameUndefined:         태스크 이름이 정의되지 않았습니다!
 Tasks.AbstractTask.DescriptionUndefined:  태스크 설명이 정의되지 않았습니다!
 Quest.Atlas.PowerOfNature.Name:           [추모] 자연의 힘
 Quest.Atlas.PowerOfNature.TheresaStep1:   {0}님, 뭐라고 말해야 할지 모르겠습니다. 도와주셔서 정말 감사합니다. 이제 아버지에 대한 [정보]를 알려드리겠습니다.
-Quest.Atlas.PowerOfNature.TheresaStep2:   {0}님, Lough Derg 동쪽 입구로 나가 남쪽의 작은 호수로 가 주세요. 그곳에서 제 아버지를 찾을 수 있기를 바랍니다.
+Quest.Atlas.PowerOfNature.TheresaStep2:   {0}님, 러프 더그 동쪽 입구로 나가 남쪽의 작은 호수로 가 주세요. 그곳에서 제 아버지를 찾을 수 있기를 바랍니다.
 Quest.Atlas.PowerOfNature.TheresaStep3:   안녕하세요 {0}님, 제 아버지를 찾으셨나요? 그분이 뭐라고 [말]하셨나요?
 Quest.Atlas.PowerOfNature.TheresaStep4:   정말 감사합니다. 이렇게 친절한 분은 처음입니다. 생각보다 훨씬 큰 도움을 주셨어요. 은화로 보답하고 싶습니다. 그리고 [자연의 힘]에 대해 말씀하셨는데, 그게 무슨 뜻인가요?
-Quest.Atlas.PowerOfNature.TheresaIntro:   안녕하세요 {0}님. 오랫동안 우리 땅에는 전쟁이 있었고, 그 시절이 다시 올까 두렵습니다. 제 아버지는 전쟁 전부터 Tir na Nog에 오지 않으셨습니다. 아버지가 몹시 그립고 무사하시길 바랍니다. 아버지를 찾는 일을 [도와] 주시겠습니까?
-Quest.Atlas.PowerOfNature.Subscribe:      Theresa가 아버지를 찾는 일을 도와주시겠습니까? [추모] 자연의 힘
-Quest.Atlas.PowerOfNature.Information:    전사 Karl, 수호자 Karl, 명예로운 Karl. 제 아버지는 훌륭한 분입니다. 제가 어릴 때 아버지는 여행에서 늘 무언가를 가져다주셨습니다. 저는 아직도 그것들을 간직하고 있고 절대 잃어버리지 않을 겁니다. 제가 자라면서 여행은 더 길어졌고 그리움도 커졌습니다. 어머니는 더 힘들어하셨습니다. 병이 들었고 아버지가 필요했습니다. 이제 어머니는 세상을 떠났고, 아버지는 몇 년째 Tir na Nog에 오지 않았습니다. 우리 모두 그분이 [필요했습니다].
-Quest.Atlas.PowerOfNature.NeededHim:      어릴 때 우리는 Lough Derg의 작은 호수까지 걸어가 나무와 벌레를 몇 시간씩 바라보곤 했습니다. 저는 그 시간이 좋았습니다. 여행 중 아버지가 준 [장난감]을 늘 가지고 다녔습니다. 그 호수로 가 주세요. 아버지가 그곳에 있다면, 그것이 제 가장 큰 희망입니다.
+Quest.Atlas.PowerOfNature.TheresaIntro:   안녕하세요 {0}님. 오랫동안 우리 땅에는 전쟁이 있었고, 그 시절이 다시 올까 두렵습니다. 제 아버지는 전쟁 전부터 티르 나 노그에 오지 않으셨습니다. 아버지가 몹시 그립고 무사하시길 바랍니다. 아버지를 찾는 일을 [도와] 주시겠습니까?
+Quest.Atlas.PowerOfNature.Subscribe:      테레사가 아버지를 찾는 일을 도와주시겠습니까? [추모] 자연의 힘
+Quest.Atlas.PowerOfNature.Information:    전사 칼, 수호자 칼, 명예로운 칼. 제 아버지는 훌륭한 분입니다. 제가 어릴 때 아버지는 여행에서 늘 무언가를 가져다주셨습니다. 저는 아직도 그것들을 간직하고 있고 절대 잃어버리지 않을 겁니다. 제가 자라면서 여행은 더 길어졌고 그리움도 커졌습니다. 어머니는 더 힘들어하셨습니다. 병이 들었고 아버지가 필요했습니다. 이제 어머니는 세상을 떠났고, 아버지는 몇 년째 티르 나 노그에 오지 않았습니다. 우리 모두 그분이 [필요했습니다].
+Quest.Atlas.PowerOfNature.NeededHim:      어릴 때 우리는 러프 더그의 작은 호수까지 걸어가 나무와 벌레를 몇 시간씩 바라보곤 했습니다. 저는 그 시간이 좋았습니다. 여행 중 아버지가 준 [장난감]을 늘 가지고 다녔습니다. 그 호수로 가 주세요. 아버지가 그곳에 있다면, 그것이 제 가장 큰 희망입니다.
 Quest.Atlas.PowerOfNature.Toy:            그녀가 잠시 말을 멈춥니다. 이 장난감을 호수로 가는 길에 가져가 주세요. 아버지를 만나면 사랑의 표시로 전해 주세요. 저는 그분을 절대 잊지 않을 겁니다!
 Quest.Atlas.PowerOfNature.InventoryFull:  인벤토리가 너무 가득 찼습니다. 이 [장난감]을 들 수 있을 때 다시 오세요.
 Quest.Atlas.PowerOfNature.Say:            당신을 보내길 정말 잘했습니다. 아버지가 아직 살아 계시고 건강하다는 사실이 제게 평온과 힘을 줍니다.
-Quest.Atlas.PowerOfNature.PowerMeaning:   이제 알겠습니다. Lough Derg의 작은 호수는 [자연의 힘의 근원]입니다. 어릴 때 왜 그곳에서 그렇게 많은 시간을 보냈는지 이제 이해됩니다.
-Quest.Atlas.PowerOfNature.NaturalPowers:  아버지는 이 인형에 마법을 불어넣었고, 그 안에서 아버지의 존재가 느껴집니다. 곧 돌아오실 거라 믿습니다. 이제 저는 평온할 수 있습니다. 제게, 그리고 Tir na Nog 모두에게 아버지를 돌려주셔서 정말 감사합니다.
+Quest.Atlas.PowerOfNature.PowerMeaning:   이제 알겠습니다. 러프 더그의 작은 호수는 [자연의 힘의 근원]입니다. 어릴 때 왜 그곳에서 그렇게 많은 시간을 보냈는지 이제 이해됩니다.
+Quest.Atlas.PowerOfNature.NaturalPowers:  아버지는 이 인형에 마법을 불어넣었고, 그 안에서 아버지의 존재가 느껴집니다. 곧 돌아오실 거라 믿습니다. 이제 저는 평온할 수 있습니다. 제게, 그리고 티르 나 노그 모두에게 아버지를 돌려주셔서 정말 감사합니다.
 Quest.Atlas.PowerOfNature.FeelPower:      자연의 힘이 느껴집니다!
 Quest.Atlas.PowerOfNature.KarlGreeting:   안녕하세요 모험가님, 좋은 하루 보내시길 바랍니다.
 Quest.Atlas.PowerOfNature.KarlStep2:      안녕하세요 {0}님, 이곳까지 오다니 정말 용감하시군요. 이 호수에는 몬스터와 해충이 들끓지만, 저는 [이곳]을 찾아오는 모든 방문자가 반갑습니다.
 Quest.Atlas.PowerOfNature.KarlStep3:      {0}님, 준비되었다면 의식을 [시작]할 수 있습니다.
-Quest.Atlas.PowerOfNature.KarlStep4:      좋습니다. 이제 이 마법 인형을 Tir na Nog의 제 딸에게 가져가 자연의 힘에 대해 전해 주세요. 저도 곧 돌아가 딸 곁에 머물겠습니다.\n찾아와 주셔서 감사합니다, {0}님. 진심으로 고맙습니다!
-Quest.Atlas.PowerOfNature.ThisPlace:      이곳은 제게 아주 특별합니다. 단순한 은신처가 아닙니다. 여기서는 Hibernia 전체에 피어나는 자연을 느낄 수 있습니다. 이곳에 오는 모두에게 그 힘과 생명을 보여주고 싶었습니다. [제 딸]에게도 보여주고 싶었지만, 너무 어려 여행할 수 없었고 어머니가 걱정했습니다.
-Quest.Atlas.PowerOfNature.MyDaughter:     가방에서 보이는 그 [인형]... 기억납니다. 오래전 Hadrian's Wall을 다녀오며 가져와 제 딸에게 준 것입니다. 왜 당신이 가지고 있습니까?
-Quest.Atlas.PowerOfNature.Doll:           당신은 그에게 인형을 건네고 Theresa의 이야기를 전합니다. 그의 눈에 눈물이 맺힙니다. 그 모든 세월 동안 정말 미안합니다. 아내가 세상을 떠났다는 말을 듣고 무너졌습니다. Theresa에게 제가 그 어느 때보다 필요했는데 저는 곁에 없었습니다. 제게 인형을 주세요. 자연의 모든 힘이 지닌 [힘과 기운]을 보여주고, 제가 아직 살아 있다는 증거를 딸에게 전하겠습니다.
+Quest.Atlas.PowerOfNature.KarlStep4:      좋습니다. 이제 이 마법 인형을 티르 나 노그의 제 딸에게 가져가 자연의 힘에 대해 전해 주세요. 저도 곧 돌아가 딸 곁에 머물겠습니다.\n찾아와 주셔서 감사합니다, {0}님. 진심으로 고맙습니다!
+Quest.Atlas.PowerOfNature.ThisPlace:      이곳은 제게 아주 특별합니다. 단순한 은신처가 아닙니다. 여기서는 하이버니아 전체에 피어나는 자연을 느낄 수 있습니다. 이곳에 오는 모두에게 그 힘과 생명을 보여주고 싶었습니다. [제 딸]에게도 보여주고 싶었지만, 너무 어려 여행할 수 없었고 어머니가 걱정했습니다.
+Quest.Atlas.PowerOfNature.MyDaughter:     가방에서 보이는 그 [인형]... 기억납니다. 오래전 하드리아누스 장벽을 다녀오며 가져와 제 딸에게 준 것입니다. 왜 당신이 가지고 있습니까?
+Quest.Atlas.PowerOfNature.Doll:           당신은 그에게 인형을 건네고 테레사의 이야기를 전합니다. 그의 눈에 눈물이 맺힙니다. 그 모든 세월 동안 정말 미안합니다. 아내가 세상을 떠났다는 말을 듣고 무너졌습니다. 테레사에게 제가 그 어느 때보다 필요했는데 저는 곁에 없었습니다. 제게 인형을 주세요. 자연의 모든 힘이 지닌 [힘과 기운]을 보여주고, 제가 아직 살아 있다는 증거를 딸에게 전하겠습니다.
 Quest.Atlas.PowerOfNature.StrengthAura:   감사합니다 {0}님. 준비되었다면 의식을 [시작]할 수 있습니다.
 Quest.Atlas.PowerOfNature.Decline:        걱정하지 마세요. 제 이야기를 들어준 것만으로도 큰 도움이 되었습니다. 마음이 바뀌면 다시 와서 [도와] 주세요.
 Quest.Atlas.PowerOfNature.Accept:         정말 감사합니다. 뭐라고 말해야 할지 모르겠습니다. 이제 아버지에 대한 [정보]를 알려드리겠습니다.
-Quest.Atlas.PowerOfNature.Description1:   Theresa와 계속 대화해 Karl에 대한 정보를 더 들으세요.
-Quest.Atlas.PowerOfNature.Description2:   Lough Derg의 작은 호수로 가서 Karl을 찾으세요.
-Quest.Atlas.PowerOfNature.Description3:   Karl과 대화하고 의식을 도와주세요.
-Quest.Atlas.PowerOfNature.Description4:   Karl의 선물을 가지고 Theresa에게 돌아가세요.
+Quest.Atlas.PowerOfNature.Description1:   테레사와 계속 대화해 칼에 대한 정보를 더 들으세요.
+Quest.Atlas.PowerOfNature.Description2:   러프 더그의 작은 호수로 가서 칼을 찾으세요.
+Quest.Atlas.PowerOfNature.Description3:   칼과 대화하고 의식을 도와주세요.
+Quest.Atlas.PowerOfNature.Description4:   칼의 선물을 가지고 테레사에게 돌아가세요.
 Quest.Atlas.PowerOfNature.Title:          자연의 가호
 Quest.Atlas.PowerOfNature.MoneyReward:    보상으로 {0}을(를) 받았습니다.
 Quests.DataQuest.SourceTextUndefined:     SourceTexts[0]이 정의되지 않았습니다!
-Appeal.Prefix:                            [어필]:
+Appeal.Prefix:                            [문의]:
 Spell.Artifact.BeltOfSun.CantSummonLight: {0}은(는) 빛을 소환할 수 없습니다!
 RealmAbility.AtlasOF.Trip.Message1:       넘어져 이동 속도가 크게 느려졌습니다.
 RealmAbility.AtlasOF.Trip.Message2:       {0}이(가) 넘어져 이동 속도가 크게 느려졌습니다!
@@ -2048,7 +2056,7 @@ NamedMobs.Kvasir.PrimalScream:                 {0}이(가) 원초적인 비명�
 NamedMobs.Kvasir.TunnelRumble:                 투스카리안 빙하 전체에 낮은 진동이 울려 퍼집니다! 소리에 공명한 고드름들이 천장에서 떨어져 바닥에 산산조각 납니다!진동은 점점 커지고 벽에는 작은 균열이 생깁니다! 빙하 어딘가에서 거인 무리가 움직이는 듯한 소리입니다!
 NamedMobs.ElderIcelord.BerserkerStance:                 {0}이(가) 광전사 태세에 들어갑니다!
 NamedMobs.ElderIcelord.BerserkerFades:                 {0}의 광전사 태세가 사라집니다!
-NamedMobs.ElderIcelord.FrozenFortress:                 {0}이(가) 말합니다. '우리 얼어붙은 요새를 침범한 대가는 죽음이다! 너와 네 동료들에게 죽음을! 너희의 존재는 의회의 평화주의자들을 조롱하는 것이다. 죽은 의회 구성원을 위해 눈물 흘리지 않겠다!'
+NamedMobs.ElderIcelord.FrozenFortress:                 {0}이(가) 말합니다. '우리 얼어붙은 요새를 침범한 대가는 죽음이다! 너와 네 용병들에게 죽음을! 너희의 존재는 의회의 평화주의자들을 조롱하는 것이다. 죽은 의회 구성원을 위해 눈물 흘리지 않겠다!'
 NamedMobs.ElderIcelord.OtherworldlyHowl:                 이세계의 울부짖음 같은 소리가 문득 들리기 시작합니다. 소리는 빠르게 커지지만 말소리는 섞여 있지 않습니다. 잠시 후 울부짖음은 사라지고, 천천히 움직이는 빙하의 익숙한 소리만 남습니다.
 NamedMobs.ElderIcelord.DarkEnergies:                 {0}의 몸 주위에 어둠의 기운이 소용돌이치며 경련합니다!
 NamedMobs.ElderIcelord.NoMercy:                 {0}이(가) 고함칩니다. '여기까지 오다니 놀랍군! 하지만 너희 여정은 여기서 모두의 죽음으로 끝난다. 자비는 없다!'
@@ -2109,7 +2117,7 @@ NamedMobs.MelancholicFairyQueen.Trumpets:                 멀리서 나팔 소�
 NamedMobs.Blight.BonesFormSkeleton:                 핏빛 뼈들이 사방에서 날아와 눈앞의 공중에서 피와 살점의 소용돌이를 이룹니다. 뼈들이 서로 맞물리며 하나의 거대한 해골을 형성하기 시작합니다.
 NamedMobs.Blight.TrueForm:                 블라이트가 진정한 모습을 드러냈습니다! 그것이 무시무시한 시선으로 당신을 노려봅니다!
 NamedMobs.Ydenia.SeithkonaPower:                 {0}이(가) 말합니다. "세이드코나의 힘을 느껴라, 어리석은 자여!"
-NamedMobs.Ydenia.ThrowsIntoWater:                 세이드코나의 이데니아가 당신을 물속으로 던져 피해를 입힙니다!
+NamedMobs.Ydenia.ThrowsIntoWater:                 세이드코나의 이드니아가 당신을 물속으로 던져 피해를 입힙니다!
 NamedMobs.Mokkurvalve.BodyFalls:                 {0}의 몸 일부가 땅에 떨어집니다.
 NamedMobs.SpectralProvisioner.ImmuneAttack:                 스펙트럴 프로비저너는 이 형태의 공격에 면역입니다.
 NamedMobs.SoulReckoner.BrushesOffAttack:                 {0}이(가) 당신의 공격을 털어냅니다!
@@ -2125,7 +2133,7 @@ NamedMobs.Apocalypse.FamesChallengeQuestion:                 파메스가 묻습
 NamedMobs.Apocalypse.MagicMovesCenter:                 마법 에너지가 당신을 방 중앙으로 이동시킵니다!
 NamedMobs.Apocalypse.FamesChallengePrompt:                 파메스가 말합니다. 그래? 운명 그 자체에 도전하겠는가?\n[아니오]라고 말하면 떠날 수 있다...\n[예]라고 말하면 준비하라.
 NamedMobs.Apocalypse.FamesBeGone:                 그렇다면 떠나라. 네가 하도록 정해진 일을 계속하라.
-NamedMobs.Apocalypse.FamesTwoMinutes:                 파메스가 말합니다. '됐다. 그대는 용감한 {0}이군... 아니면 어리석거나. 그대의 행동이 운명의 흐름을 바꿀 가능성은 거의 없겠지만, 그대와 동료들에게 준비할 몇 알의 시간, 그대들의 말로 2분을 허락한다.
+NamedMobs.Apocalypse.FamesTwoMinutes:                 파메스가 말합니다. '됐다. 그대는 용감한 {0}이군... 아니면 어리석거나. 그대의 행동이 운명의 흐름을 바꿀 가능성은 거의 없겠지만, 그대와 용병들에게 준비할 몇 알의 시간, 그대들의 말로 2분을 허락한다.
 NamedMobs.Apocalypse.BellumOneMinute:                 벨룸이 말합니다. '전쟁을 준비하라. 1분을 허락한다.'
 NamedMobs.Apocalypse.MorbusOneMinute:                 모르부스가 말합니다. '때로는 가장 작은 것들이 가장 치명적인 법이다. 1분 안에 준비하라..'
 NamedMobs.Apocalypse.FunusClericWarning:                 푸누스가 말합니다. '죽을 준비를 하라. 이 일을 준비할 60초를 주겠다.'\n잠시 동안 이 지역의 성직자들이 신성한 빛에 목욕한 듯 은은하게 빛나고, 눈에는 갑자기 에너지가 흘러드는 듯한 광채가 돕니다. 마음속의 희미한 속삭임이 이 죽음의 존재에게 평범한 공격은 거의 효과가 없거나 상황을 악화시킬 수 있다고 경고하지만, 동시에 성직자들은 신성과 이 세계를 잇는 직접적인 통로이기에 푸누스에게 예상치 못한 이점을 가진다고 안심시킵니다.
@@ -2379,7 +2387,7 @@ NamedMobs.Vortanos.LivingCannotConquer:     {0}이(가) 말합니다. "산 자�
 NamedMobs.Vortanos.SleepPrisoners:          {0}이(가) 말합니다. "잠들어라, 원치 않았던 내 포로들이여. 이제 너희는 더 이상 필요 없다."
 NamedMobs.Vortanos.FleshWillBeMine:         {0}이(가) 말합니다. "네 살점은 한 조각씩 내 것이 될 것이다!"
 NamedMobs.Oona.ImmuneDistance:              {0}은(는) 이 거리에서는 피해를 받지 않습니다!
-NamedMobs.Oona.SpiritShallHelp:             너희의 보잘것없는 신들이 {0}에게 또 한 번의 삶을 허락할지도 모르지. 그동안 히베르니아는 미드가드를 무너뜨릴 것이고, 네 영혼도 우리를 돕게 될 것이다!
+NamedMobs.Oona.SpiritShallHelp:             너희의 보잘것없는 신들이 {0}에게 또 한 번의 삶을 허락할지도 모르지. 그동안 하이버니아는 미드가르드를 무너뜨릴 것이고, 네 영혼도 우리를 돕게 될 것이다!
 NamedMobs.Amphiptere.ToothKnocked:          일격에 {0}의 이빨 하나가 땅으로 떨어집니다.
 NamedMobs.OrganicEnergyMechanism.SicklyEssence: {0}이(가) 병든 듯 흔들립니다... 강력한 마법 정수가 {1}에게 폭발하려 합니다!
 NamedMobs.Olcasgean.IntrudersEntered:       사방에서 들려오는 듯한 목소리가 말합니다. '침입자들이 내성소에 들어왔다.'
@@ -2437,13 +2445,13 @@ Scripts.System.XMob.NoSpotsLoaded:          해제할 지점이 불러와져 있
 Scripts.System.XMob.SpotRespawned:          지점을 다시 생성했습니다!
 Scripts.System.XMob.InvalidRadiusOrRealm:   반경 또는 렐름 값이 올바르지 않습니다.
 NamedMobs.OFGreenKnight.Greeting:           나와 대화하려 하다니 현명하군요, {0}. 이 숲은 섬세한 야수와 같아 쉽게 당신에게 등을 돌릴 수 있습니다. 그 안의 야수를 깨운다면, 나는 [숲을 지키기] 위해 일어설 수밖에 없습니다.
-NamedMobs.OFGreenKnight.DefendReply:        조심성이 Sauvage의 어두운 곳을 지나는 당신의 길잡이가 될 것입니다. 발걸음을 조심하세요, {0}. 나는 언제나 내 터전을 지켜보고 있습니다!
+NamedMobs.OFGreenKnight.DefendReply:        조심성이 소베지의 어두운 곳을 지나는 당신의 길잡이가 될 것입니다. 발걸음을 조심하세요, {0}. 나는 언제나 내 터전을 지켜보고 있습니다!
 NecromancerPet.Taunt.LessAggressive:        {0}이(가) 이전보다 덜 공격적으로 보입니다.
 NecromancerPet.Taunt.AggressiveStance:      {0}이(가) 공격적인 자세를 취합니다.
-NecromancerPet.Arawn.TauntPrompt:           Arawn의 수많은 시체 종복 중 하나로서, 나는 적을 [도발]해 당신 대신 나에게 집중하게 할 수 있습니다.
+NecromancerPet.Arawn.TauntPrompt:           아로운의 수많은 시체 종복 중 하나로서, 나는 적을 [도발]해 당신 대신 나에게 집중하게 할 수 있습니다.
 NecromancerPet.Arawn.EmpowerPrompt:         한마디만 해도 나를 [강화]할 수 있습니다.
 NecromancerPet.Arawn.GreaterPrompt:         {0} 또한 적에게 [독]이나 [질병]을 걸 수도 있습니다. {1}
-NecromancerPet.Arawn.AbominationPrompt:     Arawn에게 선택받은 전사로서, 나는 당신을 위해 강력한 무기들을 다룰 수 있습니다. 원한다면 적을 [도발]해 당신 대신 나에게 집중하게 하겠습니다. {0}
+NecromancerPet.Arawn.AbominationPrompt:     아로운에게 선택받은 전사로서, 나는 당신을 위해 강력한 무기들을 다룰 수 있습니다. 원한다면 적을 [도발]해 당신 대신 나에게 집중하게 하겠습니다. {0}
 NecromancerPet.AsYouCommand:                명령대로 하겠습니다.
 LevelUpRespec.AwardedDOLFull:              레벨 {0}에 도달하여 DOL 전체 재설정권을 받았습니다!
 Keep.GuildManager.DoorDestroyed:           [길드] [{1} 구역의 {0}이(가) 파괴되었습니다]

@@ -4,7 +4,7 @@ using DOL.Language;
 
 namespace DOL.GS.Commands
 {
-    [CmdAttribute("&backupstyle", ePrivLevel.Player, "Modify automatic backup style.", "/backupstyle <set | clear>")]
+    [CmdAttribute("&backupstyle", ePrivLevel.Player, "자동 예비 스타일을 설정합니다.", "/backupstyle <set | clear>")]
     public class BackupStyleCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)

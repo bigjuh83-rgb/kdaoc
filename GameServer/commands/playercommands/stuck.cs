@@ -4,7 +4,7 @@ namespace DOL.GS.Commands
 {
     [CmdAttribute("&stuck",
         ePrivLevel.Player,
-        "Move the player to the last recorded safe position",
+        "캐릭터를 마지막으로 기록된 안전 위치로 이동합니다.",
         "/stuck")]
     public class StuckCommandHandler : AbstractCommandHandler, ICommandHandler
     {

@@ -25,8 +25,8 @@ namespace DOL.GS.Commands
 		"&gu",
 		new string[] {"&guild"},
 		ePrivLevel.Player,
-		"Guild Chat command",
-		"/gu <text>")]
+		"길드 채팅 명령어입니다.",
+		"/gu <메시지>")]
 	public class GuildChatCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)
@@ -58,8 +58,8 @@ namespace DOL.GS.Commands
 		"&o",
 		new string[] {"&osend"},
 		ePrivLevel.Player,
-		"Speak in officer chat (Must be a guild officer)",
-		"/o <text>")]
+		"오피서 채팅으로 말합니다. 길드 오피서만 사용할 수 있습니다.",
+		"/o <메시지>")]
 	public class OfficerGuildChatCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)
@@ -98,8 +98,8 @@ namespace DOL.GS.Commands
 		"&as",
 		new string[] {"&asend"},
 		ePrivLevel.Player,
-		"Sends a message to the alliance chat",
-		"/as <text>")]
+		"동맹 채팅으로 메시지를 보냅니다.",
+		"/as <메시지>")]
 	public class AllianceGuildChatCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

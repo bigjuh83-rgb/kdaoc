@@ -4,7 +4,7 @@ namespace DOL.GS.Commands
         "&advisor",
         ePrivLevel.Player,
         // Displays next to the command when '/cmd' is entered
-        "Flags your character as a class or tradeskill Advisor (<ADV>) for new players' questions.",
+        "신규 플레이어 질문에 답하는 클래스/제작 조언자(<ADV>)로 표시합니다.",
         // Syntax: '/advisor' - Flags your character as an Advisor (<ADV>) to indicate that you are willing to answer new players' questions.
         "PLCommands.Advisor.Syntax.Advisor",
         // Message: '/advisor <advisorName> <message>' - Directly messages an Advisor with your question.

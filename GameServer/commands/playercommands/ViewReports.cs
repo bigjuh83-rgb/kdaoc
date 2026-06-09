@@ -26,7 +26,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&viewreports",
 		ePrivLevel.Player,
-		"Allows you to view submitted bug reports.",
+		"접수된 버그 신고를 확인합니다.",
 		"/viewreports")]
 	public class ViewReportsCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

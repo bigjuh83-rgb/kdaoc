@@ -3,12 +3,12 @@
 ## Attributes
 
 ### Skill Bonuses
-SkillBase.RegisterPropertyNames.AllArcherySkills:		모든 궁술 기술
-SkillBase.RegisterPropertyNames.AllDualWieldingSkills:	모든 쌍수 기술
-SkillBase.RegisterPropertyNames.AllMagicSkills:			모든 마법 기술
+SkillBase.RegisterPropertyNames.AllArcherySkills:		모든 아처리 기술
+SkillBase.RegisterPropertyNames.AllDualWieldingSkills:	모든 듀얼 윌드 기술
+SkillBase.RegisterPropertyNames.AllMagicSkills:			모든 매직 기술
 SkillBase.RegisterPropertyNames.AllMeleeWeaponSkills:	모든 근접 무기 기술
 SkillBase.RegisterPropertyNames.AllSkills:				모든 기술
-SkillBase.RegisterPropertyNames.ALLSpellLines:			모든 주문 계열
+SkillBase.RegisterPropertyNames.ALLSpellLines:			모든 스펠 라인
 
 ### Resists
 SkillBase.RegisterPropertyNames.Body:					바디
@@ -19,7 +19,7 @@ SkillBase.RegisterPropertyNames.Heat:					히트
 SkillBase.RegisterPropertyNames.Matter:					매터
 SkillBase.RegisterPropertyNames.Slash:					슬래쉬
 SkillBase.RegisterPropertyNames.Spirit:					스피릿
-SkillBase.RegisterPropertyNames.Thrust:					피어싱
+SkillBase.RegisterPropertyNames.Thrust:					쓰러스트
 
 ### Stats
 SkillBase.RegisterPropertyNames.Acuity:					통찰
@@ -35,51 +35,51 @@ SkillBase.RegisterPropertyNames.Quickness:				순발력
 SkillBase.RegisterPropertyNames.Strength:				힘
 
 ## Melee Skills
-SkillBase.RegisterPropertyNames.Archery:				궁술
-SkillBase.RegisterPropertyNames.Axe:					도끼
-SkillBase.RegisterPropertyNames.Blades:					검
-SkillBase.RegisterPropertyNames.Blunt:					둔기
-SkillBase.RegisterPropertyNames.CelticDual:				켈틱 쌍수
-SkillBase.RegisterPropertyNames.CelticSpear:			켈틱 창
-SkillBase.RegisterPropertyNames.Composite:				합성궁
-SkillBase.RegisterPropertyNames.CriticalStrike:			치명 공격
-SkillBase.RegisterPropertyNames.Crossbows:				석궁
+SkillBase.RegisterPropertyNames.Archery:				아처리
+SkillBase.RegisterPropertyNames.Axe:					액스
+SkillBase.RegisterPropertyNames.Blades:					블레이드
+SkillBase.RegisterPropertyNames.Blunt:					블런트
+SkillBase.RegisterPropertyNames.CelticDual:				켈틱 듀얼
+SkillBase.RegisterPropertyNames.CelticSpear:			켈틱 스피어
+SkillBase.RegisterPropertyNames.Composite:				컴포짓 보우
+SkillBase.RegisterPropertyNames.CriticalStrike:			크리티컬 스트라이크
+SkillBase.RegisterPropertyNames.Crossbows:				크로스보우
 SkillBase.RegisterPropertyNames.Crushing:				크러쉬
-SkillBase.RegisterPropertyNames.DualWield:				쌍수
-SkillBase.RegisterPropertyNames.FlexibleWeapon:			유연 무기
-SkillBase.RegisterPropertyNames.Hammer:					망치
-SkillBase.RegisterPropertyNames.HandToHand:				맨손 전투
+SkillBase.RegisterPropertyNames.DualWield:				듀얼 윌드
+SkillBase.RegisterPropertyNames.FlexibleWeapon:			플렉시블 무기
+SkillBase.RegisterPropertyNames.Hammer:					해머
+SkillBase.RegisterPropertyNames.HandToHand:				핸드 투 핸드
 SkillBase.RegisterPropertyNames.LargeWeapon:			대형 무기
-SkillBase.RegisterPropertyNames.LeftAxe:				왼손 도끼
-SkillBase.RegisterPropertyNames.Longbows:				장궁
-SkillBase.RegisterPropertyNames.Parry:					받아치기
-SkillBase.RegisterPropertyNames.Piercing:				관통
-SkillBase.RegisterPropertyNames.Polearms:				장병기
-SkillBase.RegisterPropertyNames.RecurvedBow:			곡궁
-SkillBase.RegisterPropertyNames.Scythe:					낫
+SkillBase.RegisterPropertyNames.LeftAxe:				레프트 액스
+SkillBase.RegisterPropertyNames.Longbows:				롱보우
+SkillBase.RegisterPropertyNames.Parry:					패리
+SkillBase.RegisterPropertyNames.Piercing:				피어싱
+SkillBase.RegisterPropertyNames.Polearms:				폴암
+SkillBase.RegisterPropertyNames.RecurvedBow:			리커브 보우
+SkillBase.RegisterPropertyNames.Scythe:					사이드
 SkillBase.RegisterPropertyNames.Shields:				방패
-SkillBase.RegisterPropertyNames.ShortBow:				단궁
+SkillBase.RegisterPropertyNames.ShortBow:				쇼트 보우
 SkillBase.RegisterPropertyNames.Slashing:				슬래쉬
-SkillBase.RegisterPropertyNames.Spear:					창
-SkillBase.RegisterPropertyNames.Staff:					지팡이
-SkillBase.RegisterPropertyNames.Sword:					검
-SkillBase.RegisterPropertyNames.ThrownWeapons:			투척
-SkillBase.RegisterPropertyNames.Thrusting:				피어싱
-SkillBase.RegisterPropertyNames.TwoHanded:				양손 무기
+SkillBase.RegisterPropertyNames.Spear:					스피어
+SkillBase.RegisterPropertyNames.Staff:					스태프
+SkillBase.RegisterPropertyNames.Sword:					소드
+SkillBase.RegisterPropertyNames.ThrownWeapons:			스로잉
+SkillBase.RegisterPropertyNames.Thrusting:				쓰러스트
+SkillBase.RegisterPropertyNames.TwoHanded:				투핸드
 
 ## Combat Styles
 GamePlayer.RefreshSpec.AfterBlocked:			이 스타일은 마지막 공격이 막힌 뒤 사용하기 좋습니다.
 GamePlayer.RefreshSpec.AfterEvaded:				이 스타일은 마지막 공격을 회피당한 뒤 사용하기 좋습니다.
 GamePlayer.RefreshSpec.AfterFumbles:			이 스타일은 마지막 공격이 헛나간 뒤 사용하기 좋습니다.
 GamePlayer.RefreshSpec.AfterMissed:				이 스타일은 마지막 공격이 빗나간 뒤 사용하기 좋습니다.
-GamePlayer.RefreshSpec.AfterParried:			이 스타일은 마지막 공격을 받아쳐진 뒤 사용하기 좋습니다.
+GamePlayer.RefreshSpec.AfterParried:			이 스타일은 마지막 공격이 패리된 뒤 사용하기 좋습니다.
 GamePlayer.RefreshSpec.AfterStyle:				이 스타일은 {0} 스타일을 실행한 뒤에만 사용할 수 있습니다.
 GamePlayer.RefreshSpec.TargetBlocked:			이 스타일은 대상의 마지막 공격을 막은 뒤 사용하기 좋습니다.
 GamePlayer.RefreshSpec.TargetEvaded:			이 스타일은 대상의 마지막 공격을 회피한 뒤 사용하기 좋습니다.
 GamePlayer.RefreshSpec.TargetFumbles:			이 스타일은 대상의 마지막 공격이 헛나간 뒤 사용하기 좋습니다.
 GamePlayer.RefreshSpec.TargetHits:				이 스타일은 대상의 마지막 공격이 적중한 뒤 사용하기 좋습니다.
 GamePlayer.RefreshSpec.TargetMisses:			이 스타일은 대상의 마지막 공격이 빗나간 뒤 사용하기 좋습니다.
-GamePlayer.RefreshSpec.TargetParried:			이 스타일은 대상의 마지막 공격을 받아친 뒤 사용하기 좋습니다.
+GamePlayer.RefreshSpec.TargetParried:			이 스타일은 대상의 마지막 공격을 패리한 뒤 사용하기 좋습니다.
 GamePlayer.RefreshSpec.TargetStyle:				이 스타일은 대상의 마지막 공격이 스타일 공격인 뒤 사용하기 좋습니다.
 
 ## Spell Lines
@@ -122,7 +122,7 @@ SkillBase.RegisterPropertyNames.Savagery:				야성
 SkillBase.RegisterPropertyNames.Smiting:				징벌
 SkillBase.RegisterPropertyNames.Soulrending:			영혼 찢기
 SkillBase.RegisterPropertyNames.SpiritMagic:			영혼 마법
-SkillBase.RegisterPropertyNames.Stealth:				은신
+SkillBase.RegisterPropertyNames.Stealth:				스텔스
 SkillBase.RegisterPropertyNames.Stormcalling:			폭풍 소환
 SkillBase.RegisterPropertyNames.Summoning:				소환
 SkillBase.RegisterPropertyNames.Suppression:			억압
@@ -160,7 +160,7 @@ SkillBase.RegisterPropertyNames.WindMagicFocus:			바람 마법 집중
 ## Non-Classic/SI Bonuses
 SkillBase.RegisterPropertyNames.Witchcraft:				주술
 SkillBase.RegisterPropertyNames.WitchcraftFocus:		주술 집중
-SkillBase.RegisterPropertyNames.WeaponSkill:			무기 숙련 보너스
+SkillBase.RegisterPropertyNames.WeaponSkill:			무기 스킬 보너스
 SkillBase.RegisterPropertyNames.VampiiricEmbrace:		뱀피르의 포옹
 SkillBase.RegisterPropertyNames.ToHitBonus:				- 명중 보너스: {0}% (PvE 전용)
 SkillBase.RegisterPropertyNames.StrengthBonusCap:		힘 능력치 보너스 한도 증가
@@ -184,17 +184,17 @@ SkillBase.RegisterPropertyNames.PieceAblative:			- 부위별 보호막: {0}% (Pv
 SkillBase.RegisterPropertyNames.ShadowMastery:			그림자 숙련
 #ParryChance has been commented out as a PvE-only bonus - line 1792 in GameServer\packets\Client\168\DetailDisplayHandler.cs
 #SkillBase.RegisterPropertyNames.ParryChance:			- Parry: {0}% (PvE Only)
-SkillBase.RegisterPropertyNames.ParryChance:			받아치기 확률
+SkillBase.RegisterPropertyNames.ParryChance:			패리 확률
 SkillBase.RegisterPropertyNames.NegativeReduction:		- 부정적 효과 지속시간 감소: {0}% (PvE 전용)
 SkillBase.RegisterPropertyNames.MesmerizeDuration:		최면 지속시간
-SkillBase.RegisterPropertyNames.MeleeDamage:			근접 피해 보너스
-SkillBase.RegisterPropertyNames.MeleeSpeed:				근접 전투 속도 보너스
-SkillBase.RegisterPropertyNames.MagicDamageBonus:		마법 피해 보너스
+SkillBase.RegisterPropertyNames.MeleeDamage:			밀리 피해 보너스
+SkillBase.RegisterPropertyNames.MeleeSpeed:				밀리 속도 보너스
+SkillBase.RegisterPropertyNames.MagicDamageBonus:		매직 피해 보너스
 SkillBase.RegisterPropertyNames.IntelligenceBonusCap:	지능 능력치 보너스 한도 증가
 SkillBase.RegisterPropertyNames.HitPointsBonusCap:		생명력 보너스 한도 증가
 SkillBase.RegisterPropertyNames.HealingEffectiveness:	치유 효과 보너스
 SkillBase.RegisterPropertyNames.HealthRegeneration:		생명력 재생
-SkillBase.RegisterPropertyNames.MaulerStaff:			마울러 지팡이
+SkillBase.RegisterPropertyNames.MaulerStaff:			마울러 스태프
 SkillBase.RegisterPropertyNames.MaximumSpeed:			최대 속도
 SkillBase.RegisterPropertyNames.FumbleChance:			헛손질 확률
 SkillBase.RegisterPropertyNames.EtherealShriek:			천상의 절규
@@ -215,32 +215,32 @@ SkillBase.RegisterPropertyNames.Hexing:					주박
 SkillBase.RegisterPropertyNames.HexingFocus:			주박 집중
 SkillBase.RegisterPropertyNames.Cursing:				저주
 SkillBase.RegisterPropertyNames.CursingFocus:			저주 집중
-SkillBase.RegisterPropertyNames.CriticalArcheryHit:		궁술 치명타 확률 보너스
-SkillBase.RegisterPropertyNames.CriticalMeleeHit:		근접 치명타 확률 보너스
-SkillBase.RegisterPropertyNames.CriticalSpellHit:		주문 치명타 확률 보너스
-SkillBase.RegisterPropertyNames.CriticalHealHit:		치유 치명타 확률 보너스
+SkillBase.RegisterPropertyNames.CriticalArcheryHit:		아처리 크리티컬 확률 보너스
+SkillBase.RegisterPropertyNames.CriticalMeleeHit:		밀리 크리티컬 확률 보너스
+SkillBase.RegisterPropertyNames.CriticalSpellHit:		스펠 크리티컬 확률 보너스
+SkillBase.RegisterPropertyNames.CriticalHealHit:		힐 크리티컬 확률 보너스
 SkillBase.RegisterPropertyNames.ConstitutionBonusCap:	체력 능력치 보너스 한도 증가
 SkillBase.RegisterPropertyNames.Concentration:			집중력
 SkillBase.RegisterPropertyNames.CharismaBonusCap:		매력 능력치 보너스 한도 증가
 SkillBase.RegisterPropertyNames.BonusToArmorAbsorption:	방어구 흡수율 보너스 (ABS)
 SkillBase.RegisterPropertyNames.BonusToArmorFactor:		방어구 방어도 보너스 (AF)
-SkillBase.RegisterPropertyNames.CastingSpeed:			시전 속도 보너스
+SkillBase.RegisterPropertyNames.CastingSpeed:			캐스팅 속도 보너스
 SkillBase.RegisterPropertyNames.OffhandChanceAndDamage:	보조 손 확률 및 피해
 SkillBase.RegisterPropertyNames.BladeturnReinforcement:	- 블레이드턴 강화: {0}% (PvE 전용)
 #BlockChance has been commented out as a PvE-only bonus - line 1791 in GameServer\packets\Client\168\DetailDisplayHandler.cs
 #SkillBase.RegisterPropertyNames.BlockChance:			- Block: {0}% (PvE Only)
 SkillBase.RegisterPropertyNames.BlockChance:			막기 확률
-SkillBase.RegisterPropertyNames.ArcheryRange:			궁술 사거리
-SkillBase.RegisterPropertyNames.ArcherySpeed:			궁술 속도
+SkillBase.RegisterPropertyNames.ArcheryRange:			아처리 사거리
+SkillBase.RegisterPropertyNames.ArcherySpeed:			아처리 속도
 SkillBase.RegisterPropertyNames.ArrowRecovery:			화살 회수
 SkillBase.RegisterPropertyNames.AcuityBonusCap:			통찰 능력치 보너스 한도 증가
 SkillBase.RegisterPropertyNames.StatBuffSpells:			모든 능력치 강화 주문
-SkillBase.RegisterPropertyNames.SpectralForce:			유령의 힘
-SkillBase.RegisterPropertyNames.SpectralForceFocus:		유령의 힘 집중
-SkillBase.RegisterPropertyNames.SpectralGuard:			유령의 수호
-SkillBase.RegisterPropertyNames.FistWraps:				권갑
-SkillBase.RegisterPropertyNames.ResistPierce:			저항 관통
+SkillBase.RegisterPropertyNames.SpectralForce:			스펙트럴 포스
+SkillBase.RegisterPropertyNames.SpectralForceFocus:		스펙트럴 포스 집중
+SkillBase.RegisterPropertyNames.SpectralGuard:			스펙트럴 가드
+SkillBase.RegisterPropertyNames.FistWraps:				피스트랩
+SkillBase.RegisterPropertyNames.ResistPierce:			레지스트 피어스
 SkillBase.RegisterPropertyNames.OdinsWill:				오딘의 의지
-SkillBase.RegisterPropertyNames.PowerStrikes:			파워 타격
-SkillBase.RegisterPropertyNames.AuraManipulation:		오라 조작
-SkillBase.RegisterPropertyNames.Magnetism:				자기력
+SkillBase.RegisterPropertyNames.PowerStrikes:			파워 스트라이크
+SkillBase.RegisterPropertyNames.AuraManipulation:		오라 매니퓰레이션
+SkillBase.RegisterPropertyNames.Magnetism:				마그네티즘

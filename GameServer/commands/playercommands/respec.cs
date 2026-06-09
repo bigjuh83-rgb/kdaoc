@@ -7,7 +7,7 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&respec",
         ePrivLevel.Player,
-        "Respecs the char",
+        "캐릭터 재분배를 수행합니다.",
         "/respec")]
     public class RespecCommandHandler : AbstractCommandHandler, ICommandHandler
     {

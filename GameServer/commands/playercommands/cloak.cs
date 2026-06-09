@@ -24,9 +24,9 @@ namespace DOL.GS.Commands
 {
 	[CmdAttribute("&cloak", //command to handle
 		ePrivLevel.Player, //minimum privelege level
-	   "Show / hide your cloak.", //command description
-	   "Usage: /cloak [on|off].", //usage
-	   "Example: \"/cloak off\" to hide your cloak")]
+	   "망토 표시를 켜거나 끕니다.", //command description
+	   "사용법: /cloak [on|off].", //usage
+	   "예: \"/cloak off\"는 망토를 숨깁니다.")]
 	public class CloakCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		/* version 1.98 :

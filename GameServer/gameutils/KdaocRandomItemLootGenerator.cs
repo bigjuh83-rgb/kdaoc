@@ -67,7 +67,7 @@ namespace DOL.GS
 			{
 				GeneratedUniqueItem item = AtlasROGManager.GenerateMonsterLootROG(player.Realm, classForLoot, (byte)level, player.CurrentZone?.IsOF ?? false);
 				KdaocRandomItemService.NormalizeGeneratedItem(item);
-				KdaocRandomItemService.ApplyTierBonuses(item, tier, rank);
+				KdaocRandomItemService.ApplyTierBonuses(item, tier, rank, Properties.KDAOC_RANDOM_ITEM_MAX_ITEM_LEVEL);
 
 				if (KdaocRandomItemService.ValidateGeneratedItem(item, out string reason))
 					return item;

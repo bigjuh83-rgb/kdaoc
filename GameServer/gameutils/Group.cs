@@ -9,6 +9,7 @@ using DOL.Events;
 using DOL.GS.PacketHandler;
 using DOL.GS.Quests;
 using DOL.GS.ServerProperties;
+using DOL.GS.WorldAI;
 using DOL.Language;
 using static DOL.GS.GameObject;
 
@@ -169,6 +170,8 @@ namespace DOL.GS
             UpdateMember(living, true, true);
             UpdateGroupWindow();
             GameEventMgr.Notify(GroupEvent.MemberJoined, this, new MemberJoinedEventArgs(living));
+            foreach (GamePlayer groupPlayer in GetPlayersInTheGroup())
+                DynamicQuestRuntimeService.Instance.HandlePartySizeChanged(groupPlayer);
             return true;
         }
 
@@ -538,15 +541,18 @@ namespace DOL.GS
 
             if (eligibleMembers.Count == 0)
             {
-                source.Out.SendMessage(LanguageMgr.GetTranslation(source.Client.Account.Language, "GamePlayer.PickupObject.NoOneWantsThis", item.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                string itemName = LanguageMgr.GetTranslatedItemName(source.Client.Account.Language, item.Item);
+                source.Out.SendMessage(LanguageMgr.GetTranslation(source.Client.Account.Language, "GamePlayer.PickupObject.NoOneWantsThis", itemName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return TryPickUpResult.Blocked;
             }
 
             if (!GiveItemToRandomEligibleMember(eligibleMembers, item.Item, out GamePlayer eligibleMember))
                 return TryPickUpResult.Blocked;
 
-            Message.SystemToOthers(source, LanguageMgr.GetTranslation(source.Client.Account.Language, "GamePlayer.PickupObject.GroupMemberPicksUp", Name, item.Item.GetName(1, false)), eChatType.CT_System);
-            SendMessageToGroupMembers(LanguageMgr.GetTranslation(source.Client.Account.Language, "GamePlayer.PickupObject.Autosplit", item.Item.GetName(1, true), eligibleMember.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            string itemMessageName = LanguageMgr.GetTranslatedItemMessageName(source.Client.Account.Language, item.Item, 1, false);
+            string itemMessageNameUpper = LanguageMgr.GetTranslatedItemMessageName(source.Client.Account.Language, item.Item, 1, true);
+            Message.SystemToOthers(source, LanguageMgr.GetTranslation(source.Client.Account.Language, "GamePlayer.PickupObject.GroupMemberPicksUp", Name, itemMessageName), eChatType.CT_System);
+            SendMessageToGroupMembers(LanguageMgr.GetTranslation(source.Client.Account.Language, "GamePlayer.PickupObject.Autosplit", itemMessageNameUpper, eligibleMember.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
             InventoryLogging.LogInventoryAction("(ground)", eligibleMember, eInventoryActionType.Loot, item.Item.Template, item.Item.IsStackable ? item.Item.Count : 1);
             _ = item.RemoveFromWorld();
             return TryPickUpResult.Success;

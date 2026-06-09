@@ -22,7 +22,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&pray",
 		ePrivLevel.Player,
-		"You can pray on your gravestones to get some experience back",
+		"내 묘비에서 기도하여 일부 경험치를 되찾을 수 있습니다.",
 		"/pray")]
 	public class PrayCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

@@ -11,7 +11,7 @@ namespace DOL.GS.Commands
          new [] { "&adv" },
         ePrivLevel.Player,
         // Displays next to the command when '/cmd' is entered
-        "Lists all flagged Advisors, sends advisors questions, and sends messages to the Advice channel.",
+        "등록된 조언자를 보여주고, 조언자에게 질문하거나 조언 채널에 메시지를 보냅니다.",
         // Message: '/adv <message>' - Sends a message to the Advice channel.
         "PLCommands.Advice.Syntax.AdvChannel",
         // Message: '/advice' - Lists all online Advisors.

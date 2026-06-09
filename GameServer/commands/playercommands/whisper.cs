@@ -25,8 +25,8 @@ namespace DOL.GS.Commands
 		"&whisper",
 		new string[] {"&whis"}, //Important, don't remove this alias, its used for communication with mobs!
 		ePrivLevel.Player,
-		"Sends a private message to your target if it is close enough",
-		"/whisper <message>")]
+		"대상이 충분히 가까우면 귓속말을 보냅니다.",
+		"/whisper <메시지>")]
 	public class WhisperCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

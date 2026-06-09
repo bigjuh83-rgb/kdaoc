@@ -1,4 +1,4 @@
-﻿/*
+/*
  * DAWN OF LIGHT - The first free open source DAoC server emulator
  * 
  * This program is free software; you can redistribute it and/or
@@ -18,13 +18,14 @@
  */
 using System;
 using DOL.GS;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
 	[CmdAttribute(
 		"&webdisplay",
 		ePrivLevel.Player,
-		"Set informations displayed on the herald",
+		"헤럴드에 표시할 정보를 설정합니다.",
 		"/webdisplay <position|template|equipment|craft> [on|off]")]
 	public class WebDisplayCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
@@ -73,31 +74,31 @@ namespace DOL.GS.Commands
 			byte webDisplay = client.Player.NotDisplayedInHerald;
 			byte webDisplayFlag;
 
-			string state = "/webdisplay <position|template|equipment|craft> [on|off]\n";
+			string state = LanguageMgr.GetTranslation(client, "PLCommands.WebDisplay.Usage") + "\n";
 			
 			webDisplayFlag = (byte)GlobalConstants.eWebDisplay.equipment;
 			if ((webDisplay & webDisplayFlag) == webDisplayFlag)
-				state += "Your equipment is not displayed.\n";
+				state += LanguageMgr.GetTranslation(client, "PLCommands.WebDisplay.EquipmentHidden") + "\n";
 			else
-				state += "Your equipment is displayed.\n";
+				state += LanguageMgr.GetTranslation(client, "PLCommands.WebDisplay.EquipmentShown") + "\n";
 			
 			webDisplayFlag = (byte)GlobalConstants.eWebDisplay.position;
 			if ((webDisplay & webDisplayFlag) == webDisplayFlag)
-				state += "Your position is not displayed.\n";
+				state += LanguageMgr.GetTranslation(client, "PLCommands.WebDisplay.PositionHidden") + "\n";
 			else
-				state += "Your position is displayed.\n";
+				state += LanguageMgr.GetTranslation(client, "PLCommands.WebDisplay.PositionShown") + "\n";
 			
 			webDisplayFlag = (byte)GlobalConstants.eWebDisplay.template;
 			if ((webDisplay & webDisplayFlag) == webDisplayFlag)
-				state += "Your template is not displayed.\n";
+				state += LanguageMgr.GetTranslation(client, "PLCommands.WebDisplay.TemplateHidden") + "\n";
 			else
-				state += "Your template is displayed.\n";
+				state += LanguageMgr.GetTranslation(client, "PLCommands.WebDisplay.TemplateShown") + "\n";
 	
 			webDisplayFlag = (byte)GlobalConstants.eWebDisplay.craft;
 			if ((webDisplay & webDisplayFlag) == webDisplayFlag)
-				state += "Your crafting skill is not displayed.\n";
+				state += LanguageMgr.GetTranslation(client, "PLCommands.WebDisplay.CraftHidden") + "\n";
 			else
-				state += "Your crafting skill is displayed.\n";		
+				state += LanguageMgr.GetTranslation(client, "PLCommands.WebDisplay.CraftShown") + "\n";		
 			
 			DisplayMessage(client, state);
 		}

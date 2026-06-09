@@ -222,6 +222,7 @@ namespace DOL.GS
         public virtual void DisplayServerStatistics(GameClient client, string command, string playerName)
         {
             CreateServerStats(client);
+            command = NormalizeStatisticsCommand(command);
 
             if (string.Equals(command, "rp", StringComparison.OrdinalIgnoreCase))
                 client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "PlayerStatistics.TopRealmPoints", _statsRp), eChatType.CT_System, eChatLoc.CL_SystemWindow);
@@ -257,6 +258,25 @@ namespace DOL.GS
             }
             else
                 client.Player.Out.SendMessage(LanguageMgr.GetTranslation(client.Account.Language, "PlayerStatistics.Usage"), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+        }
+
+        private static string NormalizeStatisticsCommand(string command)
+        {
+            return command?.Trim().ToLowerInvariant() switch
+            {
+                "렐름포인트" => "rp",
+                "시간당rp" => "lrp",
+                "시간당알피" => "lrp",
+                "처치" => "kills",
+                "킬" => "kills",
+                "결정타" => "deathblows",
+                "끝까지" => "irs",
+                "회복" => "heal",
+                "힐" => "heal",
+                "부활" => "rez",
+                "플레이어" => "player",
+                _ => command
+            };
         }
 
         public static uint Divide(uint dividend, uint divisor)

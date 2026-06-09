@@ -7,7 +7,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		 "&lastname",
 		 ePrivLevel.Player,
-		 "Set/change your lastname.", "/lastname <name>")]
+		 "성을 설정하거나 변경합니다.", "/lastname <이름>")]
 
 	public class LastnameCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

@@ -2362,9 +2362,6 @@ def build_behavior_command(
         "--greet-nearby-player",
         "--player-greet-chance",
         "0.35",
-        "--speak-state-changes",
-        "--state-speech-min-interval",
-        "3.0",
         "--command",
         "",
         "--jitter",
@@ -3594,7 +3591,7 @@ def empty_metric_summary() -> dict[str, float]:
     }
 
 
-COMBAT_FAILURE_OUTCOMES = {"server_los_failure", "target_timeout", "target_home_leash"}
+COMBAT_FAILURE_OUTCOMES = {"server_los_failure", "target_timeout", "target_home_leash", "flee"}
 
 
 def aggregate_combat_metrics(path: Path) -> dict[str, int]:

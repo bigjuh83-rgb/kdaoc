@@ -7,10 +7,10 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&sell",
 		ePrivLevel.Player,
-		"Sell items to a targeted merchant.  Specify a single bag, a range or all",
-		"Use: /sell 4 to sell all items bag 4",
-		"/sell 2-3 to sell all items in bags 2 and 3",
-		"/sell all to sell all items")]
+		"대상 상인에게 아이템을 판매합니다. 가방 하나, 범위 또는 all을 지정할 수 있습니다.",
+		"사용법: /sell 4 - 4번 가방의 모든 아이템을 판매합니다.",
+		"/sell 2-3 - 2번과 3번 가방의 모든 아이템을 판매합니다.",
+		"/sell all - 모든 아이템을 판매합니다.")]
 	public class SellCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

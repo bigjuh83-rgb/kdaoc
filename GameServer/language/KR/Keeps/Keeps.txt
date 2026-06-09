@@ -13,3 +13,41 @@ GameRelicPad.MountRelic.Stored:				    {1}의 {0}이(가) {2}을(를) {3}에 보
 GameRelicPad.MountRelic.Returned:			    {0}이(가) {1}(으)로 반환되었습니다.
 GameRelicPad.OnPlayerEnter.EmptyRelicPad:		이 렐릭을 놓으려면 비어 있는 {0} 렐릭 받침대를 찾아야 합니다.
 GameRelicPad.RemoveRelic.Removed:			    {1}의 {0}이(가) {3}에서 {2}을(를) 제거했습니다.
+
+## Keep Display Names
+Keep.Name.Caer_Benowyc:                         케어 베노윅
+Keep.Name.Caer_Berkstead:                       케어 버크스테드
+Keep.Name.Caer_Erasleigh:                       케어 에라슬리
+Keep.Name.Caer_Boldiam:                         케어 볼디엄
+Keep.Name.Caer_Sursbrooke:                      케어 서스브룩
+Keep.Name.Caer_Renaris:                         케어 레나리스
+Keep.Name.Caer_Hurbury:                         케어 허버리
+Keep.Name.Caer_Myrddin:                         케어 미르딘
+Keep.Name.Caer_Excalibur:                       케어 엑스칼리버
+Keep.Name.Prydwen_Keep:                         프리드웬 성채
+Keep.Name.Swanton_Keep:                         스완턴 성채
+Keep.Name.Castle_Sauvage:                       소바쥬 성
+Keep.Name.Snowdonia_Fortress:                   스노도니아 요새
+Keep.Name.Bledmeer_Faste:                       블레드미어 파스테
+Keep.Name.Nottmoor_Faste:                       노트무어 파스테
+Keep.Name.Notmoor_Faste:                        노트무어 파스테
+Keep.Name.Hlidskialf_Faste:                     흘리드스키알프 파스테
+Keep.Name.Glenlock_Faste:                       글렌록 파스테
+Keep.Name.Blendrake_Faste:                      블렌드레이크 파스테
+Keep.Name.Fensalir_Faste:                       펜살리르 파스테
+Keep.Name.Arvakr_Faste:                         아르바크르 파스테
+Keep.Name.Grallarhorn_Faste:                    그랄라르호른 파스테
+Keep.Name.Mjollner_Faste:                       묠니르 파스테
+Keep.Name.Svasud_Faste:                         스바수드 파스테
+Keep.Name.Dun_Crauchon:                         둔 크라우촌
+Keep.Name.Dun_Crimthain:                        둔 크림세인
+Keep.Name.Dun_Crimthainn:                       둔 크림세인
+Keep.Name.Dun_Bolg:                             둔 볼그
+Keep.Name.Dun_nGed:                             둔 응게드
+Keep.Name.Dun_Da_Behnn:                         둔 다 벤
+Keep.Name.Dun_da_Behnn:                         둔 다 벤
+Keep.Name.Dun_Scathaig:                         둔 스카하이그
+Keep.Name.Dun_Ailinne:                          둔 알리너
+Keep.Name.Dun_Dagda:                            둔 다그다
+Keep.Name.Dun_Lamfhota:                         둔 라브호타
+Keep.Name.Druim_Ligen:                          드루임 리겐

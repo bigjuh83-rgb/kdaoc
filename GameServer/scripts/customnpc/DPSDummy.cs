@@ -58,66 +58,81 @@ namespace DOL.GS
                 switch (splitText[0].ToLower())
                 {
                     case "slash":
+                    case "슬래쉬":
                     {
                         ApplyBonus(eBuffBonusCategory.BaseBuff, (eProperty) eResist.Slash, value);
                         break;
                     }
                     case "thrust":
+                    case "쓰러스트":
                     {
                         ApplyBonus(eBuffBonusCategory.BaseBuff, (eProperty) eResist.Thrust, value);
                         break;
                     }
                     case "crush":
+                    case "크러쉬":
                     {
                         ApplyBonus(eBuffBonusCategory.BaseBuff, (eProperty) eResist.Crush, value);
                         break;
                     }
                     case "body":
+                    case "바디":
                     {
                         ApplyBonus(eBuffBonusCategory.BaseBuff, (eProperty) eResist.Body, value);
                         break;
                     }
                     case "cold":
+                    case "콜드":
                     {
                         ApplyBonus(eBuffBonusCategory.BaseBuff, (eProperty) eResist.Cold, value);
                         break;
                     }
                     case "energy":
+                    case "에너지":
                     {
                         ApplyBonus(eBuffBonusCategory.BaseBuff, (eProperty) eResist.Energy, value);
                         break;
                     }
                     case "heat":
+                    case "히트":
                     {
                         ApplyBonus(eBuffBonusCategory.BaseBuff, (eProperty) eResist.Heat, value);
                         break;
                     }
                     case "matter":
+                    case "매터":
                     {
                         ApplyBonus(eBuffBonusCategory.BaseBuff, (eProperty) eResist.Matter, value);
                         break;
                     }
                     case "spirit":
+                    case "스피릿":
                     {
                         ApplyBonus(eBuffBonusCategory.BaseBuff, (eProperty) eResist.Spirit, value);
                         break;
                     }
                     case "block":
+                    case "블록":
+                    case "방패막기":
                     {
                         BlockChance = (byte) value;
                         break;
                     }
                     case "parry":
+                    case "패리":
                     {
                         ParryChance = (byte) value;
                         break;
                     }
                     case "evade":
+                    case "이베이드":
                     {
                         EvadeChance = (byte) value;
                         break;
                     }
                     case "allresist":
+                    case "모든저항":
+                    case "전체저항":
                     {
                         ApplyBonus(eBuffBonusCategory.BaseBuff, (eProperty) eResist.Slash, value);
                         ApplyBonus(eBuffBonusCategory.BaseBuff, (eProperty) eResist.Thrust, value);
@@ -131,6 +146,8 @@ namespace DOL.GS
                         break;
                     }
                     case "alldefense":
+                    case "모든방어":
+                    case "전체방어":
                     {
                         BlockChance = (byte) value;
                         EvadeChance = (byte) value;

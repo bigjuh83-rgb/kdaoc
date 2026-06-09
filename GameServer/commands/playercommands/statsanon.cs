@@ -1,11 +1,12 @@
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
     [CmdAttribute(
     "&statsanon",
     ePrivLevel.Player,
-    "Hides your statistics",
+    "내 통계를 숨깁니다.",
     "/statsanon")]
     public class StatsAnonHandler : AbstractCommandHandler, ICommandHandler
     {
@@ -21,9 +22,9 @@ namespace DOL.GS.Commands
             string msg;
 
             if (client.Player.IgnoreStatistics)
-                msg = "Your stats are no longer visible to other players.";
+                msg = LanguageMgr.GetTranslation(client.Account.Language, "PlayerStatistics.StatsAnon.Hidden");
             else
-                msg = "Your stats are now visible to other players.";
+                msg = LanguageMgr.GetTranslation(client.Account.Language, "PlayerStatistics.StatsAnon.Visible");
 
             client.Player.Out.SendMessage(msg, eChatType.CT_System, eChatLoc.CL_ChatWindow);
         }

@@ -368,15 +368,104 @@ namespace DOL.GS
                     }
                 default:
                     {
-                        if (obj is GameNPC)
+                        if (obj is GameNPC npc)
                         {
+                            if (HasNpcTranslationPrefix(npc.Name) && TryGetTranslatedNpcNameFromName(lang, npc.Name, out string prefixedTranslatedName))
+                                return prefixedTranslatedName;
+
                             var translation = (DbLanguageGameNpc)LanguageMgr.GetTranslation(lang, obj);
-                            if (translation != null) return translation.Name;
+                            if (!string.IsNullOrEmpty(translation?.Name))
+                                return translation.Name;
+
+                            if (TryGetTranslatedNpcNameFromName(lang, npc.Name, out string translatedName))
+                                return translatedName;
                         }
 
 						return GetName(article, firstLetterUppercase);;
                     }
             }
+        }
+
+        private static bool TryGetTranslatedNpcNameFromName(string lang, string name, out string translatedName)
+        {
+            translatedName = string.Empty;
+
+            foreach ((string prefix, string baseName) in GetNpcTranslationNameCandidates(name))
+            {
+                DbLanguageGameNpc translation = LanguageMgr.GetLanguageDataObject(
+                    lang,
+                    BuildNpcTranslationIdFromName(baseName),
+                    LanguageDataObject.eTranslationIdentifier.eNPC) as DbLanguageGameNpc;
+
+                if (string.IsNullOrEmpty(translation?.Name))
+                    continue;
+
+                translatedName = string.IsNullOrEmpty(prefix) ? translation.Name : $"{prefix}{translation.Name}";
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool HasNpcTranslationPrefix(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return false;
+
+            foreach (string prefix in GetNpcTranslationPrefixes())
+            {
+                if (name.Trim().StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static IEnumerable<(string Prefix, string BaseName)> GetNpcTranslationNameCandidates(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                yield break;
+
+            string trimmedName = name.Trim();
+            yield return (string.Empty, trimmedName);
+
+            foreach (string prefix in GetNpcTranslationPrefixes())
+            {
+                if (!trimmedName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                string baseName = trimmedName[prefix.Length..].Trim();
+                if (!string.IsNullOrEmpty(baseName))
+                    yield return (prefix, baseName);
+            }
+        }
+
+        private static IEnumerable<string> GetNpcTranslationPrefixes()
+        {
+            yield return "돌연변이 ";
+            yield return "흉포한 ";
+            yield return "챔피언 ";
+            yield return "노련한 ";
+            yield return "정예 ";
+            yield return "우두머리 ";
+        }
+
+        private static string BuildNpcTranslationIdFromName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return string.Empty;
+
+            StringBuilder builder = new("npc.");
+
+            foreach (char c in name.Trim().ToLowerInvariant())
+            {
+                if (char.IsLetterOrDigit(c))
+                    builder.Append(c);
+                else if (c == ' ' || c == '-' || c == '_')
+                    builder.Append('_');
+            }
+
+            return builder.ToString();
         }
 
 		private const string m_vowels = "aeuio";

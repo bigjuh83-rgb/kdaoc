@@ -6,7 +6,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		 "&duel",
 		 ePrivLevel.Player,
-		 "Duel another player",
+		 "다른 플레이어에게 결투를 신청합니다.",
 		 "/duel")]
 
 /*

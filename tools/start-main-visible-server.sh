@@ -6,6 +6,7 @@ DB_ROOT="${OPENDAOC_MARIADB_ROOT:-/home/bigjuh/.local/opendaoc-mariadb}"
 MYSQLD_SAFE="$DB_ROOT/current/bin/mariadbd-safe"
 MYSQLADMIN="$DB_ROOT/current/bin/mariadb-admin"
 MY_CNF="$DB_ROOT/etc/my.cnf"
+API_PORT="${OPENDAOC_API_PORT:-5000}"
 
 require_file() {
   local path="$1"
@@ -57,7 +58,7 @@ stop_existing_game_server() {
 }
 
 server_ports_in_use() {
-  ss -ltn | grep -Eq ':(10300|10400|5000) '
+  ss -ltn | grep -Eq ":(10300|10400|${API_PORT}) "
 }
 
 read_config_password() {
@@ -87,7 +88,7 @@ stop_existing_game_server
 
 if server_ports_in_use; then
   echo "[OpenDAoC] Game server ports are still in use after cleanup."
-  ss -ltunp | grep -E ':10300 |:10400 |:5000 ' || true
+  ss -ltunp | grep -E ":10300 |:10400 |:${API_PORT} " || true
   exit 1
 fi
 

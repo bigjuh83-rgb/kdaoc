@@ -828,6 +828,32 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(metrics["combat_failures"], 1)
         self.assertEqual(metrics["server_los_failures"], 1)
 
+    def test_aggregate_combat_metrics_counts_flee_as_combat_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "combat.csv"
+            path.write_text(
+                "username,round,target_id,target_name,outcome\n"
+                "growthalb,1,1,giant spider,target_removed\n"
+                "growthalb,1,2,giant spider,flee\n",
+                encoding="utf-8",
+            )
+
+            metrics = growth.aggregate_combat_metrics(path)
+
+        self.assertEqual(metrics["combat_failures"], 1)
+        self.assertFalse(
+            growth.segment_regression_passed(
+                {
+                    "player_deaths": 0,
+                    "target_removed": 1,
+                    "target_timeouts": 0,
+                    "movement_failures": 0,
+                    **metrics,
+                },
+                require_kill=True,
+            )
+        )
+
     def test_level_five_train_checkpoint_does_not_require_kill(self) -> None:
         args = SimpleNamespace(require_segment_kill=True)
 
@@ -1912,8 +1938,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertIn("--allow-preferred-low-con-fallback", command)
         self.assertEqual(command[command.index("--preferred-low-con-min-level") + 1], "4")
         self.assertIn("--greet-nearby-player", command)
-        self.assertIn("--speak-state-changes", command)
-        self.assertEqual(command[command.index("--state-speech-min-interval") + 1], "3.0")
+        self.assertNotIn("--speak-state-changes", command)
+        self.assertNotIn("--state-speech-min-interval", command)
 
     def test_solo_magic_checkpoint_uses_caster_rotation_from_account_specs(self) -> None:
         args = SimpleNamespace(

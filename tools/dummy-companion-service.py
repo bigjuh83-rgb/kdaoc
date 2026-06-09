@@ -14,14 +14,59 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+_server_companion_config: dict[str, Any] = {}
+_server_config_fetched_at: float = 0.0
+
+
+def fetch_server_companion_config(args: argparse.Namespace) -> dict[str, Any]:
+    global _server_companion_config, _server_config_fetched_at
+    now = time.monotonic()
+    if now - _server_config_fetched_at < 30.0 and _server_config_fetched_at > 0:
+        return _server_companion_config
+    try:
+        config = api_request(args, "GET", "/api/dummy/companions/config")
+    except Exception:
+        return _server_companion_config
+    if isinstance(config, dict):
+        _server_companion_config = config
+        _server_config_fetched_at = now
+    return _server_companion_config
+
+
+def dialogue_enabled_from_server_or_cli(args: argparse.Namespace) -> bool:
+    if arg_bool(args, "dialogue_enabled", False):
+        return True
+    config = fetch_server_companion_config(args)
+    return bool(config.get("dialogue_enabled"))
+
 
 VALID_ROLES = {"fill", "healer", "tank", "dps", "support"}
+CONTRACT_TIERS = {"common", "skilled", "elite", "legendary"}
+CONTRACT_TIER_ALIASES = {
+    "normal": "common",
+    "basic": "common",
+    "일반": "common",
+    "숙련": "skilled",
+    "정예": "elite",
+    "전설": "legendary",
+}
+CONTRACT_TIER_DEFAULTS = {
+    "common": {"duration": 30 * 60, "offline_grace": 3 * 60},
+    "skilled": {"duration": 45 * 60, "offline_grace": 5 * 60},
+    "elite": {"duration": 60 * 60, "offline_grace": 7 * 60},
+    "legendary": {"duration": 90 * 60, "offline_grace": 10 * 60},
+}
 ROLE_ROTATIONS = {
     "fill": "auto",
     "healer": "healer-support",
     "support": "healer-support",
     "tank": "melee-basic",
     "dps": "melee-burst",
+}
+REALM_GROUND_Z_MAP = {
+    1: "tools/pathing/heightmaps/region001_client_zones.json",
+    100: "tools/pathing/heightmaps/region100_client_zones.json",
+    200: "tools/pathing/heightmaps/region200_client_zones.json",
 }
 RELEASE_PRIORITY = {
     "dps": 0,
@@ -111,6 +156,7 @@ CLASS_ROTATION_HINTS = {
 }
 CLASS_CAPABILITY_HINTS = {
     "animist": {"caster_dps", "offensive_support"},
+    "armsman": {"defensive_tank"},
     "bainshee": {"caster_dps", "dedicated_dps"},
     "bard": {"speed_song", "group_support"},
     "berserker": {"dedicated_dps", "melee_dps"},
@@ -120,6 +166,7 @@ CLASS_CAPABILITY_HINTS = {
     "eldritch": {"caster_dps", "dedicated_dps"},
     "enchanter": {"caster_dps", "dedicated_dps"},
     "friar": {"self_sustain"},
+    "hero": {"defensive_tank"},
     "hunter": {"dedicated_dps", "ranged_dps", "stealth"},
     "infiltrator": {"dedicated_dps", "melee_dps", "stealth"},
     "mauleralb": {"melee_dps", "self_sustain"},
@@ -145,6 +192,7 @@ CLASS_CAPABILITY_HINTS = {
     "valkyrie": {"defensive_tank", "self_sustain"},
     "vampiir": {"dedicated_dps", "melee_dps", "self_sustain"},
     "warden": {"defensive_tank", "group_support", "self_sustain"},
+    "warrior": {"defensive_tank"},
     "warlock": {"caster_dps", "offensive_support"},
     "wizard": {"caster_dps", "dedicated_dps"},
 }
@@ -189,12 +237,13 @@ LIVE_COMPANION_FLEE_FLAGS = [
     "--flee-move-interval",
     "0.30",
     "--flee-movement-speed",
-    "280",
+    "300",
 ]
 LIVE_COMPANION_PARTY_COORDINATION_FLAGS = [
     "--party-rescue-aggro",
     "--party-rescue-before-objective-engaged",
     "--party-block-solo-required-retaliation",
+    "--party-support-evasion",
     "--party-rescue-max-distance",
     "6500",
     "--party-rescue-objective-max-distance",
@@ -230,11 +279,20 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ActiveCompanion:
-    def __init__(self, request: dict[str, Any], process: subprocess.Popen, account: str = "") -> None:
+    def __init__(
+        self,
+        request: dict[str, Any],
+        process: subprocess.Popen,
+        account: str = "",
+        control_path: Path | None = None,
+    ) -> None:
         self.request = request
         self.process = process
         self.account = account
+        self.control_path = control_path
         self.last_lease_refresh = time.monotonic()
+        self.last_request_status_check = 0.0
+        self.requester_offline_since = 0.0
 
 
 def normalize_role(role: Any) -> str:
@@ -242,20 +300,71 @@ def normalize_role(role: Any) -> str:
     return normalized if normalized in VALID_ROLES else "fill"
 
 
+def normalize_contract_tier(tier: Any) -> str:
+    normalized = str(tier or "").strip().lower()
+    normalized = CONTRACT_TIER_ALIASES.get(normalized, normalized)
+    return normalized if normalized in CONTRACT_TIERS else "common"
+
+
+def request_contract_tier(request: dict[str, Any]) -> str:
+    explicit = request_value(request, "contractTier", "ContractTier", "tier", "Tier", default="")
+    if explicit:
+        return normalize_contract_tier(explicit)
+    capabilities = str(request_value(request, "requestedCapabilities", "RequestedCapabilities", default="") or "")
+    for part in capabilities.replace("|", ",").replace(";", ",").split(","):
+        token = part.strip()
+        lowered = token.lower()
+        if lowered.startswith("tier:"):
+            return normalize_contract_tier(token.split(":", 1)[1])
+        if lowered.startswith("contract_tier:"):
+            return normalize_contract_tier(token.split(":", 1)[1])
+    return "common"
+
+
+def request_contract_duration_seconds(request: dict[str, Any]) -> int:
+    configured = parse_int(request_value(request, "contractDurationSeconds", "ContractDurationSeconds", default=0))
+    if configured > 0:
+        return configured
+    return int(CONTRACT_TIER_DEFAULTS[request_contract_tier(request)]["duration"])
+
+
+def request_offline_grace_seconds(request: dict[str, Any]) -> int:
+    configured = parse_int(request_value(request, "offlineGraceSeconds", "OfflineGraceSeconds", default=0))
+    if configured > 0:
+        return configured
+    return int(CONTRACT_TIER_DEFAULTS[request_contract_tier(request)]["offline_grace"])
+
+
 def role_to_rotation(role: Any) -> str:
     return ROLE_ROTATIONS[normalize_role(role)]
 
 
-def live_companion_uses_hostile_assist(role: Any, action_rotation: str) -> bool:
-    return not (normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support")
+def live_companion_uses_hostile_assist(
+    role: Any,
+    action_rotation: str,
+    request: dict[str, Any] | None = None,
+) -> bool:
+    if normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support":
+        return not bool(request_objective_target_name(request or {}))
+    return True
 
 
-def live_companion_party_assist_interval(role: Any, action_rotation: str) -> str:
-    return "0.6" if live_companion_uses_hostile_assist(role, action_rotation) else "0"
+def live_companion_party_assist_interval(
+    role: Any,
+    action_rotation: str,
+    request: dict[str, Any] | None = None,
+) -> str:
+    return "0.6" if live_companion_uses_hostile_assist(role, action_rotation, request) else "0"
 
 
-def live_companion_party_assist_attack_delay(role: Any, action_rotation: str) -> str:
-    if not live_companion_uses_hostile_assist(role, action_rotation):
+def live_companion_party_assist_attack_delay(
+    role: Any,
+    action_rotation: str,
+    request: dict[str, Any] | None = None,
+) -> str:
+    if not live_companion_uses_hostile_assist(role, action_rotation, request):
+        return "0"
+    if normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support":
         return "0"
     if live_companion_claims_objective_target(role, action_rotation):
         return "0.3"
@@ -273,15 +382,14 @@ def live_companion_ranged_assist_extra_delay(role: Any, action_rotation: str) ->
 
 
 def live_companion_follow_distance(role: Any, action_rotation: str) -> str:
-    if normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support":
-        return "1800"
-    if action_rotation.startswith("caster"):
-        return "1000"
-    return "450"
+    # Live companions should stay tight while travelling so the player does not
+    # feel the party stretching out. Combat spacing is handled by the separate
+    # boss/preengage/ranged safe-distance flags.
+    return "120"
 
 
 def live_companion_follow_hold_allows_waypoint(role: Any, action_rotation: str) -> bool:
-    return not (normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support")
+    return not (normalize_role(role) == "healer" and action_rotation == "healer-support")
 
 
 def live_companion_requires_follow_anchor_before_objective(role: Any, action_rotation: str) -> bool:
@@ -290,24 +398,33 @@ def live_companion_requires_follow_anchor_before_objective(role: Any, action_rot
 
 
 def live_companion_waypoint_stop_distance(role: Any, action_rotation: str) -> str:
-    if normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support":
-        return "3500"
+    normalized_role = normalize_role(role)
+    if normalized_role == "support":
+        return "900"
+    if normalized_role == "healer" and action_rotation == "healer-support":
+        return "1500"
     if action_rotation.startswith("caster"):
         return "1500"
     return "650"
 
 
 def live_companion_required_home_stop_distance(role: Any, action_rotation: str) -> str:
-    if normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support":
-        return "3500"
+    normalized_role = normalize_role(role)
+    if normalized_role == "support":
+        return "1100"
+    if normalized_role == "healer" and action_rotation == "healer-support":
+        return "1800"
     if action_rotation.startswith("caster"):
         return "1400"
     return "900"
 
 
 def live_companion_required_home_hunt_distance(role: Any, action_rotation: str) -> str:
-    if normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support":
-        return "3600"
+    normalized_role = normalize_role(role)
+    if normalized_role == "support":
+        return "2800"
+    if normalized_role == "healer" and action_rotation == "healer-support":
+        return "3200"
     if action_rotation.startswith("caster"):
         return "3200"
     return "2800"
@@ -320,7 +437,30 @@ def live_companion_claims_objective_target(role: Any, action_rotation: str) -> b
     return normalized_role == "fill" and action_rotation in {"melee-basic", "hybrid"}
 
 
-def live_companion_boss_role_flags(role: Any, action_rotation: str) -> list[str]:
+def live_companion_boss_role_flags(role: Any, action_rotation: str, args: argparse.Namespace | None = None) -> list[str]:
+    normalized_role = normalize_role(role)
+    healer_boss_ranged_safe_distance = "1800"
+    healer_party_preengage_ranged_safe_distance = "2000"
+    healer_boss_non_tank_follow_distance = "1800"
+    if normalized_role == "healer" and action_rotation == "healer-support" and args is not None:
+        def configured_override(name: str) -> float:
+            try:
+                return float(getattr(args, name, 0.0) or 0.0)
+            except (TypeError, ValueError):
+                return 0.0
+
+        configured_boss_ranged_safe_distance = configured_override("healer_boss_ranged_safe_distance")
+        configured_party_preengage_ranged_safe_distance = configured_override(
+            "healer_party_preengage_ranged_safe_distance"
+        )
+        configured_boss_non_tank_follow_distance = configured_override("healer_boss_non_tank_follow_distance")
+        if configured_boss_ranged_safe_distance > 0.0:
+            healer_boss_ranged_safe_distance = str(int(configured_boss_ranged_safe_distance))
+        if configured_party_preengage_ranged_safe_distance > 0.0:
+            healer_party_preengage_ranged_safe_distance = str(int(configured_party_preengage_ranged_safe_distance))
+        if configured_boss_non_tank_follow_distance > 0.0:
+            healer_boss_non_tank_follow_distance = str(int(configured_boss_non_tank_follow_distance))
+
     flags = [
         "--party-require-leader-engaged",
         "--party-mark-pull-engaged",
@@ -391,7 +531,7 @@ def live_companion_boss_role_flags(role: Any, action_rotation: str) -> list[str]
                 "3.4",
             ]
         )
-    elif action_rotation == "healer-support":
+    elif action_rotation == "healer-support" or normalized_role == "support":
         flags.extend(
             [
                 "--party-rescue-assist-after",
@@ -399,17 +539,38 @@ def live_companion_boss_role_flags(role: Any, action_rotation: str) -> list[str]
                 "--party-rescue-emergency-assist-after",
                 "0",
                 "--boss-ranged-safe-distance",
-                "3500",
+                "1400" if normalized_role == "support" else healer_boss_ranged_safe_distance,
                 "--party-preengage-ranged-safe-distance",
-                "3500",
+                "1500" if normalized_role == "support" else healer_party_preengage_ranged_safe_distance,
                 "--boss-non-tank-follow-distance",
-                "1200",
+                "1400" if normalized_role == "support" else healer_boss_non_tank_follow_distance,
             ]
         )
     return flags
 
 
-def live_companion_role_flags(role: Any, action_rotation: str) -> list[str]:
+def live_companion_field_role_flags(role: Any, action_rotation: str) -> list[str]:
+    normalized_role = normalize_role(role)
+    if action_rotation == "caster-basic" or (
+        normalized_role in {"healer", "support"} and action_rotation == "healer-support"
+    ):
+        return [
+            "--ranged-stop-distance",
+            "650",
+            "--attack-target-in-view-prime-delay",
+            "0.75",
+        ]
+    if action_rotation.startswith("melee") or action_rotation == "hybrid":
+        return [
+            "--target-face-command-interval",
+            "0",
+            "--melee-stick-attack-distance",
+            "330",
+        ]
+    return []
+
+
+def live_companion_role_flags(role: Any, action_rotation: str, args: argparse.Namespace | None = None) -> list[str]:
     flags: list[str] = []
     if normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support":
         flags.extend(
@@ -417,11 +578,109 @@ def live_companion_role_flags(role: Any, action_rotation: str) -> list[str]:
                 "--healer-self-health-percent",
                 "92",
                 "--party-heal-leader-health-percent",
-                "95",
+                "92",
                 "--party-heal-leader-interval",
                 "1.0",
                 "--self-preserve-heal-min-interval",
                 "8.0",
+            ]
+        )
+        if args is not None:
+            flee_pressure = arg_float(args, "healer_flee_pressure_health_percent", 0.0)
+            flee_health = arg_float(args, "healer_flee_health_percent", 0.0)
+            if flee_pressure > 0.0:
+                flags.extend(
+                    [
+                        "--flee-pressure-health-percent",
+                        str(int(flee_pressure)),
+                    ]
+                )
+            if flee_health > 0.0:
+                flags.extend(
+                    [
+                        "--flee-health-percent",
+                        str(int(flee_health)),
+                    ]
+                )
+            heal_exclude_names = str(getattr(args, "healer_heal_exclude_names", "") or "").strip()
+            if heal_exclude_names:
+                flags.extend(["--party-heal-exclude-names", heal_exclude_names])
+    return flags
+
+
+def live_companion_contract_tier_flags(request: dict[str, Any]) -> list[str]:
+    tier = request_contract_tier(request)
+    if tier == "common":
+        return []
+    profiles = {
+        "skilled": {
+            "combat": "0.52",
+            "skill": "0.85",
+            "api_retry": "0.32",
+            "follow_interval": "0.22",
+            "move_interval": "0.16",
+            "flee_speed": "315",
+            "buff_count": "3",
+        },
+        "elite": {
+            "combat": "0.45",
+            "skill": "0.72",
+            "api_retry": "0.25",
+            "follow_interval": "0.18",
+            "move_interval": "0.14",
+            "flee_speed": "335",
+            "buff_count": "4",
+        },
+        "legendary": {
+            "combat": "0.38",
+            "skill": "0.60",
+            "api_retry": "0.18",
+            "follow_interval": "0.14",
+            "move_interval": "0.12",
+            "flee_speed": "360",
+            "buff_count": "5",
+        },
+    }
+    profile = profiles[tier]
+    return [
+        "--combat-interval",
+        profile["combat"],
+        "--skill-interval",
+        profile["skill"],
+        "--combat-usable-api-retry-delay",
+        profile["api_retry"],
+        "--party-follow-interval",
+        profile["follow_interval"],
+        "--smooth-move-interval",
+        profile["move_interval"],
+        "--movement-update-interval",
+        profile["move_interval"],
+        "--flee-movement-speed",
+        profile["flee_speed"],
+        "--startup-self-buff-count",
+        profile["buff_count"],
+    ]
+
+
+def live_companion_service_flee_flags(args: argparse.Namespace | None) -> list[str]:
+    if args is None:
+        return []
+
+    flags: list[str] = []
+    flee_pressure = arg_float(args, "companion_flee_pressure_health_percent", 0.0)
+    flee_health = arg_float(args, "companion_flee_health_percent", 0.0)
+    if flee_pressure > 0.0:
+        flags.extend(
+            [
+                "--flee-pressure-health-percent",
+                str(int(flee_pressure)),
+            ]
+        )
+    if flee_health > 0.0:
+        flags.extend(
+            [
+                "--flee-health-percent",
+                str(int(flee_health)),
             ]
         )
     return flags
@@ -558,12 +817,25 @@ def real_group_member_count(
     return count
 
 
+def group_member_count(requester_state: dict[str, Any] | None) -> int:
+    if not isinstance(requester_state, dict):
+        return 0
+    return sum(1 for member in requester_state.get("groupMembers", []) or [] if isinstance(member, dict))
+
+
+def group_has_vacant_slots(requester_state: dict[str, Any] | None, max_group_size: int = 8) -> bool:
+    return group_member_count(requester_state) < max(1, int(max_group_size))
+
+
 def choose_release_request_for_real_player_join(
     active: dict[str, ActiveCompanion],
     requester_key: str,
     requester_state: dict[str, Any] | None,
     release_counts: dict[str, int],
 ) -> str:
+    if group_has_vacant_slots(requester_state):
+        return ""
+
     real_count = real_group_member_count(requester_state, requester_key, active)
     already_released = int(release_counts.get(requester_key, 0) or 0)
     if real_count <= already_released:
@@ -656,6 +928,273 @@ def companion_row_class_key(row: dict[str, Any]) -> str:
     return normalize_class_key(row.get("class_name") or row.get("class") or row.get("ClassName"))
 
 
+def request_mercenary_class_key(request: dict[str, Any]) -> str:
+    return normalize_class_key(
+        request_value(
+            request,
+            "mercenaryClassName",
+            "MercenaryClassName",
+            "requestedClassName",
+            "RequestedClassName",
+            default="",
+        )
+    )
+
+
+def request_mercenary_personality(request: dict[str, Any]) -> str:
+    return str(
+        request_value(
+            request,
+            "mercenaryPersonality",
+            "MercenaryPersonality",
+            "requestedPersonality",
+            "RequestedPersonality",
+            default="",
+        )
+        or ""
+    ).strip()
+
+
+TACTIC_ALIASES = {
+    "safe": "safe",
+    "safety": "safe",
+    "careful": "safe",
+    "cautious": "safe",
+    "안전": "safe",
+    "안전하게": "safe",
+    "aggressive": "aggressive",
+    "attack": "aggressive",
+    "offense": "aggressive",
+    "공격": "aggressive",
+    "공격적으로": "aggressive",
+    "heal": "heal_priority",
+    "healing": "heal_priority",
+    "heal_priority": "heal_priority",
+    "힐": "heal_priority",
+    "힐우선": "heal_priority",
+    "치유": "heal_priority",
+    "치유우선": "heal_priority",
+    "mez": "mez_priority",
+    "mezz": "mez_priority",
+    "cc": "mez_priority",
+    "crowd_control": "mez_priority",
+    "메즈": "mez_priority",
+    "메즈우선": "mez_priority",
+    "protect": "leader_protect",
+    "leader": "leader_protect",
+    "leader_protect": "leader_protect",
+    "보호": "leader_protect",
+    "리더보호": "leader_protect",
+    "balanced": "balanced",
+    "balance": "balanced",
+    "default": "balanced",
+    "기본": "balanced",
+}
+TACTICS = {"balanced", "safe", "aggressive", "heal_priority", "mez_priority", "leader_protect"}
+
+
+def normalize_tactic_preset(value: Any) -> str:
+    raw = str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
+    compact = "".join(ch for ch in raw if ch.isalnum() or "\uac00" <= ch <= "\ud7a3")
+    normalized = TACTIC_ALIASES.get(raw) or TACTIC_ALIASES.get(compact) or raw
+    return normalized if normalized in TACTICS else "balanced"
+
+
+def request_mercenary_tactic(request: dict[str, Any]) -> str:
+    return normalize_tactic_preset(
+        request_value(
+            request,
+            "mercenaryTacticPreset",
+            "MercenaryTacticPreset",
+            "mercenaryTactic",
+            "MercenaryTactic",
+            "tacticPreset",
+            "TacticPreset",
+            default="balanced",
+        )
+    )
+
+
+def request_mercenary_traits(request: dict[str, Any]) -> list[str]:
+    value = request_value(request, "mercenaryTraits", "MercenaryTraits", "traits", "Traits", default="")
+    return [part.strip() for part in str(value or "").replace(";", "|").replace(",", "|").split("|") if part.strip()]
+
+
+def request_mercenary_int(request: dict[str, Any], *keys: str, default: int = 0) -> int:
+    return max(0, min(100, parse_int(request_value(request, *keys, default=default), default=default)))
+
+
+def request_mercenary_trust(request: dict[str, Any]) -> int:
+    return request_mercenary_int(request, "mercenaryTrust", "MercenaryTrust", "trust", "Trust", default=50)
+
+
+def request_mercenary_fatigue(request: dict[str, Any]) -> int:
+    return request_mercenary_int(request, "mercenaryFatigue", "MercenaryFatigue", "fatigue", "Fatigue", default=0)
+
+
+def request_mercenary_memory(request: dict[str, Any]) -> str:
+    return str(
+        request_value(
+            request,
+            "mercenaryAdventureMemory",
+            "MercenaryAdventureMemory",
+            "adventureMemory",
+            "AdventureMemory",
+            "mercenaryBackground",
+            "MercenaryBackground",
+            default="",
+        )
+        or ""
+    ).strip()
+
+
+def mercenary_operational_state(request: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "tactic": request_mercenary_tactic(request),
+        "trust": request_mercenary_trust(request),
+        "fatigue": request_mercenary_fatigue(request),
+        "traits": request_mercenary_traits(request),
+        "memory": request_mercenary_memory(request),
+    }
+
+
+def live_companion_tactic_flags(tactic: str, role: Any, action_rotation: str) -> list[str]:
+    tactic = normalize_tactic_preset(tactic)
+    if tactic == "safe":
+        return [
+            "--party-assist-attack-delay",
+            "0.9",
+            "--flee-health-percent",
+            "52",
+            "--flee-pressure-health-percent",
+            "88",
+            "--party-preengage-ranged-safe-distance",
+            "2200",
+        ]
+    if tactic == "aggressive":
+        return [
+            "--party-assist-attack-delay",
+            "0.05",
+            "--flee-health-percent",
+            "30",
+            "--combat-interval",
+            "0.45",
+            "--skill-interval",
+            "0.72",
+        ]
+    if tactic == "heal_priority":
+        return [
+            "--party-heal-leader-health-percent",
+            "95",
+            "--healer-self-health-percent",
+            "94",
+            "--party-heal-leader-interval",
+            "0.8",
+        ]
+    if tactic == "mez_priority":
+        return [
+            "--party-rescue-assist-after",
+            "4",
+            "--party-rescue-emergency-assist-after",
+            "3",
+            "--party-support-evasion",
+        ]
+    if tactic == "leader_protect":
+        return [
+            "--party-survival-active-tank-health-percent",
+            "50",
+            "--party-rescue-max-distance",
+            "7000",
+            "--party-assist-attack-delay",
+            "0.25",
+        ]
+    return []
+
+
+def live_companion_trait_flags(traits: list[str]) -> list[str]:
+    normalized = " ".join(traits).lower()
+    flags: list[str] = []
+    if any(token in normalized for token in ("응급", "치료", "heal", "medic")):
+        flags += [
+            "--party-heal-leader-health-percent",
+            "95",
+            "--self-preserve-heal-min-interval",
+            "6.0",
+        ]
+    if any(token in normalized for token in ("도망", "탈출", "후퇴", "escape", "flee")):
+        flags += [
+            "--flee-movement-speed",
+            "360",
+            "--flee-safe-point-distance",
+            "2400",
+        ]
+    if any(token in normalized for token in ("추적", "정찰", "몹", "track", "scout")):
+        flags += [
+            "--combat-usable-api-retries",
+            "6",
+            "--target-loss-grace",
+            "12",
+        ]
+    if any(token in normalized for token in ("겁 없음", "겁없", "용맹", "brave", "fearless")):
+        flags += [
+            "--flee-health-percent",
+            "25",
+            "--required-target-tank-commit-health-percent",
+            "55",
+        ]
+    if any(token in normalized for token in ("야영", "휴식", "camp", "rest")):
+        flags += [
+            "--low-health-rest-min",
+            "8",
+        ]
+    return flags
+
+
+def live_companion_trust_fatigue_flags(trust: int, fatigue: int) -> list[str]:
+    flags: list[str] = []
+    if trust >= 80 and fatigue < 60:
+        flags += [
+            "--combat-interval",
+            "0.5",
+            "--skill-interval",
+            "0.78",
+            "--startup-self-buff-count",
+            "3",
+        ]
+    elif trust < 35:
+        flags += [
+            "--party-assist-attack-delay",
+            "1.4",
+            "--flee-health-percent",
+            "58",
+        ]
+
+    if fatigue >= 70:
+        flags += [
+            "--combat-interval",
+            "0.9",
+            "--skill-interval",
+            "1.25",
+            "--flee-health-percent",
+            "62",
+        ]
+    elif fatigue <= 20 and trust >= 60:
+        flags += [
+            "--combat-interval",
+            "0.5",
+        ]
+    return flags
+
+
+def live_companion_mercenary_state_flags(request: dict[str, Any], role: Any, action_rotation: str) -> list[str]:
+    state = mercenary_operational_state(request)
+    flags: list[str] = []
+    flags += live_companion_tactic_flags(str(state["tactic"]), role, action_rotation)
+    flags += live_companion_trait_flags(list(state["traits"]))
+    flags += live_companion_trust_fatigue_flags(int(state["trust"]), int(state["fatigue"]))
+    return flags
+
+
 def first_account_row(account_csv: str | Path) -> dict[str, Any]:
     try:
         with Path(account_csv).open(encoding="utf-8-sig", newline="") as handle:
@@ -695,6 +1234,7 @@ def default_role_capability_score(
         return 0
 
     capabilities = companion_row_capabilities(row)
+    row_roles = companion_row_roles(row)
     score = sum(weight for capability, weight in weights.items() if capability in capabilities)
     if role == "dps" and request is not None and request_is_boss_or_objective_content(request):
         score += sum(
@@ -702,10 +1242,22 @@ def default_role_capability_score(
             for capability, weight in BOSS_DPS_CAPABILITY_WEIGHTS.items()
             if capability in capabilities
         )
+    if (
+        role == "tank"
+        and request is not None
+        and request_is_boss_or_objective_content(request)
+        and "defensive_tank" in capabilities
+        and row_roles & {"support", "healer"}
+    ):
+        score -= 40
     return score
 
 
-def role_to_rotation_for_row(role: Any, row: dict[str, Any] | None = None) -> str:
+def role_to_rotation_for_row(
+    role: Any,
+    row: dict[str, Any] | None = None,
+    request: dict[str, Any] | None = None,
+) -> str:
     normalized_role = normalize_role(role)
     class_key = companion_row_class_key(row or {})
     class_rotation = CLASS_ROTATION_HINTS.get(class_key, "")
@@ -758,6 +1310,13 @@ def request_region(request: dict[str, Any]) -> int:
     return parse_int(request_value(request, "region", "Region", default=0))
 
 
+def ground_z_map_for_companion(request: dict[str, Any], companion_row: dict[str, Any]) -> str:
+    realm = parse_int(request_value(request, "realm", "Realm", default=0))
+    if realm <= 0:
+        realm = parse_int(companion_row.get("realm") or companion_row.get("Realm"), default=1)
+    return REALM_GROUND_Z_MAP.get(realm, REALM_GROUND_Z_MAP[1])
+
+
 def request_objective_target_name(request: dict[str, Any]) -> str:
     explicit = str(
         request_value(
@@ -786,10 +1345,40 @@ def request_objective_target_name(request: dict[str, Any]) -> str:
 
 def request_is_boss_or_objective_content(request: dict[str, Any]) -> bool:
     content_type = str(request_value(request, "contentType", "ContentType", default="") or "").strip()
+    if request_objective_target_name(request):
+        return True
     if not content_type:
         return False
     prefix = content_type.split(":", 1)[0].strip().lower()
-    return prefix in {"boss", "objective", "pve"}
+    return prefix in {"boss", "objective"}
+
+
+def live_companion_party_encounter_mode(request: dict[str, Any]) -> str:
+    return "boss" if request_is_boss_or_objective_content(request) else "standard"
+
+
+def should_enable_startup_stealth(
+    request: dict[str, Any],
+    role: Any,
+    row: dict[str, Any] | None,
+    *,
+    action_rotation: str,
+    hostile_assist: bool,
+) -> bool:
+    capabilities = companion_row_capabilities(row or {})
+    if "stealth" not in capabilities:
+        return False
+
+    if "stealth" in request_capabilities(request):
+        return True
+
+    if (
+        normalize_role(role) in {"support", "healer"}
+        and request_is_boss_or_objective_content(request)
+    ):
+        return False
+
+    return True
 
 
 def first_account_home_waypoint(account_csv: str | Path) -> str:
@@ -838,6 +1427,12 @@ def rank_companion_rows(request: dict[str, Any], rows: list[dict[str, Any]]) -> 
     realm_rows = [row for row in rows if row_matches_request_realm(row, request)]
     if realm_rows:
         rows = realm_rows
+
+    requested_class = request_mercenary_class_key(request)
+    if requested_class:
+        class_rows = [row for row in rows if companion_row_class_key(row) == requested_class]
+        if class_rows:
+            rows = class_rows
 
     requested_role = normalize_role(request_value(request, "requestedRole", "RequestedRole", default="fill"))
     role_rows = [row for row in rows if row_matches_requested_role(row, requested_role)]
@@ -899,6 +1494,12 @@ def select_companion_accounts_csv(
     if not fieldnames:
         raise ValueError(f"account csv has no header: {source_path}")
 
+    request_start = request_position(request)
+    if request_start is not None:
+        for field in ("start_x", "start_y", "start_z", "zone_id"):
+            if field not in fieldnames:
+                fieldnames.append(field)
+
     candidates = []
     for row in rows:
         username = str(row.get("username") or "").strip().lower()
@@ -912,6 +1513,14 @@ def select_companion_accounts_csv(
         candidates.append(row)
 
     candidates = rank_companion_rows(request, candidates)
+    if request_start is not None:
+        region = request_region(request)
+        for row in candidates:
+            row["start_x"] = str(request_start[0])
+            row["start_y"] = str(request_start[1])
+            row["start_z"] = str(request_start[2])
+            if region > 0:
+                row["zone_id"] = str(region)
 
     if not candidates:
         raise ValueError(f"no companion accounts left after excluding requester from {source_path}")
@@ -960,15 +1569,20 @@ def build_behavior_command(
     request_id = str(request_value(request, "id", "Id", default="live-companion"))
     leader_name = str(request_value(request, "requesterName", "RequesterName", default="")).strip()
     role = normalize_role(request_value(request, "requestedRole", "RequestedRole", default="fill"))
-    hold = str(getattr(args, "hold", 3600))
+    hold = str(request_contract_duration_seconds(request) or getattr(args, "hold", 3600))
     combat_home = str(getattr(args, "combat_home_leash_distance", 4500))
     leader_waypoint = request_waypoint(request)
     objective_target_name = request_objective_target_name(request)
     companion_home_waypoint = first_account_home_waypoint(account_csv)
     companion_row = first_account_row(account_csv)
-    action_rotation = role_to_rotation_for_row(role, companion_row)
-    hostile_assist = live_companion_uses_hostile_assist(role, action_rotation)
+    action_rotation = role_to_rotation_for_row(role, companion_row, request)
+    forced_personality_raw = getattr(args, "force_companion_personality", "")
+    forced_personality = forced_personality_raw.strip() if isinstance(forced_personality_raw, str) else ""
+    requested_personality = request_mercenary_personality(request)
+    personality = forced_personality or requested_personality or companion_personality_for_role(role)
+    hostile_assist = live_companion_uses_hostile_assist(role, action_rotation, request)
     player_level = requester_player_level(request, requester_state)
+    encounter_mode = live_companion_party_encounter_mode(request)
 
     command = [
         sys.executable,
@@ -988,17 +1602,18 @@ def build_behavior_command(
         "--hold",
         hold,
         "--party-size",
-        "1",
+        str(args.party_size),
         "--party-external-member-names",
         leader_name,
         "--party-auto-external-members",
         "--party-assist-only",
+        "--party-local-rescue-target",
         "--party-encounter-mode",
-        "boss",
+        encounter_mode,
         "--party-assist-interval",
-        live_companion_party_assist_interval(role, action_rotation),
+        live_companion_party_assist_interval(role, action_rotation, request),
         "--party-assist-attack-delay",
-        live_companion_party_assist_attack_delay(role, action_rotation),
+        live_companion_party_assist_attack_delay(role, action_rotation, request),
         "--party-ranged-assist-extra-delay",
         live_companion_ranged_assist_extra_delay(role, action_rotation),
         "--party-follow-interval",
@@ -1007,6 +1622,18 @@ def build_behavior_command(
         "360",
         "--party-follow-distance",
         live_companion_follow_distance(role, action_rotation),
+        "--party-follow-catchup-distance",
+        "800",
+        "--party-follow-catchup-speed-multiplier",
+        "1.6",
+        "--party-follow-hard-catchup-distance",
+        "1600",
+        "--party-follow-hard-catchup-speed-multiplier",
+        "2.3",
+        "--party-follow-teleport-distance",
+        "2500",
+        "--party-follow-teleport-stop-distance",
+        "90",
         "--follow-nearby-player",
         "--follow-player-name",
         leader_name,
@@ -1016,12 +1643,15 @@ def build_behavior_command(
         "--hunter",
         "--move",
         "--smooth-movement",
+        "--server-correction-smoothing",
         "--smooth-move-interval",
         "0.18",
         "--movement-speed",
-        "280",
+        "191",
         "--movement-update-interval",
         "0.18",
+        "--ground-z-map",
+        ground_z_map_for_companion(request, companion_row),
         "--move-step",
         "320",
         "--use-skills",
@@ -1059,7 +1689,13 @@ def build_behavior_command(
             else []
         ),
         "--auto-release-on-death",
-        "--speak-state-changes",
+        "--companion-chat-reply",
+        "--companion-chat-reply-channel",
+        "party",
+        "--companion-chat-reply-cooldown",
+        "2",
+        "--companion-personality",
+        personality,
         "--no-auto-loot",
         "--combat-home-leash-distance",
         combat_home,
@@ -1089,8 +1725,14 @@ def build_behavior_command(
         "--live-control-interval",
         "0.5",
         *LIVE_COMPANION_PARTY_COORDINATION_FLAGS,
-        *live_companion_boss_role_flags(role, action_rotation),
+        *(
+            live_companion_boss_role_flags(role, action_rotation, args)
+            if encounter_mode == "boss"
+            else live_companion_field_role_flags(role, action_rotation)
+        ),
         *LIVE_COMPANION_FLEE_FLAGS,
+        *live_companion_service_flee_flags(args),
+        *companion_personality_behavior_flags(personality, role, action_rotation),
         "--metrics-csv",
         str(run_path / f"{request_id}-metrics.csv"),
         "--report-md",
@@ -1106,8 +1748,12 @@ def build_behavior_command(
         command.append("--follow-player-hold-allows-waypoint")
     if hostile_assist:
         command.append("--party-use-assist-command")
-    command.extend(live_companion_role_flags(role, action_rotation))
-    if objective_target_name and hostile_assist and live_companion_claims_objective_target(role, action_rotation):
+    command.extend(live_companion_role_flags(role, action_rotation, args))
+    command.extend(live_companion_contract_tier_flags(request))
+    command.extend(live_companion_mercenary_state_flags(request, role, action_rotation))
+    if objective_target_name and hostile_assist and (
+        live_companion_claims_objective_target(role, action_rotation) or action_rotation.startswith("caster")
+    ):
         command += [
             "--require-target-name",
             objective_target_name,
@@ -1118,11 +1764,31 @@ def build_behavior_command(
         region = request_region(request)
         if region > 0:
             command += ["--path-region", str(region)]
-    if "stealth" in companion_row_capabilities(companion_row):
+    if should_enable_startup_stealth(
+        request,
+        role,
+        companion_row,
+        action_rotation=action_rotation,
+        hostile_assist=hostile_assist,
+    ):
         command.append("--startup-stealth")
     if "speed_song" in companion_row_capabilities(companion_row):
         command.append("--startup-speed-song")
-    if leader_waypoint:
+    if dialogue_enabled_from_server_or_cli(args) or arg_bool(args, "guide_enabled", False):
+        command += [
+            "--companion-free-chat",
+            "--ai-gateway-model-alias",
+            arg_string(args, "ai_gateway_model_alias", "small-dialogue") or "small-dialogue",
+            "--companion-guide-rag",
+            "--companion-guide-model-alias",
+            arg_string(args, "ai_guide_model_alias", "openai-small-guide") or "openai-small-guide",
+            "--companion-guide-timeout",
+            str(max(1.0, arg_float(args, "ai_gateway_timeout", 8.0))),
+        ]
+        gateway_config = arg_string(args, "ai_gateway_config", "")
+        if gateway_config:
+            command += ["--ai-gateway-config", gateway_config, "--companion-guide-ai-gateway-config", gateway_config]
+    if leader_waypoint and objective_target_name:
         command += [
             "--waypoints",
             leader_waypoint,
@@ -1141,11 +1807,11 @@ def build_behavior_command(
             "--target-home-max-distance",
             str(max(arg_float(args, "combat_home_leash_distance", 4500.0), 4500.0)),
         ]
-        if companion_home_waypoint:
-            command += [
-                "--flee-home",
-                companion_home_waypoint,
-            ]
+    if companion_home_waypoint:
+        command += [
+            "--flee-home",
+            companion_home_waypoint,
+        ]
 
     return [part for part in command if part != ""]
 
@@ -1184,13 +1850,90 @@ def api_request(args: argparse.Namespace, method: str, path: str, query: dict[st
         if exc.code == 404:
             return None
         raise
+    except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as exc:
+        print(f"[OpenDAoC] Companion API unavailable: {exc}", file=sys.stderr)
+        return None
     if not payload:
         return None
     return json.loads(payload)
 
 
+def wait_for_server_api_ready(args: argparse.Namespace) -> bool:
+    timeout = max(0.0, float(getattr(args, "api_startup_wait", 0.0) or 0.0))
+    if timeout <= 0.0:
+        return True
+    interval = max(0.05, float(getattr(args, "api_startup_retry_interval", 0.5) or 0.5))
+    deadline = time.monotonic() + timeout
+
+    while True:
+        if api_request(args, "GET", "/api/dummy/companions/config") is not None:
+            return True
+        remaining = deadline - time.monotonic()
+        if remaining <= 0.0:
+            print(
+                f"[OpenDAoC] Companion API was not ready after {timeout:.1f}s; service startup aborted.",
+                file=sys.stderr,
+            )
+            return False
+        time.sleep(min(interval, remaining))
+
+
 def claim_next_request(args: argparse.Namespace) -> dict[str, Any] | None:
     return api_request(args, "POST", "/api/dummy/companions/requests/claim")
+
+
+def snapshot_requests(args: argparse.Namespace, status: str = "", limit: int = 100) -> list[dict[str, Any]]:
+    params: dict[str, str] = {"limit": str(max(1, int(limit or 1)))}
+    if status:
+        params["status"] = status
+    payload = api_request(args, "GET", "/api/dummy/companions/requests", params)
+    if isinstance(payload, list):
+        return [row for row in payload if isinstance(row, dict)]
+    return []
+
+
+def live_behavior_process_lines() -> list[str]:
+    try:
+        completed = subprocess.run(
+            ["pgrep", "-af", "[t]ools/behavior-dummy-client.py"],
+            text=True,
+            capture_output=True,
+            timeout=2.0,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    if completed.returncode not in (0, 1):
+        return []
+    return [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+
+
+def recover_orphaned_active_requests(args: argparse.Namespace) -> int:
+    if not arg_bool(args, "recover_orphaned_active_requests", True):
+        return 0
+    try:
+        requests = snapshot_requests(args, "active", 100)
+    except Exception:
+        return 0
+    if not requests:
+        return 0
+
+    process_lines = live_behavior_process_lines()
+    recovered = 0
+    for request in requests:
+        request_id = str(request_value(request, "id", "Id", default="")).strip()
+        if not request_id:
+            continue
+        if any(request_id in line for line in process_lines):
+            continue
+        update_request_status(
+            args,
+            request_id,
+            "queued",
+            "companion service recovered orphaned active request",
+            str(request_value(request, "assignedCompanionName", "AssignedCompanionName", default="")),
+        )
+        recovered += 1
+    return recovered
 
 
 def update_request_status(
@@ -1330,10 +2073,124 @@ def companion_personality_for_role(role: Any) -> str:
     return {
         "tank": "steady_protector",
         "healer": "calm_support",
-        "support": "tactical_support",
-        "dps": "confident_striker",
-        "fill": "steady_companion",
-    }.get(role, "steady_companion")
+        "support": "loyal_guardian",
+        "dps": "sharp_striker",
+        "fill": "cautious_scout",
+    }.get(role, "cautious_scout")
+
+
+def companion_personality_behavior_flags(personality: str, role: Any, action_rotation: str) -> list[str]:
+    personality = str(personality or "").strip()
+    normalized_role = normalize_role(role)
+    flags_by_personality = {
+        "steady_protector": [
+            "--flee-health-percent",
+            "40",
+            "--flee-pressure-health-percent",
+            "75",
+            "--required-target-tank-commit-health-percent",
+            "35",
+            "--party-survival-active-tank-health-percent",
+            "35",
+        ],
+        "calm_support": [
+            "--flee-health-percent",
+            "45",
+            "--flee-pressure-health-percent",
+            "80",
+            "--skill-interval",
+            "0.85",
+        ],
+        "bold_vanguard": [
+            "--party-assist-attack-delay",
+            "0.1",
+            "--flee-health-percent",
+            "30",
+            "--required-target-tank-commit-health-percent",
+            "45",
+        ],
+        "sharp_striker": [
+            "--party-assist-attack-delay",
+            "0.1",
+            "--combat-interval",
+            "0.5",
+            "--skill-interval",
+            "0.75",
+        ],
+        "cautious_scout": [
+            "--party-assist-attack-delay",
+            "0.8",
+            "--flee-health-percent",
+            "47",
+            "--flee-pressure-health-percent",
+            "85",
+            "--party-preengage-ranged-safe-distance",
+            "2200",
+        ],
+        "wary_survivor": [
+            "--party-assist-attack-delay",
+            "1.2",
+            "--flee-health-percent",
+            "55",
+            "--flee-pressure-health-percent",
+            "90",
+        ],
+        "loyal_guardian": [
+            "--party-assist-attack-delay",
+            "0.2",
+            "--party-survival-active-tank-health-percent",
+            "45",
+            "--flee-health-percent",
+            "40",
+        ],
+        "eager_rookie": [
+            "--party-assist-attack-delay",
+            "0.1",
+            "--party-follow-step",
+            "410",
+        ],
+        "sly_opportunist": [
+            "--party-assist-attack-delay",
+            "0.15",
+            "--flee-health-percent",
+            "45",
+            "--boss-ranged-safe-distance",
+            "2000",
+        ],
+        "shifty_traitor": [
+            "--party-assist-attack-delay",
+            "1.6",
+            "--flee-health-percent",
+            "60",
+            "--flee-pressure-health-percent",
+            "92",
+        ],
+        "reckless_berserker": [
+            "--party-assist-attack-delay",
+            "0",
+            "--flee-health-percent",
+            "15",
+            "--flee-pressure-health-percent",
+            "35",
+            "--required-target-tank-commit-health-percent",
+            "55",
+        ],
+        "lazy_veteran": [
+            "--party-assist-attack-delay",
+            "1.0",
+            "--combat-interval",
+            "0.8",
+            "--skill-interval",
+            "1.2",
+        ],
+    }
+    flags = list(flags_by_personality.get(personality, []))
+    if normalized_role in {"healer", "support"} and action_rotation == "healer-support" and personality in {
+        "bold_vanguard",
+        "reckless_berserker",
+    }:
+        flags += ["--flee-health-percent", "43"]
+    return flags
 
 
 def build_companion_dialogue_payload(
@@ -1346,12 +2203,19 @@ def build_companion_dialogue_payload(
     companion_player = player_row(companion_state)
     role = request_value(companion.request, "requestedRole", "RequestedRole", default="fill")
     event_type = str(event_type or "status")
+    mercenary_state = mercenary_operational_state(companion.request)
+    personality = request_mercenary_personality(companion.request) or companion_personality_for_role(role)
+    memory_parts = []
+    if mercenary_state["traits"]:
+        memory_parts.append("특성: " + ", ".join(str(trait) for trait in mercenary_state["traits"]))
+    if mercenary_state["memory"]:
+        memory_parts.append(str(mercenary_state["memory"]))
     return {
         "feature": "companion_dialogue",
         "event_type": event_type,
         "realm": str(request_value(companion.request, "realm", "Realm", default="unknown")),
         "role": normalize_role(role),
-        "personality": companion_personality_for_role(role),
+        "personality": personality,
         "state": {
             "combat": bool(player.get("inCombat")),
             "leader_health_band": health_band_from_percent(player.get("healthPercent")),
@@ -1365,8 +2229,14 @@ def build_companion_dialogue_payload(
             "party_crowd_controlled": max(0, party_crowd_controlled_count(requester_state)),
             "player_called": event_type.startswith("player_requested_"),
             "command_intent": dialogue_command_intent(event_type),
+            "mercenary": {
+                "tactic": str(mercenary_state["tactic"]),
+                "trust": int(mercenary_state["trust"]),
+                "fatigue": int(mercenary_state["fatigue"]),
+                "traits": list(mercenary_state["traits"]),
+            },
         },
-        "memory": "",
+        "memory": " | ".join(memory_parts),
     }
 
 
@@ -1383,6 +2253,7 @@ SERVICE_ALLOWED_HINTS = {
     "cure_priority",
 }
 SERVICE_ALLOWED_URGENCY = {"low", "normal", "high"}
+MAX_COMPANION_SAY_TEXT_LENGTH = 120
 
 
 def normalize_dialogue_intent_hint(value: Any) -> str:
@@ -1416,7 +2287,7 @@ def sanitize_companion_dialogue_response(response: dict[str, Any]) -> dict[str, 
     if urgency not in SERVICE_ALLOWED_URGENCY:
         return None
     text = " ".join(str(response.get("say_text") or "").split())
-    if len(text) > 80:
+    if len(text) > MAX_COMPANION_SAY_TEXT_LENGTH:
         return None
     if text.startswith("/") or "\n/" in text or " /" in text:
         return None
@@ -1432,12 +2303,42 @@ def sanitize_companion_dialogue_response(response: dict[str, Any]) -> dict[str, 
     }
 
 
+def sanitize_companion_guide_response(response: dict[str, Any]) -> dict[str, Any] | None:
+    channel = str(response.get("say_channel") or "party").strip().lower()
+    if channel not in SERVICE_ALLOWED_CHANNELS:
+        return None
+    raw_lines = response.get("guide_lines")
+    if not isinstance(raw_lines, list):
+        return None
+    lines = [" ".join(str(line or "").split()) for line in raw_lines]
+    lines = [line for line in lines if line]
+    if len(lines) < 3 or len(lines) > 5:
+        return None
+    for line in lines:
+        if len(line) > MAX_COMPANION_SAY_TEXT_LENGTH:
+            return None
+        if line.startswith("/") or "\n/" in line or " /" in line:
+            return None
+    source_ids = response.get("source_ids", [])
+    if not isinstance(source_ids, list):
+        source_ids = []
+    return {
+        "say_channel": channel,
+        "guide_lines": lines,
+        "source_ids": [str(source_id or "").strip() for source_id in source_ids if str(source_id or "").strip()][:8],
+        "intent_hint": "none",
+        "urgency": str(response.get("urgency") or "normal"),
+    }
+
+
 def write_companion_live_control(path: Path, response: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     row = {
         "revision": time.time_ns(),
         "say_channel": str(response.get("say_channel") or "none"),
         "say_text": str(response.get("say_text") or ""),
+        "guide_lines": list(response.get("guide_lines") or []),
+        "source_ids": list(response.get("source_ids") or []),
         "intent_hint": str(response.get("intent_hint") or "none"),
         "urgency": str(response.get("urgency") or "normal"),
     }
@@ -1448,27 +2349,43 @@ def companion_control_path(args: argparse.Namespace, request_id: str) -> Path:
     return Path(arg_string(args, "run_dir", "test-output/live-companions")) / request_id / "live-control.json"
 
 
-def call_ai_gateway(args: argparse.Namespace, payload: dict[str, Any]) -> dict[str, Any]:
+def call_ai_gateway(
+    args: argparse.Namespace,
+    payload: dict[str, Any],
+    *,
+    feature: str = "companion_dialogue",
+    model_alias: str = "",
+) -> dict[str, Any]:
     command = [sys.executable, "tools/opendaoc-ai-gateway.py"]
     config = arg_string(args, "ai_gateway_config", "")
     if config:
         command += ["--config", config]
+    if not model_alias:
+        model_alias = (
+            arg_string(args, "ai_guide_model_alias", "openai-small-guide")
+            if feature == "companion_guide"
+            else arg_string(args, "ai_gateway_model_alias", "small-dialogue")
+        )
     command += [
         "generate",
         "--feature",
-        "companion_dialogue",
+        feature,
         "--model-alias",
-        arg_string(args, "ai_gateway_model_alias", "small-dialogue") or "small-dialogue",
+        model_alias or "small-dialogue",
         "--payload-json",
         json.dumps(payload, ensure_ascii=False),
     ]
     try:
+        env = dict(os.environ)
+        env.setdefault("PYTHONIOENCODING", "utf-8")
         completed = subprocess.run(
             command,
             cwd=arg_string(args, "repo_root", str(ROOT)),
             text=True,
+            encoding="utf-8",
             capture_output=True,
             timeout=arg_float(args, "ai_gateway_timeout", 5.0),
+            env=env,
         )
     except subprocess.TimeoutExpired:
         return {"allowed": False, "blocked_reason": "gateway_timeout"}
@@ -1483,7 +2400,7 @@ def call_ai_gateway(args: argparse.Namespace, payload: dict[str, Any]) -> dict[s
 
 
 def request_companion_dialogue(args: argparse.Namespace, payload: dict[str, Any], control_path: Path) -> bool:
-    if not arg_bool(args, "dialogue_enabled", False):
+    if not dialogue_enabled_from_server_or_cli(args):
         return False
     result = call_ai_gateway(args, payload)
     if not result.get("allowed"):
@@ -1492,6 +2409,22 @@ def request_companion_dialogue(args: argparse.Namespace, payload: dict[str, Any]
     if not isinstance(response, dict):
         return False
     sanitized = sanitize_companion_dialogue_response(response)
+    if sanitized is None:
+        return False
+    write_companion_live_control(control_path, sanitized)
+    return True
+
+
+def request_companion_guide(args: argparse.Namespace, payload: dict[str, Any], control_path: Path) -> bool:
+    if not dialogue_enabled_from_server_or_cli(args):
+        return False
+    result = call_ai_gateway(args, payload, feature="companion_guide")
+    if not result.get("allowed"):
+        return False
+    response = result.get("response")
+    if not isinstance(response, dict):
+        return False
+    sanitized = sanitize_companion_guide_response(response)
     if sanitized is None:
         return False
     write_companion_live_control(control_path, sanitized)
@@ -1596,6 +2529,21 @@ def online_accounts_from_pool(args: argparse.Namespace, account_csv: str | Path)
     return online
 
 
+def prune_account_cooldowns(account_cooldowns: dict[str, float], now: float) -> None:
+    for account, expires_at in list(account_cooldowns.items()):
+        if expires_at <= now:
+            account_cooldowns.pop(account, None)
+
+
+def mark_account_cooldown(args: argparse.Namespace, account_cooldowns: dict[str, float] | None, account: str) -> None:
+    if account_cooldowns is None or not account:
+        return
+    cooldown = max(0.0, float(getattr(args, "account_reuse_cooldown", 0.0) or 0.0))
+    if cooldown <= 0.0:
+        return
+    account_cooldowns[account.strip().lower()] = time.monotonic() + cooldown
+
+
 def wait_for_companion_online(args: argparse.Namespace, account_csv: str | Path) -> str:
     account = first_account_username(account_csv)
     if not account:
@@ -1640,6 +2588,20 @@ def request_status_is_externally_closed(status: str) -> bool:
     return str(status or "").strip().lower() in {"canceled", "cancelled", "failed", "completed"}
 
 
+def should_check_active_request_status(args: argparse.Namespace, companion: ActiveCompanion, now: float) -> bool:
+    interval = max(0.0, arg_float(args, "active_request_status_interval", 15.0))
+    if interval <= 0.0:
+        return True
+    return companion.last_request_status_check <= 0.0 or now - companion.last_request_status_check >= interval
+
+
+def active_request_is_externally_closed(args: argparse.Namespace, request_id: str, companion: ActiveCompanion, now: float) -> bool:
+    if not should_check_active_request_status(args, companion, now):
+        return False
+    companion.last_request_status_check = now
+    return request_status_is_externally_closed(current_request_status(args, request_id))
+
+
 def detach_companion_from_request(args: argparse.Namespace, request_id: str, account: str) -> tuple[bool, str]:
     try:
         payload = api_request(
@@ -1658,15 +2620,40 @@ def detach_companion_from_request(args: argparse.Namespace, request_id: str, acc
     return True, ""
 
 
-def stop_companion(process: subprocess.Popen, timeout: float = 5.0) -> None:
+def request_companion_quit(control_path: Path | None) -> None:
+    if control_path is None:
+        return
+    control_path.parent.mkdir(parents=True, exist_ok=True)
+    control_path.write_text(
+        json.dumps(
+            {
+                "revision": time.time_ns(),
+                "commands": ["/quit"],
+                "intent_hint": "leave",
+                "quit_after_sit_seconds": 4.0,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+
+
+def stop_companion(process: subprocess.Popen, timeout: float = 10.0, control_path: Path | None = None) -> None:
     if process.poll() is not None:
         return
+    request_companion_quit(control_path)
+    try:
+        process.wait(timeout=max(1.0, timeout))
+        return
+    except subprocess.TimeoutExpired:
+        pass
     process.terminate()
     try:
-        process.wait(timeout=timeout)
+        process.wait(timeout=max(1.0, min(timeout, 5.0)))
     except subprocess.TimeoutExpired:
         process.kill()
-        process.wait(timeout=timeout)
+        process.wait(timeout=max(1.0, min(timeout, 5.0)))
 
 
 def stop_all_active_companions(
@@ -1675,7 +2662,7 @@ def stop_all_active_companions(
     reason: str,
 ) -> None:
     for request_id, companion in list(active.items()):
-        stop_companion(companion.process)
+        stop_companion(companion.process, control_path=companion.control_path)
         try:
             update_request_status(args, request_id, "completed", reason, companion.account)
         finally:
@@ -1697,7 +2684,7 @@ def release_active_companions_for_leave_request(
             continue
 
         detached, message = detach_companion_from_request(args, request_id, companion.account)
-        stop_companion(companion.process)
+        stop_companion(companion.process, control_path=companion.control_path)
         status_message = "leave request; companion released"
         if not detached and message:
             status_message = f"{status_message}; detach warning: {message}"
@@ -1711,6 +2698,7 @@ def handle_request(
     args: argparse.Namespace,
     request: dict[str, Any],
     active: dict[str, ActiveCompanion],
+    account_cooldowns: dict[str, float] | None = None,
 ) -> None:
     request_id = str(request_value(request, "id", "Id", default=""))
     if is_leave_request(request):
@@ -1732,6 +2720,9 @@ def handle_request(
     run_dir = Path(args.run_dir) / request_id
     active_accounts = {companion.account.lower() for companion in active.values() if companion.account}
     active_accounts.update(online_accounts_from_pool(args, args.accounts_csv))
+    if account_cooldowns is not None:
+        prune_account_cooldowns(account_cooldowns, time.monotonic())
+        active_accounts.update(account_cooldowns)
     try:
         companion_accounts_csv = select_companion_accounts_csv(request, args.accounts_csv, run_dir, active_accounts)
         companion_account = first_account_username(companion_accounts_csv)
@@ -1748,21 +2739,29 @@ def handle_request(
 
     update_request_status(args, request_id, "spawning", "starting live companion behavior client")
     process = subprocess.Popen(command, cwd=args.repo_root)
-    active[request_id] = ActiveCompanion(request=request, process=process, account=companion_account)
+    control_path = companion_control_path(args, request_id)
+    active[request_id] = ActiveCompanion(
+        request=request,
+        process=process,
+        account=companion_account,
+        control_path=control_path,
+    )
     update_request_status(args, request_id, "grouping", "live companion behavior client started; waiting for grouping", companion_account)
     companion = active[request_id]
 
     if getattr(args, "attach_group", True):
         account = wait_for_companion_online(args, companion_accounts_csv)
         if not account:
-            stop_companion(process)
+            stop_companion(process, control_path=control_path)
+            mark_account_cooldown(args, account_cooldowns, companion_account)
             active.pop(request_id, None)
             update_request_status(args, request_id, "failed", "companion did not appear online before grouping timeout")
             return
 
         attached, message = attach_companion_to_request(args, request_id, account)
         if not attached:
-            stop_companion(process)
+            stop_companion(process, control_path=control_path)
+            mark_account_cooldown(args, account_cooldowns, account)
             active.pop(request_id, None)
             update_request_status(args, request_id, "failed", f"group attach failed: {message}", account)
             return
@@ -1784,7 +2783,7 @@ def release_companion_for_real_player(
         return
 
     detached, message = detach_companion_from_request(args, request_id, companion.account)
-    stop_companion(companion.process)
+    stop_companion(companion.process, control_path=companion.control_path)
     status_message = "real player joined; companion released"
     if not detached and message:
         status_message = f"{status_message}; detach warning: {message}"
@@ -1803,7 +2802,7 @@ def release_companion_for_party_loss(
         return
 
     detached, message = detach_companion_from_request(args, request_id, companion.account)
-    stop_companion(companion.process)
+    stop_companion(companion.process, control_path=companion.control_path)
     status_message = "party disbanded or companion removed; companion released"
     if not detached and message:
         status_message = f"{status_message}; detach warning: {message}"
@@ -1829,6 +2828,7 @@ def poll_active(
     active: dict[str, ActiveCompanion],
     release_counts: dict[str, int] | None = None,
     dialogue_state: dict[str, float] | None = None,
+    account_cooldowns: dict[str, float] | None = None,
 ) -> None:
     release_counts = release_counts if release_counts is not None else {}
     dialogue_state = dialogue_state if dialogue_state is not None else {}
@@ -1838,21 +2838,40 @@ def poll_active(
         process = companion.process
         return_code = process.poll()
         if return_code is None:
-            if request_status_is_externally_closed(current_request_status(args, request_id)):
+            now = time.monotonic()
+            if active_request_is_externally_closed(args, request_id, companion, now):
                 detach_companion_from_request(args, request_id, companion.account)
-                stop_companion(process)
+                stop_companion(process, control_path=companion.control_path)
                 finished.append(request_id)
                 continue
 
             requester_key = request_requester_key(companion.request)
             requester_state = requester_states.setdefault(requester_key, fetch_requester_state(args, companion.request))
             if requester_state is None:
+                grace = max(0, request_offline_grace_seconds(companion.request))
+                if grace > 0:
+                    if companion.requester_offline_since <= 0.0:
+                        companion.requester_offline_since = now
+                        update_request_status(
+                            args,
+                            request_id,
+                            "active",
+                            f"requester offline; waiting {grace} seconds for reconnect",
+                            companion.account,
+                        )
+                    if now - companion.requester_offline_since <= grace:
+                        refresh_active_companion_lease(args, request_id, companion, now)
+                        continue
+
                 detach_companion_from_request(args, request_id, companion.account)
-                stop_companion(process)
-                update_request_status(args, request_id, "completed", "requester offline; companion stopped")
+                stop_companion(process, control_path=companion.control_path)
+                update_request_status(args, request_id, "completed", "requester offline grace expired; companion stopped")
                 finished.append(request_id)
             else:
-                refresh_active_companion_lease(args, request_id, companion, time.monotonic())
+                if companion.requester_offline_since > 0.0:
+                    update_request_status(args, request_id, "active", "requester reconnected; companion resumed", companion.account)
+                    companion.requester_offline_since = 0.0
+                refresh_active_companion_lease(args, request_id, companion, now)
                 event_type = dialogue_event_for_requester_state(requester_state)
                 if event_type:
                     dialogue_key = f"{request_id}:{event_type}"
@@ -1866,6 +2885,7 @@ def poll_active(
                             dialogue_state[dialogue_key] = time.monotonic()
             continue
         status = "completed" if return_code == 0 else "failed"
+        mark_account_cooldown(args, account_cooldowns, companion.account)
         update_request_status(args, request_id, status, f"behavior client exited with {return_code}")
         finished.append(request_id)
     for request_id in finished:
@@ -1886,6 +2906,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run live companion behavior clients from server companion requests.")
     parser.add_argument("--api-url", default="http://localhost:5000")
     parser.add_argument("--api-timeout", type=float, default=2.0)
+    parser.add_argument("--api-startup-wait", type=float, default=60.0)
+    parser.add_argument("--api-startup-retry-interval", type=float, default=0.5)
     parser.add_argument("--api-password", default=os.environ.get("OPENDAOC_API_PASSWORD", ""))
     parser.add_argument("--accounts-csv", default=str(Path(__file__).resolve().with_name("dummy-live-companions.csv")))
     parser.add_argument("--run-dir", default="test-output/live-companions")
@@ -1899,12 +2921,31 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--attach-timeout", type=float, default=15.0)
     parser.add_argument("--attach-group", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--active-lease-refresh-interval", type=float, default=30.0)
+    parser.add_argument("--active-request-status-interval", type=float, default=15.0)
+    parser.add_argument("--recover-orphaned-active-requests", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--dialogue-enabled", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--guide-enabled", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--ai-gateway-config", default="")
     parser.add_argument("--ai-gateway-model-alias", default="small-dialogue")
+    parser.add_argument("--ai-guide-model-alias", default="openai-small-guide")
     parser.add_argument("--ai-gateway-timeout", type=float, default=5.0)
     parser.add_argument("--dialogue-min-interval", type=float, default=5.0)
+    parser.add_argument("--healer-boss-ranged-safe-distance", type=float, default=0.0)
+    parser.add_argument("--healer-party-preengage-ranged-safe-distance", type=float, default=0.0)
+    parser.add_argument("--healer-boss-non-tank-follow-distance", type=float, default=0.0)
+    parser.add_argument("--healer-flee-pressure-health-percent", type=float, default=0.0)
+    parser.add_argument("--healer-flee-health-percent", type=float, default=0.0)
+    parser.add_argument(
+        "--healer-heal-exclude-names",
+        default="",
+        help="pipe- or comma-separated party member names the healer companion must NOT heal (still resurrectable); forwarded as --party-heal-exclude-names",
+    )
+    parser.add_argument("--companion-flee-pressure-health-percent", type=float, default=0.0)
+    parser.add_argument("--companion-flee-health-percent", type=float, default=0.0)
+    parser.add_argument("--force-companion-personality", default="")
     parser.add_argument("--max-runtime", type=float, default=0.0, help="stop the service after this many seconds; 0 runs until interrupted")
+    parser.add_argument("--party-size", type=int, default=1, help="effective party size to pass to companions")
+    parser.add_argument("--account-reuse-cooldown", type=float, default=75.0)
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     return parser
@@ -1912,17 +2953,23 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if not wait_for_server_api_ready(args):
+        return 2
+    recovered = recover_orphaned_active_requests(args)
+    if recovered:
+        print(f"[OpenDAoC] Requeued {recovered} orphaned active companion request(s).")
     active: dict[str, ActiveCompanion] = {}
     release_counts: dict[str, int] = {}
     dialogue_state: dict[str, float] = {}
+    account_cooldowns: dict[str, float] = {}
     deadline = time.monotonic() + max(0.0, float(args.max_runtime)) if args.max_runtime else None
 
     try:
         while True:
-            poll_active(args, active, release_counts, dialogue_state)
+            poll_active(args, active, release_counts, dialogue_state, account_cooldowns)
             request = claim_next_request(args)
             if request is not None:
-                handle_request(args, request, active)
+                handle_request(args, request, active, account_cooldowns)
             elif args.once:
                 return 0
 
@@ -1930,7 +2977,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
 
             if args.once:
-                poll_active(args, active, release_counts, dialogue_state)
+                poll_active(args, active, release_counts, dialogue_state, account_cooldowns)
                 return 0
             time.sleep(max(0.25, args.poll_interval))
     finally:

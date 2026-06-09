@@ -7,13 +7,13 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&craftmacro",
         ePrivLevel.Player,
-        "Crafting macros and utilities",
-        "'/craftmacro set <#>' to set how many items you want to craft",
-        "'/craftmacro clear' to reset to crafting once",
-        "'/craftmacro show' to show the current craft settings",
-        "'/craftmacro buy' to buy the necessary materials to craft one item",
-        "'/craftmacro buy <#>' to buy the necessary materials to craft <#> items",
-        "'/craftmacro buyto <#>' to buy only the missing materials to craft <#> items")]
+        "제작 매크로와 편의 기능입니다.",
+        "'/craftmacro set <#>' 제작할 아이템 개수를 설정합니다.",
+        "'/craftmacro clear' 1회 제작으로 초기화합니다.",
+        "'/craftmacro show' 현재 제작 설정을 표시합니다.",
+        "'/craftmacro buy' 아이템 1개 제작에 필요한 재료를 구매합니다.",
+        "'/craftmacro buy <#>' 아이템 <#>개 제작에 필요한 재료를 구매합니다.",
+        "'/craftmacro buyto <#>' 아이템 <#>개 제작에 부족한 재료만 구매합니다.")]
     public class CraftMacroCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)

@@ -6,7 +6,7 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&invite",
         ePrivLevel.Player,
-        "Invite a specified or targeted player to join your group", "/invite <player>")]
+        "지정한 플레이어나 현재 대상을 그룹에 초대합니다.", "/invite <플레이어>")]
     public class InviteCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)

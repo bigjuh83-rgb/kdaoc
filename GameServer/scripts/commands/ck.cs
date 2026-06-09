@@ -37,7 +37,7 @@ namespace DOL.GS.Commands
 		private string KeepStringBuilder(AbstractGameKeep keep, string language = null)
 		{
 			string buffer = string.Empty;
-			buffer += keep.Name + ": " + GlobalConstants.RealmToName(keep.Realm, language);
+			buffer += LanguageMgr.GetTranslatedKeepName(language, keep.Name) + ": " + GlobalConstants.RealmToName(keep.Realm, language);
 			if (keep.Guild != null)
 			{
 				buffer += " (" + keep.Guild.Name + ")";

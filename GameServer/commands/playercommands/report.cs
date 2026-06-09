@@ -29,8 +29,8 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&report",
 		ePrivLevel.Player,
-		"'Reports a bug",
-		"'Usage: /report <message>  Please be as detailed as possible.")]
+		"버그를 신고합니다.",
+		"사용법: /report <메시지> 가능한 한 자세히 적어 주세요.")]
 	public class ReportCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		private const ushort MAX_REPORTS = 100;

@@ -5,8 +5,8 @@
 // 	[CmdAttribute(
 // 		"&deal",
 // 		ePrivLevel.Player,
-// 		"Deal one card to a player in your group. Cards must first be prepared with /shuffle.",
-// 		"/deal <name> <u/d>")]
+// 		"그룹원에게 카드 한 장을 나눠 줍니다. 먼저 /shuffle로 카드를 준비해야 합니다.",
+// 		"/deal <이름> <u/d>")]
 // 	public class DealCommandHandler : AbstractCommandHandler, ICommandHandler
 // 	{
 // 		public void OnCommand(GameClient client, string[] args)

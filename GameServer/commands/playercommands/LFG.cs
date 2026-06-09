@@ -8,8 +8,8 @@ namespace DOL.GS.Commands
     [CmdAttribute(
          "&lfg",
          ePrivLevel.Player,
-         "Broadcast a LFG message to other players in the same region",
-         "/lfg <message>")]
+         "같은 지역의 다른 플레이어에게 파티 찾기 메시지를 방송합니다.",
+         "/lfg <메시지>")]
     public class LFGCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         private const string LFG_TIMEOUT_KEY = "lastLFGTick";

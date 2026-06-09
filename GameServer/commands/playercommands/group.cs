@@ -24,8 +24,8 @@ namespace DOL.GS.Commands
 		"&group",
 		new string[] {"&g"},
 		ePrivLevel.Player,
-		"Say something to other chat group players",
-		"/g <message>")]
+		"그룹 채팅으로 메시지를 보냅니다.",
+		"/g <메시지>")]
 	public class GCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

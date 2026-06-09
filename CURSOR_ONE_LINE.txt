@@ -1,0 +1,1 @@
+Read `C:\Users\uihan\Desktop\다옥프리서버\OpenDAoC-Core\CODEX_DUMMY_HEADING_FIX_DIRECTIVE.md` — heading fix implemented. Verify solohunt visual if needed; preserve C2S world float 191, ground-z-map, no /facegloc, PrivLevel=1. 48896 closed. Speed state done.

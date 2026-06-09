@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using DOL.AI.Brain;
 using DOL.Database;
@@ -10,6 +11,7 @@ using DOL.GS.Keeps;
 using DOL.GS.LiveCompanion;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerProperties;
+using DOL.GS.WorldAI;
 using DOL.Language;
 using DOL.Logging;
 using static DOL.GS.IGameStaticItemOwner;
@@ -1043,6 +1045,7 @@ namespace DOL.GS.ServerRules
                 out Dictionary<BattleGroup, EntityCountTotalDamagePair> battlegroupCountAndDamage,
                 out ItemOwnerTotalDamagePair mostDamagingBattlegroup))
             {
+                TryDropDynamicQuestItemAcquiredClueForXpGainers(killedNpc);
                 SendNotWorthRewardMessage(killedNpc, GameNPC.RewardEligibility.DeniedInvalid);
                 return;
             }
@@ -1504,8 +1507,12 @@ namespace DOL.GS.ServerRules
         public virtual void DropLoot(GameNPC killedNpc, GameObject killer, SortedSet<ItemOwnerTotalDamagePair> itemOwners)
         {
             List<GamePlayer> playersInRadius = killedNpc.GetPlayersInRadius(WorldMgr.INFO_DISTANCE);
+            List<DbItemTemplate> lootTemplates = LootMgr.GetLoot(killedNpc, killer).ToList();
+            DbItemTemplate dynamicQuestClue = BuildDynamicQuestItemAcquiredClueDrop(killedNpc, itemOwners);
+            if (dynamicQuestClue != null)
+                lootTemplates.Add(dynamicQuestClue);
 
-            foreach (DbItemTemplate itemTemplate in LootMgr.GetLoot(killedNpc, killer))
+            foreach (DbItemTemplate itemTemplate in lootTemplates)
             {
                 if (GameMoney.IsItemMoney(itemTemplate.Name))
                     CreateMoney(killedNpc, itemTemplate, itemOwners, playersInRadius);
@@ -1595,8 +1602,94 @@ namespace DOL.GS.ServerRules
             static void NotifyNearbyPlayers(GameNPC killedNpc, GameStaticItemTimed item, List<GamePlayer> nearbyPlayers)
             {
                 foreach (GamePlayer player in nearbyPlayers)
-                    player.Out.SendMessage(string.Format(LanguageMgr.GetTranslation(player.Client.Account.Language, "GameNPC.DropLoot.Drops", killedNpc.GetName(0, true, player.Client.Account.Language, killedNpc), item.GetName(1, false))), eChatType.CT_Loot, eChatLoc.CL_SystemWindow);
+                {
+                    string itemName = GetTranslatedDropItemName(player, item);
+                    player.Out.SendMessage(string.Format(LanguageMgr.GetTranslation(player.Client.Account.Language, "GameNPC.DropLoot.Drops", killedNpc.GetName(0, true, player.Client.Account.Language, killedNpc), itemName)), eChatType.CT_Loot, eChatLoc.CL_SystemWindow);
+                }
             }
+
+            static string GetTranslatedDropItemName(GamePlayer player, GameStaticItemTimed item)
+            {
+                if (item is GameMoney)
+                    return LanguageMgr.GetTranslation(player.Client.Account.Language, "GameNPC.DropLoot.MoneyBag");
+
+                if (item is WorldInventoryItem worldItem && worldItem.Item != null)
+                    return LanguageMgr.GetTranslatedItemName(player.Client.Account.Language, worldItem.Item);
+
+                return item.GetName(1, false);
+            }
+        }
+
+        private static DbItemTemplate BuildDynamicQuestItemAcquiredClueDrop(GameNPC killedNpc, SortedSet<ItemOwnerTotalDamagePair> itemOwners)
+        {
+            if (killedNpc == null || itemOwners == null)
+                return null;
+
+            foreach (ItemOwnerTotalDamagePair itemOwner in itemOwners)
+            {
+                if (itemOwner?.Owner is not GamePlayer player)
+                    continue;
+
+                DbItemTemplate clue = DynamicQuestRuntimeService.Instance.BuildItemAcquiredBranchClueDrop(killedNpc, player);
+                if (clue != null)
+                    return clue;
+            }
+
+            return null;
+        }
+
+        private static bool TryDropDynamicQuestItemAcquiredClueForXpGainers(GameNPC killedNpc)
+        {
+            if (killedNpc == null)
+                return false;
+
+            foreach (KeyValuePair<GameLiving, double> pair in killedNpc.XPGainers.ToList())
+            {
+                if (pair.Key is not GamePlayer player ||
+                    player.ObjectState is not GameObject.eObjectState.Active ||
+                    !player.IsWithinRadius(killedNpc, WorldMgr.MAX_EXPFORKILL_DISTANCE))
+                {
+                    continue;
+                }
+
+                DbItemTemplate clue = DynamicQuestRuntimeService.Instance.BuildItemAcquiredBranchClueDrop(killedNpc, player);
+                if (clue == null)
+                    continue;
+
+                DropDynamicQuestClueItem(killedNpc, clue, player);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static void DropDynamicQuestClueItem(GameNPC killedNpc, DbItemTemplate itemTemplate, GamePlayer owner)
+        {
+            GameInventoryItem inventoryItem = GameInventoryItem.Create(itemTemplate);
+            inventoryItem.IsCrafted = false;
+            inventoryItem.Creator = killedNpc.Name;
+
+            WorldInventoryItem item = new(inventoryItem)
+            {
+                X = killedNpc.X,
+                Y = killedNpc.Y,
+                Z = killedNpc.Z,
+                Heading = killedNpc.Heading,
+                CurrentRegion = killedNpc.CurrentRegion
+            };
+
+            List<GamePlayer> nearbyPlayers = killedNpc.GetPlayersInRadius(WorldMgr.INFO_DISTANCE);
+            foreach (GamePlayer player in nearbyPlayers)
+            {
+                string itemName = LanguageMgr.GetTranslatedItemName(player.Client.Account.Language, item.Item);
+                player.Out.SendMessage(string.Format(LanguageMgr.GetTranslation(player.Client.Account.Language, "GameNPC.DropLoot.Drops", killedNpc.GetName(0, true, player.Client.Account.Language, killedNpc), itemName)), eChatType.CT_Loot, eChatLoc.CL_SystemWindow);
+            }
+
+            item.AddOwner(owner);
+            if (item.TryAutoPickUp(owner) is TryPickUpResult.Success)
+                return;
+
+            item.AddToWorld();
         }
 
         public virtual void OnPlayerKilled(GamePlayer killedPlayer, GameObject killer)

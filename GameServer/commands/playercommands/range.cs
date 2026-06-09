@@ -5,7 +5,7 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&range",
         ePrivLevel.Player,
-        "Gives a range to a target",
+        "대상까지의 거리를 표시합니다.",
         "/range")]
     public class RangeCommandHandler : AbstractCommandHandler, ICommandHandler
     {

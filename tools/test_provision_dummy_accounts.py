@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -75,6 +76,16 @@ class ProvisionDummyAccountsTests(unittest.TestCase):
             position_step=20,
             template_account="bigjuh",
             template_character="천재다",
+            class_cycle_values=[],
+            race_cycle_values=[],
+            creation_model_cycle_values=[],
+            current_model_cycle_values=[],
+            spec_cycle_values=[],
+            ability_cycle_values=[],
+            level_values=[],
+            randomize_race=False,
+            randomize_stats=False,
+            random_seed="",
         )
 
         with patch.object(
@@ -104,6 +115,80 @@ class ProvisionDummyAccountsTests(unittest.TestCase):
         self.assertIn("490560 AS `BindYpos`", sql)
         self.assertIn("2543 AS `BindZpos`", sql)
         self.assertIn("1 AS `BindRegion`", sql)
+
+    def test_character_insert_can_randomize_race_from_cycle_deterministically(self):
+        args = SimpleNamespace(
+            start_x=None,
+            start_y=None,
+            start_z=None,
+            start_region=None,
+            position_step=20,
+            template_account="bigjuh",
+            template_character="천재다",
+            class_cycle_values=[],
+            race_cycle_values=["1", "3", "4"],
+            creation_model_cycle_values=[],
+            current_model_cycle_values=[],
+            spec_cycle_values=[],
+            ability_cycle_values=[],
+            level_values=[],
+            randomize_race=True,
+            randomize_stats=False,
+            random_seed="mercenary",
+        )
+
+        with patch.object(provision, "get_columns", return_value=["AccountName", "Name", "DOLCharacters_ID", "Race"]):
+            first = provision.build_character_insert(args, "merc001", "Merc001", 100, 7)
+            second = provision.build_character_insert(args, "merc002", "Merc002", 100, 7)
+
+        first_race = re.search(r"([134]) AS `Race`", first)
+        second_race = re.search(r"([134]) AS `Race`", second)
+        self.assertIsNotNone(first_race)
+        self.assertIsNotNone(second_race)
+        self.assertEqual(first_race.group(1), second_race.group(1))
+
+    def test_character_insert_can_randomize_base_stats_deterministically(self):
+        args = SimpleNamespace(
+            start_x=None,
+            start_y=None,
+            start_z=None,
+            start_region=None,
+            position_step=20,
+            template_account="bigjuh",
+            template_character="천재다",
+            class_cycle_values=[],
+            race_cycle_values=[],
+            creation_model_cycle_values=[],
+            current_model_cycle_values=[],
+            spec_cycle_values=[],
+            ability_cycle_values=[],
+            level_values=[],
+            randomize_race=False,
+            randomize_stats=True,
+            random_stat_min=45,
+            random_stat_max=75,
+            random_seed="mercenary",
+        )
+
+        columns = [
+            "AccountName",
+            "Name",
+            "DOLCharacters_ID",
+            "Strength",
+            "Constitution",
+            "Dexterity",
+            "Quickness",
+            "Intelligence",
+            "Piety",
+            "Empathy",
+            "Charisma",
+        ]
+        with patch.object(provision, "get_columns", return_value=columns):
+            sql = provision.build_character_insert(args, "merc001", "Merc001", 100, 3)
+
+        for column in columns[3:]:
+            self.assertRegex(sql, rf"(4[5-9]|[56][0-9]|7[0-5]) AS `{column}`")
+        self.assertNotIn("SELECT `Strength`", sql)
 
     def test_resolve_mysql_bin_uses_system_mariadb_when_legacy_path_missing(self):
         def fake_exists(path):

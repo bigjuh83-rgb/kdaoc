@@ -24,7 +24,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&sprint",
 		ePrivLevel.Player,
-		"Toggles sprint mode",
+		"Sprint 모드를 켜거나 끕니다.",
 		"/sprint")]
 	public class SprintCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

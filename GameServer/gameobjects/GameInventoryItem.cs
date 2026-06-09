@@ -376,10 +376,14 @@ namespace DOL.GS
                 delve.Add(LanguageMgr.GetTranslation(player.Client.Account.Language, "DetailDisplayHandler.HandlePacket.CrafterName", Creator));
                 delve.Add(" ");
             }
-            else if (Description != null && Description != string.Empty)
+            else
             {
-                delve.Add(Description);
-                delve.Add(" ");
+                string description = LanguageMgr.GetTranslatedItemDescription(player.Client.Account.Language, this);
+                if (!string.IsNullOrEmpty(description))
+                {
+                    delve.Add(description);
+                    delve.Add(" ");
+                }
             }
 
             if ((Object_Type >= (int)eObjectType.GenericWeapon) && (Object_Type <= (int)eObjectType._LastWeapon) ||

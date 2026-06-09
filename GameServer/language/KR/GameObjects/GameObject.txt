@@ -94,15 +94,15 @@ GamePlayer.ItemBonusName.Bonus9:			파워
 GamePlayer.ItemBonusName.Bonus10:			생명력
 
 ### Resists
-GamePlayer.ItemBonusName.Bonus11:			육체 저항
-GamePlayer.ItemBonusName.Bonus12:			냉기 저항
-GamePlayer.ItemBonusName.Bonus13:			타격 저항
+GamePlayer.ItemBonusName.Bonus11:			바디 저항
+GamePlayer.ItemBonusName.Bonus12:			콜드 저항
+GamePlayer.ItemBonusName.Bonus13:			크러쉬 저항
 GamePlayer.ItemBonusName.Bonus14:			에너지 저항
-GamePlayer.ItemBonusName.Bonus15:			열기 저항
-GamePlayer.ItemBonusName.Bonus16:			물질 저항
-GamePlayer.ItemBonusName.Bonus17:			베기 저항
-GamePlayer.ItemBonusName.Bonus18:			영혼 저항
-GamePlayer.ItemBonusName.Bonus19:			찌르기 저항
+GamePlayer.ItemBonusName.Bonus15:			히트 저항
+GamePlayer.ItemBonusName.Bonus16:			매터 저항
+GamePlayer.ItemBonusName.Bonus17:			슬래쉬 저항
+GamePlayer.ItemBonusName.Bonus18:			스피릿 저항
+GamePlayer.ItemBonusName.Bonus19:			쓰러스트 저항
 
 ## Player Gravestone
 GameGravestone.GameGravestone.Grave:			{0}의 무덤
@@ -159,7 +159,7 @@ DetailDisplayHandler.HandlePacket.TargetEvades:		    대상이 회피
 DetailDisplayHandler.HandlePacket.TargetFumbles:	    대상이 헛침
 DetailDisplayHandler.HandlePacket.TargetHits:		    대상이 적중
 DetailDisplayHandler.HandlePacket.TargetMisses:		    대상이 빗맞힘
-DetailDisplayHandler.HandlePacket.TargetParrys:		    대상이 받아침
+DetailDisplayHandler.HandlePacket.TargetParrys:		    대상이 패리
 DetailDisplayHandler.HandlePacket.TargetStyle:		    대상 스타일
 DetailDisplayHandler.HandlePacket.ToHit:		        명중:
 DetailDisplayHandler.HandlePacket.VeryHigh:		        매우 높음
@@ -175,7 +175,7 @@ DetailDisplayHandler.HandlePacket.YouEvade:		        당신이 회피
 DetailDisplayHandler.HandlePacket.YouFumble:		    당신이 헛침
 DetailDisplayHandler.HandlePacket.YouHit:		        당신이 적중
 DetailDisplayHandler.HandlePacket.YouMiss:		        당신이 빗맞힘
-DetailDisplayHandler.HandlePacket.YouParry:		        당신이 받아침
+DetailDisplayHandler.HandlePacket.YouParry:		        당신이 패리
 DetailDisplayHandler.WriteBonusLine.Points:		        점
 DetailDisplayHandler.WriteBonusLine.PowerPool:		    파워 풀의 %.
 DetailDisplayHandler.WriteClassicArmorInfos.Absorption:	- 흡수율 {0}%
@@ -275,33 +275,33 @@ GlobalConstants.ShieldType.Small:				소형
 GlobalConstants.ShieldType.Medium:				중형
 GlobalConstants.ShieldType.Large:				대형
 GlobalConstants.WeaponDamageType.Elemental:		원소
-GlobalConstants.WeaponDamageType.Crush:			타격
-GlobalConstants.WeaponDamageType.Slash:			베기
-GlobalConstants.WeaponDamageType.Thrust:		찌르기
-GlobalConstants.WeaponDamageType.Body:			육체
-GlobalConstants.WeaponDamageType.Cold:			냉기
+GlobalConstants.WeaponDamageType.Crush:			크러쉬
+GlobalConstants.WeaponDamageType.Slash:			슬래쉬
+GlobalConstants.WeaponDamageType.Thrust:		쓰러스트
+GlobalConstants.WeaponDamageType.Body:			바디
+GlobalConstants.WeaponDamageType.Cold:			콜드
 GlobalConstants.WeaponDamageType.Energy:		에너지
-GlobalConstants.WeaponDamageType.Heat:			열기
-GlobalConstants.WeaponDamageType.Matter:		물질
-GlobalConstants.WeaponDamageType.Spirit:		영혼
+GlobalConstants.WeaponDamageType.Heat:			히트
+GlobalConstants.WeaponDamageType.Matter:		매터
+GlobalConstants.WeaponDamageType.Spirit:		스피릿
 GlobalConstants.ItemHand.twohanded:				양손
 GlobalConstants.ItemHand.lefthand:				왼손
 GlobalConstants.ItemHand.both:					양손/한손
-GlobalConstants.DamageType.Body:				육체
-GlobalConstants.DamageType.Cold:				냉기
-GlobalConstants.DamageType.Crush:				타격
+GlobalConstants.DamageType.Body:				바디
+GlobalConstants.DamageType.Cold:				콜드
+GlobalConstants.DamageType.Crush:				크러쉬
 GlobalConstants.DamageType.Energy:				에너지
 GlobalConstants.DamageType.Falling:				추락
-GlobalConstants.DamageType.Heat:				열기
-GlobalConstants.DamageType.Matter:				물질
+GlobalConstants.DamageType.Heat:				히트
+GlobalConstants.DamageType.Matter:				매터
 GlobalConstants.DamageType.Natural:				자연
-GlobalConstants.DamageType.Slash:				베기
-GlobalConstants.DamageType.Spirit:				영혼
-GlobalConstants.DamageType.Thrust:				찌르기
+GlobalConstants.DamageType.Slash:				슬래쉬
+GlobalConstants.DamageType.Spirit:				스피릿
+GlobalConstants.DamageType.Thrust:				쓰러스트
 GlobalConstants.Realm.None:						없음
 GlobalConstants.Realm.Albion:					알비온
-GlobalConstants.Realm.Midgard:					미드가드
-GlobalConstants.Realm.Hibernia:					히베르니아
+GlobalConstants.Realm.Midgard:					미드가르드
+GlobalConstants.Realm.Hibernia:					하이버니아
 GlobalConstants.Realm.Door:						문
 GlobalConstants.Property.Strength:				힘
 GlobalConstants.Property.Dexterity:				민첩
@@ -311,44 +311,44 @@ GlobalConstants.Property.Intelligence:			지능
 GlobalConstants.Property.Piety:					신앙
 GlobalConstants.Property.Empathy:				공감
 GlobalConstants.Property.Charisma:				매력
-GlobalConstants.Property.Resist_Body:			육체 저항
-GlobalConstants.Property.Resist_Cold:			냉기 저항
-GlobalConstants.Property.Resist_Crush:			타격 저항
+GlobalConstants.Property.Resist_Body:			바디 저항
+GlobalConstants.Property.Resist_Cold:			콜드 저항
+GlobalConstants.Property.Resist_Crush:			크러쉬 저항
 GlobalConstants.Property.Resist_Energy:			에너지 저항
-GlobalConstants.Property.Resist_Heat:			열기 저항
-GlobalConstants.Property.Resist_Matter:			물질 저항
-GlobalConstants.Property.Resist_Slash:			베기 저항
-GlobalConstants.Property.Resist_Spirit:			영혼 저항
-GlobalConstants.Property.Resist_Thrust:			찌르기 저항
+GlobalConstants.Property.Resist_Heat:			히트 저항
+GlobalConstants.Property.Resist_Matter:			매터 저항
+GlobalConstants.Property.Resist_Slash:			슬래쉬 저항
+GlobalConstants.Property.Resist_Spirit:			스피릿 저항
+GlobalConstants.Property.Resist_Thrust:			쓰러스트 저항
 GlobalConstants.Property.Resist_Natural:		정수 저항
 GlobalConstants.ObjectType.0:					일반 아이템
 GlobalConstants.ObjectType.1:					일반 무기
-GlobalConstants.ObjectType.2:					타격 무기
-GlobalConstants.ObjectType.3:					베기 무기
-GlobalConstants.ObjectType.4:					찌르기 무기
+GlobalConstants.ObjectType.2:					크러쉬 무기
+GlobalConstants.ObjectType.3:					슬래쉬 무기
+GlobalConstants.ObjectType.4:					쓰러스트 무기
 GlobalConstants.ObjectType.5:					발사 무기
 GlobalConstants.ObjectType.6:					양손 무기
 GlobalConstants.ObjectType.7:					폴암
-GlobalConstants.ObjectType.8:					지팡이
-GlobalConstants.ObjectType.9:					장궁
+GlobalConstants.ObjectType.8:					스태프
+GlobalConstants.ObjectType.9:					롱보우
 GlobalConstants.ObjectType.10:					석궁
-GlobalConstants.ObjectType.11:					검
+GlobalConstants.ObjectType.11:					소드
 GlobalConstants.ObjectType.12:					해머
-GlobalConstants.ObjectType.13:					도끼
-GlobalConstants.ObjectType.14:					창
-GlobalConstants.ObjectType.15:					컴포지트 보우
-GlobalConstants.ObjectType.16:					투척 무기
-GlobalConstants.ObjectType.17:					왼손 도끼
+GlobalConstants.ObjectType.13:					액스
+GlobalConstants.ObjectType.14:					스피어
+GlobalConstants.ObjectType.15:					컴포짓 보우
+GlobalConstants.ObjectType.16:					스로잉 무기
+GlobalConstants.ObjectType.17:					레프트 액스
 GlobalConstants.ObjectType.18:					리커브 보우
 GlobalConstants.ObjectType.19:					블레이드
-GlobalConstants.ObjectType.20:					둔기
-GlobalConstants.ObjectType.21:					관통 무기
+GlobalConstants.ObjectType.20:					블런트 무기
+GlobalConstants.ObjectType.21:					피어싱 무기
 GlobalConstants.ObjectType.22:					대형 무기
 GlobalConstants.ObjectType.23:					켈틱 스피어
 GlobalConstants.ObjectType.24:					플렉서블 무기
-GlobalConstants.ObjectType.25:					격투 무기
-GlobalConstants.ObjectType.26:					낫
-GlobalConstants.ObjectType.27:					피스트 랩
+GlobalConstants.ObjectType.25:					핸드 투 핸드 무기
+GlobalConstants.ObjectType.26:					사이드
+GlobalConstants.ObjectType.27:					피스트랩
 GlobalConstants.ObjectType.28:					마울러 스태프
 GlobalConstants.ObjectType.31:					일반 방어구
 GlobalConstants.ObjectType.32:					천 방어구

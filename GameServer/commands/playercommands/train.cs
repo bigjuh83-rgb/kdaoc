@@ -8,9 +8,9 @@ namespace DOL.GS.Commands
         "&train",
         ["&trainline", "&trainskill"], // New aliases to work around 1.105 client /train command.
         ePrivLevel.Player,
-        "Trains a line by the specified amount",
-        "/train <line> <level>",
-        "e.g. /train Dual Wield 50")]
+        "지정한 전문화 라인을 해당 레벨까지 훈련합니다.",
+        "/train <전문화> <레벨>",
+        "예: /train Dual Wield 50")]
     public class TrainCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public TrainCommandHandler() { }

@@ -22,7 +22,7 @@ namespace DOL.GS.Commands
 {
 	[CmdAttribute("&Noqueue", //command to handle
 	ePrivLevel.Player, //minimum privelege level
-	"Allows you to disable/enable queuing", "/Noqueue")] //usage
+	"대기열 사용을 켜거나 끕니다.", "/Noqueue")] //usage
 	public class NoqueueCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

@@ -14,7 +14,7 @@ namespace DOL.GS.DailyQuest
 		/// </summary>
 		private static readonly Logging.Logger log = Logging.LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);
 
-		private const string questTitle = "[하드코어] 용기의 증명";
+		private const string questTitle = "[Hardcore] A Bit of Bravery";
 		private const int minimumLevel = 1;
 		private const int maximumLevel = 50;
 
@@ -275,7 +275,7 @@ namespace DOL.GS.DailyQuest
 		//Set quest name
 		public override string Name
 		{
-			get { return questTitle; }
+			get { return DOL.Language.LanguageMgr.GetTranslatedQuestTitle(m_questPlayer?.Client?.Account?.Language, questTitle); }
 		}
 
 		// Define Steps

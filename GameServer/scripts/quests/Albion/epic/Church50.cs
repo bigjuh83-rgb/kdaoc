@@ -836,6 +836,7 @@ namespace DOL.GS.Quests.Albion
 					switch (wArgs.Text)
 					{
 						case "Lyonesse":
+						case "라이오네스":
 							Roben.SayTo(player, L(player, "Quest.Epic.Church50.Lyonesse", player.CharacterClass.Name));
 							break;
 							case "defeat":

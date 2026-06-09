@@ -25,7 +25,7 @@ namespace DOL.GS.Commands
 {
 	[CmdAttribute("&freelevel", //command to handle
 	              ePrivLevel.Player, //minimum privelege level
-	              "Display state of FreeLevel", //command description
+	              "무료 레벨 상태를 표시합니다.", //command description
 	              "/freelevel")] //command usage
 	public class FreelevelCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

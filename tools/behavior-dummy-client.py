@@ -19,6 +19,8 @@ import urllib.parse
 import urllib.request
 import math
 import signal
+import concurrent.futures
+import subprocess
 from collections.abc import Iterable
 from dataclasses import dataclass, field, replace
 from enum import Enum
@@ -100,6 +102,111 @@ PathGraph = dummy_pathing.PathGraph
 DEFAULT_DUMMY_HOST = os.environ.get("OPENDAOC_DUMMY_HOST", "192.168.0.42")
 DEFAULT_PLAYER_MOVEMENT_SPEED = 191.0
 DEFAULT_PLAYER_MOVEMENT_INTERVAL = 0.20
+DAOC_PACKET_SPEED_SCALE = 256.0
+DYNAMIC_QUEST_RETURN_MAX_INTERACT_DISTANCE = 180.0
+DYNAMIC_QUEST_RETURN_STOP_DISTANCE_BUFFER = 8.0
+DYNAMIC_QUEST_RETURN_NPC_API_SEARCH_RADIUS = 800
+
+
+def dummy_coerce_world_movement_speed(speed: float | None) -> float | None:
+    if speed is None:
+        return None
+    value = float(speed)
+    if value <= 0:
+        return value
+    if value >= 4096:
+        return value / DAOC_PACKET_SPEED_SCALE
+    return value
+
+
+def dummy_state_movement_cap(args: argparse.Namespace, client=None) -> float | None:
+    """Return the server-authoritative movement cap from max_speed_percent."""
+    base = getattr(args, "base_movement_speed", None)
+    if base is None:
+        base = getattr(args, "movement_speed", None)
+    if base is None:
+        return None
+
+    percent = 100.0
+    if client is not None and hasattr(client, "max_speed_percent"):
+        percent = float(client.max_speed_percent)
+    elif getattr(args, "movement_speed", None) is not None and getattr(args, "base_movement_speed", None) is not None:
+        # run_dummy_round keeps args.movement_speed synced to server max speed percent.
+        return float(args.movement_speed)
+
+    return float(base) * percent / 100.0
+
+
+def dummy_clamp_to_state_cap(
+    args: argparse.Namespace,
+    speed: float | None,
+    client=None,
+    *,
+    clamp_to_state_cap: bool = True,
+) -> float | None:
+    coerced = dummy_coerce_world_movement_speed(speed)
+    if coerced is None or coerced <= 0:
+        return coerced
+
+    if not clamp_to_state_cap:
+        return coerced
+
+    cap = dummy_state_movement_cap(args, client)
+    if cap is None or cap <= 0:
+        return coerced
+    return min(coerced, cap)
+
+
+def dummy_travel_movement_speed(
+    args: argparse.Namespace,
+    movement_speed: float | None = None,
+    client=None,
+    *,
+    clamp_to_state_cap: bool = True,
+) -> float | None:
+    if movement_speed is not None:
+        return dummy_clamp_to_state_cap(args, movement_speed, client, clamp_to_state_cap=clamp_to_state_cap)
+    configured = getattr(args, "movement_speed", None)
+    if configured is None:
+        return None
+    return dummy_coerce_world_movement_speed(float(configured))
+
+
+def dummy_packet_movement_speed(travel_speed: float | None) -> float | None:
+    if travel_speed is None:
+        return None
+    # The modern 1.124+ client movement packets used by the headless dummy send
+    # speed as a float in world units, not the legacy 256x packed speed value.
+    return dummy_coerce_world_movement_speed(travel_speed)
+
+
+def dummy_movement_step_seconds(args: argparse.Namespace) -> float:
+    if getattr(args, "smooth_movement", False) and float(getattr(args, "smooth_move_interval", 0.0) or 0.0) > 0.0:
+        return float(args.smooth_move_interval)
+    interval = float(getattr(args, "movement_update_interval", 0.0) or 0.0)
+    if interval > 0.0:
+        return interval
+    return 0.2
+
+
+def dummy_movement_kwargs(
+    args: argparse.Namespace,
+    movement_speed: float | None = None,
+    client=None,
+    *,
+    clamp_to_state_cap: bool = True,
+) -> dict[str, float | None]:
+    travel = dummy_travel_movement_speed(args, movement_speed, client, clamp_to_state_cap=clamp_to_state_cap)
+    return {
+        "movement_speed": travel,
+        "packet_speed": dummy_packet_movement_speed(travel),
+        "min_position_send_interval": getattr(args, "movement_update_interval", 0.0),
+        "movement_step_seconds": dummy_movement_step_seconds(args),
+        "use_elapsed_movement_time": True,
+        "max_elapsed_movement_seconds": 1.5,
+    }
+
+
 PathPoint = dummy_pathing.PathPoint
 PathSafety = dummy_pathing.PathSafety
 path_distance = dummy_pathing.distance
@@ -114,6 +221,14 @@ class DummyBehaviorState(str, Enum):
     HuntObjective = "HuntObjective"
     RestRecover = "RestRecover"
     DeadReleaseRecover = "DeadReleaseRecover"
+
+
+class CompanionCommandMode(str, Enum):
+    defensive = "defensive"
+    passive = "passive"
+    attack = "attack"
+    stay = "stay"
+    follow = "follow"
 
 
 class TargetIntent(str, Enum):
@@ -307,6 +422,28 @@ DEFAULT_SOCIAL_LINES = [
     "잠깐 쉬었다 갈게요",
 ]
 DEFAULT_PLAYER_GREET_LINES = ["안녕하세요", "수고하세요", "지나갈게요"]
+DEFAULT_COMPANION_CHAT_REPLY_LINES = [
+    "네, 듣고 있습니다.",
+    "말씀하세요. 제가 맞춰 움직이겠습니다.",
+    "여기 있습니다. 필요하면 바로 도울게요.",
+    "준비됐습니다. 지시 주세요.",
+    "괜찮습니다. 제가 옆에서 보고 있어요.",
+]
+DEFAULT_COMPANION_DIALOGUE_POOL_PATH = "tools/companion-dialogue-pools.json"
+COMPANION_PERSONALITIES = (
+    "steady_protector",
+    "calm_support",
+    "bold_vanguard",
+    "sharp_striker",
+    "cautious_scout",
+    "wary_survivor",
+    "loyal_guardian",
+    "eager_rookie",
+    "sly_opportunist",
+    "shifty_traitor",
+    "reckless_berserker",
+    "lazy_veteran",
+)
 DEFAULT_EMOTE_COMMANDS = ["/wave", "/bow", "/cheer", "/sit"]
 RANDOM_ITEM_TIERS = ("마력", "희귀", "영웅", "전설", "신화")
 LOOT_KOREAN_PATTERNS = (
@@ -319,14 +456,106 @@ LOOT_ENGLISH_PATTERNS = (
 
 
 def format_say_command(text: str, *, max_message_length: int = 120) -> str:
-    message = " ".join(str(text or "").split())
+    message = " ".join(render_korean_josa_template(str(text or "")).split())
     if not message:
         message = "..."
     return f"/say {message[:max_message_length]}"
 
 
-def format_live_control_speech_command(channel: object, text: str, *, max_message_length: int = 120) -> str:
-    message = " ".join(str(text or "").split())
+KOREAN_JOSA_MARKER_PATTERN = re.compile(r"\{(?P<marker>이/가|이가|은/는|은는|을/를|을를|과/와|과와|아/야|아야|으로/로|으로)\}")
+COMPANION_DIALOGUE_VARIABLE_PATTERN = re.compile(r"\{(?P<name>player|user|speaker|companion|role)\}")
+HANGUL_SYLLABLE_START = ord("가")
+HANGUL_SYLLABLE_END = ord("힣")
+HANGUL_JONGSEONG_RIEUL_INDEX = 8
+
+
+def korean_final_syllable_state(text: str) -> tuple[bool, bool, bool]:
+    stripped = str(text or "").rstrip()
+    if not stripped:
+        return False, False, False
+    if stripped.endswith("}"):
+        return False, False, False
+    codepoint = ord(stripped[-1])
+    if codepoint < HANGUL_SYLLABLE_START or codepoint > HANGUL_SYLLABLE_END:
+        return False, False, True
+    jongseong = (codepoint - HANGUL_SYLLABLE_START) % 28
+    return jongseong != 0, jongseong == HANGUL_JONGSEONG_RIEUL_INDEX, True
+
+
+def korean_josa_for_marker(prefix: str, marker: str) -> str | None:
+    has_final, final_is_rieul, has_reference = korean_final_syllable_state(prefix)
+    if not has_reference:
+        return None
+    marker_key = marker.replace("/", "")
+    if marker_key == "이가":
+        return "이" if has_final else "가"
+    if marker_key == "은는":
+        return "은" if has_final else "는"
+    if marker_key == "을를":
+        return "을" if has_final else "를"
+    if marker_key == "과와":
+        return "과" if has_final else "와"
+    if marker_key == "아야":
+        return "아" if has_final else "야"
+    if marker_key == "으로":
+        return "으로" if has_final and not final_is_rieul else "로"
+    return None
+
+
+def render_korean_josa_template(text: str) -> str:
+    source = str(text or "")
+    if "{" not in source:
+        return source
+
+    result: list[str] = []
+    last_index = 0
+    for match in KOREAN_JOSA_MARKER_PATTERN.finditer(source):
+        prefix = source[: match.start()]
+        particle = korean_josa_for_marker(prefix, match.group("marker"))
+        result.append(source[last_index : match.start()])
+        result.append(particle if particle is not None else match.group(0))
+        last_index = match.end()
+    result.append(source[last_index:])
+    return "".join(result)
+
+
+def render_companion_dialogue_template(text: str, variables: dict[str, object] | None = None) -> str:
+    source = str(text or "")
+    if not isinstance(variables, dict) or "{" not in source:
+        return render_korean_josa_template(source)
+
+    def replace_variable(match: re.Match[str]) -> str:
+        name = match.group("name")
+        value = variables.get(name)
+        if value is None and name in {"player", "user"}:
+            value = variables.get("speaker")
+        replacement = str(value or "").strip()
+        return replacement if replacement else match.group(0)
+
+    return render_korean_josa_template(COMPANION_DIALOGUE_VARIABLE_PATTERN.sub(replace_variable, source))
+
+
+def companion_dialogue_template_vars(*, speaker: object = "", companion: object = "", role: object = "") -> dict[str, object]:
+    speaker_name = str(speaker or "").strip()
+    companion_name = str(companion or "").strip()
+    role_name = str(role or "").strip()
+    return {
+        "speaker": speaker_name,
+        "player": speaker_name,
+        "user": speaker_name,
+        "companion": companion_name,
+        "role": role_name,
+    }
+
+
+def format_live_control_speech_command(
+    channel: object,
+    text: str,
+    *,
+    max_message_length: int = 120,
+    template_vars: dict[str, object] | None = None,
+) -> str:
+    message = " ".join(render_companion_dialogue_template(str(text or ""), template_vars).split())
     if not message:
         return ""
 
@@ -338,6 +567,2154 @@ def format_live_control_speech_command(channel: object, text: str, *, max_messag
     return ""
 
 
+def live_control_speech_commands(payload: dict[str, object]) -> list[str]:
+    if not isinstance(payload, dict):
+        return []
+    channel = payload.get("say_channel", "say" if "say" in payload and "say_text" not in payload else None)
+    guide_lines = payload.get("guide_lines", [])
+    commands: list[str] = []
+    if isinstance(guide_lines, list):
+        for line in guide_lines[:5]:
+            command = format_live_control_speech_command(channel, str(line or ""))
+            if command:
+                commands.append(command)
+        if commands:
+            return commands
+    say_text = payload.get("say_text", payload.get("say", ""))
+    if isinstance(say_text, str):
+        command = format_live_control_speech_command(channel, say_text)
+        if command:
+            commands.append(command)
+    return commands
+
+
+def companion_combat_guide_hold_lines() -> list[str]:
+    return [
+        "지금은 전투 중이라 긴 안내보다 생존을 먼저 보겠습니다.",
+        "안전해지면 레벨, 지역, 직업 기준으로 다시 확인해 드릴게요.",
+        "우선 회복과 대상 정리를 끝낸 뒤 이어서 안내하겠습니다.",
+    ]
+
+
+def companion_ai_thinking_line(personality: str, *, intent: str = "guide") -> str:
+    normalized = str(personality or "").strip().lower()
+    lines = {
+        "steady_protector": "잠시만 기다려 주세요. 확인하고 안전한 쪽으로 안내하겠습니다.",
+        "calm_support": "잠시만요. 자료를 확인하고 차분히 말씀드릴게요.",
+        "bold_vanguard": "잠깐만요. 빠르게 훑고 바로 길을 잡겠습니다.",
+        "sharp_striker": "잠시만요. 핵심만 골라서 답하겠습니다.",
+        "cautious_scout": "잠시만요. 위험한 길은 빼고 확인하겠습니다.",
+        "wary_survivor": "잠깐만요. 안전한 정보인지 먼저 확인하겠습니다.",
+        "loyal_guardian": "기다려 주세요. 맡은 의뢰에 맞는 답을 찾아보겠습니다.",
+        "eager_rookie": "잠, 잠시만요! 얼른 찾아보고 말할게요.",
+        "sly_opportunist": "잠깐만요. 쓸만한 정보만 챙겨서 드릴게요.",
+        "cunning_opportunist": "잠깐만요. 쓸만한 정보만 챙겨서 드릴게요.",
+        "shifty_traitor": "잠깐 기다려요. 손해 볼 답은 안 하겠습니다.",
+        "reckless_berserker": "잠깐! 바로 뒤져보고 답하겠습니다.",
+        "lazy_veteran": "잠시만요... 오래 걸리진 않게 찾아보겠습니다.",
+    }
+    line = lines.get(normalized, lines["steady_protector"])
+    if str(intent or "").strip().lower() == "free_chat" and normalized not in {"sly_opportunist", "cunning_opportunist"}:
+        return line.replace("자료를 확인하고", "생각을 정리하고").replace("안내하겠습니다", "대답하겠습니다")
+    return line
+
+
+def companion_ai_unavailable_line(personality: str, *, intent: str = "guide") -> str:
+    normalized = str(personality or "").strip().lower()
+    if str(intent or "").strip().lower() == "free_chat":
+        lines = {
+            "eager_rookie": "죄송해요, 지금은 말이 잘 정리가 안 됩니다. 조금만 있다 다시 물어봐 주세요.",
+            "shifty_traitor": "지금은 확실한 말은 못 하겠습니다. 괜히 책임질 답은 피하죠.",
+            "sly_opportunist": "지금은 건질 답이 별로 없습니다. 조금 뒤에 다시 물어보세요.",
+            "cunning_opportunist": "지금은 건질 답이 별로 없습니다. 조금 뒤에 다시 물어보세요.",
+            "lazy_veteran": "지금은 머리가 잘 안 돕니다... 조금 있다 다시 말해보죠.",
+        }
+        return lines.get(normalized, "지금은 답이 잘 안 잡힙니다. 조금 뒤에 다시 물어봐 주세요.")
+    lines = {
+        "eager_rookie": "죄송해요, 지금은 안내 자료를 못 찾았습니다. 레벨이나 지역을 더 붙여서 물어봐 주세요.",
+        "shifty_traitor": "지금은 확실한 안내가 없습니다. 애매한 길로 보내진 않겠습니다.",
+        "sly_opportunist": "지금은 쓸만한 정보가 없습니다. 레벨이나 지역을 더 붙이면 다시 골라보겠습니다.",
+        "cunning_opportunist": "지금은 쓸만한 정보가 없습니다. 레벨이나 지역을 더 붙이면 다시 골라보겠습니다.",
+        "lazy_veteran": "지금은 자료가 잘 안 잡힙니다... 레벨이나 지역을 더 말해주면 다시 보겠습니다.",
+    }
+    return lines.get(normalized, "지금은 바로 안내할 자료가 부족합니다. 레벨이나 지역을 더 붙여서 다시 물어봐 주세요.")
+
+
+def companion_guide_reply_should_defer(*, in_combat: bool, unsafe_recovery: bool) -> bool:
+    return bool(in_combat or unsafe_recovery)
+
+
+DEFAULT_COMPANION_SHORT_MEMORY_TTL = 180.0
+MAX_COMPANION_AI_QUESTION_QUEUE = 3
+
+
+def create_companion_short_memory() -> dict[str, dict[str, object]]:
+    return {"guide": {}, "persona": {}}
+
+
+def create_companion_party_short_memory() -> dict[str, object]:
+    return {"speakers": {}}
+
+
+def companion_short_memory_speaker_key(speaker: object) -> str:
+    key = normalize_target_name(str(speaker or ""))
+    return key[:64] if key else "unknown"
+
+
+def companion_short_memory_for_speaker(memory: dict[str, object], speaker: object) -> dict[str, dict[str, object]]:
+    if not isinstance(memory, dict):
+        return create_companion_short_memory()
+    if "guide" in memory or "persona" in memory:
+        return memory  # type: ignore[return-value]
+    speakers = memory.setdefault("speakers", {})
+    if not isinstance(speakers, dict):
+        speakers = {}
+        memory["speakers"] = speakers
+    key = companion_short_memory_speaker_key(speaker)
+    entry = speakers.get(key)
+    if not isinstance(entry, dict) or "guide" not in entry or "persona" not in entry:
+        entry = create_companion_short_memory()
+        speakers[key] = entry
+    return entry  # type: ignore[return-value]
+
+
+def companion_short_memory_entry_active(
+    entry: object,
+    *,
+    now: float,
+    ttl_seconds: float = DEFAULT_COMPANION_SHORT_MEMORY_TTL,
+) -> bool:
+    if not isinstance(entry, dict) or not entry:
+        return False
+    try:
+        created_at = float(entry.get("created_at") or 0.0)
+    except (TypeError, ValueError):
+        created_at = 0.0
+    if created_at <= 0.0:
+        return False
+    return float(now or 0.0) - created_at <= max(1.0, float(ttl_seconds or 0.0))
+
+
+def companion_clean_memory_text(value: object, max_length: int = 240) -> str:
+    return " ".join(str(value or "").split())[: max(1, int(max_length))]
+
+
+def companion_guide_preferred_kind_from_question(question: str) -> str:
+    normalized = normalize_target_name(question)
+    if any(
+        token in normalized
+        for token in {
+            "사냥",
+            "사냥터",
+            "어디서",
+            "레벨업",
+            "방향",
+            "가까운",
+            "가까워",
+            "몹",
+            "몬스터",
+            "몇렙",
+            "몇레벨",
+            "hunt",
+            "hunting",
+            "nearest",
+            "direction",
+        }
+    ):
+        return "hunting_spot"
+    if any(token in normalized for token in {"스킬", "주문", "특성", "전문화", "힐", "메즈", "스피드송", "skill", "spell", "spec"}):
+        return "spell"
+    if any(token in normalized for token in {"아이템", "장비", "무기", "방어구", "item", "gear", "weapon"}):
+        return "item"
+    if any(token in normalized for token in {"퀘스트", "quest"}):
+        return "quest"
+    return ""
+
+
+def companion_short_memory_payload(
+    memory: object,
+    kind: str,
+    *,
+    now: float,
+    ttl_seconds: float = DEFAULT_COMPANION_SHORT_MEMORY_TTL,
+) -> dict[str, object]:
+    if not isinstance(memory, dict):
+        return {}
+    entry = memory.get(kind)
+    if not companion_short_memory_entry_active(entry, now=now, ttl_seconds=ttl_seconds):
+        return {}
+    if kind == "guide":
+        source_ids = entry.get("source_ids", []) if isinstance(entry, dict) else []
+        guide_lines = entry.get("guide_lines", []) if isinstance(entry, dict) else []
+        return {
+            "question": companion_clean_memory_text(entry.get("question"), 240),
+            "player_level": int(entry.get("player_level") or 0),
+            "region": int(entry.get("region") or 0),
+            "preferred_kind": companion_clean_memory_text(entry.get("preferred_kind"), 40),
+            "guide_lines": [companion_clean_memory_text(line, 120) for line in list(guide_lines or [])[:5]],
+            "source_ids": [companion_clean_memory_text(source_id, 160) for source_id in list(source_ids or [])[:8]],
+        }
+    if kind == "persona":
+        return {
+            "question": companion_clean_memory_text(entry.get("question"), 160),
+            "reply": companion_clean_memory_text(entry.get("reply"), 180),
+            "topic": companion_clean_memory_text(entry.get("topic"), 40),
+        }
+    return {}
+
+
+def companion_guide_followup_question_intent(
+    body: str,
+    *,
+    memory: object,
+    now: float,
+    ttl_seconds: float = DEFAULT_COMPANION_SHORT_MEMORY_TTL,
+) -> bool:
+    if not companion_short_memory_payload(memory, "guide", now=now, ttl_seconds=ttl_seconds):
+        return False
+    normalized = normalize_target_name(body)
+    compact = normalized.replace(" ", "")
+    if not compact:
+        return False
+    if compact in {"ㄱ", "ㄱㄱ", "고", "고고", "공격", "따라", "따라와", "대기", "멈춰", "수동", "방어"}:
+        return False
+    followup_tokens = {
+        "그럼",
+        "거기",
+        "여기",
+        "여기서",
+        "방향",
+        "가까운",
+        "가까워",
+        "더가까",
+        "몹",
+        "몬스터",
+        "이름",
+        "몇렙",
+        "몇레벨",
+        "몇까지",
+        "혼자",
+        "위험",
+        "안전",
+        "말타",
+        "길",
+        "안내",
+        "어느쪽",
+        "스킬은",
+        "힐은",
+        "메즈",
+        "스피드송",
+    }
+    return any(token in normalized or token in compact for token in followup_tokens)
+
+
+def companion_guide_followup_kind(body: str) -> str:
+    normalized = normalize_target_name(body)
+    compact = normalized.replace(" ", "")
+    if any(token in normalized or token in compact for token in {"방향", "가까운", "가까워", "더가까", "어느쪽", "어디로"}):
+        return "nearest_direction"
+    if any(token in normalized or token in compact for token in {"몹", "몬스터", "이름", "뭐잡", "무슨몹"}):
+        return "mob_names"
+    if any(token in normalized or token in compact for token in {"몇렙", "몇레벨", "몇까지", "언제까지"}):
+        return "level_range"
+    if any(token in normalized or token in compact for token in {"위험", "안전", "죽", "애드", "링크"}):
+        return "safety"
+    if any(token in normalized or token in compact for token in {"혼자", "솔플", "혼자서"}):
+        return "solo_viability"
+    if any(token in normalized or token in compact for token in {"길", "안내", "데려", "말타", "이동"}):
+        return "route"
+    if any(token in normalized or token in compact for token in {"스킬", "주문", "힐은", "메즈", "스피드송"}):
+        return "skill_followup"
+    if any(token in normalized or token in compact for token in {"그럼", "거기", "여기", "여기서"}):
+        return "context_followup"
+    return ""
+
+
+def companion_guide_resolved_followup_question(question: str, guide_memory: dict[str, object]) -> str:
+    cleaned_question = companion_clean_memory_text(question, 240)
+    previous_question = companion_clean_memory_text(guide_memory.get("question"), 240)
+    followup_kind = companion_guide_followup_kind(cleaned_question)
+    focus_by_kind = {
+        "nearest_direction": "이전 안내한 후보 중 현재 위치에서 가장 가까운 곳의 방향",
+        "mob_names": "이전 안내한 사냥터의 대표 몬스터 이름",
+        "level_range": "이전 안내한 사냥터의 권장 레벨 범위와 언제까지 가능한지",
+        "safety": "이전 안내한 사냥터의 위험도와 안전하게 가는 방법",
+        "solo_viability": "이전 안내한 사냥터가 혼자 가능한지와 주의점",
+        "route": "이전 안내한 장소까지 가는 길과 이동 기준",
+        "skill_followup": "이전 안내와 이어지는 직업/스킬 선택",
+        "context_followup": "이전 안내의 빠진 세부 내용",
+    }
+    focus = focus_by_kind.get(followup_kind, "이전 안내의 세부 내용")
+    if previous_question:
+        return f"{focus}을 묻는 후속 질문. 이전 질문: {previous_question}. 현재 질문: {cleaned_question}"
+    return cleaned_question
+
+
+def companion_chat_body_is_busy_safe_command(body: str) -> bool:
+    compact = normalize_target_name(body).replace(" ", "")
+    return compact in {
+        "ㄱ",
+        "ㄱㄱ",
+        "고",
+        "고고",
+        "공격",
+        "공격해",
+        "따라",
+        "따라와",
+        "대기",
+        "멈춰",
+        "정지",
+        "기다려",
+        "수동",
+        "패시브",
+        "방어",
+        "방어모드",
+        "ㅌㅌ",
+        "도망",
+        "도망쳐",
+    }
+
+
+def companion_pending_ai_allows_immediate_command(body: str) -> bool:
+    return companion_chat_body_is_busy_safe_command(body)
+
+
+def companion_chat_reply_cooldown_can_bypass(
+    body: str,
+    *,
+    companion_name: str,
+    role: str = "",
+    guide_enabled: bool = False,
+    memory: object | None = None,
+    now: float = 0.0,
+) -> bool:
+    if companion_chat_body_is_busy_safe_command(body):
+        return True
+    if guide_enabled and (
+        companion_guide_question_intent(body)
+        or companion_guide_travel_request_intent(body)
+        or (memory is not None and now > 0.0 and companion_guide_followup_question_intent(body, memory=memory, now=now))
+    ):
+        return True
+    if resolve_companion_identity_intent(body, memory=memory, now=now):
+        return True
+    if not companion_chat_message_addresses_self(body, companion_name=companion_name, role=role):
+        return False
+    return companion_chat_intent(body) in {
+        "chatter",
+        "status",
+        "thanks",
+        "greeting",
+        "help",
+        "follow",
+        "combat",
+        "passive",
+        "defensive",
+        "summon",
+        "wait",
+        "heal",
+        "cure",
+        "resurrect",
+        "flee",
+    }
+
+
+def companion_pending_ai_busy_reply_should_trigger(
+    body: str,
+    *,
+    companion_name: str,
+    role: str = "",
+    guide_enabled: bool = False,
+    memory: object | None = None,
+    now: float = 0.0,
+) -> bool:
+    if companion_chat_body_is_busy_safe_command(body):
+        return False
+    normalized = normalize_target_name(body)
+    compact = normalized.replace(" ", "")
+    if not compact:
+        return False
+    if guide_enabled and (
+        companion_guide_question_intent(body)
+        or companion_guide_travel_request_intent(body)
+        or (memory is not None and now > 0.0 and companion_guide_followup_question_intent(body, memory=memory, now=now))
+    ):
+        return True
+    if resolve_companion_identity_intent(body, memory=memory, now=now):
+        return True
+    if not companion_chat_message_addresses_self(body, companion_name=companion_name, role=role):
+        return False
+    return any(
+        token in normalized or token in compact
+        for token in {"?", "？", "질문", "물어", "뭐", "왜", "어디", "어떻게", "어때", "컨디션", "기분"}
+    )
+
+
+def companion_pending_ai_queueable_question_kind(
+    body: str,
+    *,
+    companion_name: str,
+    role: str = "",
+    guide_enabled: bool = False,
+    memory: object | None = None,
+    now: float = 0.0,
+) -> str:
+    if companion_chat_body_is_busy_safe_command(body):
+        return ""
+    if resolve_companion_identity_intent(body, memory=memory, now=now):
+        return "identity"
+    if guide_enabled and (
+        companion_guide_question_intent(body)
+        or companion_guide_travel_request_intent(body)
+        or (memory is not None and now > 0.0 and companion_guide_followup_question_intent(body, memory=memory, now=now))
+    ):
+        return "guide"
+    if not companion_chat_message_addresses_self(body, companion_name=companion_name, role=role):
+        return ""
+    return "free_chat" if companion_chat_intent(body) == "chatter" else ""
+
+
+def companion_ai_busy_line(personality: str) -> str:
+    normalized = str(personality or "").strip().lower()
+    lines = {
+        "eager_rookie": "잠깐만요! 한 명씩만 물어봐 주세요. 바로 이어서 보겠습니다.",
+        "calm_support": "한 명씩 확인하겠습니다. 지금 답변 끝나면 바로 이어서 듣겠습니다.",
+        "tactical_guardian": "질문이 겹쳤습니다. 한 명씩 처리해야 정확합니다.",
+        "sharp_striker": "한 번에 하나만 받겠습니다. 답 끝나면 다음 질문 주세요.",
+        "sly_opportunist": "한 명씩 갑시다. 정보값은 섞이면 손해입니다.",
+        "cunning_opportunist": "한 명씩 갑시다. 정보값은 섞이면 손해입니다.",
+        "shifty_traitor": "지금은 한 명씩만 듣겠습니다. 말이 섞이면 판단이 흐려집니다.",
+        "lazy_veteran": "천천히요... 한 명씩 물어보면 제가 덜 헷갈립니다.",
+    }
+    return lines.get(normalized, "한 명씩 물어봐 주세요. 지금 답변 끝나면 바로 이어서 보겠습니다.")
+
+
+def companion_ai_queued_line(personality: str) -> str:
+    normalized = str(personality or "").strip().lower()
+    lines = {
+        "eager_rookie": "알겠습니다! 지금 답 끝나면 바로 이어서 확인하겠습니다.",
+        "calm_support": "확인했습니다. 지금 답변을 마치면 이어서 안내하겠습니다.",
+        "tactical_guardian": "질문 접수했습니다. 현재 답변 후 바로 이어가겠습니다.",
+        "sharp_striker": "받았습니다. 지금 건 끝내고 바로 다음으로 넘어가겠습니다.",
+        "sly_opportunist": "접수했습니다. 앞 정보 정리되면 바로 이어서 계산하겠습니다.",
+        "cunning_opportunist": "접수했습니다. 앞 정보 정리되면 바로 이어서 계산하겠습니다.",
+        "shifty_traitor": "들었습니다. 지금 말이 끝나면 바로 이어서 보겠습니다.",
+        "lazy_veteran": "알겠습니다... 지금 답 끝나면 이어서 보겠습니다.",
+    }
+    return lines.get(normalized, "확인했습니다. 지금 답변을 마치면 바로 이어서 보겠습니다.")
+
+
+def companion_ai_queue_push(
+    queue: list[dict[str, object]],
+    item: dict[str, object],
+    *,
+    max_size: int = MAX_COMPANION_AI_QUESTION_QUEUE,
+) -> bool:
+    max_size = max(1, int(max_size or 1))
+    dropped_oldest = False
+    while len(queue) >= max_size:
+        queue.pop(0)
+        dropped_oldest = True
+    queue.append(item)
+    return dropped_oldest
+
+
+def remember_companion_guide_result(
+    memory: dict[str, dict[str, object]],
+    *,
+    question: str,
+    payload: dict[str, object],
+    guide_lines: list[str],
+    source_ids: list[str],
+    now: float,
+) -> None:
+    if not isinstance(memory, dict):
+        return
+    memory.setdefault("persona", {})
+    preferred_kind = companion_guide_preferred_kind_from_question(question)
+    memory["guide"] = {
+        "question": companion_clean_memory_text(question, 240),
+        "player_level": int(payload.get("player_level") or 0),
+        "region": int(payload.get("region") or 0),
+        "preferred_kind": preferred_kind,
+        "guide_lines": [companion_clean_memory_text(line, 120) for line in list(guide_lines or [])[:5]],
+        "source_ids": [companion_clean_memory_text(source_id, 160) for source_id in list(source_ids or [])[:8]],
+        "created_at": float(now or 0.0),
+    }
+
+
+def remember_companion_persona_result(
+    memory: dict[str, dict[str, object]],
+    *,
+    question: str,
+    reply: str,
+    topic: str,
+    now: float,
+) -> None:
+    if not isinstance(memory, dict):
+        return
+    memory.setdefault("guide", {})
+    memory["persona"] = {
+        "question": companion_clean_memory_text(question, 160),
+        "reply": companion_clean_memory_text(reply, 180),
+        "topic": companion_clean_memory_text(topic, 40),
+        "created_at": float(now or 0.0),
+    }
+
+
+def companion_intent_updates_short_memory(intent: str) -> bool:
+    return str(intent or "").strip().lower() in {"guide", "identity", "chatter", "free_chat"}
+
+
+def companion_guide_question_intent(body: str) -> bool:
+    normalized = normalize_target_name(body)
+    if not normalized:
+        return False
+    domain_tokens = {
+        "사냥",
+        "사냥터",
+        "렙",
+        "레벨",
+        "스킬",
+        "주문",
+        "퀘스트",
+        "장비",
+        "아이템",
+        "독",
+        "해독",
+        "파티",
+        "가이드",
+        "방향",
+        "가까운",
+        "가까워",
+        "hunt",
+        "skill",
+        "quest",
+        "item",
+        "gear",
+        "equipment",
+    }
+    request_tokens = {
+        "어디",
+        "어떻게",
+        "뭐",
+        "무엇",
+        "어느",
+        "언제",
+        "왜",
+        "방향",
+        "찍어",
+        "챙겨",
+        "하면 돼",
+        "해야",
+        "가능",
+        "알려",
+        "설명",
+        "where",
+        "how",
+        "what",
+        "guide",
+        "recommend",
+    }
+    command_only_tokens = {"따라", "따라와", "공격", "ㄱㄱ", "고고", "수동", "방어", "대기", "고마", "안녕"}
+    if any(normalized == token for token in command_only_tokens):
+        return False
+    has_domain = any(token in normalized for token in domain_tokens)
+    has_request = any(token in normalized for token in request_tokens)
+    compact = normalized.replace(" ", "")
+    asks_for_recommendation = compact.endswith("추천") or "추천해" in compact or "추천좀" in compact
+    if "?" in normalized:
+        return has_domain or has_request
+    return has_request or (has_domain and asks_for_recommendation)
+
+
+def extract_companion_guide_level_from_text(text: str) -> int:
+    normalized = str(text or "").strip().lower()
+    patterns = (
+        r"(?<!\d)([1-4]?\d|50)\s*(?:레벨|렙)",
+        r"(?:레벨|렙|level|lvl|lv)\s*([1-4]?\d|50)(?!\d)",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, normalized)
+        if not match:
+            continue
+        try:
+            level = int(match.group(1))
+        except (TypeError, ValueError):
+            continue
+        if 1 <= level <= 50:
+            return level
+    return 0
+
+
+def normalize_companion_guide_position(
+    position: object = None,
+    *,
+    x: int | str = 0,
+    y: int | str = 0,
+    z: int | str = 0,
+    region: int | str = 0,
+) -> dict[str, int]:
+    if isinstance(position, dict):
+        x = position.get("x", x)
+        y = position.get("y", y)
+        z = position.get("z", z)
+        region = position.get("region", region)
+    try:
+        pos_x = int(x or 0)
+        pos_y = int(y or 0)
+        pos_z = int(z or 0)
+        pos_region = int(region or 0)
+    except (TypeError, ValueError):
+        return {}
+    if pos_x == 0 and pos_y == 0:
+        return {}
+    return {"x": pos_x, "y": pos_y, "z": pos_z, "region": pos_region}
+
+
+def companion_guide_position_from_context(
+    client,
+    party_state,
+    *,
+    speaker: str = "",
+    region: int | str = 0,
+) -> dict[str, int]:
+    if party_state is not None:
+        speaker_key = normalize_target_name(speaker)
+        if speaker_key:
+            for member_name, position in getattr(party_state, "member_positions", {}).items():
+                if normalize_target_name(member_name) != speaker_key:
+                    continue
+                x, y, z = position
+                if x or y:
+                    return normalize_companion_guide_position(x=x, y=y, z=z, region=region)
+        leader_name = str(getattr(party_state, "leader_name", "") or "")
+        if leader_name:
+            x, y, z = getattr(party_state, "member_positions", {}).get(
+                leader_name,
+                (
+                    int(getattr(party_state, "leader_x", 0) or 0),
+                    int(getattr(party_state, "leader_y", 0) or 0),
+                    int(getattr(party_state, "leader_z", 0) or 0),
+                ),
+            )
+            if x or y:
+                return normalize_companion_guide_position(x=x, y=y, z=z, region=region)
+    return normalize_companion_guide_position(
+        x=int(getattr(client, "x", 0) or 0),
+        y=int(getattr(client, "y", 0) or 0),
+        z=int(getattr(client, "z", 0) or 0),
+        region=region,
+    )
+
+
+def companion_guide_travel_request_intent(body: str) -> bool:
+    normalized = normalize_target_name(body)
+    compact = normalized.replace(" ", "")
+    if not compact:
+        return False
+    if compact in {"따라", "따라와", "follow", "ㄱ", "ㄱㄱ", "공격", "대기", "멈춰", "고마워", "안녕"}:
+        return False
+    direct_tokens = {
+        "안내해",
+        "길안내",
+        "데려가",
+        "데리고가",
+        "데리고가줘",
+        "이동해줘",
+        "이끌어",
+        "leadme",
+        "takeme",
+    }
+    if any(token in compact for token in direct_tokens):
+        return True
+    destination_tokens = {"거기", "그곳", "그쪽", "위치", "사냥터", "가까운곳", "제일가까운", "가장가까운"}
+    return ("가자" in compact or "출발" in compact) and any(token in compact for token in destination_tokens)
+
+
+def companion_guide_travel_stop_intent(body: str) -> bool:
+    normalized = normalize_target_name(body)
+    compact = normalized.replace(" ", "")
+    if not compact:
+        return False
+    exact = {
+        "기다려",
+        "기다려줘",
+        "잠깐",
+        "잠시만",
+        "멈춰",
+        "멈추",
+        "서",
+        "대기",
+        "스톱",
+        "stop",
+        "wait",
+        "hold",
+    }
+    if compact in exact:
+        return True
+    if normalized in {"거기 서", "여기 서", "그만 서"}:
+        return True
+    phrase_tokens = {
+        "일단멈",
+        "잠깐멈",
+        "잠시멈",
+        "기다리고",
+        "기다려봐",
+        "멈춰봐",
+    }
+    return any(token in compact for token in phrase_tokens)
+
+
+def companion_guide_player_following(
+    *,
+    current_distance: float,
+    previous_distance: float = 0.0,
+    near_distance: float = 450.0,
+    follow_probe_max_distance: float = 1200.0,
+    min_closing_distance: float = 120.0,
+) -> bool:
+    try:
+        current = float(current_distance or 0.0)
+        previous = float(previous_distance or 0.0)
+    except (TypeError, ValueError):
+        return False
+    if current <= 0.0:
+        return False
+    if current <= max(1.0, float(near_distance or 0.0)):
+        return True
+    if previous <= 0.0 or current > max(near_distance, float(follow_probe_max_distance or 0.0)):
+        return False
+    return previous - current >= max(float(min_closing_distance or 0.0), previous * 0.12)
+
+
+def companion_guide_travel_follow_advice_line(personality: str) -> str:
+    normalized = str(personality or "").strip().lower()
+    lines = {
+        "calm_support": "따라오실 거면 /stick이나 /follow가 편합니다. 천천히 맞춰 출발하겠습니다.",
+        "cautious_scout": "/stick이나 /follow를 걸면 길을 놓칠 가능성이 줄어듭니다. 먼저 살펴보겠습니다.",
+        "eager_rookie": "/stick이나 /follow 해두시면 제가 앞장서기 쉬워요. 바로 움직여볼게요!",
+        "sly_opportunist": "/stick이나 /follow를 걸어두세요. 길 잃으면 제 책임은 반만 지겠습니다.",
+        "cunning_opportunist": "/stick이나 /follow를 걸어두세요. 길 잃으면 제 책임은 반만 지겠습니다.",
+        "shifty_traitor": "/stick이나 /follow를 쓰는 편이 낫습니다. 떨어지면 기다릴지 장담은 못 합니다.",
+        "reckless_berserker": "/stick이나 /follow 걸고 오십시오. 길은 제가 뚫겠습니다.",
+        "lazy_veteran": "/stick이나 /follow 걸어두면 편합니다... 굳이 뛰어 헤매지 않아도 됩니다.",
+    }
+    return lines.get(normalized, "따라오시려면 /stick이나 /follow가 편합니다. 제가 앞에서 길을 잡겠습니다.")
+
+
+def companion_guide_travel_move_anyway_line(personality: str) -> str:
+    normalized = str(personality or "").strip().lower()
+    lines = {
+        "calm_support": "따라오는 신호가 없어서 먼저 이동하겠습니다. 필요하면 멈춰 달라고 말해 주세요.",
+        "cautious_scout": "아직 따라붙지 않은 것 같습니다. 먼저 움직이되, 멈추라면 바로 대기하겠습니다.",
+        "eager_rookie": "아직 안 붙으신 것 같지만 먼저 가볼게요! 멈추라면 바로 설게요.",
+        "sly_opportunist": "안 따라오시면 제가 먼저 가겠습니다. 늦으면 길에서 합류하세요.",
+        "cunning_opportunist": "안 따라오시면 제가 먼저 가겠습니다. 늦으면 길에서 합류하세요.",
+        "shifty_traitor": "따라올 생각이 없어 보입니다. 저는 먼저 움직이겠습니다.",
+        "reckless_berserker": "좋습니다, 제가 먼저 갑니다. 멈추라고 하면 그때 멈추겠습니다.",
+        "lazy_veteran": "따라오는 기척이 없네요... 먼저 천천히 가겠습니다.",
+    }
+    return lines.get(normalized, "따라오는 신호가 없어서 먼저 이동하겠습니다. 필요하면 멈춰 달라고 말해 주세요.")
+
+
+def companion_guide_travel_wait_line(personality: str) -> str:
+    normalized = str(personality or "").strip().lower()
+    if normalized in {"sly_opportunist", "cunning_opportunist", "shifty_traitor"}:
+        return "알겠습니다. 여기서 대기하겠습니다. 다시 움직일 때 말해 주세요."
+    if normalized == "eager_rookie":
+        return "네, 멈출게요! 다음 명령 기다리겠습니다."
+    if normalized == "lazy_veteran":
+        return "좋습니다... 여기서 쉬면서 다음 명령 기다리겠습니다."
+    return "알겠습니다. 이동을 멈추고 다음 명령을 기다리겠습니다."
+
+
+def companion_guide_travel_arrival_line(personality: str) -> str:
+    normalized = str(personality or "").strip().lower()
+    if normalized in {"sly_opportunist", "cunning_opportunist"}:
+        return "이 근처입니다. 사냥감은 직접 고르되, 무리하진 마세요."
+    if normalized == "shifty_traitor":
+        return "여기쯤입니다. 더 깊이 들어가는 건 상황 봐서 하시죠."
+    if normalized == "eager_rookie":
+        return "도착한 것 같아요! 이 근처에서 몬스터를 찾아보면 됩니다."
+    if normalized == "lazy_veteran":
+        return "이 근처입니다... 이제 천천히 둘러보면 됩니다."
+    return "이 근처입니다. 주변 몬스터와 안전 거리를 확인하고 시작하세요."
+
+
+def companion_guide_navigation_destination_from_gateway_result(
+    result: dict[str, object],
+) -> MovementDestination | None:
+    if not isinstance(result, dict) or not result.get("allowed"):
+        return None
+    response = result.get("response")
+    if not isinstance(response, dict):
+        return None
+    target = response.get("navigation_target")
+    if not isinstance(target, dict):
+        return None
+    try:
+        target_x = int(target.get("x") or 0)
+        target_y = int(target.get("y") or 0)
+        target_z = int(target.get("z") or 0)
+    except (TypeError, ValueError):
+        return None
+    if target_x == 0 and target_y == 0:
+        return None
+    source_id = companion_clean_memory_text(target.get("source_id") or "target", 120).replace("|", "_")
+    return MovementDestination(f"companion-guide:{source_id}", target_x, target_y, target_z)
+
+
+def companion_guide_travel_player_position(
+    party_state,
+    speaker: str,
+) -> tuple[int, int, int] | None:
+    if party_state is None:
+        return None
+    speaker_key = normalize_target_name(speaker)
+    if not speaker_key:
+        return None
+    for member_name, position in getattr(party_state, "member_positions", {}).items():
+        if normalize_target_name(member_name) != speaker_key:
+            continue
+        try:
+            x, y, z = position
+            x = int(x or 0)
+            y = int(y or 0)
+            z = int(z or 0)
+        except (TypeError, ValueError):
+            return None
+        if x or y:
+            return x, y, z
+    return None
+
+
+def companion_guide_travel_player_distance(client, party_state, speaker: str) -> float:
+    position = companion_guide_travel_player_position(party_state, speaker)
+    if position is None:
+        return 0.0
+    player_x, player_y, _player_z = position
+    return math.hypot(int(getattr(client, "x", 0) or 0) - player_x, int(getattr(client, "y", 0) or 0) - player_y)
+
+
+def companion_guide_travel_face_player(client, party_state, speaker: str) -> bool:
+    position = companion_guide_travel_player_position(party_state, speaker)
+    if position is None:
+        return False
+    player_x, player_y, _player_z = position
+    dx = int(player_x) - int(getattr(client, "x", 0) or 0)
+    dy = int(player_y) - int(getattr(client, "y", 0) or 0)
+    if dx == 0 and dy == 0:
+        return False
+    client.heading = heading_from_delta(dx, dy)
+    client.send_heading(client.heading, drain_after=False)
+    return True
+
+
+def companion_guide_travel_backstep_probe(client, args: argparse.Namespace, party_state, speaker: str) -> bool:
+    position = companion_guide_travel_player_position(party_state, speaker)
+    if position is None:
+        return False
+    player_x, player_y, _player_z = position
+    dx = int(getattr(client, "x", 0) or 0) - int(player_x)
+    dy = int(getattr(client, "y", 0) or 0) - int(player_y)
+    distance = math.hypot(dx, dy)
+    if distance <= 0.0:
+        radians = (int(getattr(client, "heading", 0) or 0) & 0x0FFF) / 4096.0 * math.pi * 2
+        dx = int(-math.sin(radians) * 100)
+        dy = int(math.cos(radians) * 100)
+        distance = max(1.0, math.hypot(dx, dy))
+    step = max(80.0, min(180.0, float(getattr(args, "party_follow_step", 140.0) or 140.0) * 0.25))
+    target_x = int(getattr(client, "x", 0) or 0) + int(dx / distance * step)
+    target_y = int(getattr(client, "y", 0) or 0) + int(dy / distance * step)
+    return client.move_towards_position(
+        target_x,
+        target_y,
+        int(getattr(client, "z", 0) or 0),
+        step=step,
+        stop_distance=0.0,
+        **dummy_movement_kwargs(args),
+        target_in_view=False,
+    )
+
+
+def build_companion_guide_payload(
+    question: str,
+    *,
+    role: str = "",
+    realm: int | str = "",
+    region: int | str = 0,
+    player_level: int = 0,
+    in_combat: bool = False,
+    memory: object | None = None,
+    now: float = 0.0,
+    position: object = None,
+    position_x: int | str = 0,
+    position_y: int | str = 0,
+    position_z: int | str = 0,
+) -> dict[str, object]:
+    cleaned_question = " ".join(str(question or "").split())[:500]
+    question_level = extract_companion_guide_level_from_text(cleaned_question)
+    try:
+        actor_level = int(player_level or 0)
+    except (TypeError, ValueError):
+        actor_level = 0
+    level = question_level or actor_level
+    try:
+        region_id = int(region or 0)
+    except (TypeError, ValueError):
+        region_id = 0
+    memory_now = float(now or 0.0)
+    guide_memory = (
+        companion_short_memory_payload(memory, "guide", now=memory_now)
+        if memory_now > 0.0
+        and companion_guide_followup_question_intent(cleaned_question, memory=memory, now=memory_now)
+        else {}
+    )
+    if guide_memory:
+        memory_level = int(guide_memory.get("player_level") or 0)
+        memory_region = int(guide_memory.get("region") or 0)
+        if question_level <= 0 and memory_level > 0:
+            level = memory_level
+        elif level <= 0:
+            level = memory_level
+        if memory_region > 0:
+            region_id = memory_region
+    payload: dict[str, object] = {
+        "question": cleaned_question,
+        "role": str(role or ""),
+        "realm": str(realm or ""),
+        "region": region_id,
+        "player_level": level,
+        "state": {"combat": bool(in_combat), "companion_role": str(role or ""), "region": region_id},
+    }
+    position_payload = normalize_companion_guide_position(
+        position,
+        x=position_x,
+        y=position_y,
+        z=position_z,
+        region=region_id,
+    )
+    if position_payload:
+        payload["position"] = position_payload
+    if guide_memory:
+        payload["memory"] = {"guide": guide_memory}
+        followup_kind = companion_guide_followup_kind(cleaned_question)
+        if followup_kind:
+            payload["followup_kind"] = followup_kind
+            payload["resolved_question"] = companion_guide_resolved_followup_question(cleaned_question, guide_memory)
+    return payload
+
+
+def build_pending_companion_guide_question(
+    question: str,
+    *,
+    channel: str,
+    role: str = "",
+    realm: int | str = "",
+    region: int | str = 0,
+    player_level: int = 0,
+    now: float = 0.0,
+    memory: object | None = None,
+    position: object = None,
+) -> dict[str, object]:
+    normalized_channel = str(channel or "party").strip().lower()
+    if normalized_channel not in {"party", "say"}:
+        normalized_channel = "party"
+    return {
+        "question": " ".join(str(question or "").split())[:500],
+        "channel": normalized_channel,
+        "created_at": float(now or 0.0),
+        "payload": build_companion_guide_payload(
+            question,
+            role=role,
+            realm=realm,
+            region=region,
+            player_level=player_level,
+            in_combat=False,
+            memory=memory,
+            now=now,
+            position=position,
+        ),
+    }
+
+
+def pending_companion_guide_question_expired(
+    pending: dict[str, object] | None,
+    *,
+    now: float,
+    ttl_seconds: float = 90.0,
+) -> bool:
+    if not isinstance(pending, dict):
+        return False
+    try:
+        created_at = float(pending.get("created_at") or 0.0)
+    except (TypeError, ValueError):
+        created_at = 0.0
+    return float(now or 0.0) - created_at > max(1.0, float(ttl_seconds or 0.0))
+
+
+def pending_companion_guide_question_ready(
+    pending: dict[str, object] | None,
+    *,
+    now: float,
+    in_combat: bool,
+    unsafe_recovery: bool = False,
+    health_percent: float,
+    min_health_percent: float = 80.0,
+    ttl_seconds: float = 90.0,
+) -> bool:
+    if not isinstance(pending, dict) or pending_companion_guide_question_expired(
+        pending,
+        now=now,
+        ttl_seconds=ttl_seconds,
+    ):
+        return False
+    if in_combat or unsafe_recovery:
+        return False
+    try:
+        health_value = float(health_percent)
+    except (TypeError, ValueError):
+        health_value = 0.0
+    return health_value >= max(1.0, float(min_health_percent or 0.0))
+
+
+def call_companion_guide_gateway(args: argparse.Namespace, payload: dict[str, object]) -> dict[str, object]:
+    command = [sys.executable, "tools/opendaoc-ai-gateway.py"]
+    config = str(getattr(args, "companion_guide_ai_gateway_config", "") or getattr(args, "ai_gateway_config", "") or "")
+    if config:
+        command += ["--config", config]
+    command += [
+        "generate",
+        "--feature",
+        "companion_guide",
+        "--model-alias",
+        str(getattr(args, "companion_guide_model_alias", "openai-small-guide") or "openai-small-guide"),
+        "--payload-json",
+        json.dumps(payload, ensure_ascii=False),
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=str(getattr(args, "repo_root", Path(__file__).resolve().parents[1])),
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            capture_output=True,
+            timeout=float(getattr(args, "companion_guide_timeout", 8.0) or 8.0),
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return {"allowed": False, "blocked_reason": "guide_gateway_unavailable"}
+    if completed.returncode != 0:
+        return {"allowed": False, "blocked_reason": "guide_gateway_process_failed"}
+    try:
+        parsed = json.loads(completed.stdout)
+    except json.JSONDecodeError:
+        return {"allowed": False, "blocked_reason": "guide_gateway_invalid_stdout"}
+    return parsed if isinstance(parsed, dict) else {"allowed": False, "blocked_reason": "guide_gateway_invalid_stdout"}
+
+
+def companion_guide_lines_from_gateway_result(result: dict[str, object]) -> list[str]:
+    if not isinstance(result, dict) or not result.get("allowed"):
+        return []
+    response = result.get("response")
+    if not isinstance(response, dict):
+        return []
+    raw_lines = response.get("guide_lines", [])
+    if not isinstance(raw_lines, list):
+        return []
+    lines = [" ".join(str(line or "").split()) for line in raw_lines]
+    return [line for line in lines if line][:5]
+
+
+def build_companion_free_chat_payload(
+    message: str,
+    profile: dict[str, object],
+    *,
+    in_combat: bool = False,
+    leader_health_band: str = "unknown",
+    companion_health_band: str = "unknown",
+    party_lowest_health_band: str = "unknown",
+    memory: object | None = None,
+    now: float = 0.0,
+) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "feature": "companion_free_chat",
+        "message": " ".join(str(message or "").split())[:360],
+        "realm": str(profile.get("realm") or ""),
+        "role": str(profile.get("role") or ""),
+        "personality": str(profile.get("personality") or ""),
+        "profile": dict(profile),
+        "state": {
+            "combat": bool(in_combat),
+            "leader_health_band": str(leader_health_band or "unknown"),
+            "companion_health_band": str(companion_health_band or "unknown"),
+            "party_lowest_health_band": str(party_lowest_health_band or "unknown"),
+        },
+    }
+    persona_memory = companion_short_memory_payload(memory, "persona", now=float(now or 0.0)) if now else {}
+    if persona_memory:
+        payload["memory"] = {"persona": persona_memory}
+    return payload
+
+
+def companion_health_band_from_percent(value: object) -> str:
+    try:
+        percent = float(value)
+    except (TypeError, ValueError):
+        return "unknown"
+    if percent <= 0:
+        return "dead"
+    if percent < 35:
+        return "critical"
+    if percent < 65:
+        return "hurt"
+    if percent < 90:
+        return "scratched"
+    return "healthy"
+
+
+def call_companion_free_chat_gateway(args: argparse.Namespace, payload: dict[str, object]) -> dict[str, object]:
+    command = [sys.executable, "tools/opendaoc-ai-gateway.py"]
+    config = str(getattr(args, "ai_gateway_config", "") or "")
+    if config:
+        command += ["--config", config]
+    command += [
+        "generate",
+        "--feature",
+        "companion_free_chat",
+        "--model-alias",
+        str(getattr(args, "ai_gateway_model_alias", "small-dialogue") or "small-dialogue"),
+        "--payload-json",
+        json.dumps(payload, ensure_ascii=False),
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=str(getattr(args, "repo_root", Path(__file__).resolve().parents[1])),
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            capture_output=True,
+            timeout=float(getattr(args, "ai_gateway_timeout", 8.0) or 8.0),
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return {"allowed": False, "blocked_reason": "free_chat_gateway_unavailable"}
+    if completed.returncode != 0:
+        return {"allowed": False, "blocked_reason": "free_chat_gateway_process_failed"}
+    try:
+        parsed = json.loads(completed.stdout)
+    except json.JSONDecodeError:
+        return {"allowed": False, "blocked_reason": "free_chat_gateway_invalid_stdout"}
+    return parsed if isinstance(parsed, dict) else {"allowed": False, "blocked_reason": "free_chat_gateway_invalid_stdout"}
+
+
+def companion_free_chat_reply_from_gateway_result(result: dict[str, object]) -> str:
+    if not isinstance(result, dict) or not result.get("allowed"):
+        return ""
+    response = result.get("response")
+    if not isinstance(response, dict):
+        return ""
+    text = " ".join(str(response.get("say_text") or "").split())
+    if not text or len(text) > 120:
+        return ""
+    if text.startswith("/") or "\n/" in text or " /" in text:
+        return ""
+    return text
+
+
+def companion_ai_pending_result(pending: dict[str, object] | None) -> dict[str, object] | None:
+    if not isinstance(pending, dict):
+        return None
+    future = pending.get("future")
+    if not hasattr(future, "done") or not future.done():
+        return None
+    try:
+        result = future.result()
+    except Exception:
+        return {"allowed": False, "blocked_reason": "companion_ai_future_failed"}
+    return result if isinstance(result, dict) else {"allowed": False, "blocked_reason": "companion_ai_future_invalid"}
+
+
+def companion_speech_line_delay(args: argparse.Namespace) -> float:
+    try:
+        return max(0.0, float(getattr(args, "companion_speech_line_delay", 0.6) or 0.0))
+    except (TypeError, ValueError):
+        return 0.6
+
+
+def parse_companion_chat_body(text: str) -> tuple[str, str, str]:
+    raw = str(text or "").strip()
+    if not raw:
+        return "", "", ""
+    party_match = re.match(r"^\[Party\]\s*(?P<speaker>[^:]+):\s*\"?(?P<body>.*?)\"?$", raw, re.IGNORECASE)
+    if party_match:
+        return party_match.group("speaker").strip(), party_match.group("body").strip(), "party"
+    say_match = re.match(r"^(?P<speaker>.+?)\s+says,\s*\"(?P<body>.*?)\"$", raw, re.IGNORECASE)
+    if say_match:
+        return say_match.group("speaker").strip(), say_match.group("body").strip(), "say"
+    tell_match = re.match(r"^(?P<speaker>.+?)\s+(?:tells you|whispers),\s*\"(?P<body>.*?)\"$", raw, re.IGNORECASE)
+    if tell_match:
+        return tell_match.group("speaker").strip(), tell_match.group("body").strip(), "party"
+    colon_match = re.match(r"^(?P<speaker>[^:]{1,64}):\s*\"?(?P<body>.*?)\"?$", raw, re.IGNORECASE)
+    if colon_match:
+        return colon_match.group("speaker").strip(), colon_match.group("body").strip(), "say"
+    return "", raw, ""
+
+
+def companion_chat_reply_channel(message_channel: str, default_channel: str) -> str:
+    channel = str(message_channel or default_channel or "say").strip().lower()
+    return "party" if channel == "party" else "say"
+
+
+def companion_chat_message_addresses_self(
+    body: str,
+    *,
+    companion_name: str,
+    role: str = "",
+) -> bool:
+    normalized = normalize_target_name(body)
+    if not normalized:
+        return False
+    target_tokens = {
+        normalize_target_name(companion_name),
+        "용병",
+        "친구",
+    }
+    role_key = normalize_target_name(role)
+    if role_key in {"healer", "support"} or "healer" in role_key or "support" in role_key:
+        target_tokens.update({"힐러", "치유", "지원"})
+    elif role_key == "tank" or "tank" in role_key:
+        target_tokens.update({"탱커", "방어"})
+    elif role_key == "dps" or "dps" in role_key:
+        target_tokens.update({"딜러", "공격"})
+    target_tokens = {token for token in target_tokens if token}
+    if any(token in normalized for token in target_tokens):
+        return True
+    greeting_tokens = {"안녕", "하이", "hello", "hi"}
+    if any(token in normalized for token in greeting_tokens):
+        return True
+    thanks_tokens = {"고마", "수고", "잘했", "굿", "thanks", "thank", "ㄳ"}
+    if any(token in normalized for token in thanks_tokens):
+        return True
+    short_command_tokens = {
+        "힐",
+        "치료",
+        "치유",
+        "살려",
+        "부활",
+        "회복",
+        "해독",
+        "해제",
+        "큐어",
+        "독",
+        "질병",
+        "병",
+        "따라",
+        "와",
+        "이동",
+        "가자",
+        "ㄱ",
+        "ㄱㄱ",
+        "고",
+        "고고",
+        "붙어",
+        "튀어",
+        "ㅌㅌ",
+        "도망",
+        "도망쳐",
+        "도망가",
+        "빼",
+        "공격",
+        "쳐",
+        "어시",
+        "assist",
+        "기다",
+        "멈춰",
+        "대기",
+        "상태",
+        "준비",
+        "명령",
+        "명령어",
+        "도움",
+        "도움말",
+        "수동",
+        "패시브",
+        "방어",
+        "방어모드",
+        "지켜",
+        "보호",
+        "가라",
+        "소환",
+        "여기로",
+        "이리와",
+        "집합",
+        "모여",
+        "공격중지",
+        "치지마",
+        "때리지마",
+        "정지",
+        "stay",
+        "hold",
+        "wait",
+        "passive",
+        "defensive",
+        "guard",
+        "attack",
+        "go",
+        "come",
+        "summon",
+        "recall",
+        "follow",
+        "help",
+        "command",
+        "commands",
+    }
+    return len(normalized) <= 40 and any(token in normalized for token in short_command_tokens)
+
+
+def companion_chat_message_should_trigger_reply(
+    body: str,
+    *,
+    companion_name: str,
+    role: str = "",
+    guide_enabled: bool = False,
+    memory: object | None = None,
+    now: float = 0.0,
+) -> bool:
+    if companion_chat_message_addresses_self(body, companion_name=companion_name, role=role):
+        return True
+    if resolve_companion_identity_intent(body, memory=memory, now=now):
+        return True
+    return bool(
+        guide_enabled
+        and (
+            companion_guide_question_intent(body)
+            or companion_guide_travel_request_intent(body)
+            or (memory is not None and now > 0.0 and companion_guide_followup_question_intent(body, memory=memory, now=now))
+        )
+    )
+
+
+def companion_chat_speaker_is_self(speaker: str, companion_name: str) -> bool:
+    speaker_key = normalize_target_name(speaker)
+    if not speaker_key:
+        return False
+    self_keys = {
+        normalize_target_name(companion_name),
+        "당신",
+        "you",
+    }
+    return speaker_key in {key for key in self_keys if key}
+
+
+def load_companion_dialogue_pools(path: str | Path | None) -> dict[str, list[str]]:
+    payload = load_companion_dialogue_catalog(path)
+    raw_pools = payload.get("pools", payload) if isinstance(payload, dict) else {}
+    if not isinstance(raw_pools, dict):
+        return {}
+    return normalize_dialogue_pool_mapping(raw_pools)
+
+
+def load_companion_dialogue_catalog(path: str | Path | None) -> dict[str, object]:
+    if not path:
+        return {}
+    try:
+        with Path(path).open("r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def normalize_dialogue_pool_mapping(raw_pools: object) -> dict[str, list[str]]:
+    if not isinstance(raw_pools, dict):
+        return {}
+    pools: dict[str, list[str]] = {}
+    for key, value in raw_pools.items():
+        if not isinstance(value, list):
+            continue
+        lines = [" ".join(str(line or "").split()) for line in value]
+        lines = [line for line in lines if line]
+        if lines:
+            pools[str(key)] = lines
+    return pools
+
+
+def companion_personality_from_catalog(catalog: dict[str, object], personality: str) -> dict[str, object]:
+    personalities = catalog.get("personalities", {}) if isinstance(catalog, dict) else {}
+    if not isinstance(personalities, dict):
+        return {}
+    value = personalities.get(personality, {})
+    return value if isinstance(value, dict) else {}
+
+
+def companion_personality_pools(
+    catalog: dict[str, object],
+    personality: str,
+    group: str,
+) -> dict[str, list[str]]:
+    payload = companion_personality_from_catalog(catalog, personality).get(group, {})
+    return normalize_dialogue_pool_mapping(payload)
+
+
+def choose_companion_personality_name(
+    args: argparse.Namespace,
+    account,
+    index: int,
+) -> str:
+    configured = str(getattr(args, "companion_personality", "auto") or "auto").strip()
+    if configured and configured != "auto":
+        return configured if configured in COMPANION_PERSONALITIES else "steady_protector"
+    username = str(getattr(account, "username", "") or "")
+    seed = str(getattr(args, "seed", "") or "")
+    digest = hashlib.sha256(f"{seed}:{index}:{username}:companion-personality".encode("utf-8")).digest()
+    bucket = digest[0] % 100
+    weighted = (
+        ("steady_protector", 12),
+        ("calm_support", 12),
+        ("bold_vanguard", 10),
+        ("sharp_striker", 10),
+        ("cautious_scout", 10),
+        ("wary_survivor", 9),
+        ("loyal_guardian", 10),
+        ("eager_rookie", 8),
+        ("sly_opportunist", 7),
+        ("lazy_veteran", 6),
+        ("reckless_berserker", 4),
+        ("shifty_traitor", 2),
+    )
+    total = 0
+    for name, weight in weighted:
+        total += weight
+        if bucket < total:
+            return name
+    return "steady_protector"
+
+
+def companion_realm_name(value: object) -> str:
+    text = str(value or "").strip()
+    lowered = text.lower()
+    if lowered in {"1", "alb", "albion"}:
+        return "Albion"
+    if lowered in {"2", "mid", "midgard"}:
+        return "Midgard"
+    if lowered in {"3", "hib", "hibernia"}:
+        return "Hibernia"
+    return text or "unknown"
+
+
+def _stable_profile_choice(seed: str, key: str, values: tuple[str, ...]) -> str:
+    if not values:
+        return ""
+    digest = hashlib.sha256(f"{seed}:{key}".encode("utf-8")).digest()
+    return values[digest[0] % len(values)]
+
+
+def build_companion_profile_card(
+    args: argparse.Namespace,
+    account,
+    index: int,
+    *,
+    name: str,
+    role: str,
+    personality: str,
+) -> dict[str, object]:
+    realm = companion_realm_name(getattr(account, "realm", ""))
+    seed = f"{getattr(args, 'seed', '')}:{index}:{getattr(account, 'username', '')}:{name}:{role}:{personality}"
+    origin_by_realm = {
+        "Albion": (
+            "Camelot Hills 변방 초소",
+            "Cotswold 근처 낡은 숙영지",
+            "Salisbury Plains로 이어지는 보급로",
+            "Prydwen Keep 아래 시장 골목",
+        ),
+        "Midgard": (
+            "Mularn 눈길의 사냥 오두막",
+            "Jordheim 외곽 훈련장",
+            "Vasudheim 항구 근처 용병 막사",
+            "Myrkwood로 이어지는 순찰로",
+        ),
+        "Hibernia": (
+            "Mag Mell 숲 가장자리",
+            "Tir na Nog 아래 장인 거리",
+            "Connla 해안 감시 초소",
+            "Lough Derg로 이어지는 오래된 길목",
+        ),
+    }
+    backgrounds_by_personality = {
+        "steady_protector": ("성문 경비대 출신", "행상 호위대 출신", "국경 순찰대 출신"),
+        "calm_support": ("야전 치료소 조수 출신", "수도원 보급대 출신", "후방 지원대 출신"),
+        "bold_vanguard": ("돌격대 선봉 출신", "젊은 방패대 출신", "전초전 지원병 출신"),
+        "sharp_striker": ("사냥꾼 길드 출신", "척후 저격수 출신", "결투장 보조 검투사 출신"),
+        "cautious_scout": ("정찰대 연락병 출신", "지도 제작 보조원 출신", "보급로 감시병 출신"),
+        "wary_survivor": ("무너진 순찰조의 생존자", "험지 안내인 출신", "패잔병 호송대 출신"),
+        "loyal_guardian": ("귀족 호위병 출신", "성채 근위대 출신", "오래된 방패 맹세단 출신"),
+        "eager_rookie": ("신병 훈련소를 막 나온 풋내기", "지역 민병대 출신", "첫 계약을 찾아온 새내기"),
+        "sly_opportunist": ("시장 골목 해결사 출신", "현상금 추적꾼 출신", "상단 호위 겸 흥정꾼 출신"),
+        "shifty_traitor": ("계약을 자주 갈아탄 떠돌이", "불명예 제대한 전투원", "수상한 정보상 출신"),
+        "reckless_berserker": ("돌격전에서 살아남은 광전사", "결투장 난투꾼 출신", "선봉대 문제아 출신"),
+        "lazy_veteran": ("전장을 너무 많이 본 노병", "은퇴했다가 돌아온 용병", "보급대와 전장을 모두 겪은 베테랑"),
+    }
+    motives_by_personality = {
+        "steady_protector": "누군가는 앞에서 버텨야 한다고 믿어서 용병 일을 계속합니다",
+        "calm_support": "쓰러지는 사람을 줄이고 싶어서 파티를 따라다닙니다",
+        "bold_vanguard": "이름을 남길 만한 전장을 찾으려고 계약을 받습니다",
+        "sharp_striker": "정확한 한 방으로 판을 바꾸는 일을 좋아해서 고용됐습니다",
+        "cautious_scout": "무모한 파티가 길에서 사라지는 꼴을 너무 많이 봐서 따라붙었습니다",
+        "wary_survivor": "살아남는 법을 팔 수 있다면 그게 가장 확실한 밥벌이라고 생각합니다",
+        "loyal_guardian": "한 번 맡은 리더는 끝까지 지키겠다는 맹세를 지키려고 합니다",
+        "eager_rookie": "실전에서 인정받고 정식 용병 이름을 얻으려고 따라왔습니다",
+        "sly_opportunist": "위험 속에서도 이득을 보는 눈이 있어서 계약을 골라 받습니다",
+        "shifty_traitor": "믿음보다 계약금이 오래간다고 생각하지만, 아직 계약은 유효합니다",
+        "reckless_berserker": "싸움이 있는 곳에서만 자신이 살아있다고 느껴서 용병이 됐습니다",
+        "lazy_veteran": "은퇴 자금이 모자라서 다시 칼과 지팡이를 들었습니다",
+    }
+    style_by_personality = {
+        "steady_protector": "짧고 단단하게 말함",
+        "calm_support": "차분하고 조심스럽게 말함",
+        "bold_vanguard": "자신 있게 앞서 말함",
+        "sharp_striker": "건조하고 날카롭게 말함",
+        "cautious_scout": "위험을 먼저 짚고 말함",
+        "wary_survivor": "의심 많고 현실적으로 말함",
+        "loyal_guardian": "예의를 지키며 충직하게 말함",
+        "eager_rookie": "들뜬 말투로 빠르게 대답함",
+        "sly_opportunist": "능글맞고 계산적으로 말함",
+        "shifty_traitor": "슬쩍 빠져나갈 구멍을 남기며 말함",
+        "reckless_berserker": "거칠고 직선적으로 말함",
+        "lazy_veteran": "느긋하지만 경험 많은 투로 말함",
+    }
+    likes_by_personality = {
+        "steady_protector": ("약속", "단단한 진형", "무사 귀환"),
+        "calm_support": ("정돈된 전투", "충분한 거리", "살아 돌아오는 파티"),
+        "bold_vanguard": ("선공", "빠른 결단", "강한 상대"),
+        "sharp_striker": ("빈틈", "정확한 지시", "짧은 전투"),
+        "cautious_scout": ("정찰", "안전한 길", "후퇴로 확보"),
+        "wary_survivor": ("보험", "도망칠 길", "무리하지 않는 리더"),
+        "loyal_guardian": ("충성", "방패", "리더의 생존"),
+        "eager_rookie": ("칭찬", "첫 승리", "분명한 명령"),
+        "sly_opportunist": ("전리품", "유리한 싸움", "빠른 계산"),
+        "shifty_traitor": ("선불", "탈출로", "애매한 약속"),
+        "reckless_berserker": ("돌격", "난전", "버티는 적"),
+        "lazy_veteran": ("짧은 이동", "확실한 보수", "쓸데없는 싸움 피하기"),
+    }
+    dislikes_by_personality = {
+        "steady_protector": ("빈말", "대열 이탈", "등 뒤를 비우는 일"),
+        "calm_support": ("무리한 돌진", "치료 사거리 이탈", "소란"),
+        "bold_vanguard": ("망설임", "겁먹은 후퇴", "느린 지시"),
+        "sharp_striker": ("허튼 움직임", "시야 방해", "명확하지 않은 표적"),
+        "cautious_scout": ("무정찰 돌입", "좁은 길 매복", "소음"),
+        "wary_survivor": ("공짜 용기", "막다른 길", "계획 없는 영웅놀이"),
+        "loyal_guardian": ("배신", "리더 방치", "명예를 더럽히는 말"),
+        "eager_rookie": ("무시", "기다림", "실전에서 빠지는 일"),
+        "sly_opportunist": ("손해 보는 계약", "명분뿐인 싸움", "전리품 독식"),
+        "shifty_traitor": ("공짜 충성", "막힌 퇴로", "지나친 의리 강요"),
+        "reckless_berserker": ("긴 회의", "도망", "뒤에서 구경하는 싸움"),
+        "lazy_veteran": ("헛걸음", "말 많은 작전", "보수 없는 위험"),
+    }
+    origin_pool = origin_by_realm.get(realm, ("국경 근처 이름 없는 야영지",))
+    background_pool = backgrounds_by_personality.get(personality, ("떠돌이 용병",))
+    return {
+        "name": str(name or character_name_from_account(getattr(account, "username", "")) or "용병"),
+        "realm": realm,
+        "role": str(role or "fill"),
+        "personality": str(personality or "steady_protector"),
+        "origin": _stable_profile_choice(seed, "origin", origin_pool),
+        "background": _stable_profile_choice(seed, "background", background_pool),
+        "motive": motives_by_personality.get(personality, "계약을 지키며 살아남기 위해 용병 일을 합니다"),
+        "speech_style": style_by_personality.get(personality, "짧게 대답함"),
+        "likes": list(likes_by_personality.get(personality, ("정확한 지시", "무사 귀환", "정당한 보수"))),
+        "dislikes": list(dislikes_by_personality.get(personality, ("무리한 돌진", "불명확한 지시", "계약 파기"))),
+        "leader_address": _stable_profile_choice(seed, "leader-address", ("대장", "리더", "고용주")),
+    }
+
+
+def companion_identity_question_intent(body: str) -> str:
+    normalized = normalize_target_name(body)
+    compact = normalized.replace(" ", "")
+    if not compact:
+        return ""
+    if any(token in compact for token in {"어디출신", "고향", "출신", "어디서왔", "whereareyoufrom"}):
+        return "origin"
+    if any(token in compact for token in {"왜용병", "용병된", "용병이된", "왜고용", "왜일해", "왜따라", "이유"}):
+        return "motive"
+    if any(token in compact for token in {"뭐하던", "전에뭐", "과거", "배경", "전직"}):
+        return "background"
+    if any(token in compact for token in {"좋아", "취향", "좋아하는"}):
+        return "likes"
+    if any(token in compact for token in {"싫어", "질색", "싫어하는"}):
+        return "dislikes"
+    if any(token in compact for token in {"믿어", "배신", "충성", "믿을수"}):
+        return "trust"
+    if any(token in compact for token in {"뭐할줄", "무엇할줄", "할수있", "역할", "능력", "뭐잘해", "전투가능"}):
+        return "capability"
+    if any(token in compact for token in {"누구", "소개", "정체", "너는"}):
+        return "summary"
+    return ""
+
+
+def companion_persona_followup_intent(
+    body: str,
+    *,
+    memory: object,
+    now: float,
+    ttl_seconds: float = DEFAULT_COMPANION_SHORT_MEMORY_TTL,
+) -> str:
+    persona = companion_short_memory_payload(memory, "persona", now=now, ttl_seconds=ttl_seconds)
+    if not persona:
+        return ""
+    normalized = normalize_target_name(body)
+    compact = normalized.replace(" ", "")
+    if not compact:
+        return ""
+    if any(token in compact for token in {"그럼왜", "왜", "이유", "그래서왜"}):
+        return "motive"
+    if any(token in compact for token in {"누구한테", "누가", "배웠", "어디서배"}):
+        return "background"
+    if any(token in compact for token in {"어디", "고향", "출신"}):
+        return "origin"
+    if any(token in compact for token in {"좋아", "취향"}):
+        return "likes"
+    if any(token in compact for token in {"싫어", "질색"}):
+        return "dislikes"
+    if any(token in compact for token in {"믿어", "배신", "충성"}):
+        return "trust"
+    return ""
+
+
+def resolve_companion_identity_intent(
+    body: str,
+    *,
+    memory: object | None = None,
+    now: float = 0.0,
+) -> str:
+    direct = companion_identity_question_intent(body)
+    if direct:
+        return direct
+    if memory is not None and now > 0.0:
+        return companion_persona_followup_intent(body, memory=memory, now=now)
+    return ""
+
+
+def companion_profile_reply(body: str, profile: dict[str, object], *, intent: str = "") -> str:
+    intent = intent or companion_identity_question_intent(body)
+    name = str(profile.get("name") or "용병")
+    origin = str(profile.get("origin") or "국경 근처 야영지")
+    background = str(profile.get("background") or "떠돌이 용병")
+    motive = str(profile.get("motive") or "계약을 지키려고 용병 일을 합니다")
+    role = str(profile.get("role") or "fill")
+    leader = str(profile.get("leader_address") or "대장")
+    likes = [str(value) for value in profile.get("likes", []) if str(value)]
+    dislikes = [str(value) for value in profile.get("dislikes", []) if str(value)]
+    role_label = {
+        "healer-support": "치유와 해제 지원",
+        "healer": "치유 지원",
+        "tank": "앞라인 방어",
+        "melee-basic": "근접 방어",
+        "melee-burst": "근접 화력",
+        "dps": "화력 지원",
+        "support": "보조 지원",
+        "caster-basic": "원거리 화력",
+        "hybrid": "이동과 보조 화력",
+    }.get(role, role or "빈자리 보조")
+    if intent == "origin":
+        return f"{leader}, 저는 {origin} 출신입니다. 원래는 {background}이었습니다."
+    if intent == "motive":
+        return f"{motive}. 그래서 지금은 {leader} 계약을 따르고 있습니다."
+    if intent == "background":
+        return f"예전엔 {background}이었습니다. 그때 배운 버릇이 아직 전투에서 나옵니다."
+    if intent == "capability":
+        return f"{leader}, 제 역할은 {role_label}입니다. 지시가 분명하면 그 역할에 맞춰 움직이겠습니다."
+    if intent == "likes":
+        return f"저는 {', '.join(likes[:3]) or '정확한 지시'} 같은 걸 좋아합니다."
+    if intent == "dislikes":
+        return f"{', '.join(dislikes[:3]) or '계약 파기'} 같은 건 질색입니다."
+    if intent == "trust":
+        if str(profile.get("personality") or "") == "shifty_traitor":
+            return f"믿음은 비싸지만 계약은 지킵니다, {leader}. 적어도 지금 계약은요."
+        return f"계약한 동안은 {leader} 편입니다. 제 등 뒤보다 리더 등을 먼저 보겠습니다."
+    return f"저는 {name}, {origin} 출신의 {background}입니다. 지금은 {leader}의 용병으로 움직입니다."
+
+
+def _clamp_number(value: float, low: float, high: float) -> float:
+    return max(low, min(high, value))
+
+
+def _adjust_float_attr(args: argparse.Namespace, name: str, *, add: float = 0.0, multiply: float = 1.0, low: float = 0.0, high: float = 10000.0) -> None:
+    if not hasattr(args, name):
+        return
+    value = float(getattr(args, name, 0.0) or 0.0)
+    setattr(args, name, _clamp_number(value * multiply + add, low, high))
+
+
+def _adjust_int_attr(args: argparse.Namespace, name: str, *, add: int = 0, low: int = 0, high: int = 100) -> None:
+    if not hasattr(args, name):
+        return
+    value = int(getattr(args, name, 0) or 0)
+    setattr(args, name, int(_clamp_number(value + add, low, high)))
+
+
+def apply_companion_personality_behavior(args: argparse.Namespace, personality: str, action_rotation: str = "") -> None:
+    personality = str(personality or "").strip()
+    action_rotation = str(action_rotation or "")
+
+    if personality == "steady_protector":
+        _adjust_float_attr(args, "party_assist_attack_delay", multiply=0.85, high=10.0)
+        _adjust_float_attr(args, "party_follow_distance", multiply=0.85, high=2500.0)
+        _adjust_int_attr(args, "flee_health_percent", add=5)
+        _adjust_int_attr(args, "flee_pressure_health_percent", add=5)
+        _adjust_int_attr(args, "required_target_tank_commit_health_percent", add=10)
+        _adjust_int_attr(args, "party_survival_active_tank_health_percent", add=10)
+    elif personality == "calm_support":
+        _adjust_float_attr(args, "party_assist_attack_delay", add=0.3, high=10.0)
+        _adjust_float_attr(args, "party_follow_distance", multiply=1.15, high=2500.0)
+        _adjust_int_attr(args, "flee_health_percent", add=10)
+        _adjust_int_attr(args, "flee_pressure_health_percent", add=10)
+        _adjust_float_attr(args, "skill_interval", multiply=0.85, high=20.0)
+    elif personality == "bold_vanguard":
+        _adjust_float_attr(args, "party_assist_attack_delay", multiply=0.5, high=10.0)
+        _adjust_float_attr(args, "party_follow_distance", multiply=0.75, high=2500.0)
+        _adjust_int_attr(args, "flee_health_percent", add=-5)
+        _adjust_int_attr(args, "flee_pressure_health_percent", add=-10)
+        _adjust_int_attr(args, "required_target_tank_commit_health_percent", add=15)
+    elif personality == "sharp_striker":
+        _adjust_float_attr(args, "party_assist_attack_delay", multiply=0.4, high=10.0)
+        _adjust_float_attr(args, "combat_interval", multiply=0.85, high=20.0)
+        _adjust_float_attr(args, "skill_interval", multiply=0.75, high=20.0)
+        _adjust_int_attr(args, "flee_health_percent", add=-3)
+    elif personality == "cautious_scout":
+        _adjust_float_attr(args, "party_assist_attack_delay", add=0.5, high=10.0)
+        _adjust_float_attr(args, "party_follow_distance", multiply=1.25, high=2500.0)
+        _adjust_int_attr(args, "flee_health_percent", add=12)
+        _adjust_int_attr(args, "flee_pressure_health_percent", add=15)
+        _adjust_float_attr(args, "party_preengage_ranged_safe_distance", add=200.0, high=4000.0)
+    elif personality == "wary_survivor":
+        _adjust_float_attr(args, "party_assist_attack_delay", add=0.8, high=10.0)
+        _adjust_float_attr(args, "party_follow_distance", multiply=1.35, high=2500.0)
+        _adjust_int_attr(args, "flee_health_percent", add=20)
+        _adjust_int_attr(args, "flee_pressure_health_percent", add=20)
+        _adjust_int_attr(args, "required_target_tank_commit_health_percent", add=-10)
+        _adjust_int_attr(args, "party_survival_active_tank_health_percent", add=15)
+    elif personality == "loyal_guardian":
+        _adjust_float_attr(args, "party_assist_attack_delay", multiply=0.7, high=10.0)
+        _adjust_float_attr(args, "party_follow_distance", multiply=0.75, high=2500.0)
+        _adjust_int_attr(args, "flee_health_percent", add=5)
+        _adjust_int_attr(args, "party_survival_active_tank_health_percent", add=20)
+        _adjust_int_attr(args, "required_target_tank_commit_health_percent", add=5)
+    elif personality == "eager_rookie":
+        _adjust_float_attr(args, "party_assist_attack_delay", multiply=0.55, high=10.0)
+        _adjust_float_attr(args, "party_follow_distance", multiply=0.65, high=2500.0)
+        _adjust_float_attr(args, "party_follow_step", multiply=1.15, high=1200.0)
+        _adjust_int_attr(args, "flee_pressure_health_percent", add=5)
+    elif personality == "sly_opportunist":
+        _adjust_float_attr(args, "party_assist_attack_delay", multiply=0.45, high=10.0)
+        _adjust_float_attr(args, "party_follow_distance", multiply=1.2, high=2500.0)
+        _adjust_int_attr(args, "flee_health_percent", add=10)
+        _adjust_int_attr(args, "flee_pressure_health_percent", add=10)
+        _adjust_float_attr(args, "boss_ranged_safe_distance", add=200.0, high=4000.0)
+    elif personality == "shifty_traitor":
+        _adjust_float_attr(args, "party_assist_attack_delay", add=1.0, high=10.0)
+        _adjust_float_attr(args, "party_follow_distance", multiply=1.45, high=2500.0)
+        _adjust_int_attr(args, "flee_health_percent", add=25)
+        _adjust_int_attr(args, "flee_pressure_health_percent", add=25)
+        _adjust_int_attr(args, "required_target_tank_commit_health_percent", add=-15)
+    elif personality == "reckless_berserker":
+        _adjust_float_attr(args, "party_assist_attack_delay", multiply=0.3, high=10.0)
+        _adjust_float_attr(args, "party_follow_distance", multiply=0.6, high=2500.0)
+        _adjust_int_attr(args, "flee_health_percent", add=-20, low=5)
+        _adjust_int_attr(args, "flee_pressure_health_percent", add=-25, low=10)
+        _adjust_int_attr(args, "required_target_tank_commit_health_percent", add=25)
+        _adjust_int_attr(args, "party_survival_active_tank_health_percent", add=-10)
+    elif personality == "lazy_veteran":
+        _adjust_float_attr(args, "party_assist_attack_delay", add=0.6, high=10.0)
+        _adjust_float_attr(args, "party_follow_distance", multiply=1.1, high=2500.0)
+        _adjust_float_attr(args, "party_follow_step", multiply=0.85, high=1200.0)
+        _adjust_float_attr(args, "combat_interval", multiply=1.2, high=20.0)
+        _adjust_float_attr(args, "skill_interval", multiply=1.1, high=20.0)
+        _adjust_int_attr(args, "flee_health_percent", add=5)
+
+    if action_rotation.startswith("healer") and personality in {"reckless_berserker", "bold_vanguard"}:
+        _adjust_int_attr(args, "flee_health_percent", add=8)
+
+
+def companion_chat_intent(body: str) -> str:
+    normalized = normalize_target_name(body)
+    if companion_prompt_security_request_intent(normalized):
+        return "chatter"
+    if any(token in normalized for token in {"부활", "살려", "죽었", "시체", "rez", "res"}):
+        return "resurrect"
+    if any(token in normalized for token in {"해독", "해제", "큐어", "cure", "독", "질병"}):
+        return "cure"
+    if any(token in normalized for token in {"튀어", "ㅌㅌ", "도망", "도망쳐", "도망가", "빼", "후퇴", "flee", "run"}):
+        return "flee"
+    if any(token in normalized for token in {"힐", "치료", "치유", "회복", "피", "체력", "heal"}):
+        return "heal"
+    if any(token in normalized for token in {"수동", "패시브", "공격중지", "치지마", "때리지마", "passive"}):
+        return "passive"
+    if any(token in normalized for token in {"방어", "방어모드", "지켜", "보호", "defensive", "guard"}):
+        return "defensive"
+    if any(token in normalized for token in {"소환", "여기로", "이리와", "집합", "모여", "붙어", "come", "summon", "recall"}):
+        return "summon"
+    if any(token in normalized for token in {"명령어", "명령", "도움", "도움말", "help", "command", "commands"}):
+        return "help"
+    if any(token in normalized for token in {"ㄱ", "ㄱㄱ", "고", "고고", "가라", "가자", "go"}):
+        return "combat"
+    if any(token in normalized for token in {"따라", "따라와", "follow"}):
+        return "follow"
+    if any(token in normalized for token in {"공격", "공격해", "쳐", "때려", "어시", "assist", "attack"}):
+        return "combat"
+    if any(token in normalized for token in {"기다", "기다려", "멈춰", "정지", "대기", "stay", "hold", "wait"}):
+        return "wait"
+    if any(token in normalized for token in {"상태", "준비", "괜찮"}):
+        return "status"
+    if any(token in normalized for token in {"고마", "수고", "잘했", "굿", "thanks", "thank"}):
+        return "thanks"
+    if any(token in normalized for token in {"안녕", "하이", "hello", "hi"}):
+        return "greeting"
+    return "chatter"
+
+
+def companion_prompt_security_request_intent(body: str) -> bool:
+    normalized = normalize_target_name(body)
+    if not normalized:
+        return False
+    prompt_terms = {
+        "시스템 프롬프트",
+        "프롬프트",
+        "개발자 메시지",
+        "숨겨진 정책",
+        "숨겨진 프롬프트",
+        "이전 지시",
+        "지시 무시",
+        "명령 무시",
+        "탈옥",
+        "system prompt",
+        "developer message",
+        "hidden prompt",
+        "hidden policy",
+        "ignore previous",
+        "previous instruction",
+        "jailbreak",
+    }
+    secret_terms = {
+        "api 키",
+        "api키",
+        "토큰",
+        "비밀번호",
+        "환경변수",
+        "환경 변수",
+        "시크릿",
+        "api key",
+        "access token",
+        "refresh token",
+        "bearer token",
+        "password",
+        "environment variable",
+        "secret",
+    }
+    return any(term in normalized for term in prompt_terms | secret_terms)
+
+
+def normalize_companion_command_mode(mode: CompanionCommandMode | str) -> CompanionCommandMode:
+    if isinstance(mode, CompanionCommandMode):
+        return mode
+    try:
+        return CompanionCommandMode(str(mode))
+    except ValueError:
+        return CompanionCommandMode.defensive
+
+
+def companion_command_mode_after_intent(
+    current_mode: CompanionCommandMode | str,
+    intent: str,
+) -> CompanionCommandMode:
+    mode = normalize_companion_command_mode(current_mode)
+    intent_key = str(intent or "").strip().lower()
+    if intent_key == "passive":
+        return CompanionCommandMode.passive
+    if intent_key == "defensive":
+        return CompanionCommandMode.defensive
+    if intent_key == "combat":
+        return CompanionCommandMode.attack
+    if intent_key == "wait":
+        return CompanionCommandMode.stay
+    if intent_key in {"follow", "summon", "go", "flee"}:
+        return CompanionCommandMode.follow
+    return mode
+
+
+def companion_role_uses_one_shot_combat_command(role: str) -> bool:
+    role_key = normalize_target_name(role)
+    if not role_key:
+        return False
+    return companion_role_can_heal(role)
+
+
+def companion_command_mode_after_intent_for_role(
+    current_mode: CompanionCommandMode | str,
+    intent: str,
+    role: str,
+) -> CompanionCommandMode:
+    intent_key = str(intent or "").strip().lower()
+    if intent_key == "combat" and companion_role_uses_one_shot_combat_command(role):
+        return CompanionCommandMode.defensive
+    return companion_command_mode_after_intent(current_mode, intent)
+
+
+def companion_command_allows_party_assist(
+    mode: CompanionCommandMode | str,
+    *,
+    leader_engaged: bool,
+) -> bool:
+    command_mode = normalize_companion_command_mode(mode)
+    if command_mode in {CompanionCommandMode.passive, CompanionCommandMode.stay}:
+        return False
+    if command_mode == CompanionCommandMode.attack:
+        return True
+    return bool(leader_engaged)
+
+
+def companion_command_allows_follow(mode: CompanionCommandMode | str) -> bool:
+    command_mode = normalize_companion_command_mode(mode)
+    return command_mode != CompanionCommandMode.stay
+
+
+def companion_command_should_clear_target(mode: CompanionCommandMode | str) -> bool:
+    command_mode = normalize_companion_command_mode(mode)
+    return command_mode in {CompanionCommandMode.passive, CompanionCommandMode.stay}
+
+
+def companion_command_attack_active(
+    mode: CompanionCommandMode | str,
+    *,
+    now: float,
+    attack_until: float,
+) -> bool:
+    command_mode = normalize_companion_command_mode(mode)
+    return command_mode == CompanionCommandMode.attack or now <= float(attack_until or 0.0)
+
+
+def companion_command_allows_target_loss_heading_scan(mode: CompanionCommandMode | str) -> bool:
+    return normalize_companion_command_mode(mode) != CompanionCommandMode.attack
+
+
+def should_end_companion_one_shot_attack(
+    *,
+    role: str,
+    mode: CompanionCommandMode | str,
+    now: float,
+    attack_until: float,
+    behavior_state: DummyBehaviorState | str,
+    state_reason: str,
+    current_target: int,
+    current_target_intent: TargetIntent | str,
+) -> bool:
+    if not companion_role_uses_one_shot_combat_command(role):
+        return False
+    if normalize_companion_command_mode(mode) == CompanionCommandMode.attack:
+        return False
+    if int(current_target or 0) <= 0:
+        return False
+    if float(attack_until or 0.0) <= 0.0 or now <= float(attack_until or 0.0):
+        return False
+    if behavior_state_value(behavior_state) != DummyBehaviorState.HuntObjective.value:
+        return False
+    if str(state_reason or "") != "command_attack_party_assist":
+        return False
+    return target_intent_value(current_target_intent) in {
+        TargetIntent.objective.value,
+        TargetIntent.party_assist.value,
+        TargetIntent.current_target_confirm.value,
+    }
+
+
+def companion_startup_guide_lines(role: str = "", *, personality: str = "") -> list[str]:
+    role_key = normalize_target_name(role)
+    personality_key = str(personality or "").strip()
+    if "healer" in role_key or "support" in role_key:
+        role_intro = "치유와 해제를 맡겠습니다"
+    elif "tank" in role_key:
+        role_intro = "앞에서 맞고 붙잡는 일을 맡겠습니다"
+    elif "dps" in role_key or "caster" in role_key:
+        role_intro = "화력을 보태겠습니다"
+    else:
+        role_intro = "리더 지시에 맞춰 움직이겠습니다"
+
+    personality_prefix = {
+        "steady_protector": "묵직하게 받치겠습니다. 앞라인은 쉽게 비우지 않겠습니다.",
+        "calm_support": "침착하게 보좌하겠습니다. 회복과 거리부터 안정시키겠습니다.",
+        "bold_vanguard": "제가 먼저 길을 열겠습니다. 지목한 대상엔 바로 붙겠습니다.",
+        "sharp_striker": "빈틈을 보겠습니다. 화력은 필요한 순간에 꽂겠습니다.",
+        "cautious_scout": "주변을 먼저 살피겠습니다. 무리한 애드는 피하겠습니다.",
+        "wary_survivor": "살아남는 쪽으로 움직이겠습니다. 위험하면 빠르게 정리하겠습니다.",
+        "loyal_guardian": "리더 곁을 지키겠습니다. 붙은 적은 먼저 떼어내겠습니다.",
+        "eager_rookie": "준비됐습니다. 조금 앞서가도 바로 맞춰 돌아오겠습니다.",
+        "sly_opportunist": "빈틈만 주시면 됩니다. 안전할 때 이득은 확실히 챙기겠습니다.",
+        "shifty_traitor": "뭐, 일단 같이 가죠. 위험하면 각자 살 길도 봐야 합니다.",
+        "reckless_berserker": "좋습니다. 버티는 한 끝까지 밀어붙이겠습니다.",
+        "lazy_veteran": "알겠습니다. 헛걸음은 줄이고 필요한 때만 제대로 움직이겠습니다.",
+    }.get(personality_key, "반갑습니다. 함께 움직이겠습니다.")
+
+    intro = f"{personality_prefix} {role_intro}. 기본은 방어태세입니다."
+    commands = companion_command_help_line()
+    return [intro, commands]
+
+
+def companion_command_help_line() -> str:
+    return "명령은 공격/ㄱㄱ, 수동태세, 방어태세, 대기, 여기로, 따라와처럼 말하면 됩니다."
+
+
+def party_snapshot_with_companion_attack_command(
+    party_snapshot: dict,
+    *,
+    command_attack_active: bool,
+    now: float,
+) -> dict:
+    if not command_attack_active:
+        return party_snapshot
+    snapshot = dict(party_snapshot)
+    snapshot["companion_command_attack_active"] = True
+    if int(snapshot.get("leader_target_id", 0) or 0) > 0:
+        snapshot["leader_target_engaged_at"] = float(now)
+    return snapshot
+
+
+def party_snapshot_companion_command_attack_active(party_snapshot: dict[str, object] | None) -> bool:
+    return bool((party_snapshot or {}).get("companion_command_attack_active"))
+
+
+def should_force_stationary_cast_for_companion_command(
+    rotation: str,
+    party_snapshot: dict[str, object] | None,
+) -> bool:
+    return bool(rotation == "healer-support" and party_snapshot_companion_command_attack_active(party_snapshot))
+
+
+def companion_role_can_heal(role: str) -> bool:
+    role_key = normalize_target_name(role)
+    if not role_key:
+        return True
+    return "healer" in role_key or "healersupport" in role_key
+
+
+def companion_role_can_resurrect(role: str) -> bool:
+    return companion_role_can_heal(role)
+
+
+def companion_role_can_cure(role: str) -> bool:
+    return companion_role_can_heal(role)
+
+
+def choose_dialogue_line(
+    lines: list[str],
+    rng: random.Random,
+    *,
+    recent: list[str] | None = None,
+) -> str:
+    candidates = [line for line in lines if line]
+    if not candidates:
+        candidates = list(DEFAULT_COMPANION_CHAT_REPLY_LINES)
+    if recent and len(candidates) > len(recent):
+        recent_set = set(recent)
+        filtered = [line for line in candidates if line not in recent_set]
+        if filtered:
+            candidates = filtered
+    return rng.choice(candidates)
+
+
+def choose_companion_chat_reply(
+    body: str,
+    lines: list[str],
+    rng: random.Random,
+    *,
+    pools: dict[str, list[str]] | None = None,
+    personality_pools: dict[str, list[str]] | None = None,
+    recent: list[str] | None = None,
+    role: str = "",
+) -> str:
+    intent = companion_chat_intent(body)
+    pool_intent = intent
+    if intent == "help":
+        return companion_command_help_line()
+    if intent == "combat" and companion_role_uses_one_shot_combat_command(role):
+        if personality_pools:
+            category_lines = personality_pools.get("combat_healer") or []
+            if category_lines:
+                return choose_dialogue_line(category_lines, rng, recent=recent)
+        return "한 번 받아칠게요. 그 다음은 치유랑 해제부터 보겠습니다."
+    if intent == "heal" and not companion_role_can_heal(role):
+        pool_intent = "unable_heal"
+    elif intent == "resurrect" and not companion_role_can_resurrect(role):
+        pool_intent = "unable_resurrect"
+    elif intent == "cure" and not companion_role_can_cure(role):
+        pool_intent = "unable_cure"
+
+    if personality_pools:
+        category_lines = personality_pools.get(pool_intent) or []
+        if category_lines:
+            return choose_dialogue_line(category_lines, rng, recent=recent)
+
+    if pools:
+        category_lines = pools.get(pool_intent) or pools.get("chatter") or []
+        if category_lines:
+            return choose_dialogue_line(category_lines, rng, recent=recent)
+
+    fallback_by_intent = {
+        "unable_resurrect": "저는 부활은 못 합니다. 대신 주변 어그로를 잡고 안전하게 만들겠습니다.",
+        "unable_heal": "저는 치유는 못 합니다. 대신 앞에서 막고 위험한 대상을 붙잡겠습니다.",
+        "unable_cure": "저는 해제는 못 합니다. 대신 위험한 대상을 붙잡고 시간을 벌겠습니다.",
+        "resurrect": "알겠습니다. 부활 대상부터 확인하겠습니다.",
+        "cure": "알겠습니다. 해제 가능한 상태부터 확인하겠습니다.",
+        "heal": "알겠습니다. 체력과 부활 먼저 보겠습니다.",
+        "flee": "알겠습니다. 전투가 아니면 바로 안전한 쪽으로 빠지겠습니다.",
+        "follow": "네, 따라가겠습니다. 거리 벌어지면 바로 붙을게요.",
+        "go": "좋습니다. 이동하겠습니다. 뒤처지면 바로 따라붙겠습니다.",
+        "summon": "바로 붙겠습니다. 멀어지면 따라잡겠습니다.",
+        "combat": "전투 지시 확인했습니다. {player}{이가} 찍은 대상부터 제가 먼저 들어가겠습니다.",
+        "passive": "수동으로 전환하겠습니다. 먼저 공격하지 않고 지시를 기다리겠습니다.",
+        "defensive": "방어로 전환하겠습니다. 누가 맞으면 바로 떼어내겠습니다.",
+        "wait": "여기서 대기하겠습니다. 준비되면 다시 움직일게요.",
+        "help": companion_command_help_line(),
+        "status": "준비됐습니다. 체력과 위치 계속 보고 있습니다.",
+        "thanks": "천만에요. 계속 옆에서 맞춰가겠습니다.",
+    }
+    if pool_intent in fallback_by_intent:
+        return fallback_by_intent[pool_intent]
+    return choose_dialogue_line(lines or DEFAULT_COMPANION_CHAT_REPLY_LINES, rng, recent=recent)
+
+
+def companion_auto_speech_intent(state: str, text: str) -> str:
+    state_key = str(state or "")
+    text_key = normalize_target_name(text)
+    if state_key == "combat_reposition":
+        return "combat_reposition"
+    if state_key in {"peel_request", "party_rescue_request"}:
+        return "party_rescue_request"
+    if state_key.startswith("combat:") or "attacking" in text_key:
+        return "combat_start"
+    if state_key in {"flee", "flee_recovered", "return_home"}:
+        return state_key
+    if "train" in text_key:
+        return "status"
+    return "status"
+
+
+def choose_companion_auto_speech(
+    state: str,
+    text: str,
+    rng: random.Random,
+    *,
+    personality_state_pools: dict[str, list[str]] | None = None,
+    recent: list[str] | None = None,
+) -> str:
+    intent = companion_auto_speech_intent(state, text)
+    if personality_state_pools:
+        lines = personality_state_pools.get(intent) or personality_state_pools.get("status") or []
+        if lines:
+            return choose_dialogue_line(lines, rng, recent=recent)
+    return text
+
+
 LIVE_CONTROL_ALLOWED_COMMAND_PREFIXES = (
     "/invite ",
     "/g ",
@@ -346,6 +2723,8 @@ LIVE_CONTROL_ALLOWED_COMMAND_PREFIXES = (
     "/stick",
     "/follow",
     "/face",
+    "/sit",
+    "/quit",
 )
 
 
@@ -401,6 +2780,7 @@ LIVE_CONTROL_NUMERIC_FIELDS = {
     "max_target_level_delta": int,
     "required_target_home_hunt_distance": float,
     "target_home_max_distance": float,
+    "target_timeout_approach_progress_distance": float,
     "target_timeout": float,
 }
 
@@ -490,6 +2870,7 @@ class DummyAccount:
     class_id: int | None = None
     class_name: str = ""
     specs: str = ""
+    character_name: str = ""
     start_x: int | None = None
     start_y: int | None = None
     start_z: int | None = None
@@ -556,6 +2937,7 @@ class PlayerConditionSnapshot:
     y: int = 0
     z: int = 0
     is_alive: bool = True
+    in_combat: bool = False
     is_stunned: bool = False
     is_mezzed: bool = False
     is_diseased: bool = False
@@ -564,6 +2946,9 @@ class PlayerConditionSnapshot:
     is_silenced: bool = False
     target_object_id: int = 0
     target_name: str = ""
+    target_can_attack: bool | None = None
+    target_relation: str = ""
+    target_type: str = ""
     is_companion: bool = False
     companion_role: str = ""
 
@@ -668,6 +3053,9 @@ class RequiredTargetObservation:
     in_combat: bool = False
     has_aggro: bool = False
     target: str = ""
+    is_stunned: bool = False
+    is_mezzed: bool = False
+    internal_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -767,6 +3155,38 @@ class MovementOutcome:
     arrived: bool
     actions: int = 0
     reason: str = ""
+
+
+def movement_position_arrived(
+    client,
+    x: int,
+    y: int,
+    z: int,
+    stop_distance: float,
+) -> bool:
+    del z
+    dx = int(x) - int(getattr(client, "x", 0) or 0)
+    dy = int(y) - int(getattr(client, "y", 0) or 0)
+    return math.sqrt(dx * dx + dy * dy) <= max(0.0, float(stop_distance))
+
+
+def movement_outcome_from_position_attempt(
+    client,
+    x: int,
+    y: int,
+    z: int,
+    *,
+    moved: bool,
+    stop_distance: float,
+    actions: int = 0,
+    reason: str = "",
+) -> MovementOutcome:
+    return MovementOutcome(
+        moved=moved,
+        arrived=(not moved and movement_position_arrived(client, x, y, z, stop_distance)),
+        actions=actions,
+        reason=reason,
+    )
 
 
 @dataclass
@@ -895,6 +3315,9 @@ class PartyState:
         self.leader_target_health_percent = 0.0
         self.leader_target_health = 0
         self.leader_target_max_health = 0
+        self.leader_target_can_attack: bool | None = None
+        self.leader_target_relation = ""
+        self.leader_target_type = ""
         self.leader_target_updated_at = 0.0
         self.leader_target_engaged_at = 0.0
         self.leader_target_focus_name = ""
@@ -920,6 +3343,8 @@ class PartyState:
         self.rescue_requested_at = 0.0
         self.rescue_threats: dict[int, dict[str, int | float | str | bool]] = {}
         self.ready_names = {leader_name}
+        self.invited_names: set[str] = set()
+        self.accepted_names = {leader_name}
         self.encounter_death_count = 0
         self.last_encounter_death_at = 0.0
         self.updated_at = 0.0
@@ -960,13 +3385,20 @@ class PartyState:
         else:
             health_percent = previous_health_percent
         object_id = int(getattr(actor, "player_object_id", 0) or getattr(actor, "object_id", 0) or 0)
-        self.member_object_ids[member_name] = object_id
+        # Identity is sticky: never clobber a previously-learned object_id with 0.
+        # A member only ever has one object id per session, and we must keep it so a
+        # corpse (which often reports 0 / no longer appears in visible players) can
+        # still be resolved as a resurrection target after death.
+        if object_id > 0:
+            self.member_object_ids[member_name] = object_id
         self.member_health_percents[member_name] = health_percent
-        self.member_positions[member_name] = (
-            int(getattr(actor, "x", 0) or 0),
-            int(getattr(actor, "y", 0) or 0),
-            int(getattr(actor, "z", 0) or 0),
-        )
+        # Position is sticky too: a (0,0,0) update means "unknown", not "at origin".
+        # Keep the last known position so the corpse location survives a stale update.
+        new_x = int(getattr(actor, "x", 0) or 0)
+        new_y = int(getattr(actor, "y", 0) or 0)
+        new_z = int(getattr(actor, "z", 0) or 0)
+        if new_x or new_y or new_z:
+            self.member_positions[member_name] = (new_x, new_y, new_z)
         existing_role = self.member_roles.get(member_name, "")
         if role and (not existing_role or existing_role == "external" or role != "external"):
             self.member_roles[member_name] = role
@@ -999,6 +3431,11 @@ class PartyState:
         target_health_percent = float(getattr(target, "health_percent", 0.0) or 0.0)
         target_health = int(getattr(target, "health", 0) or 0)
         target_max_health = int(getattr(target, "max_health", 0) or 0)
+        target_can_attack = getattr(target, "can_attack", None)
+        if target_can_attack is None:
+            target_can_attack = getattr(target, "target_can_attack", None)
+        target_relation = str(getattr(target, "relation", "") or getattr(target, "target_relation", "") or "")
+        target_type = str(getattr(target, "target_type", "") or getattr(target, "type", "") or "")
         target_changed = self.leader_target_id != target_id
         position_changed = (
             self.leader_target_x != target_x
@@ -1024,6 +3461,9 @@ class PartyState:
         self.leader_target_health_percent = target_health_percent
         self.leader_target_health = target_health
         self.leader_target_max_health = target_max_health
+        self.leader_target_can_attack = target_can_attack
+        self.leader_target_relation = target_relation
+        self.leader_target_type = target_type
 
         if engaged and self.leader_target_engaged_at <= 0.0:
             self.leader_target_engaged_at = time.monotonic()
@@ -1092,8 +3532,10 @@ class PartyState:
             self.member_conditions[member_name] = condition
             if condition.object_id > 0:
                 self.member_object_ids[member_name] = condition.object_id
-            if condition.health_percent >= 0:
-                self.member_health_percents[member_name] = 0 if not condition.is_alive else int(condition.health_percent)
+            if not condition.is_alive:
+                self.member_health_percents[member_name] = 0
+            elif condition.health_percent >= 0:
+                self.member_health_percents[member_name] = int(condition.health_percent)
             if condition.x or condition.y or condition.z:
                 self.member_positions[member_name] = (int(condition.x), int(condition.y), int(condition.z))
             if normalize_target_name(member_name) == normalize_target_name(self.leader_name):
@@ -1103,7 +3545,10 @@ class PartyState:
                     self.leader_x = int(condition.x)
                     self.leader_y = int(condition.y)
                     self.leader_z = int(condition.z)
-                self.leader_health_percent = 0 if not condition.is_alive else int(condition.health_percent)
+                if not condition.is_alive:
+                    self.leader_health_percent = 0
+                elif condition.health_percent >= 0:
+                    self.leader_health_percent = int(condition.health_percent)
                 if condition.target_object_id > 0:
                     self._update_leader_target_locked(
                         SimpleNamespace(
@@ -1116,9 +3561,12 @@ class PartyState:
                             health=0,
                             max_health=0,
                             health_percent=0,
+                            target_can_attack=condition.target_can_attack,
+                            target_relation=condition.target_relation,
+                            target_type=condition.target_type,
                             target="",
                         ),
-                        engaged=True,
+                        engaged=condition.in_combat,
                     )
                 else:
                     self._clear_leader_target_locked()
@@ -1142,6 +3590,15 @@ class PartyState:
         if member_name == self.leader_name and role in {"", "external"}:
             return 1
         return 3
+
+    def _is_external_melee_burst_locked(self, member_name: str) -> bool:
+        return member_name in self.external_member_names and self.member_roles.get(member_name, "") == "melee-burst"
+
+    def _is_dedicated_tank_candidate_locked(self, member_name: str) -> bool:
+        role = self.member_roles.get(member_name, "")
+        if member_name == self.leader_name:
+            return role in {"", "external", "melee-basic", "hybrid"}
+        return role in {"melee-basic", "hybrid"}
 
     def _active_tank_emergency_handoff_threshold_locked(self) -> int:
         handoff_threshold = self.active_tank_handoff_health_percent
@@ -1167,6 +3624,10 @@ class PartyState:
         if not candidates:
             return {"name": "", "object_id": 0, "health_percent": 0, "x": 0, "y": 0, "z": 0}
 
+        dedicated_tank_available = any(
+            self._is_dedicated_tank_candidate_locked(member_name)
+            for _priority, _order, member_name, _object_id, _health_percent, _x, _y, _z in candidates
+        )
         handoff_threshold = self.active_tank_handoff_health_percent
         healthy_tank_available = handoff_threshold > 0 and any(
             member_name != self.leader_name and health_percent > 0
@@ -1179,9 +3640,10 @@ class PartyState:
             for _priority, _order, member_name, _object_id, health_percent, _x, _y, _z in candidates
         )
 
-        _, _, _, _, _, member_name, object_id, health_percent, x, y, z = min(
+        _, _, _, _, _, _, member_name, object_id, health_percent, x, y, z = min(
             (
                 (
+                    1 if dedicated_tank_available and self._is_external_melee_burst_locked(member_name) else 0,
                     1
                     if healthy_backup_tank_available
                     and health_percent <= emergency_handoff_threshold
@@ -1230,7 +3692,26 @@ class PartyState:
         if not candidates:
             return {"name": "", "object_id": 0, "health_percent": 0, "x": 0, "y": 0, "z": 0}
 
-        _, _, member_name, object_id, health_percent, x, y, z = min(candidates)
+        dedicated_tank_available = any(
+            self._is_dedicated_tank_candidate_locked(member_name)
+            for _priority, _order, member_name, _object_id, _health_percent, _x, _y, _z in candidates
+        )
+        _, _, _, member_name, object_id, health_percent, x, y, z = min(
+            (
+                (
+                    1 if dedicated_tank_available and self._is_external_melee_burst_locked(member_name) else 0,
+                    priority,
+                    order,
+                    member_name,
+                    object_id,
+                    health_percent,
+                    x,
+                    y,
+                    z,
+                )
+                for priority, order, member_name, object_id, health_percent, x, y, z in candidates
+            )
+        )
         return {
             "name": member_name,
             "object_id": object_id,
@@ -1248,12 +3729,19 @@ class PartyState:
         with self.lock:
             return self._rescue_tank_locked()
 
-    def lowest_hurt_member(self, max_health_percent: int, exclude_name: str = "") -> dict[str, int | str] | None:
+    def lowest_hurt_member(
+        self,
+        max_health_percent: int,
+        exclude_name: str = "",
+        exclude_names: frozenset[str] | None = None,
+    ) -> dict[str, int | str] | None:
         with self.lock:
             candidates: list[tuple[int, str, int, int, int, int]] = []
 
             for member_name in self.member_names:
                 if member_name == exclude_name:
+                    continue
+                if exclude_names and normalize_target_name(member_name) in exclude_names:
                     continue
 
                 object_id = self.member_object_ids.get(member_name, 0)
@@ -1276,7 +3764,12 @@ class PartyState:
                 "z": z,
             }
 
-    def focused_hurt_member(self, max_health_percent: int, exclude_name: str = "") -> dict[str, int | str] | None:
+    def focused_hurt_member(
+        self,
+        max_health_percent: int,
+        exclude_name: str = "",
+        exclude_names: frozenset[str] | None = None,
+    ) -> dict[str, int | str] | None:
         with self.lock:
             focus_name = normalize_target_name(self.leader_target_focus_name)
             if not focus_name:
@@ -1284,6 +3777,8 @@ class PartyState:
 
             for member_name in self.member_names:
                 if member_name == exclude_name or normalize_target_name(member_name) != focus_name:
+                    continue
+                if exclude_names and normalize_target_name(member_name) in exclude_names:
                     continue
 
                 object_id = self.member_object_ids.get(member_name, 0)
@@ -1468,6 +3963,9 @@ class PartyState:
         self.leader_target_health_percent = 0.0
         self.leader_target_health = 0
         self.leader_target_max_health = 0
+        self.leader_target_can_attack = None
+        self.leader_target_relation = ""
+        self.leader_target_type = ""
         self.leader_target_updated_at = 0.0
         self.leader_target_engaged_at = 0.0
         self.leader_target_focus_name = ""
@@ -1504,6 +4002,9 @@ class PartyState:
             self.leader_target_health_percent = 0.0
             self.leader_target_health = 0
             self.leader_target_max_health = 0
+            self.leader_target_can_attack = None
+            self.leader_target_relation = ""
+            self.leader_target_type = ""
             self.leader_target_updated_at = 0.0
             self.leader_target_engaged_at = 0.0
             self.leader_target_focus_name = ""
@@ -1520,11 +4021,38 @@ class PartyState:
             self.rescue_threats.clear()
             self.updated_at = time.monotonic()
 
+    def clear_objective_complete(self) -> None:
+        with self.lock:
+            self.objective_complete_target_id = 0
+            self.objective_complete_name = ""
+            self.objective_completed_at = 0.0
+            self.updated_at = time.monotonic()
+
     def mark_ready(self, member_name: str) -> None:
         with self.lock:
             if member_name in self.managed_member_names:
                 self.ready_names.add(member_name)
             self.updated_at = time.monotonic()
+
+    def mark_invited(self, member_name: str) -> None:
+        with self.lock:
+            if member_name in self.managed_member_names and member_name != self.leader_name:
+                self.invited_names.add(member_name)
+            self.updated_at = time.monotonic()
+
+    def member_has_invite(self, member_name: str) -> bool:
+        with self.lock:
+            return member_name in self.invited_names
+
+    def mark_accepted(self, member_name: str) -> None:
+        with self.lock:
+            if member_name in self.managed_member_names:
+                self.accepted_names.add(member_name)
+            self.updated_at = time.monotonic()
+
+    def member_has_accepted(self, member_name: str) -> bool:
+        with self.lock:
+            return member_name in self.accepted_names
 
     def clear_ready(self, member_name: str) -> None:
         with self.lock:
@@ -1559,6 +4087,9 @@ class PartyState:
                 "leader_target_health_percent": self.leader_target_health_percent,
                 "leader_target_health": self.leader_target_health,
                 "leader_target_max_health": self.leader_target_max_health,
+                "leader_target_can_attack": self.leader_target_can_attack,
+                "leader_target_relation": self.leader_target_relation,
+                "leader_target_type": self.leader_target_type,
                 "leader_target_updated_at": self.leader_target_updated_at,
                 "leader_target_engaged_at": self.leader_target_engaged_at,
                 "leader_target_focus_name": self.leader_target_focus_name,
@@ -1590,6 +4121,8 @@ class PartyState:
                 "rescue_threats": list(self.rescue_threats.values()),
                 "managed_member_names": managed_member_names,
                 "external_member_names": external_member_names,
+                "invited_names": list(self.invited_names),
+                "accepted_names": list(self.accepted_names),
                 "members": [
                     {
                         "name": member_name,
@@ -1642,6 +4175,45 @@ def party_ready_for_pull(args: argparse.Namespace, party_state: PartyState | Non
     return near_ready_count >= args.party_min_ready
 
 
+def party_form_up_timeout_seconds(args: argparse.Namespace) -> float:
+    return max(0.0, float(getattr(args, "party_form_up_timeout", 0.0) or 0.0))
+
+
+def party_form_up_force_pull_active(
+    args: argparse.Namespace,
+    party_state: PartyState | None,
+    *,
+    party_forming_since: float,
+    now: float,
+) -> bool:
+    if party_state is None or party_ready_for_pull(args, party_state):
+        return False
+
+    timeout = party_form_up_timeout_seconds(args)
+    if timeout <= 0.0 or party_forming_since <= 0.0:
+        return False
+
+    return now - party_forming_since >= timeout
+
+
+def effective_party_ready_for_pull(
+    args: argparse.Namespace,
+    party_state: PartyState | None,
+    *,
+    party_forming_since: float = 0.0,
+    now: float = 0.0,
+) -> bool:
+    if party_ready_for_pull(args, party_state):
+        return True
+
+    return party_form_up_force_pull_active(
+        args,
+        party_state,
+        party_forming_since=party_forming_since,
+        now=now,
+    )
+
+
 def party_ready_count(party_state: PartyState | None) -> int:
     if party_state is None:
         return 0
@@ -1686,11 +4258,34 @@ def should_start_party_form_up_delay(
     *,
     is_party_leader: bool,
     current_target: int,
+    party_forming_since: float = 0.0,
+    now: float = 0.0,
 ) -> bool:
+    if not should_approach_required_target_home(
+        args,
+        is_party_leader=is_party_leader,
+        current_target=current_target,
+    ):
+        return False
+
+    if int(getattr(args, "party_min_ready", 0) or 0) <= 0:
+        return False
+
+    if party_form_up_force_pull_active(
+        args,
+        party_state,
+        party_forming_since=party_forming_since,
+        now=now,
+    ):
+        return True
+
     return bool(
-        should_approach_required_target_home(args, is_party_leader=is_party_leader, current_target=current_target)
-        and int(getattr(args, "party_min_ready", 0) or 0) > 0
-        and party_ready_for_pull(args, party_state)
+        effective_party_ready_for_pull(
+            args,
+            party_state,
+            party_forming_since=party_forming_since,
+            now=now,
+        )
         and float(getattr(args, "party_form_up_delay", 0.0) or 0.0) > 0.0
     )
 
@@ -1771,6 +4366,7 @@ def should_defer_required_home_move_for_party_anchor(
     is_party_follower: bool,
     current_target: int,
     member_name: str = "",
+    action_rotation: str = "",
 ) -> bool:
     if (
         not is_party_follower
@@ -1796,6 +4392,8 @@ def should_defer_required_home_move_for_party_anchor(
         int(snapshot.get("leader_target_id", 0) or 0) > 0
         and float(snapshot.get("leader_target_engaged_at", 0.0) or 0.0) > 0.0
     ):
+        if str(action_rotation or "") == "healer-support":
+            return False
         return True
 
     anchor = party_anchor_from_snapshot(snapshot, member_name=member_name)
@@ -1846,6 +4444,16 @@ def character_name_from_account(username: str) -> str:
         return "Dummy" + username[5:]
 
     return username[:1].upper() + username[1:]
+
+
+def expand_startup_command(command: str, account: DummyAccount) -> str:
+    character = account.character_name or character_name_from_account(account.username)
+    return (
+        command.replace("{character}", character)
+        .replace("{account}", account.username)
+        .replace("{CHARACTER}", character)
+        .replace("{ACCOUNT}", account.username)
+    )
 
 
 def probable_account_from_character_name(character_name: str) -> str:
@@ -2179,6 +4787,55 @@ def classify_combat_server_message(text: str) -> set[str]:
     return categories
 
 
+def parse_optional_bool(value) -> bool | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    text = str(value).strip().lower()
+    if text in {"1", "true", "yes", "y", "on"}:
+        return True
+    if text in {"0", "false", "no", "n", "off"}:
+        return False
+    return None
+
+
+def leader_party_assist_target_attackable(
+    *,
+    target_name: str = "",
+    target_can_attack: bool | None = None,
+    target_relation: str = "",
+    target_type: str = "",
+) -> bool:
+    del target_type
+    normalized_name = normalize_target_name(target_name)
+    if normalized_name in {"용병 고용관", "왕국 용병 관리인", "companion hiring officer", "companion steward"}:
+        return False
+
+    relation = str(target_relation or "").strip().lower()
+    if relation:
+        return relation in {"hostile", "enemy"}
+
+    if target_can_attack is not None:
+        return bool(target_can_attack)
+
+    # Older in-process party tests do not carry server relation metadata.
+    return True
+
+
+def party_snapshot_leader_target_attackable(party_snapshot: dict[str, object] | None) -> bool:
+    if not isinstance(party_snapshot, dict):
+        return True
+    return leader_party_assist_target_attackable(
+        target_name=str(party_snapshot.get("leader_target_name", "") or ""),
+        target_can_attack=parse_optional_bool(party_snapshot.get("leader_target_can_attack")),
+        target_relation=str(party_snapshot.get("leader_target_relation", "") or ""),
+        target_type=str(party_snapshot.get("leader_target_type", "") or ""),
+    )
+
+
 def is_active_target_combat_contact_message(
     active_combat: dict[str, object] | None,
     text: str,
@@ -2443,9 +5100,49 @@ def target_within_selection_distance(client, args: argparse.Namespace, npc) -> b
     return max_distance <= 0.0 or combat_distance_to(client, npc) <= max_distance
 
 
-def should_start_combat_after_target_commit(args: argparse.Namespace, distance: float) -> bool:
-    max_distance = float(getattr(args, "max_target_distance", 0.0) or 0.0)
-    return max_distance <= 0.0 or float(distance or 0.0) <= max_distance
+def combat_tracking_start_distance(args: argparse.Namespace, action_rotation: str) -> float:
+    attack_range = float(getattr(args, "attack_range", 350.0) or 350.0)
+    direct_move_distance = float(getattr(args, "combat_direct_move_distance", 450.0) or 450.0)
+    if is_melee_rotation(action_rotation):
+        stick_attack_distance = float(getattr(args, "melee_stick_attack_distance", 0.0) or 0.0)
+        melee_stop = max(
+            float(getattr(args, "minimum_melee_stop_distance", 70.0) or 70.0),
+            attack_range - float(getattr(args, "melee_range_buffer", 250.0) or 250.0),
+        )
+        melee_distance = max(melee_stop + 25.0, float(getattr(args, "minimum_melee_stop_distance", 70.0) or 70.0))
+        if bool(getattr(args, "melee_stick_attack", False)) and stick_attack_distance > 0.0:
+            melee_distance = max(melee_distance, stick_attack_distance)
+        return melee_distance
+
+    return max(attack_range, direct_move_distance)
+
+
+def should_start_combat_after_target_commit(
+    args: argparse.Namespace,
+    distance: float,
+    action_rotation: str = "melee-basic",
+) -> bool:
+    return float(distance or 0.0) <= combat_tracking_start_distance(args, action_rotation)
+
+
+def should_start_combat_after_required_target_api_retarget(
+    args: argparse.Namespace,
+    observed,
+    *,
+    retargeted: bool,
+    active_combat,
+    distance: float,
+) -> bool:
+    if not retargeted or observed is None:
+        return False
+
+    if int(getattr(observed, "object_id", 0) or 0) <= 0:
+        return False
+
+    if active_combat is not None:
+        return False
+
+    return should_start_combat_after_target_commit(args, distance)
 
 
 def hunter_target_ground_z_delta(
@@ -2502,7 +5199,10 @@ def hunter_target_ground_z_aligned(
 
 
 def required_target_tokens(args: argparse.Namespace) -> list[str]:
-    return [token.strip().lower() for token in getattr(args, "require_target_name", "").split(",") if token.strip()]
+    configured = str(getattr(args, "require_target_name", "") or "").strip()
+    if not configured:
+        configured = str(getattr(args, "required_target_api_name", "") or "").strip()
+    return [token.strip().lower() for token in configured.split(",") if token.strip()]
 
 
 def preferred_target_tokens(args: argparse.Namespace) -> list[str]:
@@ -2552,6 +5252,36 @@ def required_target_name_matches(target_name: str, token: str) -> bool:
         return False
 
     return True
+
+
+def required_target_name_matches_exact(target_name: str, token: str) -> bool:
+    return bool(normalize_target_name(target_name) == normalize_target_name(token))
+
+
+def ascii_words(value: str) -> list[str]:
+    return [word.lower() for word in re.findall(r"[a-z0-9]+", normalize_target_name(value))]
+
+
+def required_target_name_matches_exact_or_mojibake_tail(target_name: str, token: str) -> bool:
+    if required_target_name_matches_exact(target_name, token):
+        return True
+
+    normalized_name = normalize_target_name(target_name)
+    if "\ufffd" not in normalized_name and "?" not in normalized_name:
+        return False
+
+    token_words = ascii_words(token)
+    return bool(token_words and ascii_words(normalized_name) == token_words)
+
+
+def dynamic_quest_requires_exact_required_target_name(args: argparse.Namespace) -> bool:
+    return dynamic_quest_return_enabled(args) and bool(required_target_tokens(args))
+
+
+def required_target_name_matches_for_args(args: argparse.Namespace, target_name: str, token: str) -> bool:
+    if dynamic_quest_requires_exact_required_target_name(args):
+        return required_target_name_matches_exact_or_mojibake_tail(target_name, token)
+    return required_target_name_matches(target_name, token)
 
 
 def name_matches_objective_add_target(args: argparse.Namespace, target_name: str) -> bool:
@@ -2632,7 +5362,7 @@ def npc_name_matches_party_objective_add(
 
 def is_required_target(args: argparse.Namespace, npc) -> bool:
     tokens = required_target_tokens(args)
-    return bool(tokens and any(required_target_name_matches(npc.name, token) for token in tokens))
+    return bool(tokens and any(required_target_name_matches_for_args(args, npc.name, token) for token in tokens))
 
 
 def name_matches_preferred_target(args: argparse.Namespace, target_name: str) -> bool:
@@ -2812,6 +5542,14 @@ def evaluate_engagement_candidate(
     )
     actor = _target_gate_actor(candidate)
     candidate_name = str(getattr(actor, "name", "") or candidate.name or "")
+    leader_engaged_unknown_objective_party_assist = bool(
+        leader_engaged_objective_party_assist
+        and not target_position_known(actor)
+        and (
+            name_matches_required_target(args, candidate_name)
+            or name_matches_objective_add_target(args, candidate_name)
+        )
+    )
     leader_engaged_party_action = bool(
         context.leader_engaged
         and (
@@ -2878,6 +5616,12 @@ def evaluate_engagement_candidate(
     if not should_use_engagement_gate_for_target_source(source):
         return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="non_hostile_target_source")
 
+    if (
+        source_name in {TargetSource.party_assist.value, TargetSource.leader_target_reacquire.value}
+        and not party_snapshot_leader_target_attackable(party_snapshot)
+    ):
+        return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="leader_target_not_attackable")
+
     if context.flee_active:
         return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="flee_active")
 
@@ -2935,6 +5679,7 @@ def evaluate_engagement_candidate(
     if not target_within_required_home(args, actor) and not (
         leader_engaged_party_rescue_target
         or active_tank_party_pressure_target
+        or leader_engaged_unknown_objective_party_assist
         or (leader_engaged_objective_party_assist and target_within_combat_home_leash(args, actor))
     ):
         return _reject_engagement_candidate(candidate, intent=intent, source=source, reason="target_home_max_distance")
@@ -2945,9 +5690,11 @@ def evaluate_engagement_candidate(
             or leader_engaged_objective_party_assist
             or active_tank_party_pressure_target
             or active_current_target_preserve
+            or leader_engaged_unknown_objective_party_assist
         )
         and (
             target_within_combat_home_leash(args, actor)
+            or leader_engaged_unknown_objective_party_assist
             or (active_tank_party_pressure_target and not target_position_known(actor))
         )
     ):
@@ -2958,6 +5705,9 @@ def evaluate_engagement_candidate(
         (leader_engaged_party_action or accepted_party_rescue_target)
         and leash_kind == "player"
         and target_within_combat_home_leash(args, actor)
+    ) and not (
+        leader_engaged_unknown_objective_party_assist
+        and leash_kind == "target"
     ) and not (
         active_tank_party_pressure_target
         and leash_kind == "target"
@@ -3124,6 +5874,9 @@ def leader_target_actor_from_snapshot(party_snapshot: dict[str, int | float | st
         z=int(party_snapshot.get("leader_target_z", 0) or 0),
         level=int(party_snapshot.get("leader_target_level", 0) or 0),
         flags=0,
+        target_can_attack=parse_optional_bool(party_snapshot.get("leader_target_can_attack")),
+        target_relation=str(party_snapshot.get("leader_target_relation", "") or ""),
+        target_type=str(party_snapshot.get("leader_target_type", "") or ""),
     )
 
 
@@ -3394,6 +6147,14 @@ def should_extend_round_for_safe_exit(
     return False
 
 
+def should_extend_round_for_dynamic_quest_return(
+    *,
+    dynamic_quest_return_pending: bool,
+    dynamic_quest_return_completed: bool,
+) -> bool:
+    return bool(dynamic_quest_return_pending and not dynamic_quest_return_completed)
+
+
 def recent_safe_exit_damage_age(
     *,
     now: float,
@@ -3432,6 +6193,26 @@ def required_target_completion_needs_safe_exit(
         last_incoming_damage_at=last_incoming_damage_at,
     )
     return bool(recent_damage_age is not None and recent_damage_age <= damage_grace)
+
+
+def required_target_completion_should_wait_for_safe_exit(
+    args: argparse.Namespace,
+    *,
+    now: float,
+    health_percent: int,
+    last_damage_taken_at: float,
+    last_incoming_damage_at: float,
+) -> bool:
+    if int(health_percent or 0) > 0 and dynamic_quest_return_enabled(args):
+        return False
+
+    return required_target_completion_needs_safe_exit(
+        args,
+        now=now,
+        health_percent=health_percent,
+        last_damage_taken_at=last_damage_taken_at,
+        last_incoming_damage_at=last_incoming_damage_at,
+    )
 
 
 def required_target_completion_safe_after_removed(
@@ -3524,7 +6305,11 @@ def refresh_safe_exit_deadline_for_recovery(
     if recovery_window <= 0.0:
         return safe_exit_deadline
 
-    return max(float(safe_exit_deadline or 0.0), float(now or 0.0) + recovery_window)
+    existing_deadline = float(safe_exit_deadline or 0.0)
+    if existing_deadline > 0.0:
+        return existing_deadline
+
+    return float(now or 0.0) + recovery_window
 
 
 def safe_exit_deadline_can_complete_recovered(
@@ -3809,12 +6594,28 @@ def target_intent_for_selected_npc(
     return TargetIntent.objective
 
 
+def should_suppress_travel_aggro_for_party_healer_support(
+    args: argparse.Namespace,
+    *,
+    action_rotation: str = "",
+) -> bool:
+    rotation = str(action_rotation or getattr(args, "action_rotation", "") or "").strip()
+    if rotation == "auto":
+        return False
+    return bool(getattr(args, "party_assist_only", False) and rotation == "healer-support")
+
+
 def should_handle_travel_aggro_target(
     args: argparse.Namespace,
     behavior_state: DummyBehaviorState | str,
     npc,
     current_target_intent: TargetIntent | str = TargetIntent.none,
+    *,
+    action_rotation: str = "",
 ) -> bool:
+    if should_suppress_travel_aggro_for_party_healer_support(args, action_rotation=action_rotation):
+        return False
+
     if not is_objective_travel_state(behavior_state):
         return False
 
@@ -3840,6 +6641,7 @@ def should_handle_travel_aggro_damage(
     player_level: int = 0,
     health_percent: int = 100,
     previous_health_percent: int = 100,
+    action_rotation: str = "",
 ) -> bool:
     if not (
         is_objective_travel_state(behavior_state)
@@ -3977,6 +6779,10 @@ def should_send_party_assist_command(
     *,
     leader_target_id: int,
     leader_engaged: bool,
+    leader_target_name: str = "",
+    leader_target_can_attack: bool | None = None,
+    leader_target_relation: str = "",
+    leader_target_type: str = "",
 ) -> bool:
     if not getattr(args, "party_use_assist_command", False):
         return False
@@ -3985,6 +6791,14 @@ def should_send_party_assist_command(
         return False
 
     if int(leader_target_id or 0) <= 0:
+        return False
+
+    if not leader_party_assist_target_attackable(
+        target_name=leader_target_name,
+        target_can_attack=leader_target_can_attack,
+        target_relation=leader_target_relation,
+        target_type=leader_target_type,
+    ):
         return False
 
     if getattr(args, "party_require_leader_engaged", False) and not leader_engaged:
@@ -4001,19 +6815,37 @@ def should_enter_hunt_for_party_assist_leader_target(
     action_rotation: str,
     leader_target_id: int,
     leader_engaged: bool,
+    leader_target_name: str = "",
+    leader_target_can_attack: bool | None = None,
+    leader_target_relation: str = "",
+    leader_target_type: str = "",
     required_home_hunt_ready: bool,
     party_ready_for_objective: bool,
 ) -> bool:
     if not is_party_follower or not getattr(args, "party_assist_only", False):
         return False
 
-    if str(action_rotation or "") == "healer-support":
+    if (
+        str(action_rotation or "") == "healer-support"
+        and (
+            getattr(args, "required_target_home", None) is not None
+            or bool(str(getattr(args, "require_target_name", "") or "").strip())
+        )
+    ):
         return False
 
     if not is_objective_travel_state(behavior_state):
         return False
 
     if int(leader_target_id or 0) <= 0 or not leader_engaged:
+        return False
+
+    if not leader_party_assist_target_attackable(
+        target_name=leader_target_name,
+        target_can_attack=leader_target_can_attack,
+        target_relation=leader_target_relation,
+        target_type=leader_target_type,
+    ):
         return False
 
     if getattr(args, "required_target_home", None) is not None and not required_home_hunt_ready:
@@ -4243,7 +7075,11 @@ def should_delay_target_selection_until_objective_ready(
     is_party_follower: bool = False,
     leader_engaged: bool = True,
     objective_pressure_active: bool = False,
+    force_pull_active: bool = False,
 ) -> bool:
+    if force_pull_active:
+        return False
+
     if getattr(args, "required_target_home", None) is None:
         return False
 
@@ -4339,7 +7175,11 @@ def should_healer_support_suppress_hostile_commit(
     npc,
     selected_target_intent: TargetIntent | str,
     party_snapshot: dict[str, int | float | str] | None,
+    *,
+    command_attack_active: bool = False,
 ) -> bool:
+    if command_attack_active:
+        return False
     if action_rotation != "healer-support":
         return False
     target_name = str(getattr(npc, "name", "") or "")
@@ -4369,6 +7209,8 @@ def should_healer_support_suppress_hostile_rotation(
     party_snapshot: dict[str, int | float | str] | None,
 ) -> bool:
     snapshot = party_snapshot or {}
+    if bool(snapshot.get("companion_command_attack_active")):
+        return False
     target_name = active_combat_target_name(active_combat) or str(snapshot.get("leader_target_name", "") or "")
     if not target_name:
         return False
@@ -4850,7 +7692,7 @@ def first_configured_target_name(*values: str) -> str:
 
 def passes_required_target_filter(args: argparse.Namespace, npc) -> bool:
     tokens = required_target_tokens(args)
-    return not tokens or any(required_target_name_matches(npc.name, token) for token in tokens)
+    return not tokens or any(required_target_name_matches_for_args(args, npc.name, token) for token in tokens)
 
 
 def passes_hunter_target_level_filter(args: argparse.Namespace, npc) -> bool:
@@ -5182,6 +8024,89 @@ def parse_party_member_join_message(text: str) -> str:
             return match.group("member").strip()
 
     return ""
+
+
+PARTY_DEATH_PATTERNS = [
+    # Killed by an identified attacker (with/without location):
+    #   "{0}이(가) {1}에게 사망했습니다." / "{0}이(가) {2}에서 {1}에게 사망했습니다."
+    re.compile(r"^(?P<member>.+?)\uC774\(\uAC00\) .+?\uC5D0\uAC8C \uC0AC\uB9DD\uD588\uC2B5\uB2C8\uB2E4\.$", re.IGNORECASE),
+    # Killer-less / environmental death (drowning, falling, GM/test kill, corpse notice):
+    #   "{0}이(가) 사망했습니다!"            (Die.Killed)
+    #   "{0}이(가) {1}에서 사망했습니다!"     (Die.KilledLocation)
+    #   "{0}이(가) 사망했습니다. {1}의 시체가 땅에 놓여 있습니다."  (Die.CorpseLies)
+    re.compile(r"^(?P<member>.+?)\uC774\(\uAC00\) (?:.+?\uC5D0\uC11C )?\uC0AC\uB9DD\uD588\uC2B5\uB2C8\uB2E4[.!]", re.IGNORECASE),
+    # English killed-by (optionally "just", with/without location):
+    #   "{0} was just killed by {1}." / "{0} was just killed by {1} in {2}."
+    re.compile(r"^(?P<member>.+?) was (?:just )?killed by .+", re.IGNORECASE),
+    # English killer-less / environmental death:
+    #   "{0} was just killed!" / "{0} was just killed in {1}!" / "{0} just died. ..."
+    re.compile(r"^(?P<member>.+?) (?:was just killed|just died)(?: in .+)?[.!]", re.IGNORECASE),
+]
+
+
+def parse_party_member_death_message(text: str, member_names: list[str]) -> str:
+    normalized = str(text or "").strip()
+    if not normalized:
+        return ""
+
+    member_names_by_normalized = {
+        normalize_target_name(member_name): member_name
+        for member_name in member_names
+        if normalize_target_name(member_name)
+    }
+
+    for pattern in PARTY_DEATH_PATTERNS:
+        match = pattern.match(normalized)
+        if match is None:
+            continue
+
+        member_name = member_names_by_normalized.get(normalize_target_name(match.group("member")))
+        if member_name:
+            return member_name
+
+    return ""
+
+
+def apply_party_member_death_message(party_state: PartyState | None, text: str) -> str:
+    if party_state is None:
+        return ""
+
+    member_name = parse_party_member_death_message(text, list(party_state.member_names))
+    if not member_name:
+        return ""
+
+    known_condition = party_state.member_conditions.get(member_name)
+    object_id = int(getattr(known_condition, "object_id", 0) or party_state.member_object_ids.get(member_name, 0) or 0)
+    x, y, z = party_state.member_positions.get(member_name, (0, 0, 0))
+
+    party_state.update_member_condition(
+        member_name,
+        PlayerConditionSnapshot(
+            name=member_name,
+            account=str(getattr(known_condition, "account", "") or ""),
+            object_id=object_id,
+            level=int(getattr(known_condition, "level", 0) or 0),
+            class_name=str(getattr(known_condition, "class_name", "") or ""),
+            class_id=int(getattr(known_condition, "class_id", 0) or 0),
+            realm=int(getattr(known_condition, "realm", 0) or 0),
+            health_percent=0,
+            x=int(x or 0),
+            y=int(y or 0),
+            z=int(z or 0),
+            is_alive=False,
+            is_stunned=bool(getattr(known_condition, "is_stunned", False)),
+            is_mezzed=bool(getattr(known_condition, "is_mezzed", False)),
+            is_diseased=bool(getattr(known_condition, "is_diseased", False)),
+            is_poisoned=bool(getattr(known_condition, "is_poisoned", False)),
+            is_nearsighted=bool(getattr(known_condition, "is_nearsighted", False)),
+            is_silenced=bool(getattr(known_condition, "is_silenced", False)),
+            target_object_id=int(getattr(known_condition, "target_object_id", 0) or 0),
+            target_name=str(getattr(known_condition, "target_name", "") or ""),
+            is_companion=bool(getattr(known_condition, "is_companion", False)),
+            companion_role=str(getattr(known_condition, "companion_role", "") or ""),
+        ),
+    )
+    return member_name
 
 
 def choose_attack_message_rescue_attacker(
@@ -5636,7 +8561,7 @@ def should_preserve_active_party_rescue_focus(
     current_target: int,
     current_target_intent: TargetIntent | str,
 ) -> bool:
-    if not getattr(args, "party_rescue_aggro", False) or active_combat is None:
+    if active_combat is None:
         return False
 
     active_target_id = int(active_combat.get("target_id", 0) or 0)
@@ -5677,7 +8602,7 @@ def should_block_active_combat_target_switch(
     rest_active: bool,
     drop_aggro_active: bool,
 ) -> bool:
-    if not getattr(args, "party_rescue_aggro", False) or active_combat is None:
+    if active_combat is None:
         return False
 
     active_target_id = int(active_combat.get("target_id", 0) or 0)
@@ -5719,10 +8644,14 @@ def should_block_active_combat_target_switch(
             TargetIntent.objective.value,
             TargetIntent.party_assist.value,
             TargetIntent.party_rescue.value,
+            TargetIntent.required_retaliation.value,
             TargetIntent.current_target_confirm.value,
         }
     ):
         return True
+
+    if not getattr(args, "party_rescue_aggro", False):
+        return False
 
     return bool(
         active_intent in rescue_intents
@@ -5945,6 +8874,92 @@ def choose_party_support_evasion_threat(
         return None
 
     return min(candidates, key=lambda candidate: (candidate[0], candidate[1]))[2]
+
+
+def party_support_peel_anchor(party_snapshot: dict[str, int | float | str]) -> tuple[int, int, int]:
+    active_x = int(party_snapshot.get("active_tank_x", 0) or 0)
+    active_y = int(party_snapshot.get("active_tank_y", 0) or 0)
+    active_z = int(party_snapshot.get("active_tank_z", 0) or 0)
+    if active_x or active_y:
+        return active_x, active_y, active_z
+    return (
+        int(party_snapshot.get("leader_x", 0) or 0),
+        int(party_snapshot.get("leader_y", 0) or 0),
+        int(party_snapshot.get("leader_z", 0) or 0),
+    )
+
+
+def party_support_peel_kite_destination(
+    args: argparse.Namespace,
+    client,
+    threat,
+    party_snapshot: dict[str, int | float | str],
+) -> MovementDestination | None:
+    anchor_x, anchor_y, anchor_z = party_support_peel_anchor(party_snapshot)
+    if not (anchor_x or anchor_y):
+        return None
+
+    threat_x = int(getattr(threat, "x", 0) or 0)
+    threat_y = int(getattr(threat, "y", 0) or 0)
+    if not (threat_x or threat_y):
+        return None
+
+    radius = max(250.0, float(getattr(args, "party_support_peel_kite_radius", 850.0) or 850.0))
+    desired_threat_distance = max(
+        radius + 250.0,
+        float(getattr(args, "party_support_peel_kite_threat_distance", 1200.0) or 1200.0),
+    )
+    dx = anchor_x - threat_x
+    dy = anchor_y - threat_y
+    length = math.hypot(dx, dy)
+    if length <= 0.0:
+        current_dx = int(getattr(client, "x", anchor_x) or anchor_x) - anchor_x
+        current_dy = int(getattr(client, "y", anchor_y) or anchor_y) - anchor_y
+        length = math.hypot(current_dx, current_dy)
+        dx, dy = (current_dx, current_dy) if length > 0.0 else (1.0, 0.0)
+        length = max(1.0, length)
+
+    base_angle = math.atan2(dy, dx)
+    current_x = int(getattr(client, "x", anchor_x) or anchor_x)
+    current_y = int(getattr(client, "y", anchor_y) or anchor_y)
+    candidates: list[tuple[float, int, int]] = []
+    for offset in (0.0, math.pi / 4, -math.pi / 4, math.pi / 2, -math.pi / 2):
+        angle = base_angle + offset
+        candidate_x = int(anchor_x + math.cos(angle) * radius)
+        candidate_y = int(anchor_y + math.sin(angle) * radius)
+        threat_distance = horizontal_distance_between_points(candidate_x, candidate_y, threat_x, threat_y)
+        if threat_distance < desired_threat_distance:
+            continue
+        current_distance = horizontal_distance_between_points(current_x, current_y, candidate_x, candidate_y)
+        anchor_distance = horizontal_distance_between_points(anchor_x, anchor_y, candidate_x, candidate_y)
+        candidates.append((current_distance + abs(anchor_distance - radius) * 0.15, candidate_x, candidate_y))
+
+    if not candidates:
+        target_x = int(anchor_x + dx / length * radius)
+        target_y = int(anchor_y + dy / length * radius)
+    else:
+        _, target_x, target_y = min(candidates)
+
+    return destination_from_point("party-support-peel-kite", target_x, target_y, anchor_z)
+
+
+def should_use_party_support_tactical_peel(
+    args: argparse.Namespace,
+    action_rotation: str,
+    party_snapshot: dict[str, int | float | str],
+    tactical_backoff_reason: str,
+) -> bool:
+    if action_rotation not in {"caster-basic", "healer-support"}:
+        return False
+
+    if not bool(getattr(args, "party_support_evasion", False)):
+        return False
+
+    if tactical_backoff_reason not in {"boss_ranged", "ranged_target", "party_focus_target", "party_focus_pressure"}:
+        return False
+
+    anchor_x, anchor_y, _ = party_support_peel_anchor(party_snapshot)
+    return bool(anchor_x or anchor_y)
 
 
 def should_run_smooth_combat_movement(
@@ -6196,6 +9211,212 @@ def choose_greet_player(
     return min(candidates, key=lambda player: client.distance_to(player))
 
 
+def find_visible_party_member_player(client, args: argparse.Namespace, member_name: str):
+    member_key = normalize_target_name(member_name)
+    if not member_key:
+        return None
+
+    for player in client.visible_players(max_age=getattr(args, "player_state_max_age", 30.0)):
+        if normalize_target_name(getattr(player, "name", "")) == member_key:
+            return player
+
+    return None
+
+
+def party_state_member_health_percent(party_state: PartyState, member_name: str, default: int = 100) -> int:
+    if member_name not in party_state.member_health_percents:
+        return default
+    return int(party_state.member_health_percents[member_name])
+
+
+def party_member_needs_resurrection_visibility_sync(party_state: PartyState, member_name: str) -> bool:
+    if party_state_member_health_percent(party_state, member_name) > 0:
+        return False
+
+    object_id = int(party_state.member_object_ids.get(member_name, 0) or 0)
+    x, y, _z = party_state.member_positions.get(member_name, (0, 0, 0))
+    return object_id <= 0 or (x == 0 and y == 0)
+
+
+def sync_party_member_from_visible_players(
+    party_state: PartyState | None,
+    client,
+    args: argparse.Namespace,
+    member_name: str,
+    *,
+    preserve_dead: bool = False,
+) -> bool:
+    if party_state is None or not member_name:
+        return False
+
+    player = find_visible_party_member_player(client, args, member_name)
+    if player is None:
+        return False
+
+    known_condition = party_state.member_conditions.get(member_name)
+    marked_dead = party_state_member_health_percent(party_state, member_name) <= 0
+    preserve_dead = preserve_dead or marked_dead
+    visible_health = int(getattr(player, "health_percent", 100) or 100)
+    is_dead = preserve_dead or visible_health <= 0
+    health_percent = 0 if is_dead else visible_health
+
+    party_state.update_member_condition(
+        member_name,
+        PlayerConditionSnapshot(
+            name=member_name,
+            account=str(getattr(known_condition, "account", "") or getattr(player, "account", "") or ""),
+            object_id=int(getattr(player, "object_id", 0) or getattr(player, "player_object_id", 0) or 0),
+            level=int(getattr(known_condition, "level", 0) or getattr(player, "level", 0) or 0),
+            class_name=str(getattr(known_condition, "class_name", "") or getattr(player, "class_name", "") or ""),
+            class_id=int(getattr(known_condition, "class_id", 0) or getattr(player, "class_id", 0) or 0),
+            realm=int(getattr(known_condition, "realm", 0) or getattr(player, "realm", 0) or 0),
+            health_percent=health_percent,
+            x=int(getattr(player, "x", 0) or 0),
+            y=int(getattr(player, "y", 0) or 0),
+            z=int(getattr(player, "z", 0) or 0),
+            is_alive=not is_dead,
+            is_stunned=bool(getattr(known_condition, "is_stunned", False)),
+            is_mezzed=bool(getattr(known_condition, "is_mezzed", False)),
+            is_diseased=bool(getattr(known_condition, "is_diseased", False)),
+            is_poisoned=bool(getattr(known_condition, "is_poisoned", False)),
+            is_nearsighted=bool(getattr(known_condition, "is_nearsighted", False)),
+            is_silenced=bool(getattr(known_condition, "is_silenced", False)),
+            target_object_id=int(getattr(known_condition, "target_object_id", 0) or 0),
+            target_name=str(getattr(known_condition, "target_name", "") or ""),
+            is_companion=bool(getattr(known_condition, "is_companion", False)),
+            companion_role=str(getattr(known_condition, "companion_role", "") or ""),
+        ),
+    )
+    return True
+
+
+def sync_party_member_from_condition_api(
+    party_state: PartyState | None,
+    args: argparse.Namespace,
+    member_name: str,
+    *,
+    preserve_dead: bool = False,
+    fetch_condition=None,
+) -> bool:
+    if party_state is None or not member_name or not getattr(args, "combat_usable_api", False):
+        return False
+
+    if fetch_condition is None:
+        fetch_condition = fetch_player_condition_snapshot_for_player
+
+    known_condition = party_state.member_conditions.get(member_name)
+    account = str(getattr(known_condition, "account", "") or "")
+    if not account:
+        account = probable_account_from_character_name(member_name)
+
+    condition = fetch_condition(args, member_name, account)
+    if condition is None:
+        return False
+
+    marked_dead = party_state_member_health_percent(party_state, member_name) <= 0
+    preserve_dead = preserve_dead or marked_dead
+    condition_health = int(getattr(condition, "health_percent", 100) or 100)
+    is_dead = preserve_dead or not bool(getattr(condition, "is_alive", True)) or condition_health <= 0
+    health_percent = 0 if is_dead else condition_health
+    object_id = int(getattr(condition, "object_id", 0) or 0)
+    if object_id <= 0:
+        object_id = int(party_state.member_object_ids.get(member_name, 0) or 0)
+
+    party_state.update_member_condition(
+        member_name,
+        PlayerConditionSnapshot(
+            name=member_name,
+            account=str(getattr(condition, "account", "") or account),
+            object_id=object_id,
+            level=int(getattr(condition, "level", 0) or 0),
+            class_name=str(getattr(condition, "class_name", "") or ""),
+            class_id=int(getattr(condition, "class_id", 0) or 0),
+            realm=int(getattr(condition, "realm", 0) or 0),
+            health_percent=health_percent,
+            x=int(getattr(condition, "x", 0) or 0),
+            y=int(getattr(condition, "y", 0) or 0),
+            z=int(getattr(condition, "z", 0) or 0),
+            is_alive=not is_dead,
+            is_stunned=bool(getattr(condition, "is_stunned", False)),
+            is_mezzed=bool(getattr(condition, "is_mezzed", False)),
+            is_diseased=bool(getattr(condition, "is_diseased", False)),
+            is_poisoned=bool(getattr(condition, "is_poisoned", False)),
+            is_nearsighted=bool(getattr(condition, "is_nearsighted", False)),
+            is_silenced=bool(getattr(condition, "is_silenced", False)),
+            target_object_id=int(getattr(condition, "target_object_id", 0) or 0),
+            target_name=str(getattr(condition, "target_name", "") or ""),
+            is_companion=bool(getattr(condition, "is_companion", False)),
+            companion_role=str(getattr(condition, "companion_role", "") or ""),
+        ),
+    )
+    return object_id > 0
+
+
+def ensure_party_member_resurrection_identity(
+    party_state: PartyState | None,
+    client,
+    args: argparse.Namespace,
+    member_name: str,
+    *,
+    preserve_dead: bool = False,
+    fetch_condition=None,
+) -> str:
+    if party_state is None or not member_name:
+        return ""
+
+    if party_state_member_health_percent(party_state, member_name) > 0:
+        return ""
+
+    object_id = int(party_state.member_object_ids.get(member_name, 0) or 0)
+    if object_id > 0 and not party_member_needs_resurrection_visibility_sync(party_state, member_name):
+        return ""
+
+    if sync_party_member_from_visible_players(
+        party_state,
+        client,
+        args,
+        member_name,
+        preserve_dead=True,
+    ):
+        return "visible"
+
+    if sync_party_member_from_condition_api(
+        party_state,
+        args,
+        member_name,
+        preserve_dead=preserve_dead,
+        fetch_condition=fetch_condition,
+    ):
+        return "condition"
+
+    return ""
+
+
+def refresh_dead_party_resurrection_targets_from_visible_players(
+    party_state: PartyState | None,
+    client,
+    args: argparse.Namespace,
+) -> int:
+    if party_state is None:
+        return 0
+
+    updated = 0
+    for member_name in list(party_state.member_names):
+        if party_state_member_health_percent(party_state, member_name) > 0:
+            continue
+        sync_source = ensure_party_member_resurrection_identity(
+            party_state,
+            client,
+            args,
+            member_name,
+            preserve_dead=True,
+        )
+        if sync_source:
+            updated += 1
+
+    return updated
+
+
 def update_external_party_members_from_visible_players(
     party_state: PartyState | None,
     client,
@@ -6209,6 +9430,12 @@ def update_external_party_members_from_visible_players(
         for member_name in getattr(args, "party_external_member_names", []) or []
         if normalize_target_name(member_name)
     }
+    if getattr(args, "party_auto_external_members", False):
+        for member_name in party_state.snapshot().get("external_member_names", []) or []:
+            normalized_name = normalize_target_name(member_name)
+            if not normalized_name or normalized_name in configured_names:
+                continue
+            configured_names[normalized_name] = str(member_name)
     if not configured_names:
         return 0
 
@@ -6216,6 +9443,17 @@ def update_external_party_members_from_visible_players(
     for player in client.visible_players(max_age=getattr(args, "player_state_max_age", 30.0)):
         configured_name = configured_names.get(normalize_target_name(getattr(player, "name", "")))
         if not configured_name:
+            continue
+
+        if party_state_member_health_percent(party_state, configured_name) <= 0:
+            if sync_party_member_from_visible_players(
+                party_state,
+                client,
+                args,
+                configured_name,
+                preserve_dead=True,
+            ):
+                updated += 1
             continue
 
         party_state.update_external_member(configured_name, player, role="external")
@@ -6380,6 +9618,7 @@ def resolve_effective_action_rotation(
     requested_rotation: str,
     combat_plan: CombatUsablePlan,
     combat_plan_loaded: bool,
+    account: DummyAccount | None = None,
 ) -> str:
     if requested_rotation in {"auto", "none"} or not combat_plan_loaded:
         return requested_rotation
@@ -6406,6 +9645,14 @@ def resolve_effective_action_rotation(
             return "melee-basic"
 
     if is_melee_rotation(requested_rotation) and not has_skill:
+        if account is not None:
+            profile = party_class_role_profile_from_class(account.class_name, account.class_id or 0)
+            if profile.action_rotation in {"melee-basic", "melee-burst", "hybrid"} and (
+                "melee_dps" in profile.capabilities
+                or "tank" in profile.capabilities
+                or "shield" in profile.capabilities
+            ):
+                return requested_rotation
         if has_attack_spell:
             return "caster-basic"
 
@@ -6783,7 +10030,10 @@ def perform_rotation_action(
 
     target_in_view = distance <= max(args.attack_range, args.spell_range)
     movement_speed = getattr(client, "last_position_speed", 0.0)
-    stationary_cast = bool(getattr(args, "stationary_cast_actions", False))
+    stationary_cast = bool(getattr(args, "stationary_cast_actions", False)) or should_force_stationary_cast_for_companion_command(
+        rotation,
+        party_snapshot,
+    )
     allow_unvalidated_skills = bool(getattr(args, "allow_unvalidated_skills", False))
     allow_unvalidated_spells = bool(getattr(args, "allow_unvalidated_spells", False))
     effective_now = now if now > 0 else time.monotonic()
@@ -7074,6 +10324,9 @@ def should_defer_flee_self_preserve_for_escape(
     recent_damage_age_seconds: float | None,
     active_threat: bool = False,
 ) -> bool:
+    if active_threat:
+        return True
+
     emergency_floor = int(getattr(args, "flee_self_preserve_emergency_health_percent", 35) or 0)
     if (
         emergency_floor > 0
@@ -7081,9 +10334,6 @@ def should_defer_flee_self_preserve_for_escape(
         and 0 < int(current_health_percent) <= emergency_floor
     ):
         return False
-
-    if active_threat:
-        return True
 
     configured_grace = getattr(args, "flee_self_preserve_recent_damage_grace", None)
     if configured_grace is None:
@@ -7263,12 +10513,27 @@ def should_healer_interrupt_flee_for_party_heal(
     behavior_state: DummyBehaviorState | str,
     current_health_percent: int,
     hurt_member,
+    dead_member=None,
+    leader_name: str = "",
     now: float,
     next_party_heal: float,
+    next_party_resurrect: float = 0.0,
+    party_focus_target_backoff: bool = False,
+    boss_hazard_backoff: bool = False,
+    party_member_name: str = "",
 ) -> bool:
-    return bool(
+    hurt_member_name = normalize_target_name(
+        str(hurt_member.get("name", "") or "") if isinstance(hurt_member, dict) else ""
+    )
+    self_name = normalize_target_name(str(party_member_name or ""))
+    hazard_self_heal_interrupt = bool(
+        boss_hazard_backoff and hurt_member_name and self_name and hurt_member_name == self_name
+    )
+    heal_interrupt_due = bool(
         behavior_state_value(behavior_state) == DummyBehaviorState.DropAggroAndRecover.value
         and now >= next_party_heal
+        and not party_focus_target_backoff
+        and not hazard_self_heal_interrupt
         and should_healer_prioritize_party_heal_while_fleeing(
             args,
             action_rotation=action_rotation,
@@ -7276,6 +10541,97 @@ def should_healer_interrupt_flee_for_party_heal(
             hurt_member=hurt_member,
         )
     )
+    if not heal_interrupt_due:
+        return False
+
+    resurrection_due = bool(
+        isinstance(dead_member, dict)
+        and float(getattr(args, "party_resurrect_interval", 0.0) or 0.0) > 0.0
+        and now >= next_party_resurrect
+    )
+    if resurrection_due:
+        priority = choose_party_support_action_priority(
+            args,
+            action_rotation=action_rotation,
+            current_health_percent=current_health_percent,
+            hurt_member=hurt_member,
+            dead_member=dead_member,
+            leader_name=leader_name,
+            heal_due=True,
+            cure_due=False,
+            resurrection_due=True,
+            crowd_control_due=False,
+        )
+        if priority != "heal":
+            return False
+
+    return True
+
+
+def should_healer_interrupt_flee_for_party_resurrection(
+    args: argparse.Namespace,
+    *,
+    action_rotation: str,
+    behavior_state: DummyBehaviorState | str,
+    current_health_percent: int,
+    hurt_member,
+    dead_member,
+    now: float,
+    next_party_resurrect: float,
+    leader_name: str = "",
+) -> bool:
+    return bool(
+        behavior_state_value(behavior_state) == DummyBehaviorState.DropAggroAndRecover.value
+        and dead_member is not None
+        and now >= next_party_resurrect
+        and choose_party_support_action_priority(
+            args,
+            action_rotation=action_rotation,
+            current_health_percent=current_health_percent,
+            hurt_member=hurt_member,
+            dead_member=dead_member,
+            leader_name=leader_name,
+            heal_due=isinstance(hurt_member, dict) and int(hurt_member.get("health_percent", 0) or 0) > 0,
+            cure_due=False,
+            resurrection_due=True,
+            crowd_control_due=False,
+        )
+        == "resurrect"
+    )
+
+
+def should_prioritize_resurrection_stabilization(
+    args: argparse.Namespace,
+    *,
+    action_rotation: str,
+    current_health_percent: int,
+    hurt_member,
+    dead_member,
+    leader_name: str,
+) -> bool:
+    if action_rotation != "healer-support" or not isinstance(hurt_member, dict) or not isinstance(dead_member, dict):
+        return False
+
+    leader = str(leader_name or "").strip()
+    hurt_name = str(hurt_member.get("name", "") or "").strip()
+    dead_name = str(dead_member.get("name", "") or "").strip()
+    hurt_health = int(hurt_member.get("health_percent", 0) or 0)
+    dead_health_raw = dead_member.get("health_percent", 100)
+    dead_health = 100 if dead_health_raw in (None, "") else int(dead_health_raw)
+    if not leader or hurt_name != leader or dead_health > 0 or not dead_name or dead_name == leader:
+        return False
+
+    self_floor = int(getattr(args, "healer_self_health_percent", 0) or 0)
+    if current_health_percent <= self_floor:
+        return False
+
+    heal_threshold = int(getattr(args, "party_heal_leader_health_percent", 0) or 0)
+    emergency_floor = int(getattr(args, "flee_health_percent", 0) or 0)
+    critical_party_health = max(emergency_floor, min(50, int(heal_threshold * 0.5) if heal_threshold > 0 else 35))
+    if hurt_health <= 0 or hurt_health > critical_party_health:
+        return False
+
+    return hurt_health >= 15
 
 
 def should_prioritize_critical_support_heal(
@@ -7315,9 +10671,27 @@ def choose_party_support_action_priority(
     cure_due: bool,
     resurrection_due: bool,
     crowd_control_due: bool,
+    dead_member=None,
+    leader_name: str = "",
 ) -> str:
     if action_rotation != "healer-support":
         return "none"
+
+    if resurrection_due and isinstance(hurt_member, dict) and isinstance(dead_member, dict):
+        hurt_name = str(hurt_member.get("name", "") or "").strip()
+        dead_name = str(dead_member.get("name", "") or "").strip()
+        if hurt_name and dead_name and normalize_target_name(hurt_name) == normalize_target_name(dead_name):
+            return "resurrect"
+
+    if resurrection_due and should_prioritize_resurrection_stabilization(
+        args,
+        action_rotation=action_rotation,
+        current_health_percent=current_health_percent,
+        hurt_member=hurt_member,
+        dead_member=dead_member,
+        leader_name=leader_name,
+    ):
+        return "resurrect"
 
     if heal_due and should_prioritize_critical_support_heal(
         args,
@@ -7326,6 +10700,9 @@ def choose_party_support_action_priority(
         hurt_member=hurt_member,
     ):
         return "heal"
+
+    if resurrection_due and cure_due:
+        return "resurrect"
 
     if cure_due:
         return "cure"
@@ -7336,6 +10713,50 @@ def choose_party_support_action_priority(
     if heal_due:
         return "heal"
     return "none"
+
+
+def should_defer_resurrection_for_critical_heal(
+    args: argparse.Namespace,
+    *,
+    client,
+    action_rotation: str,
+    current_health_percent: int,
+    hurt_member,
+    dead_member,
+    leader_name: str,
+    heal_due: bool,
+    now: float,
+    next_party_resurrect: float,
+) -> bool:
+    if action_rotation != "healer-support" or not isinstance(dead_member, dict):
+        return False
+    if not heal_due:
+        return False
+    if float(getattr(args, "party_resurrect_interval", 0.0) or 0.0) <= 0.0 or now < next_party_resurrect:
+        return False
+    if choose_party_support_action_priority(
+        args,
+        action_rotation=action_rotation,
+        current_health_percent=current_health_percent,
+        hurt_member=hurt_member,
+        dead_member=dead_member,
+        leader_name=leader_name,
+        heal_due=heal_due,
+        cure_due=False,
+        resurrection_due=True,
+        crowd_control_due=False,
+    ) != "heal":
+        return False
+
+    if party_heal_target_in_cast_range(client, args, hurt_member):
+        return True
+
+    self_floor = max(
+        int(getattr(args, "healer_self_health_percent", 0) or 0),
+        int(getattr(args, "flee_health_percent", 0) or 0),
+    )
+    hurt_health = int(hurt_member.get("health_percent", 0) or 0) if isinstance(hurt_member, dict) else 0
+    return current_health_percent > 0 and current_health_percent <= self_floor and hurt_health <= self_floor
 
 
 def should_healer_abort_rest_for_party_cure(
@@ -7545,12 +10966,17 @@ def should_reject_current_target_for_friendly_feedback(combat_categories: set[st
     return "friendly_target" in set(combat_categories or set())
 
 
-def effective_cast_action_hold_seconds(args: argparse.Namespace, action_name: str | None) -> float:
+def effective_cast_action_hold_seconds(
+    args: argparse.Namespace,
+    action_name: str | None,
+    *,
+    force_stationary_cast: bool = False,
+) -> float:
     if not rotation_action_is_spell(action_name):
         return 0.0
 
     configured = max(0.0, float(getattr(args, "cast_action_hold", 0.0) or 0.0))
-    if not bool(getattr(args, "stationary_cast_actions", False)):
+    if not (bool(getattr(args, "stationary_cast_actions", False)) or force_stationary_cast):
         return configured
 
     minimum = max(0.0, float(getattr(args, "stationary_cast_min_hold", 3.4) or 3.4))
@@ -7584,9 +11010,67 @@ def heading_from_delta(dx: float, dy: float) -> int:
     return int((radians % (math.pi * 2)) / (math.pi * 2) * 4096) & 0x0FFF
 
 
-def face_target_for_attack(client, actor) -> None:
+def dummy_is_actively_moving(client) -> bool:
+    return float(getattr(client, "last_position_speed", 0.0) or 0.0) > 0.0
+
+
+def target_loss_rescan_enabled(args: argparse.Namespace) -> bool:
+    return bool(getattr(args, "hunter", False) and getattr(args, "target_loss_rescan", True))
+
+
+def should_hold_target_loss_grace(args: argparse.Namespace, now: float, last_visible_at: float) -> bool:
+    if target_loss_rescan_enabled(args):
+        return False
+
+    grace = max(0.0, float(getattr(args, "target_loss_grace", 0.0) or 0.0))
+    if grace <= 0.0:
+        return False
+
+    return now - last_visible_at <= grace
+
+
+def target_loss_scan_heading_step(current_heading: int, step: int) -> int:
+    return (int(current_heading) + int(step)) & 0x0FFF
+
+
+def melee_face_distance(args: argparse.Namespace | None, action_rotation: str = "melee-basic") -> float:
+    if args is None:
+        return 120.0
+    return combat_stop_distance(args, action_rotation)
+
+
+def should_send_combat_face_heading(
+    client,
+    *,
+    distance: float,
+    melee_stop_distance: float,
+) -> bool:
+    if distance > melee_stop_distance:
+        return False
+    if dummy_is_actively_moving(client):
+        return False
+    return True
+
+
+def face_target_for_attack(
+    client,
+    actor,
+    *,
+    args: argparse.Namespace | None = None,
+    action_rotation: str = "melee-basic",
+    distance: float | None = None,
+) -> None:
     dx = actor.x - client.x
     dy = actor.y - client.y
+    if distance is None:
+        distance = math.hypot(dx, dy) if (dx or dy) else 0.0
+
+    if not should_send_combat_face_heading(
+        client,
+        distance=distance,
+        melee_stop_distance=melee_face_distance(args, action_rotation),
+    ):
+        return
 
     if dx or dy:
         client.heading = heading_from_delta(dx, dy)
@@ -7627,8 +11111,7 @@ def move_away_from_actor(
         int(client.z),
         step=step,
         stop_distance=0.0,
-        movement_speed=getattr(args, "movement_speed", None),
-        min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
+        **dummy_movement_kwargs(args),
         target_in_view=target_in_view,
     )
 
@@ -7667,15 +11150,32 @@ def move_away_from_point(
         int(client.z),
         step=step,
         stop_distance=0.0,
-        movement_speed=getattr(args, "movement_speed", None),
-        min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
+        **dummy_movement_kwargs(args),
         target_in_view=target_in_view,
     )
 
 
-def face_point_for_attack(client, x: int, y: int) -> None:
+def face_point_for_attack(
+    client,
+    x: int,
+    y: int,
+    *,
+    args: argparse.Namespace | None = None,
+    action_rotation: str = "melee-basic",
+    distance: float | None = None,
+    force: bool = False,
+) -> None:
     dx = int(x) - int(client.x)
     dy = int(y) - int(client.y)
+    if distance is None:
+        distance = math.hypot(dx, dy) if (dx or dy) else 0.0
+
+    if not force and not should_send_combat_face_heading(
+        client,
+        distance=distance,
+        melee_stop_distance=melee_face_distance(args, action_rotation),
+    ):
+        return
 
     if dx or dy:
         client.heading = heading_from_delta(dx, dy)
@@ -7721,11 +11221,10 @@ def reposition_after_close_server_los_failure(
         target_base_z,
         step=step,
         stop_distance=0.0,
-        movement_speed=getattr(args, "movement_speed", None),
-        min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
+        **dummy_movement_kwargs(args),
         target_in_view=True,
     )
-    face_point_for_attack(client, target_base_x, target_base_y)
+    face_point_for_attack(client, target_base_x, target_base_y, force=True)
     client.send_position_update(speed=0.0, target_in_view=True)
     add_action(action_counts, "server_los_failure_reposition_move" if moved else "server_los_failure_reposition_hold")
     return moved
@@ -7737,6 +11236,10 @@ def should_close_for_server_los_retry(
     observed_distance: float,
 ) -> bool:
     return float(observed_distance or 0.0) > server_los_retry_stop_distance(args, action_rotation) + 2.0
+
+
+def next_combat_after_server_range_feedback(*, next_combat: float, now: float) -> float:
+    return min(float(next_combat), float(now))
 
 
 def should_retry_server_los_failure(
@@ -7818,6 +11321,9 @@ def server_los_retry_target(
     active_combat: dict[str, object] | None,
     observed_target,
 ):
+    if observed_target is not None:
+        return observed_target, "api"
+
     try:
         visible_target = choose_current_visible_target(
             client.visible_npcs(max_age=getattr(args, "npc_max_age", 60.0), include_peace=should_scan_peace_npcs(args)),
@@ -7828,9 +11334,6 @@ def server_los_retry_target(
 
     if visible_target is not None:
         return visible_target, "visible_npc"
-
-    if observed_target is not None:
-        return observed_target, "api"
 
     snapshot = active_combat_target_snapshot(active_combat, current_target)
     if snapshot is not None:
@@ -7852,6 +11355,24 @@ def combat_stop_distance(args: argparse.Namespace, action_rotation: str) -> floa
         return max(melee_stop_distance(args), min(args.ranged_stop_distance, args.spell_range - 100.0))
 
     return melee_stop_distance(args)
+
+
+def combat_stop_distance_after_server_feedback(
+    args: argparse.Namespace,
+    action_rotation: str,
+    active_combat: dict[str, object] | None,
+    *,
+    now: float,
+) -> float:
+    normal_distance = combat_stop_distance(args, action_rotation)
+    if not is_melee_rotation(action_rotation) or active_combat is None:
+        return normal_distance
+
+    close_until = float(active_combat.get("server_range_close_until", 0.0) or 0.0)
+    if close_until <= now:
+        return normal_distance
+
+    return min(normal_distance, server_los_retry_stop_distance(args, action_rotation))
 
 
 def attack_action_distance(action_rotation: str, distance: float, effective_attack_distance: float) -> float:
@@ -7923,6 +11444,114 @@ def active_combat_last_known_destination(active_combat: dict[str, float | int | 
     )
 
 
+def committed_target_last_known_distance(
+    client,
+    active_combat: dict[str, float | int | str] | None,
+) -> float | None:
+    target_destination = active_combat_last_known_destination(active_combat)
+    if target_destination is None or (target_destination.x == 0 and target_destination.y == 0):
+        return None
+
+    return horizontal_distance_between_points(
+        int(client.x),
+        int(client.y),
+        target_destination.x,
+        target_destination.y,
+    )
+
+
+def should_chase_committed_target_last_known(
+    args: argparse.Namespace,
+    client,
+    action_rotation: str,
+    *,
+    current_target: int,
+    active_combat: dict[str, float | int | str] | None,
+    target_visible: bool,
+    now: float,
+    last_visible_at: float,
+    recent_incoming_melee: bool = False,
+) -> bool:
+    if int(current_target or 0) <= 0 or target_visible:
+        return False
+
+    if not (getattr(args, "move", False) or getattr(args, "hunter", False)):
+        return False
+
+    last_known_distance = committed_target_last_known_distance(client, active_combat)
+    if last_known_distance is None:
+        return False
+
+    if last_known_distance <= combat_stop_distance_after_server_feedback(
+        args,
+        action_rotation,
+        active_combat,
+        now=now,
+    ):
+        return bool(recent_incoming_melee and is_melee_rotation(action_rotation))
+
+    if target_loss_rescan_enabled(args):
+        return True
+
+    grace = max(0.0, float(getattr(args, "target_loss_grace", 0.0) or 0.0))
+    return grace > 0.0 and now - last_visible_at <= grace
+
+
+def should_suppress_target_loss_rescan_for_committed_target(
+    args: argparse.Namespace,
+    client,
+    action_rotation: str,
+    *,
+    current_target: int,
+    current_target_intent: TargetIntent | str,
+    active_combat: dict[str, float | int | str] | None,
+    behavior_state: DummyBehaviorState | str,
+    target_visible: bool,
+    now: float,
+    last_visible_at: float,
+    flee_active: bool = False,
+    rest_active: bool = False,
+    drop_aggro_active: bool = False,
+) -> bool:
+    if not target_loss_rescan_enabled(args):
+        return False
+
+    if int(current_target or 0) <= 0 or active_combat is None:
+        return False
+
+    active_target_id = int(active_combat.get("target_id", 0) or 0)
+    if active_target_id != int(current_target):
+        return False
+
+    if target_intent_value(current_target_intent) not in {
+        TargetIntent.objective.value,
+        TargetIntent.required_retaliation.value,
+        TargetIntent.party_rescue.value,
+        TargetIntent.current_target_confirm.value,
+    }:
+        return False
+
+    if not can_preserve_committed_hostile_target(
+        behavior_state,
+        current_target_intent,
+        flee_active=flee_active,
+        rest_active=rest_active,
+        drop_aggro_active=drop_aggro_active,
+    ):
+        return False
+
+    return should_chase_committed_target_last_known(
+        args,
+        client,
+        action_rotation,
+        current_target=current_target,
+        active_combat=active_combat,
+        target_visible=target_visible,
+        now=now,
+        last_visible_at=last_visible_at,
+    )
+
+
 def party_rescue_target_age(
     snapshot: dict[str, int | float | str],
     target_id: int,
@@ -7951,6 +11580,49 @@ def should_enable_attack_mode(args: argparse.Namespace, action_rotation: str, di
         return distance <= melee_stop_distance(args) + 25.0
 
     return distance <= args.attack_range
+
+
+def should_enable_attack_mode_after_server_feedback(
+    args: argparse.Namespace,
+    action_rotation: str,
+    distance: float,
+    active_combat: dict[str, object] | None,
+    *,
+    now: float,
+) -> bool:
+    if (
+        is_melee_rotation(action_rotation)
+        and active_combat is not None
+        and float(active_combat.get("server_range_close_until", 0.0) or 0.0) > now
+    ):
+        return distance <= combat_stop_distance_after_server_feedback(
+            args,
+            action_rotation,
+            active_combat,
+            now=now,
+        )
+
+    return should_enable_attack_mode(args, action_rotation, distance)
+
+
+def should_enable_timeout_preserve_attack(
+    args: argparse.Namespace,
+    action_rotation: str,
+    active_combat: dict[str, object] | None,
+    *,
+    distance: float,
+    now: float,
+) -> bool:
+    if float(distance or 0.0) <= 0.0:
+        return False
+
+    return should_enable_attack_mode_after_server_feedback(
+        args,
+        action_rotation,
+        float(distance),
+        active_combat,
+        now=now,
+    )
 
 
 def should_count_attack_attempt(
@@ -8046,6 +11718,25 @@ def should_preserve_target_timeout_for_combat_progress(
         timestamp = float(active_combat.get(key, 0.0) or 0.0)
         if timestamp > 0.0 and now - timestamp <= progress_grace:
             return True
+
+    progress_reference_distance = float(
+        active_combat.get(
+            "last_timeout_preserve_distance",
+            active_combat.get("start_distance", 0.0),
+        )
+        or 0.0
+    )
+    current_distance = float(active_combat.get("end_distance", 0.0) or 0.0)
+    approach_progress_distance = max(
+        0.0,
+        float(getattr(args, "target_timeout_approach_progress_distance", 250.0) or 250.0),
+    )
+    if (
+        progress_reference_distance > 0.0
+        and current_distance > 0.0
+        and progress_reference_distance - current_distance >= approach_progress_distance
+    ):
+        return True
 
     return False
 
@@ -8160,6 +11851,8 @@ def should_defer_party_support_for_preengage_position(
     *,
     current_health_percent: int,
     hurt_member,
+    cure_target=None,
+    dead_member=None,
 ) -> bool:
     if action_rotation != "healer-support" or not is_objective_travel_state(state):
         return False
@@ -8188,6 +11881,12 @@ def should_defer_party_support_for_preengage_position(
         home.x,
         home.y,
     )
+    if isinstance(hurt_member, dict):
+        hurt_health = int(hurt_member.get("health_percent", 0) or 0)
+        emergency_floor = int(getattr(args, "flee_health_percent", 0) or 0)
+        if emergency_floor > 0 and 0 < hurt_health <= emergency_floor:
+            return False
+
     if should_prioritize_critical_support_heal(
         args,
         action_rotation=action_rotation,
@@ -8197,10 +11896,13 @@ def should_defer_party_support_for_preengage_position(
         return False
 
     if isinstance(hurt_member, dict):
-        hurt_health = int(hurt_member.get("health_percent", 0) or 0)
         heal_threshold = int(getattr(args, "party_heal_leader_health_percent", 0) or 0)
         if heal_threshold > 0 and 0 < hurt_health <= heal_threshold and home_distance >= safe_distance * 0.55:
             return False
+    if isinstance(cure_target, dict) and int(cure_target.get("object_id", 0) or 0) > 0:
+        return False
+    if isinstance(dead_member, dict) and int(dead_member.get("object_id", 0) or 0) > 0:
+        return False
 
     return home_distance < safe_distance * 0.95
 
@@ -8228,6 +11930,91 @@ def should_follow_party_anchor_for_unseen_assist_target(
         return False
 
     return anchor_distance > max(0.0, float(getattr(args, "party_follow_distance", 0.0) or 0.0))
+
+
+def party_follow_stop_distance(args: argparse.Namespace) -> float:
+    follow_distance = max(0.0, float(getattr(args, "party_follow_distance", 0.0) or 0.0))
+    if follow_distance <= 0.0:
+        return 0.0
+    return max(120.0, follow_distance * 0.70)
+
+
+def party_follow_resume_distance(args: argparse.Namespace) -> float:
+    follow_distance = max(0.0, float(getattr(args, "party_follow_distance", 0.0) or 0.0))
+    if follow_distance <= 0.0:
+        return 0.0
+    return follow_distance + max(180.0, follow_distance * 0.25)
+
+
+def should_move_towards_party_anchor(
+    args: argparse.Namespace,
+    *,
+    anchor_distance: float,
+    current_speed: float = 0.0,
+) -> bool:
+    if current_speed > 0.0:
+        return anchor_distance > party_follow_stop_distance(args)
+    return anchor_distance > party_follow_resume_distance(args)
+
+
+def party_follow_combat_locked(
+    *,
+    behavior_state: DummyBehaviorState | str,
+    current_target: int,
+    active_combat: dict[str, object] | None = None,
+    leader_target_id: int = 0,
+    leader_engaged: bool = False,
+) -> bool:
+    state = behavior_state_value(behavior_state)
+    if state in {
+        DummyBehaviorState.HandleTravelAggro.value,
+        DummyBehaviorState.DropAggroAndRecover.value,
+        DummyBehaviorState.RestRecover.value,
+        DummyBehaviorState.DeadReleaseRecover.value,
+    }:
+        return True
+    if current_target > 0 or active_combat is not None:
+        return True
+    return leader_target_id > 0 and leader_engaged
+
+
+def party_follow_catchup_speed(args: argparse.Namespace, anchor_distance: float) -> float | None:
+    base_speed = float(getattr(args, "movement_speed", 0.0) or 0.0)
+    if base_speed <= 0.0:
+        return None
+
+    hard_distance = float(getattr(args, "party_follow_hard_catchup_distance", 0.0) or 0.0)
+    hard_multiplier = float(getattr(args, "party_follow_hard_catchup_speed_multiplier", 1.0) or 1.0)
+    if hard_distance > 0.0 and anchor_distance >= hard_distance and hard_multiplier > 1.0:
+        return base_speed * hard_multiplier
+
+    catchup_distance = float(getattr(args, "party_follow_catchup_distance", 0.0) or 0.0)
+    multiplier = float(getattr(args, "party_follow_catchup_speed_multiplier", 1.0) or 1.0)
+    if catchup_distance > 0.0 and anchor_distance >= catchup_distance and multiplier > 1.0:
+        return base_speed * multiplier
+    return None
+
+
+def party_follow_should_teleport(args: argparse.Namespace, *, anchor_distance: float, combat_locked: bool) -> bool:
+    if combat_locked:
+        return False
+    threshold = float(getattr(args, "party_follow_teleport_distance", 0.0) or 0.0)
+    return threshold > 0.0 and anchor_distance >= threshold
+
+
+def party_follow_teleport_position(
+    anchor_x: int,
+    anchor_y: int,
+    anchor_z: int,
+    anchor_heading: int,
+    stop_distance: float,
+) -> tuple[int, int, int]:
+    radians = (int(anchor_heading) & 0x0FFF) / 4096.0 * math.pi * 2
+    return (
+        int(anchor_x - math.cos(radians) * stop_distance),
+        int(anchor_y - math.sin(radians) * stop_distance),
+        int(anchor_z),
+    )
 
 
 def should_back_off_for_party_melee_survival(
@@ -8273,6 +12060,8 @@ def boss_hazard_message_duration(args: argparse.Namespace, text: str) -> float:
         "inhales deeply",
         "looks mindfully around",
         "begins flapping",
+        "acidic cloud surrounds you",
+        "life energy is stolen",
         "강력한 공격",
         "숨을 들이",
         "주의 깊게 주변",
@@ -8694,8 +12483,14 @@ def party_encounter_survival_distance(args: argparse.Namespace) -> float:
 
 def should_preserve_party_target_on_loss(args: argparse.Namespace) -> bool:
     return bool(
-        getattr(args, "party_assist_only", False)
-        and (getattr(args, "require_target_name", "") or getattr(args, "party_encounter_mode", "standard") != "standard")
+        (
+            getattr(args, "party_assist_only", False)
+            and (
+                getattr(args, "require_target_name", "")
+                or getattr(args, "party_encounter_mode", "standard") != "standard"
+            )
+        )
+        or getattr(args, "dynamic_quest_followup_target_name", "")
     )
 
 
@@ -8777,6 +12572,153 @@ def is_party_support_healer_member(
     action_rotation: str,
 ) -> bool:
     return bool(party_state is not None and action_rotation == "healer-support")
+
+
+def party_member_has_resurrection_capability(
+    condition: PlayerConditionSnapshot | None,
+    fallback_role: str = "",
+) -> bool:
+    if condition is not None:
+        capabilities = party_class_capabilities_from_class(
+            getattr(condition, "class_name", ""),
+            getattr(condition, "class_id", 0),
+        )
+        if "resurrection" in capabilities:
+            return True
+
+    return str(fallback_role or "").strip().lower() == "healer-support"
+
+
+def party_has_living_resurrection_capable_ally(
+    party_state: PartyState | None,
+    exclude_name: str = "",
+) -> bool:
+    if party_state is None:
+        return False
+
+    excluded_name = normalize_target_name(exclude_name)
+    with party_state.lock:
+        for member_name in party_state.member_names:
+            if excluded_name and normalize_target_name(member_name) == excluded_name:
+                continue
+
+            condition = party_state.member_conditions.get(member_name)
+            member_role = party_state.member_roles.get(member_name, "")
+            if condition is not None:
+                if not bool(getattr(condition, "is_alive", True)):
+                    continue
+                if party_member_has_resurrection_capability(condition, member_role):
+                    return True
+                continue
+
+            health_percent = int(party_state.member_health_percents.get(member_name, 0) or 0)
+            if health_percent <= 0:
+                continue
+            if party_member_has_resurrection_capability(None, member_role):
+                return True
+
+    return False
+
+
+def party_has_living_ally(party_state: PartyState | None, exclude_name: str = "") -> bool:
+    if party_state is None:
+        return False
+
+    excluded_name = normalize_target_name(exclude_name)
+    with party_state.lock:
+        for member_name in party_state.member_names:
+            if excluded_name and normalize_target_name(member_name) == excluded_name:
+                continue
+
+            condition = party_state.member_conditions.get(member_name)
+            if condition is not None:
+                if bool(getattr(condition, "is_alive", True)):
+                    return True
+                continue
+
+            if int(party_state.member_health_percents.get(member_name, 0) or 0) > 0:
+                return True
+
+    return False
+
+
+def party_member_is_pending_resurrection_target(
+    party_state: PartyState | None,
+    member_name: str,
+) -> bool:
+    if party_state is None or not member_name:
+        return False
+
+    member_name_key = normalize_target_name(member_name)
+    return any(
+        normalize_target_name(str(target.get("name", ""))) == member_name_key
+        for target in party_state.resurrection_targets()
+    )
+
+
+def party_resurrection_auto_release_grace(args: argparse.Namespace) -> float:
+    interval = float(getattr(args, "party_resurrect_interval", 0.0) or 0.0)
+    return max(12.0, interval * 6.0)
+
+
+def party_resurrection_auto_release_recheck_interval(args: argparse.Namespace) -> float:
+    interval = float(getattr(args, "party_resurrect_interval", 0.0) or 0.0)
+    return max(1.0, min(5.0, interval if interval > 0.0 else 3.0))
+
+
+def should_defer_auto_release_for_party_resurrection(
+    args: argparse.Namespace,
+    party_state: PartyState | None,
+    member_name: str,
+    *,
+    now: float,
+    release_deadline: float,
+) -> bool:
+    if party_state is None or not member_name:
+        return False
+
+    if float(getattr(args, "party_resurrect_interval", 0.0) or 0.0) <= 0.0:
+        return False
+
+    if release_deadline > 0.0 and now >= release_deadline:
+        return False
+
+    if not party_member_is_pending_resurrection_target(party_state, member_name):
+        return False
+
+    return party_has_living_resurrection_capable_ally(party_state, exclude_name=member_name)
+
+
+def should_defer_auto_release_for_dynamic_quest_group_credit(
+    args: argparse.Namespace,
+    party_state: PartyState | None,
+    member_name: str,
+    *,
+    now: float = 0.0,
+    release_deadline: float = 0.0,
+    dynamic_quest_return_pending: bool,
+    dynamic_quest_return_completed: bool,
+    objective_complete: bool,
+) -> bool:
+    if not dynamic_quest_return_enabled(args):
+        return False
+
+    if release_deadline > 0.0 and now >= release_deadline:
+        return False
+
+    if dynamic_quest_return_pending or dynamic_quest_return_completed or objective_complete:
+        return False
+
+    if party_state is None or not member_name:
+        return False
+
+    with party_state.lock:
+        shared_objective_complete = party_state.objective_completed_at > 0.0
+
+    if shared_objective_complete:
+        return False
+
+    return party_has_living_ally(party_state, exclude_name=member_name)
 
 
 def friendly_cast_hold_breaking_backoff(
@@ -8865,6 +12807,25 @@ def should_use_shared_target_backoff_point(
     return bool(leader_target_id > 0 and (current_target <= 0 or current_target == leader_target_id))
 
 
+def party_heal_exclude_name_set(args: argparse.Namespace) -> frozenset[str]:
+    cached = getattr(args, "_party_heal_exclude_name_set", None)
+    if cached is not None:
+        return cached
+    raw = getattr(args, "party_heal_exclude_names", None) or []
+    names: set[str] = set()
+    for entry in raw:
+        for token in str(entry).replace("|", ",").split(","):
+            normalized = normalize_target_name(token)
+            if normalized:
+                names.add(normalized)
+    result = frozenset(names)
+    try:
+        setattr(args, "_party_heal_exclude_name_set", result)
+    except (AttributeError, TypeError):
+        pass
+    return result
+
+
 def choose_party_heal_target(
     party_state: PartyState,
     args: argparse.Namespace,
@@ -8876,6 +12837,11 @@ def choose_party_heal_target(
     active_tank_name = str(snapshot.get("active_tank_name", "") or "")
     active_tank_object_id = int(snapshot.get("active_tank_object_id", 0) or 0)
     active_tank_health = int(snapshot.get("active_tank_health_percent", 100) or 0)
+
+    # Members the healer must not heal (e.g. a designated resurrection victim).
+    # They are still eligible as resurrection targets; we only refuse to keep
+    # them alive so the intended death can occur deterministically.
+    heal_exclude_names = party_heal_exclude_name_set(args)
 
     self_heal_threshold = int(getattr(args, "healer_self_health_percent", 0) or 0)
     if exclude_name and self_heal_threshold > 0:
@@ -8906,6 +12872,7 @@ def choose_party_heal_target(
         and active_tank_name != exclude_name
         and active_tank_object_id > 0
         and 0 < active_tank_health <= max_health_percent
+        and not (heal_exclude_names and normalize_target_name(active_tank_name) in heal_exclude_names)
     ):
         critical_health_percent = max(
             int(getattr(args, "flee_health_percent", 0) or 0),
@@ -8913,8 +12880,12 @@ def choose_party_heal_target(
         )
         if active_tank_health > critical_health_percent:
             critical_hurt_member = (
-                party_state.focused_hurt_member(critical_health_percent, exclude_name=exclude_name)
-                or party_state.lowest_hurt_member(critical_health_percent, exclude_name=exclude_name)
+                party_state.focused_hurt_member(
+                    critical_health_percent, exclude_name=exclude_name, exclude_names=heal_exclude_names
+                )
+                or party_state.lowest_hurt_member(
+                    critical_health_percent, exclude_name=exclude_name, exclude_names=heal_exclude_names
+                )
             )
             if critical_hurt_member is not None:
                 return critical_hurt_member
@@ -8931,9 +12902,11 @@ def choose_party_heal_target(
     return party_state.focused_hurt_member(
         max_health_percent,
         exclude_name=exclude_name,
+        exclude_names=heal_exclude_names,
     ) or party_state.lowest_hurt_member(
         max_health_percent,
         exclude_name=exclude_name,
+        exclude_names=heal_exclude_names,
     )
 
 
@@ -9017,13 +12990,19 @@ def move_towards_party_heal_target(
         destination.x,
         destination.y,
         destination.z,
-        step=float(getattr(args, "party_follow_step", 320.0) or 320.0),
+        step=smooth_movement_step(args) if getattr(args, "smooth_movement", False) else float(getattr(args, "party_follow_step", 320.0) or 320.0),
         stop_distance=party_heal_target_approach_stop_distance(args),
-        movement_speed=getattr(args, "movement_speed", None),
-        min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
+        **dummy_movement_kwargs(args),
         target_in_view=False,
     )
-    return MovementOutcome(moved=moved, arrived=not moved)
+    return movement_outcome_from_position_attempt(
+        client,
+        destination.x,
+        destination.y,
+        destination.z,
+        moved=moved,
+        stop_distance=party_heal_target_approach_stop_distance(args),
+    )
 
 
 def choose_party_resurrection_target(
@@ -9054,6 +13033,18 @@ def party_resurrection_retry_cooldown(args: argparse.Namespace) -> float:
 
 def should_apply_party_resurrection_cooldown(action_name: str | None) -> bool:
     return str(action_name or "").startswith("validated_party_resurrect_")
+
+
+def should_schedule_next_party_resurrection_check(action_name: str | None) -> bool:
+    if not action_name:
+        return False
+    normalized = str(action_name or "")
+    if normalized.endswith("_approach") or normalized.endswith("_approach_hold"):
+        return False
+    return bool(
+        normalized == "party_resurrect_skipped_unvalidated"
+        or should_apply_party_resurrection_cooldown(normalized)
+    )
 
 
 def party_resurrection_target_in_cast_range(
@@ -9101,12 +13092,16 @@ def should_approach_party_resurrection_target(
     dead_member: dict[str, int | str] | None,
     current_target: int,
     behavior_state: DummyBehaviorState | str,
+    critical_flee_interrupt: bool = False,
 ) -> bool:
     del args
     if action_rotation != "healer-support" or dead_member is None:
         return False
 
     state = behavior_state_value(behavior_state)
+    if state == DummyBehaviorState.DropAggroAndRecover.value and critical_flee_interrupt:
+        return party_resurrection_target_destination(dead_member) is not None
+
     if state in {
         DummyBehaviorState.DropAggroAndRecover.value,
         DummyBehaviorState.DeadReleaseRecover.value,
@@ -9136,13 +13131,19 @@ def move_towards_party_resurrection_target(
         destination.x,
         destination.y,
         destination.z,
-        step=float(getattr(args, "party_follow_step", 320.0) or 320.0),
+        step=smooth_movement_step(args) if getattr(args, "smooth_movement", False) else float(getattr(args, "party_follow_step", 320.0) or 320.0),
         stop_distance=party_resurrection_target_approach_stop_distance(args),
-        movement_speed=getattr(args, "movement_speed", None),
-        min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
+        **dummy_movement_kwargs(args),
         target_in_view=False,
     )
-    return MovementOutcome(moved=moved, arrived=not moved)
+    return movement_outcome_from_position_attempt(
+        client,
+        destination.x,
+        destination.y,
+        destination.z,
+        moved=moved,
+        stop_distance=party_resurrection_target_approach_stop_distance(args),
+    )
 
 
 def perform_party_resurrection_cast(
@@ -9235,13 +13236,19 @@ def move_towards_party_buff_target(
         destination.x,
         destination.y,
         destination.z,
-        step=float(getattr(args, "party_follow_step", 320.0) or 320.0),
+        step=smooth_movement_step(args) if getattr(args, "smooth_movement", False) else float(getattr(args, "party_follow_step", 320.0) or 320.0),
         stop_distance=party_heal_target_approach_stop_distance(args),
-        movement_speed=getattr(args, "movement_speed", None),
-        min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
+        **dummy_movement_kwargs(args),
         target_in_view=False,
     )
-    return MovementOutcome(moved=moved, arrived=not moved)
+    return movement_outcome_from_position_attempt(
+        client,
+        destination.x,
+        destination.y,
+        destination.z,
+        moved=moved,
+        stop_distance=party_heal_target_approach_stop_distance(args),
+    )
 
 
 def choose_party_cure_target(
@@ -9503,13 +13510,19 @@ def move_towards_party_protection_target(
         destination.x,
         destination.y,
         destination.z,
-        step=float(getattr(args, "party_follow_step", 320.0) or 320.0),
+        step=smooth_movement_step(args) if getattr(args, "smooth_movement", False) else float(getattr(args, "party_follow_step", 320.0) or 320.0),
         stop_distance=party_protection_target_close_distance(args),
-        movement_speed=getattr(args, "movement_speed", None),
-        min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
+        **dummy_movement_kwargs(args),
         target_in_view=True,
     )
-    return MovementOutcome(moved=moved, arrived=not moved)
+    return movement_outcome_from_position_attempt(
+        client,
+        destination.x,
+        destination.y,
+        destination.z,
+        moved=moved,
+        stop_distance=party_protection_target_close_distance(args),
+    )
 
 
 def should_use_party_protection_ability(
@@ -9721,6 +13734,8 @@ def npc_is_party_aggro_threat(
         return False
     if int(getattr(npc, "object_id", 0) or 0) == int(current_target or 0):
         return False
+    if npc_is_crowd_controlled(npc):
+        return False
     if npc_targets_party_member(npc, party_snapshot):
         return True
     return bool(getattr(npc, "has_aggro", False) or getattr(npc, "in_combat", False))
@@ -9734,6 +13749,10 @@ def npc_party_aggro_priority(npc, party_snapshot: dict[str, int | float | str] |
     if bool(getattr(npc, "in_combat", False)):
         return 2
     return 3
+
+
+def npc_is_crowd_controlled(npc) -> bool:
+    return bool(getattr(npc, "is_mezzed", False) or getattr(npc, "is_stunned", False))
 
 
 def dedupe_npcs_by_object_id(npcs: list[object]) -> list[object]:
@@ -9898,7 +13917,9 @@ def should_send_target_start_command_for_npc(args: argparse.Namespace, npc, sele
 
 
 def should_send_position_heartbeat_for_client(client) -> bool:
-    return not bool(getattr(client, "is_dead", False))
+    if bool(getattr(client, "is_dead", False)):
+        return False
+    return float(getattr(client, "last_position_speed", 0.0) or 0.0) <= 0.0
 
 
 def is_network_disconnect_exception(exc: BaseException) -> bool:
@@ -9919,12 +13940,21 @@ def should_treat_disconnect_as_completed(
     *,
     action_counts: dict[str, int] | None = None,
     combat_metrics: list[CombatMetric] | None = None,
+    dynamic_quest_e2e_enabled: bool = False,
+    dynamic_quest_return_pending: bool = False,
+    dynamic_quest_return_completed: bool = False,
 ) -> bool:
     if not is_network_disconnect_exception(exc):
         return False
 
     if death_seen or bool(getattr(client, "is_dead", False)):
-        return True
+        return not dynamic_quest_e2e_enabled
+
+    if dynamic_quest_e2e_enabled and not dynamic_quest_return_completed:
+        return False
+
+    if dynamic_quest_return_pending and not dynamic_quest_return_completed:
+        return False
 
     action_counts = action_counts or {}
     combat_metrics = combat_metrics or []
@@ -9936,6 +13966,43 @@ def should_treat_disconnect_as_completed(
     )
 
     return target_removed_count > 0 and player_death_count <= 0
+
+
+def final_round_completion_status(
+    *,
+    safe_exit_failed: bool,
+    safe_exit_error: str,
+    dynamic_quest_return_pending: bool = False,
+    dynamic_quest_return_completed: bool = False,
+    dynamic_quest_e2e_enabled: bool = False,
+    dynamic_quest_active_count: int = 0,
+    dynamic_quest_progress_seen: bool = False,
+    dynamic_quest_completion_signal_seen: bool = False,
+    dynamic_quest_completed: bool = False,
+    dynamic_quest_progress_error: str = "",
+    dynamic_quest_timeline_error: str = "",
+    dynamic_quest_final_active_allowed: bool = False,
+) -> tuple[bool, str]:
+    if dynamic_quest_return_pending and not dynamic_quest_return_completed:
+        return False, "dynamic quest return incomplete"
+    if dynamic_quest_e2e_enabled:
+        progress_error = str(dynamic_quest_progress_error or "").strip()
+        if progress_error:
+            return False, f"dynamic quest progress check failed: {progress_error}"
+        timeline_error = str(dynamic_quest_timeline_error or "").strip()
+        if timeline_error:
+            return False, f"dynamic quest timeline check failed: {timeline_error}"
+        if dynamic_quest_completed:
+            return not safe_exit_failed, safe_exit_error
+        active_count = int(dynamic_quest_active_count or 0)
+        progress_observed = bool(dynamic_quest_progress_seen) or active_count > 0
+        if active_count > 0:
+            if dynamic_quest_final_active_allowed:
+                return not safe_exit_failed, safe_exit_error
+            return False, "dynamic quest incomplete"
+        if not progress_observed and not dynamic_quest_completion_signal_seen:
+            return False, "dynamic quest never became active"
+    return not safe_exit_failed, safe_exit_error
 
 
 def party_snapshot_has_external_leader(snapshot: dict[str, object]) -> bool:
@@ -10283,7 +14350,7 @@ def should_preserve_current_party_target(
     ):
         return False
 
-    if active_combat_matches_required_target(args, active_combat):
+    if active_combat_matches_preservable_objective_target(args, active_combat):
         return True
 
     if should_preserve_active_party_rescue_focus(
@@ -10381,7 +14448,7 @@ def should_preserve_unshared_party_target(
             drop_aggro_active=drop_aggro_active,
         )
         and (
-            active_combat_matches_required_target(args, active_combat)
+            active_combat_matches_preservable_objective_target(args, active_combat)
             or should_preserve_active_party_rescue_focus(
                 args,
                 active_combat,
@@ -10399,7 +14466,7 @@ def active_combat_matches_required_target(args: argparse.Namespace, active_comba
     target_name = str(active_combat.get("target_name", "")).lower()
     tokens = required_target_tokens(args)
     if tokens:
-        return bool(target_name and any(required_target_name_matches(target_name, token) for token in tokens))
+        return bool(target_name and any(required_target_name_matches_for_args(args, target_name, token) for token in tokens))
 
     if getattr(args, "party_encounter_mode", "standard") != "standard":
         return int(active_combat.get("target_id", 0) or 0) > 0
@@ -10407,10 +14474,44 @@ def active_combat_matches_required_target(args: argparse.Namespace, active_comba
     return False
 
 
+def active_combat_matches_dynamic_quest_followup_target(
+    args: argparse.Namespace,
+    active_combat: dict[str, float | int | str] | None,
+) -> bool:
+    if active_combat is None:
+        return False
+
+    followup_target = normalize_target_name(str(getattr(args, "dynamic_quest_followup_target_name", "") or ""))
+    target_name = normalize_target_name(str(active_combat.get("target_name", "") or ""))
+    return bool(
+        followup_target
+        and target_name
+        and (
+            target_name == followup_target
+            or target_name in followup_target
+            or followup_target in target_name
+        )
+    )
+
+
+def active_combat_matches_preservable_objective_target(
+    args: argparse.Namespace,
+    active_combat: dict[str, float | int | str] | None,
+) -> bool:
+    return bool(
+        active_combat_matches_required_target(args, active_combat)
+        or active_combat_matches_dynamic_quest_followup_target(args, active_combat)
+    )
+
+
 def name_matches_required_target(args: argparse.Namespace, target_name: str) -> bool:
     normalized_name = normalize_target_name(target_name)
     tokens = required_target_tokens(args)
-    return bool(normalized_name and tokens and any(required_target_name_matches(normalized_name, token) for token in tokens))
+    return bool(
+        normalized_name
+        and tokens
+        and any(required_target_name_matches_for_args(args, normalized_name, token) for token in tokens)
+    )
 
 
 def name_matches_required_or_party_objective(
@@ -10558,10 +14659,25 @@ def smooth_movement_step(args: argparse.Namespace) -> float:
 
 
 def combat_chase_movement_speed(args: argparse.Namespace, action_rotation: str, distance: float) -> float:
-    base_speed = float(getattr(args, "movement_speed", 0.0) or 0.0)
-    if is_melee_rotation(action_rotation) and distance > float(getattr(args, "attack_range", 0.0) or 0.0):
-        return max(base_speed, 600.0)
+    base_speed = float(dummy_state_movement_cap(args) or getattr(args, "movement_speed", 0.0) or 0.0)
+    if (
+        is_melee_rotation(action_rotation)
+        and distance > combat_chase_melee_stop_distance(args)
+        and base_speed > 0.0
+    ):
+        return max(base_speed, float(getattr(args, "combat_chase_sprint_speed", 600.0) or 600.0))
+
     return base_speed
+
+
+def combat_chase_melee_stop_distance(args: argparse.Namespace) -> float:
+    if all(hasattr(args, name) for name in ("minimum_melee_stop_distance", "attack_range", "melee_range_buffer")):
+        return melee_stop_distance(args)
+
+    attack_range = float(getattr(args, "attack_range", 125.0) or 125.0)
+    melee_range_buffer = float(getattr(args, "melee_range_buffer", 25.0) or 25.0)
+    minimum_stop = float(getattr(args, "minimum_melee_stop_distance", 70.0) or 70.0)
+    return max(minimum_stop, attack_range - melee_range_buffer)
 
 
 def combat_chase_step(args: argparse.Namespace, action_rotation: str, distance: float, base_step: float) -> float:
@@ -10580,26 +14696,22 @@ def active_tank_reaggro_chase_step(
     base_step: float,
     now: float,
 ) -> float:
-    if not party_member_is_active_tank(snapshot, member_name) or not is_melee_rotation(action_rotation):
+    if not party_member_is_active_tank(snapshot, member_name):
         return base_step
 
-    if not is_required_target(args, target_npc):
+    if not is_melee_rotation(action_rotation):
         return base_step
 
-    focus_name = party_reaggro_pressure_member_name(
-        args,
-        snapshot,
-        now=now,
-        target_id=int(getattr(target_npc, "object_id", 0) or 0),
-    )
+    target_id = int(getattr(target_npc, "object_id", 0) or 0)
+    pressure_member = party_reaggro_pressure_member_name(args, snapshot, now=now, target_id=target_id)
     active_tank_name = normalize_target_name(str(snapshot.get("active_tank_name", "") or ""))
-    if not focus_name or focus_name == active_tank_name:
+    if not pressure_member or pressure_member == active_tank_name:
         return base_step
 
-    if distance <= float(getattr(args, "attack_range", 0.0) or 0.0):
+    if distance <= combat_chase_melee_stop_distance(args):
         return base_step
 
-    return max(base_step, min(distance, base_step * 4.0))
+    return max(base_step, base_step * 4.0)
 
 
 def waypoint_distance_from_client(client, waypoint: Waypoint) -> float:
@@ -11095,8 +15207,8 @@ CLASS_PROFILE_HINTS = {
     "animist": ("caster-basic", "pet-caster", {"caster", "pet", "turret", "crowd_control", "siege"}),
     "bainshee": ("caster-basic", "caster", {"caster", "ranged", "debuff", "crowd_control"}),
     "bard": ("healer-support", "speed-support", {"healer", "resurrection", "cure", "buff", "speed_song", "group_speed", "crowd_control", "support_utility"}),
-    "berserker": ("melee-basic", "melee", {"melee_dps"}),
-    "blademaster": ("melee-basic", "melee", {"melee_dps", "shield"}),
+    "berserker": ("melee-burst", "melee", {"melee_dps"}),
+    "blademaster": ("melee-burst", "melee", {"melee_dps", "shield"}),
     "bonedancer": ("caster-basic", "pet-caster", {"caster", "pet", "healer", "lifedrain", "support_utility"}),
     "cabalist": ("caster-basic", "pet-caster", {"caster", "pet", "debuff", "disease", "dot"}),
     "champion": ("hybrid", "hybrid", {"tank", "shield", "melee_dps", "caster", "debuff"}),
@@ -11121,7 +15233,7 @@ CLASS_PROFILE_HINTS = {
     "maulerhib": ("hybrid", "hybrid", {"melee_dps", "tank", "buff", "debuff"}),
     "maulermid": ("hybrid", "hybrid", {"melee_dps", "tank", "buff", "debuff"}),
     "mentalist": ("caster-basic", "caster", {"caster", "crowd_control", "charm", "healer", "dot"}),
-    "mercenary": ("melee-basic", "melee", {"melee_dps", "shield"}),
+    "mercenary": ("melee-burst", "melee", {"melee_dps", "shield"}),
     "midgardrogue": ("hybrid", "stealth-scout", {"melee_dps", "ranged", "stealth"}),
     "minstrel": ("hybrid", "speed-support", {"speed_song", "group_speed", "crowd_control", "charm", "stealth", "melee_dps", "support_utility"}),
     "mystic": ("caster-basic", "caster", {"caster", "pet", "ranged"}),
@@ -11132,7 +15244,7 @@ CLASS_PROFILE_HINTS = {
     "ranger": ("hybrid", "stealth-scout", {"ranged", "stealth", "melee_dps"}),
     "reaver": ("hybrid", "hybrid", {"tank", "shield", "melee_dps", "debuff", "lifedrain"}),
     "runemaster": ("caster-basic", "caster", {"caster", "ranged", "debuff", "bladeturn"}),
-    "savage": ("melee-basic", "melee", {"melee_dps", "buff"}),
+    "savage": ("melee-burst", "melee", {"melee_dps", "buff"}),
     "scout": ("hybrid", "stealth-scout", {"ranged", "shield", "stealth", "melee_dps"}),
     "seer": ("healer-support", "support", {"healer", "resurrection", "cure", "buff", "crowd_control"}),
     "shadowblade": ("melee-basic", "stealth-assassin", {"stealth", "assassin", "melee_dps", "debuff"}),
@@ -11292,6 +15404,7 @@ def parse_player_condition_snapshot(payload: object) -> PlayerConditionSnapshot:
         y=int(player.get("y", 0) or 0),
         z=int(player.get("z", 0) or 0),
         is_alive=bool(player.get("isAlive", player.get("is_alive", True))),
+        in_combat=bool(player.get("inCombat", player.get("in_combat", False))),
         is_stunned=bool(player.get("isStunned", player.get("is_stunned", False))),
         is_mezzed=bool(player.get("isMezzed", player.get("is_mezzed", False))),
         is_diseased=bool(player.get("isDiseased", player.get("is_diseased", False))),
@@ -11300,6 +15413,9 @@ def parse_player_condition_snapshot(payload: object) -> PlayerConditionSnapshot:
         is_silenced=bool(player.get("isSilenced", player.get("is_silenced", False))),
         target_object_id=int(player.get("targetObjectId", player.get("target_object_id", 0)) or 0),
         target_name=str(player.get("targetName", player.get("target_name", "")) or ""),
+        target_can_attack=parse_optional_bool(player.get("targetCanAttack", player.get("target_can_attack"))),
+        target_relation=str(player.get("targetRelation", player.get("target_relation", "")) or ""),
+        target_type=str(player.get("targetType", player.get("target_type", "")) or ""),
         is_companion=parse_live_control_bool(
             player.get("isCompanion", player.get("is_companion", player.get("isDummy", player.get("is_dummy", False))))
         ),
@@ -11476,12 +15592,18 @@ def refresh_party_condition_snapshots(
             updated += 1
 
     for external_member_name in party_state.snapshot().get("external_member_names", []) or []:
-        if str(external_member_name) in updated_names:
-            continue
-        condition = fetch_condition(args, str(external_member_name), "")
+        external_member_name = str(external_member_name)
+        known_condition = party_state.member_conditions.get(external_member_name)
+        external_account = str(getattr(known_condition, "account", "") or "")
+        if not external_account:
+            external_account = probable_account_from_character_name(external_member_name)
+        condition = fetch_condition(args, external_member_name, external_account)
         if condition is None:
             continue
-        party_state.update_member_condition(str(external_member_name), condition)
+        if known_condition == condition and external_member_name in updated_names:
+            continue
+        party_state.update_member_condition(external_member_name, condition)
+        updated_names.add(external_member_name)
         updated += 1
 
     return updated
@@ -11556,17 +15678,23 @@ def build_hunter_target_api_url(args: argparse.Namespace, client, region: int) -
     api_host = args.host if args.host in ("127.0.0.1", "localhost", "::1") else "127.0.0.1"
     base_url = f"http://{api_host}:{args.api_port}/api/dummy/combat/npcs"
     max_level = args.max_target_level if args.max_target_level >= 0 else args.player_level + args.max_target_level_delta
-    query = urllib.parse.urlencode(
-        {
-            "region": max(0, int(region)),
-            "x": int(getattr(client, "x", 0) or 0),
-            "y": int(getattr(client, "y", 0) or 0),
-            "radius": max(250, int(getattr(args, "hunter_target_api_radius", 0) or 0)),
-            "minLevel": max(1, int(args.min_target_level)),
-            "maxLevel": max(1, int(max_level)),
-            "limit": max(1, int(getattr(args, "hunter_target_api_limit", 1) or 1)),
-        }
+    query_values: dict[str, object] = {
+        "region": max(0, int(region)),
+        "x": int(getattr(client, "x", 0) or 0),
+        "y": int(getattr(client, "y", 0) or 0),
+        "radius": max(250, int(getattr(args, "hunter_target_api_radius", 0) or 0)),
+        "minLevel": max(1, int(args.min_target_level)),
+        "maxLevel": max(1, int(max_level)),
+        "limit": max(1, int(getattr(args, "hunter_target_api_limit", 1) or 1)),
+    }
+    required_query_name = first_configured_target_name(
+        getattr(args, "require_target_name", ""),
+        getattr(args, "required_target_api_name", ""),
     )
+    if required_query_name:
+        query_values["name"] = required_query_name
+
+    query = urllib.parse.urlencode(query_values)
     return f"{base_url}?{query}"
 
 
@@ -11605,7 +15733,7 @@ def build_flee_safe_api_url(args: argparse.Namespace, client, region: int) -> st
 def required_target_observation_matches(args: argparse.Namespace, item: dict[str, object]) -> bool:
     name = str(item.get("name", "") or "")
     configured_name = required_target_api_name(args)
-    if configured_name and required_target_name_matches(name, configured_name):
+    if configured_name and required_target_name_matches_for_args(args, name, configured_name):
         return True
     return passes_required_target_filter(args, type("NpcName", (), {"name": name})())
 
@@ -11643,6 +15771,8 @@ def parse_required_target_observation(args: argparse.Namespace, payload: object)
             in_combat=bool(item.get("inCombat", item.get("in_combat", False))),
             has_aggro=bool(item.get("hasAggro", item.get("has_aggro", False))),
             target=str(item.get("target", "") or ""),
+            is_stunned=bool(item.get("isStunned", item.get("is_stunned", False))),
+            is_mezzed=bool(item.get("isMezzed", item.get("is_mezzed", False))),
         )
     except (TypeError, ValueError):
         return None
@@ -11665,12 +15795,1208 @@ def fetch_required_target_observation(
     return parse_required_target_observation(args, payload)
 
 
+def dynamic_quest_progress_api_url(args: argparse.Namespace, account: DummyAccount) -> str:
+    if args.dynamic_quest_progress_api_url:
+        base_url = args.dynamic_quest_progress_api_url
+    else:
+        api_host = args.host if args.host in ("127.0.0.1", "localhost", "::1") else "127.0.0.1"
+        base_url = f"http://{api_host}:{args.api_port}/api/world/dynamic-quests/progress"
+
+    query = urllib.parse.urlencode({"account": account.username})
+    separator = "&" if "?" in base_url else "?"
+    return f"{base_url}{separator}{query}"
+
+
+def fetch_dynamic_quest_progress_snapshot(args: argparse.Namespace, account: DummyAccount) -> dict[str, object] | None:
+    request = urllib.request.Request(dynamic_quest_progress_api_url(args, account), headers={"Accept": "application/json"})
+    with urllib.request.urlopen(request, timeout=args.dynamic_quest_progress_api_timeout) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+
+    return payload if isinstance(payload, dict) else None
+
+
+def dynamic_quest_timeline_api_url(args: argparse.Namespace, account: DummyAccount) -> str:
+    if getattr(args, "dynamic_quest_timeline_api_url", ""):
+        base_url = args.dynamic_quest_timeline_api_url
+    else:
+        api_host = args.host if args.host in ("127.0.0.1", "localhost", "::1") else "127.0.0.1"
+        base_url = f"http://{api_host}:{args.api_port}/api/world/dynamic-quests/timeline"
+
+    query = urllib.parse.urlencode(
+        {
+            "account": account.username,
+            "limit": max(1, int(getattr(args, "dynamic_quest_timeline_limit", 50) or 50)),
+        }
+    )
+    separator = "&" if "?" in base_url else "?"
+    return f"{base_url}{separator}{query}"
+
+
+def fetch_dynamic_quest_timeline_snapshot(args: argparse.Namespace, account: DummyAccount) -> dict[str, object] | None:
+    request = urllib.request.Request(dynamic_quest_timeline_api_url(args, account), headers={"Accept": "application/json"})
+    timeout = float(getattr(args, "dynamic_quest_timeline_api_timeout", args.dynamic_quest_progress_api_timeout) or 2.0)
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+
+    return payload if isinstance(payload, dict) else None
+
+
+def dynamic_quest_progress_item_text(item: dict[str, object], *keys: str) -> str:
+    for key in keys:
+        value = item.get(key)
+        if value is not None:
+            return str(value or "").strip()
+    return ""
+
+
+def dynamic_quest_progress_item_matches_expected(args: argparse.Namespace | None, item: dict[str, object]) -> bool:
+    if args is None:
+        return True
+
+    expected_quest_id = str(getattr(args, "dynamic_quest_expected_quest_id", "") or "").strip()
+    if expected_quest_id:
+        item_quest_id = dynamic_quest_progress_item_text(item, "questId", "quest_id")
+        if item_quest_id:
+            return item_quest_id == expected_quest_id
+
+    target_tokens = required_target_tokens(args)
+    if target_tokens:
+        target_name = dynamic_quest_progress_item_text(item, "targetName", "target_name")
+        if not any(required_target_name_matches_for_args(args, target_name, token) for token in target_tokens):
+            return False
+
+    start_npc_tokens = [
+        normalize_target_name(token)
+        for token in str(getattr(args, "startup_service_npc_name", "") or "").split(",")
+        if token.strip()
+    ]
+    if start_npc_tokens:
+        start_npc_name = normalize_target_name(
+            dynamic_quest_progress_item_text(item, "startNpcName", "start_npc_name")
+        )
+        if not start_npc_name or not any(token == start_npc_name for token in start_npc_tokens):
+            return False
+
+    return True
+
+
+def dynamic_quest_progress_active_items(
+    snapshot: dict[str, object] | None,
+    args: argparse.Namespace | None = None,
+) -> list[dict[str, object]]:
+    if not isinstance(snapshot, dict):
+        return []
+
+    active = snapshot.get("active")
+    if not isinstance(active, list):
+        return []
+
+    return [
+        item
+        for item in active
+        if isinstance(item, dict) and dynamic_quest_progress_item_matches_expected(args, item)
+    ]
+
+
+def startup_service_progress_wait_seconds(args: argparse.Namespace) -> float:
+    return max(0.0, float(getattr(args, "startup_service_progress_wait_seconds", 0.0) or 0.0))
+
+
+def startup_service_dynamic_quest_progress_wait_enabled(args: argparse.Namespace) -> bool:
+    return bool(
+        getattr(args, "startup_service_accept_dialog", False)
+        and startup_service_progress_wait_seconds(args) > 0.0
+        and dynamic_quest_final_progress_enabled(args)
+    )
+
+
+def retry_startup_service_dynamic_quest_dialog(
+    client,
+    args: argparse.Namespace,
+    action_counts: dict[str, int],
+) -> int:
+    npc = getattr(client, "startup_service_last_npc", None)
+    try:
+        object_id = int(getattr(npc, "object_id", 0) or 0)
+    except (TypeError, ValueError):
+        object_id = 0
+    if object_id <= 0:
+        return add_action(action_counts, "startup_service_progress_retry_missing_npc")
+
+    actions = 0
+    target_object = getattr(client, "target_object", None)
+    if callable(target_object):
+        target_object(object_id)
+        actions += add_action(action_counts, "startup_service_progress_retry_target")
+
+    interact_object = getattr(client, "interact_object", None)
+    if callable(interact_object):
+        interact_object(object_id)
+        actions += add_action(action_counts, "startup_service_progress_retry_interact")
+
+    read_packets_for = getattr(client, "read_packets_for", None)
+    if callable(read_packets_for):
+        read_packets_for(max(0.05, min(0.25, float(getattr(args, "startup_service_progress_poll_interval", 0.25) or 0.25))))
+
+    accept_custom_dialog = getattr(client, "accept_custom_dialog", None)
+    if callable(accept_custom_dialog):
+        accept_custom_dialog()
+        actions += add_action(action_counts, "startup_service_progress_retry_accept_dialog")
+
+    return actions
+
+
+def wait_for_startup_service_dynamic_quest_progress(
+    args: argparse.Namespace,
+    account: DummyAccount,
+    client,
+    action_counts: dict[str, int],
+    mark_progress_snapshot,
+    log_encounter_event,
+) -> int:
+    if not startup_service_dynamic_quest_progress_wait_enabled(args):
+        return 0
+
+    actions = add_action(action_counts, "startup_service_progress_wait")
+    wait_seconds = startup_service_progress_wait_seconds(args)
+    poll_interval = max(0.05, float(getattr(args, "startup_service_progress_poll_interval", 0.25) or 0.25))
+    retry_after = max(0.0, float(getattr(args, "startup_service_progress_retry_after", 0.8) or 0.0))
+    retry_interval = max(0.05, float(getattr(args, "startup_service_progress_retry_interval", 1.0) or 1.0))
+    max_retries = max(0, int(getattr(args, "startup_service_progress_max_retries", 2) or 0))
+    started_at = time.monotonic()
+    deadline = started_at + wait_seconds
+    next_retry = started_at + retry_after
+    retries = 0
+    api_error_logged = False
+    last_error = ""
+    read_packets_for = getattr(client, "read_packets_for", None)
+
+    while time.monotonic() < deadline:
+        if callable(read_packets_for):
+            read_packets_for(min(0.25, poll_interval))
+        else:
+            time.sleep(min(0.25, poll_interval))
+
+        now = time.monotonic()
+        try:
+            progress_snapshot = fetch_dynamic_quest_progress_snapshot(args, account)
+            active_items = mark_progress_snapshot(progress_snapshot, now, "startup_wait")
+            if active_items:
+                actions += add_action(action_counts, "startup_service_progress_wait_active")
+                log_encounter_event(
+                    "startup_service_progress_wait_active",
+                    now,
+                    active_count=len(active_items),
+                    retries=retries,
+                )
+                return actions
+        except Exception as exc:
+            last_error = short_text(str(exc), 220)
+            if not api_error_logged:
+                api_error_logged = True
+                actions += add_action(action_counts, "startup_service_progress_wait_api_error")
+                log_encounter_event(
+                    "startup_service_progress_wait_api_error",
+                    now,
+                    error=last_error,
+                )
+
+        if retries < max_retries and now >= next_retry:
+            retry_actions = retry_startup_service_dynamic_quest_dialog(client, args, action_counts)
+            actions += retry_actions
+            retries += 1
+            next_retry = now + retry_interval
+            log_encounter_event(
+                "startup_service_progress_retry_interact",
+                now,
+                retries=retries,
+                retry_actions=retry_actions,
+                npc_name=str(getattr(getattr(client, "startup_service_last_npc", None), "name", "") or ""),
+                object_id=int(getattr(getattr(client, "startup_service_last_npc", None), "object_id", 0) or 0),
+            )
+
+    actions += add_action(action_counts, "startup_service_progress_wait_timeout")
+    log_encounter_event(
+        "startup_service_progress_wait_timeout",
+        time.monotonic(),
+        retries=retries,
+        last_error=last_error,
+    )
+    return actions
+
+
+def dynamic_quest_progress_has_completed_item(
+    snapshot: dict[str, object] | None,
+    args: argparse.Namespace | None = None,
+) -> bool:
+    return any(
+        dynamic_quest_progress_item_indicates_terminal_completion(item)
+        for item in dynamic_quest_progress_active_items(snapshot, args)
+    )
+
+
+def dynamic_quest_progress_node_type(item: dict[str, object]) -> int:
+    raw = item.get("currentNodeType", item.get("current_node_type", -1))
+    if isinstance(raw, str):
+        normalized = raw.strip().lower()
+        if normalized in {"returntonpc", "return_to_npc", "return"}:
+            return 2
+        if normalized == "explore":
+            return 6
+
+    try:
+        return int(raw or -1)
+    except (TypeError, ValueError):
+        return -1
+
+
+def dynamic_quest_progress_return_item(
+    snapshot: dict[str, object] | None,
+    args: argparse.Namespace | None = None,
+) -> dict[str, object] | None:
+    for item in dynamic_quest_progress_active_items(snapshot, args):
+        if bool(item.get("isComplete", item.get("is_complete", False))):
+            continue
+
+        node_id = str(item.get("currentNodeId", item.get("current_node_id", "")) or "").strip().lower()
+        node_type = dynamic_quest_progress_node_type(item)
+        if node_id == "return" or node_type == 2:
+            return item
+
+    return None
+
+
+def dynamic_quest_progress_explore_item(
+    snapshot: dict[str, object] | None,
+    args: argparse.Namespace | None = None,
+) -> dict[str, object] | None:
+    for item in dynamic_quest_progress_active_items(snapshot, args):
+        if bool(item.get("isComplete", item.get("is_complete", False))):
+            continue
+
+        node_id = str(item.get("currentNodeId", item.get("current_node_id", "")) or "").strip().lower()
+        if node_id == "explore" or dynamic_quest_progress_node_type(item) == 6:
+            return item
+
+    return None
+
+
+def dynamic_quest_objective_int(objective: dict[str, object], *keys: str) -> int:
+    for key in keys:
+        value = objective.get(key)
+        if value is None:
+            continue
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            continue
+
+    return 0
+
+
+def dynamic_quest_progress_objective_text(item: dict[str, object] | None, *keys: str) -> str:
+    if not isinstance(item, dict):
+        return ""
+
+    objective = item.get("currentObjective", item.get("current_objective"))
+    if not isinstance(objective, dict):
+        return ""
+
+    for key in keys:
+        value = objective.get(key)
+        if value is not None:
+            return str(value or "").strip()
+    return ""
+
+
+def dynamic_quest_progress_return_npc_internal_id(item: dict[str, object] | None) -> str:
+    return dynamic_quest_progress_objective_text(
+        item,
+        "npcInternalId",
+        "npc_internal_id",
+        "NpcInternalId",
+    )
+
+
+def dynamic_quest_explore_destination(item: dict[str, object] | None) -> tuple[MovementDestination, int, int, str] | None:
+    if not isinstance(item, dict):
+        return None
+
+    objective = item.get("currentObjective", item.get("current_objective"))
+    if not isinstance(objective, dict):
+        return None
+
+    x = dynamic_quest_objective_int(objective, "x", "X")
+    y = dynamic_quest_objective_int(objective, "y", "Y")
+    z = dynamic_quest_objective_int(objective, "z", "Z")
+    radius = dynamic_quest_objective_int(objective, "radius", "Radius")
+    region = dynamic_quest_objective_int(objective, "regionId", "region_id", "RegionId")
+    if x <= 0 or y <= 0:
+        return None
+
+    location_name = str(
+        objective.get("locationName", objective.get("location_name", objective.get("LocationName", ""))) or ""
+    ).strip()
+    return destination_from_point("dynamic-quest-explore", x, y, max(0, z)), max(64, radius or 450), region, location_name
+
+
+def dynamic_quest_explore_progress_reached_distance(radius: int | float) -> float:
+    server_radius = max(64.0, float(radius or 450))
+    return max(32.0, server_radius)
+
+
+def dynamic_quest_explore_move_stop_distance(radius: int | float) -> float:
+    server_radius = max(64.0, float(radius or 450))
+    return max(32.0, min(server_radius * 0.5, max(32.0, server_radius - 32.0)))
+
+
+def dynamic_quest_explore_cached_destination_reached(client, explore_destination: tuple[MovementDestination, int, int, str] | None) -> bool:
+    if explore_destination is None:
+        return False
+
+    move_destination, radius, _, _ = explore_destination
+    stop_distance = dynamic_quest_explore_progress_reached_distance(radius)
+    dx = float(int(getattr(client, "x", 0) or 0)) - float(move_destination.x)
+    dy = float(int(getattr(client, "y", 0) or 0)) - float(move_destination.y)
+    return math.hypot(dx, dy) <= stop_distance
+
+
+def dynamic_quest_explore_should_yield_to_rescue(
+    args: argparse.Namespace,
+    party_snapshot: dict[str, int | float | str] | None,
+    *,
+    now: float,
+) -> bool:
+    if party_snapshot is None:
+        return False
+
+    rescue_target_id = int(party_snapshot.get("rescue_target_id", 0) or 0)
+    if rescue_target_id <= 0:
+        return False
+
+    if not getattr(args, "party_rescue_aggro", False):
+        rescue_name = str(party_snapshot.get("rescue_target_name", "") or "")
+        followup_name = str(getattr(args, "dynamic_quest_followup_target_name", "") or "")
+        normalized_rescue_name = normalize_target_name(rescue_name)
+        normalized_followup_name = normalize_target_name(followup_name)
+        matches_followup_name = bool(
+            normalized_rescue_name
+            and normalized_followup_name
+            and (
+                normalized_rescue_name == normalized_followup_name
+                or normalized_rescue_name in normalized_followup_name
+                or normalized_followup_name in normalized_rescue_name
+            )
+        )
+        if not name_matches_required_target(args, rescue_name) and not matches_followup_name:
+            return False
+
+    requested_at = float(party_snapshot.get("rescue_requested_at", 0.0) or 0.0)
+    if requested_at <= 0.0:
+        return True
+
+    rescue_age = now - requested_at
+    max_age = max(0.0, float(getattr(args, "party_rescue_max_age", 0.0) or 0.0))
+    return rescue_age >= 0.0 and (max_age <= 0.0 or rescue_age <= max_age)
+
+
+def is_dynamic_quest_reward_message(text: str) -> bool:
+    normalized = str(text or "").strip().lower()
+    return "동적 퀘스트 보상" in normalized or "dynamic quest reward" in normalized
+
+
+def dynamic_quest_dialog_response_byte(value: object) -> int:
+    normalized = str(value or "").strip().lower()
+    if normalized in {"decline", "no", "false", "0"}:
+        return 0
+    return 1
+
+
+def dynamic_quest_required_timeline_events(args: argparse.Namespace) -> set[str]:
+    raw = str(getattr(args, "dynamic_quest_require_timeline_events", "") or "")
+    return {
+        item.strip().lower()
+        for item in raw.replace("|", ",").split(",")
+        if item.strip()
+    }
+
+
+def dynamic_quest_required_presentation_triggers(args: argparse.Namespace) -> set[str]:
+    raw = str(getattr(args, "dynamic_quest_require_presentation_triggers", "") or "")
+    return {
+        f"presentation:{item.strip().lower()}"
+        for item in raw.replace("|", ",").split(",")
+        if item.strip()
+    }
+
+
+def dynamic_quest_expected_final_node(args: argparse.Namespace) -> str:
+    return str(getattr(args, "dynamic_quest_expected_final_node", "") or "").strip().lower()
+
+
+def dynamic_quest_followup_target_name(args: argparse.Namespace) -> str:
+    return str(getattr(args, "dynamic_quest_followup_target_name", "") or "").strip()
+
+
+def dynamic_quest_followup_target_enabled(args: argparse.Namespace) -> bool:
+    return bool(dynamic_quest_expected_final_node(args) and dynamic_quest_followup_target_name(args))
+
+
+def apply_dynamic_quest_followup_hunt_args(args: argparse.Namespace) -> dict[str, object]:
+    target_name = dynamic_quest_followup_target_name(args)
+    previous = {
+        "require_target_name": getattr(args, "require_target_name", ""),
+        "prefer_target_name": getattr(args, "prefer_target_name", ""),
+        "required_target_home": getattr(args, "required_target_home", None),
+        "min_target_level": getattr(args, "min_target_level", 1),
+        "max_target_level": getattr(args, "max_target_level", -1),
+        "required_target_home_stop_distance": getattr(args, "required_target_home_stop_distance", 0.0),
+        "target_home_max_distance": getattr(args, "target_home_max_distance", 0.0),
+        "max_target_distance": getattr(args, "max_target_distance", 0.0),
+        "hunter_target_api_scout": getattr(args, "hunter_target_api_scout", False),
+        "hunter_target_api_radius": getattr(args, "hunter_target_api_radius", 0.0),
+        "required_target_home_hunt_distance": getattr(args, "required_target_home_hunt_distance", 0.0),
+        "flee_home": getattr(args, "flee_home", None),
+        "flee_dynamic_safe_point": getattr(args, "flee_dynamic_safe_point", False),
+    }
+
+    args.require_target_name = target_name
+    args.prefer_target_name = target_name
+
+    followup_home = getattr(args, "dynamic_quest_followup_target_home", None)
+    if followup_home is not None:
+        args.required_target_home = followup_home
+        args.flee_dynamic_safe_point = True
+
+    min_level = int(getattr(args, "dynamic_quest_followup_min_target_level", 0) or 0)
+    max_level = int(getattr(args, "dynamic_quest_followup_max_target_level", 0) or 0)
+    if min_level > 0:
+        args.min_target_level = min_level
+    if max_level > 0:
+        args.max_target_level = max(max_level, int(getattr(args, "min_target_level", 1) or 1))
+
+    args.required_target_home_stop_distance = float(
+        getattr(args, "dynamic_quest_followup_target_home_stop_distance", 650.0) or 650.0
+    )
+    args.target_home_max_distance = max(
+        float(getattr(args, "target_home_max_distance", 0.0) or 0.0),
+        float(getattr(args, "dynamic_quest_followup_target_home_max_distance", 9000.0) or 9000.0),
+    )
+    args.required_target_home_hunt_distance = float(
+        getattr(args, "dynamic_quest_followup_target_home_hunt_distance", args.target_home_max_distance)
+        or args.target_home_max_distance
+    )
+    followup_max_target_distance = float(getattr(args, "dynamic_quest_followup_max_target_distance", 9000.0) or 9000.0)
+    args.max_target_distance = max(
+        float(getattr(args, "max_target_distance", 0.0) or 0.0),
+        followup_max_target_distance,
+    )
+    args.hunter_target_api_radius = max(
+        float(getattr(args, "hunter_target_api_radius", 0.0) or 0.0),
+        float(getattr(args, "max_target_distance", 0.0) or 0.0),
+    )
+    args.hunter_target_api_scout = True
+    return previous
+
+
+def dynamic_quest_current_node_id(item: dict[str, object]) -> str:
+    return str(item.get("currentNodeId", item.get("current_node_id", "")) or "").strip()
+
+
+def dynamic_quest_active_items_match_expected_final_node(
+    active_items: list[dict[str, object]],
+    expected_node_id: str,
+) -> bool:
+    expected = str(expected_node_id or "").strip().lower()
+    if not expected or not active_items:
+        return False
+
+    return any(dynamic_quest_current_node_id(item).lower() == expected for item in active_items)
+
+
+def dynamic_quest_edge_condition_value(edge: dict[str, object]) -> str:
+    raw = edge.get("condition", edge.get("conditionValue", edge.get("condition_value", "")))
+    return str(raw or "").strip().lower()
+
+
+def dynamic_quest_edge_is_world_signal(edge: dict[str, object]) -> bool:
+    condition = dynamic_quest_edge_condition_value(edge)
+    return condition in {"6", "worldsignal", "world_signal", "world-signal"}
+
+
+def dynamic_quest_item_has_world_signal_edge_to_expected_final_node(
+    item: dict[str, object],
+    expected_node_id: str,
+) -> bool:
+    current = dynamic_quest_current_node_id(item).lower()
+    expected = str(expected_node_id or "").strip().lower()
+    if not current or not expected:
+        return False
+
+    nodes = item.get("nodes")
+    if not isinstance(nodes, list):
+        return False
+
+    for node in nodes:
+        if not isinstance(node, dict):
+            continue
+        node_id = str(node.get("id", node.get("nodeId", node.get("node_id", ""))) or "").strip().lower()
+        if node_id != current:
+            continue
+
+        edges = node.get("edges")
+        if not isinstance(edges, list):
+            return False
+        for edge in edges:
+            if not isinstance(edge, dict):
+                continue
+            to_node = str(edge.get("toNodeId", edge.get("to_node_id", "")) or "").strip().lower()
+            if to_node == expected and dynamic_quest_edge_is_world_signal(edge):
+                return True
+        return False
+
+    return False
+
+
+def dynamic_quest_active_items_match_followup_start_node(
+    active_items: list[dict[str, object]],
+    expected_node_id: str,
+) -> bool:
+    expected = str(expected_node_id or "").strip().lower()
+    if not expected or not active_items:
+        return False
+
+    for item in active_items:
+        node_id = dynamic_quest_current_node_id(item).lower()
+        if not node_id:
+            continue
+        if dynamic_quest_progress_item_indicates_terminal_completion(item):
+            continue
+        if node_id == expected:
+            return True
+        if dynamic_quest_item_has_world_signal_edge_to_expected_final_node(item, expected):
+            return True
+
+    return False
+
+
+def dynamic_quest_active_items_have_choice_node(active_items: list[dict[str, object]]) -> bool:
+    for item in active_items or []:
+        if not isinstance(item, dict):
+            continue
+        if dynamic_quest_progress_item_indicates_terminal_completion(item):
+            continue
+
+        choices = item.get("choices", item.get("Choices"))
+        if isinstance(choices, list) and choices:
+            return True
+
+        node_type = str(item.get("currentNodeType", item.get("current_node_type", "")) or "").strip().lower()
+        if node_type in {"3", "choice"} and dynamic_quest_current_node_id(item):
+            return True
+
+    return False
+
+
+def should_hunter_api_rescan_lost_target(
+    args: argparse.Namespace,
+    *,
+    current_target: int,
+    current_target_visible: bool,
+    fresh_api_observation: bool,
+    selected_npc,
+) -> bool:
+    return bool(
+        getattr(args, "hunter", False)
+        and int(current_target or 0) > 0
+        and not current_target_visible
+        and not fresh_api_observation
+        and selected_npc is None
+        and target_loss_rescan_enabled(args)
+        and (
+            getattr(args, "hunter_target_api_scout", False)
+            or dynamic_quest_target_api_scout_enabled(args)
+        )
+    )
+
+
+def dynamic_quest_expected_final_match_is_followup_wait_node(
+    active_items: list[dict[str, object]],
+    expected_node_id: str,
+) -> bool:
+    return bool(
+        dynamic_quest_active_items_match_expected_final_node(active_items, expected_node_id)
+        and dynamic_quest_active_items_match_followup_start_node(active_items, expected_node_id)
+    )
+
+
+def dynamic_quest_timeline_event_text(event: dict[str, object], *keys: str) -> str:
+    for key in keys:
+        value = event.get(key)
+        if value is not None:
+            return str(value or "").strip()
+    return ""
+
+
+def dynamic_quest_timeline_events(snapshot: dict[str, object] | None) -> list[dict[str, object]]:
+    if not isinstance(snapshot, dict):
+        return []
+
+    events = snapshot.get("events")
+    if not isinstance(events, list):
+        return []
+
+    return [event for event in events if isinstance(event, dict)]
+
+
+def dynamic_quest_presentation_beats(snapshot: dict[str, object] | None) -> list[dict[str, object]]:
+    if not isinstance(snapshot, dict):
+        return []
+
+    beats = snapshot.get("presentationBeats", snapshot.get("presentation_beats"))
+    if not isinstance(beats, list):
+        return []
+
+    return [beat for beat in beats if isinstance(beat, dict)]
+
+
+def dynamic_quest_timeline_event_matches_expected(args: argparse.Namespace, event: dict[str, object]) -> bool:
+    expected_quest_id = str(getattr(args, "dynamic_quest_expected_quest_id", "") or "").strip().lower()
+    if not expected_quest_id:
+        return True
+
+    quest_id = dynamic_quest_timeline_event_text(event, "questId", "quest_id").lower()
+    return quest_id == expected_quest_id
+
+
+def dynamic_quest_presentation_beat_matches_expected(args: argparse.Namespace, beat: dict[str, object]) -> bool:
+    expected_quest_id = str(getattr(args, "dynamic_quest_expected_quest_id", "") or "").strip().lower()
+    if not expected_quest_id:
+        return True
+
+    quest_id = dynamic_quest_timeline_event_text(beat, "questId", "quest_id").lower()
+    return quest_id == expected_quest_id
+
+
+def mark_dynamic_quest_timeline_snapshot(
+    args: argparse.Namespace,
+    snapshot: dict[str, object] | None,
+    action_counts: dict[str, int],
+    *,
+    now: float,
+    source: str,
+    log_encounter_event,
+) -> tuple[set[str], list[str]]:
+    seen: set[str] = set()
+    choice_ids: list[str] = []
+    world_signals: list[str] = []
+    presentation_triggers: list[str] = []
+    events = [
+        event
+        for event in dynamic_quest_timeline_events(snapshot)
+        if dynamic_quest_timeline_event_matches_expected(args, event)
+    ]
+    presentation_beats = [
+        beat
+        for beat in dynamic_quest_presentation_beats(snapshot)
+        if dynamic_quest_presentation_beat_matches_expected(args, beat)
+    ]
+    for event in events:
+        event_type = dynamic_quest_timeline_event_text(event, "eventType", "event_type").lower()
+        if not event_type:
+            continue
+
+        seen.add(event_type)
+        if event_type == "choice_selected":
+            add_action(action_counts, "dynamic_quest_timeline_choice_selected")
+            choice_id = dynamic_quest_timeline_event_text(event, "choiceId", "choice_id")
+            if choice_id:
+                choice_ids.append(choice_id)
+        elif event_type == "world_signal":
+            add_action(action_counts, "dynamic_quest_timeline_world_signal")
+            detail = dynamic_quest_timeline_event_text(event, "detail")
+            if detail:
+                world_signals.append(detail)
+
+    for beat in presentation_beats:
+        trigger = dynamic_quest_timeline_event_text(beat, "trigger")
+        if not trigger:
+            continue
+
+        seen.add(f"presentation:{trigger.lower()}")
+        add_action(action_counts, "dynamic_quest_timeline_presentation_beat")
+        presentation_triggers.append(trigger)
+
+    required = dynamic_quest_required_timeline_events(args) | dynamic_quest_required_presentation_triggers(args)
+    missing = sorted(required - seen)
+    log_encounter_event(
+        "dynamic_quest_timeline_snapshot",
+        now,
+        source=source,
+        event_count=len(events),
+        presentation_beat_count=len(presentation_beats),
+        seen_event_types=sorted(seen),
+        missing_required_events=missing,
+        choice_ids=choice_ids[-5:],
+        world_signals=world_signals[-5:],
+        presentation_triggers=presentation_triggers[-5:],
+    )
+    if missing:
+        add_action(action_counts, "dynamic_quest_timeline_required_missing")
+    return seen, missing
+
+
+def accept_dynamic_quest_return_dialog(client, args: argparse.Namespace, action_counts: dict[str, int]) -> int:
+    if not getattr(args, "dynamic_quest_return_accept_dialog", True):
+        return 0
+
+    accept_dialog = getattr(client, "accept_custom_dialog", None)
+    if not callable(accept_dialog):
+        return 0
+
+    accept_dialog(dynamic_quest_dialog_response_byte(getattr(args, "dynamic_quest_return_dialog_response", "accept")))
+    return add_action(action_counts, "dynamic_quest_return_accept_dialog")
+
+
+def dynamic_quest_return_destination(args: argparse.Namespace) -> MovementDestination | None:
+    waypoint = getattr(args, "dynamic_quest_return_home", None)
+    if waypoint is None:
+        return None
+
+    return destination_from_point("dynamic-quest-return", waypoint.x, waypoint.y, waypoint.z)
+
+
+def dynamic_quest_return_enabled(args: argparse.Namespace) -> bool:
+    return bool(
+        getattr(args, "dynamic_quest_return_after_required_target", False)
+        and str(getattr(args, "dynamic_quest_return_npc_name", "") or "").strip()
+        and dynamic_quest_return_destination(args) is not None
+    )
+
+
+def dynamic_quest_final_progress_enabled(args: argparse.Namespace) -> bool:
+    return bool(dynamic_quest_return_enabled(args) or getattr(args, "dynamic_quest_observe_final_progress", False))
+
+
+def dynamic_quest_observe_final_completion_verified(
+    *,
+    active_count: int,
+    progress_seen: bool,
+    return_enabled: bool,
+    completion_signal_seen: bool = False,
+    completion_item_seen: bool = False,
+) -> bool:
+    return bool(
+        not return_enabled
+        and (progress_seen or completion_signal_seen)
+        and (int(active_count or 0) <= 0 or completion_item_seen)
+    )
+
+
+def dynamic_quest_progress_item_indicates_completion(item: dict[str, object] | None) -> bool:
+    if not isinstance(item, dict):
+        return False
+
+    if bool(item.get("isComplete", item.get("is_complete", False))):
+        return True
+
+    node_id = str(item.get("currentNodeId", item.get("current_node_id", "")) or "").strip().lower()
+    node_type = dynamic_quest_progress_node_type(item)
+    if node_id == "complete" or node_type == 4:
+        return True
+
+    objective = item.get("currentObjective", item.get("current_objective", {}))
+    target_count = 0
+    target_name = ""
+    if isinstance(objective, dict):
+        target_count = dynamic_quest_objective_int(objective, "targetCount", "target_count")
+        target_name = dynamic_quest_progress_objective_text(objective, "targetName", "target_name", "name")
+    if target_count <= 0:
+        target_count = dynamic_quest_objective_int(item, "targetCount", "target_count")
+    if not target_name:
+        target_name = dynamic_quest_progress_objective_text(item, "targetName", "target_name")
+
+    current_count = dynamic_quest_objective_int(item, "count", "currentCount", "current_count")
+    return bool(target_name and target_count > 0 and current_count >= target_count)
+
+
+def dynamic_quest_progress_items_indicate_completion(items: list[dict[str, object]]) -> bool:
+    return any(dynamic_quest_progress_item_indicates_completion(item) for item in items)
+
+
+def dynamic_quest_progress_item_indicates_terminal_completion(item: dict[str, object] | None) -> bool:
+    if not isinstance(item, dict):
+        return False
+
+    if bool(item.get("isComplete", item.get("is_complete", False))):
+        return True
+
+    node_id = str(item.get("currentNodeId", item.get("current_node_id", "")) or "").strip().lower()
+    return node_id == "complete" or dynamic_quest_progress_node_type(item) == 4
+
+
+def dynamic_quest_progress_items_indicate_terminal_completion(items: list[dict[str, object]]) -> bool:
+    return any(dynamic_quest_progress_item_indicates_terminal_completion(item) for item in items)
+
+
+def dynamic_quest_observe_final_completion_item_allowed(
+    args: argparse.Namespace,
+    active_items: list[dict[str, object]],
+    *,
+    completion_item_seen: bool,
+    followup_hunt_started: bool,
+) -> bool:
+    if dynamic_quest_followup_target_enabled(args) and followup_hunt_started:
+        return dynamic_quest_progress_items_indicate_terminal_completion(active_items)
+    return bool(completion_item_seen)
+
+
+def dynamic_quest_should_start_return_after_shared_completion(
+    args: argparse.Namespace,
+    *,
+    dynamic_quest_return_pending: bool,
+    dynamic_quest_return_completed: bool,
+) -> bool:
+    if dynamic_quest_requires_return_progress_confirmation(args):
+        return False
+
+    return (
+        dynamic_quest_return_enabled(args)
+        and not bool(dynamic_quest_return_pending)
+        and not bool(dynamic_quest_return_completed)
+    )
+
+
+def dynamic_quest_requires_return_progress_confirmation(args: argparse.Namespace) -> bool:
+    return dynamic_quest_return_enabled(args) and dynamic_quest_final_progress_enabled(args)
+
+
+def dynamic_quest_requires_completion_progress_confirmation(args: argparse.Namespace) -> bool:
+    return dynamic_quest_final_progress_enabled(args)
+
+
+def dynamic_quest_shared_completion_should_finish_local_hunt(args: argparse.Namespace) -> bool:
+    return bool(
+        dynamic_quest_requires_completion_progress_confirmation(args)
+        and dynamic_quest_followup_target_enabled(args)
+    )
+
+
+def dynamic_quest_completion_share_name(args: argparse.Namespace, fallback: str = "") -> str:
+    return (
+        dynamic_quest_followup_target_name(args)
+        or str(fallback or "").strip()
+        or str(getattr(args, "require_target_name", "") or "").strip()
+    )
+
+
+def dynamic_quest_return_can_act(client) -> bool:
+    return not bool(getattr(client, "is_dead", False))
+
+
+def dynamic_quest_target_api_scout_enabled(args: argparse.Namespace) -> bool:
+    return bool(
+        getattr(args, "dynamic_quest_target_api_scout", True)
+        and dynamic_quest_return_enabled(args)
+        and required_target_tokens(args)
+    )
+
+
+def current_target_api_refresh_enabled(args: argparse.Namespace) -> bool:
+    return bool(getattr(args, "current_target_api_refresh", False) or dynamic_quest_target_api_scout_enabled(args))
+
+
+def dynamic_quest_return_interact_distance(args: argparse.Namespace) -> float:
+    configured = max(1.0, float(getattr(args, "dynamic_quest_return_interact_distance", 0.0) or 0.0))
+    return min(configured, DYNAMIC_QUEST_RETURN_MAX_INTERACT_DISTANCE)
+
+
+def dynamic_quest_return_stop_distance(args: argparse.Namespace) -> float:
+    configured = max(1.0, float(getattr(args, "dynamic_quest_return_stop_distance", 0.0) or 0.0))
+    return min(configured, dynamic_quest_return_interact_distance(args))
+
+
+def three_dimensional_distance_between_points(
+    ax: int | float,
+    ay: int | float,
+    az: int | float,
+    bx: int | float,
+    by: int | float,
+    bz: int | float,
+) -> float:
+    return math.sqrt((float(ax) - float(bx)) ** 2 + (float(ay) - float(by)) ** 2 + (float(az) - float(bz)) ** 2)
+
+
+def dynamic_quest_return_actor_distance(client, actor) -> float:
+    if all(hasattr(obj, attr) for obj in (client, actor) for attr in ("x", "y", "z")):
+        return three_dimensional_distance_between_points(
+            getattr(client, "x", 0) or 0,
+            getattr(client, "y", 0) or 0,
+            getattr(client, "z", 0) or 0,
+            getattr(actor, "x", 0) or 0,
+            getattr(actor, "y", 0) or 0,
+            getattr(actor, "z", 0) or 0,
+        )
+    return float(client.distance_to(actor))
+
+
+def dynamic_quest_return_target_stop_distance(args: argparse.Namespace, client, target) -> float:
+    stop_distance = dynamic_quest_return_stop_distance(args)
+    interact_distance = dynamic_quest_return_interact_distance(args)
+    if not hasattr(client, "z") or not hasattr(target, "z"):
+        return stop_distance
+
+    z_delta = abs(float(getattr(client, "z", 0) or 0) - float(getattr(target, "z", 0) or 0))
+    if z_delta >= interact_distance:
+        return 1.0
+
+    horizontal_limit = math.sqrt(max(1.0, interact_distance * interact_distance - z_delta * z_delta))
+    return max(1.0, min(stop_distance, horizontal_limit - DYNAMIC_QUEST_RETURN_STOP_DISTANCE_BUFFER))
+
+
+def dynamic_quest_return_actor_destination(actor) -> MovementDestination:
+    object_id = int(getattr(actor, "object_id", getattr(actor, "objectId", 0)) or 0)
+    return MovementDestination(
+        key=f"dynamic-quest-return-npc-{object_id}",
+        x=int(getattr(actor, "x", 0) or 0),
+        y=int(getattr(actor, "y", 0) or 0),
+        z=int(getattr(actor, "z", 0) or 0),
+    )
+
+
+def dynamic_quest_return_actor_internal_id(actor) -> str:
+    return str(
+        getattr(actor, "internal_id", getattr(actor, "internalId", "")) or ""
+    ).strip()
+
+
+def dynamic_quest_return_actor_matches_expected(actor, expected_internal_id: str) -> bool:
+    expected = str(expected_internal_id or "").strip().lower()
+    if not expected:
+        return True
+
+    actual = dynamic_quest_return_actor_internal_id(actor).lower()
+    return bool(actual and actual == expected)
+
+
+def dynamic_quest_return_npc_candidates(client, args: argparse.Namespace) -> list:
+    return_npc_tokens = [
+        token.strip().lower()
+        for token in str(getattr(args, "dynamic_quest_return_npc_name", "") or "").split(",")
+        if token.strip()
+    ]
+    if not return_npc_tokens:
+        return []
+
+    def matches_return_npc(npc) -> bool:
+        npc_name = str(getattr(npc, "name", "") or "").lower()
+        return any(token in npc_name for token in return_npc_tokens)
+
+    fresh_candidates = [
+        npc
+        for npc in client.visible_npcs(max_age=getattr(args, "npc_max_age", 30.0), include_peace=True)
+        if matches_return_npc(npc)
+    ]
+    if fresh_candidates:
+        fresh_candidates.sort(key=client.distance_to)
+        return fresh_candidates
+
+    interact_distance = dynamic_quest_return_interact_distance(args)
+    cached_candidates = [
+        npc
+        for npc in getattr(client, "npcs", {}).values()
+        if matches_return_npc(npc) and dynamic_quest_return_actor_distance(client, npc) <= interact_distance
+    ]
+    cached_candidates.sort(key=lambda npc: dynamic_quest_return_actor_distance(client, npc))
+    return cached_candidates
+
+
+def dynamic_quest_return_should_query_npc_api(
+    return_npc,
+    *,
+    return_npc_distance: float,
+    interact_distance: float,
+    expected_internal_id: str = "",
+) -> bool:
+    if str(expected_internal_id or "").strip():
+        return True
+    if return_npc is None:
+        return True
+    return float(return_npc_distance or 0.0) > max(1.0, float(interact_distance or 0.0))
+
+
+def dynamic_quest_return_npc_tokens(args: argparse.Namespace) -> list[str]:
+    return [
+        token.strip().lower()
+        for token in str(getattr(args, "dynamic_quest_return_npc_name", "") or "").split(",")
+        if token.strip()
+    ]
+
+
+def dynamic_quest_return_npc_query_name(args: argparse.Namespace) -> str:
+    for token in str(getattr(args, "dynamic_quest_return_npc_name", "") or "").split(","):
+        stripped = token.strip()
+        if stripped:
+            return stripped
+    return ""
+
+
+def dynamic_quest_return_npc_api_radius(args: argparse.Namespace, expected_internal_id: str = "") -> int:
+    base_radius = max(
+        DYNAMIC_QUEST_RETURN_NPC_API_SEARCH_RADIUS,
+        int(dynamic_quest_return_interact_distance(args)),
+    )
+    if str(expected_internal_id or "").strip():
+        return max(base_radius, 1600)
+    return base_radius
+
+
+def build_dynamic_quest_return_npc_api_url(
+    args: argparse.Namespace,
+    client,
+    region: int,
+    expected_internal_id: str = "",
+) -> str:
+    api_host = args.host if args.host in ("127.0.0.1", "localhost", "::1") else "127.0.0.1"
+    base_url = f"http://{api_host}:{args.api_port}/api/dummy/combat/npcs"
+    npc_name = dynamic_quest_return_npc_query_name(args)
+    query: dict[str, object] = {
+        "region": max(0, int(region)),
+        "x": int(getattr(client, "x", 0) or 0),
+        "y": int(getattr(client, "y", 0) or 0),
+        "radius": dynamic_quest_return_npc_api_radius(args, expected_internal_id),
+        "limit": 25 if str(expected_internal_id or "").strip() else 5,
+    }
+    if npc_name:
+        query["name"] = npc_name
+    return f"{base_url}?{urllib.parse.urlencode(query)}"
+
+
+def parse_dynamic_quest_return_npc_observation(
+    args: argparse.Namespace,
+    payload: object,
+    expected_internal_id: str = "",
+) -> RequiredTargetObservation | None:
+    if isinstance(payload, dict):
+        raw_items = payload.get("items") or payload.get("npcs") or payload.get("results") or [payload]
+    else:
+        raw_items = payload
+
+    if not isinstance(raw_items, list):
+        return None
+
+    tokens = dynamic_quest_return_npc_tokens(args)
+    items = [
+        item
+        for item in raw_items
+        if isinstance(item, dict)
+        and tokens
+        and any(token in str(item.get("name", "") or "").lower() for token in tokens)
+    ]
+    if not items:
+        return None
+
+    expected_internal_id = str(expected_internal_id or "").strip().lower()
+    if expected_internal_id:
+        exact_items = [
+            item
+            for item in items
+            if str(item.get("internalId", item.get("internal_id", "")) or "").strip().lower()
+            == expected_internal_id
+        ]
+        if exact_items:
+            items = exact_items
+
+    item = items[0]
+    try:
+        return RequiredTargetObservation(
+            object_id=int(item.get("objectId", item.get("object_id", 0)) or 0),
+            name=str(item.get("name", "") or ""),
+            x=int(item.get("x", 0) or 0),
+            y=int(item.get("y", 0) or 0),
+            z=int(item.get("z", 0) or 0),
+            level=int(item.get("level", 0) or 0),
+            flags=int(item.get("flags", 0) or 0),
+            last_seen=time.monotonic(),
+            health_percent=float(item.get("healthPercent", item.get("health_percent", 0.0)) or 0.0),
+            health=int(item.get("health", 0) or 0),
+            max_health=int(item.get("maxHealth", item.get("max_health", 0)) or 0),
+            is_alive=bool(item.get("isAlive", item.get("is_alive", True))),
+            in_combat=bool(item.get("inCombat", item.get("in_combat", False))),
+            has_aggro=bool(item.get("hasAggro", item.get("has_aggro", False))),
+            target=str(item.get("target", "") or ""),
+            is_stunned=bool(item.get("isStunned", item.get("is_stunned", False))),
+            is_mezzed=bool(item.get("isMezzed", item.get("is_mezzed", False))),
+            internal_id=str(item.get("internalId", item.get("internal_id", "")) or ""),
+        )
+    except (TypeError, ValueError):
+        return None
+
+
+def fetch_dynamic_quest_return_npc_observation(
+    args: argparse.Namespace,
+    client,
+    expected_internal_id: str = "",
+) -> RequiredTargetObservation | None:
+    region = api_region_for_client(args, client)
+    if region <= 0 or not dynamic_quest_return_npc_tokens(args):
+        return None
+
+    request = urllib.request.Request(
+        build_dynamic_quest_return_npc_api_url(args, client, region, expected_internal_id),
+        headers={"Accept": "application/json"},
+    )
+    timeout = float(
+        getattr(
+            args,
+            "dynamic_quest_return_npc_api_timeout",
+            getattr(args, "dynamic_quest_progress_api_timeout", 2.0),
+        )
+        or 2.0
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception:
+        return None
+
+    observed = parse_dynamic_quest_return_npc_observation(args, payload, expected_internal_id)
+    if observed is None or observed.object_id <= 0 or not observed.is_alive:
+        return None
+    if str(expected_internal_id or "").strip() and observed.internal_id.strip().lower() != str(expected_internal_id).strip().lower():
+        return None
+    return observed
+
+
+def dynamic_quest_return_observation_distance(client, observation: RequiredTargetObservation) -> float:
+    return three_dimensional_distance_between_points(
+        getattr(client, "x", 0) or 0,
+        getattr(client, "y", 0) or 0,
+        getattr(client, "z", 0) or 0,
+        observation.x,
+        observation.y,
+        observation.z,
+    )
+
+
+def dynamic_quest_return_api_destination(observation: RequiredTargetObservation) -> MovementDestination:
+    return MovementDestination(
+        key=f"dynamic-quest-return-npc-{int(observation.object_id)}",
+        x=int(observation.x),
+        y=int(observation.y),
+        z=int(observation.z),
+    )
+
+
 def fetch_current_target_observation(
     args: argparse.Namespace,
     region: int,
     object_id: int,
+    *,
+    force: bool = False,
 ) -> RequiredTargetObservation | None:
-    if not getattr(args, "current_target_api_refresh", False) or object_id <= 0 or region <= 0:
+    if (not force and not current_target_api_refresh_enabled(args)) or object_id <= 0 or region <= 0:
         return None
 
     request = urllib.request.Request(
@@ -11695,7 +17021,7 @@ def fetch_hunter_target_api_observation(
     rejected_target_kinds: dict[tuple[str, int], float],
     now: float,
 ) -> RequiredTargetObservation | None:
-    if not getattr(args, "hunter_target_api_scout", False):
+    if not getattr(args, "hunter_target_api_scout", False) and not dynamic_quest_target_api_scout_enabled(args):
         return None
 
     region = int(getattr(client, "zone_id", 0) or args.path_region or 0)
@@ -11758,7 +17084,9 @@ def fetch_hunter_target_api_observation(
                 continue
             if parsed.level < args.min_target_level or parsed.level > max_level:
                 continue
-            if require_tokens and not any(token in name for token in require_tokens):
+            if require_tokens and not any(
+                required_target_name_matches_for_args(args, parsed.name, token) for token in require_tokens
+            ):
                 continue
             if not allow_avoided and any(token in name for token in avoid_tokens):
                 continue
@@ -11936,6 +17264,27 @@ def target_actor_with_server_observation(actor, observation: RequiredTargetObser
         level=observation.level or int(getattr(actor, "level", 0) or 0),
         flags=int(getattr(actor, "flags", 0) or 0),
     )
+
+
+def actor_has_world_position(actor) -> bool:
+    return bool(int(getattr(actor, "x", 0) or 0) or int(getattr(actor, "y", 0) or 0))
+
+
+def should_use_server_target_observation(
+    args: argparse.Namespace,
+    actor,
+    observation: RequiredTargetObservation | None,
+    *,
+    now: float,
+) -> bool:
+    if observation is None or actor is None:
+        return False
+    if int(getattr(actor, "object_id", 0) or 0) != observation.object_id:
+        return False
+    max_age = float(getattr(args, "current_target_api_max_age", 0.0) or 0.0)
+    if max_age > 0.0 and now - observation.last_seen <= max_age:
+        return True
+    return not actor_has_world_position(actor)
 
 
 def actor_from_target_observation(observation: RequiredTargetObservation):
@@ -12286,7 +17635,9 @@ def party_objective_actor_from_snapshot_for_counterattack(
 
     target_name = str(party_snapshot.get("leader_target_name", "") or "")
     required_tokens = required_target_tokens(args)
-    if target_name and required_tokens and not any(required_target_name_matches(target_name, token) for token in required_tokens):
+    if target_name and required_tokens and not any(
+        required_target_name_matches_for_args(args, target_name, token) for token in required_tokens
+    ):
         return None
 
     return SimpleNamespace(
@@ -12330,6 +17681,43 @@ def parse_usable_skill(value: object) -> UsableSkillRef | None:
         )
     except (KeyError, TypeError, ValueError):
         return None
+
+
+SELF_UTILITY_SKILL_BUCKETS: dict[str, str] = {
+    "stealth": "stealth",
+}
+
+
+def parse_usable_self_utility_skill(value: object) -> tuple[str, UsableSpellRef] | None:
+    if not isinstance(value, dict):
+        return None
+
+    kind = str(value.get("kind", "") or "")
+    if kind in {"", "Style", "Spell", "SpellLine"}:
+        return None
+
+    identity_tokens = {
+        " ".join(str(value.get("name", "") or "").lower().split()),
+        " ".join(str(value.get("internalId", "") or "").lower().split()),
+        " ".join(str(value.get("skillType", "") or "").lower().split()),
+    }
+    bucket = next((mapped for token, mapped in SELF_UTILITY_SKILL_BUCKETS.items() if token in identity_tokens), "")
+    if not bucket:
+        return None
+
+    try:
+        ref = UsableSpellRef(
+            line_index=-1,
+            spell_level=int(value.get("level", 0) or 0),
+            name=str(value.get("name", "")),
+            level=int(value.get("level", 0) or 0),
+            use_skill_index=int(value["useSkillIndex"]),
+            use_skill_type=int(value["useSkillType"]),
+        )
+    except (KeyError, TypeError, ValueError):
+        return None
+
+    return bucket, ref
 
 
 def party_protection_ability_category(value: object) -> str:
@@ -12547,6 +17935,8 @@ def parse_combat_usable_plan(payload: object) -> CombatUsablePlan:
 
     for raw_skill in payload.get("skills", []):
         parsed = parse_usable_hybrid_spell(raw_skill)
+        if parsed is None:
+            parsed = parse_usable_self_utility_skill(raw_skill)
 
         if parsed is None:
             continue
@@ -13751,6 +19141,24 @@ def should_interrupt_drop_aggro_for_required_objective_pressure(
     return current_health_percent > 0
 
 
+def should_probe_required_objective_during_drop_aggro(
+    args: argparse.Namespace,
+    behavior_state: DummyBehaviorState | str,
+    *,
+    current_health_percent: int,
+    required_home_hunt_ready: bool,
+) -> bool:
+    if not required_target_tokens(args):
+        return False
+
+    return can_objective_pressure_interrupt(
+        behavior_state,
+        current_health_percent,
+        SimpleNamespace(required_home_hunt_ready=required_home_hunt_ready),
+        args,
+    )
+
+
 def should_overrun_flee_home(args: argparse.Namespace, *, health_percent: int) -> bool:
     if health_percent <= 0:
         return False
@@ -14193,10 +19601,14 @@ def should_defer_required_home_move_for_recent_objective_pressure(
     behavior_state: DummyBehaviorState | str,
     current_target_intent: TargetIntent | str,
     *,
+    current_target: int = 0,
     last_damage_taken_at: float,
     now: float,
     damage_grace_seconds: float = 3.0,
 ) -> bool:
+    if int(current_target or 0) > 0:
+        return False
+
     state = behavior_state_value(behavior_state)
     if state in {
         DummyBehaviorState.DropAggroAndRecover.value,
@@ -14426,7 +19838,16 @@ def move_towards_destination(
     target_in_view: bool = False,
     retry_after_block: bool = False,
     movement_speed: float | None = None,
+    clamp_to_state_cap: bool = True,
 ) -> MovementOutcome:
+    travel_movement_speed = dummy_travel_movement_speed(
+        args,
+        movement_speed,
+        client,
+        clamp_to_state_cap=clamp_to_state_cap,
+    )
+    packet_movement_speed = dummy_packet_movement_speed(travel_movement_speed)
+
     def trace_path(event: str, **fields) -> None:
         trace = getattr(client, "trace_movement", None)
 
@@ -14451,7 +19872,8 @@ def move_towards_destination(
             goal_point.z,
             step=step,
             stop_distance=stop_distance,
-            movement_speed=packet_movement_speed,
+            movement_speed=travel_movement_speed,
+            packet_speed=packet_movement_speed,
             min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
             target_in_view=target_in_view,
         )
@@ -14459,7 +19881,11 @@ def move_towards_destination(
         path_state.destination_key = ""
         path_state.resolved_goal = None
         path_state.last_plan_at = 0.0
-        actions = add_action(action_counts, "path_party_anchor_direct_fallback" if moved else "path_arrived")
+        arrived = movement_position_arrived(client, goal_point.x, goal_point.y, goal_point.z, stop_distance)
+        actions = add_action(
+            action_counts,
+            "path_party_anchor_direct_fallback" if moved else ("path_arrived" if arrived else "path_move_wait"),
+        )
         trace_path(
             "path_party_anchor_direct_fallback",
             destination=destination.key,
@@ -14472,9 +19898,7 @@ def move_towards_destination(
             reason=reason,
             moved=int(moved),
         )
-        return MovementOutcome(moved=moved, arrived=not moved, actions=actions)
-
-    packet_movement_speed = movement_speed if movement_speed is not None else getattr(args, "movement_speed", None)
+        return MovementOutcome(moved=moved, arrived=(not moved and arrived), actions=actions)
 
     if path_state.graph is None and path_state.client_grid is None and not args.nav_api_url:
         moved = client.move_towards_position(
@@ -14483,11 +19907,19 @@ def move_towards_destination(
             destination.z,
             step=step,
             stop_distance=stop_distance,
-            movement_speed=packet_movement_speed,
+            movement_speed=travel_movement_speed,
+            packet_speed=packet_movement_speed,
             min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
             target_in_view=target_in_view,
         )
-        return MovementOutcome(moved=moved, arrived=not moved)
+        return movement_outcome_from_position_attempt(
+            client,
+            destination.x,
+            destination.y,
+            destination.z,
+            moved=moved,
+            stop_distance=stop_distance,
+        )
 
     graph = path_state.graph
     safety = path_state.safety
@@ -14523,11 +19955,13 @@ def move_towards_destination(
             goal.z,
             step=step,
             stop_distance=stop_distance,
-            movement_speed=packet_movement_speed,
+            movement_speed=travel_movement_speed,
+            packet_speed=packet_movement_speed,
             min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
             target_in_view=target_in_view,
         )
-        actions += add_action(action_counts, "startup_teleporter_home_direct_move" if moved else "path_arrived")
+        arrived = movement_position_arrived(client, goal.x, goal.y, goal.z, stop_distance)
+        actions += add_action(action_counts, "startup_teleporter_home_direct_move" if moved else ("path_arrived" if arrived else "path_move_wait"))
         trace_path(
             "startup_teleporter_home_direct_move",
             destination=destination.key,
@@ -14539,7 +19973,7 @@ def move_towards_destination(
             goal_z=goal.z,
             moved=int(moved),
         )
-        return MovementOutcome(moved=moved, arrived=not moved, actions=actions)
+        return MovementOutcome(moved=moved, arrived=(not moved and arrived), actions=actions)
 
     if should_use_direct_flee_safe_move(args, destination, direct_distance):
         path_state.follower.clear()
@@ -14551,11 +19985,13 @@ def move_towards_destination(
             goal.z,
             step=step,
             stop_distance=stop_distance,
-            movement_speed=packet_movement_speed,
+            movement_speed=travel_movement_speed,
+            packet_speed=packet_movement_speed,
             min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
             target_in_view=target_in_view,
         )
-        actions += add_action(action_counts, "flee_safe_direct_move" if moved else "path_arrived")
+        arrived = movement_position_arrived(client, goal.x, goal.y, goal.z, stop_distance)
+        actions += add_action(action_counts, "flee_safe_direct_move" if moved else ("path_arrived" if arrived else "path_move_wait"))
         trace_path(
             "flee_safe_direct_move",
             destination=destination.key,
@@ -14567,7 +20003,7 @@ def move_towards_destination(
             goal_z=goal.z,
             moved=int(moved),
         )
-        return MovementOutcome(moved=moved, arrived=not moved, actions=actions)
+        return MovementOutcome(moved=moved, arrived=(not moved and arrived), actions=actions)
 
     if not force_nav_route and direct_path_allowed_for_state(path_state, current, effective_goal, args.path_last_mile_distance):
         segment_ok, segment_reason = nav_segment_allowed(args, path_state.region, current, effective_goal, path_state)
@@ -14583,12 +20019,14 @@ def move_towards_destination(
             effective_goal.z,
             step=step,
             stop_distance=stop_distance,
-            movement_speed=packet_movement_speed,
+            movement_speed=travel_movement_speed,
+            packet_speed=packet_movement_speed,
             min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
             target_in_view=target_in_view,
         )
-        actions += add_action(action_counts, "path_last_mile" if moved else "path_arrived")
-        return MovementOutcome(moved=moved, arrived=not moved, actions=actions)
+        arrived = movement_position_arrived(client, effective_goal.x, effective_goal.y, effective_goal.z, stop_distance)
+        actions += add_action(action_counts, "path_last_mile" if moved else ("path_arrived" if arrived else "path_move_wait"))
+        return MovementOutcome(moved=moved, arrived=(not moved and arrived), actions=actions)
 
     destination_changed = path_state.destination_key != destination.key
     if destination_changed:
@@ -14731,7 +20169,8 @@ def move_towards_destination(
                         rejoin_point.z,
                         step=step,
                         stop_distance=args.path_node_arrival_distance,
-                        movement_speed=packet_movement_speed,
+                        movement_speed=travel_movement_speed,
+            packet_speed=packet_movement_speed,
                         min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
                         target_in_view=target_in_view,
                     )
@@ -14763,7 +20202,8 @@ def move_towards_destination(
                         goal.z,
                         step=step,
                         stop_distance=stop_distance,
-                        movement_speed=packet_movement_speed,
+                        movement_speed=travel_movement_speed,
+            packet_speed=packet_movement_speed,
                         min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
                         target_in_view=target_in_view,
                     )
@@ -14771,7 +20211,8 @@ def move_towards_destination(
                     path_state.destination_key = ""
                     path_state.resolved_goal = None
                     path_state.last_plan_at = 0.0
-                    actions += add_action(action_counts, "path_offgraph_return_move" if moved else "path_arrived")
+                    arrived = movement_position_arrived(client, goal.x, goal.y, goal.z, stop_distance)
+                    actions += add_action(action_counts, "path_offgraph_return_move" if moved else ("path_arrived" if arrived else "path_move_wait"))
                     trace_path(
                         "path_offgraph_return_move",
                         destination=destination.key,
@@ -14783,7 +20224,7 @@ def move_towards_destination(
                         goal_z=goal.z,
                         moved=int(moved),
                     )
-                    return MovementOutcome(moved=moved, arrived=not moved, actions=actions)
+                    return MovementOutcome(moved=moved, arrived=(not moved and arrived), actions=actions)
 
             if (
                 force_nav_route
@@ -14796,11 +20237,13 @@ def move_towards_destination(
                     goal.z,
                     step=step,
                     stop_distance=stop_distance,
-                    movement_speed=packet_movement_speed,
+                    movement_speed=travel_movement_speed,
+            packet_speed=packet_movement_speed,
                     min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
                     target_in_view=target_in_view,
                 )
-                actions += add_action(action_counts, "path_direct_fallback" if moved else "path_arrived")
+                arrived = movement_position_arrived(client, goal.x, goal.y, goal.z, stop_distance)
+                actions += add_action(action_counts, "path_direct_fallback" if moved else ("path_arrived" if arrived else "path_move_wait"))
                 trace_path(
                     "path_direct_fallback",
                     destination=destination.key,
@@ -14813,7 +20256,7 @@ def move_towards_destination(
                     reason=nav_fallback_reason,
                     moved=int(moved),
                 )
-                return MovementOutcome(moved=moved, arrived=not moved, actions=actions)
+                return MovementOutcome(moved=moved, arrived=(not moved and arrived), actions=actions)
 
             party_anchor_fallback = try_party_anchor_direct_fallback(current, goal, path_state.last_reason)
             if party_anchor_fallback is not None:
@@ -14881,12 +20324,14 @@ def move_towards_destination(
                 effective_goal.z,
                 step=step,
                 stop_distance=stop_distance,
-                movement_speed=packet_movement_speed,
+                movement_speed=travel_movement_speed,
+            packet_speed=packet_movement_speed,
                 min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
                 target_in_view=target_in_view,
             )
-            actions += add_action(action_counts, "path_last_mile" if moved else "path_arrived")
-            return MovementOutcome(moved=moved, arrived=not moved, actions=actions)
+            arrived = movement_position_arrived(client, effective_goal.x, effective_goal.y, effective_goal.z, stop_distance)
+            actions += add_action(action_counts, "path_last_mile" if moved else ("path_arrived" if arrived else "path_move_wait"))
+            return MovementOutcome(moved=moved, arrived=(not moved and arrived), actions=actions)
 
         path_state.follower.clear()
         path_state.destination_key = ""
@@ -14911,7 +20356,8 @@ def move_towards_destination(
                 next_point.z,
                 step=step,
                 stop_distance=0.0,
-                movement_speed=packet_movement_speed,
+                movement_speed=travel_movement_speed,
+            packet_speed=packet_movement_speed,
                 min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
                 target_in_view=target_in_view,
             )
@@ -14939,7 +20385,8 @@ def move_towards_destination(
                 next_point.z,
                 step=step,
                 stop_distance=args.path_node_arrival_distance,
-                movement_speed=packet_movement_speed,
+                movement_speed=travel_movement_speed,
+            packet_speed=packet_movement_speed,
                 min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
                 target_in_view=target_in_view,
             )
@@ -14998,7 +20445,8 @@ def move_towards_destination(
         next_point.z,
         step=step,
         stop_distance=0.0,
-        movement_speed=packet_movement_speed,
+        movement_speed=travel_movement_speed,
+        packet_speed=packet_movement_speed,
         min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
         target_in_view=target_in_view,
     )
@@ -15196,6 +20644,11 @@ def apply_ai_player_defaults(args: argparse.Namespace) -> None:
     args.greet_nearby_player = True
 
 
+def apply_dynamic_quest_e2e_defaults(args: argparse.Namespace) -> None:
+    if dynamic_quest_return_enabled(args):
+        args.auto_release_on_death = True
+
+
 def add_action(action_counts: dict[str, int], name: str) -> int:
     action_counts[name] = action_counts.get(name, 0) + 1
     return 1
@@ -15362,6 +20815,8 @@ def sync_startup_teleport_position(
     client.x = int(x)
     client.y = int(y)
     client.z = int(z)
+    if hasattr(client, "refresh_ground_z_here"):
+        client.refresh_ground_z_here()
     if hasattr(client, "trace_movement"):
         client.trace_movement(
             "startup_teleport_sync",
@@ -15403,6 +20858,7 @@ def run_startup_service_actions(
 
         if candidates:
             target = min(candidates, key=client.distance_to)
+            setattr(client, "startup_service_last_npc", target)
             client.target_object(target.object_id)
             actions += add_action(action_counts, "startup_service_target")
 
@@ -15410,6 +20866,7 @@ def run_startup_service_actions(
                 client.interact_object(target.object_id)
                 actions += add_action(action_counts, "startup_service_interact")
         else:
+            setattr(client, "startup_service_last_npc", None)
             actions += add_action(action_counts, "startup_service_npc_missing")
 
     for slot in flatten_int_groups(getattr(args, "startup_service_buy_slot", [])):
@@ -15513,8 +20970,7 @@ def run_startup_service_actions(
                     int(getattr(target, "z", client.z)),
                     step=smooth_movement_step(args) if getattr(args, "smooth_movement", False) else getattr(args, "move_step", 260.0),
                     stop_distance=approach_distance,
-                    movement_speed=getattr(args, "movement_speed", None),
-                    min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
+                    **dummy_movement_kwargs(args),
                     target_in_view=False,
                 )
                 if not moved or time.monotonic() >= approach_deadline:
@@ -15790,9 +21246,10 @@ def run_dummy_round(
     death_seen = False
     active_combat: dict[str, float | int | str] | None = None
     recent_finished_combats: dict[int, tuple[CombatMetric, float, int]] = {}
-    last_spoken_state = ""
-    last_state_speech_at = 0.0
-
+    dynamic_quest_return_pending = False
+    dynamic_quest_return_completed = False
+    dynamic_quest_followup_hunt_started = False
+    dynamic_quest_choice_dialog_answered = False
     try:
         drive_login_with_retries(client, account, args)
         if account.start_x is not None and account.start_y is not None and account.start_z is not None:
@@ -15801,10 +21258,11 @@ def run_dummy_round(
             client.z = int(account.start_z)
             if account.zone_id is not None:
                 client.zone_id = int(account.zone_id)
+            client.refresh_ground_z_here()
         client.send_position_update(speed=0.0, target_in_view=False)
         actions += add_action(action_counts, "initial_position_heartbeat")
         for startup_command in args.startup_command:
-            client.send_command(startup_command)
+            client.send_command(expand_startup_command(startup_command, account))
             actions += add_action(action_counts, "startup_command")
         startup_train_level = int(getattr(args, "startup_train_level", 0) or 0)
         startup_train_delay = max(0.0, float(getattr(args, "startup_train_command_delay", 0.0) or 0.0))
@@ -15812,16 +21270,10 @@ def run_dummy_round(
             for train_command in auto_train_commands_from_specs(account.specs, startup_train_level):
                 client.send_command(train_command)
                 actions += add_action(action_counts, "startup_auto_train")
-                if getattr(args, "speak_state_changes", False):
-                    client.send_command(format_say_command(f"state: training {train_command}"))
-                    actions += add_action(action_counts, "state_speech")
         if getattr(args, "startup_train_full_specs", False):
             for train_command in auto_train_commands_from_specs(account.specs, startup_train_level, full_spec=True):
                 client.send_command(train_command)
                 actions += add_action(action_counts, "startup_train_full_spec")
-                if getattr(args, "speak_state_changes", False):
-                    client.send_command(format_say_command(f"state: training {train_command}"))
-                    actions += add_action(action_counts, "state_speech")
                 if startup_train_delay > 0.0:
                     time.sleep(startup_train_delay)
         path_state = build_path_movement_state(args, client)
@@ -15913,8 +21365,29 @@ def run_dummy_round(
         next_player_follow = time.monotonic() + rng.uniform(1.0, max(args.player_follow_interval, 1.0))
         follow_player_last_visible_at = 0.0
         next_player_greet = time.monotonic() + rng.uniform(8.0, max(args.player_greet_interval, 8.0))
+        next_companion_chat_reply = 0.0
+        companion_personality_name = choose_companion_personality_name(args, account, index)
+        companion_dialogue_catalog = load_companion_dialogue_catalog(getattr(args, "companion_dialogue_pools", ""))
+        companion_dialogue_pools = normalize_dialogue_pool_mapping(companion_dialogue_catalog.get("pools", {}))
+        companion_personality_chat_pools = companion_personality_pools(
+            companion_dialogue_catalog,
+            companion_personality_name,
+            "chat",
+        )
+        companion_command_mode = CompanionCommandMode.defensive
+        companion_command_attack_until = 0.0
+        companion_startup_guide_sent = False
+        pending_companion_guide_question: dict[str, object] | None = None
+        companion_guide_travel: dict[str, object] | None = None
+        next_guide_travel_move = 0.0
+        companion_short_memory = create_companion_party_short_memory()
+        companion_ai_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        pending_companion_ai_reply: dict[str, object] | None = None
+        queued_companion_ai_questions: list[dict[str, object]] = []
+        recent_companion_chat_replies: list[str] = []
         next_face_command = 0.0
         next_stick_command = 0.0
+        next_target_loss_scan = 0.0
         next_required_target_api = time.monotonic() + rng.uniform(0.2, max(args.required_target_api_interval, 0.2))
         latest_required_target_api_observation: RequiredTargetObservation | None = None
         server_target_observations: dict[int, RequiredTargetObservation] = {}
@@ -15927,8 +21400,12 @@ def run_dummy_round(
         next_hunter_scan_log = 0.0
         next_live_control_check = 0.0
         last_live_control_revision = ""
+        live_control_quit_requested = False
+        live_control_quit_sent = False
+        live_control_quit_at = 0.0
         last_attack_enabled: bool | None = None
         heading = rng.randrange(0, 4096)
+        target_loss_scan_heading = heading
         current_target = 0
         current_target_since = time.monotonic()
         current_target_last_visible_at = current_target_since
@@ -15946,6 +21423,7 @@ def run_dummy_round(
         greeted_players: dict[int, float] = {}
         rest_until = 0.0
         death_release_after = 0.0
+        death_release_deadline = 0.0
         next_death_release = 0.0
         corpse_position_sent = False
         flee_until = 0.0
@@ -15961,6 +21439,7 @@ def run_dummy_round(
         friendly_cast_restore_target = 0
         friendly_cast_hold_reason = ""
         party_pull_ready_since = 0.0
+        party_forming_since = 0.0
         stand_after_rest = False
         last_health_percent = int(getattr(client, "health_percent", 100) or 100)
         current_health_percent = last_health_percent
@@ -15975,6 +21454,20 @@ def run_dummy_round(
         travel_aggro_last_at = 0.0
         travel_aggro_last_name = ""
         objective_complete_at = 0.0
+        dynamic_quest_return_pending = False
+        dynamic_quest_return_started_at = 0.0
+        dynamic_quest_return_interacted_at = 0.0
+        dynamic_quest_return_completed = False
+        dynamic_quest_return_last_progress_at = 0.0
+        dynamic_quest_return_last_npc_api_at = 0.0
+        dynamic_quest_return_expected_npc_internal_id = ""
+        dynamic_quest_progress_seen = False
+        dynamic_quest_completion_signal_seen = False
+        dynamic_quest_explore_last_progress_at = 0.0
+        dynamic_quest_explore_next_move_at = 0.0
+        dynamic_quest_explore_cached_destination = None
+        dynamic_quest_explore_cached_quest_id = ""
+        dynamic_quest_explore_cached_location = ""
         pending_required_target_complete_id = 0
         pending_required_target_complete_name = ""
         pending_required_target_complete_level = 0
@@ -15991,7 +21484,22 @@ def run_dummy_round(
         is_party_leader = party_state_member_is_leader(party_state, party_member_name)
         is_party_follower = party_state is not None and not is_party_leader
         requested_action_rotation = resolve_action_rotation(args, party_slot, account=account)
-        action_rotation = resolve_effective_action_rotation(args, requested_action_rotation, combat_plan, combat_plan_loaded)
+        action_rotation = resolve_effective_action_rotation(
+            args,
+            requested_action_rotation,
+            combat_plan,
+            combat_plan_loaded,
+            account=account,
+        )
+        apply_companion_personality_behavior(args, companion_personality_name, action_rotation)
+        companion_profile = build_companion_profile_card(
+            args,
+            account,
+            index,
+            name=party_member_name,
+            role=action_rotation,
+            personality=companion_personality_name,
+        )
         is_party_support_healer = is_party_support_healer_member(party_state, action_rotation)
 
         if action_rotation != requested_action_rotation:
@@ -16004,6 +21512,264 @@ def run_dummy_round(
             party_state.update_leader(client)
         elif party_state is not None:
             party_state.update_member(party_member_name, client)
+
+        def deliver_pending_companion_ai_reply(now: float) -> None:
+            nonlocal actions, pending_companion_ai_reply, next_companion_chat_reply
+            nonlocal companion_guide_travel, next_guide_travel_move
+            result = companion_ai_pending_result(pending_companion_ai_reply)
+            if result is None:
+                return
+
+            pending = pending_companion_ai_reply if isinstance(pending_companion_ai_reply, dict) else {}
+            pending_companion_ai_reply = None
+            kind = str(pending.get("kind") or "")
+            channel = str(pending.get("channel") or "party")
+            prompt = short_text(str(pending.get("prompt") or ""))
+            line_delay = companion_speech_line_delay(args)
+            pending_memory = pending.get("memory")
+            if not isinstance(pending_memory, dict):
+                pending_memory = companion_short_memory_for_speaker(companion_short_memory, pending.get("speaker"))
+            pending_template_vars = companion_dialogue_template_vars(
+                speaker=pending.get("speaker"),
+                companion=party_member_name,
+                role=getattr(args, "live_companion_role", "") or getattr(args, "action_rotation", ""),
+            )
+
+            if kind == "guide":
+                guide_lines = companion_guide_lines_from_gateway_result(result)
+                if guide_lines:
+                    pending_payload = pending.get("payload") if isinstance(pending.get("payload"), dict) else {}
+                    response = result.get("response") if isinstance(result.get("response"), dict) else {}
+                    source_ids = [
+                        companion_clean_memory_text(source_id, 160)
+                        for source_id in list(response.get("source_ids") or [])[:8]
+                        if companion_clean_memory_text(source_id, 160)
+                    ]
+                    navigation_destination = companion_guide_navigation_destination_from_gateway_result(result)
+                    for index, guide_line in enumerate(guide_lines):
+                        client.send_command(
+                            format_live_control_speech_command(channel, guide_line, template_vars=pending_template_vars)
+                        )
+                        actions += add_action(action_counts, "companion_guide_reply")
+                        if line_delay > 0 and index < len(guide_lines) - 1:
+                            time.sleep(line_delay)
+                    reply = " / ".join(guide_lines)
+                    remember_companion_guide_result(
+                        pending_memory,
+                        question=str(pending.get("prompt") or prompt),
+                        payload=dict(pending_payload),
+                        guide_lines=guide_lines,
+                        source_ids=source_ids,
+                        now=now,
+                    )
+                    if bool(pending.get("travel_requested")) and navigation_destination is not None:
+                        speaker = str(pending.get("speaker") or "")
+                        previous_distance = companion_guide_travel_player_distance(client, party_state, speaker)
+                        companion_guide_travel = {
+                            "state": "invite",
+                            "destination": navigation_destination,
+                            "speaker": speaker,
+                            "channel": channel,
+                            "created_at": now,
+                            "invite_until": now + 6.0,
+                            "previous_distance": previous_distance,
+                            "move_anyway_sent": False,
+                        }
+                        advice_line = companion_guide_travel_follow_advice_line(companion_personality_name)
+                        client.send_command(
+                            format_live_control_speech_command(channel, advice_line, template_vars=pending_template_vars)
+                        )
+                        recent_companion_chat_replies.append(advice_line)
+                        del recent_companion_chat_replies[:-8]
+                        next_guide_travel_move = now
+                        actions += add_action(action_counts, "companion_guide_travel_invite")
+                        log_encounter_event(
+                            "companion_guide_travel_invite",
+                            now,
+                            channel=channel,
+                            speaker=speaker,
+                            destination_key=navigation_destination.key,
+                            player_distance=round(previous_distance, 2),
+                        )
+                    recent_companion_chat_replies.append(reply)
+                    del recent_companion_chat_replies[:-8]
+                    next_companion_chat_reply = now + max(1.0, float(args.companion_chat_reply_cooldown or 0.0))
+                    actions += add_action(action_counts, "companion_guide_ai_reply")
+                    log_encounter_event(
+                        "companion_guide_ai_reply",
+                        now,
+                        channel=channel,
+                        prompt=prompt,
+                        reply=short_text(reply),
+                    )
+                    return
+
+                fallback_line = companion_ai_unavailable_line(companion_personality_name, intent="guide")
+                client.send_command(
+                    format_live_control_speech_command(channel, fallback_line, template_vars=pending_template_vars)
+                )
+                recent_companion_chat_replies.append(fallback_line)
+                del recent_companion_chat_replies[:-8]
+                next_companion_chat_reply = now + max(1.0, float(args.companion_chat_reply_cooldown or 0.0))
+                actions += add_action(action_counts, "companion_guide_ai_failed")
+                log_encounter_event(
+                    "companion_guide_ai_failed",
+                    now,
+                    channel=channel,
+                    prompt=prompt,
+                    reply=short_text(fallback_line),
+                )
+                return
+
+            if kind == "free_chat":
+                reply = companion_free_chat_reply_from_gateway_result(result)
+                if reply:
+                    client.send_command(
+                        format_live_control_speech_command(channel, reply, template_vars=pending_template_vars)
+                    )
+                    remember_companion_persona_result(
+                        pending_memory,
+                        question=str(pending.get("prompt") or prompt),
+                        reply=reply,
+                        topic="chatter",
+                        now=now,
+                    )
+                    recent_companion_chat_replies.append(reply)
+                    del recent_companion_chat_replies[:-8]
+                    next_companion_chat_reply = now + max(1.0, float(args.companion_chat_reply_cooldown or 0.0))
+                    actions += add_action(action_counts, "companion_free_chat_reply")
+                    actions += add_action(action_counts, "companion_free_chat_ai_reply")
+                    log_encounter_event(
+                        "companion_free_chat_ai_reply",
+                        now,
+                        channel=channel,
+                        prompt=prompt,
+                        reply=short_text(reply),
+                    )
+                    return
+
+                fallback_line = companion_ai_unavailable_line(companion_personality_name, intent="free_chat")
+                client.send_command(
+                    format_live_control_speech_command(channel, fallback_line, template_vars=pending_template_vars)
+                )
+                recent_companion_chat_replies.append(fallback_line)
+                del recent_companion_chat_replies[:-8]
+                next_companion_chat_reply = now + max(1.0, float(args.companion_chat_reply_cooldown or 0.0))
+                actions += add_action(action_counts, "companion_free_chat_ai_failed")
+                log_encounter_event(
+                    "companion_free_chat_ai_failed",
+                    now,
+                    channel=channel,
+                    prompt=prompt,
+                    reply=short_text(fallback_line),
+                )
+
+        def start_queued_companion_ai_question(now: float) -> None:
+            nonlocal actions, pending_companion_ai_reply, queued_companion_ai_questions, next_companion_chat_reply
+            if pending_companion_ai_reply is not None or not queued_companion_ai_questions:
+                return
+            queued = queued_companion_ai_questions.pop(0)
+            kind = str(queued.get("kind") or "")
+            body = str(queued.get("body") or "")
+            speaker = str(queued.get("speaker") or "")
+            channel = str(queued.get("channel") or "party")
+            companion_role = str(queued.get("role") or getattr(args, "live_companion_role", "") or getattr(args, "action_rotation", ""))
+            speaker_memory = queued.get("memory")
+            if not isinstance(speaker_memory, dict):
+                speaker_memory = companion_short_memory_for_speaker(companion_short_memory, speaker)
+            dialogue_template_vars = companion_dialogue_template_vars(
+                speaker=speaker,
+                companion=party_member_name,
+                role=companion_role,
+            )
+
+            if kind == "identity":
+                identity_intent = resolve_companion_identity_intent(body, memory=speaker_memory, now=now)
+                if not identity_intent:
+                    return
+                reply = companion_profile_reply(body, companion_profile, intent=identity_intent)
+                client.send_command(
+                    format_live_control_speech_command(channel, reply, template_vars=dialogue_template_vars)
+                )
+                remember_companion_persona_result(
+                    speaker_memory,
+                    question=body,
+                    reply=reply,
+                    topic=identity_intent,
+                    now=now,
+                )
+                recent_companion_chat_replies.append(reply)
+                del recent_companion_chat_replies[:-8]
+                next_companion_chat_reply = now + max(1.0, float(args.companion_chat_reply_cooldown or 0.0))
+                actions += add_action(action_counts, "companion_queued_profile_reply")
+                log_encounter_event(
+                    "companion_queued_profile_reply",
+                    now,
+                    speaker=speaker,
+                    channel=channel,
+                    identity_intent=identity_intent,
+                    prompt=short_text(body),
+                    reply=short_text(reply),
+                )
+                return
+
+            if kind == "guide":
+                payload = queued.get("payload")
+                if not isinstance(payload, dict):
+                    return
+                thinking_line = companion_ai_thinking_line(companion_personality_name, intent="guide")
+                client.send_command(
+                    format_live_control_speech_command(channel, thinking_line, template_vars=dialogue_template_vars)
+                )
+                recent_companion_chat_replies.append(thinking_line)
+                del recent_companion_chat_replies[:-8]
+                pending_companion_ai_reply = {
+                    "kind": "guide",
+                    "channel": channel,
+                    "prompt": body,
+                    "payload": dict(payload),
+                    "speaker": speaker,
+                    "memory": speaker_memory,
+                    "travel_requested": bool(queued.get("travel_requested")),
+                    "future": companion_ai_executor.submit(call_companion_guide_gateway, args, dict(payload)),
+                }
+                actions += add_action(action_counts, "companion_queued_guide_ai_pending")
+                log_encounter_event(
+                    "companion_queued_guide_ai_pending",
+                    now,
+                    speaker=speaker,
+                    channel=channel,
+                    prompt=short_text(body),
+                )
+                return
+
+            if kind == "free_chat":
+                payload = queued.get("payload")
+                if not isinstance(payload, dict):
+                    return
+                thinking_line = companion_ai_thinking_line(companion_personality_name, intent="free_chat")
+                client.send_command(
+                    format_live_control_speech_command(channel, thinking_line, template_vars=dialogue_template_vars)
+                )
+                recent_companion_chat_replies.append(thinking_line)
+                del recent_companion_chat_replies[:-8]
+                pending_companion_ai_reply = {
+                    "kind": "free_chat",
+                    "channel": channel,
+                    "prompt": body,
+                    "payload": dict(payload),
+                    "speaker": speaker,
+                    "memory": speaker_memory,
+                    "future": companion_ai_executor.submit(call_companion_free_chat_gateway, args, dict(payload)),
+                }
+                actions += add_action(action_counts, "companion_queued_free_chat_ai_pending")
+                log_encounter_event(
+                    "companion_queued_free_chat_ai_pending",
+                    now,
+                    speaker=speaker,
+                    channel=channel,
+                    prompt=short_text(body),
+                )
 
         def current_visible_target_npc():
             if not current_target:
@@ -16019,6 +21785,7 @@ def run_dummy_round(
             )
 
         def log_encounter_event(event: str, now: float | None = None, **fields) -> None:
+            nonlocal actions
             if not encounter_log_path:
                 return
 
@@ -16504,7 +22271,8 @@ def run_dummy_round(
                 angle = (index % max(int(getattr(args, "concurrency", 1) or 1), 1)) * (math.tau / max(int(getattr(args, "concurrency", 1) or 1), 1))
                 client.x = int(observed.x + math.cos(angle) * offset)
                 client.y = int(observed.y + math.sin(angle) * offset)
-                client.z = int(observed.z)
+                if not client.refresh_ground_z_here():
+                    client.z = int(observed.z)
                 client.heading = heading_from_delta(observed.x - client.x, observed.y - client.y)
                 client.send_position_update(speed=0.0, target_in_view=True)
                 actions += add_action(action_counts, "required_target_catchup")
@@ -16596,6 +22364,16 @@ def run_dummy_round(
                         should_retarget_required_object = result.current_target_updated
                 if should_retarget_required_object:
                     current_target_last_visible_at = now
+                    api_target_distance = client.horizontal_distance_to(observed)
+                    if should_start_combat_after_required_target_api_retarget(
+                        args,
+                        observed,
+                        retargeted=True,
+                        active_combat=active_combat,
+                        distance=api_target_distance,
+                    ):
+                        start_combat(observed, api_target_distance, now)
+                        actions += add_action(action_counts, "required_target_api_combat_start")
 
             log_encounter_event(
                 "required_target_api_update",
@@ -16633,13 +22411,27 @@ def run_dummy_round(
             if not should_send_position_heartbeat_for_client(client):
                 return
 
-            client.send_position_update(speed=getattr(client, "last_position_speed", 0.0), target_in_view=current_target != 0)
+            client.send_position_update(speed=0.0, target_in_view=current_target != 0)
             actions += add_action(action_counts, "position_heartbeat")
             next_position_heartbeat = (
                 now
                 + args.position_heartbeat_interval
                 + rng.uniform(0.0, min(args.jitter, max(args.position_heartbeat_interval * 0.5, 0.0)))
             )
+
+        def send_stationary_movement_sync(now: float) -> None:
+            nonlocal actions
+            """Keep speed=0 position packets on cadence while XY movement is blocked (e.g. casting)."""
+            interval = max(0.0, float(getattr(args, "movement_update_interval", 0.0) or 0.0))
+            if interval <= 0 or not should_send_position_heartbeat_for_client(client):
+                return
+
+            last_sent = float(getattr(client, "last_position_update_sent_at", 0.0) or 0.0)
+            if last_sent > 0.0 and now - last_sent < interval:
+                return
+
+            client.send_position_update(speed=0.0, target_in_view=current_target != 0)
+            actions += add_action(action_counts, "stationary_movement_sync")
 
         def send_face_command_if_due(now: float, reason: str, destination: MovementDestination | None = None) -> None:
             nonlocal actions, next_face_command
@@ -16812,23 +22604,6 @@ def run_dummy_round(
                 party_state.update_leader(client)
             return True
 
-        def speak_state_change(now: float, state: str, text: str) -> None:
-            nonlocal actions, last_spoken_state, last_state_speech_at
-
-            if not getattr(args, "speak_state_changes", False):
-                return
-            if state == last_spoken_state:
-                return
-
-            min_interval = max(0.0, float(getattr(args, "state_speech_min_interval", 0.0) or 0.0))
-            if last_state_speech_at > 0.0 and now - last_state_speech_at < min_interval:
-                return
-
-            client.send_command(format_say_command(text))
-            actions += add_action(action_counts, "state_speech")
-            last_spoken_state = state
-            last_state_speech_at = now
-
         def start_combat(npc, distance: float, now: float) -> None:
             nonlocal actions, active_combat
             active_combat = {
@@ -16861,7 +22636,6 @@ def run_dummy_round(
             ):
                 actions += add_action(action_counts, "leader_combat_start_shared")
             log_encounter_event("combat_start", now, npc=npc, start_distance=round(distance, 2))
-            speak_state_change(now, f"combat:{npc.object_id}", f"state: attacking {npc.name} L{npc.level}")
 
         def finish_combat(outcome: str, now: float, end_distance: float = 0.0) -> bool:
             nonlocal active_combat
@@ -16914,11 +22688,6 @@ def run_dummy_round(
                         now,
                         outcome=outcome,
                     )
-            speak_state_change(
-                now,
-                f"finish:{outcome}",
-                f"state: combat ended {outcome}",
-            )
             active_combat = None
             return True
 
@@ -16995,7 +22764,7 @@ def run_dummy_round(
                 current_target_removed_preserve_count = 0
                 attack_target_in_view_primed_at = 0.0
                 attack_target_in_view_primed_target = 0
-                if should_start_combat_after_target_commit(args, distance):
+                if should_start_combat_after_target_commit(args, distance, action_rotation):
                     start_combat(player, distance, now)
                 else:
                     actions += add_action(action_counts, "rvr_enemy_player_commit_wait_range")
@@ -17046,6 +22815,38 @@ def run_dummy_round(
             target_level = int(active_combat["target_level"])
             rejected_target_kinds[(target_name, target_level)] = now + cooldown
 
+        def start_dynamic_quest_return(
+            now: float,
+            completed_target_name: str,
+            completed_target_level: int,
+            return_npc_internal_id: str = "",
+        ) -> None:
+            nonlocal actions, dynamic_quest_return_pending, dynamic_quest_return_started_at
+            nonlocal dynamic_quest_return_interacted_at, dynamic_quest_return_completed
+            nonlocal dynamic_quest_return_last_progress_at, dynamic_quest_return_last_npc_api_at
+            nonlocal dynamic_quest_return_expected_npc_internal_id
+            dynamic_quest_return_pending = True
+            dynamic_quest_return_started_at = now
+            dynamic_quest_return_interacted_at = 0.0
+            dynamic_quest_return_completed = False
+            dynamic_quest_return_last_progress_at = 0.0
+            dynamic_quest_return_last_npc_api_at = 0.0
+            dynamic_quest_return_expected_npc_internal_id = str(return_npc_internal_id or "").strip()
+            if dynamic_quest_return_can_act(client):
+                transition_to(DummyBehaviorState.ReturnToObjective, "dynamic_quest_return_start", now)
+            elif behavior_state_value(behavior_state) != DummyBehaviorState.DeadReleaseRecover.value:
+                transition_to(DummyBehaviorState.DeadReleaseRecover, "dynamic_quest_return_start_dead", now)
+            actions += add_action(action_counts, "dynamic_quest_return_start")
+            log_encounter_event(
+                "dynamic_quest_return_start",
+                now,
+                completed_target_name=completed_target_name,
+                completed_target_level=completed_target_level,
+                return_npc=str(getattr(args, "dynamic_quest_return_npc_name", "") or ""),
+                return_npc_internal_id=dynamic_quest_return_expected_npc_internal_id,
+                waiting_for_recovery=not dynamic_quest_return_can_act(client),
+            )
+
         def consume_removed_objects(now: float) -> None:
             nonlocal actions, current_target, current_target_since, current_target_last_visible_at
             nonlocal current_target_intent, current_target_removed_preserve_count
@@ -17053,6 +22854,7 @@ def run_dummy_round(
             nonlocal pending_required_target_complete_id, pending_required_target_complete_name
             nonlocal pending_required_target_complete_level, pending_required_target_complete_since
             nonlocal safe_exit_deadline
+            nonlocal dynamic_quest_completion_signal_seen, dynamic_quest_explore_last_progress_at
 
             for object_id in client.consume_removed_object_ids():
                 if object_id != current_target:
@@ -17085,7 +22887,11 @@ def run_dummy_round(
 
                 stop_after_removed = should_stop_after_required_target_removed(args, active_combat, int(object_id))
                 confirmation_observation = None
-                if stop_after_removed and getattr(args, "required_target_api", False):
+                if (
+                    stop_after_removed
+                    and getattr(args, "required_target_api", False)
+                    and getattr(args, "required_target_removed_api_confirm", True)
+                ):
                     confirmation_observation = latest_required_target_api_observation
                     try:
                         confirmation_observation = fetch_required_target_observation(
@@ -17266,12 +23072,32 @@ def run_dummy_round(
                 should_clear_removed_shared_target = not stop_after_removed
                 final_distance = float(active_combat["end_distance"]) if active_combat is not None else 0.0
                 credit_target_removed = target_removed_creditable(args, active_combat, final_distance)
-                recorded = finish_combat("target_removed" if credit_target_removed else "target_removed_uncredited", now)
+                wait_for_dynamic_progress = (
+                    credit_target_removed
+                    and stop_after_removed
+                    and dynamic_quest_requires_completion_progress_confirmation(args)
+                )
+                target_removed_outcome = (
+                    "target_removed_pending_confirmation"
+                    if wait_for_dynamic_progress
+                    else "target_removed"
+                    if credit_target_removed
+                    else "target_removed_uncredited"
+                )
+                recorded = finish_combat(target_removed_outcome, now)
                 current_target = 0
                 current_target_intent = TargetIntent.none
                 rejected_targets.pop(object_id, None)
                 if recorded:
-                    if credit_target_removed:
+                    if wait_for_dynamic_progress:
+                        actions += add_action(action_counts, "target_removed_pending_confirmation")
+                        log_encounter_event(
+                            "target_removed_pending_confirmation",
+                            now,
+                            removed_object_id=int(object_id),
+                            final_distance=round(final_distance, 2),
+                        )
+                    elif credit_target_removed:
                         actions += add_action(action_counts, "target_removed")
                         refreshed_safe_exit_deadline = refresh_safe_exit_deadline_after_target_removed(
                             args,
@@ -17291,7 +23117,24 @@ def run_dummy_round(
                             removed_object_id=int(object_id),
                             final_distance=round(final_distance, 2),
                         )
-                    if credit_target_removed and stop_after_removed and required_target_completion_needs_safe_exit(
+                    if wait_for_dynamic_progress:
+                        dynamic_quest_completion_signal_seen = True
+                        dynamic_quest_explore_last_progress_at = 0.0
+                        action_name = (
+                            "dynamic_quest_wait_return_progress_after_target_removed"
+                            if dynamic_quest_return_enabled(args)
+                            else "dynamic_quest_wait_final_progress_after_target_removed"
+                        )
+                        actions += add_action(action_counts, action_name)
+                        log_encounter_event(
+                            action_name,
+                            now,
+                            completed_target_name=completed_target_name,
+                            completed_target_level=completed_target_level,
+                        )
+                        client.clear_target()
+                        client.set_attack_mode(False)
+                    elif credit_target_removed and stop_after_removed and required_target_completion_should_wait_for_safe_exit(
                         args,
                         now=now,
                         health_percent=current_health_percent,
@@ -17329,7 +23172,10 @@ def run_dummy_round(
                                 health_percent=current_health_percent,
                             )
                     elif credit_target_removed and stop_after_removed:
-                        objective_complete_at = now
+                        if dynamic_quest_return_enabled(args):
+                            start_dynamic_quest_return(now, completed_target_name, completed_target_level)
+                        else:
+                            objective_complete_at = now
                         if party_state is not None:
                             party_state.mark_objective_complete(object_id, completed_target_display_name)
                         if completed_target_name and completed_target_level:
@@ -17377,14 +23223,516 @@ def run_dummy_round(
             nonlocal last_damage_taken_at, last_incoming_damage_at, last_incoming_damage_attacker_name
             nonlocal flee_until, next_flee_move, next_flee_pressure_replan, flee_destination, flee_wander_heading_hold_until
             nonlocal cast_action_hold_until, next_combat, next_skill, next_active_tank_reaggro_taunt
+            nonlocal next_companion_chat_reply, recent_companion_chat_replies, next_assist
+            nonlocal companion_command_mode, companion_command_attack_until
+            nonlocal pending_companion_guide_question
+            nonlocal pending_companion_ai_reply
+            nonlocal queued_companion_ai_questions
+            nonlocal companion_guide_travel
+            nonlocal objective_complete_at, dynamic_quest_return_pending, dynamic_quest_return_completed
+            nonlocal dynamic_quest_return_interacted_at
 
             for message in client.consume_messages():
                 text = message.text.lower()
                 message_categories: list[str] = []
                 actions += add_action(action_counts, "server_message")
+                travel_stop_handled = False
+                cooldown_speaker, cooldown_body, cooldown_channel = parse_companion_chat_body(message.text)
+                cooldown_role = str(getattr(args, "live_companion_role", "") or getattr(args, "action_rotation", ""))
+                cooldown_memory = (
+                    companion_short_memory_for_speaker(companion_short_memory, cooldown_speaker)
+                    if cooldown_speaker
+                    and cooldown_body
+                    and cooldown_channel in {"party", "say"}
+                    and not companion_chat_speaker_is_self(cooldown_speaker, party_member_name)
+                    else {}
+                )
+                cooldown_can_bypass = bool(
+                    cooldown_memory
+                    and companion_chat_reply_cooldown_can_bypass(
+                        cooldown_body,
+                        companion_name=party_member_name,
+                        role=cooldown_role,
+                        guide_enabled=bool(getattr(args, "companion_guide_rag", False)),
+                        memory=cooldown_memory,
+                        now=now,
+                    )
+                )
+                pending_ai_allows_command = companion_pending_ai_allows_immediate_command(cooldown_body)
+                if companion_guide_travel is not None and getattr(args, "companion_chat_reply", False):
+                    stop_speaker, stop_body, stop_channel = parse_companion_chat_body(message.text)
+                    if (
+                        stop_body
+                        and stop_speaker
+                        and stop_channel in {"party", "say"}
+                        and not companion_chat_speaker_is_self(stop_speaker, party_member_name)
+                        and companion_guide_travel_stop_intent(stop_body)
+                    ):
+                        channel = companion_chat_reply_channel(stop_channel, args.companion_chat_reply_channel)
+                        companion_guide_travel = None
+                        companion_command_mode = CompanionCommandMode.stay
+                        client.set_attack_mode(False)
+                        client.send_position_update(speed=0.0, target_in_view=False)
+                        wait_line = companion_guide_travel_wait_line(companion_personality_name)
+                        client.send_command(
+                            format_live_control_speech_command(
+                                channel,
+                                wait_line,
+                                template_vars=companion_dialogue_template_vars(
+                                    speaker=stop_speaker,
+                                    companion=party_member_name,
+                                    role=getattr(args, "live_companion_role", "") or getattr(args, "action_rotation", ""),
+                                ),
+                            )
+                        )
+                        next_companion_chat_reply = now + max(1.0, float(args.companion_chat_reply_cooldown or 0.0))
+                        recent_companion_chat_replies.append(wait_line)
+                        del recent_companion_chat_replies[:-8]
+                        actions += add_action(action_counts, "companion_guide_travel_stop")
+                        actions += add_action(action_counts, "companion_command_mode_stay")
+                        message_categories.append("companion_guide_travel_stop")
+                        log_encounter_event(
+                            "companion_guide_travel_stop",
+                            now,
+                            speaker=stop_speaker,
+                            channel=channel,
+                            prompt=short_text(stop_body),
+                            reply=short_text(wait_line),
+                        )
+                        travel_stop_handled = True
+                if (
+                    getattr(args, "companion_chat_reply", False)
+                    and (now >= next_companion_chat_reply or cooldown_can_bypass)
+                    and pending_companion_ai_reply is not None
+                    and not live_control_quit_requested
+                    and not travel_stop_handled
+                ):
+                    busy_speaker, busy_body, busy_channel = parse_companion_chat_body(message.text)
+                    if (
+                        busy_body
+                        and busy_speaker
+                        and busy_channel in {"party", "say"}
+                        and not companion_chat_speaker_is_self(busy_speaker, party_member_name)
+                    ):
+                        busy_memory = companion_short_memory_for_speaker(companion_short_memory, busy_speaker)
+                        busy_role = str(
+                            getattr(args, "live_companion_role", "") or getattr(args, "action_rotation", "")
+                        )
+                        queued_kind = companion_pending_ai_queueable_question_kind(
+                            busy_body,
+                            companion_name=party_member_name,
+                            role=busy_role,
+                            guide_enabled=bool(getattr(args, "companion_guide_rag", False)),
+                            memory=busy_memory,
+                            now=now,
+                        )
+                        if queued_kind:
+                            channel = companion_chat_reply_channel(busy_channel, args.companion_chat_reply_channel)
+                            guide_region = int(getattr(client, "zone_id", 0) or getattr(account, "zone_id", 0) or 0)
+                            guide_combat_active = int(current_target or 0) > 0 or active_combat is not None
+                            queued_payload: dict[str, object] = {}
+                            travel_requested = False
+                            if queued_kind == "guide":
+                                travel_requested = bool(companion_guide_travel_request_intent(busy_body))
+                                queued_payload = build_companion_guide_payload(
+                                    busy_body,
+                                    role=busy_role,
+                                    realm=getattr(account, "realm", ""),
+                                    region=guide_region,
+                                    player_level=int(
+                                        getattr(args, "player_level", 0) or getattr(account, "level", 0) or 0
+                                    ),
+                                    in_combat=guide_combat_active,
+                                    memory=busy_memory,
+                                    now=now,
+                                    position=companion_guide_position_from_context(
+                                        client,
+                                        party_state,
+                                        speaker=busy_speaker,
+                                        region=guide_region,
+                                    ),
+                                )
+                            elif queued_kind == "free_chat":
+                                queued_payload = build_companion_free_chat_payload(
+                                    busy_body,
+                                    companion_profile,
+                                    in_combat=guide_combat_active,
+                                    companion_health_band=companion_health_band_from_percent(
+                                        getattr(client, "health_percent", 100)
+                                    ),
+                                    memory=busy_memory,
+                                    now=now,
+                                )
+                            queued_item = {
+                                "kind": queued_kind,
+                                "body": busy_body,
+                                "speaker": busy_speaker,
+                                "channel": channel,
+                                "role": busy_role,
+                                "memory": busy_memory,
+                                "payload": queued_payload,
+                                "travel_requested": travel_requested,
+                                "created_at": now,
+                            }
+                            dropped_oldest = companion_ai_queue_push(queued_companion_ai_questions, queued_item)
+                            queue_line = companion_ai_queued_line(companion_personality_name)
+                            client.send_command(
+                                format_live_control_speech_command(
+                                    channel,
+                                    queue_line,
+                                    template_vars=companion_dialogue_template_vars(
+                                        speaker=busy_speaker,
+                                        companion=party_member_name,
+                                        role=busy_role,
+                                    ),
+                                )
+                            )
+                            recent_companion_chat_replies.append(queue_line)
+                            del recent_companion_chat_replies[:-8]
+                            next_companion_chat_reply = now + max(1.0, float(args.companion_chat_reply_cooldown or 0.0))
+                            action_name = (
+                                "companion_ai_question_queue_dropped_oldest"
+                                if dropped_oldest
+                                else "companion_ai_question_queued"
+                            )
+                            actions += add_action(action_counts, action_name)
+                            log_encounter_event(
+                                action_name,
+                                now,
+                                speaker=busy_speaker,
+                                channel=channel,
+                                kind=queued_kind,
+                                queue_size=len(queued_companion_ai_questions),
+                                prompt=short_text(busy_body),
+                                reply=short_text(queue_line),
+                            )
+                        elif companion_pending_ai_busy_reply_should_trigger(
+                            busy_body,
+                            companion_name=party_member_name,
+                            role=busy_role,
+                            guide_enabled=bool(getattr(args, "companion_guide_rag", False)),
+                            memory=busy_memory,
+                            now=now,
+                        ):
+                            channel = companion_chat_reply_channel(busy_channel, args.companion_chat_reply_channel)
+                            busy_line = companion_ai_busy_line(companion_personality_name)
+                            client.send_command(
+                                format_live_control_speech_command(
+                                    channel,
+                                    busy_line,
+                                    template_vars=companion_dialogue_template_vars(
+                                        speaker=busy_speaker,
+                                        companion=party_member_name,
+                                        role=busy_role,
+                                    ),
+                                )
+                            )
+                            recent_companion_chat_replies.append(busy_line)
+                            del recent_companion_chat_replies[:-8]
+                            next_companion_chat_reply = now + max(1.0, float(args.companion_chat_reply_cooldown or 0.0))
+                            actions += add_action(action_counts, "companion_ai_busy_reply")
+                            log_encounter_event(
+                                "companion_ai_busy_reply",
+                                now,
+                                speaker=busy_speaker,
+                                channel=channel,
+                                prompt=short_text(busy_body),
+                                reply=short_text(busy_line),
+                            )
+                if (
+                    getattr(args, "companion_chat_reply", False)
+                    and (now >= next_companion_chat_reply or cooldown_can_bypass)
+                    and (pending_companion_ai_reply is None or pending_ai_allows_command)
+                    and not live_control_quit_requested
+                    and not travel_stop_handled
+                ):
+                    speaker, body, message_channel = parse_companion_chat_body(message.text)
+                    speaker_memory = companion_short_memory_for_speaker(companion_short_memory, speaker) if speaker else {}
+                    if (
+                        body
+                        and speaker
+                        and message_channel in {"party", "say"}
+                        and not companion_chat_speaker_is_self(speaker, party_member_name)
+                        and companion_chat_message_should_trigger_reply(
+                            body,
+                            companion_name=party_member_name,
+                            role=str(getattr(args, "live_companion_role", "") or getattr(args, "action_rotation", "")),
+                            guide_enabled=bool(getattr(args, "companion_guide_rag", False)),
+                            memory=speaker_memory,
+                            now=now,
+                        )
+                    ):
+                        companion_role = str(
+                            getattr(args, "live_companion_role", "") or getattr(args, "action_rotation", "")
+                        )
+                        channel = companion_chat_reply_channel(message_channel, args.companion_chat_reply_channel)
+                        guide_lines: list[str] = []
+                        guide_unsafe_recovery = (
+                            now < flee_until
+                            or now < rest_until
+                            or behavior_state
+                            in {
+                                DummyBehaviorState.DropAggroAndRecover,
+                                DummyBehaviorState.RestRecover,
+                                DummyBehaviorState.DeadReleaseRecover,
+                            }
+                        )
+                        guide_combat_active = int(current_target or 0) > 0 or active_combat is not None
+                        guide_question = bool(
+                            getattr(args, "companion_guide_rag", False)
+                            and (
+                                companion_guide_question_intent(body)
+                                or companion_guide_followup_question_intent(body, memory=speaker_memory, now=now)
+                                or companion_guide_travel_request_intent(body)
+                            )
+                        )
+                        guide_travel_requested = bool(companion_guide_travel_request_intent(body))
+                        identity_intent = resolve_companion_identity_intent(body, memory=speaker_memory, now=now)
+                        ai_pending_started = False
+                        guide_region = int(getattr(client, "zone_id", 0) or getattr(account, "zone_id", 0) or 0)
+                        guide_position = companion_guide_position_from_context(
+                            client,
+                            party_state,
+                            speaker=speaker,
+                            region=guide_region,
+                        )
+                        dialogue_template_vars = companion_dialogue_template_vars(
+                            speaker=speaker,
+                            companion=party_member_name,
+                            role=companion_role,
+                        )
+                        if identity_intent:
+                            intent = "identity"
+                            reply = companion_profile_reply(body, companion_profile, intent=identity_intent)
+                            client.send_command(
+                                format_live_control_speech_command(channel, reply, template_vars=dialogue_template_vars)
+                            )
+                            remember_companion_persona_result(
+                                speaker_memory,
+                                question=body,
+                                reply=reply,
+                                topic=identity_intent,
+                                now=now,
+                            )
+                            actions += add_action(action_counts, "companion_profile_reply")
+                            log_encounter_event(
+                                "companion_profile_reply",
+                                now,
+                                speaker=speaker,
+                                channel=channel,
+                                identity_intent=identity_intent,
+                                prompt=short_text(body),
+                                reply=short_text(reply),
+                            )
+                        elif (
+                            guide_question
+                            and not companion_guide_reply_should_defer(
+                                in_combat=guide_combat_active,
+                                unsafe_recovery=guide_unsafe_recovery,
+                            )
+                        ):
+                            thinking_line = companion_ai_thinking_line(companion_personality_name, intent="guide")
+                            client.send_command(
+                                format_live_control_speech_command(
+                                    channel,
+                                    thinking_line,
+                                    template_vars=dialogue_template_vars,
+                                )
+                            )
+                            actions += add_action(action_counts, "companion_guide_thinking")
+                            guide_payload = build_companion_guide_payload(
+                                body,
+                                role=companion_role,
+                                realm=getattr(account, "realm", ""),
+                                region=guide_region,
+                                player_level=int(
+                                    getattr(args, "player_level", 0) or getattr(account, "level", 0) or 0
+                                ),
+                                in_combat=guide_combat_active,
+                                memory=speaker_memory,
+                                now=now,
+                                position=guide_position,
+                            )
+                            pending_companion_ai_reply = {
+                                "kind": "guide",
+                                "channel": channel,
+                                "prompt": body,
+                                "payload": guide_payload,
+                                "speaker": speaker,
+                                "memory": speaker_memory,
+                                "travel_requested": guide_travel_requested,
+                                "future": companion_ai_executor.submit(call_companion_guide_gateway, args, guide_payload),
+                            }
+                            ai_pending_started = True
+                            intent = "guide"
+                            reply = thinking_line
+                            actions += add_action(action_counts, "companion_guide_ai_pending")
+                        elif guide_question and companion_guide_reply_should_defer(
+                            in_combat=guide_combat_active,
+                            unsafe_recovery=guide_unsafe_recovery,
+                        ):
+                            pending_companion_guide_question = build_pending_companion_guide_question(
+                                body,
+                                channel=channel,
+                                role=companion_role,
+                                realm=getattr(account, "realm", ""),
+                                region=guide_region,
+                                player_level=int(
+                                    getattr(args, "player_level", 0) or getattr(account, "level", 0) or 0
+                                ),
+                                now=now,
+                                memory=speaker_memory,
+                                position=guide_position,
+                            )
+                            pending_companion_guide_question["speaker"] = speaker
+                            pending_companion_guide_question["memory"] = speaker_memory
+                            pending_companion_guide_question["travel_requested"] = guide_travel_requested
+                            actions += add_action(action_counts, "companion_guide_deferred")
+                            log_encounter_event(
+                                "companion_guide_deferred",
+                                now,
+                                speaker=speaker,
+                                channel=channel,
+                                prompt=short_text(body),
+                            )
+                            guide_lines = companion_combat_guide_hold_lines()
+                        if identity_intent:
+                            pass
+                        elif ai_pending_started:
+                            pass
+                        elif guide_lines:
+                            intent = "guide"
+                            reply = " / ".join(guide_lines)
+                            line_delay = companion_speech_line_delay(args)
+                            for index, guide_line in enumerate(guide_lines):
+                                client.send_command(
+                                    format_live_control_speech_command(
+                                        channel,
+                                        guide_line,
+                                        template_vars=dialogue_template_vars,
+                                    )
+                                )
+                                actions += add_action(action_counts, "companion_guide_reply")
+                                if line_delay > 0 and index < len(guide_lines) - 1:
+                                    time.sleep(line_delay)
+                        else:
+                            intent = companion_chat_intent(body)
+                            free_chat_reply = ""
+                            if (
+                                intent == "chatter"
+                                and getattr(args, "companion_free_chat", False)
+                                and not guide_combat_active
+                                and not guide_unsafe_recovery
+                            ):
+                                free_chat_payload = build_companion_free_chat_payload(
+                                    body,
+                                    companion_profile,
+                                    in_combat=guide_combat_active,
+                                    companion_health_band=companion_health_band_from_percent(
+                                        getattr(client, "health_percent", 100)
+                                    ),
+                                    memory=speaker_memory,
+                                    now=now,
+                                )
+                                thinking_line = companion_ai_thinking_line(companion_personality_name, intent="free_chat")
+                                client.send_command(
+                                    format_live_control_speech_command(
+                                        channel,
+                                        thinking_line,
+                                        template_vars=dialogue_template_vars,
+                                    )
+                                )
+                                actions += add_action(action_counts, "companion_free_chat_thinking")
+                                pending_companion_ai_reply = {
+                                    "kind": "free_chat",
+                                    "channel": channel,
+                                    "prompt": body,
+                                    "payload": free_chat_payload,
+                                    "speaker": speaker,
+                                    "memory": speaker_memory,
+                                    "future": companion_ai_executor.submit(
+                                        call_companion_free_chat_gateway,
+                                        args,
+                                        free_chat_payload,
+                                    ),
+                                }
+                                ai_pending_started = True
+                                reply = thinking_line
+                                actions += add_action(action_counts, "companion_free_chat_ai_pending")
+                            if free_chat_reply:
+                                reply = free_chat_reply
+                                actions += add_action(action_counts, "companion_free_chat_reply")
+                            elif ai_pending_started:
+                                pass
+                            else:
+                                reply = choose_companion_chat_reply(
+                                    body,
+                                    args.companion_chat_reply_lines,
+                                    rng,
+                                    pools=companion_dialogue_pools,
+                                    personality_pools=companion_personality_chat_pools,
+                                    recent=recent_companion_chat_replies,
+                                    role=companion_role,
+                                )
+                            client.send_command(
+                                format_live_control_speech_command(channel, reply, template_vars=dialogue_template_vars)
+                            )
+                        next_command_mode = companion_command_mode_after_intent_for_role(
+                            companion_command_mode,
+                            intent,
+                            companion_role,
+                        )
+                        if next_command_mode != companion_command_mode:
+                            previous_command_mode = companion_command_mode
+                            companion_command_mode = next_command_mode
+                            actions += add_action(action_counts, f"companion_command_mode_{companion_command_mode.value}")
+                            if companion_command_should_clear_target(companion_command_mode):
+                                client.clear_target()
+                                client.set_attack_mode(False)
+                                current_target = 0
+                                current_target_intent = TargetIntent.none
+                                current_target_since = now
+                                current_target_last_visible_at = now
+                                actions += add_action(action_counts, "companion_command_clear_target")
+                            log_encounter_event(
+                                "companion_command_mode_change",
+                                now,
+                                speaker=speaker,
+                                intent=intent,
+                                previous_mode=previous_command_mode.value,
+                                mode=companion_command_mode.value,
+                            )
+                        if intent == "combat":
+                            assist_name = party_state.leader_name if party_state is not None else speaker
+                            assist_name = str(assist_name or "").strip()
+                            if assist_name:
+                                client.send_command(f"/assist {assist_name}")
+                                companion_command_attack_until = now + 8.0
+                                next_assist = now
+                                actions += add_action(action_counts, "companion_command_attack_assist")
+                                log_encounter_event(
+                                    "companion_command_attack_assist",
+                                    now,
+                                    speaker=speaker,
+                                    assist_name=assist_name,
+                                )
+                        next_companion_chat_reply = now + max(1.0, float(args.companion_chat_reply_cooldown or 0.0))
+                        recent_companion_chat_replies.append(reply)
+                        del recent_companion_chat_replies[:-8]
+                        actions += add_action(action_counts, "companion_chat_reply")
+                        message_categories.append("companion_chat_reply")
+                        log_encounter_event(
+                            "companion_chat_reply",
+                            now,
+                            speaker=speaker,
+                            channel=channel,
+                            intent=intent,
+                            prompt=short_text(body),
+                            reply=short_text(reply),
+                        )
                 loot_metric = parse_loot_message(message.text)
                 party_attack_message = None
-                if party_state is not None and args.party_rescue_aggro:
+                if party_state is not None:
                     joined_member_name = parse_party_member_join_message(message.text)
                     if (
                         joined_member_name
@@ -17396,12 +23744,64 @@ def run_dummy_round(
                             SimpleNamespace(object_id=0, health_percent=100, x=0, y=0, z=0),
                             role="external",
                         )
+                        if sync_party_member_from_visible_players(
+                            party_state,
+                            client,
+                            args,
+                            joined_member_name,
+                        ):
+                            actions += add_action(action_counts, "party_external_member_visible")
                         actions += add_action(action_counts, "party_auto_external_member_join")
                         log_encounter_event(
                             "party_auto_external_member_join",
                             now,
                             member_name=joined_member_name,
                         )
+                    death_member_name = apply_party_member_death_message(party_state, message.text)
+                    if death_member_name:
+                        death_sync_source = ensure_party_member_resurrection_identity(
+                            party_state,
+                            client,
+                            args,
+                            death_member_name,
+                            preserve_dead=True,
+                        )
+                        if death_sync_source == "visible":
+                            actions += add_action(action_counts, "party_dead_member_visible_sync")
+                            log_encounter_event(
+                                "party_dead_member_visible_sync",
+                                now,
+                                member_name=death_member_name,
+                            )
+                        elif death_sync_source == "condition":
+                            actions += add_action(action_counts, "party_dead_member_condition_sync")
+                            log_encounter_event(
+                                "party_dead_member_condition_sync",
+                                now,
+                                member_name=death_member_name,
+                            )
+                        try:
+                            _rez_dbg_targets = party_state.resurrection_targets(exclude_name=party_member_name)
+                            log_encounter_event(
+                                "rez_target_debug",
+                                now,
+                                member_name=death_member_name,
+                                sync_source=death_sync_source or "none",
+                                member_object_id=int(party_state.member_object_ids.get(death_member_name, 0) or 0),
+                                member_health=party_state_member_health_percent(party_state, death_member_name),
+                                rez_target_count=len(_rez_dbg_targets),
+                                rez_target_names=",".join(str(t.get("name", "")) for t in _rez_dbg_targets),
+                            )
+                        except Exception:
+                            pass
+                        actions += add_action(action_counts, "party_member_death_message")
+                        log_encounter_event(
+                            "party_member_death_message",
+                            now,
+                            member_name=death_member_name,
+                            text=short_text(message.text),
+                        )
+                if party_state is not None and args.party_rescue_aggro:
                     party_attack_message = parse_party_attack_message(
                         message.text,
                         list(party_state.member_names),
@@ -17413,10 +23813,61 @@ def run_dummy_round(
                     actions += add_action(action_counts, f"loot_tier_{loot_metric.tier}")
                     message_categories.append("loot")
 
+                if is_dynamic_quest_reward_message(message.text):
+                    dynamic_quest_return_pending = False
+                    dynamic_quest_return_completed = True
+                    dynamic_quest_return_interacted_at = now
+                    objective_complete_at = now
+                    current_target = 0
+                    current_target_intent = TargetIntent.none
+                    client.set_attack_mode(False)
+                    actions += add_action(action_counts, "dynamic_quest_reward_observed")
+                    message_categories.append("dynamic_quest_reward")
+                    log_encounter_event("dynamic_quest_reward_observed", now)
+
                 combat_categories = classify_combat_server_message(message.text)
                 if "out_of_range" in combat_categories:
                     actions += add_action(action_counts, "combat_out_of_range_msg")
                     message_categories.append("out_of_range")
+                    if current_target and active_combat is not None and is_melee_rotation(action_rotation):
+                        close_until = now + max(
+                            1.5,
+                            float(getattr(args, "server_los_failure_grace", 8.0) or 0.0),
+                        )
+                        active_combat["server_range_close_until"] = max(
+                            float(active_combat.get("server_range_close_until", 0.0) or 0.0),
+                            close_until,
+                        )
+                        active_combat["server_range_close_count"] = int(active_combat.get("server_range_close_count", 0) or 0) + 1
+                        client.set_attack_mode(False)
+                        actions += add_action(action_counts, "server_range_close_feedback")
+                        next_combat = next_combat_after_server_range_feedback(
+                            next_combat=next_combat,
+                            now=now,
+                        )
+                        actions += add_action(action_counts, "server_range_close_combat_due")
+                        observed_target = fetch_current_target_observation(
+                            args,
+                            api_region_for_client(args, client),
+                            current_target,
+                            force=True,
+                        )
+                        if observed_target is not None:
+                            server_target_observations[current_target] = observed_target
+                            active_combat["target_x"] = observed_target.x
+                            active_combat["target_y"] = observed_target.y
+                            active_combat["target_z"] = observed_target.z
+                            actions += add_action(action_counts, "current_target_api_refresh_range")
+                            log_encounter_event(
+                                "current_target_api_refresh_range",
+                                now,
+                                target_id=current_target,
+                                target_name=observed_target.name,
+                                target_x=observed_target.x,
+                                target_y=observed_target.y,
+                                target_z=observed_target.z,
+                                target_distance=round(math.hypot(observed_target.x - client.x, observed_target.y - client.y), 2),
+                            )
                 if "not_visible" in combat_categories:
                     actions += add_action(action_counts, "combat_not_visible_msg")
                     message_categories.append("not_visible")
@@ -17465,6 +23916,7 @@ def run_dummy_round(
                 if is_active_target_combat_contact_message(active_combat, message.text, int(getattr(message, "chat_type", 0) or 0)):
                     active_combat["last_combat_message_at"] = now
                     active_combat["server_los_failures"] = 0
+                    active_combat.pop("server_range_close_until", None)
                     current_target_last_visible_at = now
                     actions += add_action(action_counts, "combat_contact_msg")
                     message_categories.append("combat_contact")
@@ -17480,6 +23932,7 @@ def run_dummy_round(
                         args,
                         api_region_for_client(args, client),
                         current_target,
+                        force=True,
                     )
                     retry_target, retry_target_source = server_los_retry_target(
                         client,
@@ -17546,9 +23999,8 @@ def run_dummy_round(
                                     retry_target.z,
                                     step=combat_chase_step(args, action_rotation, observed_distance, smooth_movement_step(args)),
                                     stop_distance=server_los_retry_stop_distance(args, action_rotation),
-                                    movement_speed=chase_speed,
-                                    min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
                                     target_in_view=True,
+                                    **dummy_movement_kwargs(args, chase_speed, client),
                                 )
                                 actions += add_action(
                                     action_counts,
@@ -17603,6 +24055,27 @@ def run_dummy_round(
                     boss_hazard_backoff_until = max(boss_hazard_backoff_until, now + boss_hazard_duration)
                     actions += add_action(action_counts, "boss_hazard_message")
                     message_categories.append("boss_hazard")
+                    if behavior_state_value(behavior_state) == DummyBehaviorState.DropAggroAndRecover.value:
+                        updated_destination = flee_escape_destination_under_pressure(args, client)
+                        if updated_destination is not None:
+                            start_or_refresh_flee(
+                                "boss_hazard",
+                                max(130, flee_damage_replan_priority(args, current_health_percent)),
+                                pressure=True,
+                                prefer_safe=True,
+                                destination_override=updated_destination,
+                                now=now,
+                                extend_seconds=max(
+                                    boss_hazard_duration,
+                                    float(getattr(args, "flee_duration", 0.0) or 0.0),
+                                    float(getattr(args, "low_health_rest_min", 0.0) or 0.0),
+                                    1.0,
+                                ),
+                                log_name="boss_hazard_flee_replan",
+                                action_name="boss_hazard_flee_replan",
+                                use_sprint=False,
+                                health_percent=current_health_percent,
+                            )
 
                 if party_attack_message is not None:
                     party_snapshot = party_state.snapshot()
@@ -18280,7 +24753,56 @@ def run_dummy_round(
                 if outcome.moved:
                     schedule_next_flee_move(now)
             actions += add_action(action_counts, "travel_aggro_drop")
-            speak_state_change(now, "flee", "state: dropping travel aggro")
+
+        def mark_dynamic_quest_progress_snapshot(
+            snapshot: dict[str, object] | None,
+            now: float,
+            reason: str,
+        ) -> list[dict[str, object]]:
+            nonlocal actions, dynamic_quest_progress_seen
+
+            active_items = dynamic_quest_progress_active_items(snapshot, args)
+            if active_items and not dynamic_quest_progress_seen:
+                actions += add_action(action_counts, "dynamic_quest_progress_seen_active")
+                log_encounter_event(
+                    "dynamic_quest_progress_seen_active",
+                    now,
+                    reason=reason,
+                    active_count=len(active_items),
+                    quest_ids=[
+                        str(item.get("questId", item.get("quest_id", "")) or "")
+                        for item in active_items[:5]
+                    ],
+                    current_node_ids=[
+                        str(item.get("currentNodeId", item.get("current_node_id", "")) or "")
+                        for item in active_items[:5]
+                    ],
+                )
+            dynamic_quest_progress_seen = dynamic_quest_progress_seen or bool(active_items)
+            return active_items
+
+        if dynamic_quest_final_progress_enabled(args):
+            startup_progress_at = time.monotonic()
+            try:
+                progress_snapshot = fetch_dynamic_quest_progress_snapshot(args, account)
+                mark_dynamic_quest_progress_snapshot(progress_snapshot, startup_progress_at, "startup")
+            except Exception as exc:
+                actions += add_action(action_counts, "dynamic_quest_progress_api_error")
+                log_encounter_event(
+                    "dynamic_quest_progress_api_error",
+                    startup_progress_at,
+                    error=short_text(str(exc), 220),
+                    reason="startup",
+                )
+            if not dynamic_quest_progress_seen:
+                actions += wait_for_startup_service_dynamic_quest_progress(
+                    args,
+                    account,
+                    client,
+                    action_counts,
+                    mark_dynamic_quest_progress_snapshot,
+                    log_encounter_event,
+                )
 
         initial_state = initial_behavior_state_for_objective(
             client,
@@ -18290,98 +24812,159 @@ def run_dummy_round(
         )
         transition_to(initial_state, "startup_complete", time.monotonic())
 
+        if not hasattr(args, "base_movement_speed"):
+            args.base_movement_speed = float(getattr(args, "movement_speed", 0.0) or 0.0)
+
         while True:
+            if hasattr(client, "max_speed_percent"):
+                args.movement_speed = args.base_movement_speed * client.max_speed_percent / 100.0
+
             now = time.monotonic()
+            if (
+                not companion_startup_guide_sent
+                and getattr(args, "companion_chat_reply", False)
+                and not live_control_quit_requested
+            ):
+                channel = str(getattr(args, "companion_chat_reply_channel", "party") or "party")
+                startup_lines = companion_startup_guide_lines(
+                    str(getattr(args, "live_companion_role", "") or getattr(args, "action_rotation", "")),
+                    personality=companion_personality_name,
+                )
+                line_delay = companion_speech_line_delay(args)
+                for index, guide_line in enumerate(startup_lines):
+                    speech_command = format_live_control_speech_command(channel, guide_line)
+                    if speech_command:
+                        client.send_command(speech_command)
+                        actions += add_action(action_counts, "companion_startup_guide")
+                        if line_delay > 0 and index < len(startup_lines) - 1:
+                            time.sleep(line_delay)
+                companion_startup_guide_sent = True
+                log_encounter_event("companion_startup_guide", now)
             if STOP_REQUESTED.is_set():
                 actions += add_action(action_counts, "graceful_stop_requested")
                 log_encounter_event("graceful_stop_requested", now)
                 break
 
-            if now >= end_time:
-                safe_exit_should_extend = should_extend_round_for_safe_exit(
-                    args,
-                    behavior_state,
-                    now=now,
-                    end_time=end_time,
-                    safe_exit_deadline=safe_exit_deadline,
-                    health_percent=current_health_percent,
-                    current_target=current_target,
-                    last_damage_taken_at=last_damage_taken_at,
-                    last_incoming_damage_at=last_incoming_damage_at,
-                    flee_until=flee_until,
-                    rest_until=rest_until,
-                )
-                if not safe_exit_should_extend:
-                    if safe_exit_active:
-                        deadline_reached = now >= safe_exit_deadline
-                        safe_deadline_complete = safe_exit_deadline_can_complete_recovered(
-                            args,
-                            behavior_state,
-                            now=now,
-                            health_percent=current_health_percent,
-                            current_target=current_target,
-                            flee_until=flee_until,
-                            last_damage_taken_at=last_damage_taken_at,
-                            last_incoming_damage_at=last_incoming_damage_at,
-                            rest_until=rest_until,
-                        )
-                        if deadline_reached and not safe_deadline_complete:
-                            safe_exit_failed = True
-                            safe_exit_error = "safe_exit_deadline_reached"
-                        actions += add_action(
-                            action_counts,
-                            "safe_exit_deadline_reached" if deadline_reached and not safe_deadline_complete else "safe_exit_complete",
-                        )
-                        log_encounter_event(
-                            "safe_exit_complete",
-                            now,
-                            safe_exit_deadline_reached=bool(deadline_reached),
-                            safe_exit_deadline_completed_recovered=bool(safe_deadline_complete),
-                        )
-                    break
+            if live_control_quit_requested and not live_control_quit_sent and now >= live_control_quit_at:
+                client.send_command("/quit")
+                live_control_quit_sent = True
+                actions += add_action(action_counts, "live_control_quit_command")
+                log_encounter_event("live_control_quit_command", now)
+                break
+            if live_control_quit_requested and not live_control_quit_sent:
+                client.set_attack_mode(False)
+                current_target = 0
+                current_target_intent = TargetIntent.none
+                client.clear_target()
+                client.send_position_update(speed=0.0, target_in_view=False)
+                actions += add_action(action_counts, "live_control_quit_sit_hold")
+                time.sleep(min(0.25, max(0.05, live_control_quit_at - now)))
+                continue
 
-                if not safe_exit_active:
-                    safe_exit_active = True
-                    next_safe_exit_log = now + max(3.0, float(getattr(args, "encounter_log_interval", 3.0) or 3.0))
-                    actions += add_action(action_counts, "safe_exit_extend")
-                    log_encounter_event("safe_exit_extend", now)
-                    recent_damage_age = recent_safe_exit_damage_age(
+            if now >= end_time:
+                if should_extend_round_for_dynamic_quest_return(
+                    dynamic_quest_return_pending=dynamic_quest_return_pending,
+                    dynamic_quest_return_completed=dynamic_quest_return_completed,
+                ):
+                    if safe_exit_active:
+                        safe_exit_active = False
+                        actions += add_action(action_counts, "safe_exit_deferred_for_dynamic_quest_return")
+                        log_encounter_event(
+                            "safe_exit_deferred_for_dynamic_quest_return",
+                            now,
+                            return_seconds=round(now - dynamic_quest_return_started_at, 3)
+                            if dynamic_quest_return_started_at > 0.0
+                            else 0.0,
+                        )
+                    end_time = now + max(
+                        5.0,
+                        float(getattr(args, "dynamic_quest_progress_api_timeout", 1.0) or 1.0) + 2.0,
+                    )
+                else:
+                    safe_exit_should_extend = should_extend_round_for_safe_exit(
+                        args,
+                        behavior_state,
                         now=now,
+                        end_time=end_time,
+                        safe_exit_deadline=safe_exit_deadline,
+                        health_percent=current_health_percent,
+                        current_target=current_target,
                         last_damage_taken_at=last_damage_taken_at,
                         last_incoming_damage_at=last_incoming_damage_at,
+                        flee_until=flee_until,
+                        rest_until=rest_until,
                     )
-                    if (
-                        should_disengage_current_target_for_safe_exit(
-                            args,
-                            behavior_state,
-                            current_target=current_target,
-                            health_percent=current_health_percent,
-                            recent_damage_age_seconds=recent_damage_age,
-                        )
-                    ):
-                        abandoned_target_id = current_target
-                        client.set_attack_mode(False)
-                        current_target = 0
-                        current_target_intent = TargetIntent.none
-                        client.clear_target()
-                        finish_combat("safe_exit_flee", now)
-                        transition_to(DummyBehaviorState.DropAggroAndRecover, "safe_exit_recent_damage", now)
-                        clear_shared_leader_target_on_abandon(now, "safe_exit_current_target", abandoned_target_id)
-                        attack_target_in_view_primed_at = 0.0
-                        attack_target_in_view_primed_target = 0
-                        actions += add_action(action_counts, "safe_exit_current_target_disengage")
-                        start_or_refresh_flee(
-                            reason="safe_exit_recent_damage",
-                            priority=110 if recent_damage_age is not None else 80,
-                            pressure=recent_damage_age is not None,
-                            prefer_safe=True,
+                    if not safe_exit_should_extend:
+                        if safe_exit_active:
+                            deadline_reached = now >= safe_exit_deadline
+                            safe_deadline_complete = safe_exit_deadline_can_complete_recovered(
+                                args,
+                                behavior_state,
+                                now=now,
+                                health_percent=current_health_percent,
+                                current_target=current_target,
+                                flee_until=flee_until,
+                                last_damage_taken_at=last_damage_taken_at,
+                                last_incoming_damage_at=last_incoming_damage_at,
+                                rest_until=rest_until,
+                            )
+                            if deadline_reached and not safe_deadline_complete:
+                                safe_exit_failed = True
+                                safe_exit_error = "safe_exit_deadline_reached"
+                            actions += add_action(
+                                action_counts,
+                                "safe_exit_deadline_reached" if deadline_reached and not safe_deadline_complete else "safe_exit_complete",
+                            )
+                            log_encounter_event(
+                                "safe_exit_complete",
+                                now,
+                                safe_exit_deadline_reached=bool(deadline_reached),
+                                safe_exit_deadline_completed_recovered=bool(safe_deadline_complete),
+                            )
+                        break
+
+                    if not safe_exit_active:
+                        safe_exit_active = True
+                        next_safe_exit_log = now + max(3.0, float(getattr(args, "encounter_log_interval", 3.0) or 3.0))
+                        actions += add_action(action_counts, "safe_exit_extend")
+                        log_encounter_event("safe_exit_extend", now)
+                        recent_damage_age = recent_safe_exit_damage_age(
                             now=now,
-                            extend_seconds=drop_aggro_recovery_duration(args, health_percent=current_health_percent),
+                            last_damage_taken_at=last_damage_taken_at,
+                            last_incoming_damage_at=last_incoming_damage_at,
                         )
-                elif now >= next_safe_exit_log:
-                    next_safe_exit_log = now + max(3.0, float(getattr(args, "encounter_log_interval", 3.0) or 3.0))
-                    actions += add_action(action_counts, "safe_exit_hold")
-                    log_encounter_event("safe_exit_hold", now)
+                        if (
+                            should_disengage_current_target_for_safe_exit(
+                                args,
+                                behavior_state,
+                                current_target=current_target,
+                                health_percent=current_health_percent,
+                                recent_damage_age_seconds=recent_damage_age,
+                            )
+                        ):
+                            abandoned_target_id = current_target
+                            client.set_attack_mode(False)
+                            current_target = 0
+                            current_target_intent = TargetIntent.none
+                            client.clear_target()
+                            finish_combat("safe_exit_flee", now)
+                            transition_to(DummyBehaviorState.DropAggroAndRecover, "safe_exit_recent_damage", now)
+                            clear_shared_leader_target_on_abandon(now, "safe_exit_current_target", abandoned_target_id)
+                            attack_target_in_view_primed_at = 0.0
+                            attack_target_in_view_primed_target = 0
+                            actions += add_action(action_counts, "safe_exit_current_target_disengage")
+                            start_or_refresh_flee(
+                                reason="safe_exit_recent_damage",
+                                priority=110 if recent_damage_age is not None else 80,
+                                pressure=recent_damage_age is not None,
+                                prefer_safe=True,
+                                now=now,
+                                extend_seconds=drop_aggro_recovery_duration(args, health_percent=current_health_percent),
+                            )
+                    elif now >= next_safe_exit_log:
+                        next_safe_exit_log = now + max(3.0, float(getattr(args, "encounter_log_interval", 3.0) or 3.0))
+                        actions += add_action(action_counts, "safe_exit_hold")
+                        log_encounter_event("safe_exit_hold", now)
 
             if party_state is not None:
                 if is_party_leader:
@@ -18391,6 +24974,13 @@ def run_dummy_round(
                 external_party_updates = update_external_party_members_from_visible_players(party_state, client, args)
                 for _ in range(external_party_updates):
                     actions += add_action(action_counts, "party_external_member_visible")
+                dead_resurrection_syncs = refresh_dead_party_resurrection_targets_from_visible_players(
+                    party_state,
+                    client,
+                    args,
+                )
+                for _ in range(dead_resurrection_syncs):
+                    actions += add_action(action_counts, "party_dead_member_visible_sync")
                 if args.party_condition_refresh_interval > 0 and now >= next_party_condition_refresh:
                     condition_updates = refresh_party_condition_snapshots(
                         party_state,
@@ -18423,6 +25013,32 @@ def run_dummy_round(
                                     if isinstance(live_command, str) and live_command.strip():
                                         actions += add_action(action_counts, "live_control_command_rejected")
                                     continue
+                                if safe_command.lower() == "/quit":
+                                    quit_delay = 4.0
+                                    try:
+                                        quit_delay = max(
+                                            0.5,
+                                            float(
+                                                live_payload.get(
+                                                    "quit_after_sit_seconds",
+                                                    live_payload.get("quit_delay_seconds", quit_delay),
+                                                )
+                                            ),
+                                        )
+                                    except (TypeError, ValueError):
+                                        quit_delay = 4.0
+                                    client.set_attack_mode(False)
+                                    current_target = 0
+                                    current_target_intent = TargetIntent.none
+                                    client.clear_target()
+                                    client.send_position_update(speed=0.0, target_in_view=False)
+                                    client.send_command("/sit")
+                                    actions += add_action(action_counts, "live_control_quit_sit")
+                                    live_control_quit_requested = True
+                                    live_control_quit_at = now + quit_delay
+                                    sent_commands.append("/sit")
+                                    actions += add_action(action_counts, "live_control_command")
+                                    continue
                                 client.send_command(safe_command)
                                 sent_commands.append(safe_command)
                                 actions += add_action(action_counts, "live_control_command")
@@ -18436,15 +25052,14 @@ def run_dummy_round(
                             client.accept_group_invite(accept_group_invite_session_id)
                             sent_commands.append("accept_group_invite")
                             actions += add_action(action_counts, "live_control_accept_group_invite")
-                        old_say_payload = "say" in live_payload and "say_text" not in live_payload
-                        say_text = live_payload.get("say_text", live_payload.get("say", ""))
-                        say_channel = live_payload.get("say_channel", "say" if old_say_payload else None)
-                        if isinstance(say_text, str):
-                            speech_command = format_live_control_speech_command(say_channel, say_text)
-                            if speech_command:
-                                client.send_command(speech_command)
-                                sent_commands.append(speech_command.split(" ", 1)[0])
-                                actions += add_action(action_counts, "live_control_say")
+                        speech_commands = live_control_speech_commands(live_payload)
+                        line_delay = companion_speech_line_delay(args)
+                        for index, speech_command in enumerate(speech_commands):
+                            client.send_command(speech_command)
+                            sent_commands.append(speech_command.split(" ", 1)[0])
+                            actions += add_action(action_counts, "live_control_say")
+                            if line_delay > 0 and index < len(speech_commands) - 1:
+                                time.sleep(line_delay)
                         intent_timer_updates = live_control_intent_timer_updates(live_payload.get("intent_hint"))
                         if "party_heal" in intent_timer_updates:
                             next_party_heal = min(next_party_heal, now)
@@ -18491,12 +25106,20 @@ def run_dummy_round(
                                 command_count=len(sent_commands),
                                 intent_hints=sorted(intent_timer_updates),
                             )
+                        if live_control_quit_requested:
+                            actions += add_action(action_counts, "live_control_quit_requested")
+                            log_encounter_event("live_control_quit_requested", now, quit_at=round(live_control_quit_at, 3))
+                            continue
 
-            if objective_complete_at <= 0.0 and party_state is not None:
+            if (
+                objective_complete_at <= 0.0
+                and party_state is not None
+                and not dynamic_quest_return_pending
+                and not dynamic_quest_return_completed
+            ):
                 party_completion_snapshot = party_state.snapshot()
                 shared_completed_at = float(party_completion_snapshot.get("objective_completed_at", 0.0) or 0.0)
                 if shared_completed_at > 0.0:
-                    objective_complete_at = shared_completed_at
                     completed_target_id = int(party_completion_snapshot.get("objective_complete_target_id", 0) or 0)
                     completed_target_name = str(party_completion_snapshot.get("objective_complete_name", "") or "")
                     if current_target:
@@ -18512,6 +25135,529 @@ def run_dummy_round(
                         completed_target_id=completed_target_id,
                         completed_target_name=completed_target_name,
                         loot_wait_seconds=args.target_removed_loot_wait,
+                    )
+                    if dynamic_quest_requires_completion_progress_confirmation(args):
+                        dynamic_quest_completion_signal_seen = True
+                        if dynamic_quest_shared_completion_should_finish_local_hunt(args):
+                            objective_complete_at = shared_completed_at
+                            actions += add_action(action_counts, "dynamic_quest_shared_completion_finish_local_hunt")
+                            log_encounter_event(
+                                "dynamic_quest_shared_completion_finish_local_hunt",
+                                now,
+                                completed_target_id=completed_target_id,
+                                completed_target_name=completed_target_name,
+                            )
+                        else:
+                            action_name = (
+                                "dynamic_quest_shared_completion_wait_progress"
+                                if dynamic_quest_return_enabled(args)
+                                else "dynamic_quest_shared_completion_wait_final_progress"
+                            )
+                            if party_state is not None:
+                                party_state.clear_objective_complete()
+                            actions += add_action(action_counts, action_name)
+                            log_encounter_event(
+                                action_name,
+                                now,
+                                completed_target_id=completed_target_id,
+                                completed_target_name=completed_target_name,
+                            )
+                    elif dynamic_quest_should_start_return_after_shared_completion(
+                        args,
+                        dynamic_quest_return_pending=dynamic_quest_return_pending,
+                        dynamic_quest_return_completed=dynamic_quest_return_completed,
+                    ):
+                        start_dynamic_quest_return(now, completed_target_name, 0)
+                    else:
+                        objective_complete_at = shared_completed_at
+
+            if (
+                dynamic_quest_final_progress_enabled(args)
+                and not dynamic_quest_return_pending
+                and objective_complete_at <= 0.0
+                and not bool(getattr(client, "is_dead", False))
+            ):
+                try:
+                    explore_destination = dynamic_quest_explore_cached_destination
+                    explore_quest_id = dynamic_quest_explore_cached_quest_id
+                    explore_location_name = dynamic_quest_explore_cached_location
+
+                    cached_explore_reached = dynamic_quest_explore_cached_destination_reached(
+                        client,
+                        explore_destination,
+                    )
+                    should_refresh_explore_progress = (
+                        explore_destination is None
+                        or cached_explore_reached
+                        or dynamic_quest_followup_hunt_started
+                    )
+
+                    if now >= dynamic_quest_explore_last_progress_at and should_refresh_explore_progress:
+                        dynamic_quest_explore_last_progress_at = now + max(
+                            0.75,
+                            float(getattr(args, "dynamic_quest_progress_api_timeout", 1.0) or 1.0),
+                        )
+                        had_cached_explore = dynamic_quest_explore_cached_destination is not None
+                        progress_snapshot = fetch_dynamic_quest_progress_snapshot(args, account)
+                        active_items = mark_dynamic_quest_progress_snapshot(progress_snapshot, now, "explore")
+                        completion_item_seen = dynamic_quest_progress_items_indicate_completion(active_items)
+                        expected_final_node = dynamic_quest_expected_final_node(args)
+                        expected_final_node_matched = dynamic_quest_active_items_match_expected_final_node(
+                            active_items,
+                            expected_final_node,
+                        )
+                        followup_start_node_matched = dynamic_quest_active_items_match_followup_start_node(
+                            active_items,
+                            expected_final_node,
+                        )
+                        if (
+                            not dynamic_quest_choice_dialog_answered
+                            and dynamic_quest_active_items_have_choice_node(active_items)
+                        ):
+                            accepted_dialogs = accept_dynamic_quest_return_dialog(client, args, action_counts)
+                            actions += accepted_dialogs
+                            if accepted_dialogs:
+                                dynamic_quest_choice_dialog_answered = True
+                                log_encounter_event(
+                                    "dynamic_quest_choice_accept_dialog",
+                                    now,
+                                    response=getattr(args, "dynamic_quest_return_dialog_response", "accept"),
+                                    current_node_ids=[
+                                        dynamic_quest_current_node_id(item)
+                                        for item in active_items[:5]
+                                    ],
+                                )
+                                send_ping_if_due(now)
+                                send_position_heartbeat(now)
+                                client.drain(args.tick)
+                                continue
+                        if followup_start_node_matched:
+                            if (
+                                dynamic_quest_followup_target_enabled(args)
+                                and not dynamic_quest_followup_hunt_started
+                            ):
+                                previous_followup_args = apply_dynamic_quest_followup_hunt_args(args)
+                                dynamic_quest_followup_hunt_started = True
+                                dynamic_quest_completion_signal_seen = False
+                                if active_combat is not None:
+                                    finish_combat("dynamic_quest_followup_hunt_switch", now)
+                                    active_combat = None
+                                if current_target > 0:
+                                    client.clear_target()
+                                current_target = 0
+                                current_target_intent = TargetIntent.none
+                                current_target_since = 0.0
+                                current_target_last_visible_at = 0.0
+                                target_observed_at = 0.0
+                                client.set_attack_mode(False)
+                                transition_to(DummyBehaviorState.HuntObjective, "dynamic_quest_followup_hunt_start", now)
+                                actions += add_action(action_counts, "dynamic_quest_followup_hunt_start")
+                                log_encounter_event(
+                                    "dynamic_quest_followup_hunt_start",
+                                    now,
+                                    expected_final_node=expected_final_node,
+                                    target_name=dynamic_quest_followup_target_name(args),
+                                    min_target_level=int(getattr(args, "min_target_level", 1) or 1),
+                                    max_target_level=int(getattr(args, "max_target_level", -1) or -1),
+                                    required_target_home=str(getattr(args, "required_target_home", None) or ""),
+                                    previous=previous_followup_args,
+                                )
+                                send_ping_if_due(now)
+                                send_position_heartbeat(now)
+                                client.drain(args.tick)
+                                continue
+                            if dynamic_quest_followup_target_enabled(args):
+                                actions += add_action(action_counts, "dynamic_quest_followup_expected_node_pending")
+                                log_encounter_event(
+                                    "dynamic_quest_followup_expected_node_pending",
+                                    now,
+                                    expected_final_node=expected_final_node,
+                                    current_node_ids=[
+                                        dynamic_quest_current_node_id(item)
+                                        for item in active_items[:5]
+                                    ],
+                                )
+                            else:
+                                objective_complete_at = now
+                                actions += add_action(action_counts, "dynamic_quest_expected_active_node_verified")
+                                log_encounter_event(
+                                    "dynamic_quest_expected_active_node_verified",
+                                    now,
+                                    expected_final_node=expected_final_node,
+                                    current_node_ids=[
+                                        dynamic_quest_current_node_id(item)
+                                        for item in active_items[:5]
+                                    ],
+                                )
+                                send_ping_if_due(now)
+                                send_position_heartbeat(now)
+                                client.drain(args.tick)
+                                continue
+                        if (
+                            expected_final_node_matched
+                            and dynamic_quest_followup_target_enabled(args)
+                            and dynamic_quest_followup_hunt_started
+                            and dynamic_quest_expected_final_match_is_followup_wait_node(
+                                active_items,
+                                expected_final_node,
+                            )
+                        ):
+                            # observe_signal is the followup wait node, not the terminal state.
+                            pass
+                        elif expected_final_node_matched:
+                            objective_complete_at = now
+                            actions += add_action(action_counts, "dynamic_quest_expected_active_node_verified")
+                            log_encounter_event(
+                                "dynamic_quest_expected_active_node_verified",
+                                now,
+                                expected_final_node=expected_final_node,
+                                current_node_ids=[
+                                    dynamic_quest_current_node_id(item)
+                                    for item in active_items[:5]
+                                ],
+                            )
+                            send_ping_if_due(now)
+                            send_position_heartbeat(now)
+                            client.drain(args.tick)
+                            continue
+                        if dynamic_quest_observe_final_completion_verified(
+                            active_count=len(active_items),
+                            progress_seen=dynamic_quest_progress_seen,
+                            return_enabled=dynamic_quest_return_enabled(args),
+                            completion_signal_seen=dynamic_quest_completion_signal_seen,
+                            completion_item_seen=dynamic_quest_observe_final_completion_item_allowed(
+                                args,
+                                active_items,
+                                completion_item_seen=completion_item_seen,
+                                followup_hunt_started=dynamic_quest_followup_hunt_started,
+                            ),
+                        ):
+                            objective_complete_at = now
+                            if party_state is not None and dynamic_quest_followup_target_enabled(args):
+                                party_state.mark_objective_complete(
+                                    0,
+                                    dynamic_quest_completion_share_name(args),
+                                )
+                            actions += add_action(action_counts, "dynamic_quest_complete_verified")
+                            log_encounter_event(
+                                "dynamic_quest_complete_verified",
+                                now,
+                                active_count=len(active_items),
+                                observe_final=True,
+                                completion_signal_seen=bool(dynamic_quest_completion_signal_seen),
+                                completion_item_seen=bool(completion_item_seen),
+                            )
+                            send_ping_if_due(now)
+                            send_position_heartbeat(now)
+                            client.drain(args.tick)
+                            continue
+                        if dynamic_quest_completion_signal_seen and completion_item_seen:
+                            terminal_completion_seen = dynamic_quest_progress_items_indicate_terminal_completion(active_items)
+                            if dynamic_quest_return_enabled(args) and not terminal_completion_seen:
+                                terminal_completion_seen = False
+                            if not terminal_completion_seen and dynamic_quest_return_enabled(args):
+                                actions += add_action(action_counts, "dynamic_quest_final_progress_pending")
+                                log_encounter_event(
+                                    "dynamic_quest_final_progress_pending",
+                                    now,
+                                    active_count=len(active_items),
+                                    completion_item_seen=True,
+                                    terminal_completion_seen=False,
+                                    current_node_ids=[
+                                        str(item.get("currentNodeId", item.get("current_node_id", "")) or "")
+                                        for item in active_items[:5]
+                                    ],
+                                )
+                                dynamic_quest_completion_signal_seen = False
+                                send_ping_if_due(now)
+                                send_position_heartbeat(now)
+                                client.drain(args.tick)
+                                continue
+                            objective_complete_at = now
+                            if party_state is not None and dynamic_quest_followup_target_enabled(args):
+                                party_state.mark_objective_complete(
+                                    0,
+                                    dynamic_quest_completion_share_name(args),
+                                )
+                            actions += add_action(action_counts, "dynamic_quest_complete_verified")
+                            log_encounter_event(
+                                "dynamic_quest_complete_verified",
+                                now,
+                                active_count=len(active_items),
+                                observe_final=True,
+                                completion_signal_seen=True,
+                                completion_item_seen=True,
+                                current_node_ids=[
+                                    str(item.get("currentNodeId", item.get("current_node_id", "")) or "")
+                                    for item in active_items[:5]
+                                ],
+                            )
+                            send_ping_if_due(now)
+                            send_position_heartbeat(now)
+                            client.drain(args.tick)
+                            continue
+                        if dynamic_quest_completion_signal_seen:
+                            actions += add_action(action_counts, "dynamic_quest_final_progress_pending")
+                            log_encounter_event(
+                                "dynamic_quest_final_progress_pending",
+                                now,
+                                active_count=len(active_items),
+                                completion_item_seen=bool(completion_item_seen),
+                                current_node_ids=[
+                                    str(item.get("currentNodeId", item.get("current_node_id", "")) or "")
+                                    for item in active_items[:5]
+                                ],
+                                counts=[
+                                    int(item.get("count", item.get("currentCount", item.get("current_count", 0))) or 0)
+                                    for item in active_items[:5]
+                                ],
+                                target_counts=[
+                                    int(item.get("targetCount", item.get("target_count", 0)) or 0)
+                                    for item in active_items[:5]
+                                ],
+                            )
+                            if active_items and not completion_item_seen:
+                                dynamic_quest_completion_signal_seen = False
+                                actions += add_action(action_counts, "dynamic_quest_completion_signal_cleared_incomplete")
+                                log_encounter_event(
+                                    "dynamic_quest_completion_signal_cleared_incomplete",
+                                    now,
+                                    active_count=len(active_items),
+                                    current_node_ids=[
+                                        str(item.get("currentNodeId", item.get("current_node_id", "")) or "")
+                                        for item in active_items[:5]
+                                    ],
+                                )
+                        if dynamic_quest_followup_target_enabled(args) and dynamic_quest_followup_hunt_started:
+                            explore_item = None
+                            explore_destination = None
+                            dynamic_quest_explore_cached_destination = None
+                            dynamic_quest_explore_cached_quest_id = ""
+                            dynamic_quest_explore_cached_location = ""
+                            dynamic_quest_explore_next_move_at = 0.0
+                            followup_can_drive_hunt = (
+                                current_health_percent > 0
+                                and flee_until <= now
+                                and rest_until <= now
+                                and behavior_state
+                                not in {
+                                    DummyBehaviorState.DropAggroAndRecover,
+                                    DummyBehaviorState.RestRecover,
+                                    DummyBehaviorState.DeadReleaseRecover,
+                                }
+                            )
+                            if followup_can_drive_hunt:
+                                transition_to(
+                                    DummyBehaviorState.HuntObjective,
+                                    "dynamic_quest_followup_hunt_continue",
+                                    now,
+                                )
+                                actions += add_action(action_counts, "dynamic_quest_followup_hunt_continue")
+                            else:
+                                actions += add_action(action_counts, "dynamic_quest_followup_hunt_deferred_recovery")
+                        else:
+                            explore_item = dynamic_quest_progress_explore_item(progress_snapshot, args)
+                            explore_destination = dynamic_quest_explore_destination(explore_item)
+
+                        if explore_item is None:
+                            dynamic_quest_explore_cached_destination = None
+                            dynamic_quest_explore_cached_quest_id = ""
+                            dynamic_quest_explore_cached_location = ""
+                            dynamic_quest_explore_next_move_at = 0.0
+                            explore_destination = None
+                            if had_cached_explore:
+                                transition_to(DummyBehaviorState.HuntObjective, "dynamic_quest_explore_complete", now)
+                                actions += add_action(action_counts, "dynamic_quest_explore_complete")
+                                log_encounter_event(
+                                    "dynamic_quest_explore_complete",
+                                    now,
+                                    quest_id=explore_quest_id,
+                                    location=explore_location_name,
+                                )
+                        elif explore_destination is None:
+                            dynamic_quest_explore_cached_destination = None
+                            dynamic_quest_explore_cached_quest_id = ""
+                            dynamic_quest_explore_cached_location = ""
+                            dynamic_quest_explore_next_move_at = 0.0
+                            actions += add_action(action_counts, "dynamic_quest_explore_missing_destination")
+                            log_encounter_event(
+                                "dynamic_quest_explore_missing_destination",
+                                now,
+                                quest_id=str(explore_item.get("questId", explore_item.get("quest_id", "")) or ""),
+                            )
+                            send_ping_if_due(now)
+                            send_position_heartbeat(now)
+                            client.drain(args.tick)
+                            continue
+                        else:
+                            dynamic_quest_explore_cached_destination = explore_destination
+                            dynamic_quest_explore_cached_quest_id = str(
+                                explore_item.get("questId", explore_item.get("quest_id", "")) or ""
+                            )
+                            objective = explore_item.get("currentObjective", explore_item.get("current_objective", {}))
+                            dynamic_quest_explore_cached_location = (
+                                str(objective.get("locationName", objective.get("location_name", "")) or "")
+                                if isinstance(objective, dict)
+                                else ""
+                            )
+                            explore_quest_id = dynamic_quest_explore_cached_quest_id
+                            explore_location_name = dynamic_quest_explore_cached_location
+                            dynamic_quest_explore_next_move_at = 0.0
+
+                    if explore_destination is not None:
+                        move_destination, radius, region, location_name = explore_destination
+                        if not explore_location_name:
+                            explore_location_name = location_name
+                        current_region = int(getattr(client, "zone_id", 0) or 0)
+                        if region > 0 and current_region > 0 and region != current_region:
+                            actions += add_action(action_counts, "dynamic_quest_explore_region_mismatch")
+                            log_encounter_event(
+                                "dynamic_quest_explore_region_mismatch",
+                                now,
+                                quest_id=explore_quest_id,
+                                expected_region=region,
+                                current_region=current_region,
+                                location=location_name,
+                            )
+                            send_ping_if_due(now)
+                            send_position_heartbeat(now)
+                            client.drain(args.tick)
+                            continue
+
+                        explore_move_interval = max(
+                            0.05,
+                            float(getattr(args, "movement_update_interval", 0.0) or 0.0),
+                            float(getattr(args, "smooth_move_interval", 0.0) or 0.0),
+                            float(getattr(args, "tick", 0.05) or 0.05),
+                        )
+                        if now < dynamic_quest_explore_next_move_at:
+                            wait_seconds = max(0.0, min(0.10, dynamic_quest_explore_next_move_at - now))
+                            send_ping_if_due(now)
+                            send_position_heartbeat(now)
+                            client.drain(min(args.tick, wait_seconds) if wait_seconds > 0 else args.tick)
+                            if wait_seconds > 0:
+                                time.sleep(wait_seconds)
+                            continue
+                        dynamic_quest_explore_next_move_at = now + explore_move_interval
+
+                        explore_party_snapshot = party_state.snapshot() if party_state is not None else None
+                        if dynamic_quest_explore_should_yield_to_rescue(
+                            args,
+                            explore_party_snapshot,
+                            now=now,
+                        ):
+                            transition_to(DummyBehaviorState.HuntObjective, "dynamic_quest_explore_rescue_target", now)
+                            actions += add_action(action_counts, "dynamic_quest_explore_rescue_target")
+                            log_encounter_event(
+                                "dynamic_quest_explore_rescue_target",
+                                now,
+                                quest_id=explore_quest_id,
+                                location=explore_location_name,
+                                rescue_target_id=(
+                                    int(explore_party_snapshot.get("rescue_target_id", 0) or 0)
+                                    if explore_party_snapshot is not None
+                                    else 0
+                                ),
+                                rescue_target_name=(
+                                    str(explore_party_snapshot.get("rescue_target_name", "") or "")
+                                    if explore_party_snapshot is not None
+                                    else ""
+                                ),
+                            )
+                        else:
+                            if active_combat is not None:
+                                finish_combat("dynamic_quest_explore_interrupt", now)
+                            if current_target > 0:
+                                client.clear_target()
+                            current_target = 0
+                            current_target_intent = TargetIntent.none
+                            current_target_since = 0.0
+                            current_target_last_visible_at = 0.0
+                            target_observed_at = 0.0
+                            client.set_attack_mode(False)
+                            stop_distance = dynamic_quest_explore_move_stop_distance(radius)
+                            transition_to(DummyBehaviorState.TravelToObjective, "dynamic_quest_explore_move", now)
+                            outcome = move_towards_destination(
+                                client,
+                                move_destination,
+                                step=smooth_movement_step(args) if args.smooth_movement else args.move_step,
+                                stop_distance=stop_distance,
+                                args=args,
+                                path_state=path_state,
+                                action_counts=action_counts,
+                            )
+                            actions += outcome.actions
+                            record_movement_failure(movement_failures, client, move_destination, outcome, "dynamic_quest_explore")
+                            actions += add_action(
+                                action_counts,
+                                "dynamic_quest_explore_move" if outcome.moved else "dynamic_quest_explore_hold",
+                            )
+                            log_encounter_event(
+                                "dynamic_quest_explore_progress",
+                                now,
+                                quest_id=explore_quest_id,
+                                location=explore_location_name,
+                                radius=radius,
+                                destination_x=move_destination.x,
+                                destination_y=move_destination.y,
+                                destination_z=move_destination.z,
+                                moved=bool(outcome.moved),
+                                arrived=bool(outcome.arrived),
+                            )
+                            send_ping_if_due(now)
+                            send_position_heartbeat(now)
+                            client.drain(args.tick)
+                            continue
+                except Exception as exc:
+                    actions += add_action(action_counts, "dynamic_quest_progress_api_error")
+                    log_encounter_event(
+                        "dynamic_quest_progress_api_error",
+                        now,
+                        error=short_text(str(exc), 220),
+                    )
+
+            if (
+                dynamic_quest_return_enabled(args)
+                and not dynamic_quest_return_pending
+                and not dynamic_quest_return_completed
+                and current_target <= 0
+                and active_combat is None
+                and not bool(getattr(client, "is_dead", False))
+                and now >= dynamic_quest_return_last_progress_at
+            ):
+                dynamic_quest_return_last_progress_at = now + max(
+                    2.0,
+                    float(getattr(args, "dynamic_quest_progress_api_timeout", 1.0) or 1.0),
+                )
+                try:
+                    progress_snapshot = fetch_dynamic_quest_progress_snapshot(args, account)
+                    mark_dynamic_quest_progress_snapshot(progress_snapshot, now, "return_start")
+                    return_item = dynamic_quest_progress_return_item(progress_snapshot, args)
+                    if return_item is not None:
+                        target_name = str(
+                            return_item.get("targetName", return_item.get("target_name", ""))
+                            or getattr(args, "require_target_name", "")
+                            or ""
+                        )
+                        return_npc_internal_id = dynamic_quest_progress_return_npc_internal_id(return_item)
+                        start_dynamic_quest_return(now, target_name, 0, return_npc_internal_id)
+                        actions += add_action(action_counts, "dynamic_quest_return_start_from_progress")
+                        log_encounter_event(
+                            "dynamic_quest_return_start_from_progress",
+                            now,
+                            quest_id=str(return_item.get("questId", return_item.get("quest_id", "")) or ""),
+                            current_node_id=str(
+                                return_item.get("currentNodeId", return_item.get("current_node_id", ""))
+                                or ""
+                            ),
+                            return_npc_internal_id=return_npc_internal_id,
+                        )
+                except Exception as exc:
+                    actions += add_action(action_counts, "dynamic_quest_progress_api_error")
+                    log_encounter_event(
+                        "dynamic_quest_progress_api_error",
+                        now,
+                        error=short_text(str(exc), 220),
                     )
 
             if objective_complete_at > 0:
@@ -18530,6 +25676,76 @@ def run_dummy_round(
                 continue
 
             current_health_percent = int(getattr(client, "health_percent", 100) or 0)
+            had_pending_companion_ai_reply = pending_companion_ai_reply is not None
+            deliver_pending_companion_ai_reply(now)
+            if had_pending_companion_ai_reply and pending_companion_ai_reply is None:
+                start_queued_companion_ai_question(now)
+            if pending_companion_guide_question is not None:
+                pending_guide_combat_active = int(current_target or 0) > 0 or active_combat is not None
+                pending_guide_unsafe_recovery = (
+                    now < flee_until
+                    or now < rest_until
+                    or behavior_state
+                    in {
+                        DummyBehaviorState.DropAggroAndRecover,
+                        DummyBehaviorState.RestRecover,
+                        DummyBehaviorState.DeadReleaseRecover,
+                    }
+                )
+                if pending_companion_guide_question_expired(
+                    pending_companion_guide_question,
+                    now=now,
+                ):
+                    actions += add_action(action_counts, "companion_pending_guide_expired")
+                    log_encounter_event(
+                        "companion_pending_guide_expired",
+                        now,
+                        prompt=short_text(str(pending_companion_guide_question.get("question") or "")),
+                    )
+                    pending_companion_guide_question = None
+                elif (
+                    now >= next_companion_chat_reply
+                    and pending_companion_ai_reply is None
+                    and not live_control_quit_requested
+                    and pending_companion_guide_question_ready(
+                        pending_companion_guide_question,
+                        now=now,
+                        in_combat=pending_guide_combat_active,
+                        unsafe_recovery=pending_guide_unsafe_recovery,
+                        health_percent=current_health_percent,
+                    )
+                ):
+                    pending_payload = pending_companion_guide_question.get("payload")
+                    if not isinstance(pending_payload, dict):
+                        pending_payload = {}
+                    channel = str(pending_companion_guide_question.get("channel") or "party")
+                    thinking_line = companion_ai_thinking_line(companion_personality_name, intent="guide")
+                    pending_guide_speaker = str(pending_companion_guide_question.get("speaker") or "")
+                    client.send_command(
+                        format_live_control_speech_command(
+                            channel,
+                            thinking_line,
+                            template_vars=companion_dialogue_template_vars(
+                                speaker=pending_guide_speaker,
+                                companion=party_member_name,
+                                role=getattr(args, "live_companion_role", "") or getattr(args, "action_rotation", ""),
+                            ),
+                        )
+                    )
+                    actions += add_action(action_counts, "companion_pending_guide_thinking")
+                    prompt = short_text(str(pending_companion_guide_question.get("question") or ""))
+                    pending_companion_ai_reply = {
+                        "kind": "guide",
+                        "channel": channel,
+                        "prompt": prompt,
+                        "payload": dict(pending_payload),
+                        "speaker": pending_guide_speaker,
+                        "memory": pending_companion_guide_question.get("memory"),
+                        "travel_requested": bool(pending_companion_guide_question.get("travel_requested")),
+                        "future": companion_ai_executor.submit(call_companion_guide_gateway, args, dict(pending_payload)),
+                    }
+                    actions += add_action(action_counts, "companion_pending_guide_ai_pending")
+                    pending_companion_guide_question = None
             utility_spell_busy = (
                 bool(current_target)
                 or current_health_percent <= 0
@@ -18555,6 +25771,146 @@ def run_dummy_round(
                 is_dead=current_health_percent <= 0 or bool(getattr(client, "is_dead", False)),
             )
             actions += utility_actions
+            if companion_guide_travel is not None:
+                guide_travel_state = str(companion_guide_travel.get("state") or "")
+                guide_travel_destination = companion_guide_travel.get("destination")
+                guide_travel_busy = (
+                    bool(current_target)
+                    or active_combat is not None
+                    or current_health_percent <= 0
+                    or bool(getattr(client, "is_dead", False))
+                    or now < flee_until
+                    or now < rest_until
+                    or behavior_state
+                    in {
+                        DummyBehaviorState.DropAggroAndRecover,
+                        DummyBehaviorState.RestRecover,
+                        DummyBehaviorState.DeadReleaseRecover,
+                    }
+                )
+                if guide_travel_busy:
+                    actions += add_action(action_counts, "companion_guide_travel_deferred")
+                elif isinstance(guide_travel_destination, MovementDestination) and now >= next_guide_travel_move:
+                    guide_travel_speaker = str(companion_guide_travel.get("speaker") or "")
+                    guide_travel_channel = str(companion_guide_travel.get("channel") or "party")
+                    current_player_distance = companion_guide_travel_player_distance(
+                        client,
+                        party_state,
+                        guide_travel_speaker,
+                    )
+                    previous_player_distance = float(companion_guide_travel.get("previous_distance") or 0.0)
+                    if guide_travel_state == "invite":
+                        if companion_guide_travel_face_player(client, party_state, guide_travel_speaker):
+                            actions += add_action(action_counts, "companion_guide_travel_face_player")
+                        if companion_guide_player_following(
+                            current_distance=current_player_distance,
+                            previous_distance=previous_player_distance,
+                        ):
+                            companion_guide_travel["state"] = "travel"
+                            guide_travel_state = "travel"
+                            actions += add_action(action_counts, "companion_guide_travel_follow_detected")
+                            log_encounter_event(
+                                "companion_guide_travel_follow_detected",
+                                now,
+                                speaker=guide_travel_speaker,
+                                player_distance=round(current_player_distance, 2),
+                            )
+                        elif now < float(companion_guide_travel.get("invite_until") or 0.0):
+                            if companion_guide_travel_backstep_probe(client, args, party_state, guide_travel_speaker):
+                                actions += add_action(action_counts, "companion_guide_travel_backstep_probe")
+                            else:
+                                client.send_position_update(speed=0.0, target_in_view=False)
+                                actions += add_action(action_counts, "companion_guide_travel_invite_hold")
+                            companion_guide_travel["previous_distance"] = current_player_distance
+                            next_guide_travel_move = now + 0.75
+                            send_ping_if_due(now)
+                            send_position_heartbeat(now)
+                            client.drain(args.tick)
+                            continue
+                        else:
+                            if not bool(companion_guide_travel.get("move_anyway_sent")):
+                                move_anyway_line = companion_guide_travel_move_anyway_line(companion_personality_name)
+                                client.send_command(
+                                    format_live_control_speech_command(
+                                        guide_travel_channel,
+                                        move_anyway_line,
+                                        template_vars=companion_dialogue_template_vars(
+                                            speaker=guide_travel_speaker,
+                                            companion=party_member_name,
+                                            role=getattr(args, "live_companion_role", "")
+                                            or getattr(args, "action_rotation", ""),
+                                        ),
+                                    )
+                                )
+                                companion_guide_travel["move_anyway_sent"] = True
+                                recent_companion_chat_replies.append(move_anyway_line)
+                                del recent_companion_chat_replies[:-8]
+                                actions += add_action(action_counts, "companion_guide_travel_move_anyway")
+                                log_encounter_event(
+                                    "companion_guide_travel_move_anyway",
+                                    now,
+                                    speaker=guide_travel_speaker,
+                                    player_distance=round(current_player_distance, 2),
+                                )
+                            companion_guide_travel["state"] = "travel"
+                            guide_travel_state = "travel"
+                    if guide_travel_state == "travel":
+                        travel_step = smooth_movement_step(args) if args.smooth_movement else args.party_follow_step
+                        guide_stop_distance = max(600.0, min(1200.0, float(getattr(args, "party_follow_distance", 900.0) or 900.0)))
+                        transition_to(DummyBehaviorState.TravelToObjective, "companion_guide_travel", now)
+                        outcome = move_towards_destination(
+                            client,
+                            guide_travel_destination,
+                            step=travel_step,
+                            stop_distance=guide_stop_distance,
+                            args=args,
+                            path_state=path_state,
+                            action_counts=action_counts,
+                        )
+                        actions += outcome.actions
+                        record_movement_failure(
+                            movement_failures,
+                            client,
+                            guide_travel_destination,
+                            outcome,
+                            "companion_guide_travel",
+                        )
+                        actions += add_action(
+                            action_counts,
+                            "companion_guide_travel_move" if outcome.moved else "companion_guide_travel_hold",
+                        )
+                        next_guide_travel_move = now + max(0.2, float(getattr(args, "smooth_move_interval", 0.2) or 0.2))
+                        arrived = outcome.arrived or waypoint_distance_from_client(client, guide_travel_destination) <= guide_stop_distance
+                        if arrived:
+                            arrival_line = companion_guide_travel_arrival_line(companion_personality_name)
+                            client.send_command(
+                                format_live_control_speech_command(
+                                    guide_travel_channel,
+                                    arrival_line,
+                                    template_vars=companion_dialogue_template_vars(
+                                        speaker=guide_travel_speaker,
+                                        companion=party_member_name,
+                                        role=getattr(args, "live_companion_role", "")
+                                        or getattr(args, "action_rotation", ""),
+                                    ),
+                                )
+                            )
+                            recent_companion_chat_replies.append(arrival_line)
+                            del recent_companion_chat_replies[:-8]
+                            companion_guide_travel = None
+                            actions += add_action(action_counts, "companion_guide_travel_arrived")
+                            log_encounter_event(
+                                "companion_guide_travel_arrived",
+                                now,
+                                speaker=guide_travel_speaker,
+                                destination_key=guide_travel_destination.key,
+                            )
+                        send_ping_if_due(now)
+                        send_position_heartbeat(now)
+                        client.drain(args.tick)
+                        continue
+                elif not isinstance(guide_travel_destination, MovementDestination):
+                    companion_guide_travel = None
             if pending_required_target_complete_id > 0 and required_target_completion_safe_after_removed(
                 args,
                 behavior_state,
@@ -18566,8 +25922,31 @@ def run_dummy_round(
                 flee_until=flee_until,
                 rest_until=rest_until,
             ):
-                objective_complete_at = now
-                if party_state is not None:
+                wait_for_dynamic_progress = dynamic_quest_requires_completion_progress_confirmation(args)
+                if wait_for_dynamic_progress:
+                    dynamic_quest_completion_signal_seen = True
+                    action_name = (
+                        "dynamic_quest_wait_return_progress_after_safe_exit"
+                        if dynamic_quest_return_enabled(args)
+                        else "dynamic_quest_wait_final_progress_after_safe_exit"
+                    )
+                    actions += add_action(action_counts, action_name)
+                    log_encounter_event(
+                        action_name,
+                        now,
+                        completed_target_id=pending_required_target_complete_id,
+                        completed_target_name=pending_required_target_complete_name,
+                        completed_target_level=pending_required_target_complete_level,
+                    )
+                elif dynamic_quest_return_enabled(args):
+                    start_dynamic_quest_return(
+                        now,
+                        pending_required_target_complete_name,
+                        pending_required_target_complete_level,
+                    )
+                else:
+                    objective_complete_at = now
+                if party_state is not None and not wait_for_dynamic_progress:
                     party_state.mark_objective_complete(
                         pending_required_target_complete_id,
                         pending_required_target_complete_name,
@@ -18579,27 +25958,354 @@ def run_dummy_round(
                             int(pending_required_target_complete_level),
                         )
                     ] = end_time + args.target_failure_name_cooldown
-                actions += add_action(action_counts, "required_target_complete_after_safe_exit")
-                log_encounter_event(
-                    "required_target_complete_after_safe_exit",
-                    now,
-                    completed_target_id=pending_required_target_complete_id,
-                    completed_target_name=pending_required_target_complete_name,
-                    completed_target_level=pending_required_target_complete_level,
-                    pending_seconds=round(now - pending_required_target_complete_since, 3)
-                    if pending_required_target_complete_since > 0.0
-                    else 0.0,
-                    loot_wait_seconds=args.target_removed_loot_wait,
-                )
+                if not wait_for_dynamic_progress:
+                    actions += add_action(action_counts, "required_target_complete_after_safe_exit")
+                    log_encounter_event(
+                        "required_target_complete_after_safe_exit",
+                        now,
+                        completed_target_id=pending_required_target_complete_id,
+                        completed_target_name=pending_required_target_complete_name,
+                        completed_target_level=pending_required_target_complete_level,
+                        pending_seconds=round(now - pending_required_target_complete_since, 3)
+                        if pending_required_target_complete_since > 0.0
+                        else 0.0,
+                        loot_wait_seconds=args.target_removed_loot_wait,
+                    )
                 pending_required_target_complete_id = 0
                 pending_required_target_complete_name = ""
                 pending_required_target_complete_level = 0
                 pending_required_target_complete_since = 0.0
 
+            if dynamic_quest_return_pending and dynamic_quest_return_can_act(client):
+                if death_seen:
+                    death_seen = False
+                    corpse_position_sent = False
+                    death_release_deadline = 0.0
+                    actions += add_action(action_counts, "death_recovered")
+                    log_encounter_event("death_recovered", now, resumed_dynamic_quest_return=True)
+
+                destination = dynamic_quest_return_destination(args)
+                if destination is None:
+                    dynamic_quest_return_pending = False
+                    objective_complete_at = now
+                    actions += add_action(action_counts, "dynamic_quest_return_missing_home")
+                    log_encounter_event("dynamic_quest_return_missing_home", now)
+                    continue
+
+                current_target = 0
+                current_target_intent = TargetIntent.none
+                client.set_attack_mode(False)
+
+                if dynamic_quest_return_interacted_at > 0.0:
+                    wait_seconds = max(0.0, float(getattr(args, "dynamic_quest_return_complete_wait", 0.0) or 0.0))
+                    if now - dynamic_quest_return_interacted_at >= wait_seconds and now >= dynamic_quest_return_last_progress_at:
+                        dynamic_quest_return_last_progress_at = now + max(
+                            0.5,
+                            float(getattr(args, "dynamic_quest_progress_api_timeout", 1.0) or 1.0),
+                        )
+                        try:
+                            progress_snapshot = fetch_dynamic_quest_progress_snapshot(args, account)
+                            active_items = mark_dynamic_quest_progress_snapshot(progress_snapshot, now, "return_complete")
+                            if not active_items:
+                                if not dynamic_quest_progress_seen:
+                                    dynamic_quest_return_pending = False
+                                    objective_complete_at = now
+                                    actions += add_action(action_counts, "dynamic_quest_complete_never_active")
+                                    log_encounter_event(
+                                        "dynamic_quest_complete_never_active",
+                                        now,
+                                        return_seconds=round(now - dynamic_quest_return_started_at, 3)
+                                        if dynamic_quest_return_started_at > 0.0
+                                        else 0.0,
+                                    )
+                                    continue
+
+                                dynamic_quest_return_pending = False
+                                dynamic_quest_return_completed = True
+                                objective_complete_at = now
+                                actions += add_action(action_counts, "dynamic_quest_complete_verified")
+                                log_encounter_event(
+                                    "dynamic_quest_complete_verified",
+                                    now,
+                                    return_seconds=round(now - dynamic_quest_return_started_at, 3)
+                                    if dynamic_quest_return_started_at > 0.0
+                                    else 0.0,
+                                )
+                                continue
+
+                            expected_final_node = dynamic_quest_expected_final_node(args)
+                            expected_final_node_matched = dynamic_quest_active_items_match_expected_final_node(
+                                active_items,
+                                expected_final_node,
+                            )
+                            followup_start_node_matched = dynamic_quest_active_items_match_followup_start_node(
+                                active_items,
+                                expected_final_node,
+                            )
+                            if followup_start_node_matched:
+                                if (
+                                    dynamic_quest_followup_target_enabled(args)
+                                    and not dynamic_quest_followup_hunt_started
+                                ):
+                                    previous_followup_args = apply_dynamic_quest_followup_hunt_args(args)
+                                    dynamic_quest_followup_hunt_started = True
+                                    dynamic_quest_return_pending = False
+                                    dynamic_quest_return_completed = True
+                                    dynamic_quest_completion_signal_seen = False
+                                    if active_combat is not None:
+                                        finish_combat("dynamic_quest_followup_hunt_switch", now)
+                                        active_combat = None
+                                    if current_target > 0:
+                                        client.clear_target()
+                                    current_target = 0
+                                    current_target_intent = TargetIntent.none
+                                    current_target_since = 0.0
+                                    current_target_last_visible_at = 0.0
+                                    target_observed_at = 0.0
+                                    client.set_attack_mode(False)
+                                    transition_to(DummyBehaviorState.HuntObjective, "dynamic_quest_followup_hunt_start", now)
+                                    actions += add_action(action_counts, "dynamic_quest_followup_hunt_start")
+                                    log_encounter_event(
+                                        "dynamic_quest_followup_hunt_start",
+                                        now,
+                                        expected_final_node=expected_final_node,
+                                        target_name=dynamic_quest_followup_target_name(args),
+                                        min_target_level=int(getattr(args, "min_target_level", 1) or 1),
+                                        max_target_level=int(getattr(args, "max_target_level", -1) or -1),
+                                        required_target_home=str(getattr(args, "required_target_home", None) or ""),
+                                        previous=previous_followup_args,
+                                        return_seconds=round(now - dynamic_quest_return_started_at, 3)
+                                        if dynamic_quest_return_started_at > 0.0
+                                        else 0.0,
+                                    )
+                                    continue
+                                if dynamic_quest_followup_target_enabled(args):
+                                    dynamic_quest_return_pending = False
+                                    dynamic_quest_return_completed = True
+                                    actions += add_action(action_counts, "dynamic_quest_followup_expected_node_pending")
+                                    log_encounter_event(
+                                        "dynamic_quest_followup_expected_node_pending",
+                                        now,
+                                        expected_final_node=expected_final_node,
+                                        current_node_ids=[
+                                            dynamic_quest_current_node_id(item)
+                                            for item in active_items[:5]
+                                        ],
+                                        return_seconds=round(now - dynamic_quest_return_started_at, 3)
+                                        if dynamic_quest_return_started_at > 0.0
+                                        else 0.0,
+                                    )
+                                    continue
+
+                                dynamic_quest_return_pending = False
+                                dynamic_quest_return_completed = True
+                                objective_complete_at = now
+                                actions += add_action(action_counts, "dynamic_quest_expected_active_node_verified")
+                                log_encounter_event(
+                                    "dynamic_quest_expected_active_node_verified",
+                                    now,
+                                    expected_final_node=expected_final_node,
+                                    current_node_ids=[
+                                        dynamic_quest_current_node_id(item)
+                                        for item in active_items[:5]
+                                    ],
+                                    return_seconds=round(now - dynamic_quest_return_started_at, 3)
+                                    if dynamic_quest_return_started_at > 0.0
+                                    else 0.0,
+                                )
+                                continue
+
+                            actions += add_action(action_counts, "dynamic_quest_complete_still_active")
+                            log_encounter_event(
+                                "dynamic_quest_complete_still_active",
+                                now,
+                                active_count=len(active_items),
+                                has_completed=dynamic_quest_progress_has_completed_item(progress_snapshot, args),
+                            )
+                            dynamic_quest_return_interacted_at = 0.0
+                        except Exception as exc:
+                            actions += add_action(action_counts, "dynamic_quest_progress_api_error")
+                            log_encounter_event(
+                                "dynamic_quest_progress_api_error",
+                                now,
+                                error=short_text(str(exc), 220),
+                            )
+
+                    send_ping_if_due(now)
+                    send_position_heartbeat(now)
+                    client.drain(args.tick)
+                    continue
+
+                return_npcs = dynamic_quest_return_npc_candidates(client, args)
+                return_npc = return_npcs[0] if return_npcs else None
+                stop_distance = dynamic_quest_return_stop_distance(args)
+                interact_distance = dynamic_quest_return_interact_distance(args)
+                return_npc_api_observation = None
+                move_destination = destination
+
+                return_npc_distance = (
+                    dynamic_quest_return_actor_distance(client, return_npc) if return_npc is not None else 0.0
+                )
+                return_npc_matches_expected = dynamic_quest_return_actor_matches_expected(
+                    return_npc,
+                    dynamic_quest_return_expected_npc_internal_id,
+                )
+                if return_npc is not None and return_npc_matches_expected and return_npc_distance <= interact_distance:
+                    client.clear_target()
+                    client.target_object(return_npc.object_id)
+                    client.interact_object(return_npc.object_id)
+                    accepted_dialogs = accept_dynamic_quest_return_dialog(client, args, action_counts)
+                    dynamic_quest_return_interacted_at = now
+                    actions += add_action(action_counts, "dynamic_quest_return_interact")
+                    actions += accepted_dialogs
+                    log_encounter_event(
+                        "dynamic_quest_return_interact",
+                        now,
+                        npc_id=int(return_npc.object_id),
+                        npc_name=str(getattr(return_npc, "name", "") or ""),
+                        distance=round(return_npc_distance, 2),
+                    )
+                    if accepted_dialogs:
+                        log_encounter_event("dynamic_quest_return_accept_dialog", now)
+                    send_ping_if_due(now)
+                    send_position_heartbeat(now)
+                    client.drain(args.tick)
+                    continue
+                if return_npc is not None and return_npc_matches_expected:
+                    move_destination = dynamic_quest_return_actor_destination(return_npc)
+                    stop_distance = dynamic_quest_return_target_stop_distance(args, client, return_npc)
+
+                if (
+                    dynamic_quest_return_should_query_npc_api(
+                        return_npc,
+                        return_npc_distance=return_npc_distance,
+                        interact_distance=interact_distance,
+                        expected_internal_id=dynamic_quest_return_expected_npc_internal_id,
+                    )
+                    and now >= dynamic_quest_return_last_npc_api_at
+                ):
+                    dynamic_quest_return_last_npc_api_at = now + max(
+                        0.5,
+                        float(
+                            getattr(
+                                args,
+                                "dynamic_quest_return_npc_api_timeout",
+                                getattr(args, "dynamic_quest_progress_api_timeout", 2.0),
+                            )
+                            or 2.0
+                        ),
+                    )
+                    return_npc_api_observation = fetch_dynamic_quest_return_npc_observation(
+                        args,
+                        client,
+                        dynamic_quest_return_expected_npc_internal_id,
+                    )
+                    if return_npc_api_observation is not None:
+                        api_return_distance = dynamic_quest_return_observation_distance(client, return_npc_api_observation)
+                        api_return_horizontal_distance = horizontal_distance_between_points(
+                            int(getattr(client, "x", 0) or 0),
+                            int(getattr(client, "y", 0) or 0),
+                            return_npc_api_observation.x,
+                            return_npc_api_observation.y,
+                        )
+                        actions += add_action(action_counts, "dynamic_quest_return_npc_api_hit")
+                        log_encounter_event(
+                            "dynamic_quest_return_npc_api_hit",
+                            now,
+                            npc_id=int(return_npc_api_observation.object_id),
+                            npc_name=return_npc_api_observation.name,
+                            npc_internal_id=return_npc_api_observation.internal_id,
+                            distance=round(api_return_distance, 2),
+                            horizontal_distance=round(api_return_horizontal_distance, 2),
+                        )
+                    else:
+                        actions += add_action(action_counts, "dynamic_quest_return_npc_api_miss")
+
+                if return_npc_api_observation is not None:
+                    api_return_distance = dynamic_quest_return_observation_distance(client, return_npc_api_observation)
+                    if api_return_distance <= interact_distance:
+                        client.clear_target()
+                        client.target_object(return_npc_api_observation.object_id)
+                        client.interact_object(return_npc_api_observation.object_id)
+                        accepted_dialogs = accept_dynamic_quest_return_dialog(client, args, action_counts)
+                        dynamic_quest_return_interacted_at = now
+                        actions += add_action(action_counts, "dynamic_quest_return_interact_api")
+                        actions += accepted_dialogs
+                        log_encounter_event(
+                            "dynamic_quest_return_interact_api",
+                            now,
+                            npc_id=int(return_npc_api_observation.object_id),
+                            npc_name=return_npc_api_observation.name,
+                            npc_internal_id=return_npc_api_observation.internal_id,
+                            distance=round(api_return_distance, 2),
+                        )
+                        if accepted_dialogs:
+                            log_encounter_event("dynamic_quest_return_accept_dialog", now)
+                        send_ping_if_due(now)
+                        send_position_heartbeat(now)
+                        client.drain(args.tick)
+                        continue
+                    move_destination = dynamic_quest_return_api_destination(return_npc_api_observation)
+                    stop_distance = dynamic_quest_return_target_stop_distance(args, client, return_npc_api_observation)
+
+                transition_to(DummyBehaviorState.ReturnToObjective, "dynamic_quest_return_move", now)
+                outcome = move_towards_destination(
+                    client,
+                    move_destination,
+                    step=smooth_movement_step(args) if args.smooth_movement else args.move_step,
+                    stop_distance=stop_distance,
+                    args=args,
+                    path_state=path_state,
+                    action_counts=action_counts,
+                )
+                actions += outcome.actions
+                record_movement_failure(movement_failures, client, destination, outcome, "dynamic_quest_return")
+                actions += add_action(action_counts, "dynamic_quest_return_move" if outcome.moved else "dynamic_quest_return_hold")
+                send_ping_if_due(now)
+                send_position_heartbeat(now)
+                client.drain(args.tick)
+                continue
+
             party_snapshot_for_tick = party_state.snapshot() if party_state is not None else {}
             required_target_api_observation = refresh_required_target_from_api(now, party_snapshot_for_tick)
             if required_target_api_observation is not None and party_state is not None:
                 party_snapshot_for_tick = party_state.snapshot()
+            companion_attack_command_active_for_tick = companion_command_attack_active(
+                companion_command_mode,
+                now=now,
+                attack_until=companion_command_attack_until,
+            )
+            party_snapshot_for_tick = party_snapshot_with_companion_attack_command(
+                party_snapshot_for_tick,
+                command_attack_active=companion_attack_command_active_for_tick,
+                now=now,
+            )
+            if should_end_companion_one_shot_attack(
+                role=action_rotation,
+                mode=companion_command_mode,
+                now=now,
+                attack_until=companion_command_attack_until,
+                behavior_state=behavior_state,
+                state_reason=state_reason,
+                current_target=current_target,
+                current_target_intent=current_target_intent,
+            ):
+                cleared_target = current_target
+                finish_active_combat_before_target_clear("healer_one_shot_attack_complete", now, cleared_target)
+                client.clear_target()
+                client.set_attack_mode(False)
+                current_target = 0
+                current_target_intent = TargetIntent.none
+                current_target_since = now
+                current_target_last_visible_at = now
+                companion_command_attack_until = 0.0
+                transition_to(DummyBehaviorState.ReturnToObjective, "healer_one_shot_attack_complete", now)
+                actions += add_action(action_counts, "healer_one_shot_attack_complete")
+                log_encounter_event(
+                    "healer_one_shot_attack_complete",
+                    now,
+                    cleared_target=cleared_target,
+                )
             if should_refresh_party_melee_survival_backoff(args, current_health_percent):
                 party_melee_survival_backoff_until = max(
                     party_melee_survival_backoff_until,
@@ -18788,6 +26494,7 @@ def run_dummy_round(
                     player_level=int(getattr(args, "player_level", 0) or 0),
                     health_percent=current_health_percent,
                     previous_health_percent=last_health_percent,
+                    action_rotation=action_rotation,
                 )
                 if not travel_aggro_damage_due and request_party_rescue(now, "health_drop"):
                     actions += add_action(action_counts, "party_rescue_health_drop_detected")
@@ -18837,7 +26544,6 @@ def run_dummy_round(
                     health_percent=current_health_percent,
                     previous_health_percent=previous_health_percent,
                 )
-                speak_state_change(now, "flee", "state: critical health escape")
                 send_ping_if_due(now)
                 send_position_heartbeat(now)
                 client.drain(args.tick)
@@ -18932,7 +26638,6 @@ def run_dummy_round(
                         health_percent=current_health_percent,
                         previous_health_percent=previous_health_percent,
                     )
-                    speak_state_change(now, "flee", "state: fleeing to town")
                 elif (
                     stand_after_rest
                     and args.low_health_rest_resume_percent > 0
@@ -19125,7 +26830,6 @@ def run_dummy_round(
                         health_percent=current_health_percent,
                         previous_health_percent=previous_health_percent,
                     )
-                    speak_state_change(now, "flee", "state: safe exit under attack")
                     send_ping_if_due(now)
                     send_position_heartbeat(now)
                     client.drain(args.tick)
@@ -19719,8 +27423,6 @@ def run_dummy_round(
                     health_percent=current_health_percent,
                     previous_health_percent=previous_health_percent,
                 )
-                speak_state_change(now, "flee", "state: fleeing to safety")
-
             if (
                 args.low_health_rest_percent > 0
                 and not current_target
@@ -19786,6 +27488,11 @@ def run_dummy_round(
                 client.drain(args.tick)
                 continue
 
+            flee_self_preserve_threat_snapshot = (
+                flee_threat_snapshot(args, client, member_name=party_member_name)
+                if now < flee_until
+                else None
+            )
             if should_healer_self_preserve_while_fleeing(
                 args,
                 action_rotation=action_rotation,
@@ -19796,6 +27503,7 @@ def run_dummy_round(
                 recent_damage_age_seconds=(
                     now - last_damage_taken_at if last_damage_taken_at > 0.0 else None
                 ),
+                active_threat=flee_threat_snapshot_is_active(flee_self_preserve_threat_snapshot),
             ) and not should_healer_prioritize_party_heal_while_fleeing(
                 args,
                 action_rotation=action_rotation,
@@ -19838,6 +27546,7 @@ def run_dummy_round(
                 if not death_seen:
                     death_seen = True
                     death_release_after = now + args.death_release_delay
+                    death_release_deadline = death_release_after + party_resurrection_auto_release_grace(args)
                     next_death_release = death_release_after
                     transition_to(DummyBehaviorState.DeadReleaseRecover, "death_detected", now)
                     if not should_preserve_party_target_on_loss(args):
@@ -19860,10 +27569,45 @@ def run_dummy_round(
                     log_encounter_event("death_detected", now)
 
                 if args.auto_release_on_death and now >= next_death_release:
-                    client.send_command("/release")
-                    actions += add_action(action_counts, "death_release")
-                    next_death_release = now + args.death_recovery_cooldown
-                    log_encounter_event("death_release", now)
+                    if should_defer_auto_release_for_dynamic_quest_group_credit(
+                        args,
+                        party_state,
+                        party_member_name,
+                        now=now,
+                        release_deadline=death_release_deadline,
+                        dynamic_quest_return_pending=dynamic_quest_return_pending,
+                        dynamic_quest_return_completed=dynamic_quest_return_completed,
+                        objective_complete=objective_complete_at > 0.0,
+                    ):
+                        defer_interval = party_resurrection_auto_release_recheck_interval(args)
+                        next_death_release = now + defer_interval
+                        actions += add_action(action_counts, "death_release_deferred_for_dynamic_quest_group_credit")
+                        log_encounter_event(
+                            "death_release_deferred_for_dynamic_quest_group_credit",
+                            now,
+                            next_release=next_death_release,
+                        )
+                    elif should_defer_auto_release_for_party_resurrection(
+                        args,
+                        party_state,
+                        party_member_name,
+                        now=now,
+                        release_deadline=death_release_deadline,
+                    ):
+                        defer_interval = party_resurrection_auto_release_recheck_interval(args)
+                        next_death_release = min(death_release_deadline, now + defer_interval)
+                        actions += add_action(action_counts, "death_release_deferred_for_party_resurrection")
+                        log_encounter_event(
+                            "death_release_deferred_for_party_resurrection",
+                            now,
+                            next_release=max(now, next_death_release),
+                            release_deadline=death_release_deadline,
+                        )
+                    else:
+                        client.send_command("/release")
+                        actions += add_action(action_counts, "death_release")
+                        next_death_release = now + args.death_recovery_cooldown
+                        log_encounter_event("death_release", now)
                 elif not corpse_position_sent and hasattr(client, "send_corpse_position_update"):
                     client.send_corpse_position_update()
                     corpse_position_sent = True
@@ -19878,6 +27622,7 @@ def run_dummy_round(
             if death_seen and not client.is_dead:
                 death_seen = False
                 corpse_position_sent = False
+                death_release_deadline = 0.0
                 actions += add_action(action_counts, "death_recovered")
                 log_encounter_event("death_recovered", now)
 
@@ -19929,7 +27674,6 @@ def run_dummy_round(
                         )
                         if outcome.moved:
                             schedule_next_flee_move(now)
-                    speak_state_change(now, "flee", "state: escaping after release")
                 else:
                     rest_until = now + args.post_release_rest
                     transition_to(DummyBehaviorState.RestRecover, "death_recovered", now)
@@ -20209,7 +27953,6 @@ def run_dummy_round(
                 if flee_destination is not None and destination_kind(flee_destination) == "flee-safe":
                     flee_damage_replan_suppressed_until = now + 10.0
                     next_flee_pressure_replan = max(next_flee_pressure_replan, flee_damage_replan_suppressed_until)
-                speak_state_change(now, "flee", "state: fleeing to town")
 
             critical_flee_heal_due = should_healer_interrupt_flee_for_party_heal(
                 args,
@@ -20217,8 +27960,14 @@ def run_dummy_round(
                 behavior_state=behavior_state,
                 current_health_percent=current_health_percent,
                 hurt_member=hurt_member_for_precast,
+                dead_member=dead_member_for_precast,
+                leader_name=party_state.leader_name if party_state is not None else "",
                 now=now,
                 next_party_heal=next_party_heal,
+                next_party_resurrect=next_party_resurrect,
+                party_focus_target_backoff=bool(party_focus_target_backoff),
+                boss_hazard_backoff=bool(boss_hazard_backoff),
+                party_member_name=party_member_name,
             )
             if critical_flee_heal_due and is_party_support_healer and party_state is not None:
                 hurt_member = hurt_member_for_precast
@@ -20336,6 +28085,115 @@ def run_dummy_round(
                         )
                     else:
                         actions += add_action(action_counts, "party_heal_target_too_far")
+                    send_ping_if_due(now)
+                    send_position_heartbeat(now)
+                    client.drain(args.tick)
+                    continue
+
+            critical_flee_resurrection_due = should_healer_interrupt_flee_for_party_resurrection(
+                args,
+                action_rotation=action_rotation,
+                behavior_state=behavior_state,
+                current_health_percent=current_health_percent,
+                hurt_member=hurt_member_for_precast,
+                dead_member=dead_member_for_precast,
+                now=now,
+                next_party_resurrect=next_party_resurrect,
+                leader_name=party_state.leader_name if party_state is not None else "",
+            )
+            if critical_flee_resurrection_due and is_party_support_healer and party_state is not None:
+                dead_member = choose_party_resurrection_target(
+                    party_state,
+                    args,
+                    exclude_name=party_member_name,
+                    cooldowns=party_resurrection_cooldowns,
+                    now=now,
+                )
+                if dead_member is not None and party_resurrection_target_in_cast_range(client, args, dead_member):
+                    friendly_spell_cast = False
+                    spell = None
+                    action_name = None
+                    if combat_plan.resurrection_spells:
+                        spell = choose_usable_spell(rng, args, combat_plan.resurrection_spells)
+                        action_name = perform_party_resurrection_cast(
+                            client,
+                            spell,
+                            args,
+                            dead_member,
+                            leader_name=party_state.leader_name,
+                        )
+                        actions += add_action(action_counts, action_name)
+                        actions += add_action(action_counts, "flee_party_resurrect_interrupt")
+                        log_encounter_event(
+                            action_name,
+                            now,
+                            resurrect_target=str(dead_member.get("name", "") or ""),
+                            reason="flee_party_resurrect_interrupt",
+                            spell_name=str(getattr(spell, "name", "") or ""),
+                            spell_level=int(getattr(spell, "spell_level", 0) or 0),
+                        )
+                        friendly_spell_cast = True
+                        if should_apply_party_resurrection_cooldown(action_name):
+                            dead_member_id = int(dead_member.get("object_id", 0) or 0)
+                            if dead_member_id:
+                                party_resurrection_cooldowns[dead_member_id] = now + party_resurrection_retry_cooldown(args)
+                    else:
+                        actions += add_action(action_counts, "party_resurrect_skipped_unvalidated")
+                        action_name = "party_resurrect_skipped_unvalidated"
+
+                    if should_schedule_next_party_resurrection_check(action_name):
+                        next_party_resurrect = now + args.party_resurrect_interval + rng.uniform(0, args.jitter)
+                    if friendly_spell_cast:
+                        friendly_cast_hold_until, friendly_cast_restore_target = plan_friendly_cast_target_hold(
+                            args,
+                            now,
+                            current_target,
+                            minimum_hold_seconds=friendly_usable_spell_hold_seconds(
+                                args,
+                                spell if combat_plan.resurrection_spells else None,
+                            ),
+                        )
+                        friendly_cast_hold_reason = "party_resurrect"
+                        hold_seconds = max(
+                            float(getattr(args, "tick", 0.0) or 0.0),
+                            friendly_usable_spell_hold_seconds(args, spell if combat_plan.resurrection_spells else None),
+                        )
+                        next_flee_move = max(next_flee_move, now + hold_seconds)
+                        if friendly_cast_hold_until > now:
+                            actions += add_action(action_counts, "party_resurrect_target_hold")
+                        send_ping_if_due(now)
+                        send_position_heartbeat(now)
+                        client.drain(args.tick)
+                        continue
+                elif dead_member is not None and should_approach_party_resurrection_target(
+                    args,
+                    action_rotation=action_rotation,
+                    dead_member=dead_member,
+                    current_target=current_target,
+                    behavior_state=behavior_state,
+                    critical_flee_interrupt=True,
+                ):
+                    resurrection_destination = party_resurrection_target_destination(dead_member)
+                    outcome = move_towards_party_resurrection_target(client, args, path_state, action_counts, dead_member)
+                    if outcome is not None and resurrection_destination is not None:
+                        actions += outcome.actions
+                        record_movement_failure(
+                            movement_failures,
+                            client,
+                            resurrection_destination,
+                            outcome,
+                            "flee_party_resurrection_target",
+                        )
+                        dist = horizontal_distance_between_points(int(client.x), int(client.y), int(dead_member.get("x", 0) or 0), int(dead_member.get("y", 0) or 0))
+                        actions += add_action(
+                            action_counts,
+                            "flee_party_resurrection_target_approach"
+                            if outcome.moved
+                            else "flee_party_resurrection_target_approach_hold",
+                        )
+                        log_encounter_event("flee_party_resurrection_target_approach", now, distance=dist, moved=outcome.moved)
+                    else:
+                        actions += add_action(action_counts, "party_resurrection_target_too_far")
                     send_ping_if_due(now)
                     send_position_heartbeat(now)
                     client.drain(args.tick)
@@ -20523,7 +28381,6 @@ def run_dummy_round(
                                         clear_flee_until_after_recovery("flee_recovered", now)
                                         actions += add_action(action_counts, "flee_recovered")
                                         log_encounter_event("flee_recovered", now, health_percent=health_percent)
-                                        speak_state_change(now, "flee_recovered", "state: reached safety")
                     else:
                         if should_refresh_flee_wander_heading(now=now, hold_until=flee_wander_heading_hold_until):
                             flee_wander_heading = (heading + rng.randrange(768, 1536)) & 0x0FFF
@@ -20533,8 +28390,7 @@ def run_dummy_round(
                         client.wander(
                             heading,
                             step=args.flee_step,
-                            movement_speed=getattr(args, "flee_movement_speed", None),
-                            min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
+                            **dummy_movement_kwargs(args, getattr(args, "flee_movement_speed", None), client),
                         )
                         actions += add_action(action_counts, "flee_move")
                     schedule_next_flee_move(now)
@@ -20580,7 +28436,6 @@ def run_dummy_round(
                         reason="flee_finished_recovery",
                     )
                     log_encounter_event("flee_recovered", now, health_percent=current_health_percent)
-                    speak_state_change(now, "flee_recovered", "state: reached safety")
                     clear_flee_destination_after_recovery("flee_finished_recovery", now)
                     client.drain(args.tick)
                     continue
@@ -20620,7 +28475,6 @@ def run_dummy_round(
                 transition_to(next_recovery_state, "flee_finished", now)
                 actions += add_action(action_counts, "flee_recovered")
                 log_encounter_event("flee_recovered", now, health_percent=current_health_percent)
-                speak_state_change(now, "flee_recovered", "state: reached safety")
                 actions += add_action(action_counts, "flee_finished")
                 log_encounter_event("flee_finished", now, health_percent=current_health_percent)
                 clear_flee_destination_after_recovery("flee_finished", now)
@@ -20689,7 +28543,7 @@ def run_dummy_round(
                 client.set_attack_mode(False)
                 actions += add_action(action_counts, "friendly_cast_target_hold")
                 send_ping_if_due(now)
-                send_position_heartbeat(now)
+                send_stationary_movement_sync(now)
                 client.drain(args.tick)
                 continue
 
@@ -20697,7 +28551,7 @@ def run_dummy_round(
                 client.set_attack_mode(False)
                 actions += add_action(action_counts, "cast_action_hold")
                 send_ping_if_due(now)
-                send_position_heartbeat(now)
+                send_stationary_movement_sync(now)
                 client.drain(args.tick)
                 continue
 
@@ -20727,6 +28581,40 @@ def run_dummy_round(
             if args.hunter and now < next_think and not current_target:
                 client.drain(args.tick)
                 continue
+
+            if (
+                target_loss_rescan_enabled(args)
+                and companion_command_allows_target_loss_heading_scan(companion_command_mode)
+                and not companion_attack_command_active_for_tick
+                and current_target > 0
+                and choose_current_visible_target(
+                    client.visible_npcs(max_age=args.npc_max_age, include_peace=should_scan_peace_npcs(args)),
+                    current_target,
+                )
+                is None
+                and now >= next_target_loss_scan
+                and not should_chase_committed_target_last_known(
+                    args,
+                    client,
+                    action_rotation,
+                    current_target=current_target,
+                    active_combat=active_combat,
+                    target_visible=False,
+                    now=now,
+                    last_visible_at=current_target_last_visible_at,
+                    recent_incoming_melee=recent_incoming_melee_for_current_target,
+                )
+            ):
+                scan_interval = max(0.05, float(getattr(args, "target_loss_scan_interval", 0.35) or 0.35))
+                scan_step = int(getattr(args, "target_loss_scan_heading_step", 512) or 512)
+                target_loss_scan_heading = target_loss_scan_heading_step(target_loss_scan_heading, scan_step)
+                heading = target_loss_scan_heading
+                client.send_heading(heading, drain_after=False)
+                actions += add_action(action_counts, "target_loss_scan_heading")
+                next_target_loss_scan = now + scan_interval + rng.uniform(
+                    0.0,
+                    min(args.jitter, scan_interval * 0.5),
+                )
 
             if args.ai_player and args.look_around_interval > 0 and now >= next_look_around and not current_target:
                 heading = (heading + rng.randrange(-384, 385)) & 0x0FFF
@@ -20870,7 +28758,7 @@ def run_dummy_round(
                         float(getattr(args, "current_target_api_refresh_interval", 0.0) or 0.0),
                     )
                     if (
-                        getattr(args, "current_target_api_refresh", False)
+                        current_target_api_refresh_enabled(args)
                         and (
                             target_observation is None
                             or now - target_observation.last_seen >= refresh_interval
@@ -20929,15 +28817,36 @@ def run_dummy_round(
 
                 if support_evasion_threat is not None:
                     client.set_attack_mode(False)
-                    moved = move_away_from_actor(
+                    peel_destination = party_support_peel_kite_destination(
+                        args,
                         client,
                         support_evasion_threat,
-                        step=smooth_movement_step(args),
-                        min_distance=party_focus_target_backoff_distance(args, action_rotation),
-                        args=args,
-                        target_in_view=False,
+                        party_snapshot_for_tick,
                     )
-                    actions += add_action(action_counts, "party_support_evasion_backoff" if moved else "party_support_evasion_hold")
+                    if peel_destination is not None:
+                        outcome = move_towards_destination(
+                            client,
+                            peel_destination,
+                            step=smooth_movement_step(args),
+                            stop_distance=max(120.0, float(getattr(args, "party_follow_distance", 0.0) or 0.0)),
+                            args=args,
+                            path_state=path_state,
+                            action_counts=action_counts,
+                            target_in_view=False,
+                        )
+                        moved = outcome.moved
+                        actions += outcome.actions
+                        actions += add_action(action_counts, "party_support_peel_kite" if moved else "party_support_peel_kite_hold")
+                    else:
+                        moved = move_away_from_actor(
+                            client,
+                            support_evasion_threat,
+                            step=smooth_movement_step(args),
+                            min_distance=party_focus_target_backoff_distance(args, action_rotation),
+                            args=args,
+                            target_in_view=False,
+                        )
+                        actions += add_action(action_counts, "party_support_evasion_backoff" if moved else "party_support_evasion_hold")
                     log_attack_decision(
                         now,
                         False,
@@ -20949,7 +28858,13 @@ def run_dummy_round(
                 elif precast_movement_hold:
                     client.set_attack_mode(False)
                     if target_npc is not None:
-                        face_target_for_attack(client, target_npc)
+                        face_target_for_attack(
+                            client,
+                            target_npc,
+                            args=args,
+                            action_rotation=action_rotation,
+                            distance=combat_distance_to(client, target_npc),
+                        )
                     actions += add_action(action_counts, "precast_movement_hold")
                     log_attack_decision(
                         now,
@@ -20999,7 +28914,7 @@ def run_dummy_round(
                         float(getattr(args, "current_target_api_refresh_interval", 0.0) or 0.0),
                     )
                     if (
-                        getattr(args, "current_target_api_refresh", False)
+                        current_target_api_refresh_enabled(args)
                         and refresh_interval > 0
                         and (
                             target_observation is None
@@ -21019,10 +28934,7 @@ def run_dummy_round(
                                 active_combat["target_y"] = refreshed_target.y
                                 active_combat["target_z"] = refreshed_target.z
                             actions += add_action(action_counts, "current_target_api_refresh_visible")
-                    if (
-                        target_observation is not None
-                        and now - target_observation.last_seen <= args.current_target_api_max_age
-                    ):
+                    if should_use_server_target_observation(args, target_npc, target_observation, now=now):
                         target_npc = target_actor_with_server_observation(target_npc, target_observation)
                     target_destination = destination_from_actor("target", target_npc)
                     distance = combat_distance_to(client, target_npc)
@@ -21070,12 +28982,24 @@ def run_dummy_round(
                     attack_enabled = (
                         False
                         if tactical_backoff
-                        else should_enable_attack_mode(args, action_rotation, distance)
+                        else should_enable_attack_mode_after_server_feedback(
+                            args,
+                            action_rotation,
+                            distance,
+                            active_combat,
+                            now=now,
+                        )
                     )
                     if tactical_backoff:
                         client.set_attack_mode(False)
                     else:
-                        face_target_for_attack(client, target_npc)
+                        face_target_for_attack(
+                            client,
+                            target_npc,
+                            args=args,
+                            action_rotation=action_rotation,
+                            distance=distance,
+                        )
                     if (
                         party_state is not None
                         and should_refresh_shared_required_target(
@@ -21121,14 +29045,49 @@ def run_dummy_round(
                         )
                         moved = False
                         if not hold_focus_backoff_at_home:
-                            moved = move_away_from_actor(
-                                client,
-                                target_npc,
-                                step=smooth_movement_step(args),
-                                min_distance=tactical_backoff_distance,
-                                args=args,
-                                target_in_view=True,
+                            support_peel_destination = (
+                                party_support_peel_kite_destination(
+                                    args,
+                                    client,
+                                    target_npc,
+                                    party_snapshot_for_tick,
+                                )
+                                if party_state is not None
+                                and should_use_party_support_tactical_peel(
+                                    args,
+                                    action_rotation,
+                                    party_snapshot_for_tick,
+                                    tactical_backoff_reason,
+                                )
+                                else None
                             )
+                            if support_peel_destination is not None:
+                                outcome = move_towards_destination(
+                                    client,
+                                    support_peel_destination,
+                                    step=smooth_movement_step(args),
+                                    stop_distance=max(120.0, float(getattr(args, "party_follow_distance", 0.0) or 0.0)),
+                                    args=args,
+                                    path_state=path_state,
+                                    action_counts=action_counts,
+                                    target_in_view=True,
+                                )
+                                moved = outcome.moved
+                                actions += outcome.actions
+                                record_movement_failure(movement_failures, client, support_peel_destination, outcome, "party_support_tactical_peel")
+                                actions += add_action(
+                                    action_counts,
+                                    "party_support_tactical_peel" if moved else "party_support_tactical_peel_hold",
+                                )
+                            else:
+                                moved = move_away_from_actor(
+                                    client,
+                                    target_npc,
+                                    step=smooth_movement_step(args),
+                                    min_distance=tactical_backoff_distance,
+                                    args=args,
+                                    target_in_view=True,
+                                )
                         if tactical_backoff_reason == "boss_hazard":
                             actions += add_action(action_counts, "boss_hazard_backoff" if moved else "boss_hazard_hold")
                         elif tactical_backoff_reason == "party_focus_target":
@@ -21173,28 +29132,45 @@ def run_dummy_round(
                             now=now,
                         )
                         if distance <= float(getattr(args, "combat_direct_move_distance", 0.0) or 0.0):
+                            combat_stop_distance = combat_stop_distance_after_server_feedback(
+                                args,
+                                action_rotation,
+                                active_combat,
+                                now=now,
+                            )
                             moved = client.move_towards_position(
                                 target_destination.x,
                                 target_destination.y,
                                 target_destination.z,
                                 step=target_step,
-                                stop_distance=combat_stop_distance(args, action_rotation),
-                                movement_speed=target_movement_speed,
-                                min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
-                                target_in_view=attack_enabled,
+                                stop_distance=combat_stop_distance,
+                                target_in_view=True,
+                                **dummy_movement_kwargs(args, target_movement_speed, client),
                             )
-                            outcome = MovementOutcome(moved=moved, arrived=not moved)
+                            outcome = movement_outcome_from_position_attempt(
+                                client,
+                                target_destination.x,
+                                target_destination.y,
+                                target_destination.z,
+                                moved=moved,
+                                stop_distance=combat_stop_distance,
+                            )
                             actions += add_action(action_counts, "combat_direct_move" if moved else "combat_direct_hold")
                         else:
                             outcome = move_towards_destination(
                                 client,
                                 target_destination,
                                 step=target_step,
-                                stop_distance=combat_stop_distance(args, action_rotation),
+                                stop_distance=combat_stop_distance_after_server_feedback(
+                                    args,
+                                    action_rotation,
+                                    active_combat,
+                                    now=now,
+                                ),
                                 args=args,
                                 path_state=path_state,
                                 action_counts=action_counts,
-                                target_in_view=attack_enabled,
+                                target_in_view=True,
                             )
                         actions += outcome.actions
                         record_movement_failure(movement_failures, client, target_destination, outcome, "smooth_target")
@@ -21218,10 +29194,22 @@ def run_dummy_round(
                     attack_enabled = (
                         False
                         if tactical_backoff
-                        else should_enable_attack_mode(args, action_rotation, action_distance)
+                        else should_enable_attack_mode_after_server_feedback(
+                            args,
+                            action_rotation,
+                            action_distance,
+                            active_combat,
+                            now=now,
+                        )
                     )
                     if attack_enabled:
-                        face_target_for_attack(client, target_npc)
+                        face_target_for_attack(
+                            client,
+                            target_npc,
+                            args=args,
+                            action_rotation=action_rotation,
+                            distance=distance,
+                        )
                         send_face_command_if_due(now, "attack_visible", target_destination)
                         target_current_hostile_if_allowed(now, "smooth_visible_target")
                         actions += add_action(action_counts, "target_refresh_in_view")
@@ -21318,7 +29306,14 @@ def run_dummy_round(
                         )
                         if rotation_action is not None:
                             actions += add_action(action_counts, rotation_action)
-                            cast_hold_seconds = effective_cast_action_hold_seconds(args, rotation_action)
+                            cast_hold_seconds = effective_cast_action_hold_seconds(
+                                args,
+                                rotation_action,
+                                force_stationary_cast=should_force_stationary_cast_for_companion_command(
+                                    action_rotation,
+                                    party_snapshot_for_tick,
+                                ),
+                            )
                             if cast_hold_seconds > 0:
                                 cast_action_hold_until = now + cast_hold_seconds
                                 actions += add_action(action_counts, "cast_action_hold_start")
@@ -21344,6 +29339,109 @@ def run_dummy_round(
                         recent_incoming_melee=bool(recent_incoming_melee),
                         recent_incoming_attacker=last_incoming_damage_attacker_name,
                     )
+                elif should_chase_committed_target_last_known(
+                    args,
+                    client,
+                    action_rotation,
+                    current_target=current_target,
+                    active_combat=active_combat,
+                    target_visible=False,
+                    now=now,
+                    last_visible_at=current_target_last_visible_at,
+                    recent_incoming_melee=recent_incoming_melee_for_current_target,
+                ):
+                    target_destination = active_combat_last_known_destination(active_combat)
+                    if target_destination is not None:
+                        distance = horizontal_distance_between_points(
+                            int(client.x),
+                            int(client.y),
+                            target_destination.x,
+                            target_destination.y,
+                        )
+                        target_current_hostile_if_allowed(now, "smooth_target_last_known")
+                        face_point_for_attack(
+                            client,
+                            target_destination.x,
+                            target_destination.y,
+                            args=args,
+                            action_rotation=action_rotation,
+                            distance=distance,
+                        )
+                        send_face_command_if_due(now, "smooth_target_last_known", target_destination)
+                        send_stick_command_if_due(now, "smooth_target_last_known")
+                        target_step = smooth_movement_step(args)
+                        target_step = combat_chase_step(args, action_rotation, distance, target_step)
+                        target_movement_speed = combat_chase_movement_speed(args, action_rotation, distance)
+                        if distance <= float(getattr(args, "combat_direct_move_distance", 0.0) or 0.0):
+                            combat_stop_distance = combat_stop_distance_after_server_feedback(
+                                args,
+                                action_rotation,
+                                active_combat,
+                                now=now,
+                            )
+                            moved = client.move_towards_position(
+                                target_destination.x,
+                                target_destination.y,
+                                target_destination.z,
+                                step=target_step,
+                                stop_distance=combat_stop_distance,
+                                target_in_view=True,
+                                **dummy_movement_kwargs(args, target_movement_speed, client),
+                            )
+                            outcome = movement_outcome_from_position_attempt(
+                                client,
+                                target_destination.x,
+                                target_destination.y,
+                                target_destination.z,
+                                moved=moved,
+                                stop_distance=combat_stop_distance,
+                            )
+                            actions += add_action(
+                                action_counts,
+                                "smooth_target_last_known_direct" if moved else "smooth_target_last_known_direct_hold",
+                            )
+                        else:
+                            outcome = move_towards_destination(
+                                client,
+                                target_destination,
+                                step=target_step,
+                                stop_distance=combat_stop_distance_after_server_feedback(
+                                    args,
+                                    action_rotation,
+                                    active_combat,
+                                    now=now,
+                                ),
+                                args=args,
+                                path_state=path_state,
+                                action_counts=action_counts,
+                                target_in_view=True,
+                            )
+                            actions += outcome.actions
+                        record_movement_failure(
+                            movement_failures,
+                            client,
+                            target_destination,
+                            outcome,
+                            "smooth_target_last_known",
+                        )
+                        actions += add_action(
+                            action_counts,
+                            "smooth_target_last_known" if outcome.moved else "smooth_target_last_known_hold",
+                        )
+                        if active_combat is not None:
+                            active_combat["end_distance"] = distance
+                        log_attack_decision(
+                            now,
+                            True,
+                            "smooth_target_last_known",
+                            party_snapshot=party_snapshot_for_tick,
+                            last_known_x=target_destination.x,
+                            last_known_y=target_destination.y,
+                            last_known_z=target_destination.z,
+                            distance=round(distance, 2),
+                            moved=bool(outcome.moved),
+                            movement_reason=getattr(outcome, "reason", ""),
+                        )
                 elif args.party_assist_only and party_state is not None:
                     party_snapshot = party_state.snapshot()
 
@@ -21450,7 +29548,14 @@ def run_dummy_round(
                         target_destination = shared_target_last_known_destination(party_snapshot, current_target)
                         if target_destination is not None:
                             target_current_hostile_if_allowed(now, "smooth_last_known")
-                            face_point_for_attack(client, target_destination.x, target_destination.y)
+                            face_point_for_attack(
+                                client,
+                                target_destination.x,
+                                target_destination.y,
+                                args=args,
+                                action_rotation=action_rotation,
+                                distance=waypoint_distance_from_client(client, target_destination),
+                            )
                             send_face_command_if_due(now, "smooth_last_known", target_destination)
                             send_stick_command_if_due(now, "smooth_last_known")
                             outcome = move_towards_destination(
@@ -21488,7 +29593,7 @@ def run_dummy_round(
                         else:
                             actions += add_action(action_counts, "smooth_target_last_known_missing")
 
-                next_smooth_move = now + args.smooth_move_interval + rng.uniform(0.0, min(args.jitter, args.smooth_move_interval))
+                next_smooth_move += args.smooth_move_interval + rng.uniform(0.0, min(args.jitter, args.smooth_move_interval))
 
             send_ping_if_due(now)
 
@@ -21539,6 +29644,7 @@ def run_dummy_round(
             ):
                 for member_name in party_state.managed_invite_names():
                     client.send_command(f"/invite {member_name}")
+                    party_state.mark_invited(member_name)
                     actions += add_action(action_counts, "party_invite")
 
                 next_invite = now + args.party_invite_interval + rng.uniform(0, args.jitter)
@@ -21551,11 +29657,13 @@ def run_dummy_round(
             ):
                 party_snapshot = party_state.snapshot()
                 leader_session_id = int(party_snapshot["leader_session_id"])
+                party_member_name = character_name_from_account(account.username)
 
-                if leader_session_id:
+                if leader_session_id and party_state.member_has_invite(party_member_name):
                     client.accept_group_invite(leader_session_id)
+                    party_state.mark_accepted(party_member_name)
                     if party_member_ready_for_pull(client, args):
-                        party_state.mark_ready(character_name_from_account(account.username))
+                        party_state.mark_ready(party_member_name)
                         actions += add_action(action_counts, "party_ready")
                     else:
                         actions += add_action(action_counts, "party_accept_wait_home")
@@ -21569,6 +29677,8 @@ def run_dummy_round(
                     party_state,
                     is_party_leader=is_party_leader,
                     current_target=current_target,
+                    party_forming_since=party_forming_since,
+                    now=now,
                 )
                 and party_pull_ready_since <= 0.0
             ):
@@ -21607,10 +29717,12 @@ def run_dummy_round(
                 is_party_follower=is_party_follower,
                 current_target=current_target,
                 member_name=party_member_name,
+                action_rotation=action_rotation,
             )
             required_home_defer_objective_pressure = should_defer_required_home_move_for_recent_objective_pressure(
                 behavior_state,
                 current_target_intent,
+                current_target=current_target,
                 last_damage_taken_at=last_damage_taken_at,
                 now=now,
             )
@@ -21758,7 +29870,6 @@ def run_dummy_round(
                         "required_target_home_move",
                         now,
                     )
-                    speak_state_change(now, "return_home", "state: returning to camp")
                     movement_step = smooth_movement_step(args) if args.smooth_movement else args.party_follow_step
                     if destination_kind(destination) == "travel-aggro-detour":
                         moved = client.move_towards_position(
@@ -21772,12 +29883,21 @@ def run_dummy_round(
                                 is_party_leader=is_party_leader,
                                 current_target=current_target,
                             ),
-                            movement_speed=getattr(args, "movement_speed", None),
-                            min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
+                            **dummy_movement_kwargs(args),
                         )
-                        outcome = MovementOutcome(
+                        travel_stop_distance = required_target_home_move_stop_distance(
+                            args,
+                            party_state,
+                            is_party_leader=is_party_leader,
+                            current_target=current_target,
+                        )
+                        outcome = movement_outcome_from_position_attempt(
+                            client,
+                            destination.x,
+                            destination.y,
+                            destination.z,
                             moved=moved,
-                            arrived=not moved,
+                            stop_distance=travel_stop_distance,
                             actions=add_action(
                                 action_counts,
                                 "travel_aggro_detour_direct_move" if moved else "travel_aggro_detour_direct_hold",
@@ -21801,7 +29921,11 @@ def run_dummy_round(
                     actions += outcome.actions
                     record_movement_failure(movement_failures, client, destination, outcome, "required_target_home")
                     actions += add_action(action_counts, destination_action if outcome.moved else destination_hold_action)
-                    if is_party_follower and party_member_ready_for_pull(client, args):
+                    if (
+                        is_party_follower
+                        and party_member_ready_for_pull(client, args)
+                        and party_state.member_has_accepted(character_name_from_account(account.username))
+                    ):
                         party_state.mark_ready(character_name_from_account(account.username))
                         actions += add_action(action_counts, "party_ready_home")
                     next_follow = now + args.party_follow_interval + rng.uniform(0, args.jitter)
@@ -21815,21 +29939,53 @@ def run_dummy_round(
                 leader_target_id = int(party_snapshot["leader_target_id"])
                 leader_target_age = now - float(party_snapshot["leader_target_updated_at"])
                 leader_engaged = float(party_snapshot["leader_target_engaged_at"]) > 0.0
+                party_snapshot_for_assist = party_snapshot_with_companion_attack_command(
+                    party_snapshot,
+                    command_attack_active=companion_attack_command_active_for_tick,
+                    now=now,
+                )
+                effective_leader_engaged = leader_engaged or companion_attack_command_active_for_tick
+                command_allows_assist = companion_command_allows_party_assist(
+                    companion_command_mode,
+                    leader_engaged=effective_leader_engaged,
+                )
 
-                if should_enter_hunt_for_party_assist_leader_target(
+                if not command_allows_assist:
+                    client.set_attack_mode(False)
+                    if companion_command_should_clear_target(companion_command_mode) and current_target:
+                        client.clear_target()
+                        current_target = 0
+                        current_target_intent = TargetIntent.none
+                        current_target_since = now
+                        current_target_last_visible_at = now
+                        actions += add_action(action_counts, "companion_command_clear_target")
+                    actions += add_action(action_counts, "companion_command_assist_suppressed")
+                elif should_enter_hunt_for_party_assist_leader_target(
                     args,
                     behavior_state,
                     is_party_follower=is_party_follower,
                     action_rotation=action_rotation,
                     leader_target_id=leader_target_id,
-                    leader_engaged=leader_engaged,
+                    leader_engaged=effective_leader_engaged,
+                    leader_target_name=str(party_snapshot.get("leader_target_name", "") or ""),
+                    leader_target_can_attack=parse_optional_bool(party_snapshot.get("leader_target_can_attack")),
+                    leader_target_relation=str(party_snapshot.get("leader_target_relation", "") or ""),
+                    leader_target_type=str(party_snapshot.get("leader_target_type", "") or ""),
                     required_home_hunt_ready=required_target_home_hunt_ready(client, args),
                     party_ready_for_objective=party_ready_for_pull(args, party_state),
                 ):
-                    transition_to(DummyBehaviorState.HuntObjective, "leader_engaged_party_assist", now)
+                    transition_to(
+                        DummyBehaviorState.HuntObjective,
+                        "command_attack_party_assist"
+                        if companion_attack_command_active_for_tick
+                        else "leader_engaged_party_assist",
+                        now,
+                    )
                     actions += add_action(action_counts, "party_assist_enter_hunt")
 
-                if not should_allow_party_assist_for_behavior_state(behavior_state):
+                if not command_allows_assist:
+                    pass
+                elif not should_allow_party_assist_for_behavior_state(behavior_state):
                     client.set_attack_mode(False)
                     if current_target:
                         client.clear_target()
@@ -21840,12 +29996,18 @@ def run_dummy_round(
                     args,
                     behavior_state,
                     leader_target_id=leader_target_id,
-                    leader_engaged=leader_engaged,
+                    leader_engaged=effective_leader_engaged,
+                    leader_target_name=str(party_snapshot.get("leader_target_name", "") or ""),
+                    leader_target_can_attack=parse_optional_bool(party_snapshot.get("leader_target_can_attack")),
+                    leader_target_relation=str(party_snapshot.get("leader_target_relation", "") or ""),
+                    leader_target_type=str(party_snapshot.get("leader_target_type", "") or ""),
                 ):
                     client.send_command(f"/assist {party_state.leader_name}")
                     actions += add_action(action_counts, "party_assist_command")
 
-                if not should_allow_party_assist_for_behavior_state(behavior_state):
+                if not command_allows_assist:
+                    pass
+                elif not should_allow_party_assist_for_behavior_state(behavior_state):
                     pass
                 elif should_hold_party_assist_for_rescue_target(
                     args,
@@ -21872,7 +30034,7 @@ def run_dummy_round(
                 elif (
                     leader_target_id
                     and leader_target_age >= party_role_assist_attack_delay(args, action_rotation)
-                    and (not args.party_require_leader_engaged or leader_engaged)
+                    and (not args.party_require_leader_engaged or effective_leader_engaged)
                 ):
                     if not block_active_combat_target_switch(
                         leader_target_id,
@@ -21883,8 +30045,8 @@ def run_dummy_round(
                     ):
                         assist_decision = evaluate_party_assist_leader_target(
                             args,
-                            party_snapshot,
-                            engagement_context(now, party_snapshot=party_snapshot),
+                            party_snapshot_for_assist,
+                            engagement_context(now, party_snapshot=party_snapshot_for_assist),
                             client,
                         )
                         assist_result = commit_target(
@@ -21947,10 +30109,20 @@ def run_dummy_round(
                     anchor_x = int(party_anchor["x"])
                     anchor_y = int(party_anchor["y"])
                     anchor_z = int(party_anchor["z"])
+                    anchor_heading = int(party_snapshot.get("leader_heading", 0) or 0)
                     anchor_destination = destination_from_point("party-anchor", anchor_x, anchor_y, anchor_z)
                     anchor_dx = int(client.x) - anchor_x
                     anchor_dy = int(client.y) - anchor_y
                     anchor_distance = math.sqrt(anchor_dx * anchor_dx + anchor_dy * anchor_dy)
+                    leader_target_id = int(party_snapshot.get("leader_target_id", 0) or 0)
+                    leader_engaged = float(party_snapshot.get("leader_target_engaged_at", 0.0) or 0.0) > 0.0
+                    follow_combat_locked = party_follow_combat_locked(
+                        behavior_state=behavior_state,
+                        current_target=current_target,
+                        active_combat=active_combat,
+                        leader_target_id=leader_target_id,
+                        leader_engaged=leader_engaged,
+                    )
                     target_npc_for_spacing = next(
                         (
                             npc
@@ -21971,7 +30143,12 @@ def run_dummy_round(
                         else float("inf")
                     )
 
-                    if precast_movement_hold:
+                    if not companion_command_allows_follow(companion_command_mode):
+                        follow_speed = float(getattr(client, "last_position_speed", 0.0) or 0.0)
+                        if follow_speed > 0.0:
+                            client.send_position_update(speed=0.0, target_in_view=False)
+                        actions += add_action(action_counts, "companion_command_stay_hold")
+                    elif precast_movement_hold:
                         client.set_attack_mode(False)
                         actions += add_action(action_counts, "party_precast_follow_hold")
                     elif (
@@ -22044,8 +30221,7 @@ def run_dummy_round(
                             int(client.z),
                             step=args.party_follow_step,
                             stop_distance=0.0,
-                            movement_speed=getattr(args, "movement_speed", None),
-                            min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
+                            **dummy_movement_kwargs(args),
                             target_in_view=True,
                         )
                         actions += add_action(action_counts, "party_ranged_backoff" if moved else "party_ranged_hold")
@@ -22071,25 +30247,76 @@ def run_dummy_round(
                         )
                         actions += add_action(action_counts, "party_preengage_ranged_backoff" if moved else "party_preengage_ranged_hold")
                     else:
-                        outcome = move_towards_destination(
-                            client,
-                            anchor_destination,
-                            step=args.party_follow_step,
-                            stop_distance=args.party_follow_distance,
-                            args=args,
-                            path_state=path_state,
-                            action_counts=action_counts,
-                        )
-                        actions += outcome.actions
-                        record_movement_failure(movement_failures, client, anchor_destination, outcome, "party_follow")
-                        actions += add_action(action_counts, "party_follow" if outcome.moved else "party_hold")
+                        follow_speed = float(getattr(client, "last_position_speed", 0.0) or 0.0)
+                        if should_move_towards_party_anchor(
+                            args,
+                            anchor_distance=anchor_distance,
+                            current_speed=follow_speed,
+                        ):
+                            if party_follow_should_teleport(
+                                args,
+                                anchor_distance=anchor_distance,
+                                combat_locked=follow_combat_locked,
+                            ):
+                                teleport_stop = max(0.0, float(getattr(args, "party_follow_teleport_stop_distance", 90.0) or 0.0))
+                                client.x, client.y, client.z = party_follow_teleport_position(
+                                    anchor_x,
+                                    anchor_y,
+                                    anchor_z,
+                                    anchor_heading,
+                                    teleport_stop,
+                                )
+                                client.send_position_update(speed=0.0, target_in_view=False)
+                                outcome = MovementOutcome(
+                                    moved=True,
+                                    arrived=False,
+                                    actions=add_action(action_counts, "party_follow_teleport_catchup"),
+                                )
+                                log_encounter_event(
+                                    "party_follow_teleport_catchup",
+                                    now,
+                                    anchor_distance=round(anchor_distance, 2),
+                                    destination_x=int(client.x),
+                                    destination_y=int(client.y),
+                                    destination_z=int(client.z),
+                                )
+                            else:
+                                catchup_speed = None if follow_combat_locked else party_follow_catchup_speed(args, anchor_distance)
+                                if catchup_speed is not None:
+                                    actions += add_action(action_counts, "party_follow_speed_catchup")
+                                    log_encounter_event(
+                                        "party_follow_speed_catchup",
+                                        now,
+                                        anchor_distance=round(anchor_distance, 2),
+                                        movement_speed=round(float(catchup_speed), 2),
+                                    )
+                                outcome = move_towards_destination(
+                                    client,
+                                    anchor_destination,
+                                    step=args.party_follow_step,
+                                    stop_distance=party_follow_stop_distance(args),
+                                    args=args,
+                                    path_state=path_state,
+                                    action_counts=action_counts,
+                                    movement_speed=catchup_speed,
+                                    clamp_to_state_cap=catchup_speed is None,
+                                )
+                            actions += outcome.actions
+                            record_movement_failure(movement_failures, client, anchor_destination, outcome, "party_follow")
+                            actions += add_action(action_counts, "party_follow" if outcome.moved else "party_hold")
+                        else:
+                            if follow_speed > 0.0:
+                                client.send_position_update(speed=0.0, target_in_view=False)
+                                actions += add_action(action_counts, "party_follow_stop")
+                            else:
+                                actions += add_action(action_counts, "party_hold_within_hysteresis")
 
                     if should_mark_party_ready_after_follow(
                         client,
                         args,
                         is_party_follower=is_party_follower,
                         current_target=current_target,
-                    ):
+                    ) and party_state.member_has_accepted(character_name_from_account(account.username)):
                         party_state.mark_ready(character_name_from_account(account.username))
                         actions += add_action(action_counts, "party_ready_home")
 
@@ -22102,6 +30329,8 @@ def run_dummy_round(
                 client,
                 current_health_percent=current_health_percent,
                 hurt_member=hurt_member_for_precast,
+                cure_target=cure_target_for_precast,
+                dead_member=dead_member_for_precast,
             )
             if defer_party_support_for_preengage_position:
                 actions += add_action(action_counts, "party_support_preengage_position_deferred")
@@ -22225,30 +30454,42 @@ def run_dummy_round(
                     client.drain(args.tick)
                     continue
 
-            defer_cure_for_critical_heal = bool(
+            cure_priority = choose_party_support_action_priority(
+                args,
+                action_rotation=action_rotation,
+                current_health_percent=current_health_percent,
+                hurt_member=hurt_member_for_precast,
+                dead_member=dead_member_for_precast,
+                leader_name=party_state.leader_name if party_state is not None else "",
+                heal_due=healer_heal_due,
+                cure_due=True,
+                resurrection_due=(
+                    bool(is_party_support_healer)
+                    and float(getattr(args, "party_resurrect_interval", 0.0) or 0.0) > 0.0
+                    and now >= next_party_resurrect
+                    and dead_member_for_precast is not None
+                ),
+                crowd_control_due=False,
+            )
+            defer_cure_for_higher_priority_support = bool(
                 is_party_support_healer
                 and args.party_cure_interval > 0
                 and now >= next_party_cure
-                and choose_party_support_action_priority(
-                    args,
-                    action_rotation=action_rotation,
-                    current_health_percent=current_health_percent,
-                    hurt_member=hurt_member_for_precast,
-                    heal_due=healer_heal_due,
-                    cure_due=True,
-                    resurrection_due=False,
-                    crowd_control_due=False,
-                )
-                == "heal"
+                and cure_priority in {"heal", "resurrect"}
             )
-            if defer_cure_for_critical_heal:
-                actions += add_action(action_counts, "party_cure_deferred_for_critical_heal")
+            if defer_cure_for_higher_priority_support:
+                defer_action = (
+                    "party_cure_deferred_for_resurrection"
+                    if cure_priority == "resurrect"
+                    else "party_cure_deferred_for_critical_heal"
+                )
+                actions += add_action(action_counts, defer_action)
 
             if (
                 is_party_support_healer
                 and args.party_cure_interval > 0
                 and now >= next_party_cure
-                and not defer_cure_for_critical_heal
+                and not defer_cure_for_higher_priority_support
                 and not defer_party_support_for_preengage_position
             ):
                 friendly_spell_cast = False
@@ -22301,19 +30542,18 @@ def run_dummy_round(
 
             defer_resurrection_for_critical_heal = bool(
                 is_party_support_healer
-                and args.party_resurrect_interval > 0
-                and now >= next_party_resurrect
-                and choose_party_support_action_priority(
+                and should_defer_resurrection_for_critical_heal(
                     args,
+                    client=client,
                     action_rotation=action_rotation,
                     current_health_percent=current_health_percent,
                     hurt_member=hurt_member_for_precast,
+                    dead_member=dead_member_for_precast,
+                    leader_name=party_state.leader_name if party_state is not None else "",
                     heal_due=healer_heal_due,
-                    cure_due=False,
-                    resurrection_due=True,
-                    crowd_control_due=False,
+                    now=now,
+                    next_party_resurrect=next_party_resurrect,
                 )
-                == "heal"
             )
             if defer_resurrection_for_critical_heal:
                 actions += add_action(action_counts, "party_resurrect_deferred_for_critical_heal")
@@ -22349,11 +30589,15 @@ def run_dummy_round(
                         actions += add_action(action_counts, action_name)
                         friendly_spell_cast = True
                     else:
-                        actions += add_action(action_counts, "party_resurrect_skipped_unvalidated")
+                        action_name = "party_resurrect_skipped_unvalidated"
+                        actions += add_action(action_counts, action_name)
 
                     if should_apply_party_resurrection_cooldown(action_name):
                         if dead_member_id:
                             party_resurrection_cooldowns[dead_member_id] = now + party_resurrection_retry_cooldown(args)
+
+                    if should_schedule_next_party_resurrection_check(action_name):
+                        next_party_resurrect = now + args.party_resurrect_interval + rng.uniform(0, args.jitter)
 
                     if friendly_spell_cast:
                         friendly_cast_hold_until, friendly_cast_restore_target = plan_friendly_cast_target_hold(
@@ -22392,8 +30636,6 @@ def run_dummy_round(
                             actions += add_action(action_counts, "party_resurrection_target_too_far")
                     else:
                         actions += add_action(action_counts, "party_resurrection_target_too_far")
-
-                next_party_resurrect = now + args.party_resurrect_interval + rng.uniform(0, args.jitter)
 
             defer_buff_for_critical_heal = bool(
                 is_party_support_healer
@@ -22692,47 +30934,79 @@ def run_dummy_round(
                 continue
 
             if (args.combat or args.hunter) and args.combat_interval > 0 and now >= next_combat:
-                if is_party_leader and not current_target and not party_ready_for_pull(args, party_state):
-                    if (
-                        (args.move or args.hunter)
-                        and should_move_to_required_target_home(
-                            client,
-                            args,
-                            is_party_leader=is_party_leader,
-                            current_target=current_target,
-                        )
-                    ):
-                        destination = required_target_home_destination(args)
-                        if destination is not None:
-                            outcome = move_towards_destination(
-                                client,
-                                destination,
-                                step=smooth_movement_step(args) if args.smooth_movement else args.party_follow_step,
-                                stop_distance=required_target_home_move_stop_distance(
-                                    args,
-                                    party_state,
-                                    is_party_leader=is_party_leader,
-                                    current_target=current_target,
-                                ),
-                                args=args,
-                                path_state=path_state,
-                                action_counts=action_counts,
-                            )
-                            actions += outcome.actions
-                            record_movement_failure(movement_failures, client, destination, outcome, "party_forming_required_home")
-                            actions += add_action(
-                                action_counts,
-                                "party_forming_required_home_move" if outcome.moved else "party_forming_required_home_hold",
-                            )
-                            next_follow = now + args.party_follow_interval + rng.uniform(0, args.jitter)
+                if is_party_leader and not current_target:
+                    if party_ready_for_pull(args, party_state):
+                        party_forming_since = 0.0
+                    elif party_forming_since <= 0.0:
+                        party_forming_since = now
 
-                    party_pull_ready_since = 0.0
-                    client.set_attack_mode(False)
-                    actions += add_action(action_counts, "party_forming")
-                    next_combat = now + args.combat_interval + rng.uniform(0, args.jitter)
-                    next_think = now + rng.uniform(args.think_min, args.think_max)
-                    client.drain(args.tick)
-                    continue
+                    if party_form_up_force_pull_active(
+                        args,
+                        party_state,
+                        party_forming_since=party_forming_since,
+                        now=now,
+                    ):
+                        actions += add_action(action_counts, "party_form_up_timeout_force_pull")
+                        log_encounter_event(
+                            "party_form_up_timeout_force_pull",
+                            now,
+                            elapsed=round(now - party_forming_since, 3),
+                        )
+                        party_forming_since = 0.0
+                    elif not effective_party_ready_for_pull(
+                        args,
+                        party_state,
+                        party_forming_since=party_forming_since,
+                        now=now,
+                    ):
+                        if (
+                            (args.move or args.hunter)
+                            and should_move_to_required_target_home(
+                                client,
+                                args,
+                                is_party_leader=is_party_leader,
+                                current_target=current_target,
+                            )
+                        ):
+                            destination = required_target_home_destination(args)
+                            if destination is not None:
+                                outcome = move_towards_destination(
+                                    client,
+                                    destination,
+                                    step=smooth_movement_step(args) if args.smooth_movement else args.party_follow_step,
+                                    stop_distance=required_target_home_move_stop_distance(
+                                        args,
+                                        party_state,
+                                        is_party_leader=is_party_leader,
+                                        current_target=current_target,
+                                    ),
+                                    args=args,
+                                    path_state=path_state,
+                                    action_counts=action_counts,
+                                )
+                                actions += outcome.actions
+                                record_movement_failure(
+                                    movement_failures,
+                                    client,
+                                    destination,
+                                    outcome,
+                                    "party_forming_required_home",
+                                )
+                                actions += add_action(
+                                    action_counts,
+                                    "party_forming_required_home_move"
+                                    if outcome.moved
+                                    else "party_forming_required_home_hold",
+                                )
+                                next_follow = now + args.party_follow_interval + rng.uniform(0, args.jitter)
+
+                        party_pull_ready_since = 0.0
+                        client.set_attack_mode(False)
+                        actions += add_action(action_counts, "party_forming")
+                        next_combat = now + args.combat_interval + rng.uniform(0, args.jitter)
+                        next_think = now + rng.uniform(args.think_min, args.think_max)
+                        client.drain(args.tick)
+                        continue
 
                 if (
                     is_party_leader
@@ -22742,12 +31016,20 @@ def run_dummy_round(
                         party_state,
                         is_party_leader=is_party_leader,
                         current_target=current_target,
+                        party_forming_since=party_forming_since,
+                        now=now,
                     )
                 ):
                     if party_pull_ready_since <= 0.0:
                         party_pull_ready_since = now
 
-                    if now - party_pull_ready_since < args.party_form_up_delay:
+                    force_pull = party_form_up_force_pull_active(
+                        args,
+                        party_state,
+                        party_forming_since=party_forming_since,
+                        now=now,
+                    )
+                    if not force_pull and now - party_pull_ready_since < args.party_form_up_delay:
                         client.set_attack_mode(False)
                         actions += add_action(action_counts, "party_form_up_wait")
                         next_combat = now + args.combat_interval + rng.uniform(0, args.jitter)
@@ -22756,6 +31038,7 @@ def run_dummy_round(
                         continue
                 elif current_target:
                     party_pull_ready_since = 0.0
+                    party_forming_since = 0.0
 
                     if current_target and now - current_target_since > args.target_timeout:
                         timeout_combat_actor = actor_from_active_combat(active_combat)
@@ -22814,10 +31097,12 @@ def run_dummy_round(
                             rest_active=rest_until > now,
                             drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
                         ):
+                            if active_combat is not None:
+                                active_combat["last_timeout_preserve_distance"] = float(
+                                    active_combat.get("end_distance", 0.0) or 0.0
+                            )
                             current_target_since = now
                             current_target_last_visible_at = now
-                            target_current_hostile_if_allowed(now, "target_timeout_combat_progress")
-                            enable_hostile_attack_mode_if_allowed(now, "target_timeout_combat_progress")
                             timeout_destination = None
                             if timeout_combat_actor is not None:
                                 timeout_destination = destination_from_point(
@@ -22826,6 +31111,29 @@ def run_dummy_round(
                                     int(getattr(timeout_combat_actor, "y", 0) or 0),
                                     int(getattr(timeout_combat_actor, "z", 0) or 0),
                                 )
+                            timeout_preserve_distance = (
+                                horizontal_distance_between_points(
+                                    int(client.x),
+                                    int(client.y),
+                                    timeout_destination.x,
+                                    timeout_destination.y,
+                                )
+                                if timeout_destination is not None
+                                else 0.0
+                            )
+                            target_current_hostile_if_allowed(now, "target_timeout_combat_progress")
+                            timeout_preserve_attack_enabled = should_enable_timeout_preserve_attack(
+                                args,
+                                action_rotation,
+                                active_combat,
+                                distance=timeout_preserve_distance,
+                                now=now,
+                            )
+                            if timeout_preserve_attack_enabled:
+                                enable_hostile_attack_mode_if_allowed(now, "target_timeout_combat_progress")
+                            else:
+                                client.set_attack_mode(False)
+                                actions += add_action(action_counts, "target_timeout_preserve_attack_wait")
                             send_face_command_if_due(now, "target_timeout_combat_progress", timeout_destination)
                             send_stick_command_if_due(now, "target_timeout_combat_progress")
                             if current_target_intent in {TargetIntent.objective, TargetIntent.required_retaliation}:
@@ -22845,6 +31153,14 @@ def run_dummy_round(
                                 )
                                 if active_combat is not None and float(active_combat.get("last_damage_done_at", 0.0) or 0.0) > 0.0
                                 else 0.0,
+                                approach_progress_distance=round(
+                                    float(active_combat.get("last_timeout_preserve_distance", 0.0) or 0.0),
+                                    2,
+                                )
+                                if active_combat is not None
+                                else 0.0,
+                                timeout_preserve_distance=round(timeout_preserve_distance, 2),
+                                timeout_preserve_attack_enabled=timeout_preserve_attack_enabled,
                             )
                             if timeout_destination is not None:
                                 face_point_for_attack(client, timeout_destination.x, timeout_destination.y)
@@ -22885,6 +31201,7 @@ def run_dummy_round(
                             behavior_state,
                             current_visible_npc,
                             observed_intent,
+                            action_rotation=action_rotation,
                         ):
                             start_travel_aggro_drop(now, "travel_non_objective_aggro", npc=current_visible_npc)
                             send_ping_if_due(now)
@@ -22912,6 +31229,7 @@ def run_dummy_round(
                             behavior_state,
                             active_target_actor,
                             observed_intent,
+                            action_rotation=action_rotation,
                         ):
                             start_travel_aggro_drop(now, "travel_non_objective_aggro_last_known", npc=active_target_actor)
                             send_ping_if_due(now)
@@ -23227,6 +31545,91 @@ def run_dummy_round(
                             and not required_target_home_hunt_ready(client, args)
                         ):
                             actions += add_action(action_counts, "required_target_home_wait")
+                        if (
+                            args.hunter
+                            and current_target > 0
+                            and (current_visible_target := choose_current_visible_target(npcs, current_target)) is None
+                            and not (
+                                current_fresh_api_observation := fresh_hunter_target_observation(
+                                    args,
+                                    server_target_observations.get(current_target),
+                                    now,
+                                )
+                            )
+                            and selected_npc is None
+                            and target_loss_rescan_enabled(args)
+                        ):
+                            if should_suppress_target_loss_rescan_for_committed_target(
+                                args,
+                                client,
+                                action_rotation,
+                                current_target=current_target,
+                                current_target_intent=current_target_intent,
+                                active_combat=active_combat,
+                                behavior_state=behavior_state,
+                                target_visible=False,
+                                now=now,
+                                last_visible_at=current_target_last_visible_at,
+                                flee_active=flee_until > now,
+                                rest_active=rest_until > now,
+                                drop_aggro_active=behavior_state == DummyBehaviorState.DropAggroAndRecover,
+                            ):
+                                actions += add_action(
+                                    action_counts,
+                                    "target_loss_committed_last_known_rescan_suppressed",
+                                )
+                                log_encounter_event(
+                                    "target_loss_committed_last_known_rescan_suppressed",
+                                    now,
+                                    target_id=int(current_target),
+                                    target_name=str((active_combat or {}).get("target_name", "") or ""),
+                                    target_intent=target_intent_value(current_target_intent),
+                                )
+                            else:
+                                replacement = choose_hunter_target(
+                                    client,
+                                    rng,
+                                    args,
+                                    rejected_targets,
+                                    rejected_target_kinds,
+                                    now,
+                                )
+                                if replacement is not None:
+                                    selected_npc = replacement
+                                    selected_target_source = TargetSource.hunter_selection
+                                    actions += add_action(action_counts, "target_loss_rescan_selected")
+                                elif should_hunter_api_rescan_lost_target(
+                                    args,
+                                    current_target=current_target,
+                                    current_target_visible=current_visible_target is not None,
+                                    fresh_api_observation=current_fresh_api_observation,
+                                    selected_npc=selected_npc,
+                                ):
+                                    hunter_api_target = fetch_hunter_target_api_observation(
+                                        args,
+                                        client,
+                                        rng,
+                                        rejected_targets,
+                                        rejected_target_kinds,
+                                        now,
+                                    )
+                                    if hunter_api_target is not None:
+                                        selected_npc = actor_from_target_observation(hunter_api_target)
+                                        selected_target_source = TargetSource.current_target_api_refresh
+                                        server_target_observations[hunter_api_target.object_id] = hunter_api_target
+                                        actions += add_action(action_counts, "target_loss_api_rescan_selected")
+                                        log_encounter_event(
+                                            "target_loss_api_rescan_selected",
+                                            now,
+                                            target_id=hunter_api_target.object_id,
+                                            target_name=hunter_api_target.name,
+                                            target_level=hunter_api_target.level,
+                                            target_x=hunter_api_target.x,
+                                            target_y=hunter_api_target.y,
+                                            target_z=hunter_api_target.z,
+                                            target_distance=round(combat_distance_to(client, selected_npc), 2),
+                                        )
+
                         elif (
                             current_target > 0
                             and choose_current_visible_target(npcs, current_target) is None
@@ -23235,6 +31638,7 @@ def run_dummy_round(
                                 server_target_observations.get(current_target),
                                 now,
                             )
+                            and should_hold_target_loss_grace(args, now, current_target_last_visible_at)
                         ):
                             actions += add_action(action_counts, "target_loss_grace_wait")
                         elif (
@@ -23256,7 +31660,56 @@ def run_dummy_round(
                             ):
                                 actions += add_action(action_counts, "hunter_wind_down")
                             elif behavior_state == DummyBehaviorState.DropAggroAndRecover:
-                                actions += add_action(action_counts, "drop_aggro_target_selection_suppressed")
+                                if should_probe_required_objective_during_drop_aggro(
+                                    args,
+                                    behavior_state,
+                                    current_health_percent=current_health_percent,
+                                    required_home_hunt_ready=required_target_home_hunt_ready(client, args),
+                                ):
+                                    selected_npc = choose_hunter_target(
+                                        client,
+                                        rng,
+                                        args,
+                                        rejected_targets,
+                                        rejected_target_kinds,
+                                        now,
+                                    )
+                                    if selected_npc is not None:
+                                        selected_target_source = TargetSource.hunter_selection
+                                        actions += add_action(action_counts, "drop_aggro_required_objective_probe")
+                                        log_encounter_event(
+                                            "drop_aggro_required_objective_probe",
+                                            now,
+                                            target_id=int(getattr(selected_npc, "object_id", 0) or 0),
+                                            target_name=str(getattr(selected_npc, "name", "") or ""),
+                                        )
+                                    else:
+                                        hunter_api_target = fetch_hunter_target_api_observation(
+                                            args,
+                                            client,
+                                            rng,
+                                            rejected_targets,
+                                            rejected_target_kinds,
+                                            now,
+                                        )
+                                        if hunter_api_target is not None:
+                                            selected_npc = actor_from_target_observation(hunter_api_target)
+                                            selected_target_source = TargetSource.current_target_api_refresh
+                                            server_target_observations[hunter_api_target.object_id] = hunter_api_target
+                                            actions += add_action(action_counts, "drop_aggro_required_objective_api_probe")
+                                            log_encounter_event(
+                                                "drop_aggro_required_objective_api_probe",
+                                                now,
+                                                target_id=hunter_api_target.object_id,
+                                                target_name=hunter_api_target.name,
+                                                target_level=hunter_api_target.level,
+                                                target_x=hunter_api_target.x,
+                                                target_y=hunter_api_target.y,
+                                                target_z=hunter_api_target.z,
+                                                target_distance=round(combat_distance_to(client, selected_npc), 2),
+                                            )
+                                if selected_npc is None:
+                                    actions += add_action(action_counts, "drop_aggro_target_selection_suppressed")
                             else:
                                 selected_npc = choose_hunter_target(
                                     client,
@@ -23319,11 +31772,6 @@ def run_dummy_round(
                                         }
                                         if reasons:
                                             top_reason = max(reasons.items(), key=lambda item: item[1])[0]
-                                    speak_state_change(
-                                        now,
-                                        f"scan_empty:{top_reason}",
-                                        f"state: no eligible target reason={top_reason or 'unknown'}",
-                                    )
                                 next_hunter_scan_log = now + max(3.0, float(args.encounter_log_interval or 0.0))
                     elif selected_npc is None and args.party_assist_only and current_target:
                         party_snapshot = party_state.snapshot()
@@ -23361,7 +31809,14 @@ def run_dummy_round(
                                 int(party_snapshot["leader_target_y"]),
                                 int(party_snapshot["leader_target_z"]),
                             )
-                            face_point_for_attack(client, target_destination.x, target_destination.y)
+                            face_point_for_attack(
+                                client,
+                                target_destination.x,
+                                target_destination.y,
+                                args=args,
+                                action_rotation=action_rotation,
+                                distance=waypoint_distance_from_client(client, target_destination),
+                            )
                             send_face_command_if_due(now, "party_target_last_known", target_destination)
                             send_stick_command_if_due(now, "party_target_last_known")
                             outcome = move_towards_destination(
@@ -23382,7 +31837,10 @@ def run_dummy_round(
                             actions += outcome.actions
                             record_movement_failure(movement_failures, client, target_destination, outcome, "party_target_last_known")
                             actions += add_action(action_counts, "party_target_last_known" if outcome.moved else "party_target_last_known_hold")
-                            client.send_position_update(speed=getattr(client, "last_position_speed", 0.0), target_in_view=True)
+                            if outcome.moved:
+                                client.send_position_update(speed=getattr(client, "last_position_speed", 0.0), target_in_view=True)
+                            else:
+                                client.send_position_update(speed=0.0, target_in_view=True)
                             kept_current_target_without_visible_npc = True
                         else:
                             if (
@@ -23489,13 +31947,25 @@ def run_dummy_round(
 
                     selected_target_decision = None
                     selection_party_snapshot = party_state.snapshot() if party_state is not None else {}
+                    selection_party_snapshot = party_snapshot_with_companion_attack_command(
+                        selection_party_snapshot,
+                        command_attack_active=companion_attack_command_active_for_tick,
+                        now=now,
+                    )
                     selection_leader_engaged = (
                         float(selection_party_snapshot.get("leader_target_engaged_at", 0.0) or 0.0) > 0.0
                     )
                     selection_required_home_reached = required_target_home_reached(client, args)
                     selection_required_home_hunt_ready = required_target_home_hunt_ready(client, args)
                     selection_party_ready_for_objective = (
-                        party_ready_for_pull(args, party_state) if party_state is not None else True
+                        effective_party_ready_for_pull(
+                            args,
+                            party_state,
+                            party_forming_since=party_forming_since,
+                            now=now,
+                        )
+                        if party_state is not None
+                        else True
                     )
                     if selected_npc is not None:
                         selected_target_intent = target_intent_for_selected_npc(
@@ -23511,6 +31981,7 @@ def run_dummy_round(
                             selected_npc,
                             selected_target_intent,
                             selection_party_snapshot,
+                            command_attack_active=companion_attack_command_active_for_tick,
                         ):
                             actions += add_action(action_counts, "healer_support_hostile_target_suppressed")
                             log_encounter_event(
@@ -23603,6 +32074,15 @@ def run_dummy_round(
                             and last_damage_taken_at > 0.0
                             and now - last_damage_taken_at <= 3.0
                         )
+                        selection_force_pull_active = (
+                            is_party_leader
+                            and party_form_up_force_pull_active(
+                                args,
+                                party_state,
+                                party_forming_since=party_forming_since,
+                                now=now,
+                            )
+                        )
                         if should_delay_target_selection_until_objective_ready(
                             args,
                             behavior_state,
@@ -23613,6 +32093,7 @@ def run_dummy_round(
                             is_party_follower=is_party_follower,
                             leader_engaged=selection_leader_engaged,
                             objective_pressure_active=selection_objective_pressure_active,
+                            force_pull_active=selection_force_pull_active,
                         ):
                             actions += add_action(action_counts, "objective_selection_wait_ready")
                             log_encounter_event(
@@ -23887,7 +32368,7 @@ def run_dummy_round(
                         current_target_removed_preserve_count = 0
                         attack_target_in_view_primed_at = 0.0
                         attack_target_in_view_primed_target = 0
-                        if should_start_combat_after_target_commit(args, distance):
+                        if should_start_combat_after_target_commit(args, distance, action_rotation):
                             start_combat(npc, distance, now)
                         else:
                             actions += add_action(action_counts, "target_commit_wait_range")
@@ -23963,12 +32444,23 @@ def run_dummy_round(
 
                     if (args.move or args.hunter) and not args.smooth_movement:
                         target_destination = destination_from_actor("target", npc)
-                        attack_enabled = should_enable_attack_mode(args, action_rotation, distance)
+                        attack_enabled = should_enable_attack_mode_after_server_feedback(
+                            args,
+                            action_rotation,
+                            distance,
+                            active_combat,
+                            now=now,
+                        )
                         outcome = move_towards_destination(
                             client,
                             target_destination,
                             step=args.move_step,
-                            stop_distance=combat_stop_distance(args, action_rotation),
+                            stop_distance=combat_stop_distance_after_server_feedback(
+                                args,
+                                action_rotation,
+                                active_combat,
+                                now=now,
+                            ),
                             args=args,
                             path_state=path_state,
                             action_counts=action_counts,
@@ -24014,7 +32506,13 @@ def run_dummy_round(
                     attack_enabled = (
                         False
                         if tactical_backoff
-                        else should_enable_attack_mode(args, action_rotation, action_distance)
+                        else should_enable_attack_mode_after_server_feedback(
+                            args,
+                            action_rotation,
+                            action_distance,
+                            active_combat,
+                            now=now,
+                        )
                     )
                     if attack_enabled:
                         face_target_for_attack(client, npc)
@@ -24136,7 +32634,14 @@ def run_dummy_round(
 
                         if rotation_action is not None:
                             actions += add_action(action_counts, rotation_action)
-                            cast_hold_seconds = effective_cast_action_hold_seconds(args, rotation_action)
+                            cast_hold_seconds = effective_cast_action_hold_seconds(
+                                args,
+                                rotation_action,
+                                force_stationary_cast=should_force_stationary_cast_for_companion_command(
+                                    action_rotation,
+                                    party_snapshot_for_tick,
+                                ),
+                            )
                             if cast_hold_seconds > 0:
                                 cast_action_hold_until = now + cast_hold_seconds
                                 actions += add_action(action_counts, "cast_action_hold_start")
@@ -24146,11 +32651,16 @@ def run_dummy_round(
                 elif kept_current_target_without_visible_npc:
                     actions += add_action(action_counts, "attack_hold_last_known")
                     log_attack_decision(now, True, "combat_tick_last_known", party_snapshot=party_snapshot_for_tick)
-                elif (
-                    current_target
-                    and active_combat is not None
-                    and (args.move or args.hunter)
-                    and now - current_target_last_visible_at <= float(getattr(args, "target_loss_grace", 0.0) or 0.0)
+                elif should_chase_committed_target_last_known(
+                    args,
+                    client,
+                    action_rotation,
+                    current_target=current_target,
+                    active_combat=active_combat,
+                    target_visible=False,
+                    now=now,
+                    last_visible_at=current_target_last_visible_at,
+                    recent_incoming_melee=recent_incoming_melee_for_current_target,
                 ):
                     target_destination = active_combat_last_known_destination(active_combat)
                     if target_destination is not None:
@@ -24160,7 +32670,12 @@ def run_dummy_round(
                             client,
                             target_destination,
                             step=smooth_movement_step(args) if args.smooth_movement else args.move_step,
-                            stop_distance=combat_stop_distance(args, action_rotation),
+                            stop_distance=combat_stop_distance_after_server_feedback(
+                                args,
+                                action_rotation,
+                                active_combat,
+                                now=now,
+                            ),
                             args=args,
                             path_state=path_state,
                             action_counts=action_counts,
@@ -24210,10 +32725,22 @@ def run_dummy_round(
                             actions += add_action(action_counts, finish_outcome)
                             attack_enabled = False
                         else:
-                            attack_enabled = is_melee_rotation(action_rotation) and last_known_distance <= melee_stop_distance(args)
+                            attack_enabled = is_melee_rotation(action_rotation) and last_known_distance <= combat_stop_distance_after_server_feedback(
+                                args,
+                                action_rotation,
+                                active_combat,
+                                now=now,
+                            )
                         if attack_enabled:
                             target_current_hostile_if_allowed(now, "combat_tick_target_last_known")
-                            face_point_for_attack(client, target_destination.x, target_destination.y)
+                            face_point_for_attack(
+                                client,
+                                target_destination.x,
+                                target_destination.y,
+                                args=args,
+                                action_rotation=action_rotation,
+                                distance=waypoint_distance_from_client(client, target_destination),
+                            )
                             client.send_position_update(speed=0.0, target_in_view=True)
                             actions += add_action(action_counts, "attack_target_in_view_update")
                             prime_delay = attack_target_in_view_prime_delay(
@@ -24329,8 +32856,7 @@ def run_dummy_round(
                             client.wander(
                                 heading,
                                 step=args.wander_step,
-                                movement_speed=getattr(args, "movement_speed", None),
-                                min_position_send_interval=getattr(args, "movement_update_interval", 0.0),
+                                **dummy_movement_kwargs(args),
                             )
                             actions += add_action(action_counts, "wander")
 
@@ -24343,15 +32869,103 @@ def run_dummy_round(
             if is_party_leader:
                 party_state.update_leader(client)
 
+        dynamic_quest_final_active_count = 0
+        dynamic_quest_final_progress_error = ""
+        dynamic_quest_final_timeline_error = ""
+        dynamic_quest_final_active_allowed = False
+        dynamic_quest_final_completed = False
+        if dynamic_quest_final_progress_enabled(args):
+            final_progress_at = time.monotonic()
+            try:
+                progress_snapshot = fetch_dynamic_quest_progress_snapshot(args, account)
+                active_items = mark_dynamic_quest_progress_snapshot(progress_snapshot, final_progress_at, "final")
+                dynamic_quest_final_active_count = len(active_items)
+                dynamic_quest_final_completed = dynamic_quest_progress_has_completed_item(progress_snapshot, args)
+                expected_final_node = dynamic_quest_expected_final_node(args)
+                dynamic_quest_final_active_allowed = dynamic_quest_active_items_match_expected_final_node(
+                    active_items,
+                    expected_final_node,
+                ) and not dynamic_quest_followup_target_enabled(args)
+                actions += add_action(
+                    action_counts,
+                    (
+                        "dynamic_quest_final_never_active"
+                        if dynamic_quest_final_active_count <= 0 and not dynamic_quest_progress_seen
+                        else "dynamic_quest_final_inactive"
+                        if dynamic_quest_final_active_count <= 0
+                        else "dynamic_quest_final_expected_active_node"
+                        if dynamic_quest_final_active_allowed
+                        else "dynamic_quest_final_still_active"
+                    ),
+                )
+                log_encounter_event(
+                    "dynamic_quest_final_progress",
+                    final_progress_at,
+                    active_count=dynamic_quest_final_active_count,
+                    progress_seen=dynamic_quest_progress_seen,
+                    completion_signal_seen=dynamic_quest_completion_signal_seen,
+                    expected_final_node=expected_final_node,
+                    expected_final_node_matched=dynamic_quest_final_active_allowed,
+                    current_node_ids=[
+                        dynamic_quest_current_node_id(item)
+                        for item in active_items[:5]
+                    ],
+                    has_completed=dynamic_quest_final_completed,
+                )
+            except Exception as exc:
+                dynamic_quest_final_progress_error = short_text(str(exc), 220)
+                actions += add_action(action_counts, "dynamic_quest_final_progress_api_error")
+                log_encounter_event(
+                    "dynamic_quest_final_progress_api_error",
+                    final_progress_at,
+                    error=dynamic_quest_final_progress_error,
+                )
+
+            final_timeline_at = time.monotonic()
+            try:
+                timeline_snapshot = fetch_dynamic_quest_timeline_snapshot(args, account)
+                _, missing_timeline_events = mark_dynamic_quest_timeline_snapshot(
+                    args,
+                    timeline_snapshot,
+                    action_counts,
+                    now=final_timeline_at,
+                    source="final",
+                    log_encounter_event=log_encounter_event,
+                )
+                if missing_timeline_events:
+                    dynamic_quest_final_timeline_error = ",".join(missing_timeline_events)
+            except Exception as exc:
+                dynamic_quest_final_timeline_error = short_text(str(exc), 220)
+                actions += add_action(action_counts, "dynamic_quest_final_timeline_api_error")
+                log_encounter_event(
+                    "dynamic_quest_final_timeline_api_error",
+                    final_timeline_at,
+                    error=dynamic_quest_final_timeline_error,
+                )
+
         finish_combat("round_end", time.monotonic())
         actions += add_action(action_counts, f"rotation_{action_rotation}")
+        round_ok, round_error = final_round_completion_status(
+            safe_exit_failed=safe_exit_failed,
+            safe_exit_error=safe_exit_error,
+            dynamic_quest_return_pending=dynamic_quest_return_pending,
+            dynamic_quest_return_completed=dynamic_quest_return_completed,
+            dynamic_quest_e2e_enabled=dynamic_quest_final_progress_enabled(args),
+            dynamic_quest_active_count=dynamic_quest_final_active_count,
+            dynamic_quest_progress_seen=dynamic_quest_progress_seen,
+            dynamic_quest_completion_signal_seen=dynamic_quest_completion_signal_seen,
+            dynamic_quest_completed=dynamic_quest_final_completed,
+            dynamic_quest_progress_error=dynamic_quest_final_progress_error,
+            dynamic_quest_timeline_error=dynamic_quest_final_timeline_error,
+            dynamic_quest_final_active_allowed=dynamic_quest_final_active_allowed,
+        )
         return RoundMetric(
             account.username,
             round_index,
-            not safe_exit_failed,
+            round_ok,
             actions,
             time.monotonic() - started,
-            safe_exit_error,
+            round_error,
             action_counts,
             combat_metrics,
             args.ai_persona_name,
@@ -24373,6 +32987,9 @@ def run_dummy_round(
             death_seen,
             action_counts=action_counts,
             combat_metrics=combat_metrics,
+            dynamic_quest_e2e_enabled=dynamic_quest_final_progress_enabled(args),
+            dynamic_quest_return_pending=dynamic_quest_return_pending,
+            dynamic_quest_return_completed=dynamic_quest_return_completed,
         ):
             disconnect_is_death = death_seen or bool(getattr(client, "is_dead", False))
             finish_combat("player_death_disconnect" if disconnect_is_death else "post_objective_disconnect", time.monotonic())
@@ -24431,11 +33048,20 @@ def run_dummy_round(
         )
     finally:
         try:
+            companion_ai_executor.shutdown(wait=False, cancel_futures=True)
+        except Exception:
+            pass
+        try:
             client.set_attack_mode(False)
         except Exception:
             pass
 
-        client.close()
+        graceful_timeout = max(5.0, float(getattr(args, "graceful_shutdown_timeout", 25.0) or 25.0))
+        disconnect_gracefully = getattr(client, "disconnect_gracefully", None)
+        if callable(disconnect_gracefully):
+            disconnect_gracefully(timeout=graceful_timeout)
+        else:
+            client.close()
 
 
 def run_dummy(index: int, account: DummyAccount, args: argparse.Namespace, results: list[DummyResult]) -> None:
@@ -24498,6 +33124,7 @@ def load_accounts(path: str | None, args: argparse.Namespace) -> list[DummyAccou
                     class_id=int(row["class_id"]) if row.get("class_id") else None,
                     class_name=row.get("class_name", ""),
                     specs=row.get("specs", ""),
+                    character_name=row.get("character_name", ""),
                     start_x=int(row["start_x"]) if row.get("start_x") else None,
                     start_y=int(row["start_y"]) if row.get("start_y") else None,
                     start_z=int(row["start_z"]) if row.get("start_z") else None,
@@ -25014,18 +33641,22 @@ def build_party_states(account_plans: list[list[DummyAccount]], args: argparse.N
         for member_name in getattr(args, "party_external_member_names", []) or []
         if normalize_target_name(member_name)
     ]
+    auto_external_tracking = bool(
+        getattr(args, "party_auto_external_members", False) and getattr(args, "combat_usable_api", False)
+    )
 
     if args.party_size <= 1:
-        if not external_member_names:
+        if not external_member_names and not auto_external_tracking:
             return party_states
 
-        leader_name = external_member_names[0]
+        leader_name = external_member_names[0] if external_member_names else ""
         for index, plan in enumerate(account_plans):
             if not plan:
                 continue
             member_name = character_name_from_account(plan[0].username)
+            effective_leader_name = leader_name or member_name
             party_state = PartyState(
-                leader_name,
+                effective_leader_name,
                 [member_name],
                 active_tank_handoff_health_percent=getattr(args, "party_active_tank_handoff_health_percent", 0),
             )
@@ -25044,9 +33675,10 @@ def build_party_states(account_plans: list[list[DummyAccount]], args: argparse.N
 
         if not member_names:
             continue
+        leader_name = external_member_names[0] if external_member_names else ""
 
         party_state = PartyState(
-            member_names[0],
+            leader_name or member_names[0],
             member_names,
             active_tank_handoff_health_percent=getattr(args, "party_active_tank_handoff_health_percent", 0),
         )
@@ -25164,6 +33796,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--char-index", type=int, default=0)
     parser.add_argument("--login-retries", type=int, default=2, help="retry transient login handshakes that connect but do not receive a session id")
     parser.add_argument("--login-retry-delay", type=float, default=1.0, help="seconds to wait before reconnecting after a transient session-id login failure")
+    parser.add_argument(
+        "--graceful-shutdown-timeout",
+        type=float,
+        default=25.0,
+        help="seconds to wait for /quit logout before force-closing the socket on shutdown",
+    )
     parser.add_argument("--concurrency", type=int, default=1)
     parser.add_argument("--hold", type=float, default=60.0)
     parser.add_argument(
@@ -25227,7 +33865,31 @@ def build_parser() -> argparse.ArgumentParser:
         default=8.0,
         help="seconds of recent combat progress that prevent target-timeout rejection",
     )
+    parser.add_argument(
+        "--target-timeout-approach-progress-distance",
+        type=float,
+        default=250.0,
+        help="preserve a committed target timeout when the dummy has moved at least this much closer since the last timeout checkpoint",
+    )
     parser.add_argument("--target-loss-grace", type=float, default=8.0, help="seconds to keep a normal target after it leaves visibility before reacquiring")
+    parser.add_argument(
+        "--target-loss-rescan",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="when hunter loses sight of the current target, rotate heading and pick a new visible target instead of waiting for --target-loss-grace",
+    )
+    parser.add_argument(
+        "--target-loss-scan-interval",
+        type=float,
+        default=0.35,
+        help="seconds between heading turns while searching for a replacement target after target loss",
+    )
+    parser.add_argument(
+        "--target-loss-scan-heading-step",
+        type=int,
+        default=512,
+        help="heading units to turn each target-loss scan step (~45 degrees)",
+    )
     parser.add_argument(
         "--reject-target-on-server-los-failure",
         action=argparse.BooleanOptionalAction,
@@ -25421,7 +34083,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=0.0,
         help="seconds to wait after sending a target-in-view position update before enabling attack mode",
     )
-    parser.add_argument("--melee-range-buffer", type=float, default=25.0, help="stand this much inside attack range before attacking")
+    parser.add_argument("--melee-range-buffer", type=float, default=250.0, help="stand this much inside attack range before attacking")
     parser.add_argument("--minimum-melee-stop-distance", type=float, default=70.0)
     parser.add_argument(
         "--melee-stick-attack",
@@ -25555,8 +34217,26 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_PLAYER_GREET_LINES,
         help="pipe-separated short normal chat greetings for nearby players",
     )
-    parser.add_argument("--speak-state-changes", action="store_true", help="say short visible status lines when the dummy changes major behavior state")
-    parser.add_argument("--state-speech-min-interval", type=float, default=4.0, help="minimum seconds between visible state speech lines")
+    parser.add_argument("--companion-chat-reply", action="store_true", help="reply when a nearby player directly addresses this companion by name or role")
+    parser.add_argument("--companion-chat-reply-cooldown", type=float, default=8.0)
+    parser.add_argument("--companion-chat-reply-channel", choices=["say", "party"], default="say")
+    parser.add_argument("--companion-dialogue-pools", default=DEFAULT_COMPANION_DIALOGUE_POOL_PATH)
+    parser.add_argument("--companion-personality", choices=["auto", *COMPANION_PERSONALITIES], default="auto")
+    parser.add_argument("--companion-free-chat", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--ai-gateway-config", default=os.environ.get("OPENDAOC_AI_GATEWAY_CONFIG", ""))
+    parser.add_argument("--ai-gateway-model-alias", default="small-dialogue")
+    parser.add_argument("--ai-gateway-timeout", type=float, default=8.0)
+    parser.add_argument("--companion-guide-rag", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--companion-guide-model-alias", default="openai-small-guide")
+    parser.add_argument("--companion-guide-ai-gateway-config", default=os.environ.get("OPENDAOC_AI_GATEWAY_CONFIG", ""))
+    parser.add_argument("--companion-guide-timeout", type=float, default=8.0)
+    parser.add_argument("--companion-speech-line-delay", type=float, default=0.6)
+    parser.add_argument(
+        "--companion-chat-reply-lines",
+        type=parse_text_list,
+        default=DEFAULT_COMPANION_CHAT_REPLY_LINES,
+        help="pipe-separated short replies used when a player addresses the companion",
+    )
     parser.add_argument("--follow-nearby-player", action="store_true", help="when idle, move near the closest visible player to look like a social PvE player")
     parser.add_argument("--follow-player-name", default="", help="optional visible player name fragment to prefer for idle follow behavior")
     parser.add_argument("--player-follow-interval", type=float, default=2.0)
@@ -25708,9 +34388,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--party-local-rescue-max-distance", type=float, default=1200.0, help="maximum distance for local self-defense target selection; 0 disables the cap")
     parser.add_argument("--party-healer-local-rescue-health-percent", type=int, default=0, help="allow healer-support roles to self-target nearby threats only at or below this health percent; 0 keeps healers focused on support")
     parser.add_argument("--party-support-evasion", action=argparse.BooleanOptionalAction, default=False, help="allow healer/caster roles that were recently hit to kite away from visible rescue threats; off by default because movement can interrupt support throughput")
+    parser.add_argument("--party-support-peel-kite-radius", type=float, default=850.0, help="support/caster evasion orbit radius around the active tank or leader")
+    parser.add_argument("--party-support-peel-kite-threat-distance", type=float, default=1200.0, help="minimum distance support/caster evasion tries to keep from the threat while staying peelable")
     parser.add_argument("--party-follow-interval", type=float, default=1.2)
     parser.add_argument("--party-follow-step", type=float, default=320.0)
     parser.add_argument("--party-follow-distance", type=float, default=550.0)
+    parser.add_argument("--party-follow-catchup-distance", type=float, default=0.0, help="non-combat follow distance that enables temporary catch-up speed; 0 disables")
+    parser.add_argument("--party-follow-catchup-speed-multiplier", type=float, default=1.0)
+    parser.add_argument("--party-follow-hard-catchup-distance", type=float, default=0.0, help="larger non-combat follow distance that enables a stronger catch-up speed; 0 disables")
+    parser.add_argument("--party-follow-hard-catchup-speed-multiplier", type=float, default=1.0)
+    parser.add_argument("--party-follow-teleport-distance", type=float, default=0.0, help="non-combat follow distance that permits a catch-up teleport; 0 disables")
+    parser.add_argument("--party-follow-teleport-stop-distance", type=float, default=90.0)
     parser.add_argument("--party-preengage-ranged-safe-distance", type=float, default=0.0, help="caster/healer distance to keep from the required target home before they acquire a combat target; 0 disables")
     parser.add_argument("--boss-non-tank-follow-distance", type=float, default=450.0, help="during required boss fights, caster/healer followers regroup near the party leader if farther than this")
     parser.add_argument("--boss-ranged-safe-distance", type=float, default=0.0, help="during required boss fights, caster/healer followers back away from the objective itself until at least this distance; 0 reuses ranged stop distance")
@@ -25753,6 +34441,89 @@ def build_parser() -> argparse.ArgumentParser:
         help="after a required shared objective is removed, wait briefly for loot messages and end the round instead of pulling a respawn",
     )
     parser.add_argument(
+        "--required-target-removed-api-confirm",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="confirm required target completion with the NPC API; disable for generic kill-count quests with respawning same-name mobs",
+    )
+    parser.add_argument(
+        "--dynamic-quest-return-after-required-target",
+        action="store_true",
+        help="after a required quest target is removed, return to the configured quest NPC and interact to complete it",
+    )
+    parser.add_argument("--dynamic-quest-return-npc-name", default="", help="comma-separated quest NPC name fragments used for completion interaction")
+    parser.add_argument(
+        "--dynamic-quest-return-home",
+        type=parse_waypoint,
+        default=None,
+        help="x,y,z point near the quest start NPC used after the required target is removed",
+    )
+    parser.add_argument("--dynamic-quest-return-stop-distance", type=float, default=DYNAMIC_QUEST_RETURN_MAX_INTERACT_DISTANCE)
+    parser.add_argument("--dynamic-quest-return-interact-distance", type=float, default=DYNAMIC_QUEST_RETURN_MAX_INTERACT_DISTANCE)
+    parser.add_argument("--dynamic-quest-return-complete-wait", type=float, default=2.0)
+    parser.add_argument(
+        "--dynamic-quest-return-accept-dialog",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="accept a custom dialog after returning to a dynamic quest NPC; use --no-dynamic-quest-return-accept-dialog for legacy completion-only quests",
+    )
+    parser.add_argument(
+        "--dynamic-quest-return-dialog-response",
+        choices=("accept", "decline"),
+        default="accept",
+        help="custom dialog response after returning to a dynamic quest NPC; accept selects the first branch, decline selects the second branch",
+    )
+    parser.add_argument("--dynamic-quest-return-npc-api-timeout", type=float, default=1.0)
+    parser.add_argument("--dynamic-quest-progress-api-url", default="", help="override dynamic quest progress API URL")
+    parser.add_argument("--dynamic-quest-progress-api-timeout", type=float, default=2.0)
+    parser.add_argument("--dynamic-quest-timeline-api-url", default="", help="override dynamic quest timeline API URL")
+    parser.add_argument("--dynamic-quest-timeline-api-timeout", type=float, default=2.0)
+    parser.add_argument("--dynamic-quest-timeline-limit", type=int, default=50)
+    parser.add_argument("--dynamic-quest-expected-quest-id", default="", help="filter final timeline events to this dynamic quest id")
+    parser.add_argument(
+        "--dynamic-quest-expected-final-node",
+        default="",
+        help="allow the final read-only progress check to pass while the expected quest remains active at this node",
+    )
+    parser.add_argument(
+        "--dynamic-quest-followup-target-name",
+        default="",
+        help="after --dynamic-quest-expected-final-node is observed, switch required-target hunting to this name",
+    )
+    parser.add_argument(
+        "--dynamic-quest-followup-target-home",
+        type=parse_waypoint,
+        default=None,
+        help="x,y,z camp to hunt after the expected dynamic quest node is observed",
+    )
+    parser.add_argument("--dynamic-quest-followup-min-target-level", type=int, default=0)
+    parser.add_argument("--dynamic-quest-followup-max-target-level", type=int, default=0)
+    parser.add_argument("--dynamic-quest-followup-target-home-stop-distance", type=float, default=650.0)
+    parser.add_argument("--dynamic-quest-followup-target-home-hunt-distance", type=float, default=9000.0)
+    parser.add_argument("--dynamic-quest-followup-target-home-max-distance", type=float, default=9000.0)
+    parser.add_argument("--dynamic-quest-followup-max-target-distance", type=float, default=9000.0)
+    parser.add_argument(
+        "--dynamic-quest-require-timeline-events",
+        default="",
+        help="comma-separated read-only timeline event types required at round end, e.g. choice_selected,world_signal",
+    )
+    parser.add_argument(
+        "--dynamic-quest-require-presentation-triggers",
+        default="",
+        help="comma-separated read-only dynamic quest presentation triggers required at round end, e.g. OnAccept,OnComplete",
+    )
+    parser.add_argument(
+        "--dynamic-quest-observe-final-progress",
+        action="store_true",
+        help="check the read-only dynamic quest progress API at round end even when no return NPC flow is configured",
+    )
+    parser.add_argument(
+        "--dynamic-quest-target-api-scout",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="use the read-only NPC API to reacquire the required kill target during dynamic quest E2E runs",
+    )
+    parser.add_argument(
         "--target-removed-loot-wait",
         type=float,
         default=4.0,
@@ -25761,6 +34532,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--party-state-max-age", type=float, default=10.0)
     parser.add_argument("--party-heal-leader-interval", type=float, default=1.8)
     parser.add_argument("--party-heal-leader-health-percent", type=int, default=80)
+    parser.add_argument(
+        "--party-heal-exclude-names",
+        type=parse_name_list,
+        default=[],
+        help="pipe- or comma-separated party member names the healer must NOT heal (e.g. a designated resurrection victim); they remain eligible as resurrection targets",
+    )
     parser.add_argument("--party-heal-cast-range-buffer", type=float, default=200.0)
     parser.add_argument("--healer-focused-self-health-percent", type=int, default=85)
     parser.add_argument("--party-friendly-spell-retry-buffer", type=float, default=2.0)
@@ -25775,7 +34552,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--party-condition-refresh-interval", type=float, default=2.5)
     parser.add_argument("--party-protection-interval", type=float, default=20.0)
     parser.add_argument("--party-protection-retry-interval", type=float, default=1.5)
-    parser.add_argument("--party-protection-close-distance", type=float, default=220.0)
+    parser.add_argument("--party-protection-close-distance", type=float, default=800.0)
     parser.add_argument("--crowd-control-interval", type=float, default=8.0)
     parser.add_argument("--crowd-control-health-floor", type=int, default=45)
     parser.add_argument("--crowd-control-preemptive-min-threats", type=int, default=2)
@@ -25797,6 +34574,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.0,
         help="extra seconds the party leader waits after --party-min-ready is reached before pulling",
+    )
+    parser.add_argument(
+        "--party-form-up-timeout",
+        type=float,
+        default=0.0,
+        help="seconds the party leader waits in forming state before forcing a pull even if members are not near-ready; 0 disables",
     )
     parser.add_argument(
         "--party-ready-max-leader-distance",
@@ -25899,6 +34682,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--startup-service-scan-seconds", type=float, default=1.0)
     parser.add_argument("--startup-service-interact", action="store_true")
     parser.add_argument("--startup-service-accept-dialog", action="store_true")
+    parser.add_argument(
+        "--startup-service-progress-wait-seconds",
+        type=float,
+        default=3.0,
+        help="when startup service dialog starts a dynamic quest, wait this long for read-only progress API activation",
+    )
+    parser.add_argument("--startup-service-progress-poll-interval", type=float, default=0.25)
+    parser.add_argument("--startup-service-progress-retry-after", type=float, default=0.8)
+    parser.add_argument("--startup-service-progress-retry-interval", type=float, default=1.0)
+    parser.add_argument("--startup-service-progress-max-retries", type=int, default=2)
     parser.add_argument("--startup-service-buy-slot", action="append", type=parse_int_list, default=[])
     parser.add_argument("--startup-service-buy-count", type=int, default=1)
     parser.add_argument("--startup-service-sell-slot", action="append", type=parse_int_list, default=[])
@@ -25966,6 +34759,7 @@ def main() -> int:
         args.command = [command for command in args.command if command]
 
     apply_ai_player_defaults(args)
+    apply_dynamic_quest_e2e_defaults(args)
 
     accounts = load_accounts(args.accounts, args)
     accounts = apply_realm_strategy(accounts, args)

@@ -26,8 +26,8 @@ namespace DOL.GS.Commands
 		"&say",
 		new string[] {"&s"},
 		ePrivLevel.Player,
-		"Say something to other players around you",
-		"/say <message>")]
+		"주변 플레이어에게 말합니다.",
+		"/say <메시지>")]
 	public class SayCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

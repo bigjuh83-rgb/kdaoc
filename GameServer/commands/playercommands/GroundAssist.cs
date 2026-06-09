@@ -2,7 +2,7 @@ namespace DOL.GS.Commands
 {
 	[CmdAttribute("&groundassist", //command to handle
 		 ePrivLevel.Player, //minimum privelege level
-		 "Show the current coordinates", //command description
+		 "현재 좌표를 표시합니다.", //command description
 		 "/groundassist")] //command usage
 	public class GroundAssistCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

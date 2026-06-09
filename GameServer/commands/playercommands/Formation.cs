@@ -24,7 +24,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&formation",
 		ePrivLevel.Player,
-		"Change the formation of your pets!", "/formation <type>")]
+		"소환수 진형을 변경합니다.", "/formation <종류>")]
 	public class FormationHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

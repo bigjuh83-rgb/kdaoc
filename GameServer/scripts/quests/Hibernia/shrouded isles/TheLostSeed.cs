@@ -591,6 +591,7 @@ namespace DOL.GS.Quests.Hibernia
 							Kredril.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Kredril.TheLostSeed"));
 							break;
 						case "Jandros":
+						case "잔드로스":
 							if (quest.Step == 2)
 							{
 								Kredril.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Kredril.Jandros"));
@@ -670,7 +671,8 @@ namespace DOL.GS.Quests.Hibernia
 				{
 					switch (wArgs.Text)
 					{
-						case "Aalid Feie":
+					case "Aalid Feie":
+					case "알리드 페이":
 							if (quest.Step == 3)
 							{
 								quest.Step = 4;
@@ -752,6 +754,7 @@ namespace DOL.GS.Quests.Hibernia
 					switch (wArgs.Text)
 					{
 						case "Kredril":
+						case "크레드릴":
 							Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.Kredril"));
 							break;
 							case "the Lost Seed":
@@ -764,6 +767,7 @@ namespace DOL.GS.Quests.Hibernia
 							Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.Died"));
 							break;
 						case "Feairna-Athar":
+						case "페아르나-아타르":
 							if (quest.Step == 4)
 							{
 								Jandros.SayTo(player, L(player, "Quest.Hibernia.TheLostSeed.Jandros.FeairnaAthar"));
@@ -868,7 +872,7 @@ namespace DOL.GS.Quests.Hibernia
 		//Set quest name
 		public override string Name
 		{
-			get { return questTitle; }
+			get { return DOL.Language.LanguageMgr.GetTranslatedQuestTitle(m_questPlayer?.Client?.Account?.Language, questTitle); }
 		}
 
 		// Define Steps

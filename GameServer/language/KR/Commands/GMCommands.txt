@@ -100,10 +100,10 @@ GMCommands.HasCredit.Usage:					/hascredit <mobname>
 # ]jump
 GMCommands.DebugJump.Description:			자신을 지정한 위치로 순간이동합니다
 GMCommands.DebugJump.Usage:					']jump <zoneID> <locX> <locY> <locZ> <heading>' 디버그 모드에서 *jump에 자동 사용됩니다
-GMCommands.DebugJump.InvalidZoneID:			잘못된 zone Id: {0}
-GMCommands.DebugJump.UnknownZoneID:			알 수 없는 zone Id: {0}
-GMCommands.DebugJump.UnknownRegion:			알 수 없는 region({0})입니다.
-GMCommands.DebugJump.RegionNotSuppByClient:	region({0})은(는) 당신의 클라이언트에서 지원되지 않습니다.
+GMCommands.DebugJump.InvalidZoneID:			잘못된 존 ID: {0}
+GMCommands.DebugJump.UnknownZoneID:			알 수 없는 존 ID: {0}
+GMCommands.DebugJump.UnknownRegion:			알 수 없는 지역({0})입니다.
+GMCommands.DebugJump.RegionNotSuppByClient:	지역({0})은(는) 당신의 클라이언트에서 지원되지 않습니다.
 
 ## /door
 GMCommands.Door.Description:				문을 수정합니다
@@ -145,17 +145,17 @@ GMCommands.Faction.Relations.Line:          #{0}: {1} ({2}){3}
 GMCommands.Faction.Select.Selected:         #{0}: {1} ({2}) 팩션을 선택했습니다.
 
 ## /gmappeal
-Scripts.Players.Appeal.UseGMappeal:				플레이어의 appeal 처리를 도우려면 /gmappeal을 사용하세요.
-Scripts.Players.Appeal.MustBeAssisting:			먼저 appeal을 제출한 활성 플레이어를 지원 중이어야 합니다.
+Scripts.Players.Appeal.UseGMappeal:				플레이어의 문의 처리를 도우려면 /gmappeal을 사용하세요.
+Scripts.Players.Appeal.MustBeAssisting:			먼저 문의를 제출한 활성 플레이어를 지원 중이어야 합니다.
 Scripts.Players.Appeal.NoLocationToJump:		되돌아갈 위치가 없습니다.
-Scripts.Players.Appeal.NoLongerReceiveMsg:		이번 세션에서는 더 이상 Appeal 메시지를 받지 않습니다.
-Scripts.Players.Appeal.NowReceiveMsg:			이번 세션에서 Appeal 메시지를 다시 받습니다.
+Scripts.Players.Appeal.NoLongerReceiveMsg:		이번 세션에서는 더 이상 문의 메시지를 받지 않습니다.
+Scripts.Players.Appeal.NowReceiveMsg:			이번 세션에서 문의 메시지를 다시 받습니다.
 Scripts.Players.Appeal.UseCmdTurnBackOn:		메시지를 다시 켜려면 /gmappeal mute를 한 번 더 사용하세요.
 Scripts.Players.Appeal.UseCmdTurnBackOff:		메시지를 다시 끄려면 /gmappeal mute를 한 번 더 사용하세요.
-Scripts.Players.Appeal.CantCancelWhile:			도움을 받는 중에는 appeal을 취소할 수 없습니다.
-Scripts.Players.Appeal.NoAppealToView:			현재 확인할 appeal이 없습니다.
-Scripts.Players.Appeal.NoAppealsinQueue:		현재 대기열에 Appeal이 없습니다.
-Scripts.Players.Appeal.CantFindAppeal:			해당 오프라인 플레이어 이름으로 된 appeal을 찾을 수 없습니다. 철자가 맞는지 확인하세요.
+Scripts.Players.Appeal.CantCancelWhile:			도움을 받는 중에는 문의를 취소할 수 없습니다.
+Scripts.Players.Appeal.NoAppealToView:			현재 확인할 문의가 없습니다.
+Scripts.Players.Appeal.NoAppealsinQueue:		현재 대기열에 문의가 없습니다.
+Scripts.Players.Appeal.CantFindAppeal:			해당 오프라인 플레이어 이름으로 된 문의를 찾을 수 없습니다. 철자가 맞는지 확인하세요.
 Scripts.Players.Appeal.NameNotUnique:			캐릭터 이름이 고유하지 않습니다.
 Scripts.Players.Appeal.PlayerNotFound:			{0}은(는) 게임에 접속해 있지 않습니다.
 Scripts.Players.Appeal.RandMessage0:			{0}님, 기다려 주셔서 감사합니다. 무엇을 도와드릴까요?
@@ -164,8 +164,8 @@ Scripts.Players.Appeal.RandMessage2:			안녕하세요 {0}님! 도와드리러 �
 Scripts.Players.Appeal.RandMessage3:			안녕하세요 {0}님, 도움이 필요하신 것으로 알고 있습니다. 오늘 무엇을 도와드릴까요?
 Scripts.Players.Appeal.RandMessage4:			안녕하세요 {0}님, 문제가 생겨 유감입니다. 어떤 문제가 있으신가요?
 Scripts.Players.Appeal.BeingHelped:				해당 플레이어는 이미 도움을 받고 있습니다.
-Scripts.Players.Appeal.NotBeingHelped:			해제하려면 먼저 이 플레이어의 appeal을 지원 중이어야 합니다.
-Scripts.Players.Appeal.DoesntHaveAppeal:		해당 플레이어는 이미 appeal을 취소했거나 appeal이 없습니다.
+Scripts.Players.Appeal.NotBeingHelped:			해제하려면 먼저 이 플레이어의 문의를 지원 중이어야 합니다.
+Scripts.Players.Appeal.DoesntHaveAppeal:		해당 플레이어는 이미 문의를 취소했거나 문의가 없습니다.
 
 ## /gmrelic
 GMCommands.GMRelic.Description:				새 Relic을 생성합니다

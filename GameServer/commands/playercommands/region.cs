@@ -9,8 +9,8 @@ namespace DOL.GS.Commands
          "&region",
          new string[] { "&reg" },
          ePrivLevel.Player,
-         "Broadcast something to other players in the same region",
-         "/region <message>")]
+         "같은 지역의 다른 플레이어에게 메시지를 방송합니다.",
+         "/region <메시지>")]
     public class RegionCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         private const string BROAD_TICK = "Broad_Tick";

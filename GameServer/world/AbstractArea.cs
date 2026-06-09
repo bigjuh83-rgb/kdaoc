@@ -172,7 +172,8 @@ namespace DOL.GS
 		public virtual void OnPlayerLeave(GamePlayer player)
 		{
             if (m_displayMessage && Description != null && Description != string.Empty)
-                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AbstractArea.Left", Description),
+                player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AbstractArea.Left",
+                        LanguageMgr.GetTranslatedKeepName(player.Client.Account.Language, Description)),
                     eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
 			player.Notify(AreaEvent.PlayerLeave, this, new AreaEventArgs(this, player));
@@ -197,6 +198,11 @@ namespace DOL.GS
 
                     if (!string.IsNullOrEmpty(translation.ScreenDescription))
                         screenDescription = translation.ScreenDescription;
+                }
+                else
+                {
+                    description = LanguageMgr.GetTranslatedKeepName(player.Client.Account.Language, description);
+                    screenDescription = LanguageMgr.GetTranslatedKeepName(player.Client.Account.Language, screenDescription);
                 }
 
                 player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "AbstractArea.Entered", description),

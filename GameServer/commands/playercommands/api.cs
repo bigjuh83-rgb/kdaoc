@@ -7,8 +7,8 @@ namespace DOL.GS.Commands
 	[Cmd(
 		"&api",
 		ePrivLevel.Player,
-		"Toggles API options",
-		"/api specs - toggle showing the specs of the player")]
+		"API 표시 옵션을 켜거나 끕니다.",
+		"/api specs - 플레이어 전문화 표시를 켜거나 끕니다.")]
 	public class APICommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

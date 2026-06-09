@@ -9,7 +9,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 	   "&realm",
 	   ePrivLevel.Player,
-		 "Displays the current realm status.", "/realm")]
+		 "현재 렐름 상태를 표시합니다.", "/realm")]
 	public class RealmCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		/*          Realm status
@@ -167,7 +167,7 @@ namespace DOL.GS.Commands
 		private string KeepStringBuilder(string language, AbstractGameKeep keep)
 		{
 			string buffer = string.Empty;
-			buffer += keep.Name + ": " + TranslateRealm(language, keep.Realm);
+			buffer += LanguageMgr.GetTranslatedKeepName(language, keep.Name) + ": " + TranslateRealm(language, keep.Realm);
 			if (keep.Guild != null)
 			{
 				buffer += " (" + keep.Guild.Name + ")";

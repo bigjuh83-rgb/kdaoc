@@ -119,6 +119,7 @@ namespace DOL.GS.Trainer
 					return true;
 				case "practice staff":
 				case "연습용 지팡이":
+				case "연습용 스태프":
 					if (player.Inventory.GetFirstItemByID(PRACTICE_WEAPON_ID, eInventorySlot.Min_Inv, eInventorySlot.Max_Inv) == null)
 					{
 						player.ReceiveItem(this,PRACTICE_WEAPON_ID);

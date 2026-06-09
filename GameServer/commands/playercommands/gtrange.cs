@@ -6,7 +6,7 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&gtrange",
         ePrivLevel.Player,
-        "Gives a range to a ground target",
+        "지상 대상까지의 거리를 표시합니다.",
         "/gtrange")]
     public class GroundTargetRangeCommandHandler : AbstractCommandHandler, ICommandHandler
     {

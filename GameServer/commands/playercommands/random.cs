@@ -25,8 +25,8 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&random",
 		ePrivLevel.Player,
-		"prints out a random number between 1 and the number specified.",
-		"/random [#] to get a random number between 1 and the number you specified.")]
+		"1부터 지정한 숫자 사이의 무작위 숫자를 출력합니다.",
+		"/random [#] 1부터 지정한 숫자 사이의 무작위 숫자를 얻습니다.")]
 	public class RandomCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		private const int RESULT_RANGE = 512; // emote range

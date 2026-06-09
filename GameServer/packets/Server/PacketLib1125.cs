@@ -559,6 +559,7 @@ namespace DOL.GS.PacketHandler
 					pak.WriteShortLowEndian((byte)item.Effect); // untested for low endian but probabaly
 					pak.WriteShortLowEndian(item.OwnerLot);//lot
 					pak.WriteIntLowEndian((uint)item.SellPrice);
+					string itemName = GetItemNameForClient(item);
 
 					if (ServerProperties.Properties.CONSIGNMENT_USE_BP)
 					{
@@ -570,30 +571,30 @@ namespace DOL.GS.PacketHandler
 
 						if (item.Count > 1)
 						{
-							pak.WritePascalStringIntLE(item.Count + " " + item.Name);
+							pak.WritePascalStringIntLE(item.Count + " " + itemName);
 						}
 						else if (item.PackSize > 1)
 						{
-							pak.WritePascalStringIntLE(item.PackSize + " " + item.Name + bpPrice);
+							pak.WritePascalStringIntLE(item.PackSize + " " + itemName + bpPrice);
 						}
 						else
 						{
-							pak.WritePascalStringIntLE(item.Name + bpPrice);
+							pak.WritePascalStringIntLE(itemName + bpPrice);
 						}
 					}
 					else
 					{
 						if (item.Count > 1)
 						{
-							pak.WritePascalStringIntLE(item.Count + " " + item.Name);
+							pak.WritePascalStringIntLE(item.Count + " " + itemName);
 						}
 						else if (item.PackSize > 1)
 						{
-							pak.WritePascalStringIntLE(item.PackSize + " " + item.Name);
+							pak.WritePascalStringIntLE(item.PackSize + " " + itemName);
 						}
 						else
 						{
-							pak.WritePascalStringIntLE(item.Name);
+							pak.WritePascalStringIntLE(itemName);
 						}
 					}
 				}
@@ -700,7 +701,7 @@ namespace DOL.GS.PacketHandler
 								pak.WriteShortLowEndian((ushort)value2);
 								pak.WriteIntLowEndian((uint)item.Price);
 								pak.WriteShortLowEndian((ushort)item.Model);
-								pak.WritePascalStringIntLE(item.Name);
+								pak.WritePascalStringIntLE(GetTemplateNameForClient(item));
 							}
 							else
 							{

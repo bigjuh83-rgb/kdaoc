@@ -105,6 +105,7 @@ namespace DOL.GS.Trainer
 							break;
 						case "slashing":
 						case "베기":
+						case "슬래쉬":
 
 							PromotePlayer(player, (int)eCharacterClass.Armsman, LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.ArmsmanWelcome.Sword"), null);
 							player.ReceiveItem(this,WEAPON_ID1);
@@ -112,6 +113,7 @@ namespace DOL.GS.Trainer
 							break;
 						case "crushing":
 						case "타격":
+						case "크러쉬":
 
 							PromotePlayer(player, (int)eCharacterClass.Armsman, LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.ArmsmanWelcome.Mace"), null);
 							player.ReceiveItem(this,WEAPON_ID2);
@@ -119,6 +121,7 @@ namespace DOL.GS.Trainer
 							break;
 						case "thrusting":
 						case "찌르기":
+						case "쓰러스트":
 
 							PromotePlayer(player, (int)eCharacterClass.Armsman, LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.ArmsmanWelcome.Rapier"), null);
 							player.ReceiveItem(this,WEAPON_ID3);

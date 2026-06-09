@@ -1215,6 +1215,7 @@ namespace DOL.GS.Quests.Albion
 					switch (wArgs.Text)
 					{
 						case "Morgana":
+						case "모르가나":
 							Ferowl.SayTo(player, L(player, "Quest.Epic.Academy50.Morgana"));
 							break;
 						case "stopped":

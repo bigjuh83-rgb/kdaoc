@@ -1639,11 +1639,11 @@ Expected: tests and server build pass.
 If a local MariaDB-backed server is already running with `atlas_api=True`, run:
 
 ```bash
-curl -I http://localhost:9874/dashboard
-curl -s http://localhost:9874/api/dashboard/live
-curl -s http://localhost:9874/api/dashboard/history?range=24h
-curl -s http://localhost:9874/api/dashboard/realm-activity?range=7d
-curl -I http://localhost:9874/status/badge.png
+curl -I http://localhost:5000/dashboard
+curl -s http://localhost:5000/api/dashboard/live
+curl -s http://localhost:5000/api/dashboard/history?range=24h
+curl -s http://localhost:5000/api/dashboard/realm-activity?range=7d
+curl -I http://localhost:5000/status/badge.png
 ```
 
 Expected:

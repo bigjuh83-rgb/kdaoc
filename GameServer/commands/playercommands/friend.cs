@@ -7,8 +7,8 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&friend",
         ePrivLevel.Player,
-        "Adds/Removes a player to/from your friendlist!",
-        "/friend <playerName>")]
+        "친구 목록에 플레이어를 추가하거나 제거합니다.",
+        "/friend <플레이어이름>")]
     public class FriendCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)

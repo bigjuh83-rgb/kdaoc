@@ -8,8 +8,8 @@ namespace DOL.GS.Commands
          "&broadcast",
          new string[] { "&b" },
          ePrivLevel.Player,
-         "Broadcast something to other players in the same zone",
-         "/b <message>")]
+         "같은 존의 다른 플레이어에게 메시지를 방송합니다.",
+         "/b <메시지>")]
     public class BroadcastCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         private enum eBroadcastType : int

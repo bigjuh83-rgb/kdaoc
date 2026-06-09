@@ -185,7 +185,8 @@ namespace DOL.GS
 													charXDrop.ItemTemplateID = drop.ItemTemplateID;
 													GameServer.Database.AddObject(charXDrop);
 
-													player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "GamePlayer.ReceiveItem.ReceiveFrom", item.GetName(1, false), mob.GetName(1, false)), eChatType.CT_Loot, eChatLoc.CL_SystemWindow);
+													string itemMessageName = LanguageMgr.GetTranslatedItemName(player.Client.Account.Language, item);
+													player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "GamePlayer.ReceiveItem.ReceiveFrom", itemMessageName, mob.GetName(1, false)), eChatType.CT_Loot, eChatLoc.CL_SystemWindow);
 													InventoryLogging.LogInventoryAction(mob, player, eInventoryActionType.Loot, item);
 												}
 												else

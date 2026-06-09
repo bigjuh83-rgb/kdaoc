@@ -74,6 +74,13 @@ namespace DOL.GS
 			{
 				foreach (DbLootGenerator dbGenerator in m_lootGenerators)
 				{
+					if (ShouldSkipLegacyRandomItemGenerator(dbGenerator))
+					{
+						if (log.IsInfoEnabled)
+							log.Info("Skipping legacy ROG loot generator because KDAOC owns random item loot: " + dbGenerator.LootGeneratorClass);
+						continue;
+					}
+
 					ILootGenerator generator = GetGeneratorInCache(dbGenerator);
 					if (generator == null)
 					{
@@ -157,6 +164,22 @@ namespace DOL.GS
 				return (ILootGenerator)m_ClassGenerators[dbGenerator.LootGeneratorClass + dbGenerator.ExclusivePriority];
 			}
 			return null;
+		}
+
+		private static bool ShouldSkipLegacyRandomItemGenerator(DbLootGenerator dbGenerator)
+		{
+			return ShouldSkipLegacyRandomItemGeneratorForTest(dbGenerator?.LootGeneratorClass);
+		}
+
+		internal static bool ShouldSkipLegacyRandomItemGeneratorForTest(string lootGeneratorClass)
+		{
+			if (string.IsNullOrWhiteSpace(lootGeneratorClass))
+				return false;
+
+			string value = lootGeneratorClass.Trim();
+			return string.Equals(value, "ROGMobGenerator", StringComparison.Ordinal)
+				|| string.Equals(value, "DOL.GS.ROGMobGenerator", StringComparison.Ordinal)
+				|| value.EndsWith(".ROGMobGenerator", StringComparison.Ordinal);
 		}
 
 		public static void UnRegisterLootGenerator(ILootGenerator generator, string mobname, string mobguild, string mobfaction)

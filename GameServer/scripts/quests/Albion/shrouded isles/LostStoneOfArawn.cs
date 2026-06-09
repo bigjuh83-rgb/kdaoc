@@ -644,6 +644,7 @@ public class LostStoneofArawn : BaseQuest
                 switch (wArgs.Text)
                 {
                     case "Gwyddneau":
+                    case "귄드네우":
                         if (quest.Step == 3)
                         {
                             quest.Step = 4;

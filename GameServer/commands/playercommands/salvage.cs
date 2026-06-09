@@ -9,8 +9,8 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&salvage",
 		ePrivLevel.Player,
-		"You can salvage one or multiple item(s) when you are a crafter",
-		"/salvage", "/salvage all", "/salvage <bag>", "/salvage <bag-bag>", "Add 'Qxx' to specify the minimum quality of the items to salvage (Q98)")]
+		"제작자라면 아이템 하나 또는 여러 개를 분해할 수 있습니다.",
+		"/salvage", "/salvage all", "/salvage <bag>", "/salvage <bag-bag>", "분해할 아이템의 최소 품질을 지정하려면 'Qxx'를 추가하세요. 예: Q98")]
 	public class SalvageCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

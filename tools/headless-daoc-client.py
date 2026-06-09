@@ -18,6 +18,57 @@ from dataclasses import dataclass
 from typing import Callable
 
 
+DAOC_PACKET_SPEED_SCALE = 256.0
+DAOC_PACKET_SPEED_THRESHOLD = 4096.0
+HEADING_FULL_CIRCLE = 4096
+HEADING_LARGE_TURN = 1024  # 90 degrees
+HEADING_TURN_STEP = 768  # ~67 degrees per tick
+HEADING_DUAL_PACKET_WINDOW = 0.05
+DEFAULT_MOVEMENT_STEP_SECONDS = 0.2
+
+
+def resolve_movement_step_seconds(
+    movement_step_seconds: float | None,
+    min_position_send_interval: float,
+    step: float,
+    movement_speed: float | None,
+) -> float:
+    if movement_step_seconds is not None and movement_step_seconds > 0.0:
+        return float(movement_step_seconds)
+    if min_position_send_interval > 0.0:
+        return float(min_position_send_interval)
+    if movement_speed is not None and movement_speed > 0.0 and step > 0.0:
+        return max(0.05, float(step) / float(movement_speed))
+    return DEFAULT_MOVEMENT_STEP_SECONDS
+
+
+def resolve_travel_limit(step: float, movement_speed: float | None, movement_step_seconds: float) -> float:
+    if movement_speed is not None and movement_speed > 0.0:
+        return min(float(step), max(1.0, float(movement_speed) * max(movement_step_seconds, 0.05)))
+    return float(step)
+
+
+def coerce_world_speed(speed: float | None) -> float | None:
+    if speed is None:
+        return None
+    value = float(speed)
+    if value >= DAOC_PACKET_SPEED_THRESHOLD:
+        return value / DAOC_PACKET_SPEED_SCALE
+    return value
+
+
+def resolve_movement_speeds(
+    movement_speed: float | None,
+    packet_speed: float | None = None,
+) -> tuple[float | None, float | None]:
+    travel = coerce_world_speed(movement_speed)
+    # 1.124+ position/action packets carry speed as a float in world units.  The
+    # old 256x value belongs to pre-1.124 packed speed data and breaks animation.
+    packet = coerce_world_speed(packet_speed) if packet_speed is not None else travel
+
+    return travel, packet
+
+
 CLIENT_PACKETS = {
     "crypt_key_request": 0xF4,
     "login_request": 0xA7,
@@ -117,6 +168,7 @@ class HeadlessDaocClient:
         self.y = 0
         self.z = 0
         self.heading = 0
+        self.max_speed_percent = 100
         self.zone_id = 0
         self.health_percent = 100
         self.mana_percent = 100
@@ -155,6 +207,66 @@ class HeadlessDaocClient:
                 self.sock.close()
             finally:
                 self.sock = None
+
+    def disconnect_gracefully(self, timeout: float = 25.0) -> bool:
+        """Leave the world with /quit so the server releases the account instead of linkdead."""
+        if self.sock is None or self.session_id == 0:
+            self.close()
+            return True
+
+        deadline = time.monotonic() + max(timeout, 1.0)
+        quit_sent = False
+
+        try:
+            for action in (
+                lambda: self.set_attack_mode(False),
+                lambda: self.clear_target(),
+                lambda: self.send_position_update(speed=0.0, target_in_view=False),
+                lambda: self.send_command("/sit"),
+            ):
+                try:
+                    action()
+                except Exception:
+                    pass
+
+            try:
+                remaining_before_quit = max(0.0, deadline - time.monotonic() - 0.1)
+                time.sleep(min(4.0, remaining_before_quit))
+                self.send_command("/quit")
+                quit_sent = True
+            except Exception:
+                pass
+
+            while time.monotonic() < deadline and self.sock is not None:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+
+                try:
+                    self.sock.settimeout(min(0.25, max(remaining, 0.001)))
+                    chunk = self.sock.recv(65535)
+                except socket.timeout:
+                    if quit_sent:
+                        continue
+                    break
+                except OSError:
+                    return True
+
+                if not chunk:
+                    return True
+
+                self.recv_buffer += chunk
+                while len(self.recv_buffer) >= 3:
+                    packet_size = int.from_bytes(self.recv_buffer[0:2], "big") + 3
+                    if len(self.recv_buffer) < packet_size:
+                        break
+                    raw = bytes(self.recv_buffer[:packet_size])
+                    del self.recv_buffer[:packet_size]
+                    self.observe_packet(ServerPacket(raw[2], raw[3:]))
+        finally:
+            self.close()
+
+        return False
 
     def send_packet(self, code: int, data: bytes = b"", session_id: int | None = None) -> None:
         if self.sock is None:
@@ -255,20 +367,37 @@ class HeadlessDaocClient:
         self.send_packet(CLIENT_PACKETS["player_init_request"], b"")
         self.print_packets("player_init", self.read_packets_for(1.0))
 
-    def send_command(self, command: str) -> None:
+    def send_command(self, command: str, response_wait: float = 0.05) -> None:
         self.trace_movement("command", command=command)
         if command.startswith("/"):
             command = "&" + command[1:]
-        self.send_packet(CLIENT_PACKETS["command"], b"\x00" + command.encode("utf-8") + b"\x00")
-        self.print_packets(f"command {command}", self.read_packets_for(1.0))
+        self.send_packet(CLIENT_PACKETS["command"], b"\x00" + encode_client_command(command) + b"\x00")
+        self.print_packets(f"command {command}", self.read_packets_for(max(0.0, float(response_wait))))
 
     def send_ping(self) -> int:
         timestamp = int(time.monotonic() * 1000) & 0xFFFFFFFF
         self.send_packet(CLIENT_PACKETS["ping"], b"\x00\x00\x00\x00" + struct.pack(">I", timestamp))
         return self.drain(0.05)
 
-    def send_heading(self, heading: int, *, drain_after: bool = True) -> int:
-        self.heading = heading & 0x0FFF
+    def send_heading(self, heading: int, *, drain_after: bool = True, force: bool = False) -> int:
+        heading = heading & 0x0FFF
+        now = time.monotonic()
+        last_position_at = float(getattr(self, "_last_position_packet_at", 0.0) or 0.0)
+        last_position_heading = getattr(self, "_last_position_packet_heading", None)
+        if (
+            not force
+            and last_position_heading is not None
+            and now - last_position_at <= HEADING_DUAL_PACKET_WINDOW
+            and abs(heading_delta(int(last_position_heading), heading)) > 256
+        ):
+            self.trace_movement(
+                "skip_send_heading_dual_conflict",
+                heading=int(heading),
+                position_heading=int(last_position_heading),
+            )
+            return 0
+
+        self.heading = heading
         data = bytearray()
         data += struct.pack(">H", self.session_id & 0xFFFF)
         data += b"\x00\x00"  # target/object id for 1.127.
@@ -278,7 +407,16 @@ class HeadlessDaocClient:
         data += b"\x00"  # steed slot.
         data += b"\x00"  # state flags.
         self.send_packet(CLIENT_PACKETS["heading"], bytes(data))
+        self._last_heading_packet_at = time.monotonic()
         return self.drain(0.05) if drain_after else 0
+
+    def normalize_position_speed(self, speed: float) -> float:
+        coerced = coerce_world_speed(speed)
+        value = 0.0 if coerced is None else float(coerced)
+        last_sent_x, last_sent_y, _ = self.last_sent_position
+        if int(self.x) == last_sent_x and int(self.y) == last_sent_y and value > 0.0:
+            return 0.0
+        return value
 
     def send_position_update(self, speed: float = 0.0, target_in_view: bool = False) -> int:
         if self.is_dead:
@@ -293,6 +431,7 @@ class HeadlessDaocClient:
             )
             return 0
 
+        speed = self.normalize_position_speed(speed)
         self.last_position_speed = float(speed)
         self.last_position_target_in_view = bool(target_in_view)
         self.last_position_update_sent_at = time.monotonic()
@@ -327,6 +466,8 @@ class HeadlessDaocClient:
         data += b"\x64"  # endurance percent.
         data += b"\x00\x00"
         self.send_packet(CLIENT_PACKETS["position"], bytes(data))
+        self._last_position_packet_at = time.monotonic()
+        self._last_position_packet_heading = int(self.heading & 0x0FFF)
         return self.drain(0.05)
 
     def send_corpse_position_update(self) -> int:
@@ -386,13 +527,31 @@ class HeadlessDaocClient:
         return self.drain(0.05)
 
     def set_attack_mode(self, enabled: bool) -> int:
-        if self.attack_mode_enabled == bool(enabled):
-            self.trace_movement("attack_mode_skip", enabled=bool(enabled))
-            return 0
+        want_enabled = bool(enabled)
+        if self.attack_mode_enabled == want_enabled:
+            now_ts = time.monotonic()
+            self._attack_mode_skip_count = getattr(self, "_attack_mode_skip_count", 0) + 1
+            consecutive_skips = self._attack_mode_skip_count
+            time_since_last_packet = now_ts - getattr(self, "_last_attack_mode_packet_at", 0.0)
+            force_resend_in_combat = (
+                consecutive_skips >= 3
+                and time_since_last_packet >= 3.0
+                and want_enabled is True
+                and self.health_percent > 0
+            )
+            if not force_resend_in_combat:
+                self.trace_movement("attack_mode_skip", enabled=want_enabled)
+                return 0
 
-        self.attack_mode_enabled = bool(enabled)
-        self.send_packet(CLIENT_PACKETS["attack"], bytes([1 if enabled else 0, 0]))
-        self.trace_movement("attack_mode", enabled=bool(enabled))
+            self.trace_movement("attack_mode_skip_force_resend", enabled=want_enabled,
+                                consecutive_skips=consecutive_skips,
+                                time_since_last_packet=round(time_since_last_packet, 3))
+
+        self._attack_mode_skip_count = 0
+        self._last_attack_mode_packet_at = time.monotonic()
+        self.attack_mode_enabled = want_enabled
+        self.send_packet(CLIENT_PACKETS["attack"], bytes([1 if want_enabled else 0, 0]))
+        self.trace_movement("attack_mode", enabled=want_enabled)
         return self.drain(0.05)
 
     def accept_group_invite(self, leader_session_id: int) -> int:
@@ -410,7 +569,7 @@ class HeadlessDaocClient:
         data += b"\x00\x00"
         data += b"\x00\x01"
         data += b"\x00\x00"
-        data += b"\x01"  # eDialogCode.CustomDialog
+        data += b"\x06"  # eDialogCode.CustomDialog
         data += bytes([response & 0xFF])
         self.send_packet(CLIENT_PACKETS["dialog_response"], bytes(data))
         return self.drain(0.05)
@@ -466,6 +625,7 @@ class HeadlessDaocClient:
     def build_action_payload(self, target_in_view: bool = True, speed: float | None = None) -> bytearray:
         flag_speed_data = 0xA000 if target_in_view else 0
         movement_speed = self.last_position_speed if speed is None else speed
+        movement_speed = self.normalize_position_speed(float(movement_speed))
         last_sent_x, last_sent_y, last_sent_z = self.last_sent_position
         has_unsent_position = (int(self.x), int(self.y), int(self.z)) != (last_sent_x, last_sent_y, last_sent_z)
         payload_x = self.x
@@ -515,6 +675,29 @@ class HeadlessDaocClient:
     def horizontal_distance_to(self, obj) -> float:
         return math.sqrt((obj.x - self.x) ** 2 + (obj.y - self.y) ** 2)
 
+    def refresh_ground_z_here(self) -> bool:
+        if not self.ground_z_sampler:
+            return False
+        sampled = self.ground_z_sampler(int(self.x), int(self.y), self.zone_id)
+        if sampled is None:
+            return False
+        self.z = int(sampled)
+        return True
+
+    def position_send_due(
+        self,
+        *,
+        min_position_send_interval: float,
+        target_in_view: bool = False,
+    ) -> bool:
+        if min_position_send_interval <= 0.0:
+            return True
+        if self.last_position_speed == 0.0:
+            return True
+        if target_in_view and not self.last_position_target_in_view:
+            return True
+        return time.monotonic() - self.last_position_update_sent_at >= min_position_send_interval
+
     def move_towards(self, obj, step: float = 250.0, stop_distance: float = 250.0, movement_speed: float | None = None) -> bool:
         return self.move_towards_position(obj.x, obj.y, obj.z, step=step, stop_distance=stop_distance, movement_speed=movement_speed)
 
@@ -526,12 +709,24 @@ class HeadlessDaocClient:
         step: float = 250.0,
         stop_distance: float = 250.0,
         movement_speed: float | None = None,
+        packet_speed: float | None = None,
         max_z_step: float = 0.0,
         min_position_send_interval: float = 0.0,
+        movement_step_seconds: float | None = None,
         ground_z: int | None = None,
         snap_ground_z_on_stop: bool = False,
         target_in_view: bool = False,
+        prefer_target_z: bool = False,
+        use_elapsed_movement_time: bool = False,
+        max_elapsed_movement_seconds: float = 1.5,
     ) -> bool:
+        movement_speed, packet_speed = resolve_movement_speeds(movement_speed, packet_speed)
+        step_seconds = resolve_movement_step_seconds(
+            movement_step_seconds,
+            min_position_send_interval,
+            step,
+            movement_speed,
+        )
         start_x = int(self.x)
         start_y = int(self.y)
         start_z = int(self.z)
@@ -542,6 +737,8 @@ class HeadlessDaocClient:
         if horizontal_distance <= stop_distance or horizontal_distance <= 0:
             if ground_z is not None and snap_ground_z_on_stop:
                 self.z = int(ground_z)
+            elif self.ground_z_sampler:
+                self.refresh_ground_z_here()
             should_send_stop = (
                 self.last_position_speed != 0.0
                 or (target_in_view and not self.last_position_target_in_view)
@@ -549,10 +746,20 @@ class HeadlessDaocClient:
                 or time.monotonic() - self.last_position_update_sent_at >= min_position_send_interval
             )
             if horizontal_distance > 0:
-                self.heading = heading_from_delta(dx, dy)
+                target_heading = heading_from_delta(dx, dy)
+                turn_delta = heading_delta(int(self.heading), target_heading)
+                if abs(turn_delta) > HEADING_LARGE_TURN:
+                    self.heading = step_heading_towards(int(self.heading), target_heading, HEADING_TURN_STEP)
+                    if not should_send_stop:
+                        return False
+                    self.refresh_ground_z_here()
+                    self.send_position_update(speed=0.0, target_in_view=target_in_view)
+                    return False
+                self.heading = step_heading_towards(int(self.heading), target_heading, abs(turn_delta))
                 if not should_send_stop:
-                    self.send_heading(self.heading, drain_after=False)
+                    return False
             if should_send_stop:
+                self.refresh_ground_z_here()
                 self.send_position_update(speed=0.0, target_in_view=target_in_view)
             else:
                 self.trace_movement(
@@ -564,18 +771,34 @@ class HeadlessDaocClient:
                 )
             return False
 
+        if not self.position_send_due(
+            min_position_send_interval=min_position_send_interval,
+            target_in_view=target_in_view,
+        ):
+            self.trace_movement(
+                "defer_move_until_position_send_due",
+                x=int(self.x),
+                y=int(self.y),
+                z=int(self.z),
+                target_x=int(x),
+                target_y=int(y),
+            )
+            return False
+
         now = time.monotonic()
-        travel_limit = step
-
-        movement_reference_time = max(self.last_local_move_at, self.last_position_update_sent_at)
-
-        if movement_speed is not None and movement_speed > 0 and movement_reference_time > 0.0:
-            elapsed = max(0.0, now - movement_reference_time)
-            # Follow elapsed wall-clock time instead of forcing a full smooth step every tick.
-            # Forcing `step` here makes a 55-unit smooth step fire every 0.05s tick, which
-            # overshoots the advertised speed and looks like forward walking mixed with teleporting.
-            travel_limit = min(max(1.0, movement_speed * elapsed), max(1.0, movement_speed * 1.0))
-
+        elapsed_step_seconds = step_seconds
+        elapsed_movement_enabled = use_elapsed_movement_time or packet_speed is not None
+        if (
+            elapsed_movement_enabled
+            and movement_speed is not None
+            and movement_speed > 0.0
+            and self.last_position_speed > 0.0
+            and self.last_local_move_at > 0.0
+        ):
+            elapsed = max(0.0, now - float(self.last_local_move_at))
+            max_elapsed = max(step_seconds, float(max_elapsed_movement_seconds or 0.0))
+            elapsed_step_seconds = max(step_seconds, min(elapsed, max_elapsed))
+        travel_limit = resolve_travel_limit(step, movement_speed, elapsed_step_seconds)
         travel = min(travel_limit, max(horizontal_distance - stop_distance, 0))
         ratio = travel / horizontal_distance
         next_x = int(self.x + dx * ratio)
@@ -586,16 +809,37 @@ class HeadlessDaocClient:
         # into "no position change". Treat that as arrival instead of repeatedly advertising run
         # speed at the same coordinates, which looks like in-place rewind/rubber-banding in game.
         if next_x == self.x and next_y == self.y:
-            self.heading = heading_from_delta(dx, dy)
+            target_heading = heading_from_delta(dx, dy)
+            self.heading = step_heading_towards(int(self.heading), target_heading, HEADING_TURN_STEP)
+            self.refresh_ground_z_here()
             self.send_position_update(speed=0.0, target_in_view=target_in_view)
             return False
+
+        target_heading = heading_from_delta(dx, dy)
+        turn_delta = heading_delta(int(self.heading), target_heading)
+        if abs(turn_delta) > HEADING_LARGE_TURN:
+            self.heading = step_heading_towards(int(self.heading), target_heading, HEADING_TURN_STEP)
+            self.refresh_ground_z_here()
+            self.send_position_update(speed=0.0, target_in_view=target_in_view)
+            return True
 
         self.x = next_x
         self.y = next_y
         self.last_local_move_at = now
         z_source = "interpolated"
 
-        if sampled_ground_z is not None:
+        target_z_is_plausible = (
+            prefer_target_z
+            and int(z) != 0
+            and (
+                sampled_ground_z is None
+                or abs(int(z) - int(sampled_ground_z)) <= 160
+            )
+        )
+        if target_z_is_plausible:
+            self.z = int(z)
+            z_source = "target_z"
+        elif sampled_ground_z is not None:
             self.z = int(sampled_ground_z)
             z_source = "ground_z_sampler"
             self.trace_movement(
@@ -610,6 +854,8 @@ class HeadlessDaocClient:
         elif ground_z is not None:
             self.z = int(ground_z)
             z_source = "explicit_ground_z"
+        elif self.ground_z_sampler and self.refresh_ground_z_here():
+            z_source = "ground_z_sampler_current"
         else:
             dz = z - self.z
 
@@ -621,9 +867,19 @@ class HeadlessDaocClient:
 
                 self.z = int(self.z + z_step)
 
-        self.heading = heading_from_delta(dx, dy)
-        display_speed = movement_speed if movement_speed is not None and movement_speed > 0 else travel
-        self.last_local_movement_speed = float(display_speed)
+        self.heading = step_heading_towards(
+            int(self.heading),
+            target_heading,
+            HEADING_TURN_STEP if abs(turn_delta) > 256 else abs(turn_delta),
+        )
+        travel_speed = movement_speed if movement_speed is not None and movement_speed > 0 else travel
+        send_speed = packet_speed if packet_speed is not None and packet_speed > 0 else travel_speed
+        if elapsed_step_seconds > 0:
+            # When the remaining distance is smaller than a full-speed step, do not
+            # advertise full run speed. Observing clients extrapolate from this
+            # field and then rubber-band back on the next stop packet.
+            send_speed = min(float(send_speed), max(0.0, float(travel) / max(float(elapsed_step_seconds), 0.05)))
+        self.last_local_movement_speed = float(travel_speed)
         self.trace_movement(
             "move_step",
             from_x=start_x,
@@ -638,31 +894,16 @@ class HeadlessDaocClient:
             horizontal_distance=f"{float(horizontal_distance):.3f}",
             travel=f"{float(travel):.3f}",
             ratio=f"{float(ratio):.6f}",
+            movement_step_seconds=f"{float(step_seconds):.3f}",
+            elapsed_step_seconds=f"{float(elapsed_step_seconds):.3f}",
             heading=int(self.heading & 0x0FFF),
-            speed=f"{float(display_speed):.3f}",
+            speed=f"{float(travel_speed):.3f}",
+            packet_speed=f"{float(send_speed):.3f}",
             z_source=z_source,
             sampled_ground_z="" if sampled_ground_z is None else int(sampled_ground_z),
             zone=int(self.zone_id),
         )
-        should_send_position = (
-            min_position_send_interval <= 0
-            or self.last_position_speed == 0.0
-            or (target_in_view and not self.last_position_target_in_view)
-            or now - self.last_position_update_sent_at >= min_position_send_interval
-        )
-
-        if not should_send_position:
-            self.trace_movement(
-                "skip_move_send",
-                x=int(self.x),
-                y=int(self.y),
-                z=int(self.z),
-                heading=int(self.heading & 0x0FFF),
-                speed=f"{float(display_speed):.3f}",
-            )
-            return True
-
-        self.send_position_update(speed=display_speed, target_in_view=target_in_view)
+        self.send_position_update(speed=send_speed, target_in_view=target_in_view)
         return True
 
     def wander(
@@ -671,31 +912,57 @@ class HeadlessDaocClient:
         step: float = 250.0,
         movement_speed: float | None = None,
         min_position_send_interval: float = 0.0,
+        movement_step_seconds: float | None = None,
+        packet_speed: float | None = None,
+        use_elapsed_movement_time: bool = False,
+        max_elapsed_movement_seconds: float = 1.5,
     ) -> None:
+        movement_speed, packet_speed = resolve_movement_speeds(movement_speed, packet_speed)
+        if not self.position_send_due(min_position_send_interval=min_position_send_interval):
+            self.trace_movement(
+                "defer_wander_until_position_send_due",
+                x=int(self.x),
+                y=int(self.y),
+                z=int(self.z),
+                heading=int(heading & 0x0FFF),
+            )
+            return
+
+        step_seconds = resolve_movement_step_seconds(
+            movement_step_seconds,
+            min_position_send_interval,
+            step,
+            movement_speed,
+        )
         self.heading = heading & 0x0FFF
         radians = self.heading / 4096 * (math.pi * 2)
         now = time.monotonic()
-        travel = step
-
-        movement_reference_time = max(self.last_local_move_at, self.last_position_update_sent_at)
-
-        if movement_speed is not None and movement_speed > 0 and movement_reference_time > 0.0:
-            elapsed = max(0.0, now - movement_reference_time)
-            travel = min(step, max(1.0, movement_speed * elapsed), max(1.0, movement_speed * 1.0))
+        elapsed_step_seconds = step_seconds
+        elapsed_movement_enabled = use_elapsed_movement_time or packet_speed is not None
+        if (
+            elapsed_movement_enabled
+            and movement_speed is not None
+            and movement_speed > 0.0
+            and self.last_position_speed > 0.0
+            and self.last_local_move_at > 0.0
+        ):
+            elapsed = max(0.0, now - float(self.last_local_move_at))
+            max_elapsed = max(step_seconds, float(max_elapsed_movement_seconds or 0.0))
+            elapsed_step_seconds = max(step_seconds, min(elapsed, max_elapsed))
+        travel = resolve_travel_limit(step, movement_speed, elapsed_step_seconds)
 
         self.x = int(self.x - math.sin(radians) * travel)
         self.y = int(self.y + math.cos(radians) * travel)
         self.last_local_move_at = now
         self.last_local_movement_speed = float(movement_speed if movement_speed is not None and movement_speed > 0 else travel)
+        self.refresh_ground_z_here()
 
-        if (
-            min_position_send_interval > 0
-            and self.last_position_speed != 0.0
-            and time.monotonic() - self.last_position_update_sent_at < min_position_send_interval
-        ):
-            return
-
-        self.send_position_update(speed=movement_speed if movement_speed is not None and movement_speed > 0 else travel, target_in_view=False)
+        send_speed = packet_speed if packet_speed is not None and packet_speed > 0 else (
+            movement_speed if movement_speed is not None and movement_speed > 0 else travel
+        )
+        if elapsed_step_seconds > 0:
+            send_speed = min(float(send_speed), max(0.0, float(travel) / max(float(elapsed_step_seconds), 0.05)))
+        self.send_position_update(speed=send_speed, target_in_view=False)
 
     def observe_packet(self, packet: ServerPacket) -> None:
         if packet.code == 0x20:
@@ -718,6 +985,12 @@ class HeadlessDaocClient:
             self.observe_player_death(packet.data)
         elif packet.code == 0xAF:
             self.observe_message(packet.data)
+        elif packet.code == 0xB6:
+            self.observe_max_speed_update(packet.data)
+
+    def observe_max_speed_update(self, data: bytes) -> None:
+        if len(data) >= 2:
+            self.max_speed_percent = int.from_bytes(data[0:2], "little")
 
     def observe_position_and_object_id(self, data: bytes) -> None:
         if len(data) < 22:
@@ -1019,6 +1292,10 @@ def decode_daoc_text(data: bytes) -> str:
         return data.decode("cp949", errors="replace")
 
 
+def encode_client_command(command: str) -> bytes:
+    return command.encode("cp949", errors="replace")
+
+
 def read_pascal_string(data: bytes, offset: int) -> tuple[str, int]:
     if offset >= len(data):
         return "", offset
@@ -1027,6 +1304,21 @@ def read_pascal_string(data: bytes, offset: int) -> tuple[str, int]:
     start = offset + 1
     end = min(start + length, len(data))
     return data[start:end].decode("utf-8", errors="replace"), end
+
+
+def heading_delta(from_heading: int, to_heading: int) -> int:
+    delta = (int(to_heading) - int(from_heading)) & (HEADING_FULL_CIRCLE - 1)
+    if delta > HEADING_FULL_CIRCLE // 2:
+        delta -= HEADING_FULL_CIRCLE
+    return delta
+
+
+def step_heading_towards(from_heading: int, to_heading: int, max_step: int) -> int:
+    delta = heading_delta(from_heading, to_heading)
+    step = max(1, int(max_step))
+    if abs(delta) <= step:
+        return int(to_heading) & 0x0FFF
+    return (int(from_heading) + (step if delta > 0 else -step)) & 0x0FFF
 
 
 def heading_from_delta(dx: float, dy: float) -> int:

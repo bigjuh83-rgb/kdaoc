@@ -322,18 +322,18 @@ namespace DOL.GS.Spells
 					if (Caster is GamePlayer playerCaster)
 					{
 						// Message: You begin casting a {0} spell!
-						MessageToCaster(LanguageMgr.GetTranslation(playerCaster.Client, "SpellHandler.CastSpell.Msg.YouBeginCasting", Spell.Name), eChatType.CT_Spell);
+						MessageToCaster(LanguageMgr.GetTranslation(playerCaster.Client, "SpellHandler.CastSpell.Msg.YouBeginCasting", LanguageMgr.GetTranslatedSkillName(playerCaster.Client.Account.Language, Spell.Name)), eChatType.CT_Spell);
 					}
 					else if (Caster is NecromancerPet petCaster && petCaster.Owner is GamePlayer casterOwner)
 					{
 						// Message: {0} begins casting a {1} spell!
-						casterOwner.Out.SendMessage(LanguageMgr.GetTranslation(casterOwner.Client.Account.Language, "SpellHandler.CastSpell.Msg.PetBeginsCasting", Caster.GetName(0, true), Spell.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+						casterOwner.Out.SendMessage(LanguageMgr.GetTranslation(casterOwner.Client.Account.Language, "SpellHandler.CastSpell.Msg.PetBeginsCasting", Caster.GetName(0, true), LanguageMgr.GetTranslatedSkillName(casterOwner.Client.Account.Language, Spell.Name)), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 					}
 				}
 				else if (Caster is GamePlayer songCaster)
 				{
 					// Message: You begin playing {0}!
-					MessageToCaster(LanguageMgr.GetTranslation(songCaster.Client, "SpellHandler.CastSong.Msg.YouBeginPlaying", Spell.Name), eChatType.CT_Spell);
+					MessageToCaster(LanguageMgr.GetTranslation(songCaster.Client, "SpellHandler.CastSong.Msg.YouBeginPlaying", LanguageMgr.GetTranslatedSkillName(songCaster.Client.Account.Language, Spell.Name)), eChatType.CT_Spell);
 				}
 			}
 		}
@@ -1335,13 +1335,13 @@ namespace DOL.GS.Spells
 					if (playerCaster != null)
 					{
 						// Message: You cast a {0} spell!
-						MessageToCaster(LanguageMgr.GetTranslation(playerCaster.Client, "SpellHandler.CastSpell.Msg.YouCastSpell", Spell.Name), eChatType.CT_Spell);
+						MessageToCaster(LanguageMgr.GetTranslation(playerCaster.Client, "SpellHandler.CastSpell.Msg.YouCastSpell", LanguageMgr.GetTranslatedSkillName(playerCaster.Client.Account.Language, Spell.Name)), eChatType.CT_Spell);
 						toExclude = playerCaster;
 					}
 					else if (Caster is NecromancerPet pet && pet.Owner is GamePlayer casterOwner)
 					{
 						// Message: {0} cast a {1} spell!
-						casterOwner.Out.SendMessage(LanguageMgr.GetTranslation(casterOwner.Client.Account.Language, "SpellHandler.CastSpell.Msg.PetCastSpell", Caster.GetName(0, true), Spell.Name), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+						casterOwner.Out.SendMessage(LanguageMgr.GetTranslation(casterOwner.Client.Account.Language, "SpellHandler.CastSpell.Msg.PetCastSpell", Caster.GetName(0, true), LanguageMgr.GetTranslatedSkillName(casterOwner.Client.Account.Language, Spell.Name)), eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 						toExclude = casterOwner;
 					}
 

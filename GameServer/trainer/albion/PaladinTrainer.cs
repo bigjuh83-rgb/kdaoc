@@ -97,16 +97,19 @@ namespace DOL.GS.Trainer
 							break;
 						case "slashing":
 						case "베기":
+						case "슬래쉬":
 							PromotePlayer(player, (int)eCharacterClass.Paladin, LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.PaladinWelcome.Sword"), null);
 							player.ReceiveItem(this,WEAPON_ID1);
 							break;
 						case "crushing":
 						case "타격":
+						case "크러쉬":
 							PromotePlayer(player, (int)eCharacterClass.Paladin, LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.PaladinWelcome.Mace"), null);
 							player.ReceiveItem(this,WEAPON_ID2);
 							break;
 						case "thrusting":
 						case "찌르기":
+						case "쓰러스트":
 							PromotePlayer(player, (int)eCharacterClass.Paladin, LanguageMgr.GetTranslation(player.Client.Account.Language, "AlbionTrainer.PaladinWelcome.Rapier"), null);
 							player.ReceiveItem(this,WEAPON_ID3);
 							break;

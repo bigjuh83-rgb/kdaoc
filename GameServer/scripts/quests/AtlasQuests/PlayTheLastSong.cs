@@ -303,6 +303,7 @@ namespace DOL.GS.Quests.Midgard
 					switch (wArgs.Text)
 					{
 						case "Freeya":
+						case "프레야":
 							VikingDextz.SayTo(player, L(player, "Quest.PlayTheLastSong.Viking.Freeya"));
 							if (quest.Step == 1)
 							{
@@ -411,6 +412,7 @@ namespace DOL.GS.Quests.Midgard
 							}
 							break;
 						case "song":
+						case "노래":
 							//when ceremony begins, it isnt possible to interact with Freeya (prevent Spell/Quest Bugs)
 							if (quest.Step == 3 && !IsSinging)
 							{

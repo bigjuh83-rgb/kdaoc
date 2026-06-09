@@ -29,7 +29,7 @@ namespace DOL.GS.Commands
 	  new [] {"&anon"},
 	  ePrivLevel.Player,
 	  // Displays next to the command when '/cmd' is entered
-	  "Enables/disables anonymous mode, which hides you from player searches (e.g., '/who').",
+	  "익명 모드를 켜거나 끕니다. 익명 모드에서는 '/who' 같은 플레이어 검색에 표시되지 않습니다.",
 	  // Syntax: '/anonymous' or '/anon' - Enables/disables anonymous mode, which hides you from player searches (e.g., '/who').
 	  "PLCommands.Anonymous.Syntax.Anon")]
 	public class AnonymousCommandHandler : AbstractCommandHandler, ICommandHandler

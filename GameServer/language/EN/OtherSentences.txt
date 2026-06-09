@@ -1,4 +1,4 @@
-﻿# Languages
+# Languages
 System.LanguagesName.EN:				English
 System.LanguagesName.IT:				Italian
 System.LanguagesName.FR:				French
@@ -590,6 +590,8 @@ PlayerStatistics.TopHealers:                  Top 20 Healers\n{0}
 PlayerStatistics.TopResurrectors:             Top 20 Resurrectors\n{0}
 PlayerStatistics.NoPlayerFound:               No player with name {0} found!
 PlayerStatistics.PrivateStats:                {0} doesn't want you to view their stats.
+PlayerStatistics.StatsAnon.Hidden:            Your stats are no longer visible to other players.
+PlayerStatistics.StatsAnon.Visible:           Your stats are now visible to other players.
 SummonedDjinn.Say.Greeting:                  Greetings, great one.
 SummonedDjinn.Say.TimeDone:                  My time here is done.
 
@@ -1694,6 +1696,7 @@ Quest.Common.TeamBuildingMystic:          Mystic
 Quest.Common.MonthlyFrontierPrompt:       Hello {0}, did you succeed [capturing keeps and killing enemies]?
 Quest.Common.MonthlyFrontierIntro:        Oh hey, {0}. The frontier needs order and security. Slay enemies and capture keeps for {1}, then return for your reward.
 Quest.Common.MonthlyFrontierThanks:       Thank you for your help! {0} will thank you for your contribution.
+Quest.Common.MonthlyFrontierStep1:        Hello {0}, you will find enemies in {1}, {2} or in our lands. Come back when you have killed enough enemies and taken keeps for our safety.
 Quest.Common.DecidedToHelp:               Thank you for deciding to help.
 Quest.Common.MonthlyFrontierDescription:  Defend your realm!\nSlay enemies in the frontiers and capture Keeps for {0}.\nPlayers Killed: ({1} | {2})\nCaptured Keeps: ({3} | {4})
 Quest.Common.MonthlyEpicIntro:            Hello {0}, I am {1}. For several months the situation in {2} has changed. Dangerous epic creatures have grown bolder, and we need your help restoring order.
@@ -1979,6 +1982,11 @@ Quest.Hibernia.WildWilderness.ResalgFormula: Aye. It should calm the maddened an
 Quest.Hibernia.WildWilderness.Decline:    Oh, well... if you change your mind, please come back!
 Quest.Hibernia.WildWilderness.MoneyReward: You receive {0} as a reward.
 PLCommands.Buff.Help:                     This command expects a buff list.\nUse these shortcuts separated by a single comma to build one.
+PLCommands.Buff.AreaRequired:             This command cannot be used here. You must be within 2500 units of a friendly keep, or within a main city, border keep, or a housing area.
+PLCommands.Buff.NeedTarget:               You need a target!
+PLCommands.Buff.TargetNotSeen:            You don't see {0} around here!
+PLCommands.Buff.InvalidShortcut:          "{0}" is not a valid shortcut.
+PLCommands.Buff.NoCastableBuff:           "{0}" doesn't match any buff you can cast.
 Tasks.AbstractTask.NameUndefined:         TASK NAME UNDEFINED!
 Tasks.AbstractTask.DescriptionUndefined:  TASK DESCRIPTION UNDEFINED!
 Quest.Atlas.PowerOfNature.Name:           [Memorial] Power of Nature

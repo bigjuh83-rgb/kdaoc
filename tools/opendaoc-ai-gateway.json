@@ -1,0 +1,77 @@
+{
+  "provider": "fake",
+  "free_quota_guardrails": {
+    "paid_provider_enabled": false,
+    "local_config_hint": "Keep paid provider config in a local ignored file and point OPENDAOC_AI_GATEWAY_CONFIG to it only after confirming free-quota limits."
+  },
+  "daily_token_cap": 500000,
+  "warning_token_cap": 400000,
+  "feature_token_caps": {
+    "companion_dialogue": 350000,
+    "companion_free_chat": 350000,
+    "companion_guide": 900000,
+    "guide_embedding": 200000,
+    "mob_dialogue": 100000,
+    "event_news": 30000,
+    "manual_test": 20000
+  },
+  "model_aliases": {
+    "small-dialogue": {
+      "provider_model": "openai/gpt-4.1-nano",
+      "features": ["companion_dialogue", "companion_free_chat"],
+      "max_output_tokens": 80,
+      "temperature": 0.7
+    },
+    "gemini-small-dialogue": {
+      "provider_model": "gemini/gemini-2.5-flash-lite",
+      "features": ["companion_dialogue", "companion_free_chat"],
+      "max_output_tokens": 160,
+      "temperature": 0.4
+    },
+    "gemini-guide-answer": {
+      "provider_model": "gemini/gemini-2.5-flash-lite",
+      "features": ["companion_guide"],
+      "max_output_tokens": 512,
+      "temperature": 0.2
+    },
+    "openai-small-guide": {
+      "provider_model": "openai/gpt-4.1-nano",
+      "features": ["companion_guide"],
+      "max_output_tokens": 512,
+      "temperature": 0.2
+    },
+    "local-small-dialogue": {
+      "provider_model": "openai_compatible/local-gemma-4-e4b-it",
+      "features": ["companion_dialogue", "companion_free_chat"],
+      "max_output_tokens": 120,
+      "temperature": 0.2
+    },
+    "local-small-guide": {
+      "provider_model": "openai_compatible/local-gemma-4-e4b-it",
+      "features": ["companion_guide"],
+      "max_output_tokens": 256,
+      "temperature": 0.2
+    }
+  },
+  "answer_base_url_env": "OPENDAOC_AI_GATEWAY_ANSWER_BASE_URL",
+  "answer_timeout_seconds": 60,
+  "fallback_aliases": {
+    "small-dialogue": ["local-small-dialogue", "gemini-small-dialogue"],
+    "openai-small-guide": ["local-small-guide", "gemini-guide-answer"]
+  },
+  "guide_embedding_provider": "openai_compatible",
+  "guide_embedding_base_url_env": "OPENDAOC_RAG_EMBEDDING_BASE_URL",
+  "guide_embedding_model": "text-embedding-nomic-embed-text-v1.5",
+  "guide_embedding_dimensions": 768,
+  "guide_embedding_batch_size": 1000,
+  "guide_embedding_timeout_seconds": 120,
+  "guide_top_k": 5,
+  "guide_context_token_budget": 12000,
+  "guide_answer_fallback_alias": "gemini-guide-answer",
+  "rag_database_url_env": "OPENDAOC_RAG_DATABASE_URL",
+  "usage_log": "test-output/ai-gateway/usage.jsonl",
+  "ledger_file": "test-output/ai-gateway/ledger.json",
+  "cache_file": "test-output/ai-gateway/dialogue-cache.jsonl",
+  "cache_enabled": true,
+  "cache_limit": 5000
+}

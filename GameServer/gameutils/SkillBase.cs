@@ -13,6 +13,14 @@ using DOL.Logging;
 
 namespace DOL.GS
 {
+	public static class IntrinsicAbilityFactory
+	{
+		public static Ability Create(string keyname, int level = 0)
+		{
+			return new Ability(keyname, keyname, string.Empty, 0, 0, level, 0);
+		}
+	}
+
 	public class SkillBase
 	{
 		/// <summary>
@@ -2264,8 +2272,20 @@ namespace DOL.GS
 		/// <returns></returns>
 		public static Ability GetAbility(string keyname, int level)
 		{
+			if (TryGetAbility(keyname, level, out Ability ability))
+				return ability;
+
+			if (log.IsWarnEnabled)
+				log.Warn($"Ability '{keyname}' unknown");
+
+			return new Ability(keyname, $"?{keyname}", "", 0, 0, level, 0);
+		}
+
+		public static bool TryGetAbility(string keyname, int level, out Ability ability)
+		{
 			m_syncLockUpdates.EnterReadLock();
 			DbAbility dbab = null;
+			ability = null;
 
 			try
 			{
@@ -2279,15 +2299,12 @@ namespace DOL.GS
 
 			if (dbab != null)
 			{
-				Ability dba = GetNewAbilityInstance(dbab);
-				dba.Level = level;
-				return dba;
+				ability = GetNewAbilityInstance(dbab);
+				ability.Level = level;
+				return true;
 			}
 
-			if (log.IsWarnEnabled)
-				log.Warn($"Ability '{keyname}' unknown");
-
-			return new Ability(keyname, $"?{keyname}", "", 0, 0, level, 0);
+			return false;
 		}
 
 		/// <summary>

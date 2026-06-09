@@ -30,7 +30,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&played",
 		ePrivLevel.Player,
-		"Returns the age of the character",
+		"캐릭터의 플레이 시간을 표시합니다.",
 		"/played")]
 	public class PlayedCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

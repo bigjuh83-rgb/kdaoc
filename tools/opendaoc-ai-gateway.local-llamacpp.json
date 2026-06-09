@@ -1,0 +1,54 @@
+{
+  "provider": "openai_compatible",
+  "answer_base_url": "http://192.168.0.28:8001",
+  "answer_timeout_seconds": 30,
+  "daily_token_cap": 500000,
+  "warning_token_cap": 400000,
+  "feature_token_caps": {
+    "companion_dialogue": 350000,
+    "companion_free_chat": 350000,
+    "companion_guide": 500000,
+    "guide_embedding": 200000
+  },
+  "model_aliases": {
+    "small-dialogue": {
+      "provider_model": "openai_compatible/local-gemma-4-e4b-it",
+      "features": ["companion_dialogue", "companion_free_chat"],
+      "max_output_tokens": 120,
+      "temperature": 0.2
+    },
+    "openai-small-guide": {
+      "provider_model": "openai_compatible/local-gemma-4-e4b-it",
+      "features": ["companion_guide"],
+      "max_output_tokens": 256,
+      "temperature": 0.2
+    },
+    "local-small-dialogue": {
+      "provider_model": "openai_compatible/local-gemma-4-e4b-it",
+      "features": ["companion_dialogue", "companion_free_chat"],
+      "max_output_tokens": 120,
+      "temperature": 0.2
+    },
+    "local-small-guide": {
+      "provider_model": "openai_compatible/local-gemma-4-e4b-it",
+      "features": ["companion_guide"],
+      "max_output_tokens": 256,
+      "temperature": 0.2
+    }
+  },
+  "guide_answer_fallback_alias": "local-small-guide",
+  "guide_embedding_provider": "openai_compatible",
+  "guide_embedding_base_url_env": "OPENDAOC_RAG_EMBEDDING_BASE_URL",
+  "guide_embedding_model": "text-embedding-nomic-embed-text-v1.5",
+  "guide_embedding_dimensions": 768,
+  "guide_embedding_batch_size": 1000,
+  "guide_embedding_timeout_seconds": 120,
+  "guide_top_k": 5,
+  "guide_context_token_budget": 1200,
+  "rag_database_url_env": "OPENDAOC_RAG_DATABASE_URL",
+  "usage_log": "test-output/ai-gateway/local-llamacpp-usage.jsonl",
+  "ledger_file": "test-output/ai-gateway/local-llamacpp-ledger.json",
+  "cache_file": "test-output/ai-gateway/local-llamacpp-dialogue-cache.jsonl",
+  "cache_enabled": true,
+  "cache_limit": 5000
+}

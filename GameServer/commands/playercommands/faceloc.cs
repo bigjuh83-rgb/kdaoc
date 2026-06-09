@@ -31,7 +31,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&faceloc",
 		ePrivLevel.Player,
-		"Turns and faces your character into the direction of the x, y coordinates provided (using Mythic zone coordinates).",
+		"입력한 x, y 존 좌표 방향으로 캐릭터를 돌립니다.",
 		"/faceloc [x] [y]")]
 	public class LocFaceCommandHandler : AbstractCommandHandler,ICommandHandler
 	{

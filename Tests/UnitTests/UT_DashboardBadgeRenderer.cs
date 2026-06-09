@@ -27,5 +27,17 @@ namespace DOL.GS.Tests
                 Assert.That(png[..8], Is.EqualTo(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }));
             });
         }
+
+        [Test]
+        public void Render_Offline_ReturnsPngImage()
+        {
+            byte[] png = DashboardBadgeRenderer.Render(null, false);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(png, Has.Length.GreaterThan(100));
+                Assert.That(png[..8], Is.EqualTo(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }));
+            });
+        }
     }
 }

@@ -1127,7 +1127,7 @@ Reward = new DynamicQuestRewardDefinition
 {
     XpMultiplier = 1.0,
     MoneyMultiplier = 1.0,
-    StepBonusMultiplier = 1.0,
+    StepBonusMultiplier = 0.25,
     PartyBonusMultiplier = 1.0
 },
 Tags = new[] { $"region:{definition.RegionId}", $"target:{definition.TargetName}" }

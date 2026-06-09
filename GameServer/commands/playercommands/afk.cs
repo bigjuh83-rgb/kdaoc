@@ -23,10 +23,10 @@ namespace DOL.GS.Commands
 		"&afk",
 		ePrivLevel.Player,
 		// Displays next to the command when '/cmd' is entered
-		"Enables/disables a flag that indicates you are \"away from keyboard,\" and allows you to attach a message that will auto-send to any player that uses '/send' to you (e.g., '/afk Bio break').",
-		// Syntax: '/afk' - Enables/disables a flag that indicates you are "away from keyboard," and allows you to attach a message that will auto-send to any player that uses '/send' to you (e.g., '/afk Bio break').
+		"자리 비움(AFK) 표시를 켜거나 끄고, 다른 플레이어가 '/send'를 보낼 때 자동 답장할 메시지를 설정합니다. 예: '/afk 잠시 자리 비움'",
+		// Syntax: '/afk' - 자리 비움(AFK) 표시를 켜거나 끕니다.
 		"PLCommands.AFK.Syntax.AFK",
-		// Syntax: '/afk <message>' - Sets yourself as "away from keyboard," and attaches a message that will auto-send to any player that uses '/send' to you.
+		// Syntax: '/afk <message>' - 자리 비움(AFK) 표시와 자동 답장 메시지를 설정합니다.
 		"PLCommands.AFK.Syntax.MessageAFK")]
 	public class AFKCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

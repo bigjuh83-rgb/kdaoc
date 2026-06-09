@@ -33,7 +33,12 @@ namespace DOL.Database
 				m_id_nb = template.Id_nb + UNIQUE_SEPARATOR + UniqueID.IdGenerator.GenerateID();
 			}
 
+			TranslationId = !string.IsNullOrEmpty(template.TranslationId)
+				? template.TranslationId
+				: template is DbItemUnique ? null : template.Id_nb;
 			Name = template.Name;
+			ExamineArticle = template.ExamineArticle;
+			MessageArticle = template.MessageArticle;
 			Bonus = template.Bonus;
 			Bonus1 = template.Bonus1;
 			Bonus2 = template.Bonus2;

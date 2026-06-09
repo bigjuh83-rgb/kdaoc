@@ -33,8 +33,8 @@ using DOL.Language;
 
 namespace DOL.GS.Commands
 {
-	//[CmdAttribute("&task", ePrivLevel.Player, "Ask for a Task from Guards or Merchants", "/task")]
-	[CmdAttribute("&task", ePrivLevel.Player, "Show the actual task", "/task")]
+	//[CmdAttribute("&task", ePrivLevel.Player, "경비병이나 상인에게 임무를 요청합니다.", "/task")]
+	[CmdAttribute("&task", ePrivLevel.Player, "현재 임무를 표시합니다.", "/task")]
 	public class TaskCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

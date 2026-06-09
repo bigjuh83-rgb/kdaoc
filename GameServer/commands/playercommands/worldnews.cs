@@ -6,7 +6,7 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&worldnews",
         ePrivLevel.Player,
-        "Show recent public world news.",
+        "최근 공개 월드 뉴스를 표시합니다.",
         "/worldnews")]
     public class WorldNewsCommandHandler : AbstractCommandHandler, ICommandHandler
     {

@@ -5,7 +5,7 @@ namespace DOL.GS.Commands
     [Cmd(
         "&release", ["&rel"],
         ePrivLevel.Player,
-        "When you are dead you can '/release'. This will bring you back to your bindpoint!",
+        "사망 중일 때 '/release'를 사용하면 바인드 지점으로 돌아갑니다.",
         "/release")]
     public class ReleaseCommandHandler : AbstractCommandHandler, ICommandHandler
     {

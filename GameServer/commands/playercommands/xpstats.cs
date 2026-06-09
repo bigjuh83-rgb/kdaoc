@@ -5,7 +5,7 @@ namespace DOL.GS.Commands {
 	[CmdAttribute(
 		"&xpstats",
 		ePrivLevel.Player,
-		"Toggle showing XP statistics",
+		"경험치 통계 표시를 켜거나 끕니다.",
 		"/xpstats <off|on|verbose>")]
 	public class XPStatsCommandHandler : AbstractCommandHandler, ICommandHandler {
 		public void OnCommand(GameClient client, string[] args)

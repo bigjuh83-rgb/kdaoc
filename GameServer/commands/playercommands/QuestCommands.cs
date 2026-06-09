@@ -26,7 +26,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&search",
 		ePrivLevel.Player,
-		"Search the current area.",
+		"현재 지역을 수색합니다.",
 		"/search")]
 	public class QuestSearchCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

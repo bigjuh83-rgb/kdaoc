@@ -2025,6 +2025,12 @@ namespace DOL.GS.PacketHandler.Client.v168
             if (sk != null)
             {
                 dw.AddKeyValuePair("Name", sk.Name);
+                if (sk is Ability ability)
+                {
+                    string description = string.Join('\n', ability.DelveInfo.Where(line => !string.IsNullOrWhiteSpace(line)));
+                    if (!string.IsNullOrWhiteSpace(description))
+                        dw.AddKeyValuePair("delve_string", description);
+                }
             }
             else
             {

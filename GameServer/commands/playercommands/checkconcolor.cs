@@ -3,7 +3,7 @@ using DOL.Language;
 
 namespace DOL.GS.Commands
 {
-    [CmdAttribute("&checkconcolor", ePrivLevel.Player, "Check the target's con color server-side.", "/checkconcolor")]
+    [CmdAttribute("&checkconcolor", ePrivLevel.Player, "대상의 난이도 색상을 서버 기준으로 확인합니다.", "/checkconcolor")]
     public class CheckConColorCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)

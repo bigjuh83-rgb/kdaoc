@@ -3,6 +3,7 @@ using System;
 using DOL.Database;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.Language;
 
 namespace DOL.GS.Keeps
 {
@@ -17,7 +18,8 @@ namespace DOL.GS.Keeps
 		/// <param name="door">The door object</param>
 		public static void SendDoorDestroyedMessage(GameKeepDoor door)
 		{
-			door.Component.Keep.Guild?.SendTranslatedMessageToGuildMembers("Keep.GuildManager.DoorDestroyed", eChatType.CT_Guild, eChatLoc.CL_ChatWindow, door.Name, door.Component.Keep.Name);
+			door.Component.Keep.Guild?.SendTranslatedMessageToGuildMembers("Keep.GuildManager.DoorDestroyed", eChatType.CT_Guild, eChatLoc.CL_ChatWindow,
+				door.Name, LanguageMgr.GetTranslatedKeepName(ServerProperties.Properties.SERV_LANGUAGE, door.Component.Keep.Name));
 		}
 
 		/// <summary>
@@ -36,10 +38,11 @@ namespace DOL.GS.Keeps
 
 		public static void SendLevelChangeMessage(AbstractGameKeep keep)
 		{
+			string keepName = LanguageMgr.GetTranslatedKeepName(ServerProperties.Properties.SERV_LANGUAGE, keep.Name);
 			if (keep.Level != ServerProperties.Properties.MAX_KEEP_LEVEL)
-				keep.Guild?.SendTranslatedMessageToGuildMembers("Keep.GuildManager.KeepLevelNowProgress", eChatType.CT_Guild, eChatLoc.CL_ChatWindow, keep.Name, keep.Level, ServerProperties.Properties.MAX_KEEP_LEVEL);
+				keep.Guild?.SendTranslatedMessageToGuildMembers("Keep.GuildManager.KeepLevelNowProgress", eChatType.CT_Guild, eChatLoc.CL_ChatWindow, keepName, keep.Level, ServerProperties.Properties.MAX_KEEP_LEVEL);
 			else
-				keep.Guild?.SendTranslatedMessageToGuildMembers("Keep.GuildManager.KeepLevelNow", eChatType.CT_Guild, eChatLoc.CL_ChatWindow, keep.Name, keep.Level);
+				keep.Guild?.SendTranslatedMessageToGuildMembers("Keep.GuildManager.KeepLevelNow", eChatType.CT_Guild, eChatLoc.CL_ChatWindow, keepName, keep.Level);
 		}
 
 		public static void SendChangeLevelTimeMessage(AbstractGameKeep keep)
@@ -72,7 +75,8 @@ namespace DOL.GS.Keeps
 					message += time.Minutes + " minute(s)";
 				else message += time.Seconds + " second(s)";
 				string translationId = changeleveltext == "upgrade" ? "Keep.GuildManager.LevelChangeStartedUpgrade" : "Keep.GuildManager.LevelChangeStartedDowngrade";
-				keep.Guild?.SendTranslatedMessageToGuildMembers(translationId, eChatType.CT_Guild, eChatLoc.CL_ChatWindow, keep.Name, maxlevel, message);
+				keep.Guild?.SendTranslatedMessageToGuildMembers(translationId, eChatType.CT_Guild, eChatLoc.CL_ChatWindow,
+					LanguageMgr.GetTranslatedKeepName(ServerProperties.Properties.SERV_LANGUAGE, keep.Name), maxlevel, message);
 			}
 		}
 }

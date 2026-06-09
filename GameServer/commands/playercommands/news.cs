@@ -25,7 +25,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&news",
 		ePrivLevel.Player,
-		"Show news on social interface",
+		"소셜 인터페이스에 뉴스를 표시합니다.",
 		"/news")]
 	public class NewsCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

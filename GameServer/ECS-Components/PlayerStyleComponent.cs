@@ -121,7 +121,8 @@ namespace DOL.GS
                 if (!notify)
                     return;
 
-                _playerOwner.Out.SendMessage(LanguageMgr.GetTranslation(_playerOwner.Client.Account.Language, "GamePlayer.RefreshSpec.YouLearn", style.Name), eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                string styleName = LanguageMgr.GetTranslatedSkillName(_playerOwner.Client.Account.Language, style.Name);
+                _playerOwner.Out.SendMessage(LanguageMgr.GetTranslation(_playerOwner.Client.Account.Language, "GamePlayer.RefreshSpec.YouLearn", styleName), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 string message = null;
 
                 if (style.OpeningRequirementType is Style.eOpening.Offensive)
@@ -136,7 +137,7 @@ namespace DOL.GS
                             if (reqStyle == null)
                                 message = LanguageMgr.GetTranslation(_playerOwner.Client.Account.Language, "GamePlayer.RefreshSpec.AfterStyle", "(style " + style.OpeningRequirementValue + " not found)");
                             else
-                                message = LanguageMgr.GetTranslation(_playerOwner.Client.Account.Language, "GamePlayer.RefreshSpec.AfterStyle", reqStyle.Name);
+                                message = LanguageMgr.GetTranslation(_playerOwner.Client.Account.Language, "GamePlayer.RefreshSpec.AfterStyle", LanguageMgr.GetTranslatedSkillName(_playerOwner.Client.Account.Language, reqStyle.Name));
 
                             break;
                         }

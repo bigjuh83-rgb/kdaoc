@@ -3,9 +3,9 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&classrog",
         ePrivLevel.Player,
-        "change the chance% of getting ROGs outside of your current class at level 50," +
-        " or the likelihood of getting items relevant to your spec while under 50",
-        "/classrog <%chance>")]
+        "50레벨에는 현재 클래스와 맞지 않는 ROG 획득 확률을," +
+        " 50레벨 미만에는 전문화와 맞는 아이템 획득 확률을 조정합니다.",
+        "/classrog <%확률>")]
     public class ClassRogsCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)

@@ -252,8 +252,10 @@ namespace DOL.Language
             [
                 .. GameServer.Database.SelectAllObjects<DbLanguageArea>(),
                 .. GameServer.Database.SelectAllObjects<DbLanguageGameObject>(),
+                .. GameServer.Database.SelectAllObjects<DbLanguageGameItem>(),
                 .. GameServer.Database.SelectAllObjects<DbLanguageGameNpc>(),
                 .. GameServer.Database.SelectAllObjects<DbLanguageZone>(),
+                .. GameServer.Database.SelectAllObjects<DbLanguageDataQuest>(),
             ];
 
             foreach (LanguageDataObject lngObj in lngObjs)
@@ -434,8 +436,8 @@ namespace DOL.Language
             if (obj == null)
                 return false;
 
-            if (string.IsNullOrEmpty(language) || language == DefaultLanguage)
-                return false;
+            if (string.IsNullOrEmpty(language))
+                language = DefaultLanguage;
 
             translation = GetLanguageDataObject(language, obj.TranslationId, obj.TranslationIdentifier);
             return translation != null;
@@ -517,6 +519,9 @@ namespace DOL.Language
             if (args.IsEmpty || langObj.FormattableText == null)
             {
                 translation = langObj.Text;
+                if (IsKoreanLanguage(language))
+                    translation = ApplyKoreanParticles(translation);
+
                 return true;
             }
 
@@ -540,6 +545,9 @@ namespace DOL.Language
                 translation = langObj.Text;
             }
 
+            if (IsKoreanLanguage(language))
+                translation = ApplyKoreanParticles(translation);
+
             return true;
         }
 
@@ -559,6 +567,312 @@ namespace DOL.Language
             }
 
             return $"{lang} translation error";
+        }
+
+        public static DbLanguageGameItem GetItemTranslation(string language, DbInventoryItem item)
+        {
+            if (item == null)
+                return null;
+
+            return GetItemTranslation(language, item.Template);
+        }
+
+        public static DbLanguageGameItem GetItemTranslation(string language, DbItemTemplate template)
+        {
+            if (template == null || string.IsNullOrEmpty(language))
+                return null;
+
+            DbLanguageGameItem translation = TryGetItemTranslation(language, template.TranslationId);
+            if (translation != null)
+                return translation;
+
+            translation = TryGetItemTranslation(language, template.Id_nb);
+            if (translation != null)
+                return translation;
+
+            string baseTemplateId = GetUniqueItemBaseTemplateId(template.Id_nb);
+            return TryGetItemTranslation(language, baseTemplateId);
+        }
+
+        private static DbLanguageGameItem TryGetItemTranslation(string language, string translationId)
+        {
+            if (string.IsNullOrEmpty(translationId))
+                return null;
+
+            return GetLanguageDataObject(language, translationId, LanguageDataObject.eTranslationIdentifier.eItem) as DbLanguageGameItem;
+        }
+
+        private static string GetUniqueItemBaseTemplateId(string templateId)
+        {
+            if (string.IsNullOrEmpty(templateId))
+                return string.Empty;
+
+            int separatorIndex = templateId.IndexOf(DbItemUnique.UNIQUE_SEPARATOR, StringComparison.Ordinal);
+            return separatorIndex <= 0 ? string.Empty : templateId[..separatorIndex];
+        }
+
+        public static string GetTranslatedItemName(string language, DbInventoryItem item)
+        {
+            if (item == null)
+                return string.Empty;
+
+            return GetTranslatedItemName(language, item.Template);
+        }
+
+        public static string GetTranslatedItemName(string language, DbItemTemplate template)
+        {
+            if (template == null)
+                return string.Empty;
+
+            DbLanguageGameItem translation = GetItemTranslation(language, template);
+            return !string.IsNullOrEmpty(translation?.Name) ? translation.Name : template.Name;
+        }
+
+        public static string GetTranslatedItemMessageName(string language, DbInventoryItem item, int article, bool firstLetterUppercase)
+        {
+            if (item == null)
+                return string.Empty;
+
+            DbLanguageGameItem translation = GetItemTranslation(language, item);
+            if (!string.IsNullOrEmpty(translation?.Name))
+                return translation.Name;
+
+            if (IsKoreanLanguage(language) && !string.IsNullOrEmpty(item.Name))
+                return item.Name;
+
+            return item.GetName(article, firstLetterUppercase);
+        }
+
+        private static bool IsKoreanLanguage(string language)
+        {
+            return string.Equals(language, "KR", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static string ApplyKoreanParticles(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return text;
+
+            StringBuilder builder = new(text.Length);
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                char current = text[i];
+                builder.Append(current);
+
+                if (!TryGetKoreanParticleBaseInfo(text, i, out bool hasFinalConsonant, out bool finalConsonantIsRieul))
+                    continue;
+
+                if (TryAppendKoreanParticle(builder, text, i + 1, hasFinalConsonant, finalConsonantIsRieul, out int consumedLength))
+                    i += consumedLength;
+            }
+
+            return builder.ToString();
+        }
+
+        private static bool TryAppendKoreanParticle(StringBuilder builder, string text, int index, bool hasFinalConsonant, bool finalConsonantIsRieul, out int consumedLength)
+        {
+            consumedLength = 0;
+
+            if (MatchesAt(text, index, "이(가)"))
+            {
+                builder.Append(hasFinalConsonant ? '이' : '가');
+                consumedLength = "이(가)".Length;
+                return true;
+            }
+
+            if (MatchesAt(text, index, "을(를)"))
+            {
+                builder.Append(hasFinalConsonant ? '을' : '를');
+                consumedLength = "을(를)".Length;
+                return true;
+            }
+
+            if (MatchesAt(text, index, "은(는)"))
+            {
+                builder.Append(hasFinalConsonant ? '은' : '는');
+                consumedLength = "은(는)".Length;
+                return true;
+            }
+
+            if (MatchesAt(text, index, "와(과)"))
+            {
+                builder.Append(hasFinalConsonant ? '과' : '와');
+                consumedLength = "와(과)".Length;
+                return true;
+            }
+
+            if (MatchesAt(text, index, "(으)로"))
+            {
+                builder.Append(hasFinalConsonant && !finalConsonantIsRieul ? "으로" : "로");
+                consumedLength = "(으)로".Length;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryGetKoreanParticleBaseInfo(string text, int index, out bool hasFinalConsonant, out bool finalConsonantIsRieul)
+        {
+            hasFinalConsonant = false;
+            finalConsonantIsRieul = false;
+
+            char current = text[index];
+            if (HasKoreanFinalConsonantInfo(current, out hasFinalConsonant, out finalConsonantIsRieul))
+                return true;
+
+            if (IsAsciiLetterOrDigit(current))
+            {
+                hasFinalConsonant = HasAsciiFinalConsonantSound(current);
+                return true;
+            }
+
+            if (!IsKoreanParticleClosingChar(current))
+                return false;
+
+            return TryFindPreviousKoreanParticleBaseInfo(text, index - 1, out hasFinalConsonant, out finalConsonantIsRieul);
+        }
+
+        private static bool IsKoreanParticleClosingChar(char value)
+        {
+            return value is ']' or ')' or '}' or '>' or '\'' or '"';
+        }
+
+        private static bool TryFindPreviousKoreanParticleBaseInfo(string text, int index, out bool hasFinalConsonant, out bool finalConsonantIsRieul)
+        {
+            hasFinalConsonant = false;
+            finalConsonantIsRieul = false;
+
+            for (int i = index; i >= 0; i--)
+            {
+                char current = text[i];
+
+                if (HasKoreanFinalConsonantInfo(current, out hasFinalConsonant, out finalConsonantIsRieul))
+                    return true;
+
+                if (IsAsciiLetterOrDigit(current))
+                {
+                    hasFinalConsonant = HasAsciiFinalConsonantSound(current);
+                    return true;
+                }
+
+                if (char.IsWhiteSpace(current) || IsKoreanParticleClosingChar(current))
+                    continue;
+
+                return false;
+            }
+
+            return false;
+        }
+
+        private static bool IsAsciiLetterOrDigit(char value)
+        {
+            return value <= sbyte.MaxValue && char.IsLetterOrDigit(value);
+        }
+
+        private static bool HasAsciiFinalConsonantSound(char value)
+        {
+            if (char.IsDigit(value))
+                return value is '0' or '1' or '3' or '6' or '7' or '8';
+
+            return char.ToUpperInvariant(value) switch
+            {
+                'L' or 'M' or 'N' or 'R' => true,
+                _ => false
+            };
+        }
+
+        private static bool MatchesAt(string text, int index, string value)
+        {
+            if (index < 0 || index + value.Length > text.Length)
+                return false;
+
+            return string.CompareOrdinal(text, index, value, 0, value.Length) == 0;
+        }
+
+        private static bool HasKoreanFinalConsonantInfo(char value, out bool hasFinalConsonant, out bool finalConsonantIsRieul)
+        {
+            const int hangulBase = 0xAC00;
+            const int hangulEnd = 0xD7A3;
+
+            hasFinalConsonant = false;
+            finalConsonantIsRieul = false;
+
+            if (value < hangulBase || value > hangulEnd)
+                return false;
+
+            int finalConsonantIndex = (value - hangulBase) % 28;
+            hasFinalConsonant = finalConsonantIndex != 0;
+            finalConsonantIsRieul = finalConsonantIndex == 8;
+            return true;
+        }
+
+        public static string GetTranslatedItemDescription(string language, DbInventoryItem item)
+        {
+            if (item == null)
+                return string.Empty;
+
+            return GetTranslatedItemDescription(language, item.Template);
+        }
+
+        public static string GetTranslatedItemDescription(string language, DbItemTemplate template)
+        {
+            if (template == null)
+                return string.Empty;
+
+            DbLanguageGameItem translation = GetItemTranslation(language, template);
+            return !string.IsNullOrEmpty(translation?.Description) ? translation.Description : template.Description;
+        }
+
+        public static string GetTranslatedSkillName(string language, string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return string.Empty;
+
+            if (string.IsNullOrEmpty(language))
+                return name;
+
+            string translationId = $"Skill.Name.{BuildNameTranslationKey(name)}";
+            return TryGetTranslation(out string translation, language, translationId) ? translation : name;
+        }
+
+        public static string GetTranslatedQuestTitle(string language, string title)
+        {
+            if (string.IsNullOrEmpty(title))
+                return string.Empty;
+
+            if (string.IsNullOrEmpty(language))
+                return title;
+
+            string translationId = $"Quest.Title.{BuildNameTranslationKey(title)}";
+            return TryGetTranslation(out string translation, language, translationId) ? translation : title;
+        }
+
+        public static string GetTranslatedKeepName(string language, string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return string.Empty;
+
+            if (string.IsNullOrEmpty(language))
+                return name;
+
+            string translationId = $"Keep.Name.{BuildNameTranslationKey(name)}";
+            return TryGetTranslation(out string translation, language, translationId) ? translation : name;
+        }
+
+        private static string BuildNameTranslationKey(string name)
+        {
+            StringBuilder builder = new();
+
+            foreach (char c in name.Trim())
+            {
+                if (char.IsLetterOrDigit(c))
+                    builder.Append(c);
+                else if (c == ' ' || c == '-' || c == '_')
+                    builder.Append('_');
+            }
+
+            return builder.ToString().Trim('_');
         }
 
         public static string TryTranslateOrDefault(GamePlayer player, string missingDefault, string translationId)

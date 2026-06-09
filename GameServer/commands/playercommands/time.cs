@@ -7,7 +7,7 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&time",
         ePrivLevel.Player,
-        "time in game",
+        "게임 내 시간을 표시합니다.",
         "/time")]
     public class TimeCommandHandler : AbstractCommandHandler, ICommandHandler
     {

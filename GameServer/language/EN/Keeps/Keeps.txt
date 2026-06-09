@@ -13,3 +13,41 @@ GameRelicPad.MountRelic.Stored:				    {0} from {1} has stored the {2} to {3}.
 GameRelicPad.MountRelic.Returned:			    The {0} has been returned to {1}.
 GameRelicPad.OnPlayerEnter.EmptyRelicPad:		You need to find an empty {0} relic pad in order to place this relic.
 GameRelicPad.RemoveRelic.Removed:			    {0} from {1} has removed the {2} from {3}.
+
+## Keep Display Names
+Keep.Name.Caer_Benowyc:                         Caer Benowyc
+Keep.Name.Caer_Berkstead:                       Caer Berkstead
+Keep.Name.Caer_Erasleigh:                       Caer Erasleigh
+Keep.Name.Caer_Boldiam:                         Caer Boldiam
+Keep.Name.Caer_Sursbrooke:                      Caer Sursbrooke
+Keep.Name.Caer_Renaris:                         Caer Renaris
+Keep.Name.Caer_Hurbury:                         Caer Hurbury
+Keep.Name.Caer_Myrddin:                         Caer Myrddin
+Keep.Name.Caer_Excalibur:                       Caer Excalibur
+Keep.Name.Prydwen_Keep:                         Prydwen Keep
+Keep.Name.Swanton_Keep:                         Swanton Keep
+Keep.Name.Castle_Sauvage:                       Castle Sauvage
+Keep.Name.Snowdonia_Fortress:                   Snowdonia Fortress
+Keep.Name.Bledmeer_Faste:                       Bledmeer Faste
+Keep.Name.Nottmoor_Faste:                       Nottmoor Faste
+Keep.Name.Notmoor_Faste:                        Notmoor Faste
+Keep.Name.Hlidskialf_Faste:                     Hlidskialf Faste
+Keep.Name.Glenlock_Faste:                       Glenlock Faste
+Keep.Name.Blendrake_Faste:                      Blendrake Faste
+Keep.Name.Fensalir_Faste:                       Fensalir Faste
+Keep.Name.Arvakr_Faste:                         Arvakr Faste
+Keep.Name.Grallarhorn_Faste:                    Grallarhorn Faste
+Keep.Name.Mjollner_Faste:                       Mjollner Faste
+Keep.Name.Svasud_Faste:                         Svasud Faste
+Keep.Name.Dun_Crauchon:                         Dun Crauchon
+Keep.Name.Dun_Crimthain:                        Dun Crimthain
+Keep.Name.Dun_Crimthainn:                       Dun Crimthainn
+Keep.Name.Dun_Bolg:                             Dun Bolg
+Keep.Name.Dun_nGed:                             Dun nGed
+Keep.Name.Dun_Da_Behnn:                         Dun Da Behnn
+Keep.Name.Dun_da_Behnn:                         Dun da Behnn
+Keep.Name.Dun_Scathaig:                         Dun Scathaig
+Keep.Name.Dun_Ailinne:                          Dun Ailinne
+Keep.Name.Dun_Dagda:                            Dun Dagda
+Keep.Name.Dun_Lamfhota:                         Dun Lamfhota
+Keep.Name.Druim_Ligen:                          Druim Ligen

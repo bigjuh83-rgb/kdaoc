@@ -21,7 +21,7 @@ namespace DOL.GS.Commands
 {
 	[CmdAttribute("&hood", //command to handle
 		ePrivLevel.Player, //minimum privelege level
-		"Toggles the hood on and off when wearing a hooded cloak.", //command description
+		"후드 달린 망토를 착용 중일 때 후드 표시를 켜거나 끕니다.", //command description
 		"/hood")] //usage
 	public class HoodCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

@@ -27,7 +27,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&emote", new string[] {"&em", "&e"},
 		ePrivLevel.Player,
-		"Roleplay an action or emotion", "/emote <text>")]
+		"행동이나 감정을 역할극 메시지로 표현합니다.", "/emote <메시지>")]
 	public class CustomEmoteCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		/// <summary>

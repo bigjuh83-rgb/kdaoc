@@ -3,7 +3,7 @@ using DOL.Language;
 
 namespace DOL.GS.Commands
 {
-    [CmdAttribute("&target", ePrivLevel.Player, "target a player by name", "/target <playerName>")]
+    [CmdAttribute("&target", ePrivLevel.Player, "이름으로 플레이어를 대상으로 선택합니다.", "/target <플레이어이름>")]
     public class TargetCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)

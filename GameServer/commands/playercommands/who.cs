@@ -1,39 +1,36 @@
 using System;
 using System.Collections;
 using System.Text;
+using DOL.Language;
 
 namespace DOL.GS.Commands
 {
 	[CmdAttribute(
 		"&who",
 		ePrivLevel.Player,
-		"Shows who is online",
+		"접속 중인 플레이어를 표시합니다.",
 		//help:
-		//"/who  Can be modified with [playername], [class], [#] level, [location], [##] [##] level range",
-		"/WHO ALL - lists all players online",
-		//"/WHO NF lists all players online in New Frontiers",
-		// "/WHO CSR lists all Customer Service Representatives currently online",
-		// "/WHO DEV lists all Development Team Members currently online",
-		// "/WHO QTA lists all Quest Team Assistants currently online",
-		"/WHO <name> lists - players with names that start with <name>",
-		"/WHO <guild name> - lists players with names that start with <guild name>",
-		"/WHO <class> - lists players with of class <class>",
-		"/WHO <location> - lists players in the <location> area",
-		"/WHO <level> - lists players of level <level>",
-		"/WHO <level> <level> - lists players in level range",
-		"/WHO BG - lists all players leading a public BattleGroup",
-		"/WHO nogroup - lists all ungrouped players",
-		"/WHO hc - lists all Hardcore players"
+		//"/who  [플레이어이름], [클래스], [#] 레벨, [지역], [##] [##] 레벨 범위로 필터링할 수 있습니다.",
+		"/WHO 전체 - 접속 중인 모든 플레이어를 표시합니다.",
+		//"/WHO NF - New Frontiers에 접속 중인 모든 플레이어를 표시합니다.",
+		// "/WHO CSR - 접속 중인 고객지원 담당자를 표시합니다.",
+		// "/WHO DEV - 접속 중인 개발팀원을 표시합니다.",
+		// "/WHO QTA - 접속 중인 퀘스트 팀 어시스턴트를 표시합니다.",
+		"/WHO <이름> - 해당 이름으로 시작하는 플레이어를 표시합니다.",
+		"/WHO <길드 이름> - 해당 길드 이름으로 시작하는 플레이어를 표시합니다.",
+		"/WHO <클래스> - 해당 클래스의 플레이어를 표시합니다.",
+		"/WHO <지역> - 해당 지역의 플레이어를 표시합니다.",
+		"/WHO <레벨> - 해당 레벨의 플레이어를 표시합니다.",
+		"/WHO <레벨> <레벨> - 지정한 레벨 범위의 플레이어를 표시합니다.",
+		"/WHO BG - 공개 배틀그룹을 이끄는 모든 플레이어를 표시합니다.",
+		"/WHO 그룹없음 - 그룹이 없는 모든 플레이어를 표시합니다.",
+		"/WHO 하드코어 - 모든 하드코어 플레이어를 표시합니다."
 	)]
 	public class WhoCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		private static readonly Logging.Logger log = Logging.LoggerManager.Create(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
 		public const int MAX_LIST_SIZE = 49;
-		public const string MESSAGE_LIST_TRUNCATED = "(Too many matches ({0}).  List truncated.)";
-		private const string MESSAGE_NO_MATCHES = "No Matches.";
-		private const string MESSAGE_NO_ARGS = "Type /WHO HELP for variations on the WHO command.";
-		private const string MESSAGE_PLAYERS_ONLINE = "{0} player{1} currently online.";
 
 		public void OnCommand(GameClient client, string[] args)
 		{
@@ -69,8 +66,8 @@ namespace DOL.GS.Commands
 				int playing = clientsList.Count;
 
 				// including anon?
-				DisplayMessage(client, string.Format(MESSAGE_PLAYERS_ONLINE, playing, playing > 1 ? "s" : ""));
-				DisplayMessage(client, MESSAGE_NO_ARGS);
+				DisplayMessage(client, L(client, "PLCommands.Who.PlayersOnline", playing));
+				DisplayMessage(client, L(client, "PLCommands.Who.NoArgs"));
 				return;
 			}
 			
@@ -78,16 +75,20 @@ namespace DOL.GS.Commands
 			switch (args[1].ToLower())
 			{
 				case "all": // display all players, no filter
+				case "전체":
+				case "모두":
 				{
 					filters = null;
 					break;
 				}
 				case "help": // list syntax for the who command
+				case "도움말":
 				{
 					DisplaySyntax(client);
 					return;
 				}
 				case "staff":
+				case "스태프":
 				case "gm":
 				case "admin":
 				{
@@ -107,24 +108,29 @@ namespace DOL.GS.Commands
 					break;
 				}
 				case "cg":
+				case "채팅그룹":
 				{
 					filters = new ArrayList(1);
 					filters.Add(new ChatGroupFilter());
 					break;
 				}
 				case "bg":
+				case "배틀그룹":
 				{
 					filters = new ArrayList(1);
 					filters.Add(new BGFilter());
 					break;
 				}
 				case "nogroup":
+				case "그룹없음":
+				case "솔로":
 				{
 					filters = new ArrayList();
 					filters.Add(new SoloFilter());
 					break;
 				}
 				case "rp":
+				case "렐름포인트":
 				{
 					filters = new ArrayList(1);
 					filters.Add(new RPFilter());
@@ -132,18 +138,21 @@ namespace DOL.GS.Commands
 				}
 				case "hc":
 				case "hardcore":
+				case "하드코어":
 				{
 					filters = new ArrayList(1);
 					filters.Add(new HCFilter());
 					break;
 				}
 				case "frontiers":
+				case "프론티어":
 				{
 					filters = new ArrayList();
 					filters.Add(new OldFrontiersFilter());
 					break;
 				}
 				case "adv": // Filter for '/advisor' system
+				case "조언자":
 				{
 					filters = new ArrayList();
 					filters.Add(new AdvisorFilter());
@@ -177,11 +186,11 @@ namespace DOL.GS.Commands
 
 			if (resultCount == 0)
 			{
-				DisplayMessage(client, MESSAGE_NO_MATCHES);
+				DisplayMessage(client, L(client, "PLCommands.Who.NoMatches"));
 			}
 			else if (resultCount > MAX_LIST_SIZE)
 			{
-				DisplayMessage(client, string.Format(MESSAGE_LIST_TRUNCATED, resultCount));
+				DisplayMessage(client, L(client, "PLCommands.Who.ListTruncated", resultCount));
 			}
 
 			filters = null;
@@ -214,7 +223,9 @@ namespace DOL.GS.Commands
 				result.Append(">");
 			}
 
-			result.Append(" the Level ");
+			result.Append(" ");
+			result.Append(L(source, "PLCommands.Who.LevelPrefix"));
+			result.Append(" ");
 			result.Append(player.Level);
 			if (player.ClassNameFlag)
 			{
@@ -238,11 +249,13 @@ namespace DOL.GS.Commands
 				// If '/who' source is a Player and target is plvl 3, do not return zone description (only return for Admins if Admin is source)
 				if (source.Account.PrivLevel == (uint)ePrivLevel.Player && player.Client.Account.PrivLevel == (uint)ePrivLevel.Player || source.Account.PrivLevel == (uint)ePrivLevel.Admin)
 				{
-					result.Append(" in ");
+					result.Append(" ");
+					result.Append(L(source, "PLCommands.Who.LocationPrefix"));
+					result.Append(" ");
 					// Counter-espionage behavior: Change zone description to "Frontiers" if source is a Player and target(s) located in OF (RVR-enabled zone in classic Alb/Hib/Mid region)
 					if (source.Account.PrivLevel == (uint)ePrivLevel.Player && player.CurrentZone.IsRvR && player.CurrentRegion.ID is 1 or 100 or 200)
 					{
-						result.Append("the Frontiers");
+						result.Append(L(source, "PLCommands.Who.Frontiers"));
 					}
 					// If target player(s) are not in RvR-enabled zones in classic region, return zone name/description
 					else
@@ -528,6 +541,11 @@ namespace DOL.GS.Commands
 		private interface IWhoFilter
 		{
 			bool ApplyFilter(GamePlayer player);
+		}
+
+		private static string L(GameClient client, string key, params object[] args)
+		{
+			return LanguageMgr.GetTranslation(client, key, args);
 		}
 	}
 }

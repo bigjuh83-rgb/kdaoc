@@ -6,7 +6,7 @@ using DOL.Language;
 
 namespace DOL.GS.Commands
 {
-	[CmdAttribute("&horse", ePrivLevel.Player, "Horse emotes", "/horse <emote>")]
+	[CmdAttribute("&horse", ePrivLevel.Player, "말 감정표현입니다.", "/horse <감정표현>")]
 	public class HorseEmoteCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		private const ushort EMOTE_RANGE_TO_TARGET = 2048;

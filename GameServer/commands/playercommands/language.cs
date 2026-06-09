@@ -25,10 +25,10 @@ using DOL.Language;
 
 namespace DOL.GS.Commands
 {
-    [Cmd("&language", ePrivLevel.Player, "Change your language.",
-        "Use '/language current' to see your current used language.",
-        "Use '/language set [language]' to set your language.",
-        "Use '/language show' to show all available languages and to see your current used language."
+    [Cmd("&language", ePrivLevel.Player, "사용 언어를 변경합니다.",
+        "'/language 현재'는 현재 사용 중인 언어를 표시합니다.",
+        "'/language 설정 [언어]'는 사용할 언어를 설정합니다.",
+        "'/language 보기'는 사용 가능한 모든 언어와 현재 언어를 표시합니다."
     )]
     public class LanguageCommandHandler : AbstractCommandHandler, ICommandHandler
     {
@@ -49,7 +49,14 @@ namespace DOL.GS.Commands
                 return;
             }
 
-            switch (args[1].ToLower())
+            string directLanguage = NormalizeLanguageCode(args[1]);
+            if (LanguageMgr.Languages.Contains(directLanguage))
+            {
+                SetLanguage(client, directLanguage);
+                return;
+            }
+
+            switch (NormalizeLanguageCommand(args[1]))
             {
                 #region current
                 case "current":
@@ -68,16 +75,14 @@ namespace DOL.GS.Commands
                             return;
                         }
 
-                        string language = args[2].ToUpper();
+                        string language = NormalizeLanguageCode(args[2]);
                         if (!LanguageMgr.Languages.Contains(language))
                         {
                             DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Language.LanguageNotSupported", language));
                             return;
                         }
 
-                        client.Account.Language = language;
-                        GameServer.Database.SaveObject(client.Account);
-                        DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Language.Set", language));
+                        SetLanguage(client, language);
                         return;
                     }
                 #endregion set
@@ -115,6 +120,40 @@ namespace DOL.GS.Commands
             DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Language.SyntaxCurrent"));
             DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Language.SyntaxSet"));
             DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Language.SyntaxShow"));
+        }
+
+        private void SetLanguage(GameClient client, string language)
+        {
+            client.Account.Language = language;
+            GameServer.Database.SaveObject(client.Account);
+            DisplayMessage(client, LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Language.Set", language));
+        }
+
+        private static string NormalizeLanguageCommand(string command)
+        {
+            return command?.Trim().ToLowerInvariant() switch
+            {
+                "현재" => "current",
+                "보기" => "show",
+                "목록" => "show",
+                "설정" => "set",
+                "변경" => "set",
+                _ => command?.Trim().ToLowerInvariant()
+            };
+        }
+
+        private static string NormalizeLanguageCode(string language)
+        {
+            return language?.Trim().ToLowerInvariant() switch
+            {
+                "한국어" => "KR",
+                "한글" => "KR",
+                "영어" => "EN",
+                "이탈리아어" => "IT",
+                "프랑스어" => "FR",
+                "독일어" => "DE",
+                _ => language?.ToUpper()
+            };
         }
     }
 }

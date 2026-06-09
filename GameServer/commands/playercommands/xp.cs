@@ -6,7 +6,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&xp",
 		ePrivLevel.Player,
-		"toggle receiving experience points",
+		"경험치 획득을 켜거나 끕니다.",
 		"/xp <on/off>")]
 	public class XPCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

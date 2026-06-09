@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using DOL.AI.Brain;
 using DOL.Database;
@@ -368,7 +368,7 @@ namespace DOL.GS.Quests.Albion
 
         public override string Name
         {
-            get { return questTitle; }
+            get { return DOL.Language.LanguageMgr.GetTranslatedQuestTitle(m_questPlayer?.Client?.Account?.Language, questTitle); }
         }
 
         public override string Description

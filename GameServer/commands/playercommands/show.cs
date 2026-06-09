@@ -3,7 +3,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&show",
 		ePrivLevel.Player,
-		"Show all your cards to the other players (all cards become 'up').",
+		"내 모든 카드를 다른 플레이어에게 공개합니다. 모든 카드가 앞면이 됩니다.",
 		"/show")]
 	public class ShowCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

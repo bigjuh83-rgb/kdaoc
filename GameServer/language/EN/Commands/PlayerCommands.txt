@@ -184,12 +184,20 @@ Scripts.Players.Battlegroup.RollsBeingRecorded:	Rolls are being recorded. Please
 Scripts.Players.Battlegroup.NoRollsRecorded:		No rolls have been recorded yet.
 Scripts.Players.Battlegroup.LastRollResultsTitle:	Last roll results
 Scripts.Players.Battlegroup.RollResultLine:		{0}) {1} rolled {2}
+Scripts.Players.Battlegroup.GroupClassHeader:		Groups currently in the BG:
+Scripts.Players.Battlegroup.SoloHeader:		Solo players currently in the BG:
+Scripts.Players.Battlegroup.WhoHeader:		Players currently in Battle Group:
+Scripts.Players.Battlegroup.RoleLeader:		 <Leader> 
+Scripts.Players.Battlegroup.RoleTreasurer:	 <Treasurer> 
+Scripts.Players.Battlegroup.RoleMember:		 <Member> 
+Scripts.Players.Battlegroup.SoloLine:		{0}, the level {1} {2}
 
 ## /bind
 GamePlayer.Bind.Bound:						        You are now bound to this location.
 GamePlayer.Bind.CantBindDead:				        You cannot bind while dead!
 GamePlayer.Bind.CantHere:					        You can't bind here!
 GamePlayer.Bind.LastBindPoint:				        Last Bind Point: {0}.
+GamePlayer.Bind.LastBindPoint.Location:				in {0}
 GamePlayer.Bind.MustWait:					        You must wait {0} seconds to bind again!
 
 ## /bonuses
@@ -1023,6 +1031,26 @@ Scripts.Players.Rearrange.WindowTitle:          Character slots
 Scripts.Players.Battlegroup.LootUsage:          You should use /bg loot normal or /bg loot treasurer.
 Scripts.Players.Battlegroup.PlayerNotInBattlegroup:This player is not in your battleground.
 Scripts.Players.Battlegroup.RecordStartUsage:   You need to specify a valid max roll value (i.e. /bg recordstart 1000)
+
+## /who
+PLCommands.Who.PlayersOnline:                 {0} player(s) currently online.
+PLCommands.Who.NoArgs:                        Type /WHO HELP for variations on the WHO command.
+PLCommands.Who.NoMatches:                     No Matches.
+PLCommands.Who.ListTruncated:                 Too many matches ({0}). List truncated.
+PLCommands.Who.LevelPrefix:                   the Level
+PLCommands.Who.LocationPrefix:                in
+PLCommands.Who.Frontiers:                     the Frontiers
+
+## /webdisplay
+PLCommands.WebDisplay.Usage:                  /webdisplay <position|template|equipment|craft> [on|off]
+PLCommands.WebDisplay.EquipmentShown:         Your equipment is displayed.
+PLCommands.WebDisplay.EquipmentHidden:        Your equipment is not displayed.
+PLCommands.WebDisplay.PositionShown:          Your position is displayed.
+PLCommands.WebDisplay.PositionHidden:         Your position is not displayed.
+PLCommands.WebDisplay.TemplateShown:          Your template is displayed.
+PLCommands.WebDisplay.TemplateHidden:         Your template is not displayed.
+PLCommands.WebDisplay.CraftShown:             Your crafting skill is displayed.
+PLCommands.WebDisplay.CraftHidden:            Your crafting skill is not displayed.
 
 ## /gc guild
 Scripts.Player.Guild.RequestError:              There was an issue processing the guild request. Please try again.

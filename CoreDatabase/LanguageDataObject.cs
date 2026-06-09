@@ -14,7 +14,8 @@ namespace DOL.Database
             eNPC = 3,
             eObject = 4,
             eSystem = 5,
-            eZone = 6
+            eZone = 6,
+            eDataQuest = 7
         }
         #endregion Enums
 

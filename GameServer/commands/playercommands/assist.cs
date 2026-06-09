@@ -4,7 +4,7 @@ using DOL.Language;
 
 namespace DOL.GS.Commands
 {
-    [CmdAttribute("&assist", ePrivLevel.Player, "Assist your target", "/assist [playerName]")]
+    [CmdAttribute("&assist", ePrivLevel.Player, "대상의 대상을 선택합니다.", "/assist [플레이어이름]")]
     public class AssistCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)

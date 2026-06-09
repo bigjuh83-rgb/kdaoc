@@ -23,7 +23,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&spacing",
 		ePrivLevel.Player,
-		"Change the spacing of your pets!", "/spacing {normal, big, huge}")]
+		"소환수 간격을 변경합니다.", "/spacing {normal, big, huge}")]
 	public class SpacingHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

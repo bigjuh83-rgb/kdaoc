@@ -33,6 +33,7 @@ namespace DOL.GS.WorldAI
     {
         public const string BossBorn = "bossborn";
         public const string MobAscended = "mobascended";
+        public const string MobMutated = "mobmutated";
     }
 
     public static class WorldAiImportance

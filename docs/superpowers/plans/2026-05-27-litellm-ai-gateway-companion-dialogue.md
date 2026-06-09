@@ -319,7 +319,7 @@ class OpenDaocAiGatewayValidationTests(unittest.TestCase):
             "player_name": "후후",
             "x": 123,
             "y": 456,
-            "raw_chat": "동료야 힐해줘",
+            "raw_chat": "용병아 힐해줘",
             "role": "healer",
             "personality": "calm_support",
             "state": {
@@ -380,7 +380,7 @@ class OpenDaocAiGatewayValidationTests(unittest.TestCase):
                 "event_type": "add_detected",
                 "role": "support",
                 "personality": "tactical_support",
-                "raw_chat": "동료야 저 좌표로 가",
+                "raw_chat": "용병아 저 좌표로 가",
                 "state": {"combat": True, "adds": 2},
             }
         )

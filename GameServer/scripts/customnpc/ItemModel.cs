@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using DOL.Database;
 using DOL.GS.PacketHandler;
@@ -124,6 +124,7 @@ namespace DOL.GS
 
                 #region helms
                 case "dragonslayer helm":
+                case "드래곤슬레이어 헬름":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -211,6 +212,7 @@ namespace DOL.GS
                     }
                     break;
                 case "dragonsworn helm":
+                case "드래곤스원 헬름":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -256,6 +258,7 @@ namespace DOL.GS
                     }
                     break;
                 case "crown of zahur":
+                case "자후르의 왕관":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -279,6 +282,7 @@ namespace DOL.GS
                     }
                     break;
                 case "crown of zahur variant":
+                case "자후르의 왕관 변형":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -302,6 +306,7 @@ namespace DOL.GS
                     }
                     break;
                 case "winged helm":
+                case "날개 헬름":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -325,6 +330,7 @@ namespace DOL.GS
                     }
                     break;
                 case "oceanus helm":
+                case "오세아누스 헬름":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -411,6 +417,7 @@ namespace DOL.GS
                     }
                     break;
                 case "stygia helm":
+                case "스티지아 헬름":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -497,6 +504,7 @@ namespace DOL.GS
                     }
                     break;
                 case "volcanus helm":
+                case "볼카누스 헬름":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -583,6 +591,7 @@ namespace DOL.GS
                     }
                     break;
                 case "aerus helm":
+                case "에어러스 헬름":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -669,6 +678,7 @@ namespace DOL.GS
                     }
                     break;
                 case "wizard hat":
+                case "위저드 모자":
                     if (item.Item_Type != Slot.HELM || item.Object_Type != (int)eObjectType.Cloth)
                     {
                         SendNotValidMessage(player);
@@ -692,6 +702,7 @@ namespace DOL.GS
                     }
                     break;
                 case "robin hood hat":
+                case "로빈 후드 모자":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -712,6 +723,7 @@ namespace DOL.GS
                     }
                     break;
                 case "fur cap":
+                case "털모자":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -721,6 +733,7 @@ namespace DOL.GS
                     modelIDToAssign = 1283;
                     break;
                 case "tarboosh":
+                case "타부시":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -730,6 +743,7 @@ namespace DOL.GS
                     modelIDToAssign = 1284;
                     break;
                 case "leaf hat":
+                case "잎 모자":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -739,6 +753,7 @@ namespace DOL.GS
                     modelIDToAssign = 1285;
                     break;
                 case "wing hat":
+                case "날개 모자":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -748,6 +763,7 @@ namespace DOL.GS
                     modelIDToAssign = 1286;
                     break;
                 case "jester hat":
+                case "광대 모자":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -757,6 +773,7 @@ namespace DOL.GS
                     modelIDToAssign = 1287;
                     break;
                 case "stag helm":
+                case "수사슴 헬름":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -766,6 +783,7 @@ namespace DOL.GS
                     modelIDToAssign = 1288;
                     break;
                 case "wolf helm":
+                case "늑대 헬름":
                     if (item.Item_Type != Slot.HELM)
                     {
                         SendNotValidMessage(player);
@@ -787,6 +805,7 @@ namespace DOL.GS
 
                 #region torsos
                 case "dragonslayer breastplate":
+                case "드래곤슬레이어 흉갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -874,6 +893,7 @@ namespace DOL.GS
                     }
                     break;
                 case "dragonsworn breastplate":
+                case "드래곤스원 흉갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -916,6 +936,7 @@ namespace DOL.GS
                     }
                     break;
                 case "good shar breastplate":
+                case "선한 샤르 흉갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -958,6 +979,7 @@ namespace DOL.GS
                     }
                     break;
                 case "possessed shar breastplate":
+                case "빙의된 샤르 흉갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -1000,6 +1022,7 @@ namespace DOL.GS
                     }
                     break;
                 case "good inconnu breastplate":
+                case "선한 인코뉴 흉갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -1042,6 +1065,7 @@ namespace DOL.GS
                     }
                     break;
                 case "possessed inconnu breastplate":
+                case "빙의된 인코뉴 흉갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -1084,6 +1108,7 @@ namespace DOL.GS
                     }
                     break;
                 case "good realm breastplate":
+                case "선한 렐름 흉갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -1116,6 +1141,7 @@ namespace DOL.GS
                     }
                     break;
                 case "possessed realm breastplate":
+                case "빙의된 렐름 흉갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -1148,6 +1174,7 @@ namespace DOL.GS
                     }
                     break;
                 case "mino breastplate":
+                case "미노 흉갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -1182,6 +1209,7 @@ namespace DOL.GS
                     }
                     break;
                 case "eirene's chest":
+                case "에이레네의 흉갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -1205,6 +1233,7 @@ namespace DOL.GS
                     }
                     break;
                 case "naliah's robe":
+                case "날리아의 로브":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -1228,6 +1257,7 @@ namespace DOL.GS
                     }
                     break;
                 case "guard of valor":
+                case "용맹의 수호갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -1251,6 +1281,7 @@ namespace DOL.GS
                     }
                     break;
                 case "golden scarab vest":
+                case "황금 스카라브 조끼":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -1274,6 +1305,7 @@ namespace DOL.GS
                     }
                     break;
                 case "oceanus breastplate":
+                case "오세아누스 흉갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -1360,6 +1392,7 @@ namespace DOL.GS
                     }
                     break;
                 case "stygia breastplate":
+                case "스티지아 흉갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -1446,6 +1479,7 @@ namespace DOL.GS
                     }
                     break;
                 case "volcanus breastplate":
+                case "볼카누스 흉갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -1532,6 +1566,7 @@ namespace DOL.GS
                     }
                     break;
                 case "aerus breastplate":
+                case "에어러스 흉갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -1618,6 +1653,7 @@ namespace DOL.GS
                     }
                     break;
                 case "class epic chestpiece":
+                case "직업 에픽 흉갑":
                     if (item.Item_Type != Slot.TORSO)
                     {
                         SendNotValidMessage(player);
@@ -1754,6 +1790,7 @@ namespace DOL.GS
 
                 #region sleeves
                 case "dragonslayer sleeves":
+                case "드래곤슬레이어 소매":
                     if (item.Item_Type != Slot.ARMS)
                     {
                         SendNotValidMessage(player);
@@ -1841,6 +1878,7 @@ namespace DOL.GS
                     }
                     break;
                 case "good shar sleeves":
+                case "선한 샤르 소매":
                     if (item.Item_Type != Slot.ARMS)
                     {
                         SendNotValidMessage(player);
@@ -1883,6 +1921,7 @@ namespace DOL.GS
                     }
                     break;
                 case "possessed shar sleeves":
+                case "빙의된 샤르 소매":
                     if (item.Item_Type != Slot.ARMS)
                     {
                         SendNotValidMessage(player);
@@ -1925,6 +1964,7 @@ namespace DOL.GS
                     }
                     break;
                 case "good inconnu sleeves":
+                case "선한 인코뉴 소매":
                     if (item.Item_Type != Slot.ARMS)
                     {
                         SendNotValidMessage(player);
@@ -1967,6 +2007,7 @@ namespace DOL.GS
                     }
                     break;
                 case "possessed inconnu sleeves":
+                case "빙의된 인코뉴 소매":
                     if (item.Item_Type != Slot.ARMS)
                     {
                         SendNotValidMessage(player);
@@ -2009,6 +2050,7 @@ namespace DOL.GS
                     }
                     break;
                 case "good realm sleeves":
+                case "선한 렐름 소매":
                     if (item.Item_Type != Slot.ARMS)
                     {
                         SendNotValidMessage(player);
@@ -2041,6 +2083,7 @@ namespace DOL.GS
                     }
                     break;
                 case "possessed realm sleeves":
+                case "빙의된 렐름 소매":
                     if (item.Item_Type != Slot.ARMS)
                     {
                         SendNotValidMessage(player);
@@ -2073,6 +2116,7 @@ namespace DOL.GS
                     }
                     break;
                 case "mino sleeves":
+                case "미노 소매":
                     if (item.Item_Type != Slot.ARMS)
                     {
                         SendNotValidMessage(player);
@@ -2107,6 +2151,7 @@ namespace DOL.GS
                     }
                     break;
                 case "foppish sleeves":
+                case "멋쟁이 소매":
                     if (item.Item_Type != Slot.ARMS)
                     {
                         SendNotValidMessage(player);
@@ -2116,6 +2161,7 @@ namespace DOL.GS
                     modelIDToAssign = 1732;
                     break;
                 case "arms of the wind":
+                case "바람의 팔보호구":
                     if (item.Item_Type != Slot.ARMS)
                     {
                         SendNotValidMessage(player);
@@ -2125,6 +2171,7 @@ namespace DOL.GS
                     modelIDToAssign = 1733;
                     break;
                 case "oceanus sleeves":
+                case "오세아누스 소매":
                     if (item.Item_Type != Slot.ARMS)
                     {
                         SendNotValidMessage(player);
@@ -2158,6 +2205,7 @@ namespace DOL.GS
                     }
                     break;
                 case "stygia sleeves":
+                case "스티지아 소매":
                     if (item.Item_Type != Slot.ARMS)
                     {
                         SendNotValidMessage(player);
@@ -2191,6 +2239,7 @@ namespace DOL.GS
                     }
                     break;
                 case "volcanus sleeves":
+                case "볼카누스 소매":
                     if (item.Item_Type != Slot.ARMS)
                     {
                         SendNotValidMessage(player);
@@ -2224,6 +2273,7 @@ namespace DOL.GS
                     }
                     break;
                 case "aerus sleeves":
+                case "에어러스 소매":
                     if (item.Item_Type != Slot.ARMS)
                     {
                         SendNotValidMessage(player);
@@ -2260,6 +2310,7 @@ namespace DOL.GS
 
                 #region pants
                 case "dragonslayer pants":
+                case "드래곤슬레이어 바지":
                     if (item.Item_Type != Slot.LEGS)
                     {
                         SendNotValidMessage(player);
@@ -2347,6 +2398,7 @@ namespace DOL.GS
                     }
                     break;
                 case "good shar pants":
+                case "선한 샤르 바지":
                     if (item.Item_Type != Slot.LEGS)
                     {
                         SendNotValidMessage(player);
@@ -2389,6 +2441,7 @@ namespace DOL.GS
                     }
                     break;
                 case "possessed shar pants":
+                case "빙의된 샤르 바지":
                     if (item.Item_Type != Slot.LEGS)
                     {
                         SendNotValidMessage(player);
@@ -2431,6 +2484,7 @@ namespace DOL.GS
                     }
                     break;
                 case "good inconnu pants":
+                case "선한 인코뉴 바지":
                     if (item.Item_Type != Slot.LEGS)
                     {
                         SendNotValidMessage(player);
@@ -2473,6 +2527,7 @@ namespace DOL.GS
                     }
                     break;
                 case "possessed inconnu pants":
+                case "빙의된 인코뉴 바지":
                     if (item.Item_Type != Slot.LEGS)
                     {
                         SendNotValidMessage(player);
@@ -2515,6 +2570,7 @@ namespace DOL.GS
                     }
                     break;
                 case "good realm pants":
+                case "선한 렐름 바지":
                     if (item.Item_Type != Slot.LEGS)
                     {
                         SendNotValidMessage(player);
@@ -2547,6 +2603,7 @@ namespace DOL.GS
                     }
                     break;
                 case "possessed realm pants":
+                case "빙의된 렐름 바지":
                     if (item.Item_Type != Slot.LEGS)
                     {
                         SendNotValidMessage(player);
@@ -2579,6 +2636,7 @@ namespace DOL.GS
                     }
                     break;
                 case "mino pants":
+                case "미노 바지":
                     if (item.Item_Type != Slot.LEGS)
                     {
                         SendNotValidMessage(player);
@@ -2622,6 +2680,7 @@ namespace DOL.GS
                     modelIDToAssign = 1767;
                     break;
                 case "alvarus' leggings":
+                case "알바루스의 레깅스":
                     if (item.Item_Type != Slot.LEGS)
                     {
                         SendNotValidMessage(player);
@@ -2631,6 +2690,7 @@ namespace DOL.GS
                     modelIDToAssign = 1744;
                     break;
                 case "oceanus pants":
+                case "오세아누스 바지":
                     if (item.Item_Type != Slot.LEGS)
                     {
                         SendNotValidMessage(player);
@@ -2664,6 +2724,7 @@ namespace DOL.GS
                     }
                     break;
                 case "stygia pants":
+                case "스티지아 바지":
                     if (item.Item_Type != Slot.LEGS)
                     {
                         SendNotValidMessage(player);
@@ -2697,6 +2758,7 @@ namespace DOL.GS
                     }
                     break;
                 case "volcanus pants":
+                case "볼카누스 바지":
                     if (item.Item_Type != Slot.LEGS)
                     {
                         SendNotValidMessage(player);
@@ -2730,6 +2792,7 @@ namespace DOL.GS
                     }
                     break;
                 case "aerus pants":
+                case "에어러스 바지":
                     if (item.Item_Type != Slot.LEGS)
                     {
                         SendNotValidMessage(player);
@@ -2766,6 +2829,7 @@ namespace DOL.GS
 
                 #region boots
                 case "dragonslayer boots":
+                case "드래곤슬레이어 부츠":
                     if (item.Item_Type != Slot.FEET)
                     {
                         SendNotValidMessage(player);
@@ -2853,6 +2917,7 @@ namespace DOL.GS
                     }
                     break;
                 case "good shar boots":
+                case "선한 샤르 부츠":
                     if (item.Item_Type != Slot.FEET)
                     {
                         SendNotValidMessage(player);
@@ -2895,6 +2960,7 @@ namespace DOL.GS
                     }
                     break;
                 case "possessed shar boots":
+                case "빙의된 샤르 부츠":
                     if (item.Item_Type != Slot.FEET)
                     {
                         SendNotValidMessage(player);
@@ -2937,6 +3003,7 @@ namespace DOL.GS
                     }
                     break;
                 case "good inconnu boots":
+                case "선한 인코뉴 부츠":
                     if (item.Item_Type != Slot.FEET)
                     {
                         SendNotValidMessage(player);
@@ -2979,6 +3046,7 @@ namespace DOL.GS
                     }
                     break;
                 case "possessed inconnu boots":
+                case "빙의된 인코뉴 부츠":
                     if (item.Item_Type != Slot.FEET)
                     {
                         SendNotValidMessage(player);
@@ -3021,6 +3089,7 @@ namespace DOL.GS
                     }
                     break;
                 case "good realm boots":
+                case "선한 렐름 부츠":
                     if (item.Item_Type != Slot.FEET)
                     {
                         SendNotValidMessage(player);
@@ -3053,6 +3122,7 @@ namespace DOL.GS
                     }
                     break;
                 case "possessed realm boots":
+                case "빙의된 렐름 부츠":
                     if (item.Item_Type != Slot.FEET)
                     {
                         SendNotValidMessage(player);
@@ -3085,6 +3155,7 @@ namespace DOL.GS
                     }
                     break;
                 case "mino boots":
+                case "미노 부츠":
                     if (item.Item_Type != Slot.FEET)
                     {
                         SendNotValidMessage(player);
@@ -3119,6 +3190,7 @@ namespace DOL.GS
                     }
                     break;
                 case "enyalio's boots":
+                case "엔얄리오의 부츠":
                     if (item.Item_Type != Slot.FEET)
                     {
                         SendNotValidMessage(player);
@@ -3128,6 +3200,7 @@ namespace DOL.GS
                     modelIDToAssign = 2488;
                     break;
                 case "flamedancer's boots":
+                case "플레임댄서의 부츠":
                     if (item.Item_Type != Slot.FEET)
                     {
                         SendNotValidMessage(player);
@@ -3137,6 +3210,7 @@ namespace DOL.GS
                     modelIDToAssign = 1731;
                     break;
                 case "oceanus boots":
+                case "오세아누스 부츠":
                     if (item.Item_Type != Slot.FEET)
                     {
                         SendNotValidMessage(player);
@@ -3170,6 +3244,7 @@ namespace DOL.GS
                     }
                     break;
                 case "stygia boots":
+                case "스티지아 부츠":
                     if (item.Item_Type != Slot.FEET)
                     {
                         SendNotValidMessage(player);
@@ -3203,6 +3278,7 @@ namespace DOL.GS
                     }
                     break;
                 case "volcanus boots":
+                case "볼카누스 부츠":
                     if (item.Item_Type != Slot.FEET)
                     {
                         SendNotValidMessage(player);
@@ -3236,6 +3312,7 @@ namespace DOL.GS
                     }
                     break;
                 case "aerus boots":
+                case "에어러스 부츠":
                     if (item.Item_Type != Slot.FEET)
                     {
                         SendNotValidMessage(player);
@@ -3272,6 +3349,7 @@ namespace DOL.GS
 
                 #region gloves
                 case "dragonslayer gloves":
+                case "드래곤슬레이어 장갑":
                     if (item.Item_Type != Slot.HANDS)
                     {
                         SendNotValidMessage(player);
@@ -3359,6 +3437,7 @@ namespace DOL.GS
                     }
                     break;
                 case "good shar gloves":
+                case "선한 샤르 장갑":
                     if (item.Item_Type != Slot.HANDS)
                     {
                         SendNotValidMessage(player);
@@ -3401,6 +3480,7 @@ namespace DOL.GS
                     }
                     break;
                 case "possessed shar gloves":
+                case "빙의된 샤르 장갑":
                     if (item.Item_Type != Slot.HANDS)
                     {
                         SendNotValidMessage(player);
@@ -3443,6 +3523,7 @@ namespace DOL.GS
                     }
                     break;
                 case "good inconnu gloves":
+                case "선한 인코뉴 장갑":
                     if (item.Item_Type != Slot.HANDS)
                     {
                         SendNotValidMessage(player);
@@ -3485,6 +3566,7 @@ namespace DOL.GS
                     }
                     break;
                 case "possessed inconnu gloves":
+                case "빙의된 인코뉴 장갑":
                     if (item.Item_Type != Slot.HANDS)
                     {
                         SendNotValidMessage(player);
@@ -3527,6 +3609,7 @@ namespace DOL.GS
                     }
                     break;
                 case "good realm gloves":
+                case "선한 렐름 장갑":
                     if (item.Item_Type != Slot.HANDS)
                     {
                         SendNotValidMessage(player);
@@ -3559,6 +3642,7 @@ namespace DOL.GS
                     }
                     break;
                 case "possessed realm gloves":
+                case "빙의된 렐름 장갑":
                     if (item.Item_Type != Slot.HANDS)
                     {
                         SendNotValidMessage(player);
@@ -3591,6 +3675,7 @@ namespace DOL.GS
                     }
                     break;
                 case "mino gloves":
+                case "미노 장갑":
                     if (item.Item_Type != Slot.HANDS)
                     {
                         SendNotValidMessage(player);
@@ -3625,6 +3710,7 @@ namespace DOL.GS
                     }
                     break;
                 case "maddening scalars":
+                case "매드닝 스칼라":
                     if (item.Item_Type != Slot.HANDS)
                     {
                         SendNotValidMessage(player);
@@ -3634,6 +3720,7 @@ namespace DOL.GS
                     modelIDToAssign = 1746;
                     break;
                 case "sharkskin gloves":
+                case "상어가죽 장갑":
                     if (item.Item_Type != Slot.HANDS)
                     {
                         SendNotValidMessage(player);
@@ -3643,6 +3730,7 @@ namespace DOL.GS
                     modelIDToAssign = 1734;
                     break;
                 case "oceanus gloves":
+                case "오세아누스 장갑":
                     if (item.Item_Type != Slot.HANDS)
                     {
                         SendNotValidMessage(player);
@@ -3676,6 +3764,7 @@ namespace DOL.GS
                     }
                     break;
                 case "stygia gloves":
+                case "스티지아 장갑":
                     if (item.Item_Type != Slot.HANDS)
                     {
                         SendNotValidMessage(player);
@@ -3709,6 +3798,7 @@ namespace DOL.GS
                     }
                     break;
                 case "volcanus gloves":
+                case "볼카누스 장갑":
                     if (item.Item_Type != Slot.HANDS)
                     {
                         SendNotValidMessage(player);
@@ -3742,6 +3832,7 @@ namespace DOL.GS
                     }
                     break;
                 case "aerus gloves":
+                case "에어러스 장갑":
                     if (item.Item_Type != Slot.HANDS)
                     {
                         SendNotValidMessage(player);
@@ -3779,6 +3870,7 @@ namespace DOL.GS
                 #region cloaks
 
                 case "realm cloak":
+                case "렐름 망토":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3800,6 +3892,7 @@ namespace DOL.GS
                     break;
 
                 case "dragonslayer cloak":
+                case "드래곤슬레이어 망토":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3821,6 +3914,7 @@ namespace DOL.GS
                     break;
 
                 case "dragonsworn cloak":
+                case "드래곤스원 망토":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3831,6 +3925,7 @@ namespace DOL.GS
                     break;
 
                 case "valentines cloak":
+                case "밸런타인 망토":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3841,6 +3936,7 @@ namespace DOL.GS
                     break;
 
                 case "winter cloak":
+                case "겨울 망토":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3851,6 +3947,7 @@ namespace DOL.GS
                     break;
 
                 case "clean leather cloak":
+                case "깨끗한 가죽 망토":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3861,6 +3958,7 @@ namespace DOL.GS
                     break;
 
                 case "corrupt leather cloak":
+                case "타락한 가죽 망토":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3871,6 +3969,7 @@ namespace DOL.GS
                     break;
 
                 case "cloudsong":
+                case "클라우드송":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3881,6 +3980,7 @@ namespace DOL.GS
                     break;
 
                 case "shades of mist":
+                case "안개의 그림자":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3891,6 +3991,7 @@ namespace DOL.GS
                     break;
 
                 case "magma cloak":
+                case "마그마 망토":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3901,6 +4002,7 @@ namespace DOL.GS
                     break;
 
                 case "stygian cloak":
+                case "스티지안 망토":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3911,6 +4013,7 @@ namespace DOL.GS
                     break;
 
                 case "aerus cloak":
+                case "에어러스 망토":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3921,6 +4024,7 @@ namespace DOL.GS
                     break;
 
                 case "oceanus cloak":
+                case "오세아누스 망토":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3931,6 +4035,7 @@ namespace DOL.GS
                     break;
 
                 case "harpy feather cloak":
+                case "하피 깃털 망토":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3941,6 +4046,7 @@ namespace DOL.GS
                     break;
 
                 case "healer's embrace":
+                case "힐러의 포옹":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3951,6 +4057,7 @@ namespace DOL.GS
                     break;
 
                 case "collared cloak":
+                case "칼라 망토":
                     if (item.Item_Type != Slot.CLOAK)
                     {
                         SendNotValidMessage(player);
@@ -3966,6 +4073,7 @@ namespace DOL.GS
 
                 #region 1h wep
                 case "traitor's dagger 1h":
+                case "트레이터 단검 1손":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Thrust)
@@ -3977,6 +4085,7 @@ namespace DOL.GS
                     modelIDToAssign = 1668;
                     break;
                 case "traitor's axe 1h":
+                case "트레이터 도끼 1손":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Slash)
@@ -3988,6 +4097,7 @@ namespace DOL.GS
                     modelIDToAssign = 3452;
                     break;
                 case "croc tooth dagger 1h":
+                case "크록 이빨 단검 1손":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Thrust)
@@ -3999,6 +4109,7 @@ namespace DOL.GS
                     modelIDToAssign = 1669;
                     break;
                 case "croc tooth axe 1h":
+                case "크록 이빨 도끼 1손":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Slash)
@@ -4010,6 +4121,7 @@ namespace DOL.GS
                     modelIDToAssign = 3451;
                     break;
                 case "golden spear 1h":
+                case "황금 창 1손":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Thrust)
@@ -4021,6 +4133,7 @@ namespace DOL.GS
                     modelIDToAssign = 1807;
                     break;
                 case "malice axe 1h":
+                case "말리스 도끼 1손":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Slash)
@@ -4032,6 +4145,7 @@ namespace DOL.GS
                     modelIDToAssign = 2109;
                     break;
                 case "malice hammer 1h":
+                case "말리스 해머 1손":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Crush)
@@ -4043,6 +4157,7 @@ namespace DOL.GS
                     modelIDToAssign = 3447;
                     break;
                 case "bruiser hammer 1h":
+                case "브루저 해머 1손":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Crush)
@@ -4054,6 +4169,7 @@ namespace DOL.GS
                     modelIDToAssign = 1671;
                     break;
                 case "battler hammer 1h":
+                case "배틀러 해머 1손":
                     if ((item.Item_Type != Slot.RIGHTHAND ||
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Crush)
@@ -4065,6 +4181,7 @@ namespace DOL.GS
                     modelIDToAssign = 3453;
                     break;
                 case "battler sword 1h":
+                case "배틀러 검 1손":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Slash)
@@ -4076,6 +4193,7 @@ namespace DOL.GS
                     modelIDToAssign = 2112;
                     break;
                 case "scepter of the meritorious":
+                case "공훈의 홀":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Crush)
@@ -4110,6 +4228,7 @@ namespace DOL.GS
                     }
                     break;
                 case "rolling pin":
+                case "밀대":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Crush)
@@ -4121,6 +4240,7 @@ namespace DOL.GS
                     modelIDToAssign = 3458;
                     break;
                 case "wakazashi":
+                case "와키자시":
                     if (item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND &&
                         item.Type_Damage != (int)eDamageType.Thrust &&
@@ -4133,6 +4253,7 @@ namespace DOL.GS
                     modelIDToAssign = 2209;
                     break;
                 case "turkey leg":
+                case "칠면조 다리":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Crush)
@@ -4144,6 +4265,7 @@ namespace DOL.GS
                     modelIDToAssign = 3454;
                     break;
                 case "cleaver":
+                case "클리버":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Slash)
@@ -4155,6 +4277,7 @@ namespace DOL.GS
                     modelIDToAssign = 654;
                     break;
                 case "khopesh":
+                case "코페쉬":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Slash)
@@ -4166,6 +4289,7 @@ namespace DOL.GS
                     modelIDToAssign = 2195;
                     break;
                 case "stein":
+                case "맥주잔":
                     if ((item.Item_Type != Slot.RIGHTHAND &&
                         item.Item_Type != Slot.LEFTHAND) &&
                         item.Type_Damage != (int)eDamageType.Crush)
@@ -4201,6 +4325,7 @@ namespace DOL.GS
 
                 //hand to hand
                 case "snakecharmer's fist":
+                case "스네이크차머 피스트":
                     if (item.Object_Type != (int)eObjectType.HandToHand)
                     {
                         SendNotValidMessage(player);
@@ -4211,6 +4336,7 @@ namespace DOL.GS
                     break;
 
                 case "scorched fist":
+                case "그을린 피스트":
                     if (item.Object_Type != (int)eObjectType.HandToHand)
                     {
                         SendNotValidMessage(player);
@@ -4232,6 +4358,7 @@ namespace DOL.GS
                     break;
 
                 case "dragonsworn fist":
+                case "드래곤스원 피스트":
                     if (item.Object_Type != (int)eObjectType.HandToHand)
                     {
                         SendNotValidMessage(player);
@@ -4254,6 +4381,7 @@ namespace DOL.GS
 
                 //flex
                 case "snakecharmer's whip":
+                case "스네이크차머 채찍":
                     if (item.Object_Type != (int)eObjectType.Flexible)
                     {
                         SendNotValidMessage(player);
@@ -4264,6 +4392,7 @@ namespace DOL.GS
                     break;
 
                 case "scorched whip":
+                case "그을린 채찍":
                     if (item.Object_Type != (int)eObjectType.Flexible)
                     {
                         SendNotValidMessage(player);
@@ -4285,6 +4414,7 @@ namespace DOL.GS
                     break;
 
                 case "dragonsworn whip":
+                case "드래곤스원 채찍":
                     if (item.Object_Type != (int)eObjectType.Flexible)
                     {
                         SendNotValidMessage(player);
@@ -4311,6 +4441,7 @@ namespace DOL.GS
                 #region 2h wep
 
                 case "pickaxe":
+                case "곡괭이":
                     if (item.Item_Type != Slot.TWOHAND ||
                         item.Object_Type == (int)eObjectType.PolearmWeapon)
                     {
@@ -4323,6 +4454,7 @@ namespace DOL.GS
 
                 //axe
                 case "malice axe 2h":
+                case "말리스 도끼 2손":
                     if (item.Item_Type != Slot.TWOHAND ||
                         item.Type_Damage != (int)eDamageType.Slash ||
                         item.Object_Type == (int)eObjectType.PolearmWeapon)
@@ -4334,6 +4466,7 @@ namespace DOL.GS
                     modelIDToAssign = 2110;
                     break;
                 case "scorched axe 2h":
+                case "그을린 도끼 2손":
                     if (item.Item_Type != Slot.TWOHAND ||
                         item.Type_Damage != (int)eDamageType.Slash ||
                         item.Object_Type == (int)eObjectType.PolearmWeapon)
@@ -4345,6 +4478,7 @@ namespace DOL.GS
                     modelIDToAssign = 3705;
                     break;
                 case "magma axe 2h":
+                case "마그마 도끼 2손":
                     if (item.Item_Type != Slot.TWOHAND ||
                         item.Type_Damage != (int)eDamageType.Slash ||
                         item.Object_Type == (int)eObjectType.PolearmWeapon)
@@ -4358,6 +4492,7 @@ namespace DOL.GS
 
                 //spears
                 case "golden spear 2h":
+                case "황금 창 2손":
                     if (item.Object_Type != (int)eObjectType.Spear &&
                         item.Object_Type != (int)eObjectType.CelticSpear)
                     {
@@ -4368,6 +4503,7 @@ namespace DOL.GS
                     modelIDToAssign = 1662;
                     break;
                 case "dragon spear 2h":
+                case "드래곤 창 2손":
                     if (item.Object_Type != (int)eObjectType.Spear &&
                            item.Object_Type != (int)eObjectType.CelticSpear)
                     {
@@ -4378,6 +4514,7 @@ namespace DOL.GS
                     modelIDToAssign = 3819;
                     break;
                 case "scorched spear 2h":
+                case "그을린 창 2손":
                     if (item.Object_Type != (int)eObjectType.Spear &&
                         item.Object_Type != (int)eObjectType.CelticSpear)
                     {
@@ -4388,6 +4525,7 @@ namespace DOL.GS
                     modelIDToAssign = 3714;
                     break;
                 case "trident spear 2h":
+                case "삼지창 2손":
                     if (item.Object_Type != (int)eObjectType.Spear &&
                         item.Object_Type != (int)eObjectType.CelticSpear)
                     {
@@ -4400,6 +4538,7 @@ namespace DOL.GS
 
                 //hammers
                 case "bruiser hammer 2h":
+                case "브루저 해머 2손":
                     if (item.Item_Type != Slot.TWOHAND ||
                         item.Type_Damage != (int)eDamageType.Crush ||
                         item.Object_Type == (int)eObjectType.PolearmWeapon ||
@@ -4414,6 +4553,7 @@ namespace DOL.GS
                     modelIDToAssign = 2113;
                     break;
                 case "battler hammer 2h":
+                case "배틀러 해머 2손":
                     if (item.Item_Type != Slot.TWOHAND ||
                         item.Type_Damage != (int)eDamageType.Crush ||
                         item.Object_Type == (int)eObjectType.PolearmWeapon ||
@@ -4428,6 +4568,7 @@ namespace DOL.GS
                     modelIDToAssign = 3448;
                     break;
                 case "malice hammer 2h":
+                case "말리스 해머 2손":
                     if (item.Item_Type != Slot.TWOHAND ||
                         item.Type_Damage != (int)eDamageType.Crush ||
                         item.Object_Type == (int)eObjectType.PolearmWeapon ||
@@ -4442,6 +4583,7 @@ namespace DOL.GS
                     modelIDToAssign = 3449;
                     break;
                 case "scorched hammer 2h":
+                case "그을린 해머 2손":
                     if (item.Item_Type != Slot.TWOHAND ||
                         item.Type_Damage != (int)eDamageType.Crush ||
                         item.Object_Type == (int)eObjectType.PolearmWeapon ||
@@ -4456,6 +4598,7 @@ namespace DOL.GS
                     modelIDToAssign = 3704;
                     break;
                 case "magma hammer 2h":
+                case "마그마 해머 2손":
                     if (item.Item_Type != Slot.TWOHAND ||
                         item.Type_Damage != (int)eDamageType.Crush ||
                         item.Object_Type == (int)eObjectType.PolearmWeapon ||
@@ -4472,6 +4615,7 @@ namespace DOL.GS
 
                 //swords
                 case "battler sword 2h":
+                case "배틀러 검 2손":
                     if (item.Item_Type != Slot.TWOHAND ||
                         item.Type_Damage != (int)eDamageType.Slash ||
                         item.Object_Type == (int)eObjectType.PolearmWeapon ||
@@ -4486,6 +4630,7 @@ namespace DOL.GS
                     modelIDToAssign = 1670;
                     break;
                 case "scorched sword 2h":
+                case "그을린 검 2손":
                     if (item.Item_Type != Slot.TWOHAND ||
                         item.Type_Damage != (int)eDamageType.Slash ||
                         item.Object_Type == (int)eObjectType.PolearmWeapon ||
@@ -4500,6 +4645,7 @@ namespace DOL.GS
                     modelIDToAssign = 3701;
                     break;
                 case "katana 2h":
+                case "카타나 2손":
                     if (item.Item_Type != Slot.TWOHAND ||
                         item.Type_Damage != (int)eDamageType.Slash ||
                         item.Object_Type == (int)eObjectType.PolearmWeapon ||
@@ -4556,6 +4702,7 @@ namespace DOL.GS
 
                 //thrust
                 case "scorched thrust 2h":
+                case "그을린 쓰러스트 2손":
                     if (item.Item_Type != Slot.TWOHAND ||
                         item.Type_Damage != (int)eDamageType.Thrust ||
                         item.Object_Type == (int)eObjectType.PolearmWeapon ||
@@ -4570,6 +4717,7 @@ namespace DOL.GS
                     modelIDToAssign = 3700;
                     break;
                 case "dragon thrust 2h":
+                case "드래곤 쓰러스트 2손":
                     if (item.Item_Type != Slot.TWOHAND ||
                         item.Type_Damage != (int)eDamageType.Thrust ||
                         item.Object_Type == (int)eObjectType.PolearmWeapon ||
@@ -4586,6 +4734,7 @@ namespace DOL.GS
 
                 //staffs
                 case "traldor's oracle":
+                case "트랄도르의 오라클":
                     if (item.Object_Type != (int)eObjectType.Staff)
                     {
                         SendNotValidMessage(player);
@@ -4595,6 +4744,7 @@ namespace DOL.GS
                     modelIDToAssign = 1659;
                     break;
                 case "trident of the gods":
+                case "신들의 삼지창":
                     if (item.Object_Type != (int)eObjectType.Staff)
                     {
                         SendNotValidMessage(player);
@@ -4604,6 +4754,7 @@ namespace DOL.GS
                     modelIDToAssign = 1660;
                     break;
                 case "tartaros gift":
+                case "타르타로스의 선물":
                     if (item.Object_Type != (int)eObjectType.Staff)
                     {
                         SendNotValidMessage(player);
@@ -4613,6 +4764,7 @@ namespace DOL.GS
                     modelIDToAssign = 1658;
                     break;
                 case "dragonsworn staff":
+                case "드래곤스원 스태프":
                     if (item.Object_Type != (int)eObjectType.Staff)
                     {
                         SendNotValidMessage(player);
@@ -4622,6 +4774,7 @@ namespace DOL.GS
                     modelIDToAssign = 3827;
                     break;
                 case "scorched staff":
+                case "그을린 스태프":
                     if (item.Object_Type != (int)eObjectType.Staff)
                     {
                         SendNotValidMessage(player);
@@ -4633,6 +4786,7 @@ namespace DOL.GS
 
                 //scythes
                 case "dragonsworn scythe":
+                case "드래곤스원 사이드":
                     if (item.Object_Type != (int)eObjectType.Scythe)
                     {
                         SendNotValidMessage(player);
@@ -4642,6 +4796,7 @@ namespace DOL.GS
                     modelIDToAssign = 3825;
                     break;
                 case "magma scythe":
+                case "마그마 사이드":
                     if (item.Object_Type != (int)eObjectType.Scythe)
                     {
                         SendNotValidMessage(player);
@@ -4651,6 +4806,7 @@ namespace DOL.GS
                     modelIDToAssign = 2213;
                     break;
                 case "scorched scythe":
+                case "그을린 사이드":
                     if (item.Object_Type != (int)eObjectType.Scythe)
                     {
                         SendNotValidMessage(player);
@@ -4660,6 +4816,7 @@ namespace DOL.GS
                     modelIDToAssign = 3708;
                     break;
                 case "scythe of kings":
+                case "왕들의 사이드":
                     if (item.Object_Type != (int)eObjectType.Scythe)
                     {
                         SendNotValidMessage(player);
@@ -4669,6 +4826,7 @@ namespace DOL.GS
                     modelIDToAssign = 3450;
                     break;
                 case "snakechamer's scythe":
+                case "스네이크차머 사이드":
                     if (item.Object_Type != (int)eObjectType.Scythe)
                     {
                         SendNotValidMessage(player);
@@ -4680,6 +4838,7 @@ namespace DOL.GS
 
                 //polearms
                 case "dragonsworn pole":
+                case "드래곤스원 폴암":
                     if (item.Object_Type != (int)eObjectType.PolearmWeapon)
                     {
                         SendNotValidMessage(player);
@@ -4700,6 +4859,7 @@ namespace DOL.GS
                     }
                     break;
                 case "pole of kings":
+                case "왕들의 폴암":
                     if (item.Object_Type != (int)eObjectType.PolearmWeapon)
                     {
                         SendNotValidMessage(player);
@@ -4709,6 +4869,7 @@ namespace DOL.GS
                     modelIDToAssign = 1661;
                     break;
                 case "scorched pole":
+                case "그을린 폴암":
                     if (item.Object_Type != (int)eObjectType.PolearmWeapon)
                     {
                         SendNotValidMessage(player);
@@ -4729,6 +4890,7 @@ namespace DOL.GS
                     }
                     break;
                 case "golden pole":
+                case "황금 폴암":
                     if (item.Object_Type != (int)eObjectType.PolearmWeapon)
                     {
                         SendNotValidMessage(player);
@@ -5780,6 +5942,7 @@ namespace DOL.GS
 
                 #region shields
                 case "aten's shield":
+                case "아텐의 방패":
                     if (item.Object_Type != (int)eObjectType.Shield)
                     {
                         SendNotValidMessage(player);
@@ -5789,6 +5952,7 @@ namespace DOL.GS
                     modelIDToAssign = 1663;
                     break;
                 case "cyclop's eye":
+                case "사이클롭스의 눈":
                     if (item.Object_Type != (int)eObjectType.Shield)
                     {
                         SendNotValidMessage(player);
@@ -5798,6 +5962,7 @@ namespace DOL.GS
                     modelIDToAssign = 1664;
                     break;
                 case "shield of khaos":
+                case "카오스의 방패":
                     if (item.Object_Type != (int)eObjectType.Shield)
                     {
                         SendNotValidMessage(player);
@@ -5807,6 +5972,7 @@ namespace DOL.GS
                     modelIDToAssign = 1665;
                     break;
                 case "oceanus shield":
+                case "오세아누스 방패":
                     if (item.Object_Type != (int)eObjectType.Shield)
                     {
                         SendNotValidMessage(player);
@@ -5828,6 +5994,7 @@ namespace DOL.GS
                     break;
 
                 case "aerus shield":
+                case "에어러스 방패":
                     if (item.Object_Type != (int)eObjectType.Shield)
                     {
                         SendNotValidMessage(player);
@@ -5849,6 +6016,7 @@ namespace DOL.GS
                     break;
 
                 case "magma shield":
+                case "마그마 방패":
                     if (item.Object_Type != (int)eObjectType.Shield)
                     {
                         SendNotValidMessage(player);
@@ -5870,6 +6038,7 @@ namespace DOL.GS
                     break;
 
                 case "minotaur shield":
+                case "미노타우르 방패":
                     if (item.Object_Type != (int)eObjectType.Shield)
                     {
                         SendNotValidMessage(player);
@@ -5885,6 +6054,7 @@ namespace DOL.GS
                 //case "dragonslayer harp": probably doesn't work
                 //     break;
                 case "class epic harp":
+                case "직업 에픽 하프":
                     if (item.Object_Type != (int)eObjectType.Instrument)
                     {
                         SendNotValidMessage(player);
@@ -5905,6 +6075,7 @@ namespace DOL.GS
                     }
                     break;
                 case "labyrinth harp":
+                case "라비린스 하프":
                     if (item.Object_Type != (int)eObjectType.Instrument)
                     {
                         SendNotValidMessage(player);
@@ -5914,6 +6085,7 @@ namespace DOL.GS
                     modelIDToAssign = 3688;
                     break;
                 case "class epic bow":
+                case "직업 에픽 활":
                     if (item.Object_Type != (int)eObjectType.CompositeBow &&
                         item.Object_Type != (int)eObjectType.Longbow &&
                         item.Object_Type != (int)eObjectType.RecurvedBow
@@ -5941,6 +6113,7 @@ namespace DOL.GS
                     }
                     break;
                 case "fool's bow":
+                case "풀의 활":
                     if (item.Object_Type != (int)eObjectType.CompositeBow &&
                         item.Object_Type != (int)eObjectType.Longbow &&
                         item.Object_Type != (int)eObjectType.RecurvedBow &&
@@ -5954,6 +6127,7 @@ namespace DOL.GS
                     modelIDToAssign = 1666;
                     break;
                 case "braggart's bow":
+                case "브래거트의 활":
                     if (item.Object_Type != (int)eObjectType.CompositeBow &&
                         item.Object_Type != (int)eObjectType.Longbow &&
                         item.Object_Type != (int)eObjectType.RecurvedBow &&
@@ -5967,6 +6141,7 @@ namespace DOL.GS
                     modelIDToAssign = 1667;
                     break;
                 case "labyrinth bow":
+                case "라비린스 활":
                     if (item.Object_Type != (int)eObjectType.CompositeBow &&
                         item.Object_Type != (int)eObjectType.Longbow &&
                         item.Object_Type != (int)eObjectType.RecurvedBow &&

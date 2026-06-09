@@ -184,12 +184,20 @@ Scripts.Players.Battlegroup.RollsBeingRecorded:	주사위 기록 중입니다. �
 Scripts.Players.Battlegroup.NoRollsRecorded:		아직 기록된 주사위가 없습니다.
 Scripts.Players.Battlegroup.LastRollResultsTitle:	최근 주사위 결과
 Scripts.Players.Battlegroup.RollResultLine:		{0}) {1}: {2}
+Scripts.Players.Battlegroup.GroupClassHeader:		현재 배틀그룹에 속한 그룹:
+Scripts.Players.Battlegroup.SoloHeader:		현재 배틀그룹에 속한 솔로 플레이어:
+Scripts.Players.Battlegroup.WhoHeader:		현재 배틀그룹 구성원:
+Scripts.Players.Battlegroup.RoleLeader:		 <리더> 
+Scripts.Players.Battlegroup.RoleTreasurer:	 <재무관> 
+Scripts.Players.Battlegroup.RoleMember:		 <구성원> 
+Scripts.Players.Battlegroup.SoloLine:		{0}, 레벨 {1} {2}
 
 ## /bind
 GamePlayer.Bind.Bound:						        이 위치에 바인드되었습니다.
 GamePlayer.Bind.CantBindDead:				        사망 상태에서는 바인드할 수 없습니다!
 GamePlayer.Bind.CantHere:					        여기서는 바인드할 수 없습니다!
 GamePlayer.Bind.LastBindPoint:				        마지막 바인드 지점: {0}.
+GamePlayer.Bind.LastBindPoint.Location:				{0}
 GamePlayer.Bind.MustWait:					        다시 바인드하려면 {0}초 기다려야 합니다!
 
 ## /bonuses
@@ -352,7 +360,7 @@ PlayerCommands.Roll.ResultSelf:             주사위 {0}개를 굴려 {1}이(�
 PlayerCommands.Roll.ResultOther:            {0}님이 주사위 {1}개를 굴려 {2}이(가) 나왔습니다.
 
 ## /setwho /noqueue /stuck /summon
-PlayerCommands.SetWho.Specify:              class 또는 trade 중 무엇으로 바꿀지 지정해야 합니다.
+PlayerCommands.SetWho.Specify:              클래스 또는 제작 중 무엇으로 바꿀지 지정해야 합니다.
 PlayerCommands.SetWho.NeedProfession:       /who 메시지에 표시할 제작 직업이 필요합니다.
 PlayerCommands.SetWho.HideCraftTitle:       이제 /who에 제작 칭호가 표시되지 않습니다.
 PlayerCommands.SetWho.ShowCraftTitle:       이제 /who에 제작 칭호가 표시됩니다.
@@ -444,15 +452,15 @@ Scripts.Players.Cloak.AlreadyVisible:		망토가 이미 보이는 상태입니�
 Scripts.Players.Cloak.AlreadyInvisible:		망토가 이미 숨겨진 상태입니다.
 
 ## /sprint
-Scripts.Players.Sprint.NoAbility:			질주 능력이 없습니다.
+Scripts.Players.Sprint.NoAbility:			Sprint 능력이 없습니다.
 
 ## /settitle
 Scripts.Players.SetTitle.Forced:			현재 칭호는 변경할 수 없습니다.
 
 ## /cancelstyle
-Scripts.Players.Cancelstyle.Set:			스타일 취소가 {0}(으)로 설정되었습니다.
-Scripts.Players.Cancelstyle.On:				ON
-Scripts.Players.Cancelstyle.Off:			OFF
+Scripts.Players.Cancelstyle.Set:			스타일 취소가 {0} 상태로 설정되었습니다.
+Scripts.Players.Cancelstyle.On:				켜짐
+Scripts.Players.Cancelstyle.Off:			꺼짐
 
 ## /chatgroup
 Scripts.Players.Chatgroup.Usage:			사용법: /c <내용>
@@ -743,7 +751,7 @@ Scripts.Player.Guild.PlayerNotFound:			게임 내에서 해당 플레이어를 �
 Scripts.Player.Guild.PromotedOther:			{0}이(가) {1}의 길드 랭크를 {2}번 ({3})(으)로 설정했습니다.
 Scripts.Player.Guild.PromotedSelf:			{0}의 길드 랭크를 {1}번 ({2})(으)로 설정했습니다.
 Scripts.Player.Guild.PromoteHigherThanPlayer:		자신보다 낮은 랭크로만 승급할 수 있습니다.
-Scripts.Player.Guild.PromoteHaveToUseDemote:	promote 명령으로는 이 플레이어의 길드 랭크를 낮출 수 없습니다. /demote <랭크레벨> <플레이어>를 사용하세요.
+Scripts.Player.Guild.PromoteHaveToUseDemote:	/gc promote로는 이 플레이어의 길드 랭크를 낮출 수 없습니다. /gc demote <랭크레벨> <플레이어>를 사용하세요.
 Scripts.Player.Guild.Purged:				{0}이(가) 완전히 삭제되었습니다.
 Scripts.Player.Guild.RankACHearSet:			랭크 {1}의 동맹 채팅 듣기 권한을 {0}(으)로 설정했습니다.
 Scripts.Player.Guild.RankACSpeakSet:			랭크 {1}의 동맹 채팅 말하기 권한을 {0}(으)로 설정했습니다.
@@ -783,9 +791,9 @@ Scripts.Players.Language.Set:				서버 표시 언어를 {0}(으)로 변경했�
 Scripts.Players.Language.AvailableLanguages: 사용 가능한 언어: {0}
 Scripts.Players.Language.LanguageNotSupported: 지원하지 않는 언어입니다: {0}
 Scripts.Players.Language.Disabled:         이 서버에서는 언어 변경을 지원하지 않습니다.
-Scripts.Players.Language.SyntaxCurrent:   /language current - 현재 언어를 표시합니다.
-Scripts.Players.Language.SyntaxSet:       /language set <언어> - 표시 언어를 변경합니다. 예: /language set KR
-Scripts.Players.Language.SyntaxShow:      /language show - 사용 가능한 모든 언어를 표시합니다.
+Scripts.Players.Language.SyntaxCurrent:   /language 현재 - 현재 언어를 표시합니다.
+Scripts.Players.Language.SyntaxSet:       /language 설정 <언어> - 표시 언어를 변경합니다. 예: /language 설정 한국어
+Scripts.Players.Language.SyntaxShow:      /language 보기 - 사용 가능한 모든 언어를 표시합니다.
 
 ## /pray
 GamePlayer.Pray.AlreadyPraying:					이미 기도 중입니다!
@@ -1023,6 +1031,26 @@ Scripts.Players.Rearrange.WindowTitle:          캐릭터 슬롯
 Scripts.Players.Battlegroup.LootUsage:          /bg loot normal 또는 /bg loot treasurer를 사용하세요.
 Scripts.Players.Battlegroup.PlayerNotInBattlegroup:이 플레이어는 당신의 배틀그룹에 속해 있지 않습니다.
 Scripts.Players.Battlegroup.RecordStartUsage:   유효한 최대 주사위 값을 지정해야 합니다. (예: /bg recordstart 1000)
+
+## /who
+PLCommands.Who.PlayersOnline:                 현재 접속 중인 플레이어: {0}명.
+PLCommands.Who.NoArgs:                        /WHO 도움말을 입력하면 WHO 명령어의 다양한 사용법을 볼 수 있습니다.
+PLCommands.Who.NoMatches:                     일치하는 플레이어가 없습니다.
+PLCommands.Who.ListTruncated:                 일치 항목이 너무 많습니다({0}). 목록을 일부만 표시합니다.
+PLCommands.Who.LevelPrefix:                   레벨
+PLCommands.Who.LocationPrefix:                위치:
+PLCommands.Who.Frontiers:                     프론티어
+
+## /webdisplay
+PLCommands.WebDisplay.Usage:                  /webdisplay <position|template|equipment|craft> [on|off]
+PLCommands.WebDisplay.EquipmentShown:         장비 정보가 표시됩니다.
+PLCommands.WebDisplay.EquipmentHidden:        장비 정보가 표시되지 않습니다.
+PLCommands.WebDisplay.PositionShown:          위치 정보가 표시됩니다.
+PLCommands.WebDisplay.PositionHidden:         위치 정보가 표시되지 않습니다.
+PLCommands.WebDisplay.TemplateShown:          템플릿 정보가 표시됩니다.
+PLCommands.WebDisplay.TemplateHidden:         템플릿 정보가 표시되지 않습니다.
+PLCommands.WebDisplay.CraftShown:             제작 기술 정보가 표시됩니다.
+PLCommands.WebDisplay.CraftHidden:            제작 기술 정보가 표시되지 않습니다.
 
 ## /gc guild
 Scripts.Player.Guild.RequestError:              길드 요청을 처리하는 중 문제가 발생했습니다. 다시 시도해 주세요.

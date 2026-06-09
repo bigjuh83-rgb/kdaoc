@@ -3,7 +3,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&held",
 		ePrivLevel.Player,
-		"List the cards in your hand. Use 'held g' to display faceup cards held by group members.",
+		"내 손패를 표시합니다. 'held g'를 사용하면 그룹원이 공개한 카드를 표시합니다.",
 		"/held <g>")]
 	public class HeldCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

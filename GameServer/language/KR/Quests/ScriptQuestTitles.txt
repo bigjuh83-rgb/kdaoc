@@ -1,0 +1,49 @@
+Quest.Title.An_End_to_the_Daggers: 단검의 끝
+Quest.Title.Ancestral_Secrets: 조상의 비밀
+Quest.Title.Daily_A_Bit_of_Bravery: [일일] 작은 용기
+Quest.Title.Daily_Caledonia_Conquerer: [일일] 칼레도니아 정복자
+Quest.Title.Daily_Danaoin_Invasion: [일일] 다나오인 침입
+Quest.Title.Daily_Every_Little_Bit_Helps: [일일] 작은 도움도 소중하다
+Quest.Title.Daily_Fens_New_Friends: [일일] 펜의 새 친구들
+Quest.Title.Daily_Frontier_Conquerer: [일일] 프론티어 정복자
+Quest.Title.Daily_Megaloceros_Invasion: [일일] 메갈로케로스 침입
+Quest.Title.Daily_Octonid_Invasion: [일일] 옥토니드 침입
+Quest.Title.Daily_Thidranki_Conquerer: [일일] 티드란키 정복자
+Quest.Title.Daily_Too_Many_Monsters: [일일] 너무 많은 몬스터
+Quest.Title.Feast_of_the_Decadent: 타락한 자들의 연회
+Quest.Title.Group_Daily_A_Team_Building_Exercise: [그룹 일일] 팀워크 훈련
+Quest.Title.Hardcore_Apex_Predator: [하드코어] 최상위 포식자
+Quest.Title.Hardcore_Big_Man_On_Campus: [하드코어] 거물
+Quest.Title.Immediate_Resolution: 즉각적인 해결
+Quest.Title.Lost_Stone_of_Arawn: 아로운의 잃어버린 돌
+Quest.Title.Memorial_All_in_the_Gold: [추모] 모두 황금 속에
+Quest.Title.Memorial_Play_the_Last_Song: [추모] 마지막 노래를 연주하라
+Quest.Title.Memorial_Power_of_Nature: [추모] 자연의 힘
+Quest.Title.Monthly_Annihilation_of_Malevolence: [월간] 악의 섬멸
+Quest.Title.Monthly_Aspiring_Relic_Fighter: [월간] 유물 전사 지망생
+Quest.Title.Monthly_Aspiring_Relic_Guardian: [월간] 유물 수호자 지망생
+Quest.Title.Monthly_Aspiring_Relic_Soldier: [월간] 유물 병사 지망생
+Quest.Title.Monthly_Bring_Order_and_Security_to_Albion: [월간] 알비온에 질서와 안보를
+Quest.Title.Monthly_Bring_Order_and_Security_to_Hibernia: [월간] 하이버니아에 질서와 안보를
+Quest.Title.Monthly_Bring_Order_and_Security_to_Midgard: [월간] 미드가르드에 질서와 안보를
+Quest.Title.Passage_to_Eternity: 영원으로 가는 길
+Quest.Title.Saving_the_Clan: 클랜 구하기
+Quest.Title.Symbol_of_the_Broken: 부서진 자의 상징
+Quest.Title.The_Desire_of_a_God: 신의 갈망
+Quest.Title.The_Horn_Twin: 뿔의 쌍둥이
+Quest.Title.The_Lost_Seed: 잃어버린 씨앗
+Quest.Title.The_Moonstone_Twin: 월장석의 쌍둥이
+Quest.Title.Unnatural_Powers: 부자연스러운 힘
+Quest.Title.War_Concluded: 전쟁의 종결
+Quest.Title.Weekly_Darkness_Falls_Invasion: [주간] 다크니스 폴스 침입
+Quest.Title.Weekly_Extinction_of: [주간] 멸종 작전
+Quest.Title.Weekly_Femurs_From_Darkness_Falls: [주간] 다크니스 폴스의 대퇴골
+Quest.Title.Weekly_Femurs_from_Darkness_Falls: [주간] 다크니스 폴스의 대퇴골
+Quest.Title.Weekly_Fens_Many_Friends: [주간] 펜의 많은 친구들
+Quest.Title.Weekly_For_The_Realm: [주간] 렐름을 위하여
+Quest.Title.Weekly_Frontier_Cleanup: [주간] 프론티어 정리
+Quest.Title.Weekly_Harder_Adversaries: [주간] 더 강한 적들
+Quest.Title.Weekly_Slay_The_Enemies: [주간] 적을 처치하라
+Quest.Title.Weekly_Slay_the_enemies: [주간] 적을 처치하라
+Quest.Title.Wolf_Pelt_Cloak: 늑대 가죽 망토
+Quest.Title.Hardcore_A_Bit_of_Bravery: [하드코어] 용기의 증명

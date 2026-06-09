@@ -5,11 +5,11 @@ namespace DOL.GS.Commands
 {
 	[CmdAttribute("&autosplit",
 		 ePrivLevel.Player,
-		 "Choose how the loot and money are split between members of group",
-		 "/autosplit on/off (Leader only: Toggles both coins and loot for entire group)",
-		 "/autosplit coins (Leader only: When turned off, will send coins to the person who picked it up, instead of splitting it evenly across other members)",
-		 "/autosplit loot (Leader only: When turned off, will send loot to the person who picked it up, instead of splitting it evenly across other members)",
-		 "/autosplit self (Any group member: Choose not to receive autosplit loot items)")]
+		 "그룹원 사이의 전리품과 돈 분배 방식을 설정합니다.",
+		 "/autosplit on/off (그룹장 전용: 그룹 전체의 돈과 전리품 자동 분배를 함께 켜거나 끕니다)",
+		 "/autosplit coins (그룹장 전용: 끄면 돈을 균등 분배하지 않고 주운 사람에게 줍니다)",
+		 "/autosplit loot (그룹장 전용: 끄면 전리품을 균등 분배하지 않고 주운 사람에게 줍니다)",
+		 "/autosplit self (그룹원 공통: 자동 분배 전리품을 받지 않도록 설정합니다)")]
 	public class AutosplitCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

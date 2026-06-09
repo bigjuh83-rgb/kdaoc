@@ -14,12 +14,25 @@ namespace DOL.Database
         private int m_baseLevel;
         private int m_growthLevel;
         private int m_effectiveLevel;
+        private int m_baseSize;
+        private int m_effectiveSize;
         private int m_growthScore;
         private int m_survivalTicks;
         private int m_unhuntedTicks;
         private int m_combatCount;
         private int m_playerKills;
         private string m_stage = string.Empty;
+        private int m_recentDeathCount;
+        private DateTime m_deathWindowStartedAt = DateTime.MinValue;
+        private bool m_mutationPending;
+        private bool m_isMutant;
+        private DateTime m_lastMutationAt = DateTime.MinValue;
+        private int m_lastMutationChancePercent;
+        private int m_mutationCount;
+        private string m_bonusLoadoutKey = string.Empty;
+        private string m_bonusSpellIds = string.Empty;
+        private string m_bonusStyleIds = string.Empty;
+        private string m_bonusAbilityKeys = string.Empty;
         private bool m_isActive;
         private DateTime m_createdAt = DateTime.UtcNow;
         private DateTime m_firstSeenAt = DateTime.UtcNow;
@@ -85,6 +98,20 @@ namespace DOL.Database
             set { Dirty = true; m_effectiveLevel = value; }
         }
 
+        [DataElement(AllowDbNull = false)]
+        public int BaseSize
+        {
+            get { return m_baseSize; }
+            set { Dirty = true; m_baseSize = value; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public int EffectiveSize
+        {
+            get { return m_effectiveSize; }
+            set { Dirty = true; m_effectiveSize = value; }
+        }
+
         [DataElement(AllowDbNull = false, Index = true)]
         public int GrowthScore
         {
@@ -125,6 +152,83 @@ namespace DOL.Database
         {
             get { return m_stage; }
             set { Dirty = true; m_stage = value; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public int RecentDeathCount
+        {
+            get { return m_recentDeathCount; }
+            set { Dirty = true; m_recentDeathCount = value; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public DateTime DeathWindowStartedAt
+        {
+            get { return m_deathWindowStartedAt; }
+            set { Dirty = true; m_deathWindowStartedAt = value; }
+        }
+
+        [DataElement(AllowDbNull = false, Index = true)]
+        public bool MutationPending
+        {
+            get { return m_mutationPending; }
+            set { Dirty = true; m_mutationPending = value; }
+        }
+
+        [DataElement(AllowDbNull = false, Index = true)]
+        public bool IsMutant
+        {
+            get { return m_isMutant; }
+            set { Dirty = true; m_isMutant = value; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public DateTime LastMutationAt
+        {
+            get { return m_lastMutationAt; }
+            set { Dirty = true; m_lastMutationAt = value; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public int LastMutationChancePercent
+        {
+            get { return m_lastMutationChancePercent; }
+            set { Dirty = true; m_lastMutationChancePercent = value; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public int MutationCount
+        {
+            get { return m_mutationCount; }
+            set { Dirty = true; m_mutationCount = value; }
+        }
+
+        [DataElement(AllowDbNull = false, Varchar = 96)]
+        public string BonusLoadoutKey
+        {
+            get { return m_bonusLoadoutKey; }
+            set { Dirty = true; m_bonusLoadoutKey = value; }
+        }
+
+        [DataElement(AllowDbNull = false, Varchar = 255)]
+        public string BonusSpellIds
+        {
+            get { return m_bonusSpellIds; }
+            set { Dirty = true; m_bonusSpellIds = value; }
+        }
+
+        [DataElement(AllowDbNull = false, Varchar = 255)]
+        public string BonusStyleIds
+        {
+            get { return m_bonusStyleIds; }
+            set { Dirty = true; m_bonusStyleIds = value; }
+        }
+
+        [DataElement(AllowDbNull = false, Varchar = 255)]
+        public string BonusAbilityKeys
+        {
+            get { return m_bonusAbilityKeys; }
+            set { Dirty = true; m_bonusAbilityKeys = value; }
         }
 
         [DataElement(AllowDbNull = false, Index = true)]

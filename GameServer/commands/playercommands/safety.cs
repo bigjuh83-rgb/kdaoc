@@ -3,7 +3,7 @@ namespace DOL.GS.Commands
     [CmdAttribute(
          "&safety",
          ePrivLevel.Player,
-         "Turns off PvP safety flag.",
+         "PvP 안전 설정을 끕니다.",
          "/safety off")]
     public class SafetyCommandHandler : AbstractCommandHandler, ICommandHandler
     {

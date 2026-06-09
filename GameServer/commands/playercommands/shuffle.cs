@@ -5,7 +5,7 @@
 // 	[CmdAttribute(
 // 		"&shuffle",
 // 		ePrivLevel.Player,
-// 		"Shuffle # of decks, minimum 1. Must be used before /deal.",
+// 		"지정한 수의 덱을 섞습니다. 최소 1개이며 /deal 전에 사용해야 합니다.",
 // 		"/shuffle <#>")]
 // 	public class ShuffleCommandHandler : AbstractCommandHandler, ICommandHandler
 // 	{

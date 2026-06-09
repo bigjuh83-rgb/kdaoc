@@ -175,9 +175,9 @@ The progress API exposes pending choices so dummy automation can choose by id or
 - `PartyBonusMultiplier`
 - `ChoiceBonusKey`
 
-The v1 formula remains compatible with current XP/money rewards, then adds a step-count bonus:
+The v1 formula remains compatible with current XP/money rewards, then adds an explicit step-count bonus:
 
-`baseReward * questMultiplier * max(1, completedPlayableStepCount)`
+`baseReward * rewardMultiplier * partyMultiplier * (1 + max(0, completedPlayableStepCount - 1) * stepBonusMultiplier)`
 
 Item, reputation, faction, and world-state rewards are deferred until graph progression is stable.
 
@@ -212,13 +212,13 @@ For v1 E2E, the follow-up hook records the selected branch but does not spawn a 
 
 ## LLM Role
 
-LLM generation is deferred until graph execution is stable. When added, LLM output must be constrained to a validated graph JSON schema.
+LLM graph generation is allowed only as a constrained v1 graph template. LLM output is parsed into server-owned graph objects, then the same graph validator used by deterministic quests decides whether the definition may run.
 
 Allowed LLM responsibilities:
 
 - Generate title and NPC text.
 - Suggest node labels and choice prose.
-- Fill a deterministic graph template.
+- Fill a deterministic `Talk -> Kill -> ReturnToNpc -> Choice -> Complete` graph template.
 - Suggest follow-up quest seeds.
 
 Disallowed LLM responsibilities:
@@ -227,6 +227,7 @@ Disallowed LLM responsibilities:
 - Mark progress complete.
 - Choose hidden branch outcomes outside server conditions.
 - Create unvalidated target NPC names or impossible objectives.
+- Override server-owned Talk/ReturnToNpc NPC identifiers.
 
 ## Monster Growth And Companion Hooks
 

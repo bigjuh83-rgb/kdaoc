@@ -30,7 +30,7 @@ PROFILES: dict[str, NavTestProfile] = {
         "salisbury-slope",
         "Salisbury Plains height/Z regression route with visible slope changes",
         1,
-        "581632,581632,2192|582432,581632,2008|582432,582432,2050|581066,581066,2412",
+        "581632,581632,2192|582432,581632,2008|582432,582432,1968|581066,581066,2412",
     ),
     "salisbury-grid": NavTestProfile(
         "salisbury-grid",

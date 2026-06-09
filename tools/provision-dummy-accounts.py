@@ -7,6 +7,7 @@ import argparse
 import csv
 import hashlib
 import os
+import random
 import re
 import shutil
 import subprocess
@@ -52,6 +53,16 @@ DEFAULT_NATURAL_CHARACTER_NAMES = [
     "리아",
     "테오",
 ]
+RANDOM_STAT_COLUMNS = {
+    "Strength",
+    "Constitution",
+    "Dexterity",
+    "Quickness",
+    "Intelligence",
+    "Piety",
+    "Empathy",
+    "Charisma",
+}
 
 
 def read_serverconfig_password() -> str:
@@ -67,6 +78,28 @@ def client_character_index(realm: int, slot_index: int) -> int:
     """Return the WorldInit client index for a realm-local character slot."""
 
     return (realm - 1) * 10 + slot_index
+
+
+def deterministic_random(args: argparse.Namespace, field: str, position_offset: int) -> random.Random:
+    seed = str(getattr(args, "random_seed", "") or getattr(args, "seed", "") or "opendaoc-dummy")
+    return random.Random(f"{seed}:{field}:{position_offset}")
+
+
+def random_cycle_int(args: argparse.Namespace, values: list[str], field: str, position_offset: int) -> int | None:
+    parsed = [int(value) for value in values if str(value).strip().lstrip("-").isdigit()]
+    if not parsed:
+        return None
+    return deterministic_random(args, field, position_offset).choice(parsed)
+
+
+def random_stat_value(args: argparse.Namespace, stat_name: str, position_offset: int) -> int:
+    minimum = int(getattr(args, "random_stat_min", 45) or 45)
+    maximum = int(getattr(args, "random_stat_max", 75) or 75)
+    if maximum < minimum:
+        minimum, maximum = maximum, minimum
+    minimum = max(1, minimum)
+    maximum = min(255, maximum)
+    return deterministic_random(args, f"stat:{stat_name}", position_offset).randint(minimum, maximum)
 
 
 EQUIP_SLOTS = {
@@ -440,7 +473,12 @@ def build_character_insert(
     columns = get_columns(args, "dolcharacters")
     select_parts: list[str] = []
     class_id = cycle_int(getattr(args, "class_cycle_values", []), position_offset)
-    race_id = cycle_int(getattr(args, "race_cycle_values", []), position_offset)
+    race_values = getattr(args, "race_cycle_values", [])
+    race_id = (
+        random_cycle_int(args, race_values, "race", position_offset)
+        if getattr(args, "randomize_race", False)
+        else cycle_int(race_values, position_offset)
+    )
     creation_model = cycle_int(getattr(args, "creation_model_cycle_values", []), position_offset)
     current_model = cycle_int(getattr(args, "current_model_cycle_values", []), position_offset)
     specs = cycle_value(getattr(args, "spec_cycle_values", []), position_offset)
@@ -461,6 +499,8 @@ def build_character_insert(
             select_parts.append(f"{class_id} AS `{column}`")
         elif column == "Race" and race_id is not None:
             select_parts.append(f"{race_id} AS `{column}`")
+        elif column in RANDOM_STAT_COLUMNS and getattr(args, "randomize_stats", False):
+            select_parts.append(f"{random_stat_value(args, column, position_offset)} AS `{column}`")
         elif column == "CreationModel" and creation_model is not None:
             select_parts.append(f"{creation_model} AS `{column}`")
         elif column == "CurrentModel" and current_model is not None:
@@ -475,6 +515,12 @@ def build_character_insert(
             select_parts.append(f"NOW() AS `{column}`")
         elif column == "LastPlayed":
             select_parts.append(f"NULL AS `{column}`")
+        elif column == "Level":
+            level_override = cycle_int(getattr(args, "level_values", []), position_offset)
+            if level_override is not None and level_override > 0:
+                select_parts.append(f"{level_override} AS `{column}`")
+            else:
+                select_parts.append(f"`{column}`")
         elif column in {"PlayedTime", "PlayedTimeSinceLevel", "RealmPoints", "BountyPoints", "Experience"}:
             select_parts.append(f"0 AS `{column}`")
         elif column == "Xpos" and args.start_x is not None:
@@ -786,6 +832,11 @@ def main() -> int:
     parser.add_argument("--class-cycle", default="", help="pipe-separated class IDs to assign by offset")
     parser.add_argument("--csv-class-cycle", default="", help="pipe-separated target class IDs to write to csv by offset")
     parser.add_argument("--race-cycle", default="", help="pipe-separated race IDs to assign by offset")
+    parser.add_argument("--randomize-race", action="store_true", help="choose a deterministic random race from --race-cycle for each generated character")
+    parser.add_argument("--randomize-stats", action="store_true", help="assign deterministic random base stats instead of copying template stats")
+    parser.add_argument("--random-stat-min", type=int, default=45, help="minimum random base stat when --randomize-stats is enabled")
+    parser.add_argument("--random-stat-max", type=int, default=75, help="maximum random base stat when --randomize-stats is enabled")
+    parser.add_argument("--random-seed", default="opendaoc-dummy", help="seed for deterministic random race/stat generation")
     parser.add_argument("--creation-model-cycle", default="", help="pipe-separated CreationModel values to assign by offset")
     parser.add_argument("--current-model-cycle", default="", help="pipe-separated CurrentModel values to assign by offset")
     parser.add_argument("--spec-cycle", default="", help="pipe-separated SerializedSpecs values to assign by offset")
@@ -797,6 +848,7 @@ def main() -> int:
     parser.add_argument("--start-y", type=int, help="override dummy character start Y coordinate")
     parser.add_argument("--start-z", type=int, help="override dummy character start Z coordinate")
     parser.add_argument("--start-region", type=int, help="override dummy character start region")
+    parser.add_argument("--level", default="", help="pipe-separated level values to assign by offset; overrides template level")
     parser.add_argument("--slot-index", type=int, default=0, help="client-visible character index inside the selected realm")
     parser.add_argument("--csv", default="tools/dummy-accounts.csv")
     parser.add_argument("--replace", action="store_true", help="delete existing dummy accounts/chars in the requested range first")
@@ -810,6 +862,7 @@ def main() -> int:
     args.current_model_cycle_values = parse_cycle(args.current_model_cycle)
     args.spec_cycle_values = parse_cycle(args.spec_cycle, "||")
     args.ability_cycle_values = parse_cycle(args.ability_cycle, "||")
+    args.level_values = parse_cycle(args.level)
 
     if not mysql_bin_available(args.mysql_bin):
         raise SystemExit(f"mysql client not found: {args.mysql_bin}")

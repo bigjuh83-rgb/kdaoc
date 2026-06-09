@@ -13,8 +13,8 @@ namespace DOL.GS.Commands
 		"&boat",
 		new string[] { "&boatcommand" },
 		ePrivLevel.Player,
-		"Boat command (use /boat for options)",
-		"/boat <option>")]
+		"보트 명령어입니다. 옵션을 보려면 /boat를 사용하세요.",
+		"/boat <옵션>")]
 	public class BoatCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		/// <summary>

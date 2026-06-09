@@ -52,7 +52,7 @@ SiegecraftingMaster.GuildOrder:				공성 제작자
 SiegecraftingMaster.InitialEntersentence:	[공성 제작자] 조합에 가입하시겠습니까? 공성 제작자는 렐름 방어를 돕는 정교한 전쟁 장비를 만들 수 있습니다!
 FletchingMaster.AcceptedByOrderName:			활 제작자 조합
 FletchingMaster.GuildOrder:				    활 제작자
-FletchingMaster.InitialEntersentence:		[활 제작자] 조합에 가입하시겠습니까? 활 제작자는 활, 화살, 지팡이를 만들 수 있습니다. 활 제작에 뛰어나고 무기 제작에도 능숙하지만, 방어구 제작과 재봉은 어려울 것입니다. 숙련된 활 제작자는 필요할 때 공성 제작도 상당히 잘 수행할 수 있습니다.
+FletchingMaster.InitialEntersentence:		[활 제작자] 조합에 가입하시겠습니까? 활 제작자는 활, 화살, 스태프를 만들 수 있습니다. 활 제작에 뛰어나고 무기 제작에도 능숙하지만, 방어구 제작과 재봉은 어려울 것입니다. 숙련된 활 제작자는 필요할 때 공성 제작도 상당히 잘 수행할 수 있습니다.
 BasicCraftingMaster.AcceptedByOrderName:	기본 제작
 BasicCraftingMaster.GuildOrder:				기본 제작자
 ArmorCraftingMaster.AcceptedByOrderName:	방어구 제작자 조합

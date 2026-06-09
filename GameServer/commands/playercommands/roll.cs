@@ -34,8 +34,8 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&roll",
 		ePrivLevel.Player,
-		"simulates a dice roll.",
-		"/roll [#] to throw with a specified number of dice")]
+		"주사위 굴림을 시뮬레이션합니다.",
+		"/roll [#] 지정한 개수의 주사위를 굴립니다.")]
 	public class RollCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		private const int RESULT_RANGE = 512; // emote range

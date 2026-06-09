@@ -45,6 +45,9 @@ namespace DOL.GS
 				return false;
 			}
 
+			if (IsInstrument(item))
+				return ValidateInstrument(item, out reason);
+
 			if (IsWeaponSlot(item.Item_Type))
 				return ValidateWeapon(item, out reason);
 
@@ -191,7 +194,7 @@ namespace DOL.GS
 			return false;
 		}
 
-		public static void ApplyTierBonuses(DbItemTemplate item, KdaocRandomItemTier tier, KdaocRandomMobRank rank)
+		public static void ApplyTierBonuses(DbItemTemplate item, KdaocRandomItemTier tier, KdaocRandomMobRank rank, int maxItemLevel = 50)
 		{
 			if (item == null)
 				return;
@@ -219,18 +222,19 @@ namespace DOL.GS
 			item.Quality = Math.Max(item.Quality, minimumQuality);
 			item.Bonus = Math.Max(item.Bonus, minimumBonus);
 
+			int levelCap = Math.Max(1, maxItemLevel);
 			if (rank == KdaocRandomMobRank.Boss)
-				item.Level = Math.Min(50, Math.Max(item.Level, item.Level + 5));
+				item.Level = Math.Min(levelCap, Math.Max(item.Level, item.Level + 5));
 			else if (rank == KdaocRandomMobRank.Named)
-				item.Level = Math.Min(50, Math.Max(item.Level, item.Level + 2));
+				item.Level = Math.Min(levelCap, Math.Max(item.Level, item.Level + 2));
 
 			string prefix = tier switch
 			{
-				KdaocRandomItemTier.Mythic => "신화:",
-				KdaocRandomItemTier.Legendary => "전설:",
-				KdaocRandomItemTier.Heroic => "영웅:",
-				KdaocRandomItemTier.Rare => "희귀:",
-				KdaocRandomItemTier.Magic => "마력:",
+				KdaocRandomItemTier.Mythic => "Mythic:",
+				KdaocRandomItemTier.Legendary => "Legendary:",
+				KdaocRandomItemTier.Heroic => "Heroic:",
+				KdaocRandomItemTier.Rare => "Rare:",
+				KdaocRandomItemTier.Magic => "Magic:",
 				_ => string.Empty,
 			};
 
@@ -254,6 +258,17 @@ namespace DOL.GS
 			return itemType == Slot.JEWELRY || itemType == Slot.CLOAK || itemType == Slot.NECK || itemType == Slot.WAIST
 				|| itemType == Slot.LEFTWRIST || itemType == Slot.RIGHTWRIST || itemType == Slot.LEFTRING
 				|| itemType == Slot.RIGHTRING || itemType == Slot.MYTHICAL;
+		}
+
+		private static bool IsInstrument(DbItemTemplate item)
+		{
+			return item.Item_Type == Slot.RANGED && item.Object_Type == (int)eObjectType.Instrument;
+		}
+
+		private static bool ValidateInstrument(DbItemTemplate item, out string reason)
+		{
+			reason = string.Empty;
+			return true;
 		}
 
 		private static bool ValidateWeapon(DbItemTemplate item, out string reason)

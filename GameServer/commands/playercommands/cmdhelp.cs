@@ -6,9 +6,9 @@ namespace DOL.GS.Commands
 {
     [CmdAttribute("&cmdhelp",
         ePrivLevel.Player,
-        "Displays available commands",
-        "'/cmdhelp' displays a list of all the commands and their descriptions",
-        "'/cmdhelp <cmd>' displays the usage for cmd")]
+        "사용 가능한 명령어를 표시합니다.",
+        "'/cmdhelp'는 모든 명령어와 설명 목록을 표시합니다.",
+        "'/cmdhelp <명령어>'는 해당 명령어 사용법을 표시합니다.")]
     public class CmdHelpCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         private static SortedDictionary<ePrivLevel, List<string>> m_commandLists;

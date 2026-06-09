@@ -109,51 +109,61 @@ namespace DOL.GS {
 				#region Caer Sidi
 
 				case "caer sidi":
+				case "케어 시디":
 					if (t.Realm != eRealm.Albion) return false;
 					t.Out.SendMessage(LanguageMgr.GetTranslation(t.Client.Account.Language, "LordOfBoss.Menu.CaerSidi"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 					break;
 
 				case "skeletal sacristan":
+				case "스켈레탈 새크리스턴":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.Scripts.SkeletalSacristan");
 					break;
 
 				case "spectral provisioner":
+				case "스펙트럴 프로비저너":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.Scripts.SpectralProvisioner");
 					break;
 
 				case "lich lord ilron":
+				case "리치 로드 일론":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.Scripts.LichLordIlron");
 					break;
 
 				case "warlord dorinakka":
+				case "워로드 도리나카":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.Scripts.WarlordDorinakka");
 					break;
 
 				case "soul reckoner":
+				case "소울 레커너":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.SoulReckoner");
 					break;
 
 				case "crypt lord":
+				case "크립트 로드":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.CryptLord");
 					break;
 
 				case "silencer":
+				case "사일런서":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.Silencer");
 					break;
 
 				case "lord sanguis":
+				case "로드 생귀스":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.LordSanguis");
 					break;
 
 				case "bane of hope":
+				case "베인 오브 호프":
 					if (t.Realm != eRealm.Albion) return false;
 					SummonBoss(t,"DOL.GS.Scripts.BaneOfHope");
 					break;
@@ -161,31 +171,37 @@ namespace DOL.GS {
 
 				#region Galladoria
 				case "galladoria":
+				case "갈라도리아":
 					if (t.Realm != eRealm.Hibernia) return false;
 					t.Out.SendMessage(LanguageMgr.GetTranslation(t.Client.Account.Language, "LordOfBoss.Menu.Galladoria"), eChatType.CT_Say, eChatLoc.CL_PopupWindow);
 					break;
 
 				case "easmarach":
+				case "이스마라크":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.Easmarach");
 					break;
 
 				case "organic energy mechanism":
+				case "유기 에너지 장치":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.OrganicEnergyMechanism");
 					break;
 
 				case "giant sporite cluster":
+				case "거대 스포라이트 군집":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.GiantSporiteCluster");
 					break;
 
 				case "conservator":
+				case "컨서베이터":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.Conservator");
 					break;
 
 				case "xaga":
+				case "자가":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.Xaga");
 					SummonBoss(t,"DOL.GS.Beatha");
@@ -193,21 +209,25 @@ namespace DOL.GS {
 					break;
 
 				case "spindler broodmother":
+				case "스핀들러 브루드마더":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.SpindlerBroodmother");
 					break;
 
 				case "olcasar geomancer":
+				case "올카사르 지오맨서":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.OlcasarGeomancer");
 					break;
 
 				case "aroon the urlamhai":
+				case "아룬 더 우를람하이":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.Aroon");
 					break;
 
 				case "hurionthex":
+				case "휴리온텍스":
 					if (t.Realm != eRealm.Hibernia) return false;
 					SummonBoss(t,"DOL.GS.Hurionthex");
 					break;

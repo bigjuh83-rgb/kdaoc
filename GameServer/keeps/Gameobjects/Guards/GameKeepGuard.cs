@@ -4,6 +4,7 @@ using System.Numerics;
 using DOL.AI.Brain;
 using DOL.Database;
 using DOL.Events;
+using DOL.GS.GameEvents;
 using DOL.GS.ServerProperties;
 using DOL.Language;
 
@@ -115,6 +116,26 @@ namespace DOL.GS.Keeps
 		{
 			// (base.Level * 4)
 			get { return GetModified(eProperty.MaxHealth) + (base.Level * 2); }
+		}
+
+		public override void TakeDamage(GameObject source, eDamageType damageType, int damageAmount, int criticalAmount)
+		{
+			if (damageType is not eDamageType.GM && Component?.Keep != null && IsEnemyDamageSource(source))
+			{
+				damageAmount = KeepSupplyConvoyEvent.ApplyUndersuppliedGuardDamage(Component.Keep, damageAmount);
+				criticalAmount = KeepSupplyConvoyEvent.ApplyUndersuppliedGuardDamage(Component.Keep, criticalAmount);
+			}
+
+			base.TakeDamage(source, damageType, damageAmount, criticalAmount);
+		}
+
+		private bool IsEnemyDamageSource(GameObject source)
+		{
+			GameLiving attacker = source as GameLiving;
+			if (source is GameNPC npcSource && npcSource.Brain is IControlledBrain controlledBrain)
+				attacker = controlledBrain.GetLivingOwner();
+
+			return attacker != null && !GameServer.ServerRules.IsSameRealm(this, attacker, true);
 		}
 
 		private bool m_changingPositions = false;
@@ -491,8 +512,8 @@ namespace DOL.GS.Keeps
 
 			RefreshTemplate();
 
-			// Guards are immune to confusion effects.
-			AddAbility(SkillBase.GetAbility(GS.Abilities.ConfusionImmunity));
+			// Guards use an internal immunity key that is intentionally not DB-backed.
+			AddAbility(IntrinsicAbilityFactory.Create(GS.Abilities.ConfusionImmunity));
 		}
 
 		public void DeleteObject()

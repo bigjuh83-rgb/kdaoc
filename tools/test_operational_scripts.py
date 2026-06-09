@@ -1,7 +1,9 @@
 import unittest
 import csv
 import importlib.util
+import io
 import json
+import sys
 import tempfile
 from pathlib import Path
 from unittest import mock
@@ -49,8 +51,207 @@ assert RVR_SMOKE_SPEC is not None and RVR_SMOKE_SPEC.loader is not None
 run_dummy_rvr_smoke = importlib.util.module_from_spec(RVR_SMOKE_SPEC)
 RVR_SMOKE_SPEC.loader.exec_module(run_dummy_rvr_smoke)
 
+LIVE_COMPANION_ROLE_MATRIX_SPEC = importlib.util.spec_from_file_location(
+    "run_live_companion_role_matrix",
+    ROOT / "tools" / "run-live-companion-role-matrix.py",
+)
+assert LIVE_COMPANION_ROLE_MATRIX_SPEC is not None and LIVE_COMPANION_ROLE_MATRIX_SPEC.loader is not None
+run_live_companion_role_matrix = importlib.util.module_from_spec(LIVE_COMPANION_ROLE_MATRIX_SPEC)
+LIVE_COMPANION_ROLE_MATRIX_SPEC.loader.exec_module(run_live_companion_role_matrix)
+
+LIVE_COMPANION_PLAYER_DRIVER_SPEC = importlib.util.spec_from_file_location(
+    "run_live_companion_player_driver_smoke",
+    ROOT / "tools" / "run-live-companion-player-driver-smoke.py",
+)
+assert LIVE_COMPANION_PLAYER_DRIVER_SPEC is not None and LIVE_COMPANION_PLAYER_DRIVER_SPEC.loader is not None
+run_live_companion_player_driver_smoke = importlib.util.module_from_spec(LIVE_COMPANION_PLAYER_DRIVER_SPEC)
+LIVE_COMPANION_PLAYER_DRIVER_SPEC.loader.exec_module(run_live_companion_player_driver_smoke)
+
 
 class OperationalScriptTests(unittest.TestCase):
+    def test_live_companion_role_matrix_defaults_cover_current_operational_baseline(self) -> None:
+        self.assertEqual(
+            run_live_companion_role_matrix.DEFAULT_PROFILES,
+            [
+                "support-crowd-control",
+                "support-speed-song",
+                "stealth-passive",
+                "mixed-real-join",
+                "tank-protection",
+                "caster-dps",
+                "healer-resurrection",
+            ],
+        )
+
+    def test_live_companion_role_matrix_builds_profile_command_with_passthrough(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            args = run_live_companion_role_matrix.build_parser().parse_args(
+                ["--run-root", temp_dir, "--replace"]
+            )
+
+            command = run_live_companion_role_matrix.build_profile_command(
+                "caster-dps",
+                args,
+                ["--allow-leader-deaths", "1"],
+            )
+
+        self.assertEqual(command[0], sys.executable)
+        self.assertTrue(command[1].replace("\\", "/").endswith("tools/run-live-companion-party-smoke.py"))
+        self.assertEqual(command[command.index("--smoke-profile") + 1], "caster-dps")
+        self.assertEqual(command[command.index("--run-dir") + 1], str(Path(temp_dir) / "caster-dps"))
+        self.assertIn("--replace", command)
+        self.assertEqual(command[-2:], ["--allow-leader-deaths", "1"])
+
+    def test_live_companion_role_matrix_builds_healer_resurrection_with_stable_real_join_overrides(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            args = run_live_companion_role_matrix.build_parser().parse_args(
+                ["--run-root", temp_dir]
+            )
+
+            command = run_live_companion_role_matrix.build_profile_command(
+                "healer-resurrection",
+                args,
+                [],
+            )
+
+        self.assertIn("--real-player-join", command)
+        self.assertEqual(command[command.index("--joiner-account") + 1], "albtest007")
+        self.assertEqual(command[command.index("--roles") + 1], "healer,dps")
+
+    def test_live_companion_player_driver_smoke_wraps_command_profile(self) -> None:
+        command = run_live_companion_player_driver_smoke.build_command(["--dry-run"])
+
+        self.assertTrue(command[1].replace("\\", "/").endswith("tools/run-live-companion-party-smoke.py"))
+        self.assertEqual(command[command.index("--smoke-profile") + 1], "player-command-combat")
+        self.assertEqual(
+            command[command.index("--run-dir") + 1].replace("\\", "/"),
+            "test-output/live-companion-selftest/player-command-combat",
+        )
+        self.assertIn("--replace", command)
+        self.assertEqual(command[-1], "--dry-run")
+
+    def test_live_companion_role_matrix_reads_player_accounts_from_profile_run_dir(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            run_dir = Path(temp_dir)
+            (run_dir / "player-accounts.csv").write_text(
+                "username,password,realm,char_index\n"
+                "dummy300,dummy-pass,1,0\n"
+                "albtest007,dummy-pass,1,0\n"
+                "dummy300,dummy-pass,1,0\n",
+                encoding="utf-8",
+            )
+
+            accounts = run_live_companion_role_matrix.profile_player_accounts(run_dir)
+
+        self.assertEqual(accounts, ["dummy300", "albtest007"])
+
+    def test_live_companion_role_matrix_main_returns_failure_when_any_profile_fails(self) -> None:
+        calls: list[list[str]] = []
+
+        def fake_run(command: list[str], cwd: Path | None = None) -> mock.Mock:
+            calls.append(command)
+            profile = command[command.index("--smoke-profile") + 1]
+            return mock.Mock(returncode=0 if profile == "stealth-passive" else 12)
+
+        with tempfile.TemporaryDirectory() as temp_dir, mock.patch.object(
+            run_live_companion_role_matrix.subprocess,
+            "run",
+            side_effect=fake_run,
+        ), mock.patch.object(run_live_companion_role_matrix, "wait_for_accounts_offline", return_value=True), mock.patch.object(
+            run_live_companion_role_matrix.time, "sleep"
+        ) as sleep_mock:
+            rc = run_live_companion_role_matrix.main(
+                [
+                    "--run-root",
+                    temp_dir,
+                    "--profiles",
+                    "stealth-passive,caster-dps",
+                    "--replace",
+                    "--allow-leader-deaths",
+                    "1",
+                ]
+            )
+
+        self.assertEqual(rc, 1)
+        self.assertEqual(len(calls), 2)
+        self.assertIn("--replace", calls[0])
+        self.assertEqual(calls[1][-2:], ["--allow-leader-deaths", "1"])
+        sleep_mock.assert_called_once_with(45.0)
+
+    def test_live_companion_role_matrix_defaults_use_matrix_stability_settle(self) -> None:
+        args = run_live_companion_role_matrix.build_parser().parse_args([])
+
+        self.assertEqual(args.account_offline_timeout, 60.0)
+        self.assertEqual(args.profile_settle_seconds, 45.0)
+        self.assertEqual(args.healer_resurrection_pre_settle_seconds, 60.0)
+
+    def test_live_companion_role_matrix_main_waits_for_previous_player_accounts_to_clear(self) -> None:
+        def fake_run_profile(profile: str, args: object, passthrough: object) -> dict[str, object]:
+            run_dir = Path(args.run_root) / profile
+            run_dir.mkdir(parents=True, exist_ok=True)
+            (run_dir / "player-accounts.csv").write_text(
+                "username,password,realm,char_index\n"
+                f"{profile}-leader,dummy-pass,1,0\n",
+                encoding="utf-8",
+            )
+            return {"profile": profile, "run_dir": str(run_dir), "return_code": 0}
+
+        with tempfile.TemporaryDirectory() as temp_dir, mock.patch.object(
+            run_live_companion_role_matrix,
+            "run_profile",
+            side_effect=fake_run_profile,
+        ), mock.patch.object(
+            run_live_companion_role_matrix,
+            "wait_for_accounts_offline",
+            return_value=True,
+        ) as wait_mock, mock.patch.object(run_live_companion_role_matrix.time, "sleep") as sleep_mock:
+            rc = run_live_companion_role_matrix.main(
+                [
+                    "--run-root",
+                    temp_dir,
+                    "--profiles",
+                    "support-crowd-control,caster-dps",
+                    "--profile-settle-seconds",
+                    "5",
+                ]
+            )
+
+        self.assertEqual(rc, 0)
+        wait_mock.assert_called_once_with(
+            "http://localhost:5000",
+            ["support-crowd-control-leader"],
+            timeout=60.0,
+            poll_interval=1.0,
+        )
+        sleep_mock.assert_called_once_with(5.0)
+
+    def test_live_companion_role_matrix_wait_for_accounts_offline_polls_until_clear(self) -> None:
+        states = [
+            {"player": {"name": "Dummy300"}},
+            None,
+        ]
+
+        def fake_fetch_player_state(api_url: str, account: str, *, timeout: float = 2.0) -> dict[str, object] | None:
+            self.assertEqual(api_url, "http://localhost:5000")
+            self.assertEqual(account, "dummy300")
+            self.assertEqual(timeout, 1.0)
+            return states.pop(0)
+
+        with mock.patch.object(
+            run_live_companion_role_matrix,
+            "fetch_player_state",
+            side_effect=fake_fetch_player_state,
+        ), mock.patch.object(run_live_companion_role_matrix.time, "sleep") as sleep_mock:
+            cleared = run_live_companion_role_matrix.wait_for_accounts_offline(
+                "http://localhost:5000",
+                ["dummy300"],
+                timeout=5.0,
+                poll_interval=1.0,
+            )
+
+        self.assertTrue(cleared)
+        sleep_mock.assert_called_once_with(1.0)
+
     def test_live_companion_player_facing_korean_text_is_readable(self) -> None:
         hire_npc = (ROOT / "GameServer" / "scripts" / "customnpc" / "CompanionHireNpc.cs").read_text(encoding="utf-8")
         gm_dummy = (ROOT / "GameServer" / "commands" / "gmcommands" / "dummy.cs").read_text(encoding="utf-8")
@@ -59,26 +260,28 @@ class OperationalScriptTests(unittest.TestCase):
         )
 
         for expected in [
-            "동료 고용관",
-            "[파티 동료] [치유 동료] [방어 동료] [공격 동료] [동료 상태] [동료 요청 취소] [동료 해산]",
-            "동료에게 연락을 넣었습니다.",
-            "지금 가능한 동료가 없습니다.",
-            "최근 동료 요청: 상태=",
+            "용병 고용관",
+            "고용: [치유형 고용] [방어형 고용] [공격형 고용]",
+            "관리: [상태 확인] [요청 취소] [용병 해산]",
+            "용병에게 연락을 넣었습니다.",
+            "지금 가능한 용병이 없습니다.",
+            "최근 용병 요청: 상태=",
         ]:
             self.assertIn(expected, hire_npc)
+        self.assertNotIn("[파티 용병]", hire_npc)
 
         for expected in [
             "역할은 healer, tank, dps, support 중 하나여야 합니다.",
             "플레이어를 찾을 수 없습니다:",
-            "동료 요청 상태",
+            "용병 요청 상태",
         ]:
             self.assertIn(expected, gm_dummy)
 
         for expected in [
-            "동료 요청이 취소되었습니다.",
-            "동료가 파티에 합류했습니다.",
-            "동료를 찾을 수 없습니다.",
-            "동료가 이미 다른 파티에 속해 있습니다.",
+            "용병 요청이 취소되었습니다.",
+            "용병이 파티에 합류했습니다.",
+            "용병을 찾을 수 없습니다.",
+            "용병이 이미 다른 파티에 속해 있습니다.",
         ]:
             self.assertIn(expected, companion_api)
 
@@ -110,6 +313,29 @@ class OperationalScriptTests(unittest.TestCase):
     def test_rvr_smoke_uses_new_frontiers_region(self) -> None:
         self.assertEqual(run_dummy_rvr_smoke.FRONTIER_REGION, 163)
 
+    def test_rvr_smoke_dry_run_skip_provision_builds_three_realm_commands_without_csv(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch("sys.stdout", new_callable=io.StringIO) as stdout:
+                exit_code = run_dummy_rvr_smoke.main(
+                    [
+                        "--dry-run",
+                        "--skip-provision",
+                        "--run-dir",
+                        str(Path(tmp) / "rvr-smoke"),
+                        "--party-size",
+                        "2",
+                        "--hold",
+                        "1",
+                    ]
+                )
+
+        self.assertEqual(exit_code, 0)
+        output = stdout.getvalue()
+        self.assertEqual(output.count("behavior-dummy-client.py"), 3)
+        for realm in ("alb", "mid", "hib"):
+            self.assertIn(f"{realm}-accounts.csv", output)
+        self.assertIn("--rvr-enemy-player-hunter", output)
+
     def test_rvr_smoke_reads_account_rows_for_level50_promotion(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "accounts.csv"
@@ -132,6 +358,23 @@ class OperationalScriptTests(unittest.TestCase):
                 dx = first[0] - second[0]
                 dy = first[1] - second[1]
                 self.assertLessEqual(dx * dx + dy * dy, 700 * 700)
+
+    def test_rvr_smoke_waypoints_stay_inside_frontier_patrol_envelope(self) -> None:
+        center_x, center_y, center_z = run_dummy_rvr_smoke.FRONTIER_PATROL_CENTER
+
+        for realm_key, meet_point in run_dummy_rvr_smoke.FRONTIER_MEET_POINTS.items():
+            with self.subTest(realm=realm_key):
+                waypoints = [
+                    tuple(int(value) for value in waypoint.split(","))
+                    for waypoint in run_dummy_rvr_smoke.rvr_waypoints(*meet_point).split("|")
+                ]
+
+                self.assertEqual(waypoints[0], meet_point)
+                self.assertEqual(waypoints[1], run_dummy_rvr_smoke.FRONTIER_PATROL_CENTER)
+                for x, y, z in waypoints:
+                    self.assertEqual(z, center_z)
+                    self.assertLessEqual(abs(x - center_x), 700)
+                    self.assertLessEqual(abs(y - center_y), 700)
 
     def test_rvr_smoke_summary_counts_damage_when_attack_toggle_is_absent(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -753,6 +996,32 @@ class OperationalScriptTests(unittest.TestCase):
         self.assertIn("OPENDAOC_PAUSE_ON_EXIT", script)
         self.assertNotIn("\npause >nul\nexit /b", script.lower())
 
+    def test_visible_launcher_defers_companion_until_api_ready(self) -> None:
+        script = (ROOT / "start-main-server-visible.bat").read_text(encoding="utf-8")
+
+        self.assertIn("start-companion-after-api-ready.ps1", script)
+        self.assertIn("OPENDAOC_START_COMPANION_SERVICE", script)
+        self.assertNotIn('start "OpenDAoC Companion Service" "%SCRIPT_DIR%start-live-companion-service-visible.bat"', script)
+
+    def test_visible_launcher_exports_gemini_key_to_wsl(self) -> None:
+        script = (ROOT / "start-main-server-visible.bat").read_text(encoding="utf-8")
+
+        self.assertIn("GEMINI_API_KEY/u", script)
+        self.assertIn("OPENAI_API_KEY/u", script)
+        self.assertLess(script.index("GEMINI_API_KEY/u"), script.index("wsl.exe -d Ubuntu"))
+        self.assertLess(script.index("OPENAI_API_KEY/u"), script.index("wsl.exe -d Ubuntu"))
+
+    def test_companion_api_ready_helper_starts_visible_companion_launcher_after_probe(self) -> None:
+        script = (ROOT / "tools" / "start-companion-after-api-ready.ps1").read_text(encoding="utf-8")
+
+        self.assertIn("OPENDAOC_COMPANION_API_URL", script)
+        self.assertIn("/api/dummy/companions/config", script)
+        self.assertIn("Invoke-WebRequest", script)
+        self.assertIn("start-live-companion-service-visible.bat", script)
+        self.assertLess(script.find("Invoke-WebRequest"), script.find("start-live-companion-service-visible.bat"))
+        self.assertNotIn("OPENAI_API_KEY", script)
+        self.assertNotIn("sk-", script.lower())
+
     def test_live_companion_visible_launcher_uses_standard_wsl_service_runner(self) -> None:
         script = (ROOT / "start-live-companion-service-visible.bat").read_text(encoding="utf-8")
 
@@ -765,7 +1034,7 @@ class OperationalScriptTests(unittest.TestCase):
     def test_live_companion_service_runner_uses_safe_operational_defaults(self) -> None:
         script = (ROOT / "tools" / "start-live-companion-service.sh").read_text(encoding="utf-8")
 
-        self.assertIn('API_URL="${OPENDAOC_COMPANION_API_URL:-http://127.0.0.1:5000}"', script)
+        self.assertIn('API_URL="${OPENDAOC_COMPANION_API_URL:-http://localhost:5000}"', script)
         self.assertIn('ACCOUNTS_CSV="${OPENDAOC_COMPANION_ACCOUNTS:-tools/dummy-live-companions.csv}"', script)
         self.assertIn('RUN_DIR="${OPENDAOC_COMPANION_RUN_DIR:-test-output/live-companion-service}"', script)
         self.assertIn('MAX_RUNTIME="${OPENDAOC_COMPANION_MAX_RUNTIME:-0}"', script)
@@ -773,9 +1042,15 @@ class OperationalScriptTests(unittest.TestCase):
         self.assertIn("--max-runtime", script)
         self.assertIn("OPENDAOC_COMPANION_ONCE", script)
         self.assertIn("OPENDAOC_COMPANION_DRY_RUN", script)
+        self.assertIn("OPENDAOC_COMPANION_WAIT_API", script)
+        self.assertIn("OPENDAOC_COMPANION_WAIT_API_TIMEOUT", script)
+        self.assertIn("/api/dummy/companions/config", script)
+        self.assertIn('sed "s/\\r$//" "$ENV_FILE"', script)
         self.assertIn('if [[ "$DIALOGUE_ENABLED" == "1" ]]', script)
         self.assertIn("--ai-gateway-model-alias", script)
+        self.assertIn("--ai-guide-model-alias", script)
         self.assertIn("small-dialogue", script)
+        self.assertIn("openai-small-guide", script)
         self.assertNotIn("OPENAI_API_KEY=", script)
         self.assertNotIn("sk-", script.lower())
 
@@ -900,6 +1175,14 @@ class OperationalScriptTests(unittest.TestCase):
         self.assertIn("tools/equip-dummy-boss-gear.py", script)
         self.assertIn("tools/validate-dummy-50-setup.py", script)
         self.assertLess(script.find("tools/equip-dummy-boss-gear.py"), script.find("tools/validate-dummy-50-setup.py"))
+
+    def test_fast_status_checks_read_only_dynamic_quest_api_on_standard_port(self) -> None:
+        script = (ROOT / "tools" / "check-main-server-fast.sh").read_text(encoding="utf-8")
+
+        self.assertIn('local port="${OPENDAOC_API_PORT:-5000}"', script)
+        self.assertIn("/api/world/dynamic-quests/story-config", script)
+        self.assertIn("OK api ${OPENDAOC_API_PORT:-5000}", script)
+        self.assertIn("DOWN api ${OPENDAOC_API_PORT:-5000}", script)
 
     def test_dummy_load_test_uses_current_dummy_template_defaults(self) -> None:
         script = (ROOT / "tools" / "run-dummy-load-test.py").read_text(encoding="utf-8")

@@ -5,7 +5,7 @@ namespace DOL.GS.Commands
 {
     [CmdAttribute("&knock",
         ePrivLevel.Player,
-       "Knock on a house",
+       "집 문을 두드립니다.",
         "/knock")]
     public class KnockCommandHandler : AbstractCommandHandler, ICommandHandler
     {

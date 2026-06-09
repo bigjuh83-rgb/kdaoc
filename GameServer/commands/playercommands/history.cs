@@ -6,7 +6,7 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&history",
         ePrivLevel.Player,
-        "Show recent public world history.",
+        "최근 공개 월드 기록을 표시합니다.",
         "/history")]
     public class HistoryCommandHandler : AbstractCommandHandler, ICommandHandler
     {

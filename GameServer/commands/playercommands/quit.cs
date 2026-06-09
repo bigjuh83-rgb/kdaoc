@@ -21,7 +21,7 @@ namespace DOL.GS.Commands
 {
 	[CmdAttribute("&quit", new string[] { "&q" }, //command to handle
 		ePrivLevel.Player, //minimum privelege level
-		"Removes the player from the world", //command description
+		"캐릭터를 월드에서 접속 종료합니다.", //command description
 		"/quit")] //usage
 	public class QuitCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

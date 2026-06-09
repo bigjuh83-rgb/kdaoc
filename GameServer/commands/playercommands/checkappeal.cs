@@ -9,11 +9,11 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&checkappeal",
 		ePrivLevel.Player,
-		"Checks the status of your appeal or cancels it.",
-		"Usage:",
-		"/checkappeal view - View your appeal status.",
-		"/checkappeal cancel - Cancel your appeal and remove it from the queue.",
-		"Use /appeal to file an appeal.")]
+		"내 신고 상태를 확인하거나 신고를 취소합니다.",
+		"사용법:",
+		"/checkappeal view - 신고 상태를 확인합니다.",
+		"/checkappeal cancel - 신고를 취소하고 대기열에서 제거합니다.",
+		"신고를 접수하려면 /appeal을 사용하세요.")]
 
 	public class CheckAppealCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

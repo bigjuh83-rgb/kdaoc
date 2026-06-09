@@ -29,8 +29,8 @@ namespace DOL.GS.Commands
 	[Cmd(
 		 "&settitle",
 		 ePrivLevel.Player,
-		 "Sets the current player title",
-		 "/settitle <index> - to change current title using index in the list")]
+		 "현재 플레이어 칭호를 설정합니다.",
+		 "/settitle <인덱스> - 목록의 인덱스로 현재 칭호를 변경합니다.")]
 	public class SetTitleCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

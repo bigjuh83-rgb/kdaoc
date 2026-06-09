@@ -8,8 +8,8 @@ namespace DOL.GS.Commands
     [CmdAttribute(
          "&trade",
          ePrivLevel.Player,
-         "Broadcast a trade message to other players in the same region",
-         "/trade <message>")]
+         "같은 지역의 다른 플레이어에게 거래 메시지를 방송합니다.",
+         "/trade <메시지>")]
     public class TradeChannelCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         private const string tradeTimeoutString = "lastTradeTick";

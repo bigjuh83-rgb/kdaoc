@@ -24,7 +24,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&autoloot",
 		ePrivLevel.Player,
-		"automaticly pick up any loot that drops in your area",
+		"주변에 떨어진 전리품을 자동으로 줍습니다.",
 		"/autoloot <on/off>")]
 	public class AutolootCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

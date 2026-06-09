@@ -27,7 +27,7 @@ namespace DOL.GS.Commands
         "&quest",
         new string[] {"&quests"},
         ePrivLevel.Player,
-        "Display a list of your ongoing and completed quests", "/quest")]
+        "진행 중이거나 완료한 퀘스트 목록을 표시합니다.", "/quest")]
     public class QuestCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)

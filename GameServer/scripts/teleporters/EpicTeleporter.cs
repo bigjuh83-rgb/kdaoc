@@ -53,6 +53,7 @@ namespace DOL.GS.Scripts
 			switch(str)
 			{
 
+                case "셀레스티우스":
                 case "Celestius":
 
                     //if (t.Group.MemberCount >= 4) //You have enough

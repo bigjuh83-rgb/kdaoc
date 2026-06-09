@@ -7,8 +7,8 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 	  "&housepoints",
 	  ePrivLevel.Player,
-	   "Toggles display of housepoints",
-		 "Useage: /housepoints toggle")]
+	   "하우스 포인트 표시를 켜거나 끕니다.",
+		 "사용법: /housepoints toggle")]
 	public class HousePointsCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

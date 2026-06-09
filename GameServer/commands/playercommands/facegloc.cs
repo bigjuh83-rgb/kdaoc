@@ -7,7 +7,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&facegloc",
 		ePrivLevel.Player,
-		"Turns and faces your character into the direction of the x, y coordinates provided (using DOL region global coordinates).",
+		"입력한 x, y 전역 좌표 방향으로 캐릭터를 돌립니다.",
 		"/facegloc [x] [y]")]
 	public class GLocFaceCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

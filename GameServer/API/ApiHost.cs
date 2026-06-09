@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using DOL.GS.API.Dashboard;
@@ -8,6 +8,7 @@ using DOL.GS.API.DummyNavigation;
 using DOL.GS.API.WorldAI;
 using DOL.GS.ServerProperties;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -24,7 +25,11 @@ namespace DOL.GS.API
 
             var contentRoot = Directory.GetCurrentDirectory();
 
-            // builder.WebHost.ConfigureKestrel(options => options.ListenLocalhost(9874));
+            string apiPort = Environment.GetEnvironmentVariable("OPENDAOC_API_PORT");
+            if (string.IsNullOrWhiteSpace(apiPort))
+                apiPort = "5000";
+
+            builder.WebHost.UseUrls($"http://0.0.0.0:{apiPort}");
 
             var webRoot = Path.Combine(contentRoot, "wwwroot", "docs");
 
@@ -81,6 +86,13 @@ namespace DOL.GS.API
             api.MapWorldAiRoutes();
             api.MapDummyNavigationRoutes();
             api.MapDummyCombatRoutes();
+            api.MapGet("/api/dummy/companions/config", () =>
+            {
+                return Results.Ok(new
+                {
+                    dialogue_enabled = Properties.DUMMY_COMPANION_DIALOGUE_ENABLED
+                });
+            });
             api.MapDummyCompanionRoutes();
 
             #endregion

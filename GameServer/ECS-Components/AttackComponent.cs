@@ -983,8 +983,10 @@ namespace DOL.GS
 
             if (!playerName.StartsWith("Growth", StringComparison.OrdinalIgnoreCase) &&
                 !playerName.StartsWith("Dummy", StringComparison.OrdinalIgnoreCase) &&
+                !playerName.StartsWith("Dqtest", StringComparison.OrdinalIgnoreCase) &&
                 !accountName.StartsWith("growth", StringComparison.OrdinalIgnoreCase) &&
-                !accountName.StartsWith("dummy", StringComparison.OrdinalIgnoreCase))
+                !accountName.StartsWith("dummy", StringComparison.OrdinalIgnoreCase) &&
+                !accountName.StartsWith("dqtest", StringComparison.OrdinalIgnoreCase))
                 return;
 
             bool inFront = owner.IsObjectInFront(target, 120);
@@ -1906,7 +1908,7 @@ namespace DOL.GS
 
             if (_simpleAttackMessageKeys.TryGetValue(ad.AttackResult, out var messageKey))
             {
-                string targetName = ad.Target?.GetName(0, true, player.Client.Account.Language, ad.Target as GameNPC);
+                string targetName = GetCombatNameFor(player, ad.Target, 0, true);
                 SendLocalizedMessage(player, messageKey, targetName);
                 return;
             }
@@ -1969,26 +1971,32 @@ namespace DOL.GS
 
                 if (wasIntercepted)
                 {
+                    string targetNameUpper = GetCombatNameFor(player, ad.Target, 0, true);
+                    string targetName = GetCombatNameFor(player, ad.Target, 0, false);
+                    string originalTargetName = GetCombatNameFor(player, ad.OriginalTarget, 0, false);
+
                     // Message: "You attack <OriginalTarget>, but <FinalTarget> steps in the way!"
                     SendLocalizedMessage(player,
                         "GamePlayer.Attack.Intercepted",
-                        ad.Target.GetName(0, true),
-                        ad.OriginalTarget.GetName(0, false));
+                        targetNameUpper,
+                        originalTargetName);
                     SendLocalizedMessage(player,
                         "GamePlayer.Attack.InterceptedHit",
                         attackTypeMsg,
-                        ad.OriginalTarget.GetName(0, false),
+                        originalTargetName,
                         hitWeapon,
-                        ad.Target.GetName(0, false),
+                        targetName,
                         ad.Damage,
                         modMessage);
                 }
                 else
                 {
+                    string targetName = GetCombatNameFor(player, ad.Target, 0, false);
+
                     SendLocalizedMessage(player,
                         "GamePlayer.Attack.InterceptHit",
                         attackTypeMsg,
-                        ad.Target.GetName(0, false),
+                        targetName,
                         hitWeapon,
                         ad.Damage,
                         modMessage);
@@ -1997,7 +2005,8 @@ namespace DOL.GS
                 // Send critical hit message if applicable.
                 if (ad.CriticalDamage > 0)
                 {
-                    string baseMessage = LanguageMgr.GetTranslation(player.Client.Account.Language, "GamePlayer.Attack.Critical", ad.Target.GetName(0, false, player.Client.Account.Language, ad.Target as GameNPC), ad.CriticalDamage);
+                    string targetName = GetCombatNameFor(player, ad.Target, 0, false);
+                    string baseMessage = LanguageMgr.GetTranslation(player.Client.Account.Language, "GamePlayer.Attack.Critical", targetName, ad.CriticalDamage);
                     string criticalMessage = $"{baseMessage} ({ad.CriticalChance}%)";
                     player.Out.SendMessage(criticalMessage, eChatType.CT_YouHit, eChatLoc.CL_SystemWindow);
                 }
@@ -2007,7 +2016,9 @@ namespace DOL.GS
                     if (weapon == null)
                         return string.Empty;
 
-                    string name = player.Client.Account.Language == "DE" ? weapon.Name : GlobalConstants.NameToShortName(weapon.Name);
+                    string name = player.Client.Account.Language == "KR"
+                        ? LanguageMgr.GetTranslatedItemName(player.Client.Account.Language, weapon)
+                        : player.Client.Account.Language == "DE" ? weapon.Name : GlobalConstants.NameToShortName(weapon.Name);
                     string withYour = LanguageMgr.GetTranslation(player.Client.Account.Language, "GamePlayer.Attack.WithYour");
                     return $" {withYour} {name}";
                 }
@@ -2037,18 +2048,18 @@ namespace DOL.GS
                     if (wasIntercepted)
                     {
                         if (ad.OriginalTarget is GamePlayer guardedPlayer)
-                            SendLocalizedMessage(guardedPlayer, "GameLiving.AttackData.BlocksYou", ad.BlockChance, ad.Target.GetName(0, true), ad.Attacker.GetName(0, false));
+                            SendLocalizedMessage(guardedPlayer, "GameLiving.AttackData.BlocksYou", ad.BlockChance, GetCombatNameFor(guardedPlayer, ad.Target, 0, true), GetCombatNameFor(guardedPlayer, ad.Attacker, 0, false));
 
                         if (ad.Target is GamePlayer blockerPlayer)
                         {
-                            SendLocalizedMessage(blockerPlayer, "GameLiving.AttackData.YouBlock", ad.BlockChance, ad.Attacker.GetName(0, false), ad.OriginalTarget.GetName(0, false));
+                            SendLocalizedMessage(blockerPlayer, "GameLiving.AttackData.YouBlock", ad.BlockChance, GetCombatNameFor(blockerPlayer, ad.Attacker, 0, false), GetCombatNameFor(blockerPlayer, ad.OriginalTarget, 0, false));
                             blockerPlayer.Stealth(false);
                         }
                     }
                     else
                     {
                         if (ad.Target is GamePlayer targetPlayer)
-                            SendLocalizedMessage(targetPlayer, "GameLiving.Attack.Block", ad.BlockChance, ad.Attacker.GetName(0, true));
+                            SendLocalizedMessage(targetPlayer, "GameLiving.Attack.Block", ad.BlockChance, GetCombatNameFor(targetPlayer, ad.Attacker, 0, true));
                     }
 
                     break;
@@ -2059,10 +2070,10 @@ namespace DOL.GS
                     if (wasIntercepted)
                     {
                         if (ad.OriginalTarget is GamePlayer originalTargetPlayer)
-                            SendLocalizedMessage(originalTargetPlayer, "GameLiving.AttackData.StepsInFront", 0, ad.Target.GetName(0, true));
+                            SendLocalizedMessage(originalTargetPlayer, "GameLiving.AttackData.StepsInFront", 0, GetCombatNameFor(originalTargetPlayer, ad.Target, 0, true));
 
                         if (ad.Target is GamePlayer finalTargetPlayer)
-                            SendLocalizedMessage(finalTargetPlayer, "GameLiving.AttackData.YouStepInFront", 0, ad.OriginalTarget.GetName(0, false));
+                            SendLocalizedMessage(finalTargetPlayer, "GameLiving.AttackData.YouStepInFront", 0, GetCombatNameFor(finalTargetPlayer, ad.OriginalTarget, 0, false));
                     }
 
                     break;
@@ -2080,6 +2091,15 @@ namespace DOL.GS
 
                 player.Out.SendMessage(message, eChatType.CT_Action, eChatLoc.CL_SystemWindow);
             }
+        }
+
+        private static string GetCombatNameFor(GamePlayer viewer, GameLiving living, int article, bool firstLetterUppercase)
+        {
+            if (living == null)
+                return string.Empty;
+
+            string language = viewer?.Client?.Account?.Language;
+            return living.GetName(article, firstLetterUppercase, language, living as GameNPC);
         }
 
         private void BroadcastObserverMessage(AttackData ad)

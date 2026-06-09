@@ -425,13 +425,109 @@ namespace DOL.GS.ServerProperties
 		[ServerProperty("kdaoc", "worldai_mob_growth_max_active_bosses", "KDAOC: Maximum active grown bosses operators should allow before pruning or resetting.", 5)]
 		public static int WORLDAI_MOB_GROWTH_MAX_ACTIVE_BOSSES;
 
+		[ServerProperty("kdaoc", "worldai_mob_growth_max_active_bosses_per_region", "KDAOC: Maximum active grown bosses per region. 0 disables the regional cap.", 1)]
+		public static int WORLDAI_MOB_GROWTH_MAX_ACTIVE_BOSSES_PER_REGION;
+
 		[ServerProperty("kdaoc", "worldai_mob_growth_excluded_regions", "KDAOC: CSV/semicolon region IDs excluded from monster growth.", "")]
 		public static string WORLDAI_MOB_GROWTH_EXCLUDED_REGIONS;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_protected_regions", "KDAOC: CSV/semicolon region IDs protected from monster growth by default, such as tutorial or newbie regions.", "27")]
+		public static string WORLDAI_MOB_GROWTH_PROTECTED_REGIONS;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_protected_name_tokens", "KDAOC: CSV/semicolon name tokens excluded from monster growth, for quest-critical or utility NPCs.", "quest;trainer;merchant;master;훈련;상인;퀘스트")]
+		public static string WORLDAI_MOB_GROWTH_PROTECTED_NAME_TOKENS;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_minimum_eligible_level", "KDAOC: Minimum base level eligible for monster growth.", 5)]
+		public static int WORLDAI_MOB_GROWTH_MINIMUM_ELIGIBLE_LEVEL;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_low_level_max_base_level", "KDAOC: Base level at or below which monsters are capped by worldai_mob_growth_low_level_max_stage. 0 disables this cap.", 15)]
+		public static int WORLDAI_MOB_GROWTH_LOW_LEVEL_MAX_BASE_LEVEL;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_low_level_max_stage", "KDAOC: Maximum growth stage for low-level monsters. normal, elite, champion, or boss.", "Elite")]
+		public static string WORLDAI_MOB_GROWTH_LOW_LEVEL_MAX_STAGE;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_decay_enabled", "KDAOC: Enable GM-triggered stale monster growth decay cleanup.", true)]
+		public static bool WORLDAI_MOB_GROWTH_DECAY_ENABLED;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_decay_after_minutes", "KDAOC: Active grown monsters unseen for this many minutes lose growth when /mobgrowth decay runs.", 720)]
+		public static int WORLDAI_MOB_GROWTH_DECAY_AFTER_MINUTES;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_decay_score", "KDAOC: Growth score removed from stale active monsters per /mobgrowth decay run.", 60)]
+		public static int WORLDAI_MOB_GROWTH_DECAY_SCORE;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_reset_inactive_after_minutes", "KDAOC: Inactive growth rows unseen for this many minutes are deleted by /mobgrowth decay.", 10080)]
+		public static int WORLDAI_MOB_GROWTH_RESET_INACTIVE_AFTER_MINUTES;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_mutation_enabled", "KDAOC: Enable mutant monster spawns when the same monster is killed too often.", true)]
+		public static bool WORLDAI_MOB_GROWTH_MUTATION_ENABLED;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_mutation_death_window_minutes", "KDAOC: Minutes in the rolling death window used for mutant spawn checks.", 10)]
+		public static int WORLDAI_MOB_GROWTH_MUTATION_DEATH_WINDOW_MINUTES;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_mutation_death_threshold", "KDAOC: Deaths required inside the mutation window before mutation rolls start.", 5)]
+		public static int WORLDAI_MOB_GROWTH_MUTATION_DEATH_THRESHOLD;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_mutation_chance_step_percent", "KDAOC: Mutation chance added for each death at or above the threshold.", 10)]
+		public static int WORLDAI_MOB_GROWTH_MUTATION_CHANCE_STEP_PERCENT;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_mutation_max_chance_percent", "KDAOC: Maximum mutant spawn chance after repeated deaths.", 100)]
+		public static int WORLDAI_MOB_GROWTH_MUTATION_MAX_CHANCE_PERCENT;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_mutation_level_bonus", "KDAOC: Extra level bonus applied while a monster is mutant.", 2)]
+		public static int WORLDAI_MOB_GROWTH_MUTATION_LEVEL_BONUS;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_mutation_size_bonus_percent", "KDAOC: Extra size percent applied while a monster is mutant.", 15)]
+		public static int WORLDAI_MOB_GROWTH_MUTATION_SIZE_BONUS_PERCENT;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_elite_size_bonus_percent", "KDAOC: Size percent bonus for Elite grown monsters.", 10)]
+		public static int WORLDAI_MOB_GROWTH_ELITE_SIZE_BONUS_PERCENT;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_champion_size_bonus_percent", "KDAOC: Size percent bonus for Champion grown monsters.", 25)]
+		public static int WORLDAI_MOB_GROWTH_CHAMPION_SIZE_BONUS_PERCENT;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_boss_size_bonus_percent", "KDAOC: Size percent bonus for Boss grown monsters.", 45)]
+		public static int WORLDAI_MOB_GROWTH_BOSS_SIZE_BONUS_PERCENT;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_mutation_spell_pool", "KDAOC: Semicolon-separated spell IDs randomly granted to mutant monsters.", "11890;11891;11933;11934;12006;12008")]
+		public static string WORLDAI_MOB_GROWTH_MUTATION_SPELL_POOL;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_elite_spell_pool", "KDAOC: Semicolon-separated spell IDs randomly granted to Elite or higher monsters.", "11874;11892;11899;12001")]
+		public static string WORLDAI_MOB_GROWTH_ELITE_SPELL_POOL;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_champion_spell_pool", "KDAOC: Semicolon-separated spell IDs randomly granted to Champion or higher monsters.", "11893;11902;11979;12003")]
+		public static string WORLDAI_MOB_GROWTH_CHAMPION_SPELL_POOL;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_boss_spell_pool", "KDAOC: Semicolon-separated boss-style spell IDs randomly granted to Boss monsters.", "11840;11841;11842;11955;11956;11957;11958;12013")]
+		public static string WORLDAI_MOB_GROWTH_BOSS_SPELL_POOL;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_mutation_style_pool", "KDAOC: Semicolon-separated styleId|classId entries randomly granted to mutant monsters.", "103|2;247|44;240|10")]
+		public static string WORLDAI_MOB_GROWTH_MUTATION_STYLE_POOL;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_elite_style_pool", "KDAOC: Semicolon-separated styleId|classId entries randomly granted to Elite or higher monsters.", "103|2;247|44")]
+		public static string WORLDAI_MOB_GROWTH_ELITE_STYLE_POOL;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_champion_style_pool", "KDAOC: Semicolon-separated styleId|classId entries randomly granted to Champion or higher monsters.", "108|2;112|2;246|44;247|44")]
+		public static string WORLDAI_MOB_GROWTH_CHAMPION_STYLE_POOL;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_boss_style_pool", "KDAOC: Semicolon-separated boss-style styleId|classId entries randomly granted to Boss monsters.", "256|44;259|44;292|44;302|44;157|22;178|22;167|22")]
+		public static string WORLDAI_MOB_GROWTH_BOSS_STYLE_POOL;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_mutation_ability_pool", "KDAOC: Semicolon-separated abilityKey|level entries randomly granted to mutant monsters.", "Enhanced Evade|1;Tireless|1;CCImmunity|1")]
+		public static string WORLDAI_MOB_GROWTH_MUTATION_ABILITY_POOL;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_elite_ability_pool", "KDAOC: Semicolon-separated abilityKey|level entries randomly granted to Elite or higher monsters.", "Evade|1;Tireless|1")]
+		public static string WORLDAI_MOB_GROWTH_ELITE_ABILITY_POOL;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_champion_ability_pool", "KDAOC: Semicolon-separated abilityKey|level entries randomly granted to Champion or higher monsters.", "Advanced Evade|1;Stoicism|1;CCImmunity|1")]
+		public static string WORLDAI_MOB_GROWTH_CHAMPION_ABILITY_POOL;
+
+		[ServerProperty("kdaoc", "worldai_mob_growth_boss_ability_pool", "KDAOC: Semicolon-separated boss-style abilityKey|level entries randomly granted to Boss monsters.", "CCImmunity|1;Stoicism|1;Advanced Evade|1;Enhanced Evade|1")]
+		public static string WORLDAI_MOB_GROWTH_BOSS_ABILITY_POOL;
 
 		[ServerProperty("kdaoc", "kdaoc_random_item_enabled", "KDAOC: Enable global random generated item drops.", false)]
 		public static bool KDAOC_RANDOM_ITEM_ENABLED;
 
-		[ServerProperty("kdaoc", "kdaoc_random_item_suppress_existing_loot", "KDAOC: When enabled, random item loot replaces existing normal item loot generators.", true)]
+		[ServerProperty("kdaoc", "kdaoc_random_item_suppress_existing_loot", "KDAOC: When enabled, random item loot replaces existing normal item loot generators.", false)]
 		public static bool KDAOC_RANDOM_ITEM_SUPPRESS_EXISTING_LOOT;
 
 		[ServerProperty("kdaoc", "kdaoc_random_item_exclusive_priority", "KDAOC: Exclusive loot priority used when suppressing existing loot.", 1000)]
@@ -440,7 +536,7 @@ namespace DOL.GS.ServerProperties
 		[ServerProperty("kdaoc", "kdaoc_random_item_min_mob_level", "KDAOC: Minimum monster level eligible for random item drops.", 1)]
 		public static int KDAOC_RANDOM_ITEM_MIN_MOB_LEVEL;
 
-		[ServerProperty("kdaoc", "kdaoc_random_item_max_item_level", "KDAOC: Maximum generated random item level.", 50)]
+		[ServerProperty("kdaoc", "kdaoc_random_item_max_item_level", "KDAOC: Maximum generated random item level.", 51)]
 		public static int KDAOC_RANDOM_ITEM_MAX_ITEM_LEVEL;
 
 		[ServerProperty("kdaoc", "kdaoc_random_item_drop_grey_mobs", "KDAOC: Allow random item drops from grey-con monsters.", false)]
@@ -494,7 +590,31 @@ namespace DOL.GS.ServerProperties
 		[ServerProperty("kdaoc", "kdaoc_random_item_max_generation_attempts", "KDAOC: Maximum attempts to generate a safe random item before dropping nothing.", 5)]
 		public static int KDAOC_RANDOM_ITEM_MAX_GENERATION_ATTEMPTS;
 
-		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_enabled", "KDAOC: Enable volatile in-memory dynamic quests. Dynamic quests are not saved to DB.", false)]
+		[ServerProperty("kdaoc", "kdaoc_dragon_ball_enabled", "KDAOC: Enable rare Dragon Ball collection drops from monster kills.", true)]
+		public static bool KDAOC_DRAGON_BALL_ENABLED;
+
+		[ServerProperty("kdaoc", "kdaoc_dragon_ball_drop_chance_per_million", "KDAOC: Dragon Ball drop chance per eligible monster kill, in one-millionths. 250 means 0.025%.", 250)]
+		public static int KDAOC_DRAGON_BALL_DROP_CHANCE_PER_MILLION;
+
+		[ServerProperty("kdaoc", "kdaoc_dragon_ball_min_mob_level", "KDAOC: Minimum monster level eligible for Dragon Ball drops.", 5)]
+		public static int KDAOC_DRAGON_BALL_MIN_MOB_LEVEL;
+
+		[ServerProperty("kdaoc", "kdaoc_dragon_ball_summon_dragon_model", "KDAOC: NPC model used for the temporary Dragon Ball summon dragon.", 2383)]
+		public static int KDAOC_DRAGON_BALL_SUMMON_DRAGON_MODEL;
+
+		[ServerProperty("kdaoc", "kdaoc_dragon_ball_summon_dragon_size", "KDAOC: NPC size used for the temporary Dragon Ball summon dragon.", 180)]
+		public static int KDAOC_DRAGON_BALL_SUMMON_DRAGON_SIZE;
+
+		[ServerProperty("kdaoc", "kdaoc_dragon_ball_summon_duration_seconds", "KDAOC: Seconds the temporary Dragon Ball summon dragon remains visible for wish presentation.", 300)]
+		public static int KDAOC_DRAGON_BALL_SUMMON_DURATION_SECONDS;
+
+		[ServerProperty("kdaoc", "kdaoc_dragon_ball_summon_weather_enabled", "KDAOC: Start temporary foggy weather during Dragon Ball summon when the region has no active weather.", true)]
+		public static bool KDAOC_DRAGON_BALL_SUMMON_WEATHER_ENABLED;
+
+		[ServerProperty("kdaoc", "kdaoc_dragon_ball_summon_effect", "KDAOC: Client spell effect id played during Dragon Ball summon.", 4074)]
+		public static int KDAOC_DRAGON_BALL_SUMMON_EFFECT;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_enabled", "KDAOC: Enable dynamic quest offers, graph progress, and runtime world bindings.", false)]
 		public static bool KDAOC_DYNAMIC_QUEST_ENABLED;
 
 		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_max_active_per_player", "KDAOC: Maximum active in-memory dynamic quests per player.", 1)]
@@ -511,6 +631,99 @@ namespace DOL.GS.ServerProperties
 
 		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_reward_money_multiplier", "KDAOC: Money multiplier for volatile dynamic quest completion.", 1.0)]
 		public static double KDAOC_DYNAMIC_QUEST_REWARD_MONEY_MULTIPLIER;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_auto_seed_enabled", "KDAOC: Automatically seed dynamic quest offers from configured story templates and current world NPCs.", false)]
+		public static bool KDAOC_DYNAMIC_QUEST_AUTO_SEED_ENABLED;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_auto_seed_tick_minutes", "KDAOC: Minutes between automatic dynamic quest seed checks.", 30)]
+		public static int KDAOC_DYNAMIC_QUEST_AUTO_SEED_TICK_MINUTES;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_auto_seed_max_quests", "KDAOC: Maximum dynamic quest offers created by one automatic seed pass.", 3)]
+		public static int KDAOC_DYNAMIC_QUEST_AUTO_SEED_MAX_QUESTS;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_auto_seed_definitions", "KDAOC: Semicolon-separated deterministic dynamic quest story hints: StartNpcNameOrSelector|RegionId|TargetNameOrSelector|Count|MinLevel|MaxLevel|StartMode|Trigger|BranchWorldSignal.", "selector:town-npc|1|selector:hostile-near-start|1|1|5|NpcOffer||mob-growth:killed:region:1;selector:town-npc|100|selector:hostile-near-start|1|1|5|NpcOffer||mob-growth:killed:region:100;selector:town-npc|200|selector:hostile-near-start|1|1|5|NpcOffer||mob-growth:killed:region:200")]
+		public static string KDAOC_DYNAMIC_QUEST_AUTO_SEED_DEFINITIONS;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_world_revision", "KDAOC: Dynamic quest world/lore revision. Change this value to cancel stale dynamic quest progress and rebind volatile quest offers.", "default")]
+		public static string KDAOC_DYNAMIC_QUEST_WORLD_REVISION;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_auto_seed_use_llm", "KDAOC: Use LLM quest generation for automatic dynamic quest seeds instead of deterministic text.", false)]
+		public static bool KDAOC_DYNAMIC_QUEST_AUTO_SEED_USE_LLM;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_auto_seed_llm_seed", "KDAOC: LLM prompt seed suffix used when automatic dynamic quest LLM generation is enabled.", "지역 분위기에 맞는 짧은 처치 의뢰")]
+		public static string KDAOC_DYNAMIC_QUEST_AUTO_SEED_LLM_SEED;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_provider_order", "KDAOC: Dynamic quest story provider fallback order. Supported aliases: openai, main-local, gemini, secondary-local.", "openai,main-local,secondary-local")]
+		public static string KDAOC_DYNAMIC_QUEST_STORY_PROVIDER_ORDER;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_minimum_score", "KDAOC: Minimum evaluated quality score accepted for generated dynamic quest stories before trying the next provider.", 50)]
+		public static int KDAOC_DYNAMIC_QUEST_STORY_MINIMUM_SCORE;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_compare_providers_enabled", "KDAOC: Generate comparison candidates from multiple story providers before choosing a dynamic quest story. Disabled by default to protect API quota.", false)]
+		public static bool KDAOC_DYNAMIC_QUEST_STORY_COMPARE_PROVIDERS_ENABLED;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_compare_max_per_prefill", "KDAOC: Maximum story provider comparison candidates generated per prefill item when provider comparison is enabled.", 2)]
+		public static int KDAOC_DYNAMIC_QUEST_STORY_COMPARE_MAX_PER_PREFILL;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_cache_max_templates", "KDAOC: Maximum active generated dynamic quest story templates kept in DB before daily low-score pruning.", 500)]
+		public static int KDAOC_DYNAMIC_QUEST_STORY_CACHE_MAX_TEMPLATES;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_cache_prune_count", "KDAOC: Number of low-score generated story templates pruned once per day when the story cache is full.", 50)]
+		public static int KDAOC_DYNAMIC_QUEST_STORY_CACHE_PRUNE_COUNT;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_cache_prefill_batch_size", "KDAOC: Maximum generated dynamic quest story templates to prefill per seed pass.", 5)]
+		public static int KDAOC_DYNAMIC_QUEST_STORY_CACHE_PREFILL_BATCH_SIZE;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_cache_world_prefill_enabled", "KDAOC: Derive extra generated dynamic quest story cache candidates from current world NPC and monster data.", true)]
+		public static bool KDAOC_DYNAMIC_QUEST_STORY_CACHE_WORLD_PREFILL_ENABLED;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_cache_world_prefill_max_candidates", "KDAOC: Maximum extra current-world dynamic quest story candidates considered per seed pass.", 60)]
+		public static int KDAOC_DYNAMIC_QUEST_STORY_CACHE_WORLD_PREFILL_MAX_CANDIDATES;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_cache_offer_enabled", "KDAOC: Promote cached generated dynamic quest stories into live offers when automatic seed slots remain.", true)]
+		public static bool KDAOC_DYNAMIC_QUEST_STORY_CACHE_OFFER_ENABLED;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_cache_offer_min_slots", "KDAOC: Minimum automatic seed slots reserved for cached story offers when LLM quest generation and cache offers are enabled.", 3)]
+		public static int KDAOC_DYNAMIC_QUEST_STORY_CACHE_OFFER_MIN_SLOTS;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_secondary_llm_api_url", "KDAOC: Secondary OpenAI-compatible local LLM API base URL for dynamic quest story fallback.", "http://192.168.0.28:8001")]
+		public static string KDAOC_DYNAMIC_QUEST_STORY_SECONDARY_LLM_API_URL;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_secondary_llm_model", "KDAOC: Secondary OpenAI-compatible local LLM model id for dynamic quest story fallback.", "local-gemma-4-e4b-it")]
+		public static string KDAOC_DYNAMIC_QUEST_STORY_SECONDARY_LLM_MODEL;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_openai_model", "KDAOC: OpenAI model id used for premium dynamic quest story generation.", "gpt-5.4")]
+		public static string KDAOC_DYNAMIC_QUEST_STORY_OPENAI_MODEL;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_openai_per_minute_limit", "KDAOC: Maximum OpenAI dynamic quest story calls per server minute.", 2)]
+		public static int KDAOC_DYNAMIC_QUEST_STORY_OPENAI_PER_MINUTE_LIMIT;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_openai_daily_limit", "KDAOC: Maximum OpenAI dynamic quest story calls per server day.", 5)]
+		public static int KDAOC_DYNAMIC_QUEST_STORY_OPENAI_DAILY_LIMIT;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_openai_daily_token_limit", "KDAOC: Maximum OpenAI dynamic quest story tokens reserved per server day.", 500000)]
+		public static int KDAOC_DYNAMIC_QUEST_STORY_OPENAI_DAILY_TOKEN_LIMIT;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_gemini_model", "KDAOC: Gemini model id used as cloud fallback for dynamic quest story generation.", "gemini-3.5-flash")]
+		public static string KDAOC_DYNAMIC_QUEST_STORY_GEMINI_MODEL;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_gemini_per_minute_limit", "KDAOC: Maximum Gemini dynamic quest story calls per server minute. Keep below provider quota. Set 0 to disable Gemini calls.", 0)]
+		public static int KDAOC_DYNAMIC_QUEST_STORY_GEMINI_PER_MINUTE_LIMIT;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_gemini_daily_limit", "KDAOC: Maximum Gemini dynamic quest story calls per server day. Keep below provider quota. Set 0 to disable Gemini calls.", 0)]
+		public static int KDAOC_DYNAMIC_QUEST_STORY_GEMINI_DAILY_LIMIT;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_gemini_daily_token_limit", "KDAOC: Maximum Gemini dynamic quest story tokens reserved per server day. Set 0 to disable Gemini token spend.", 0)]
+		public static int KDAOC_DYNAMIC_QUEST_STORY_GEMINI_DAILY_TOKEN_LIMIT;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_gemini_reset_delay_minutes", "KDAOC: Minutes after Gemini RPD reset at midnight Pacific Time before pruning and refilling generated quest stories.", 10)]
+		public static int KDAOC_DYNAMIC_QUEST_STORY_GEMINI_RESET_DELAY_MINUTES;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_gemini_reset_window_minutes", "KDAOC: Minutes after the reset delay during which generated quest story pruning/refill may use fresh Gemini daily quota.", 360)]
+		public static int KDAOC_DYNAMIC_QUEST_STORY_GEMINI_RESET_WINDOW_MINUTES;
+
+		[ServerProperty("companion", "dummy_companion_dialogue_enabled", "Enable AI-driven dialogue for live companion service.", false)]
+		public static bool DUMMY_COMPANION_DIALOGUE_ENABLED;
 
 		/// <summary>
 		/// Enable Discord Webhook?
@@ -2561,9 +2774,9 @@ namespace DOL.GS.ServerProperties
 		public static bool ALLOW_BG_CLAIM;
 
 		/// <summary>
-		/// Enables the API endpoints on the port :5000
+		/// Enables the API endpoints on the configured API port.
 		/// </summary>
-		[ServerProperty("atlas", "atlas_api", "Enables the API endpoints on the port :5000", false)]
+		[ServerProperty("atlas", "atlas_api", "Enables the API endpoints on the configured API port", false)]
 		public static bool ATLAS_API;
 		
 		/// <summary>

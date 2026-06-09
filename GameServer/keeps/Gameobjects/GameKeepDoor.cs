@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using DOL.Database;
+using DOL.GS.GameEvents;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerProperties;
 using DOL.Language;
@@ -248,11 +249,22 @@ namespace DOL.GS.Keeps
             attackData.Damage = baseDamage;
             attackData.StyleDamage = styleDamage;
             attackData.CriticalDamage = criticalDamage;
+            ApplyUndersuppliedDamagePenalty(attackData);
 
             static int GetAdjustedDamage(int damage, int toughness, int level)
             {
                 return (damage - damage * 5 * level / 100) * toughness / 100;
             }
+        }
+
+        private void ApplyUndersuppliedDamagePenalty(AttackData attackData)
+        {
+            if (Component?.Keep == null)
+                return;
+
+            attackData.Damage = KeepSupplyConvoyEvent.ApplyUndersuppliedStructureDamage(Component.Keep, attackData.Damage);
+            attackData.StyleDamage = KeepSupplyConvoyEvent.ApplyUndersuppliedStructureDamage(Component.Keep, attackData.StyleDamage);
+            attackData.CriticalDamage = KeepSupplyConvoyEvent.ApplyUndersuppliedStructureDamage(Component.Keep, attackData.CriticalDamage);
         }
 
         /// <summary>

@@ -7,9 +7,9 @@ using DOL.Language;
 
 namespace DOL.GS.Commands
 {
-    [CmdAttribute("&rearrange", ePrivLevel.Player, "Allows you to rearrange your character overview.",
-        "/rearrange list - Shows a list with all to this account assigned characters and their slots.",
-        "/rearrange setslot [source slot] [target slot] - Sets the given source slot to the given target slot.")]
+    [CmdAttribute("&rearrange", ePrivLevel.Player, "캐릭터 선택 화면의 캐릭터 순서를 바꿉니다.",
+        "/rearrange list - 이 계정의 모든 캐릭터와 슬롯 목록을 표시합니다.",
+        "/rearrange setslot [원본 슬롯] [대상 슬롯] - 원본 슬롯의 캐릭터를 대상 슬롯으로 이동합니다.")]
     public class RearrangeCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         private static readonly Logging.Logger log = Logging.LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);

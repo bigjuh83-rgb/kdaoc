@@ -33,8 +33,8 @@ Titles.Kills.Epic.EpicChallenger:			에픽 도전자
 Titles.Kills.Epic.EpicVictor:				에픽 승리자
 Titles.Kills.Hibernia.BaneOfHibernia:		하이버니아의 파멸
 Titles.Kills.Hibernia.ScourgeOfHibernia:	하이버니아의 재앙
-Titles.Kills.Midgard.BaneOfMidgard:			미드가드의 파멸
-Titles.Kills.Midgard.ScourgeOfMidgard:		미드가드의 재앙
+Titles.Kills.Midgard.BaneOfMidgard:			미드가르드의 파멸
+Titles.Kills.Midgard.ScourgeOfMidgard:		미드가르드의 재앙
 
 ### Solo Kills
 Titles.Solokills.DuelMaster:				결투의 달인
@@ -409,8 +409,8 @@ PlayerClass.Valkyrie.GetTitle.40:	오딘이 선택한 자
 PlayerClass.Valkyrie.GetTitle.35:	발할라의 보호자
 PlayerClass.Valkyrie.GetTitle.30:	발할라가 선택한 자
 PlayerClass.Valkyrie.GetTitle.25:	방패 처녀
-PlayerClass.Valkyrie.GetTitle.20:	미드가드의 보호자
-PlayerClass.Valkyrie.GetTitle.15:	미드가드의 종
+PlayerClass.Valkyrie.GetTitle.20:	미드가르드의 보호자
+PlayerClass.Valkyrie.GetTitle.15:	미드가르드의 종
 PlayerClass.Valkyrie.GetTitle.10:	시녀
 PlayerClass.Valkyrie.GetTitle.5:	견습 시녀
 
@@ -421,7 +421,7 @@ PlayerClass.Warlock.GetTitle.40:	헬이 선택한 자
 PlayerClass.Warlock.GetTitle.35:	헬의 종
 PlayerClass.Warlock.GetTitle.30:	워록 옹호자
 PlayerClass.Warlock.GetTitle.25:	워록 보호자
-PlayerClass.Warlock.GetTitle.20:	미드가드의 소환술사
+PlayerClass.Warlock.GetTitle.20:	미드가르드의 소환술사
 PlayerClass.Warlock.GetTitle.15:	헬의 입문자
 PlayerClass.Warlock.GetTitle.10:	소환술사
 PlayerClass.Warlock.GetTitle.5:		견습 소환술사

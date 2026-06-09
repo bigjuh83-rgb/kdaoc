@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +9,7 @@ using DOL.GS.Spells;
 
 namespace DOL.GS.Commands
 {
-    [CmdAttribute("&buff", ePrivLevel.Player, "Buff the target", "/buff <(buffList) | all | help> [playerName | npcName]")]
+    [CmdAttribute("&buff", ePrivLevel.Player, "대상에게 버프를 시전합니다.", "/buff <(버프목록) | all | help> [플레이어이름 | NPC이름]")]
     public class BuffCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         private const int RANGE = 1500;
@@ -70,7 +70,7 @@ namespace DOL.GS.Commands
 
             if (!IsInAllowedArea())
             {
-                ChatUtil.SendSystemMessage(client.Player, $"This command cannot be used here. You must be within 2500 units of a friendly keep, or within a main city, border keep, or a housing area.");
+                ChatUtil.SendSystemMessage(client, "PLCommands.Buff.AreaRequired", null);
                 return;
             }
 
@@ -125,9 +125,9 @@ namespace DOL.GS.Commands
             if (target == null || !client.Player.IsWithinRadius(target, RANGE) || GameServer.ServerRules.IsAllowedToAttack(client.Player, target, true))
             {
                 if (string.IsNullOrEmpty(targetName))
-                    ChatUtil.SendSystemMessage(client.Player, $"You need a target!");
+                    ChatUtil.SendSystemMessage(client, "PLCommands.Buff.NeedTarget", null);
                 else
-                    ChatUtil.SendSystemMessage(client.Player, $"You don't see {targetName} around here!");
+                    ChatUtil.SendSystemMessage(client, "PLCommands.Buff.TargetNotSeen", targetName);
 
                 return;
             }
@@ -151,7 +151,7 @@ namespace DOL.GS.Commands
 
                 if (!_buffLookupTable.TryGetValue(buffKey, out eSpellType buffType))
                 {
-                    ChatUtil.SendSystemMessage(client.Player, $"\"{buffKey}\" is not a valid shortcut.");
+                    ChatUtil.SendSystemMessage(client, "PLCommands.Buff.InvalidShortcut", buffKey);
                     continue;
                 }
 
@@ -177,7 +177,7 @@ namespace DOL.GS.Commands
                 if (strongestSpell.spell == null)
                 {
                     if (!isCastingEveryBuff)
-                        ChatUtil.SendSystemMessage(client.Player, $"\"{buffKey}\" doesn't match any buff you can cast.");
+                        ChatUtil.SendSystemMessage(client, "PLCommands.Buff.NoCastableBuff", buffKey);
                 }
                 else
                     buffsToCast.Add(strongestSpell);

@@ -24,7 +24,7 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&roleplay",
 		ePrivLevel.Player,
-	   "Flags a player with an  tag to indicate the player is a role player.",
+	   "역할극 플레이어임을 나타내는 태그를 표시합니다.",
 	   "/roleplay on/off")]
 	public class RolePlayCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

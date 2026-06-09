@@ -31,7 +31,7 @@ namespace DOL.GS.Commands
 	"&relics",
 	new string[] {"&relic"},
 	ePrivLevel.Player,
-	"Displays the current relic status.", "/relics")]
+	"현재 유물 상태를 표시합니다.", "/relics")]
    public class RelicCommandHandler : AbstractCommandHandler, ICommandHandler
    {
         /*          Relic status

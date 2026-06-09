@@ -65,10 +65,11 @@ namespace DOL.GS
 				InventoryLogging.LogInventoryAction(this, player, eInventoryActionType.Merchant, template, amountToBuy);
 				//Generate the buy message
 				string message;
+				string itemName = LanguageMgr.GetTranslatedItemName(player.Client.Account.Language, template);
 				if (amountToBuy > 1)
-					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.BoughtPieces", amountToBuy, template.GetName(1, false), Money.GetString(totalValue));
+					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.BoughtPieces", amountToBuy, itemName, Money.GetString(totalValue));
 				else
-					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.Bought", template.GetName(1, false), Money.GetString(totalValue));
+					message = LanguageMgr.GetTranslation(player.Client.Account.Language, "GameMerchant.OnPlayerBuy.Bought", itemName, Money.GetString(totalValue));
 
 				// Check if player has enough money and subtract the money
 				if (!player.RemoveMoney(totalValue, message, eChatType.CT_Merchant, eChatLoc.CL_SystemWindow))

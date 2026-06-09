@@ -8,8 +8,8 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&ignore",
         ePrivLevel.Player,
-        "Adds/Removes a player to/from your Ignorelist!",
-        "/ignore <playerName>")]
+        "차단 목록에 플레이어를 추가하거나 제거합니다.",
+        "/ignore <플레이어이름>")]
     public class IgnoreCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         /// <summary>

@@ -3,7 +3,7 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&bind",
         ePrivLevel.Player,
-        "Binds your soul to a bind location, you will start from there after you die and /release",
+        "영혼을 바인드 위치에 묶습니다. 사망 후 /release하면 그 위치에서 시작합니다.",
         "/bind")]
     public class BindCommandHandler : AbstractCommandHandler, ICommandHandler
     {

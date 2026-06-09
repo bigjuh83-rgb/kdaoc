@@ -22,7 +22,7 @@ using DOL.Language;
 
 namespace DOL.GS.Commands
 {
-	[CmdAttribute("&where", ePrivLevel.Player, "Ask where an NPC is from Guards", "/where <NPC Name>")]
+	[CmdAttribute("&where", ePrivLevel.Player, "경비병에게 NPC 위치를 물어봅니다.", "/where <NPC 이름>")]
 	public class WhereCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

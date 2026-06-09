@@ -11,8 +11,8 @@ namespace DOL.GS.Commands
         "&battlechat",
         new string[] { "&bc", "&bchat" },
         ePrivLevel.Player,
-        "Battle group command",
-        "/bc <text>")]
+        "배틀그룹 명령어입니다.",
+        "/bc <메시지>")]
     public class BattleGroupCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         protected static readonly Logging.Logger log = Logging.LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);
@@ -79,8 +79,8 @@ namespace DOL.GS.Commands
         "&battlegroup",
         new string[] { "&bg" },
         ePrivLevel.Player,
-        "Battle group command",
-        "/bg <option>")]
+        "배틀그룹 명령어입니다.",
+        "/bg <옵션>")]
     public class BattleGroupSetupCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         protected static readonly Logging.Logger log = Logging.LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);
@@ -243,7 +243,7 @@ namespace DOL.GS.Commands
                         var curBattleGroupGrouped = new ArrayList(); //create the arraylist
                         var i = 1; //This will list each group in the battle group.
                         text.Length = 0;
-                        text.Append("Groups currently in the BG:");
+                        text.Append(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.GroupClassHeader"));
                         client.Out.SendMessage(text.ToString(), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         text.Length = 0;
 
@@ -301,7 +301,7 @@ namespace DOL.GS.Commands
                         var curBattleGroupNotGrouped = new ArrayList();
                         var i = 1; //This will list each group in the battle group.
                         text.Length = 0;
-                        text.Append("Solo players currently in the BG:");
+                        text.Append(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.SoloHeader"));
                         client.Out.SendMessage(text.ToString(), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         text.Length = 0;
 
@@ -328,14 +328,15 @@ namespace DOL.GS.Commands
 
                             if (mybattlegroup.IsBGLeader(player))
                             {
-                                text.Append(" <Leader> ");
+                                text.Append(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.RoleLeader"));
                             }
                             else
                             {
-                                text.Append(" <Member> ");
+                                text.Append(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.RoleMember"));
                             }
 
-                            text.Append($"{nongrouped.Name}, the level {nongrouped.Level} {nongrouped.CharacterClass.Name} \n");
+                            text.Append(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.SoloLine", nongrouped.Name, nongrouped.Level, nongrouped.CharacterClass.Name));
+                            text.Append('\n');
                             client.Out.SendMessage(text.ToString(), eChatType.CT_System, eChatLoc.CL_SystemWindow);
                         }
                     }
@@ -356,7 +357,7 @@ namespace DOL.GS.Commands
                         int i = 0;
                         StringBuilder text = new StringBuilder(ServerProperties.Properties.BATTLEGROUP_MAX_MEMBER);
                         text.Length = 0;
-                        text.Append("Players currently in Battle Group:");
+                        text.Append(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.WhoHeader"));
                         client.Out.SendMessage(text.ToString(), eChatType.CT_System, eChatLoc.CL_SystemWindow);
 
                         foreach (GamePlayer player in mybattlegroup.Members.Keys)
@@ -368,15 +369,15 @@ namespace DOL.GS.Commands
 
                             if (mybattlegroup.IsBGLeader(player) == true)
                             {
-                                text.Append(" <Leader> ");
+                                text.Append(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.RoleLeader"));
                             }
                             else if (mybattlegroup.IsBGTreasurer(player) == true)
                             {
-                                text.Append(" <Treasurer> ");
+                                text.Append(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.RoleTreasurer"));
                             }
                             else
                             {
-                                text.Append(" <Member> ");
+                                text.Append(LanguageMgr.GetTranslation(client.Account.Language, "Scripts.Players.Battlegroup.RoleMember"));
                             }
 
                             text.Append(player.Name);

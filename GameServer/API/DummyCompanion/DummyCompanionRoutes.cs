@@ -11,6 +11,9 @@ namespace DOL.GS.API.DummyCompanion
 {
     internal static class DummyCompanionRoutes
     {
+        private const int LiveCompanionAttachRelocateDistance = 12000;
+        private const int LiveCompanionAttachOffset = 120;
+
         public static void MapDummyCompanionRoutes(this WebApplication api)
         {
             api.MapGet("/api/dummy/companions/requests", (HttpContext context) =>
@@ -67,18 +70,32 @@ namespace DOL.GS.API.DummyCompanion
                 if (player == null)
                     return Results.NotFound(new { error = "PlayerNotFound", player = playerName });
 
-                CompanionRequestResult result = CompanionRequestService.CreateRequest(
-                    player,
-                    Query(context, "role", CompanionRequestRoles.Fill),
-                    Query(context, "source", "api"),
-                    Query(context, "contentType", "pve"),
-                    Query(context, "createdBy", "api"),
-                    ParseUShort(Query(context, "region"), 0),
-                    ParseInt(Query(context, "x"), 0),
-                    ParseInt(Query(context, "y"), 0),
-                    ParseInt(Query(context, "z"), 0),
-                    Query(context, "requestedCapabilities", Query(context, "capabilities", Query(context, "capability"))),
-                    Query(context, "objectiveTarget", Query(context, "targetName", Query(context, "objectiveName"))));
+                string mercenaryId = Query(context, "mercenaryId", Query(context, "mercenary"));
+                CompanionRequestResult result = string.IsNullOrWhiteSpace(mercenaryId)
+                    ? CompanionRequestService.CreateRequest(
+                        player,
+                        Query(context, "role", CompanionRequestRoles.Fill),
+                        Query(context, "source", "api"),
+                        Query(context, "contentType", "pve"),
+                        Query(context, "createdBy", "api"),
+                        ParseUShort(Query(context, "region"), 0),
+                        ParseInt(Query(context, "x"), 0),
+                        ParseInt(Query(context, "y"), 0),
+                        ParseInt(Query(context, "z"), 0),
+                        Query(context, "requestedCapabilities", Query(context, "capabilities", Query(context, "capability"))),
+                        Query(context, "objectiveTarget", Query(context, "targetName", Query(context, "objectiveName"))),
+                        Query(context, "contractTier", Query(context, "tier")))
+                    : CompanionRequestService.CreateOwnedMercenaryRequest(
+                        player,
+                        mercenaryId,
+                        Query(context, "source", "api"),
+                        Query(context, "contentType", "pve"),
+                        Query(context, "createdBy", "api"),
+                        ParseUShort(Query(context, "region"), 0),
+                        ParseInt(Query(context, "x"), 0),
+                        ParseInt(Query(context, "y"), 0),
+                        ParseInt(Query(context, "z"), 0),
+                        Query(context, "objectiveTarget", Query(context, "targetName", Query(context, "objectiveName"))));
 
                 return result.Success ? Results.Ok(result) : Results.BadRequest(result);
             });
@@ -117,7 +134,7 @@ namespace DOL.GS.API.DummyCompanion
                 CompanionRequest request = CompanionRequestService.CancelRequest(
                     id,
                     Query(context, "reason", "request_canceled"),
-                    Query(context, "message", "동료 요청이 취소되었습니다."));
+                    Query(context, "message", "용병 요청이 취소되었습니다."));
 
                 return request == null ? Results.NotFound(new { error = "RequestNotFoundOrNotCancelable", id }) : Results.Ok(request);
             });
@@ -162,10 +179,13 @@ namespace DOL.GS.API.DummyCompanion
                     return Results.BadRequest(new { error = "AttachFailed", message = failure, request = failed });
                 }
 
+                bool relocated = RelocateCompanionNearRequesterIfNeeded(requester, companion);
                 CompanionRequest updated = CompanionRequestService.UpdateStatus(
                     id,
                     CompanionRequestStatus.Active,
-                    $"{companion.Name} 동료가 파티에 합류했습니다.",
+                    relocated
+                        ? $"{companion.Name} 용병이 곁에 합류했습니다."
+                        : $"{companion.Name} 용병이 파티에 합류했습니다.",
                     companion.Name);
 
                 return Results.Ok(updated);
@@ -214,6 +234,63 @@ namespace DOL.GS.API.DummyCompanion
                     Query(context, "createdBy", "api"));
 
                 return result.Success ? Results.Ok(result) : Results.BadRequest(result);
+            });
+
+            // Test-only hook: deterministically kill a named player so live smokes
+            // can exercise resurrection without relying on RNG boss-combat deaths.
+            // Guarded by the same API password / loopback check as every mutation.
+            api.MapPost("/api/dummy/companions/test/kill", (HttpContext context) =>
+            {
+                IResult denied = RequireMutationAllowed(context);
+                if (denied != null)
+                    return denied;
+
+                string playerName = Query(context, "player");
+                GamePlayer player = FindPlayer(playerName, Query(context, "account"));
+                if (player == null)
+                    return Results.NotFound(new { error = "PlayerNotFound", player = playerName });
+
+                if (!player.IsAlive)
+                    return Results.Ok(new { ok = true, alreadyDead = true, player = player.Name });
+
+                // Environmental-style lethal hit (same pattern as drowning death):
+                // no external killer, Natural damage, on the player's own thread-safe path.
+                player.TakeDamage(null, eDamageType.Natural, player.MaxHealth, 0);
+
+                return Results.Ok(new { ok = true, player = player.Name, dead = !player.IsAlive });
+            });
+
+            // Test-only hook: lower a named player's health without killing them
+            // so live healer smokes can deterministically exercise healing.
+            api.MapPost("/api/dummy/companions/test/damage", (HttpContext context) =>
+            {
+                IResult denied = RequireMutationAllowed(context);
+                if (denied != null)
+                    return denied;
+
+                string playerName = Query(context, "player");
+                GamePlayer player = FindPlayer(playerName, Query(context, "account"));
+                if (player == null)
+                    return Results.NotFound(new { error = "PlayerNotFound", player = playerName });
+
+                if (!player.IsAlive)
+                    return Results.BadRequest(new { error = "PlayerDead", player = player.Name });
+
+                int healthPercent = Math.Max(1, Math.Min(99, ParseInt(Query(context, "healthPercent"), 35)));
+                int targetHealth = Math.Max(1, player.MaxHealth * healthPercent / 100);
+                int damage = Math.Max(0, player.Health - targetHealth);
+                if (damage > 0)
+                    player.TakeDamage(null, eDamageType.Natural, damage, 0);
+
+                return Results.Ok(new
+                {
+                    ok = true,
+                    player = player.Name,
+                    health = player.Health,
+                    player.MaxHealth,
+                    healthPercent,
+                    damage
+                });
             });
         }
 
@@ -306,26 +383,26 @@ namespace DOL.GS.API.DummyCompanion
             if (requester == null)
                 return "요청자를 찾을 수 없습니다.";
             if (companion == null)
-                return "동료를 찾을 수 없습니다.";
+                return "용병을 찾을 수 없습니다.";
             if (ReferenceEquals(requester, companion))
-                return "요청자 자신은 동료로 붙일 수 없습니다.";
+                return "요청자 자신은 용병으로 붙일 수 없습니다.";
             if (!GameServer.ServerRules.IsAllowedToGroup(requester, companion, true))
-                return "같은 렐름의 동료만 파티에 합류할 수 있습니다.";
+                return "같은 렐름의 용병만 파티에 합류할 수 있습니다.";
             if (companion.Group != null)
             {
                 if (ReferenceEquals(companion.Group, requester.Group) && requester.Group.IsInTheGroup(companion))
                     return string.Empty;
 
-                return "동료가 이미 다른 파티에 속해 있습니다.";
+                return "용병이 이미 다른 파티에 속해 있습니다.";
             }
 
             if (requester.Group != null)
             {
                 if (requester.Group.MemberCount >= Properties.GROUP_MAX_MEMBER)
-                    return "파티가 가득 차 동료를 합류시킬 수 없습니다.";
+                    return "파티가 가득 차 용병을 합류시킬 수 없습니다.";
 
                 if (!requester.Group.AddMember(companion))
-                    return "동료를 파티에 합류시키지 못했습니다.";
+                    return "용병을 파티에 합류시키지 못했습니다.";
 
                 GameEventMgr.Notify(GamePlayerEvent.AcceptGroup, companion);
                 return string.Empty;
@@ -334,10 +411,33 @@ namespace DOL.GS.API.DummyCompanion
             Group group = new(requester);
             GroupMgr.AddGroup(group);
             if (!group.AddMember(requester) || !group.AddMember(companion))
-                return "동료 파티를 생성하지 못했습니다.";
+                return "용병 파티를 생성하지 못했습니다.";
 
             GameEventMgr.Notify(GamePlayerEvent.AcceptGroup, companion);
             return string.Empty;
+        }
+
+        private static bool RelocateCompanionNearRequesterIfNeeded(GamePlayer requester, GamePlayer companion)
+        {
+            if (requester == null || companion == null)
+                return false;
+
+            long dx = (long)requester.X - companion.X;
+            long dy = (long)requester.Y - companion.Y;
+            bool differentRegion = requester.CurrentRegionID != companion.CurrentRegionID;
+            bool tooFar = differentRegion ||
+                          dx * dx + dy * dy > (long)LiveCompanionAttachRelocateDistance * LiveCompanionAttachRelocateDistance;
+            if (!tooFar)
+                return false;
+
+            // Live hire attach is the arrival boundary. Normal travel/pathing still
+            // belongs to the companion client after it is near the requester.
+            return companion.MoveTo(
+                requester.CurrentRegionID,
+                requester.X + LiveCompanionAttachOffset,
+                requester.Y + LiveCompanionAttachOffset,
+                requester.Z,
+                (ushort)requester.Heading);
         }
     }
 }

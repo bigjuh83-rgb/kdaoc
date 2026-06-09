@@ -26,8 +26,8 @@ namespace DOL.GS.Commands
 		"&yell",
 		new string[] { "&y" },
 		ePrivLevel.Player,
-		"Yell something to other players around you",
-		"/yell <message>")]
+		"주변 플레이어에게 외칩니다.",
+		"/yell <메시지>")]
 	public class YellCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

@@ -11,7 +11,8 @@ namespace DOL.GS.Commands
         "/dummy fill <playerName>",
         "/dummy role <playerName> healer|tank|dps|support",
         "/dummy status <playerName>",
-        "/dummy leave <playerName>")]
+        "/dummy leave <playerName>",
+        "/dummy kill <playerName>")]
     public class DummyCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)
@@ -39,10 +40,45 @@ namespace DOL.GS.Commands
                 case "leave":
                     QueueLeave(client, args);
                     return;
+                case "kill":
+                    KillNamedPlayer(client, args);
+                    return;
                 default:
                     DisplaySyntax(client);
                     return;
             }
+        }
+
+        private void KillNamedPlayer(GameClient client, string[] args)
+        {
+            if (args.Length < 3)
+            {
+                DisplaySyntax(client);
+                return;
+            }
+
+            GamePlayer player = FindPlayer(args[2]);
+            if (player == null)
+            {
+                DisplayMessage(client, $"플레이어를 찾을 수 없습니다: {args[2]}");
+                return;
+            }
+
+            if (player.Client != null && player.Client.Account.PrivLevel > 1)
+            {
+                DisplayMessage(client, "GM 캐릭터는 대상으로 할 수 없습니다.");
+                return;
+            }
+
+            if (!player.IsAlive)
+            {
+                DisplayMessage(client, $"{player.Name}{Josa(player.Name, "은", "는")} 이미 사망 상태입니다.");
+                return;
+            }
+
+            // Environmental-style lethal hit (same pattern as drowning death).
+            player.TakeDamage(null, eDamageType.Natural, player.MaxHealth, 0);
+            DisplayMessage(client, $"{player.Name}{Josa(player.Name, "을", "를")} 처치했습니다.");
         }
 
         private void QueueExplicitRole(GameClient client, string[] args)
@@ -126,12 +162,12 @@ namespace DOL.GS.Commands
             CompanionRequest request = CompanionRequestService.LatestForPlayer(args[2]);
             if (request == null)
             {
-                DisplayMessage(client, $"동료 요청 이력이 없습니다: {args[2]}");
+                DisplayMessage(client, $"용병 요청 이력이 없습니다: {args[2]}");
                 return;
             }
 
             client.Out.SendCustomTextWindow(
-                "동료 요청 상태",
+                "용병 요청 상태",
                 new List<string>
                 {
                     $"요청: {request.Id}",
@@ -139,7 +175,7 @@ namespace DOL.GS.Commands
                     $"상태: {request.Status}",
                     $"역할: {request.RequestedRole}",
                     $"소집 방식: {request.Source}",
-                    $"동료명: {request.AssignedCompanionName}",
+                    $"용병명: {request.AssignedCompanionName}",
                     $"파티 인원/빈자리: {request.GroupSize}/{request.VacantSlots}",
                     $"메시지: {request.Message}",
                 });
@@ -151,6 +187,24 @@ namespace DOL.GS.Commands
                 return null;
 
             return ClientService.Instance.GetPlayerByExactName(name);
+        }
+
+        private static string Josa(string text, string withFinalConsonant, string withoutFinalConsonant)
+        {
+            return HasFinalConsonant(text) ? withFinalConsonant : withoutFinalConsonant;
+        }
+
+        private static bool HasFinalConsonant(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return false;
+
+            string trimmed = text.TrimEnd();
+            char last = trimmed[trimmed.Length - 1];
+            if (last < '가' || last > '힣')
+                return false;
+
+            return (last - '가') % 28 != 0;
         }
     }
 }

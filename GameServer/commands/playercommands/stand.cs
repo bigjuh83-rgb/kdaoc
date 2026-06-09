@@ -19,7 +19,7 @@
 
 namespace DOL.GS.Commands
 {
-	[CmdAttribute("&stand", ePrivLevel.Player, "Stands up when sitting", "/stand")]
+	[CmdAttribute("&stand", ePrivLevel.Player, "앉아 있을 때 일어섭니다.", "/stand")]
 	public class StandCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)
@@ -31,7 +31,7 @@ namespace DOL.GS.Commands
 		}
 	}
 
-	[CmdAttribute("&sit", new string[] { "&rest" }, ePrivLevel.Player, "Sit", "/sit")]
+	[CmdAttribute("&sit", new string[] { "&rest" }, ePrivLevel.Player, "앉습니다.", "/sit")]
 	public class SitCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

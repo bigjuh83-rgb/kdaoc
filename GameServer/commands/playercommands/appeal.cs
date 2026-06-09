@@ -1,4 +1,4 @@
-﻿using DOL.Database;
+using DOL.Database;
 using DOL.GS.Appeal;
 using DOL.Language;
 
@@ -9,12 +9,12 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&appeal",
         ePrivLevel.Player,
-        "Usage: '/appeal <appeal type> <appeal text>",
-        "Where <appeal type> is one of the following:",
-        "  Harassment, Naming, Conduct, Stuck, Emergency or Other",
-        "and <appeal text> is a description of your issue.",
-        "If you have submitted an appeal, you can check its",
-        "status by typing '/checkappeal'.")]
+        "사용법: '/appeal <신고 유형> <신고 내용>",
+        "<신고 유형>은 다음 중 하나입니다:",
+        "  harassment(괴롭힘), naming(이름), conduct(행동), stuck(고립), emergency(긴급), other(기타)",
+        "<신고 내용>에는 문제를 자세히 적어 주세요.",
+        "이미 신고를 접수했다면",
+        "'/checkappeal'로 상태를 확인할 수 있습니다.")]
     public class AppealCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)
@@ -114,7 +114,7 @@ namespace DOL.GS.Commands
     //handles /reportbug command that is issued from the client /appeal function.
     [CmdAttribute(
     "&reportbug",
-    ePrivLevel.Player, "Use /appeal to file an appeal")]
+    ePrivLevel.Player, "신고를 접수하려면 /appeal을 사용하세요.")]
     public class ReportBugCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)
@@ -158,7 +158,7 @@ namespace DOL.GS.Commands
     //handles /reportharass command that is issued from the client /appeal function.
     [CmdAttribute(
     "&reportharass",
-    ePrivLevel.Player, "Use /appeal to file an appeal")]
+    ePrivLevel.Player, "신고를 접수하려면 /appeal을 사용하세요.")]
     public class ReportHarassCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)
@@ -204,7 +204,7 @@ namespace DOL.GS.Commands
     //handles /reporttos command that is issued from the client /appeal function.
     [CmdAttribute(
     "&reporttos",
-    ePrivLevel.Player, "Use /appeal to file an appeal")]
+    ePrivLevel.Player, "신고를 접수하려면 /appeal을 사용하세요.")]
     public class ReportTosCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)
@@ -278,7 +278,7 @@ namespace DOL.GS.Commands
     //handles /reportharass command that is issued from the client /appeal function.
     [CmdAttribute(
     "&reportstuck",
-    ePrivLevel.Player, "Use /appeal to file an appeal")]
+    ePrivLevel.Player, "신고를 접수하려면 /appeal을 사용하세요.")]
     public class ReportStuckCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)
@@ -324,7 +324,7 @@ namespace DOL.GS.Commands
     //handles /appea command that is issued from the client /appeal function (emergency appeal).
     [CmdAttribute(
     "&appea",
-    ePrivLevel.Player, "Use /appeal to file an appeal")]
+    ePrivLevel.Player, "신고를 접수하려면 /appeal을 사용하세요.")]
     public class EmergencyAppealCommandHandler : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)

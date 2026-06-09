@@ -6,8 +6,8 @@ namespace DOL.GS.Commands
 	[CmdAttribute(
 		"&setwho",
 		ePrivLevel.Player,
-		"Set your class or trade for /who output",
-		"/setwho class | trade")]
+		"/who 출력에 표시할 클래스 또는 제작 직업을 설정합니다.",
+		"/setwho 클래스 | 제작")]
 	public class SetWhoCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)
@@ -24,16 +24,18 @@ namespace DOL.GS.Commands
 			var played = client.Player.PlayedTimeSinceLevel / 60 / 60; // Sets time played since last level
 			var totalPlayed = client.Player.PlayedTime / 60 / 60; // Time played total for character
 
-			if (client.Player.Level == 50 && played < 15 && args[1].ToLower() == "class" && !client.Player.ClassNameFlag && client.Player.Advisor || client.Player.Level != 50 && totalPlayed < 15 && client.Player.Advisor && args[1].ToLower() == "class" && !client.Player.ClassNameFlag)
+			string displayMode = NormalizeDisplayMode(args[1]);
+
+			if (client.Player.Level == 50 && played < 15 && displayMode == "class" && !client.Player.ClassNameFlag && client.Player.Advisor || client.Player.Level != 50 && totalPlayed < 15 && client.Player.Advisor && displayMode == "class" && !client.Player.ClassNameFlag)
 			{
 				// Message: "You cannot turn off your craft title while your Advisor flag is active, as you do not meet the other level and/or time played requirements."
 				ChatUtil.SendSystemMessage(client, "PLCommands.SetWho.Err.CraftAdvisor", null);
 				return;
 			}
 
-			if (args[1].ToLower() == "class")
+			if (displayMode == "class")
 				client.Player.ClassNameFlag = true;
-			else if (args[1].ToLower() == "trade")
+			else if (displayMode == "trade")
 			{
 				if (client.Player.CraftingPrimarySkill == eCraftingSkill.NoCrafting)
 				{
@@ -53,6 +55,19 @@ namespace DOL.GS.Commands
 				DisplayMessage(client, T(client, "PlayerCommands.SetWho.HideCraftTitle"));
 			else
 				DisplayMessage(client, T(client, "PlayerCommands.SetWho.ShowCraftTitle"));
+		}
+
+		private static string NormalizeDisplayMode(string mode)
+		{
+			return mode?.Trim().ToLowerInvariant() switch
+			{
+				"클래스" => "class",
+				"직업" => "class",
+				"제작" => "trade",
+				"제작직업" => "trade",
+				"제작기술" => "trade",
+				_ => mode?.Trim().ToLowerInvariant()
+			};
 		}
 	}
 }

@@ -203,9 +203,6 @@ def build_behavior_command(
         "--greet-nearby-player",
         "--player-greet-chance",
         "0.05",
-        "--speak-state-changes",
-        "--state-speech-min-interval",
-        "3",
         "--trace-observed-player-positions",
         "--metrics-csv",
         str(metrics_csv),
@@ -345,7 +342,7 @@ def main(argv: list[str] | None = None) -> int:
             rc = run_command(provision_command, dry_run=args.dry_run)
             if rc != 0:
                 return rc
-        elif not accounts_csv.exists():
+        elif not args.dry_run and not accounts_csv.exists():
             raise FileNotFoundError(f"--skip-provision needs existing accounts csv: {accounts_csv}")
 
         accounts = (

@@ -2568,9 +2568,11 @@ namespace DOL.GS
 				player.MountSteed(this, true);
 			}
 
-			FireAmbientSentence(eAmbientTrigger.interact, player);
 			if (DynamicQuestRuntimeService.Instance.HandleNpcInteract(this, player))
-				return true;
+				// Stop derived service NPC overrides from replacing the dynamic quest dialog callback.
+				return false;
+
+			FireAmbientSentence(eAmbientTrigger.interact, player);
 
 			return true;
 		}
@@ -2854,10 +2856,10 @@ namespace DOL.GS
 
 			if (killer != null)
 			{
-				Message.SystemToArea(this, LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "GameNPC.Die.Area", GetName(0, true)), eChatType.CT_OthersDeath, killer);
+				Message.SystemToArea(this, LanguageMgr.GetTranslation(ServerProperties.Properties.SERV_LANGUAGE, "GameNPC.Die.Area", GetName(0, true, ServerProperties.Properties.SERV_LANGUAGE, this)), eChatType.CT_OthersDeath, killer);
 
 				if (killer is GamePlayer player)
-					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "GameNPC.Die.Area", GetName(0, true)), eChatType.CT_OthersDeath, eChatLoc.CL_SystemWindow);
+					player.Out.SendMessage(LanguageMgr.GetTranslation(player.Client.Account.Language, "GameNPC.Die.Area", GetName(0, true, player.Client.Account.Language, this)), eChatType.CT_OthersDeath, eChatLoc.CL_SystemWindow);
 
 				// Deal out experience, realm points, loot... Based on server rules.
 				GameServer.ServerRules.OnNpcKilled(this, killer);

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>KDAOC 서버 현황</title>
-  <link rel="stylesheet" href="/dashboard/dashboard.css">
+  <link rel="stylesheet" href="/dashboard/dashboard.css?v=20260603-select">
 </head>
 <body>
   <main class="shell">
@@ -16,20 +16,236 @@
       <div class="refresh">갱신 <span id="updatedAt">-</span></div>
     </header>
 
-    <section class="summary" aria-label="서버 요약">
-      <article><span>접속자</span><strong id="onlinePlayers">0</strong></article>
-      <article><span>알비온</span><strong id="albionPlayers">0</strong></article>
-      <article><span>미드가드</span><strong id="midgardPlayers">0</strong></article>
-      <article><span>하이버니아</span><strong id="hiberniaPlayers">0</strong></article>
-      <article><span>가동 시간</span><strong id="uptime">-</strong></article>
+    <nav class="view-tabs" aria-label="서버 현황 보기">
+      <button class="view-tab active" type="button" data-view-tab="live" aria-selected="true">라이브</button>
+      <button class="view-tab" type="button" data-view-tab="herald" aria-selected="false">해럴드</button>
+      <button class="view-tab" type="button" data-view-tab="operator" aria-selected="false">운영</button>
+    </nav>
+
+    <section class="tab-panel active" data-view-panel="live">
+      <section class="summary" aria-label="서버 요약">
+        <article><span>접속자</span><strong id="onlinePlayers">0</strong></article>
+        <article><span>24시간 최고</span><strong id="peakPlayers24h">0</strong></article>
+        <article><span>알비온</span><strong id="albionPlayers">0</strong></article>
+        <article><span>미드가드</span><strong id="midgardPlayers">0</strong></article>
+        <article><span>하이버니아</span><strong id="hiberniaPlayers">0</strong></article>
+        <article><span>가동 시간</span><strong id="uptime">-</strong></article>
+      </section>
+
+      <section class="grid" aria-label="서버 통계 차트">
+        <article class="panel wide"><h2>24시간 접속자 추이</h2><canvas id="populationChart"></canvas></article>
+        <article class="panel"><h2>렐름 비율</h2><canvas id="realmChart"></canvas></article>
+        <article class="panel class-panel">
+          <div class="panel-title-row">
+            <h2>직업 분포</h2>
+            <span>Classes Online - Now</span>
+          </div>
+          <div id="classRealmGrid" class="class-realm-grid" aria-live="polite"></div>
+        </article>
+        <article class="panel wide"><h2>이번 주 골드 증가량</h2><canvas id="goldChart"></canvas></article>
+        <article class="panel wide"><h2>이번 주 RP 증가량</h2><canvas id="rpChart"></canvas></article>
+        <article class="panel wide resource-panel">
+          <div class="panel-title-row">
+            <h2>서버 리소스 추이</h2>
+            <span>24 Hours</span>
+          </div>
+          <div class="resource-chart-grid">
+            <div class="resource-chart">
+              <h3>CPU</h3>
+              <canvas id="cpuChart"></canvas>
+            </div>
+            <div class="resource-chart">
+              <h3>RAM</h3>
+              <canvas id="memoryChart"></canvas>
+            </div>
+            <div class="resource-chart">
+              <h3>커넥션</h3>
+              <canvas id="connectionChart"></canvas>
+            </div>
+            <div class="resource-chart">
+              <h3>네트워크</h3>
+              <canvas id="networkChart"></canvas>
+            </div>
+          </div>
+        </article>
+      </section>
     </section>
 
-    <section class="grid" aria-label="서버 통계 차트">
-      <article class="panel wide"><h2>24시간 접속자 추이</h2><canvas id="populationChart"></canvas></article>
-      <article class="panel"><h2>렐름 비율</h2><canvas id="realmChart"></canvas></article>
-      <article class="panel"><h2>직업 분포</h2><canvas id="classChart"></canvas></article>
-      <article class="panel wide"><h2>이번 주 서버 지급 골드</h2><canvas id="goldChart"></canvas></article>
-      <article class="panel wide"><h2>이번 주 서버 지급 RP</h2><canvas id="rpChart"></canvas></article>
+    <section class="tab-panel" data-view-panel="herald" hidden>
+      <section class="herald-grid" aria-label="해럴드">
+        <article class="panel wide herald-summary-panel">
+          <div class="panel-title-row">
+            <h2>해럴드 서버 요약</h2>
+            <span>Realm Herald</span>
+          </div>
+          <div id="heraldRealmSummary" class="herald-summary-grid" aria-live="polite"></div>
+        </article>
+        <article class="panel wide herald-war-panel">
+          <div class="panel-title-row">
+            <h2>전황</h2>
+            <span id="heraldDfOwner">DF -</span>
+          </div>
+          <div id="heraldWarSummary" class="war-summary-grid" aria-live="polite"></div>
+          <div id="heraldRelics" class="relic-list" aria-live="polite"></div>
+        </article>
+        <article class="panel wide herald-class-panel">
+          <div class="panel-title-row">
+            <h2>해럴드 직업 분포</h2>
+            <span id="heraldClassSubtitle">Classes Online - Now</span>
+          </div>
+          <div class="metric-tabs" aria-label="직업 분포 기간">
+            <button class="metric-tab active" type="button" data-class-range="now" aria-selected="true">Now</button>
+            <button class="metric-tab" type="button" data-class-range="24h" aria-selected="false">24시간 평균</button>
+            <button class="metric-tab" type="button" data-class-range="7d" aria-selected="false">7일 평균</button>
+          </div>
+          <div id="heraldClassRealmGrid" class="class-realm-grid herald-class-grid" aria-live="polite"></div>
+        </article>
+        <article class="panel herald-rank-panel">
+          <div class="panel-title-row">
+            <h2 id="heraldCharacterRankTitle">캐릭터 RP 랭킹</h2>
+            <span>Top Characters</span>
+          </div>
+          <div class="herald-controls" aria-label="캐릭터 검색과 정렬">
+            <input id="heraldCharacterSearch" type="search" autocomplete="off" placeholder="캐릭터명 검색">
+            <select id="heraldCharacterRealm" aria-label="캐릭터 렐름 필터">
+              <option value="all">전체 렐름</option>
+              <option value="1">알비온</option>
+              <option value="2">미드가드</option>
+              <option value="3">하이버니아</option>
+            </select>
+            <select id="heraldCharacterSort" aria-label="캐릭터 정렬">
+              <option value="rp">RP 높은순</option>
+              <option value="bp">BP 높은순</option>
+              <option value="playerKills">플레이어킬 높은순</option>
+              <option value="deathBlows">데스블로우 높은순</option>
+              <option value="soloKills">솔로킬 높은순</option>
+              <option value="pvpDeaths">PvP 사망 높은순</option>
+              <option value="level">레벨 높은순</option>
+              <option value="recent">최근 접속순</option>
+              <option value="name">이름순</option>
+            </select>
+            <button id="heraldCharacterLookup" type="button">상세</button>
+          </div>
+          <div id="heraldCharacterRanks" class="rank-list" aria-live="polite"></div>
+        </article>
+        <article class="panel herald-rank-panel">
+          <div class="panel-title-row">
+            <h2>길드 RP 랭킹</h2>
+            <span>Top Guilds</span>
+          </div>
+          <div class="herald-controls" aria-label="길드 검색과 정렬">
+            <input id="heraldGuildSearch" type="search" autocomplete="off" placeholder="길드명 검색">
+            <select id="heraldGuildRealm" aria-label="길드 렐름 필터">
+              <option value="all">전체 렐름</option>
+              <option value="1">알비온</option>
+              <option value="2">미드가드</option>
+              <option value="3">하이버니아</option>
+            </select>
+            <select id="heraldGuildSort" aria-label="길드 정렬">
+              <option value="rp">RP 높은순</option>
+              <option value="bp">BP 높은순</option>
+              <option value="level">레벨 높은순</option>
+              <option value="name">이름순</option>
+            </select>
+            <button id="heraldGuildLookup" type="button">상세</button>
+          </div>
+          <div id="heraldGuildRanks" class="rank-list" aria-live="polite"></div>
+        </article>
+        <article class="panel wide herald-detail-panel">
+          <div class="panel-title-row">
+            <h2 id="heraldDetailTitle">상세 정보</h2>
+            <span id="heraldDetailSubtitle">행을 선택하세요</span>
+          </div>
+          <div id="heraldDetail" class="detail-body" aria-live="polite">
+            <p class="empty-state">캐릭터나 길드 랭킹을 선택하면 상세 정보가 표시됩니다</p>
+          </div>
+        </article>
+        <article class="panel wide herald-rvr-panel">
+          <div class="panel-title-row">
+            <h2>최근 RvR</h2>
+            <span>2 Days</span>
+          </div>
+          <div id="heraldRvrActivity" class="activity-list rvr-activity-list" aria-live="polite"></div>
+        </article>
+        <article class="panel wide herald-activity-panel">
+          <div class="panel-title-row">
+            <h2>최근 활동</h2>
+            <span>7 Days</span>
+          </div>
+          <div id="heraldActivity" class="activity-list" aria-live="polite"></div>
+        </article>
+      </section>
+    </section>
+
+    <section class="tab-panel" data-view-panel="operator" hidden>
+      <section class="operator-grid" aria-label="운영 상태">
+        <article class="panel wide operator-status-panel">
+          <div class="panel-title-row">
+            <h2>운영 상태</h2>
+            <span id="operatorUpdatedAt">-</span>
+          </div>
+          <div id="operatorStatusBanner" class="operator-banner" aria-live="polite"></div>
+        </article>
+        <article class="panel operator-metrics-panel">
+          <div class="panel-title-row">
+            <h2>라이브 자원</h2>
+            <span>Now</span>
+          </div>
+          <div id="operatorResourceMetrics" class="operator-metrics" aria-live="polite"></div>
+        </article>
+        <article class="panel operator-metrics-panel">
+          <div class="panel-title-row">
+            <h2>수집 상태</h2>
+            <span>24 Hours</span>
+          </div>
+          <div id="operatorHistoryMetrics" class="operator-metrics" aria-live="polite"></div>
+        </article>
+        <article class="panel wide operator-check-panel">
+          <div class="panel-title-row">
+            <h2>서비스 체크</h2>
+            <span id="operatorApiLatency">API -</span>
+          </div>
+          <div id="operatorChecks" class="operator-check-list" aria-live="polite"></div>
+        </article>
+        <article class="panel wide dynamic-quest-panel">
+          <div class="panel-title-row">
+            <h2>동적 퀘스트 시더</h2>
+            <span id="dynamicQuestSeedUpdatedAt">-</span>
+          </div>
+          <div id="dynamicQuestSeedMetrics" class="operator-metrics dynamic-quest-metrics" aria-live="polite"></div>
+          <div id="dynamicQuestOfferList" class="dynamic-quest-list" aria-live="polite"></div>
+        </article>
+        <article class="panel wide dynamic-quest-panel">
+          <div class="panel-title-row">
+            <h2>스토리 캐시</h2>
+            <span id="dynamicQuestStoryProvider">-</span>
+          </div>
+          <div id="dynamicQuestStoryMetrics" class="operator-metrics dynamic-quest-metrics" aria-live="polite"></div>
+          <div id="dynamicQuestStoryList" class="dynamic-quest-list story-list" aria-live="polite"></div>
+        </article>
+        <article class="panel wide dynamic-quest-panel">
+          <div class="panel-title-row">
+            <h2>난이도 리포트</h2>
+            <span id="dynamicQuestDifficultyUpdatedAt">-</span>
+          </div>
+          <div id="dynamicQuestDifficultyMetrics" class="operator-metrics dynamic-quest-metrics" aria-live="polite"></div>
+          <div id="dynamicQuestDifficultyRuns" class="dynamic-quest-list" aria-live="polite"></div>
+        </article>
+        <article class="panel wide operator-link-panel">
+          <div class="panel-title-row">
+            <h2>외부 상태 링크</h2>
+            <span>Cafe</span>
+          </div>
+          <div class="operator-link-grid">
+            <a href="/dashboard#live" target="_blank" rel="noopener">라이브 탭</a>
+            <a href="/dashboard#herald" target="_blank" rel="noopener">해럴드 탭</a>
+            <a href="/dashboard#operator" target="_blank" rel="noopener">운영 탭</a>
+            <a href="/status" target="_blank" rel="noopener">카페용 미니 상태</a>
+            <a href="/status/badge.png" target="_blank" rel="noopener">배너 이미지</a>
+            <a href="/api/status/summary" target="_blank" rel="noopener">미니 상태 API</a>
+          </div>
+        </article>
+      </section>
     </section>
   </main>
   <script src="/dashboard/dashboard.js"></script>

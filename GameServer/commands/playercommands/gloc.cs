@@ -22,7 +22,7 @@ namespace DOL.GS.Commands
 {
 	[CmdAttribute("&gloc", //command to handle
 		ePrivLevel.Player, //minimum privelege level
-		"Show the current coordinates", //command description
+		"현재 좌표를 표시합니다.", //command description
 		"/gloc")] //command usage
 	public class GlocCommandHandler : AbstractCommandHandler, ICommandHandler
 	{

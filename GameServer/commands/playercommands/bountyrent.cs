@@ -25,8 +25,8 @@ namespace DOL.GS.Commands
 {
 	[CmdAttribute("&bountyrent", //command to handle
 		ePrivLevel.Player, //minimum privelege level
-		"Pay house rent with bountypoints", //command description
-        "Use /bountyrent personal/guild <amount> to pay.")]
+		"바운티 포인트로 집세를 냅니다.", //command description
+        "사용법: /bountyrent personal/guild <금액>")]
 	public class BountyRentCommandHandler : AbstractCommandHandler, ICommandHandler
 	{
 		public void OnCommand(GameClient client, string[] args)

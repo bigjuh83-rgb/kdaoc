@@ -73,6 +73,7 @@ namespace DOL.GS.GameEvents
 
                 GameServer.Database.AddObject(newStat);
                 GameServer.Database.SaveObject(newStat);
+                DashboardClassSnapshotRecorder.SaveCurrentSnapshot(DateTime.UtcNow);
             }
             catch (Exception e)
             {

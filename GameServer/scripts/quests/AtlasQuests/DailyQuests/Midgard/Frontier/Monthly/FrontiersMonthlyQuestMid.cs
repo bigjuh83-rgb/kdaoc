@@ -173,8 +173,7 @@ namespace DOL.GS.MonthlyQuest.Midgard
 					switch (quest.Step)
 					{
 						case 1:
-							Kelteen.SayTo(player, $"Hello {player.CharacterClass.Name}, you will find enemies in Albion, Hibernia or in our lands. " +
-							                      $"Come back when you have killed enough enemies and taken keeps for our safety.");
+							Kelteen.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyFrontierStep1", player.CharacterClass.Name, "Albion", "Hibernia"));
 							break;
 						case 2:
 							Kelteen.SayTo(player, DOL.Language.LanguageMgr.GetTranslation(player.Client.Account.Language, "Quest.Common.MonthlyFrontierPrompt", player.Name));
@@ -290,7 +289,7 @@ namespace DOL.GS.MonthlyQuest.Midgard
 		//Set quest name
 		public override string Name
 		{
-			get { return questTitle; }
+			get { return DOL.Language.LanguageMgr.GetTranslatedQuestTitle(m_questPlayer?.Client?.Account?.Language, questTitle); }
 		}
 
 		// Define Steps

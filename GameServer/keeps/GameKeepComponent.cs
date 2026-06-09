@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using DOL.Database;
 using DOL.Events;
+using DOL.GS.GameEvents;
 using DOL.GS.ServerProperties;
 using DOL.Language;
 
@@ -494,11 +495,22 @@ namespace DOL.GS.Keeps
 			attackData.Damage = baseDamage;
 			attackData.StyleDamage = styleDamage;
 			attackData.CriticalDamage = criticalDamage;
+			ApplyUndersuppliedDamagePenalty(attackData);
 
 			static int GetAdjustedDamage(int damage, int toughness, int level)
 			{
 				return (damage - damage * 5 * level / 100) * toughness / 100;
 			}
+		}
+
+		private void ApplyUndersuppliedDamagePenalty(AttackData attackData)
+		{
+			if (Keep == null)
+				return;
+
+			attackData.Damage = KeepSupplyConvoyEvent.ApplyUndersuppliedStructureDamage(Keep, attackData.Damage);
+			attackData.StyleDamage = KeepSupplyConvoyEvent.ApplyUndersuppliedStructureDamage(Keep, attackData.StyleDamage);
+			attackData.CriticalDamage = KeepSupplyConvoyEvent.ApplyUndersuppliedStructureDamage(Keep, attackData.CriticalDamage);
 		}
 
 		public override void Die(GameObject killer)

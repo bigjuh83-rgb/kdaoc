@@ -30,6 +30,9 @@ COMMON_ARGS=(
   --count "${OPENDAOC_REALM_POOL_COUNT:-40}"
   --password "${OPENDAOC_DUMMY_PASSWORD:-dummy-pass}"
   --slot-index 0
+  --randomize-race
+  --randomize-stats
+  --random-seed "${OPENDAOC_REALM_POOL_RANDOM_SEED:-opendaoc-mercenary-pool}"
   "${REPLACE_ARGS[@]}"
 )
 
