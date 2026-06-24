@@ -1828,6 +1828,8 @@ def build_behavior_command(
         str(int(mercenary_state["trust"])),
         "--mercenary-fatigue",
         str(int(mercenary_state["fatigue"])),
+        "--mercenary-tactic-preset",
+        str(mercenary_state["tactic"]),
         "--mercenary-total-contracts",
         str(int(mercenary_record.get("total_contracts", 0) or 0)),
         "--mercenary-total-contract-minutes",
@@ -1900,6 +1902,9 @@ def build_behavior_command(
         value = str(mercenary_record.get(key, "") or "").strip()
         if value:
             command += [option, value]
+    memory = str(mercenary_state.get("memory", "") or "").strip()
+    if memory:
+        command += ["--mercenary-adventure-memory", memory]
     command.extend(live_companion_role_flags(role, action_rotation, args))
     command.extend(live_companion_contract_tier_flags(request))
     command.extend(live_companion_mercenary_state_flags(request, role, action_rotation))

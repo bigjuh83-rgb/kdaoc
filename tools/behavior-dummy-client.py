@@ -2461,6 +2461,14 @@ def companion_chat_intent(body: str) -> str:
     compact = normalized.replace(" ", "")
     if companion_prompt_security_request_intent(normalized):
         return "chatter"
+    if any(token in normalized or token in compact for token in {"추억", "일지", "기억", "사연", "관계기록", "인연", "journal", "memory"}):
+        return "journal"
+    if any(token in normalized or token in compact for token in {"초보", "처음", "뉴비", "입문", "beginner", "newbie"}):
+        return "beginner_tip"
+    if any(token in normalized or token in compact for token in {"숙련", "고인물", "운용팁", "심화", "veteran", "expert"}):
+        return "veteran_tip"
+    if any(token in normalized or token in compact for token in {"전술", "성격", "버릇", "운용", "특성", "tactic", "personality"}):
+        return "tactic"
     if any(token in normalized or token in compact for token in {"기록", "활약", "전적", "도감", "리포트", "report", "record"}):
         return "record"
     status_terms = {"상태", "상태창", "준비", "괜찮", "친밀도", "피로도", "계약상태", "계약 상태"}
@@ -2767,6 +2775,50 @@ def companion_role_label(role: str) -> str:
     return "빈자리 보조"
 
 
+def companion_personality_label(personality: object) -> str:
+    key = str(personality or "").strip().lower()
+    labels = {
+        "steady_protector": "묵직한 보호자형",
+        "calm_support": "침착한 보좌관형",
+        "bold_vanguard": "돌격 선봉형",
+        "sharp_striker": "날카로운 타격형",
+        "cautious_scout": "신중한 정찰형",
+        "wary_survivor": "생존 우선형",
+        "loyal_guardian": "충직한 수호자형",
+        "eager_rookie": "열정적인 신참형",
+        "sly_opportunist": "얍삽한 기회주의형",
+        "cunning_opportunist": "얍삽한 기회주의형",
+        "shifty_traitor": "배신자 기질형",
+        "reckless_berserker": "무모한 광전사형",
+        "lazy_veteran": "느긋한 고참형",
+        "tactical_guardian": "전술 수호자형",
+    }
+    return labels.get(key, "보통형")
+
+
+def mercenary_tactic_label(tactic: object) -> str:
+    key = str(tactic or "").strip().lower().replace("-", "_").replace(" ", "_")
+    labels = {
+        "balanced": "균형",
+        "safe": "안전 우선",
+        "aggressive": "공격 우선",
+        "heal_priority": "치유 우선",
+        "mez_priority": "메즈 우선",
+        "leader_protect": "리더 보호",
+    }
+    return labels.get(key, "균형")
+
+
+def mercenary_relationship_label(value: object) -> str:
+    tokens = [part.strip().lower() for part in str(value or "").replace(";", "|").replace(",", "|").split("|") if part.strip()]
+    labels = {
+        "bond_acknowledged": "처음으로 리더를 믿겠다고 인정함",
+        "field_oath": "전장에서 끝까지 함께하겠다고 맹세함",
+    }
+    matched = [labels[token] for token in tokens if token in labels]
+    return ", ".join(matched)
+
+
 def mercenary_titles_list(value: object) -> list[str]:
     return [part.strip() for part in str(value or "").replace(";", "|").replace(",", "|").split("|") if part.strip()]
 
@@ -2787,8 +2839,11 @@ def mercenary_personal_quest_label(value: object) -> str:
     return labels.get(state, "없음")
 
 
-def build_runtime_mercenary_record(args: argparse.Namespace) -> dict[str, object]:
+def build_runtime_mercenary_record(args: argparse.Namespace, *, personality: str = "") -> dict[str, object]:
     return {
+        "personality": str(personality or getattr(args, "companion_personality", "") or ""),
+        "tactic": str(getattr(args, "mercenary_tactic_preset", "") or "balanced"),
+        "adventure_memory": str(getattr(args, "mercenary_adventure_memory", "") or ""),
         "total_contracts": max(0, int(getattr(args, "mercenary_total_contracts", 0) or 0)),
         "total_contract_minutes": max(0, int(getattr(args, "mercenary_total_contract_minutes", 0) or 0)),
         "persistent_kills": max(0, int(getattr(args, "mercenary_kills_together", 0) or 0)),
@@ -2846,6 +2901,11 @@ def build_companion_chat_status_context(
     return {
         "role_label": companion_role_label(role),
         "mode_label": companion_command_mode_label(command_mode),
+        "personality": str(record.get("personality", "") or ""),
+        "personality_label": companion_personality_label(record.get("personality", "")),
+        "tactic": str(record.get("tactic", "") or "balanced"),
+        "tactic_label": mercenary_tactic_label(record.get("tactic", "")),
+        "adventure_memory": str(record.get("adventure_memory", "") or ""),
         "health_percent": max(0, min(100, health_value)),
         "trust_stage": mercenary_trust_stage_label(trust),
         "trust": max(0, min(100, trust_value)),
@@ -2869,6 +2929,7 @@ def build_companion_chat_status_context(
         "personal_quest_state": str(record.get("personal_quest_state", "") or ""),
         "personal_quest_label": mercenary_personal_quest_label(record.get("personal_quest_state", "")),
         "relationship_event_state": str(record.get("relationship_event_state", "") or ""),
+        "relationship_event_label": mercenary_relationship_label(record.get("relationship_event_state", "")),
     }
 
 
@@ -2883,7 +2944,8 @@ def companion_status_reply(status_context: dict[str, object] | None = None) -> s
     return (
         f"현재 {context.get('role_label', '빈자리 보조')} 역할, {context.get('mode_label', '방어태세')}입니다. "
         f"체력 {context.get('health_percent', 100)}%, 친밀도 {context.get('trust', 50)}({context.get('trust_stage', '익숙함')}), "
-        f"피로도 {context.get('fatigue', 0)}({context.get('fatigue_stage', '가벼움')})이고 {ai_text} 가능합니다."
+        f"피로도 {context.get('fatigue', 0)}({context.get('fatigue_stage', '가벼움')}), "
+        f"전술은 {context.get('tactic_label', '균형')}이고 {ai_text} 가능합니다."
     )
 
 
@@ -2909,6 +2971,49 @@ def companion_record_reply(status_context: dict[str, object] | None = None) -> s
         f"처치 {persistent_kills}회, 구출 {persistent_rescues}회, 의뢰 {persistent_quests}회입니다. "
         f"칭호는 {title}, 개인 의뢰는 {quest}입니다."
     )
+
+
+def companion_journal_reply(status_context: dict[str, object] | None = None) -> str:
+    context = dict(status_context or {})
+    memory = short_text(str(context.get("adventure_memory", "") or ""), 90)
+    title = str(context.get("primary_title", "칭호 없음") or "칭호 없음")
+    quest = str(context.get("personal_quest_label", "없음") or "없음")
+    relationship = str(context.get("relationship_event_label", "") or "")
+    if not memory and title == "칭호 없음" and quest == "없음" and not relationship:
+        return "아직 특별히 남길 만한 추억은 적습니다. 몇 번 더 같이 싸우면 기록할 이야기가 생길 겁니다."
+    parts = []
+    if memory:
+        parts.append(f"가장 남는 기억은 {memory}")
+    if title != "칭호 없음":
+        parts.append(f"지금 칭호는 {title}")
+    if quest != "없음":
+        parts.append(f"개인 의뢰는 {quest}")
+    if relationship:
+        parts.append(f"관계 기록은 {relationship}")
+    return "제 일지 기준으로는 " + ". ".join(parts[:3]) + "."
+
+
+def companion_tactic_reply(status_context: dict[str, object] | None = None) -> str:
+    context = dict(status_context or {})
+    personality = str(context.get("personality_label", "보통형") or "보통형")
+    tactic = str(context.get("tactic_label", "균형") or "균형")
+    role = str(context.get("role_label", "빈자리 보조") or "빈자리 보조")
+    fatigue = str(context.get("fatigue_stage", "가벼움") or "가벼움")
+    return f"저는 {personality}이고 현재 전술은 {tactic}입니다. {role} 역할에 맞춰 움직이고, 피로 상태는 {fatigue}라 무리한 지시는 조금 조절하겠습니다."
+
+
+def companion_beginner_tip_reply(status_context: dict[str, object] | None = None) -> str:
+    context = dict(status_context or {})
+    role = str(context.get("role_label", "빈자리 보조") or "빈자리 보조")
+    tactic = str(context.get("tactic_label", "균형") or "균형")
+    return f"처음이면 제게 `상태`, `기록`, `대기`, `따라와`, `ㄱㄱ`, `5렙 사냥 어디서해`처럼 말하면 됩니다. 지금 저는 {role} 역할이고 전술은 {tactic}입니다."
+
+
+def companion_veteran_tip_reply(status_context: dict[str, object] | None = None) -> str:
+    context = dict(status_context or {})
+    personality = str(context.get("personality_label", "보통형") or "보통형")
+    tactic = str(context.get("tactic_label", "균형") or "균형")
+    return f"숙련 운용은 역할보다 전술을 먼저 보시면 됩니다. 저는 {personality}/{tactic} 세팅이라, 필요하면 공격 우선·메즈 우선·리더 보호 같은 용도로 바꿔 쓰는 쪽이 좋습니다."
 
 
 def companion_post_combat_reflection_line(
@@ -3022,6 +3127,14 @@ def choose_companion_chat_reply(
         return companion_status_reply(status_context)
     if intent == "record":
         return companion_record_reply(status_context)
+    if intent == "journal":
+        return companion_journal_reply(status_context)
+    if intent == "tactic":
+        return companion_tactic_reply(status_context)
+    if intent == "beginner_tip":
+        return companion_beginner_tip_reply(status_context)
+    if intent == "veteran_tip":
+        return companion_veteran_tip_reply(status_context)
     if intent == "combat" and companion_role_uses_one_shot_combat_command(role):
         if personality_pools:
             category_lines = personality_pools.get("combat_healer") or []
@@ -3063,6 +3176,10 @@ def choose_companion_chat_reply(
         "help": companion_command_help_line(),
         "status": companion_status_reply(status_context),
         "record": companion_record_reply(status_context),
+        "journal": companion_journal_reply(status_context),
+        "tactic": companion_tactic_reply(status_context),
+        "beginner_tip": companion_beginner_tip_reply(status_context),
+        "veteran_tip": companion_veteran_tip_reply(status_context),
         "thanks": "천만에요. 계속 옆에서 맞춰가겠습니다.",
     }
     if pool_intent in fallback_by_intent:
@@ -24543,7 +24660,10 @@ def run_dummy_round(
                                         free_chat_enabled=bool(getattr(args, "companion_free_chat", False)),
                                         combat_metrics=combat_metrics,
                                         action_counts=action_counts,
-                                        mercenary_record=build_runtime_mercenary_record(args),
+                                        mercenary_record=build_runtime_mercenary_record(
+                                            args,
+                                            personality=companion_personality_name,
+                                        ),
                                     ),
                                 )
                             client.send_command(
@@ -35142,6 +35262,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--companion-personality", choices=["auto", *COMPANION_PERSONALITIES], default="auto")
     parser.add_argument("--mercenary-trust", type=int, default=50)
     parser.add_argument("--mercenary-fatigue", type=int, default=0)
+    parser.add_argument("--mercenary-tactic-preset", default="balanced")
+    parser.add_argument("--mercenary-adventure-memory", default="")
     parser.add_argument("--mercenary-total-contracts", type=int, default=0)
     parser.add_argument("--mercenary-total-contract-minutes", type=int, default=0)
     parser.add_argument("--mercenary-kills-together", type=int, default=0)

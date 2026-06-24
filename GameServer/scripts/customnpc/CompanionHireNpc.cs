@@ -65,7 +65,7 @@ namespace DOL.GS.Scripts
                 "안내: [처음 안내] [운용 팁]\n" +
                 "보유: [내 용병]\n" +
                 "고용: [추천 고용] [치유형 고용] [방어형 고용] [공격형 고용] [지원형 고용]\n" +
-                "관리: [용병 상세] [휴식] [상태 확인] [소문] [요청 취소] [용병 해산]";
+                "관리: [용병 상세] [용병 일지] [휴식] [상태 확인] [소문] [요청 취소] [용병 해산]";
         }
 
         public static string BuildBeginnerGuideText()
@@ -168,6 +168,12 @@ namespace DOL.GS.Scripts
                 case "details":
                     ShowMercenaryDetails(player, string.Empty);
                     return true;
+                case "용병 일지":
+                case "일지":
+                case "추억":
+                case "journal":
+                    ShowMercenaryJournal(player, string.Empty);
+                    return true;
                 case "휴식":
                 case "용병 휴식":
                 case "rest":
@@ -224,6 +230,8 @@ namespace DOL.GS.Scripts
                     return true;
                 default:
                     if (TryShowMercenaryDetails(player, str))
+                        return true;
+                    if (TryShowMercenaryJournal(player, str))
                         return true;
                     if (TryRestMercenary(player, str))
                         return true;
@@ -346,6 +354,44 @@ namespace DOL.GS.Scripts
                     $"장비: {FirstNonEmpty(row.ItemProfile, "기본 장비")}\n" +
                     $"기억: {FirstNonEmpty(row.AdventureMemory, row.Background)}"));
             SendReply(player, "보유 용병 상세입니다.\n" + lines);
+            return true;
+        }
+
+        private bool TryShowMercenaryJournal(GamePlayer player, string command)
+        {
+            string name = ExtractMercenaryCommandSubject(command, "일지", "추억", "journal");
+            if (string.IsNullOrWhiteSpace(name))
+                return false;
+
+            return ShowMercenaryJournal(player, name);
+        }
+
+        private bool ShowMercenaryJournal(GamePlayer player, string mercenaryName)
+        {
+            PlayerMercenaryService.EnsureStarterMercenary(player);
+            var mercenaries = string.IsNullOrWhiteSpace(mercenaryName)
+                ? PlayerMercenaryService.OwnedBy(player)
+                : PlayerMercenaryService.OwnedBy(player)
+                    .Where(row =>
+                        row.MercenaryId.Equals(mercenaryName.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                        row.DisplayName.Equals(mercenaryName.Trim(), StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+            if (mercenaries.Count == 0)
+            {
+                SendReply(player, "일지를 볼 보유 용병을 찾지 못했습니다.");
+                return true;
+            }
+
+            string lines = string.Join(
+                "\n\n",
+                mercenaries.Take(4).Select(row =>
+                    $"[{row.DisplayName}] {PlayerMercenaryService.PrimaryTitle(row)}\n" +
+                    $"추억: {FirstNonEmpty(row.AdventureMemory, row.Background)}\n" +
+                    $"{PlayerMercenaryService.RecordSummary(row)}\n" +
+                    $"{PlayerMercenaryService.PersonalQuestLine(row)}\n" +
+                    $"{RelationshipEventLine(row.RelationshipEventState)}"));
+            SendReply(player, "보유 용병 일지입니다.\n" + lines);
             return true;
         }
 
@@ -534,6 +580,27 @@ namespace DOL.GS.Scripts
                 return "없음";
 
             return string.Join(", ", value.Split('|').Select(part => part.Trim()).Where(part => !string.IsNullOrWhiteSpace(part)));
+        }
+
+        private static string RelationshipEventLine(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return "관계 기록: 아직 특별한 사건 없음";
+
+            var labels = value.Split('|', ';', ',')
+                .Select(part => part.Trim().ToLowerInvariant())
+                .Where(part => !string.IsNullOrWhiteSpace(part))
+                .Select(part => part switch
+                {
+                    "bond_acknowledged" => "처음으로 리더를 믿겠다고 인정",
+                    "field_oath" => "전장에서 끝까지 함께하겠다고 맹세",
+                    _ => part
+                })
+                .ToList();
+
+            return labels.Count == 0
+                ? "관계 기록: 아직 특별한 사건 없음"
+                : $"관계 기록: {string.Join(", ", labels)}";
         }
 
         private static string ExtractMercenaryCommandSubject(string command, params string[] keywords)

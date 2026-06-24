@@ -60,6 +60,7 @@ namespace DOL.GS.Tests
             Assert.That(text, Does.Contain("[운용 팁]"));
             Assert.That(text, Does.Contain("[추천 고용]"));
             Assert.That(text, Does.Contain("[지원형 고용]"));
+            Assert.That(text, Does.Contain("[용병 일지]"));
             Assert.That(text, Does.Contain("[용병 해산]"));
             Assert.That(text, Does.Contain("[상태 확인]"));
         }

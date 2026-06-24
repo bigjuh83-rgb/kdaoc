@@ -2,6 +2,7 @@ import csv
 import importlib.util
 import json
 import os
+import random
 import subprocess
 import sys
 import tempfile
@@ -463,6 +464,8 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(last_option_value("--combat-interval"), "0.5")
         self.assertEqual(last_option_value("--mercenary-trust"), "86")
         self.assertEqual(last_option_value("--mercenary-fatigue"), "8")
+        self.assertEqual(last_option_value("--mercenary-tactic-preset"), "safe")
+        self.assertEqual(last_option_value("--mercenary-adventure-memory"), "브리튼 남쪽 숲에서 초보 파티를 무사히 호위했다.")
         self.assertEqual(last_option_value("--mercenary-total-contracts"), "6")
         self.assertEqual(last_option_value("--mercenary-total-contract-minutes"), "143")
         self.assertEqual(last_option_value("--mercenary-kills-together"), "22")
@@ -546,6 +549,45 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertIn("개인 의뢰: 전장의 맹세 진행 중", payload["memory"])
         self.assertIn("관계 이벤트: 처음으로 리더를 믿겠다고 인정", payload["memory"])
         self.assertEqual(payload["state"]["mercenary"]["record"]["kills_together"], 13)
+
+    def test_behavior_companion_replies_to_journal_tactic_and_experience_tips(self) -> None:
+        behavior = load_behavior()
+        context = behavior.build_companion_chat_status_context(
+            role="healer-support",
+            command_mode=behavior.CompanionCommandMode.defensive,
+            trust=88,
+            fatigue=18,
+            guide_enabled=True,
+            free_chat_enabled=True,
+            mercenary_record={
+                "personality": "calm_support",
+                "tactic": "heal_priority",
+                "adventure_memory": "드럼 리자드 무리에서 리더를 살려냈다.",
+                "total_contracts": 9,
+                "total_contract_minutes": 240,
+                "persistent_kills": 31,
+                "persistent_rescues": 4,
+                "persistent_quests_completed": 2,
+                "earned_titles": "위기 구원자",
+                "personal_quest_state": "completed:first_bond",
+                "relationship_event_state": "bond_acknowledged",
+            },
+        )
+        rng = random.Random(1)
+
+        journal = behavior.choose_companion_chat_reply("용병아 추억 일지 말해줘", [], rng, status_context=context)
+        tactic = behavior.choose_companion_chat_reply("너 성격이랑 전술 뭐야?", [], rng, status_context=context)
+        beginner = behavior.choose_companion_chat_reply("초보면 뭐부터 말하면 돼?", [], rng, status_context=context)
+        veteran = behavior.choose_companion_chat_reply("숙련 운용팁 알려줘", [], rng, status_context=context)
+
+        self.assertIn("드럼 리자드", journal)
+        self.assertIn("위기 구원자", journal)
+        self.assertIn("침착한 보좌관형", tactic)
+        self.assertIn("치유 우선", tactic)
+        self.assertIn("상태", beginner)
+        self.assertIn("ㄱㄱ", beginner)
+        self.assertIn("숙련 운용", veteran)
+        self.assertIn("치유 우선", veteran)
 
     def test_tank_selection_prefers_defensive_self_sustain_when_home_ties(self) -> None:
         service = load_service()
@@ -4583,7 +4625,7 @@ class DummyCompanionServerSurfaceTests(unittest.TestCase):
         self.assertNotIn("[파티 용병]", source)
         self.assertNotIn('case "파티 용병":', source)
         self.assertIn("고용: [추천 고용] [치유형 고용] [방어형 고용] [공격형 고용] [지원형 고용]", source)
-        self.assertIn("관리: [용병 상세] [휴식] [상태 확인] [소문] [요청 취소] [용병 해산]", source)
+        self.assertIn("관리: [용병 상세] [용병 일지] [휴식] [상태 확인] [소문] [요청 취소] [용병 해산]", source)
         self.assertIn('case "추천 고용":', source)
         self.assertIn('case "치유형 고용":', source)
         self.assertIn('case "방어형 고용":', source)
