@@ -16,6 +16,16 @@ from typing import Any
 
 _server_companion_config: dict[str, Any] = {}
 _server_config_fetched_at: float = 0.0
+_last_live_control_revision: int = 0
+
+
+def next_live_control_revision() -> int:
+    global _last_live_control_revision
+    revision = time.time_ns()
+    if revision <= _last_live_control_revision:
+        revision = _last_live_control_revision + 1
+    _last_live_control_revision = revision
+    return revision
 
 
 def fetch_server_companion_config(args: argparse.Namespace) -> dict[str, Any]:
@@ -818,13 +828,53 @@ def real_group_member_count(
 
 
 def group_member_count(requester_state: dict[str, Any] | None) -> int:
-    if not isinstance(requester_state, dict):
-        return 0
-    return sum(1 for member in requester_state.get("groupMembers", []) or [] if isinstance(member, dict))
+    return len(group_member_rows(requester_state))
 
 
 def group_has_vacant_slots(requester_state: dict[str, Any] | None, max_group_size: int = 8) -> bool:
     return group_member_count(requester_state) < max(1, int(max_group_size))
+
+
+def pending_companion_count_for_requester(
+    active: dict[str, ActiveCompanion],
+    requester_key: str,
+    requester_state: dict[str, Any] | None,
+) -> int:
+    if not requester_key:
+        return 0
+
+    group_keys: set[str] = set()
+    for member in group_member_rows(requester_state):
+        group_keys.update(member_identity_keys(member))
+
+    pending = 0
+    for row in active_companion_member_rows(active, requester_key):
+        if member_identity_keys(row) & group_keys:
+            continue
+        pending += 1
+    return pending
+
+
+def companion_slot_block_reason(
+    active: dict[str, ActiveCompanion],
+    request: dict[str, Any],
+    requester_state: dict[str, Any] | None,
+    max_group_size: int = 8,
+) -> str:
+    if not has_group_member_snapshot(requester_state):
+        return ""
+
+    max_count = max(1, int(max_group_size))
+    member_count = group_member_count(requester_state)
+    if member_count >= max_count:
+        return f"group is full ({member_count}/{max_count})"
+
+    requester_key = request_requester_key(request)
+    vacancy = party_vacancy(max_count, member_count)
+    pending = pending_companion_count_for_requester(active, requester_key, requester_state)
+    if pending >= vacancy:
+        return "pending companion already reserves remaining group slot"
+    return ""
 
 
 def choose_release_request_for_real_player_join(
@@ -833,16 +883,9 @@ def choose_release_request_for_real_player_join(
     requester_state: dict[str, Any] | None,
     release_counts: dict[str, int],
 ) -> str:
-    if group_has_vacant_slots(requester_state):
-        return ""
-
-    real_count = real_group_member_count(requester_state, requester_key, active)
-    already_released = int(release_counts.get(requester_key, 0) or 0)
-    if real_count <= already_released:
-        return ""
-
-    candidate = choose_release_candidate(active_companion_member_rows(active, requester_key))
-    return str(candidate.get("request_id") or "") if candidate else ""
+    # Real players joining the group should not implicitly dismiss a companion.
+    # The party leader must explicitly free a slot through a leave/kick flow.
+    return ""
 
 
 def choose_release_request_for_missing_group_companion(
@@ -1024,6 +1067,10 @@ def request_mercenary_int(request: dict[str, Any], *keys: str, default: int = 0)
     return max(0, min(100, parse_int(request_value(request, *keys, default=default), default=default)))
 
 
+def request_mercenary_counter(request: dict[str, Any], *keys: str, default: int = 0) -> int:
+    return max(0, parse_int(request_value(request, *keys, default=default), default=default))
+
+
 def request_mercenary_trust(request: dict[str, Any]) -> int:
     return request_mercenary_int(request, "mercenaryTrust", "MercenaryTrust", "trust", "Trust", default=50)
 
@@ -1048,6 +1095,34 @@ def request_mercenary_memory(request: dict[str, Any]) -> str:
     ).strip()
 
 
+def request_mercenary_record(request: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "total_contracts": request_mercenary_counter(request, "mercenaryTotalContracts", "MercenaryTotalContracts", default=0),
+        "total_contract_minutes": request_mercenary_counter(
+            request,
+            "mercenaryTotalContractMinutes",
+            "MercenaryTotalContractMinutes",
+            default=0,
+        ),
+        "kills_together": request_mercenary_counter(request, "mercenaryKillsTogether", "MercenaryKillsTogether", default=0),
+        "deaths_together": request_mercenary_counter(request, "mercenaryDeathsTogether", "MercenaryDeathsTogether", default=0),
+        "rescues": request_mercenary_counter(request, "mercenaryRescues", "MercenaryRescues", default=0),
+        "quests_completed": request_mercenary_counter(
+            request,
+            "mercenaryQuestsCompleted",
+            "MercenaryQuestsCompleted",
+            default=0,
+        ),
+        "earned_titles": str(request_value(request, "mercenaryEarnedTitles", "MercenaryEarnedTitles", default="") or ""),
+        "personal_quest_state": str(
+            request_value(request, "mercenaryPersonalQuestState", "MercenaryPersonalQuestState", default="") or ""
+        ),
+        "relationship_event_state": str(
+            request_value(request, "mercenaryRelationshipEventState", "MercenaryRelationshipEventState", default="") or ""
+        ),
+    }
+
+
 def mercenary_operational_state(request: dict[str, Any]) -> dict[str, Any]:
     return {
         "tactic": request_mercenary_tactic(request),
@@ -1055,6 +1130,7 @@ def mercenary_operational_state(request: dict[str, Any]) -> dict[str, Any]:
         "fatigue": request_mercenary_fatigue(request),
         "traits": request_mercenary_traits(request),
         "memory": request_mercenary_memory(request),
+        "record": request_mercenary_record(request),
     }
 
 
@@ -1184,6 +1260,56 @@ def live_companion_trust_fatigue_flags(trust: int, fatigue: int) -> list[str]:
             "0.5",
         ]
     return flags
+
+
+def mercenary_trust_stage(trust: int) -> str:
+    trust = max(0, min(100, int(trust)))
+    if trust >= 90:
+        return "충성"
+    if trust >= 75:
+        return "두터운 신뢰"
+    if trust >= 55:
+        return "익숙함"
+    if trust >= 35:
+        return "조심스러움"
+    return "낯섦"
+
+
+def mercenary_trust_dialogue_note(trust: int) -> str:
+    stage = mercenary_trust_stage(trust)
+    notes = {
+        "충성": "친밀도 말투: 충성, 먼저 안심시키고 믿고 맡기라는 어조",
+        "두터운 신뢰": "친밀도 말투: 두터운 신뢰, 편하게 보고하고 책임감 있게 답함",
+        "익숙함": "친밀도 말투: 익숙함, 자연스럽고 실무적으로 답함",
+        "조심스러움": "친밀도 말투: 조심스러움, 예의 있지만 거리를 둠",
+        "낯섦": "친밀도 말투: 낯섦, 사무적이고 과한 친근함을 피함",
+    }
+    return notes[stage]
+
+
+def mercenary_primary_title_label(value: Any) -> str:
+    titles = [part.strip() for part in str(value or "").replace(";", "|").replace(",", "|").split("|") if part.strip()]
+    return titles[0] if titles else ""
+
+
+def mercenary_personal_quest_label(value: Any) -> str:
+    state = str(value or "").strip().lower()
+    labels = {
+        "available:first_bond": "신뢰의 첫 증표 진행 중",
+        "completed:first_bond": "신뢰의 첫 증표 완료",
+        "available:field_oath": "전장의 맹세 진행 중",
+        "completed:field_oath": "전장의 맹세 완료",
+    }
+    return labels.get(state, "")
+
+
+def mercenary_relationship_event_labels(value: Any) -> list[str]:
+    labels = {
+        "bond_acknowledged": "처음으로 리더를 믿겠다고 인정한 관계 이벤트가 있음",
+        "field_oath": "전장에서 끝까지 함께하겠다고 맹세한 관계 이벤트가 있음",
+    }
+    tokens = [part.strip().lower() for part in str(value or "").replace(";", "|").replace(",", "|").split("|") if part.strip()]
+    return [labels[token] for token in tokens if token in labels]
 
 
 def live_companion_mercenary_state_flags(request: dict[str, Any], role: Any, action_rotation: str) -> list[str]:
@@ -1580,6 +1706,8 @@ def build_behavior_command(
     forced_personality = forced_personality_raw.strip() if isinstance(forced_personality_raw, str) else ""
     requested_personality = request_mercenary_personality(request)
     personality = forced_personality or requested_personality or companion_personality_for_role(role)
+    mercenary_state = mercenary_operational_state(request)
+    mercenary_record = dict(mercenary_state.get("record") or {})
     hostile_assist = live_companion_uses_hostile_assist(role, action_rotation, request)
     player_level = requester_player_level(request, requester_state)
     encounter_mode = live_companion_party_encounter_mode(request)
@@ -1696,6 +1824,22 @@ def build_behavior_command(
         "2",
         "--companion-personality",
         personality,
+        "--mercenary-trust",
+        str(int(mercenary_state["trust"])),
+        "--mercenary-fatigue",
+        str(int(mercenary_state["fatigue"])),
+        "--mercenary-total-contracts",
+        str(int(mercenary_record.get("total_contracts", 0) or 0)),
+        "--mercenary-total-contract-minutes",
+        str(int(mercenary_record.get("total_contract_minutes", 0) or 0)),
+        "--mercenary-kills-together",
+        str(int(mercenary_record.get("kills_together", 0) or 0)),
+        "--mercenary-deaths-together",
+        str(int(mercenary_record.get("deaths_together", 0) or 0)),
+        "--mercenary-rescues",
+        str(int(mercenary_record.get("rescues", 0) or 0)),
+        "--mercenary-quests-completed",
+        str(int(mercenary_record.get("quests_completed", 0) or 0)),
         "--no-auto-loot",
         "--combat-home-leash-distance",
         combat_home,
@@ -1748,6 +1892,14 @@ def build_behavior_command(
         command.append("--follow-player-hold-allows-waypoint")
     if hostile_assist:
         command.append("--party-use-assist-command")
+    for option, key in (
+        ("--mercenary-earned-titles", "earned_titles"),
+        ("--mercenary-personal-quest-state", "personal_quest_state"),
+        ("--mercenary-relationship-event-state", "relationship_event_state"),
+    ):
+        value = str(mercenary_record.get(key, "") or "").strip()
+        if value:
+            command += [option, value]
     command.extend(live_companion_role_flags(role, action_rotation, args))
     command.extend(live_companion_contract_tier_flags(request))
     command.extend(live_companion_mercenary_state_flags(request, role, action_rotation))
@@ -1942,13 +2094,99 @@ def update_request_status(
     status: str,
     message: str = "",
     companion: str = "",
+    close_reason: str = "",
 ) -> None:
+    params = {"status": status, "message": message, "companion": companion}
+    if close_reason:
+        params["closeReason"] = close_reason
     api_request(
         args,
         "POST",
         f"/api/dummy/companions/requests/{urllib.parse.quote(request_id)}/status",
-        {"status": status, "message": message, "companion": companion},
+        params,
     )
+
+
+def service_stop_file(args: argparse.Namespace) -> Path:
+    configured = arg_string(args, "stop_file", "")
+    if configured:
+        return Path(configured)
+    return Path(arg_string(args, "run_dir", "test-output/live-companions")) / "companion-service.stop"
+
+
+def service_stop_requested(args: argparse.Namespace) -> bool:
+    return service_stop_file(args).exists()
+
+
+def metric_int(row: dict[str, Any], key: str) -> int:
+    try:
+        return int(float(row.get(key) or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def live_companion_completion_metrics(run_dir: str | Path) -> dict[str, int]:
+    counts = {
+        "target_removed": 0,
+        "player_deaths": 0,
+        "damage_done": 0,
+        "healing_done": 0,
+        "resurrect": 0,
+        "cure": 0,
+        "crowd_control": 0,
+        "party_protection": 0,
+    }
+    run_path = Path(run_dir)
+    if not run_path.exists():
+        return counts
+
+    for path in run_path.rglob("*metrics.csv"):
+        try:
+            with path.open(encoding="utf-8-sig", newline="") as handle:
+                for row in csv.DictReader(handle):
+                    counts["target_removed"] += metric_int(row, "target_removed")
+                    counts["player_deaths"] += metric_int(row, "player_deaths")
+                    counts["damage_done"] += metric_int(row, "damage_done")
+                    counts["healing_done"] += metric_int(row, "healing_done")
+                    for key, value in row.items():
+                        if not str(key or "").startswith("action_"):
+                            continue
+                        amount = metric_int({key: value}, key)
+                        if amount <= 0:
+                            continue
+                        if key.startswith("action_validated_party_resurrect_") or key.startswith("action_validated_revive_"):
+                            counts["resurrect"] += amount
+                        elif "validated_party_cure_" in key:
+                            counts["cure"] += amount
+                        elif "validated_crowd_control_spell" in key:
+                            counts["crowd_control"] += amount
+                        elif key.startswith("action_validated_party_") and key.endswith("_member") and any(
+                            token in key for token in ("guard", "protect", "intercept", "bodyguard", "protection")
+                        ):
+                            counts["party_protection"] += amount
+        except OSError:
+            continue
+    return counts
+
+
+def live_companion_success_close_reason(request: dict[str, Any], run_dir: str | Path) -> str:
+    metrics = live_companion_completion_metrics(run_dir)
+    if metrics["resurrect"] > 0:
+        return "resurrection_save"
+    if metrics["target_removed"] > 0 and request_objective_target_name(request):
+        return "boss_defeated" if live_companion_party_encounter_mode(request) == "boss" else "objective_completed"
+    if metrics["party_protection"] > 0 or (
+        metrics["healing_done"] > 0 and metrics["player_deaths"] <= 0
+    ):
+        return "protected_leader"
+    if (
+        metrics["damage_done"] > 0
+        or metrics["healing_done"] > 0
+        or metrics["cure"] > 0
+        or metrics["crowd_control"] > 0
+    ):
+        return "honorable_release"
+    return "normal_behavior_client_exit"
 
 
 def health_band_from_percent(value: Any) -> str:
@@ -2204,12 +2442,31 @@ def build_companion_dialogue_payload(
     role = request_value(companion.request, "requestedRole", "RequestedRole", default="fill")
     event_type = str(event_type or "status")
     mercenary_state = mercenary_operational_state(companion.request)
+    mercenary_record = dict(mercenary_state.get("record") or {})
     personality = request_mercenary_personality(companion.request) or companion_personality_for_role(role)
     memory_parts = []
     if mercenary_state["traits"]:
         memory_parts.append("특성: " + ", ".join(str(trait) for trait in mercenary_state["traits"]))
+    memory_parts.append(mercenary_trust_dialogue_note(int(mercenary_state["trust"])))
     if mercenary_state["memory"]:
         memory_parts.append(str(mercenary_state["memory"]))
+    primary_title = mercenary_primary_title_label(mercenary_record.get("earned_titles", ""))
+    if primary_title:
+        memory_parts.append(f"현재 칭호: {primary_title}")
+    if any(int(mercenary_record.get(key, 0) or 0) > 0 for key in ("total_contracts", "kills_together", "rescues", "quests_completed")):
+        memory_parts.append(
+            "누적 기록: "
+            f"계약 {int(mercenary_record.get('total_contracts', 0) or 0)}회, "
+            f"처치 기여 {int(mercenary_record.get('kills_together', 0) or 0)}회, "
+            f"구출 {int(mercenary_record.get('rescues', 0) or 0)}회, "
+            f"개인 의뢰 {int(mercenary_record.get('quests_completed', 0) or 0)}회"
+        )
+    personal_quest = mercenary_personal_quest_label(mercenary_record.get("personal_quest_state", ""))
+    if personal_quest:
+        memory_parts.append(f"개인 의뢰: {personal_quest}")
+    relationship_events = mercenary_relationship_event_labels(mercenary_record.get("relationship_event_state", ""))
+    if relationship_events:
+        memory_parts.append("관계 이벤트: " + ", ".join(relationship_events))
     return {
         "feature": "companion_dialogue",
         "event_type": event_type,
@@ -2232,8 +2489,10 @@ def build_companion_dialogue_payload(
             "mercenary": {
                 "tactic": str(mercenary_state["tactic"]),
                 "trust": int(mercenary_state["trust"]),
+                "trust_stage": mercenary_trust_stage(int(mercenary_state["trust"])),
                 "fatigue": int(mercenary_state["fatigue"]),
                 "traits": list(mercenary_state["traits"]),
+                "record": dict(mercenary_record),
             },
         },
         "memory": " | ".join(memory_parts),
@@ -2334,7 +2593,7 @@ def sanitize_companion_guide_response(response: dict[str, Any]) -> dict[str, Any
 def write_companion_live_control(path: Path, response: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     row = {
-        "revision": time.time_ns(),
+        "revision": next_live_control_revision(),
         "say_channel": str(response.get("say_channel") or "none"),
         "say_text": str(response.get("say_text") or ""),
         "guide_lines": list(response.get("guide_lines") or []),
@@ -2620,15 +2879,25 @@ def detach_companion_from_request(args: argparse.Namespace, request_id: str, acc
     return True, ""
 
 
-def request_companion_quit(control_path: Path | None) -> None:
+def companion_leave_farewell_line(reason: str = "leave_request") -> str:
+    if str(reason or "").strip().lower() in {"leave_request", "party_kick", "kick", "dismiss"}:
+        return "알겠습니다. 계약을 정리하고 파티에서 빠지겠습니다. 빈자리는 제가 비워두겠습니다."
+    return ""
+
+
+def request_companion_quit(control_path: Path | None, *, farewell_line: str = "") -> None:
     if control_path is None:
         return
     control_path.parent.mkdir(parents=True, exist_ok=True)
+    commands = []
+    if farewell_line:
+        commands.append(f"/g {farewell_line[:120]}")
+    commands.append("/quit")
     control_path.write_text(
         json.dumps(
             {
-                "revision": time.time_ns(),
-                "commands": ["/quit"],
+                "revision": next_live_control_revision(),
+                "commands": commands,
                 "intent_hint": "leave",
                 "quit_after_sit_seconds": 4.0,
             },
@@ -2639,10 +2908,15 @@ def request_companion_quit(control_path: Path | None) -> None:
     )
 
 
-def stop_companion(process: subprocess.Popen, timeout: float = 10.0, control_path: Path | None = None) -> None:
+def stop_companion(
+    process: subprocess.Popen,
+    timeout: float = 10.0,
+    control_path: Path | None = None,
+    farewell_line: str = "",
+) -> None:
     if process.poll() is not None:
         return
-    request_companion_quit(control_path)
+    request_companion_quit(control_path, farewell_line=farewell_line)
     try:
         process.wait(timeout=max(1.0, timeout))
         return
@@ -2684,11 +2958,22 @@ def release_active_companions_for_leave_request(
             continue
 
         detached, message = detach_companion_from_request(args, request_id, companion.account)
-        stop_companion(companion.process, control_path=companion.control_path)
+        stop_companion(
+            companion.process,
+            control_path=companion.control_path,
+            farewell_line=companion_leave_farewell_line("leave_request"),
+        )
         status_message = "leave request; companion released"
         if not detached and message:
             status_message = f"{status_message}; detach warning: {message}"
-        update_request_status(args, request_id, "completed", status_message, companion.account)
+        update_request_status(
+            args,
+            request_id,
+            "completed",
+            status_message,
+            companion.account,
+            close_reason="leader_dismissed",
+        )
         active.pop(request_id, None)
         released += 1
     return released
@@ -2714,7 +2999,24 @@ def handle_request(
     requester_state = fetch_requester_state(args, request)
     ready, reason = requester_spawn_ready(requester_state)
     if not ready:
-        update_request_status(args, request_id, "failed", f"cannot spawn companion: {reason}")
+        update_request_status(
+            args,
+            request_id,
+            "failed",
+            f"cannot spawn companion: {reason}",
+            close_reason="system_spawn_blocked",
+        )
+        return
+
+    slot_block_reason = companion_slot_block_reason(active, request, requester_state)
+    if slot_block_reason:
+        update_request_status(
+            args,
+            request_id,
+            "failed",
+            f"cannot spawn companion: {slot_block_reason}",
+            close_reason="party_full",
+        )
         return
 
     run_dir = Path(args.run_dir) / request_id
@@ -2730,7 +3032,13 @@ def handle_request(
             raise ValueError("selected companion account csv has no usable account")
         command = build_behavior_command(args, request, companion_accounts_csv, run_dir, requester_state=requester_state)
     except (OSError, ValueError) as exc:
-        update_request_status(args, request_id, "failed", f"cannot spawn companion: {exc}")
+        update_request_status(
+            args,
+            request_id,
+            "failed",
+            f"cannot spawn companion: {exc}",
+            close_reason="system_spawn_failed",
+        )
         return
 
     if args.dry_run:
@@ -2755,7 +3063,13 @@ def handle_request(
             stop_companion(process, control_path=control_path)
             mark_account_cooldown(args, account_cooldowns, companion_account)
             active.pop(request_id, None)
-            update_request_status(args, request_id, "failed", "companion did not appear online before grouping timeout")
+            update_request_status(
+                args,
+                request_id,
+                "failed",
+                "companion did not appear online before grouping timeout",
+                close_reason="system_grouping_timeout",
+            )
             return
 
         attached, message = attach_companion_to_request(args, request_id, account)
@@ -2763,8 +3077,16 @@ def handle_request(
             stop_companion(process, control_path=control_path)
             mark_account_cooldown(args, account_cooldowns, account)
             active.pop(request_id, None)
-            update_request_status(args, request_id, "failed", f"group attach failed: {message}", account)
+            update_request_status(
+                args,
+                request_id,
+                "failed",
+                f"group attach failed: {message}",
+                account,
+                close_reason="system_attach_failed",
+            )
             return
+        update_request_status(args, request_id, "active", "live companion grouped and active", account)
         emit_companion_dialogue(args, companion, requester_state, "companion_joined")
     else:
         update_request_status(args, request_id, "active", "live companion behavior client started")
@@ -2787,7 +3109,14 @@ def release_companion_for_real_player(
     status_message = "real player joined; companion released"
     if not detached and message:
         status_message = f"{status_message}; detach warning: {message}"
-    update_request_status(args, request_id, "completed", status_message, companion.account)
+    update_request_status(
+        args,
+        request_id,
+        "completed",
+        status_message,
+        companion.account,
+        close_reason="real_player_joined",
+    )
     active.pop(request_id, None)
     release_counts[requester_key] = int(release_counts.get(requester_key, 0) or 0) + 1
 
@@ -2806,7 +3135,14 @@ def release_companion_for_party_loss(
     status_message = "party disbanded or companion removed; companion released"
     if not detached and message:
         status_message = f"{status_message}; detach warning: {message}"
-    update_request_status(args, request_id, "completed", status_message, companion.account)
+    update_request_status(
+        args,
+        request_id,
+        "completed",
+        status_message,
+        companion.account,
+        close_reason="party_lost",
+    )
     active.pop(request_id, None)
 
 
@@ -2865,7 +3201,13 @@ def poll_active(
 
                 detach_companion_from_request(args, request_id, companion.account)
                 stop_companion(process, control_path=companion.control_path)
-                update_request_status(args, request_id, "completed", "requester offline grace expired; companion stopped")
+                update_request_status(
+                    args,
+                    request_id,
+                    "completed",
+                    "requester offline grace expired; companion stopped",
+                    close_reason="offline_grace_expired",
+                )
                 finished.append(request_id)
             else:
                 if companion.requester_offline_since > 0.0:
@@ -2886,7 +3228,18 @@ def poll_active(
             continue
         status = "completed" if return_code == 0 else "failed"
         mark_account_cooldown(args, account_cooldowns, companion.account)
-        update_request_status(args, request_id, status, f"behavior client exited with {return_code}")
+        run_dir = Path(arg_string(args, "run_dir", "test-output/live-companions")) / request_id
+        update_request_status(
+            args,
+            request_id,
+            status,
+            f"behavior client exited with {return_code}",
+            close_reason=(
+                live_companion_success_close_reason(companion.request, run_dir)
+                if status == "completed"
+                else "system_behavior_client_exit"
+            ),
+        )
         finished.append(request_id)
     for request_id in finished:
         active.pop(request_id, None)
@@ -2946,6 +3299,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-runtime", type=float, default=0.0, help="stop the service after this many seconds; 0 runs until interrupted")
     parser.add_argument("--party-size", type=int, default=1, help="effective party size to pass to companions")
     parser.add_argument("--account-reuse-cooldown", type=float, default=75.0)
+    parser.add_argument("--stop-file", default="", help="exit gracefully when this file exists")
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     return parser
@@ -2953,6 +3307,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    stop_file = service_stop_file(args)
+    if stop_file.exists():
+        stop_file.unlink()
     if not wait_for_server_api_ready(args):
         return 2
     recovered = recover_orphaned_active_requests(args)
@@ -2967,6 +3324,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         while True:
             poll_active(args, active, release_counts, dialogue_state, account_cooldowns)
+            if service_stop_requested(args):
+                return 0
             request = claim_next_request(args)
             if request is not None:
                 handle_request(args, request, active, account_cooldowns)

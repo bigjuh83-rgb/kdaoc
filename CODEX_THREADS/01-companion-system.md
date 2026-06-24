@@ -17,7 +17,8 @@
 - No player slash command for summoning companions.
 - `/dummy` remains GM-only for testing.
 - Companions should help fill party gaps, not replace real players.
-- Real player joining should safely release lower-priority companions when needed.
+- Real players joining should not automatically dismiss an active mercenary.
+- The party leader should explicitly dismiss or kick a mercenary first when a real player needs that party slot.
 
 ## Main Files
 
@@ -48,13 +49,16 @@
 - RX7600 llama.cpp local AI path is active. Gemma 4 E4B Q4_K_M runs via `llama-server` on `http://192.168.0.28:8001` as `local-gemma-4-e4b-it`; 4 slots and 8 queued client requests passed short Korean smoke tests. See `docs/companion-local-ai-llamacpp-rx7600.md`.
 - AI Gateway supports `hybrid` provider routing. Recommended paid/free operating config is `tools/opendaoc-ai-gateway.hybrid-openai-local.json`: OpenAI small model first, local llama.cpp fallback second, Gemini emergency fallback third. Local `openai_compatible/` aliases are unmetered in the ledger so they do not block the OpenAI Tier 3 data-sharing 10M tokens/day small-model budget.
 - One mercenary in a mostly real-player party keeps short guide/persona memory per speaker, not globally. While one AI answer is pending, new explicit questions get a personality-specific “one at a time” busy line instead of starting another provider call; combat commands such as `ㄱㄱ` still bypass the busy reply.
+- Live companion service is wired to an environment config on CT 208 (`/etc/opendaoc/opendaoc-ai-gateway.json`) with `small-dialogue`, `openai-small-guide`, `gemini-small-dialogue`, and `gemini-guide-answer` aliases.
+- Live-control revisions are monotonic even when two control files are written inside the same Windows timer tick; this prevents fast consecutive commands from being mistaken for the same command.
+- Recruiter NPC menu includes `추천 고용`, beginner `처음 안내`, and veteran `운용 팁` paths so new players see safe first steps and experienced players see role/progression management quickly.
 
 ## Next Work
 
-1. Check recruiter NPC UX in game.
-2. Verify real player join release policy.
+1. Check recruiter NPC UX in game, including `추천 고용`, `처음 안내`, `운용 팁`, `지원형 고용`, `상태 확인`, and `용병 해산`.
+2. Verify real player join does not auto-dismiss an active mercenary.
 3. Keep role matrix short and diagnostic.
-4. Wire live companion service to `tools/opendaoc-ai-gateway.hybrid-openai-local.json` after confirming which live service launcher should own `OPENDAOC_AI_GATEWAY_CONFIG`.
+4. Run the full in-game mercenary flow during the next real external-client test: hire, status, guide question, `ㄱㄱ`, manual dismissal, and rehiring.
 
 ## Useful Commands
 

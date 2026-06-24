@@ -859,16 +859,30 @@ def companion_chat_body_is_busy_safe_command(body: str) -> bool:
         "고고",
         "공격",
         "공격해",
+        "같이쳐",
+        "때려줘",
         "따라",
         "따라와",
+        "나따라와",
+        "붙어",
+        "옆에있어",
         "대기",
+        "대기해",
         "멈춰",
+        "멈춰줘",
         "정지",
         "기다려",
+        "기다려줘",
+        "여기있어",
+        "움직이지마",
         "수동",
         "패시브",
+        "공격하지마",
+        "치지마",
         "방어",
         "방어모드",
+        "보호해",
+        "나지켜",
         "ㅌㅌ",
         "도망",
         "도망쳐",
@@ -1208,6 +1222,52 @@ def companion_guide_position_from_context(
     )
 
 
+def companion_guide_player_class_from_context(party_state, speaker: str = "") -> str:
+    context = companion_guide_player_context_from_context(party_state, speaker)
+    return str(context.get("player_class") or "")
+
+
+def companion_guide_player_context_from_context(party_state, speaker: str = "") -> dict[str, object]:
+    if party_state is None:
+        return {}
+    speaker_key = normalize_target_name(speaker)
+    if not speaker_key:
+        return {}
+    conditions = getattr(party_state, "member_conditions", {})
+    if not isinstance(conditions, dict):
+        return {}
+    for member_name, condition in conditions.items():
+        if normalize_target_name(member_name) != speaker_key:
+            continue
+        context: dict[str, object] = {}
+        player_class = str(getattr(condition, "class_name", "") or "").strip()[:64]
+        if player_class:
+            context["player_class"] = player_class
+        try:
+            class_id = int(getattr(condition, "class_id", 0) or 0)
+        except (TypeError, ValueError):
+            class_id = 0
+        if class_id > 0:
+            context["player_class_id"] = class_id
+        try:
+            player_level = int(getattr(condition, "level", 0) or 0)
+        except (TypeError, ValueError):
+            player_level = 0
+        if player_level > 0:
+            context["player_level"] = player_level
+        try:
+            player_realm = int(getattr(condition, "realm", 0) or 0)
+        except (TypeError, ValueError):
+            player_realm = 0
+        if player_realm > 0:
+            context["player_realm"] = player_realm
+        player_specs = str(getattr(condition, "specs", "") or "").strip()[:160]
+        if player_specs:
+            context["player_specs"] = player_specs
+        return context
+    return {}
+
+
 def companion_guide_travel_request_intent(body: str) -> bool:
     normalized = normalize_target_name(body)
     compact = normalized.replace(" ", "")
@@ -1443,6 +1503,9 @@ def build_companion_guide_payload(
     *,
     role: str = "",
     realm: int | str = "",
+    player_class: str = "",
+    player_class_id: int | str = 0,
+    player_specs: str = "",
     region: int | str = 0,
     player_level: int = 0,
     in_combat: bool = False,
@@ -1460,6 +1523,10 @@ def build_companion_guide_payload(
     except (TypeError, ValueError):
         actor_level = 0
     level = question_level or actor_level
+    try:
+        class_id = int(player_class_id or 0)
+    except (TypeError, ValueError):
+        class_id = 0
     try:
         region_id = int(region or 0)
     except (TypeError, ValueError):
@@ -1484,6 +1551,9 @@ def build_companion_guide_payload(
         "question": cleaned_question,
         "role": str(role or ""),
         "realm": str(realm or ""),
+        "player_class": str(player_class or "").strip()[:64],
+        "player_class_id": max(0, class_id),
+        "player_specs": " ".join(str(player_specs or "").split())[:160],
         "region": region_id,
         "player_level": level,
         "state": {"combat": bool(in_combat), "companion_role": str(role or ""), "region": region_id},
@@ -1512,6 +1582,9 @@ def build_pending_companion_guide_question(
     channel: str,
     role: str = "",
     realm: int | str = "",
+    player_class: str = "",
+    player_class_id: int | str = 0,
+    player_specs: str = "",
     region: int | str = 0,
     player_level: int = 0,
     now: float = 0.0,
@@ -1529,6 +1602,9 @@ def build_pending_companion_guide_question(
             question,
             role=role,
             realm=realm,
+            player_class=player_class,
+            player_class_id=player_class_id,
+            player_specs=player_specs,
             region=region,
             player_level=player_level,
             in_combat=False,
@@ -1635,9 +1711,11 @@ def build_companion_free_chat_payload(
     leader_health_band: str = "unknown",
     companion_health_band: str = "unknown",
     party_lowest_health_band: str = "unknown",
+    player_context: dict[str, object] | None = None,
     memory: object | None = None,
     now: float = 0.0,
 ) -> dict[str, object]:
+    safe_player_context = dict(player_context or {}) if isinstance(player_context, dict) else {}
     payload: dict[str, object] = {
         "feature": "companion_free_chat",
         "message": " ".join(str(message or "").split())[:360],
@@ -1645,6 +1723,7 @@ def build_companion_free_chat_payload(
         "role": str(profile.get("role") or ""),
         "personality": str(profile.get("personality") or ""),
         "profile": dict(profile),
+        "player_context": safe_player_context,
         "state": {
             "combat": bool(in_combat),
             "leader_health_band": str(leader_health_band or "unknown"),
@@ -2134,10 +2213,14 @@ def companion_identity_question_intent(body: str) -> str:
     compact = normalized.replace(" ", "")
     if not compact:
         return ""
+    if "어디" in normalized and any(token in normalized for token in {"출신", "고향", "왔"}):
+        return "origin"
     if any(token in compact for token in {"어디출신", "고향", "출신", "어디서왔", "whereareyoufrom"}):
         return "origin"
-    if any(token in compact for token in {"왜용병", "용병된", "용병이된", "왜고용", "왜일해", "왜따라", "이유"}):
+    if any(token in compact for token in {"왜용병", "용병된", "용병이된", "왜고용", "왜일해", "왜따라", "어째서", "이유"}):
         return "motive"
+    if any(token in compact for token in {"누구한테배웠", "누가가르", "누구한테", "배웠", "스승", "가르친"}):
+        return "mentor"
     if any(token in compact for token in {"뭐하던", "전에뭐", "과거", "배경", "전직"}):
         return "background"
     if any(token in compact for token in {"좋아", "취향", "좋아하는"}):
@@ -2148,7 +2231,7 @@ def companion_identity_question_intent(body: str) -> str:
         return "trust"
     if any(token in compact for token in {"뭐할줄", "무엇할줄", "할수있", "역할", "능력", "뭐잘해", "전투가능"}):
         return "capability"
-    if any(token in compact for token in {"누구", "소개", "정체", "너는"}):
+    if any(token in compact for token in {"누구", "소개", "정체", "너는", "이름", "성격", "말투"}):
         return "summary"
     return ""
 
@@ -2167,10 +2250,18 @@ def companion_persona_followup_intent(
     compact = normalized.replace(" ", "")
     if not compact:
         return ""
-    if any(token in compact for token in {"그럼왜", "왜", "이유", "그래서왜"}):
+    compact_core = compact.strip(".,!?？!~…")
+    topic = str(persona.get("topic") or "").strip().lower()
+    if compact_core in {"그럼", "그래서", "그리고", "더", "더말해", "더말해줘", "더얘기해", "자세히", "자세히말해"}:
+        if topic == "origin":
+            return "background"
+        if topic in {"background", "summary"}:
+            return "motive"
+        return topic if topic in {"motive", "likes", "dislikes", "trust", "capability", "mentor"} else "summary"
+    if any(token in compact for token in {"그럼왜", "왜", "이유", "그래서왜", "어째서", "왜그랬"}):
         return "motive"
-    if any(token in compact for token in {"누구한테", "누가", "배웠", "어디서배"}):
-        return "background"
+    if any(token in compact for token in {"누구한테", "누가", "배웠", "어디서배", "스승", "가르"}):
+        return "mentor"
     if any(token in compact for token in {"어디", "고향", "출신"}):
         return "origin"
     if any(token in compact for token in {"좋아", "취향"}):
@@ -2196,6 +2287,31 @@ def resolve_companion_identity_intent(
     return ""
 
 
+def companion_profile_tone_tail(profile: dict[str, object], *, intent: str = "") -> str:
+    personality = str(profile.get("personality") or "").strip()
+    if personality in {"sly_opportunist", "cunning_opportunist"}:
+        if intent in {"motive", "trust"}:
+            return " 손해 보는 계약은 싫지만, 맡은 일은 계산해서 지킵니다."
+        return " 값어치 있는 일이라면 움직임은 빠릅니다."
+    if personality == "shifty_traitor":
+        if intent == "trust":
+            return ""
+        return " 믿음은 천천히 쌓는 편이 좋습니다."
+    if personality == "eager_rookie":
+        return " 아직 배울 건 많지만, 뒤처지진 않겠습니다."
+    if personality == "lazy_veteran":
+        return " 서두르진 않아도 필요한 일은 합니다."
+    if personality == "reckless_berserker":
+        return " 길이 막히면 뚫고 가는 쪽입니다."
+    if personality == "calm_support":
+        return " 무리하지 않고 오래 버티는 쪽이 제 방식입니다."
+    if personality in {"cautious_scout", "wary_survivor"}:
+        return " 먼저 살피고 움직이는 쪽이 오래 삽니다."
+    if personality in {"steady_protector", "loyal_guardian", "tactical_guardian"}:
+        return " 계약 중에는 곁을 지키겠습니다."
+    return ""
+
+
 def companion_profile_reply(body: str, profile: dict[str, object], *, intent: str = "") -> str:
     intent = intent or companion_identity_question_intent(body)
     name = str(profile.get("name") or "용병")
@@ -2206,6 +2322,7 @@ def companion_profile_reply(body: str, profile: dict[str, object], *, intent: st
     leader = str(profile.get("leader_address") or "대장")
     likes = [str(value) for value in profile.get("likes", []) if str(value)]
     dislikes = [str(value) for value in profile.get("dislikes", []) if str(value)]
+    tone_tail = companion_profile_tone_tail(profile, intent=intent)
     role_label = {
         "healer-support": "치유와 해제 지원",
         "healer": "치유 지원",
@@ -2218,22 +2335,24 @@ def companion_profile_reply(body: str, profile: dict[str, object], *, intent: st
         "hybrid": "이동과 보조 화력",
     }.get(role, role or "빈자리 보조")
     if intent == "origin":
-        return f"{leader}, 저는 {origin} 출신입니다. 원래는 {background}이었습니다."
+        return f"{leader}, 저는 {origin} 출신입니다. 원래는 {background}이었습니다.{tone_tail}"
     if intent == "motive":
-        return f"{motive}. 그래서 지금은 {leader} 계약을 따르고 있습니다."
+        return f"{motive}. 그래서 지금은 {leader} 계약을 따르고 있습니다.{tone_tail}"
     if intent == "background":
-        return f"예전엔 {background}이었습니다. 그때 배운 버릇이 아직 전투에서 나옵니다."
+        return f"예전엔 {background}이었습니다. 그때 배운 버릇이 아직 전투에서 나옵니다.{tone_tail}"
+    if intent == "mentor":
+        return f"{background} 시절에 현장에서 배웠습니다. 이름보다 버틴 방식이 더 오래 남았습니다.{tone_tail}"
     if intent == "capability":
-        return f"{leader}, 제 역할은 {role_label}입니다. 지시가 분명하면 그 역할에 맞춰 움직이겠습니다."
+        return f"{leader}, 제 역할은 {role_label}입니다. 지시가 분명하면 그 역할에 맞춰 움직이겠습니다.{tone_tail}"
     if intent == "likes":
-        return f"저는 {', '.join(likes[:3]) or '정확한 지시'} 같은 걸 좋아합니다."
+        return f"저는 {', '.join(likes[:3]) or '정확한 지시'} 같은 걸 좋아합니다.{tone_tail}"
     if intent == "dislikes":
-        return f"{', '.join(dislikes[:3]) or '계약 파기'} 같은 건 질색입니다."
+        return f"{', '.join(dislikes[:3]) or '계약 파기'} 같은 건 질색입니다.{tone_tail}"
     if intent == "trust":
         if str(profile.get("personality") or "") == "shifty_traitor":
             return f"믿음은 비싸지만 계약은 지킵니다, {leader}. 적어도 지금 계약은요."
-        return f"계약한 동안은 {leader} 편입니다. 제 등 뒤보다 리더 등을 먼저 보겠습니다."
-    return f"저는 {name}, {origin} 출신의 {background}입니다. 지금은 {leader}의 용병으로 움직입니다."
+        return f"계약한 동안은 {leader} 편입니다. 제 등 뒤보다 리더 등을 먼저 보겠습니다.{tone_tail}"
+    return f"저는 {name}, {origin} 출신의 {background}입니다. 지금은 {leader}의 용병으로 움직입니다.{tone_tail}"
 
 
 def _clamp_number(value: float, low: float, high: float) -> float:
@@ -2339,34 +2458,61 @@ def apply_companion_personality_behavior(args: argparse.Namespace, personality: 
 
 def companion_chat_intent(body: str) -> str:
     normalized = normalize_target_name(body)
+    compact = normalized.replace(" ", "")
     if companion_prompt_security_request_intent(normalized):
         return "chatter"
+    if any(token in normalized or token in compact for token in {"기록", "활약", "전적", "도감", "리포트", "report", "record"}):
+        return "record"
+    status_terms = {"상태", "상태창", "준비", "괜찮", "친밀도", "피로도", "계약상태", "계약 상태"}
+    combat_terms_for_status_guard = {"공격", "쳐", "때려", "어시", "assist", "attack"}
+    if any(token in normalized or token in compact for token in status_terms) and not any(
+        token in normalized or token in compact for token in combat_terms_for_status_guard
+    ):
+        return "status"
     if any(token in normalized for token in {"부활", "살려", "죽었", "시체", "rez", "res"}):
         return "resurrect"
     if any(token in normalized for token in {"해독", "해제", "큐어", "cure", "독", "질병"}):
         return "cure"
-    if any(token in normalized for token in {"튀어", "ㅌㅌ", "도망", "도망쳐", "도망가", "빼", "후퇴", "flee", "run"}):
+    if any(
+        token in normalized or token in compact
+        for token in {"튀어", "ㅌㅌ", "도망", "도망쳐", "도망가", "빼", "후퇴", "위험하면도망쳐", "살아서빠져", "죽지마", "flee", "run"}
+    ):
         return "flee"
     if any(token in normalized for token in {"힐", "치료", "치유", "회복", "피", "체력", "heal"}):
         return "heal"
-    if any(token in normalized for token in {"수동", "패시브", "공격중지", "치지마", "때리지마", "passive"}):
+    if any(
+        token in normalized or token in compact
+        for token in {"수동", "패시브", "공격중지", "공격하지마", "치지마", "때리지마", "손대지마", "전투하지마", "passive"}
+    ):
         return "passive"
-    if any(token in normalized for token in {"방어", "방어모드", "지켜", "보호", "defensive", "guard"}):
+    if any(
+        token in normalized or token in compact
+        for token in {"방어", "방어모드", "지켜", "보호", "나지켜", "보호해", "위험하면막아", "defensive", "guard"}
+    ):
         return "defensive"
-    if any(token in normalized for token in {"소환", "여기로", "이리와", "집합", "모여", "붙어", "come", "summon", "recall"}):
+    if any(
+        token in normalized or token in compact
+        for token in {"소환", "여기로", "이리와", "집합", "모여", "붙어", "나따라와", "옆에있어", "come", "summon", "recall"}
+    ):
         return "summon"
     if any(token in normalized for token in {"명령어", "명령", "도움", "도움말", "help", "command", "commands"}):
         return "help"
-    if any(token in normalized for token in {"ㄱ", "ㄱㄱ", "고", "고고", "가라", "가자", "go"}):
+    if (
+        compact in {"ㄱ", "고", "go"}
+        or "ㄱㄱ" in compact
+        or "고고" in compact
+        or any(token in normalized for token in {"가라", "가자", "공격가자"})
+    ):
         return "combat"
-    if any(token in normalized for token in {"따라", "따라와", "follow"}):
+    if any(token in normalized or token in compact for token in {"따라", "따라와", "따라만와", "follow"}):
         return "follow"
-    if any(token in normalized for token in {"공격", "공격해", "쳐", "때려", "어시", "assist", "attack"}):
+    if any(token in normalized or token in compact for token in {"공격", "공격해", "쳐", "때려", "같이쳐", "붙어쳐", "때려줘", "어시", "assist", "attack"}):
         return "combat"
-    if any(token in normalized for token in {"기다", "기다려", "멈춰", "정지", "대기", "stay", "hold", "wait"}):
+    if any(
+        token in normalized or token in compact
+        for token in {"기다", "기다려", "기다려줘", "멈춰", "멈춰줘", "정지", "대기", "대기해", "자리 지켜", "자리 지켜줘", "자리 지켜", "여기있어", "움직이지마", "그자리", "stay", "hold", "wait"}
+    ):
         return "wait"
-    if any(token in normalized for token in {"상태", "준비", "괜찮"}):
-        return "status"
     if any(token in normalized for token in {"고마", "수고", "잘했", "굿", "thanks", "thank"}):
         return "thanks"
     if any(token in normalized for token in {"안녕", "하이", "hello", "hi"}):
@@ -2561,7 +2707,242 @@ def companion_startup_guide_lines(role: str = "", *, personality: str = "") -> l
 
 
 def companion_command_help_line() -> str:
-    return "명령은 공격/ㄱㄱ, 수동태세, 방어태세, 대기, 여기로, 따라와처럼 말하면 됩니다."
+    return "명령은 공격/ㄱㄱ, 방어태세, 수동태세, 대기/멈춰, 여기로/따라와, 안내해줘, 상태, 기록처럼 말하면 됩니다."
+
+
+def mercenary_trust_stage_label(trust: object) -> str:
+    try:
+        value = int(trust)
+    except (TypeError, ValueError):
+        value = 50
+    value = max(0, min(100, value))
+    if value >= 90:
+        return "충성"
+    if value >= 75:
+        return "두터운 신뢰"
+    if value >= 55:
+        return "익숙함"
+    if value >= 35:
+        return "조심스러움"
+    return "낯섦"
+
+
+def mercenary_fatigue_stage_label(fatigue: object) -> str:
+    try:
+        value = int(fatigue)
+    except (TypeError, ValueError):
+        value = 0
+    value = max(0, min(100, value))
+    if value >= 80:
+        return "많이 지침"
+    if value >= 55:
+        return "조금 지침"
+    if value >= 25:
+        return "버틸 만함"
+    return "가벼움"
+
+
+def companion_command_mode_label(mode: CompanionCommandMode | str) -> str:
+    command_mode = normalize_companion_command_mode(mode)
+    labels = {
+        CompanionCommandMode.defensive: "방어태세",
+        CompanionCommandMode.passive: "수동태세",
+        CompanionCommandMode.attack: "공격태세",
+        CompanionCommandMode.stay: "대기",
+        CompanionCommandMode.follow: "추종",
+    }
+    return labels.get(command_mode, "방어태세")
+
+
+def companion_role_label(role: str) -> str:
+    role_key = normalize_target_name(role)
+    if "healer" in role_key:
+        return "치유/해제"
+    if "tank" in role_key or "melee" in role_key:
+        return "앞라인"
+    if "caster" in role_key or "dps" in role_key:
+        return "화력"
+    if "support" in role_key or "hybrid" in role_key:
+        return "보조"
+    return "빈자리 보조"
+
+
+def mercenary_titles_list(value: object) -> list[str]:
+    return [part.strip() for part in str(value or "").replace(";", "|").replace(",", "|").split("|") if part.strip()]
+
+
+def mercenary_primary_title_label(value: object) -> str:
+    titles = mercenary_titles_list(value)
+    return titles[0] if titles else "칭호 없음"
+
+
+def mercenary_personal_quest_label(value: object) -> str:
+    state = str(value or "").strip().lower()
+    labels = {
+        "available:first_bond": "신뢰의 첫 증표 진행 중",
+        "completed:first_bond": "신뢰의 첫 증표 완료",
+        "available:field_oath": "전장의 맹세 진행 중",
+        "completed:field_oath": "전장의 맹세 완료",
+    }
+    return labels.get(state, "없음")
+
+
+def build_runtime_mercenary_record(args: argparse.Namespace) -> dict[str, object]:
+    return {
+        "total_contracts": max(0, int(getattr(args, "mercenary_total_contracts", 0) or 0)),
+        "total_contract_minutes": max(0, int(getattr(args, "mercenary_total_contract_minutes", 0) or 0)),
+        "persistent_kills": max(0, int(getattr(args, "mercenary_kills_together", 0) or 0)),
+        "persistent_deaths": max(0, int(getattr(args, "mercenary_deaths_together", 0) or 0)),
+        "persistent_rescues": max(0, int(getattr(args, "mercenary_rescues", 0) or 0)),
+        "persistent_quests_completed": max(0, int(getattr(args, "mercenary_quests_completed", 0) or 0)),
+        "earned_titles": str(getattr(args, "mercenary_earned_titles", "") or ""),
+        "personal_quest_state": str(getattr(args, "mercenary_personal_quest_state", "") or ""),
+        "relationship_event_state": str(getattr(args, "mercenary_relationship_event_state", "") or ""),
+    }
+
+
+def build_companion_chat_status_context(
+    *,
+    role: str = "",
+    command_mode: CompanionCommandMode | str = CompanionCommandMode.defensive,
+    health_percent: object = 100,
+    trust: object = 50,
+    fatigue: object = 0,
+    guide_enabled: bool = False,
+    free_chat_enabled: bool = False,
+    combat_metrics: list[CombatMetric] | None = None,
+    action_counts: dict[str, int] | None = None,
+    mercenary_record: dict[str, object] | None = None,
+) -> dict[str, object]:
+    metrics = list(combat_metrics or [])
+    counts = dict(action_counts or {})
+    record = dict(mercenary_record or {})
+    kills = sum(1 for metric in metrics if metric.outcome in {"target_removed", "party_objective_complete"})
+    retreats = sum(1 for metric in metrics if metric.outcome in {"flee", "critical_health_drop_aggro", "safe_exit_flee"})
+    deaths = int(counts.get("death_detected", 0) or 0) + sum(1 for metric in metrics if metric.outcome == "player_death")
+    support_actions = sum(
+        int(counts.get(key, 0) or 0)
+        for key in (
+            "party_heal",
+            "party_resurrect",
+            "party_cure",
+            "party_buff",
+            "crowd_control",
+            "speed_song",
+        )
+    )
+    try:
+        health_value = int(float(health_percent))
+    except (TypeError, ValueError):
+        health_value = 100
+    try:
+        fatigue_value = int(fatigue)
+    except (TypeError, ValueError):
+        fatigue_value = 0
+    try:
+        trust_value = int(trust)
+    except (TypeError, ValueError):
+        trust_value = 50
+    return {
+        "role_label": companion_role_label(role),
+        "mode_label": companion_command_mode_label(command_mode),
+        "health_percent": max(0, min(100, health_value)),
+        "trust_stage": mercenary_trust_stage_label(trust),
+        "trust": max(0, min(100, trust_value)),
+        "fatigue": max(0, min(100, fatigue_value)),
+        "fatigue_stage": mercenary_fatigue_stage_label(fatigue),
+        "guide_enabled": bool(guide_enabled),
+        "free_chat_enabled": bool(free_chat_enabled),
+        "engagements": len(metrics),
+        "kills": kills,
+        "retreats": retreats,
+        "deaths": deaths,
+        "support_actions": support_actions,
+        "total_contracts": int(record.get("total_contracts", 0) or 0),
+        "total_contract_minutes": int(record.get("total_contract_minutes", 0) or 0),
+        "persistent_kills": int(record.get("persistent_kills", 0) or 0),
+        "persistent_deaths": int(record.get("persistent_deaths", 0) or 0),
+        "persistent_rescues": int(record.get("persistent_rescues", 0) or 0),
+        "persistent_quests_completed": int(record.get("persistent_quests_completed", 0) or 0),
+        "earned_titles": str(record.get("earned_titles", "") or ""),
+        "primary_title": mercenary_primary_title_label(record.get("earned_titles", "")),
+        "personal_quest_state": str(record.get("personal_quest_state", "") or ""),
+        "personal_quest_label": mercenary_personal_quest_label(record.get("personal_quest_state", "")),
+        "relationship_event_state": str(record.get("relationship_event_state", "") or ""),
+    }
+
+
+def companion_status_reply(status_context: dict[str, object] | None = None) -> str:
+    context = dict(status_context or {})
+    ai_parts = []
+    if context.get("guide_enabled"):
+        ai_parts.append("안내")
+    if context.get("free_chat_enabled"):
+        ai_parts.append("대화")
+    ai_text = "/".join(ai_parts) if ai_parts else "기본응답"
+    return (
+        f"현재 {context.get('role_label', '빈자리 보조')} 역할, {context.get('mode_label', '방어태세')}입니다. "
+        f"체력 {context.get('health_percent', 100)}%, 친밀도 {context.get('trust', 50)}({context.get('trust_stage', '익숙함')}), "
+        f"피로도 {context.get('fatigue', 0)}({context.get('fatigue_stage', '가벼움')})이고 {ai_text} 가능합니다."
+    )
+
+
+def companion_record_reply(status_context: dict[str, object] | None = None) -> str:
+    context = dict(status_context or {})
+    deaths = int(context.get("deaths", 0) or 0)
+    death_text = "전투불능 없음" if deaths <= 0 else f"전투불능 {deaths}회"
+    session_text = (
+        f"이번 계약 기록은 교전 {context.get('engagements', 0)}회, 마무리 {context.get('kills', 0)}회, "
+        f"지원 {context.get('support_actions', 0)}회, 후퇴 {context.get('retreats', 0)}회, {death_text}입니다."
+    )
+    total_contracts = int(context.get("total_contracts", 0) or 0)
+    total_minutes = int(context.get("total_contract_minutes", 0) or 0)
+    persistent_kills = int(context.get("persistent_kills", 0) or 0)
+    persistent_rescues = int(context.get("persistent_rescues", 0) or 0)
+    persistent_quests = int(context.get("persistent_quests_completed", 0) or 0)
+    if total_contracts <= 0 and total_minutes <= 0 and persistent_kills <= 0 and persistent_rescues <= 0 and persistent_quests <= 0:
+        return session_text
+    title = str(context.get("primary_title", "칭호 없음") or "칭호 없음")
+    quest = str(context.get("personal_quest_label", "없음") or "없음")
+    return (
+        f"{session_text} 누적은 계약 {total_contracts}회/{total_minutes}분, "
+        f"처치 {persistent_kills}회, 구출 {persistent_rescues}회, 의뢰 {persistent_quests}회입니다. "
+        f"칭호는 {title}, 개인 의뢰는 {quest}입니다."
+    )
+
+
+def companion_post_combat_reflection_line(
+    personality: str,
+    outcome: str,
+    *,
+    trust: object = 50,
+    target_name: str = "",
+) -> str:
+    personality_key = str(personality or "").strip().lower()
+    trust_stage = mercenary_trust_stage_label(trust)
+    target = short_text(str(target_name or "대상"), 40)
+    if outcome in {"target_removed", "party_objective_complete"}:
+        by_personality = {
+            "calm_support": f"{target} 정리됐습니다. 체력만 다시 안정시키겠습니다.",
+            "bold_vanguard": f"{target} 끝났습니다. 다음 표적도 바로 받을 수 있습니다.",
+            "sharp_striker": f"{target} 처리 완료. 빈틈 보이면 바로 이어가겠습니다.",
+            "cautious_scout": f"{target} 정리했습니다. 주변 애드부터 다시 살피겠습니다.",
+            "sly_opportunist": f"{target} 마무리했습니다. 이득은 챙기되 무리하진 마시죠.",
+            "cunning_opportunist": f"{target} 마무리했습니다. 이득은 챙기되 무리하진 마시죠.",
+            "shifty_traitor": f"{target}은 끝났습니다. 아직 계약은 괜찮게 굴러가네요.",
+            "reckless_berserker": f"{target} 쓰러졌습니다. 아직 더 밀 수 있습니다.",
+            "lazy_veteran": f"{target} 끝났습니다... 잠깐 숨 돌리고 갑시다.",
+        }
+        if trust_stage in {"충성", "두터운 신뢰"} and personality_key not in {"shifty_traitor", "sly_opportunist", "cunning_opportunist"}:
+            return f"{by_personality.get(personality_key, f'{target} 정리됐습니다. 다음 지시 기다리겠습니다.')} 리더 판단 좋았습니다."
+        return by_personality.get(personality_key, f"{target} 정리됐습니다. 다음 지시 기다리겠습니다.")
+    if outcome in {"flee", "critical_health_drop_aggro", "safe_exit_flee"}:
+        return "위험해서 빠졌습니다. 다시 붙기 전에 체력과 거리를 먼저 보겠습니다."
+    if outcome == "player_death":
+        return "방금 전투는 안 좋았습니다. 부활과 안전거리부터 다시 맞추겠습니다."
+    if outcome in {"target_lost", "server_los_failure", "combat_chase_overextended"}:
+        return "대상을 놓쳤습니다. 시야와 거리를 다시 잡겠습니다."
+    return ""
 
 
 def party_snapshot_with_companion_attack_command(
@@ -2631,11 +3012,16 @@ def choose_companion_chat_reply(
     personality_pools: dict[str, list[str]] | None = None,
     recent: list[str] | None = None,
     role: str = "",
+    status_context: dict[str, object] | None = None,
 ) -> str:
     intent = companion_chat_intent(body)
     pool_intent = intent
     if intent == "help":
         return companion_command_help_line()
+    if intent == "status":
+        return companion_status_reply(status_context)
+    if intent == "record":
+        return companion_record_reply(status_context)
     if intent == "combat" and companion_role_uses_one_shot_combat_command(role):
         if personality_pools:
             category_lines = personality_pools.get("combat_healer") or []
@@ -2675,7 +3061,8 @@ def choose_companion_chat_reply(
         "defensive": "방어로 전환하겠습니다. 누가 맞으면 바로 떼어내겠습니다.",
         "wait": "여기서 대기하겠습니다. 준비되면 다시 움직일게요.",
         "help": companion_command_help_line(),
-        "status": "준비됐습니다. 체력과 위치 계속 보고 있습니다.",
+        "status": companion_status_reply(status_context),
+        "record": companion_record_reply(status_context),
         "thanks": "천만에요. 계속 옆에서 맞춰가겠습니다.",
     }
     if pool_intent in fallback_by_intent:
@@ -3134,6 +3521,30 @@ def target_removed_creditable(args: argparse.Namespace, active_combat: dict[str,
     return credit_distance <= 0.0 or float(final_distance or 0.0) <= credit_distance
 
 
+def confirmed_target_removed_combats(
+    combats: list[CombatMetric],
+    action_counts: dict[str, int] | None,
+) -> list[CombatMetric]:
+    target_removed = [combat for combat in combats if combat.outcome == "target_removed"]
+    if target_removed:
+        return target_removed
+
+    actions = action_counts or {}
+    confirmed_completion = any(
+        int(actions.get(action, 0) or 0) > 0
+        for action in (
+            "required_target_complete_exit",
+            "dynamic_quest_complete_verified",
+            "dynamic_quest_reward_observed",
+            "dynamic_quest_final_inactive",
+        )
+    )
+    if not confirmed_completion:
+        return []
+
+    return [combat for combat in combats if combat.outcome == "target_removed_pending_confirmation"]
+
+
 @dataclass(frozen=True)
 class Waypoint:
     x: int
@@ -3444,7 +3855,10 @@ class PartyState:
         )
 
         if target_changed or position_changed:
-            self.leader_target_updated_at = time.monotonic()
+            updated_at = time.monotonic()
+            if updated_at <= self.leader_target_updated_at:
+                updated_at = self.leader_target_updated_at + 0.001
+            self.leader_target_updated_at = updated_at
 
         if target_changed:
             self.leader_target_engaged_at = 0.0
@@ -6362,6 +6776,7 @@ def should_drop_new_damage_during_safe_exit(
     current_health_percent: int,
     previous_health_percent: int,
     last_damage_attacker_name: str = "",
+    objective_damage: bool = False,
 ) -> bool:
     return bool(
         safe_exit_active
@@ -6370,6 +6785,7 @@ def should_drop_new_damage_during_safe_exit(
         and previous_health_percent > 0
         and current_health_percent < previous_health_percent
         and str(last_damage_attacker_name or "").strip()
+        and not objective_damage
     )
 
 
@@ -7924,7 +8340,7 @@ PARTY_ATTACK_PATTERNS = (
 
 
 KOREAN_INCOMING_DAMAGE_ATTACKER_PATTERN = re.compile(
-    r"^(?P<attacker>.+?)이\(가\)\s*당신(?:의\s*.+?에게|에게)\s+(?P<amount>\d+)(?:\s*\([^)]*\))?\s*피해를\s+입혔습니다!?\s*$",
+    r"^(?P<attacker>.+?)(?:이\(가\)|이|가)\s*당신(?:의\s*.+?(?:에게|에)|에게)\s+(?P<amount>\d+)(?:\s*\([^)]*\))?\s*피해를\s+입혔습니다!?\s*$",
     re.IGNORECASE,
 )
 
@@ -9613,6 +10029,17 @@ def resolve_action_rotation(args: argparse.Namespace, party_slot: int, account: 
     return "melee-basic"
 
 
+def dynamic_quest_required_target_melee_fallback_enabled(args: argparse.Namespace) -> bool:
+    return bool(
+        getattr(args, "required_target_home", None) is not None
+        and (
+            getattr(args, "dynamic_quest_return_after_required_target", False)
+            or getattr(args, "dynamic_quest_observe_final_progress", False)
+        )
+        and str(getattr(args, "require_target_name", "") or "").strip()
+    )
+
+
 def resolve_effective_action_rotation(
     args: argparse.Namespace,
     requested_rotation: str,
@@ -9645,6 +10072,8 @@ def resolve_effective_action_rotation(
             return "melee-basic"
 
     if is_melee_rotation(requested_rotation) and not has_skill:
+        if has_attack_spell and dynamic_quest_required_target_melee_fallback_enabled(args):
+            return requested_rotation
         if account is not None:
             profile = party_class_role_profile_from_class(account.class_name, account.class_id or 0)
             if profile.action_rotation in {"melee-basic", "melee-burst", "hybrid"} and (
@@ -11665,6 +12094,42 @@ def recent_incoming_damage_matches_actor(
     actor_name = normalize_target_name(str(getattr(actor, "name", "") or ""))
     attacker = normalize_target_name(attacker_name)
     return bool(actor_name and attacker and actor_name == attacker)
+
+
+def active_combat_target_is_current_melee_actor(
+    client,
+    args: argparse.Namespace,
+    active_combat,
+    *,
+    current_target: int,
+    current_target_intent: TargetIntent | str = TargetIntent.none,
+) -> bool:
+    if client is None or active_combat is None or current_target <= 0:
+        return False
+
+    if int(active_combat.get("target_id", 0) or 0) != int(current_target or 0):
+        return False
+
+    if target_intent_value(current_target_intent) not in {
+        TargetIntent.objective.value,
+        TargetIntent.required_retaliation.value,
+        TargetIntent.party_rescue.value,
+        TargetIntent.current_target_confirm.value,
+    }:
+        return False
+
+    actor = actor_from_active_combat(active_combat)
+    if actor is None:
+        return False
+
+    distance = combat_distance_to(client, actor)
+    max_distance = max(
+        float(getattr(args, "attack_range", 0.0) or 0.0),
+        float(getattr(args, "melee_range_buffer", 0.0) or 0.0),
+        float(getattr(args, "minimum_melee_stop_distance", 0.0) or 0.0),
+        350.0,
+    ) + 150.0
+    return distance <= max_distance
 
 
 def should_preserve_target_timeout_for_combat_progress(
@@ -15903,8 +16368,12 @@ def startup_service_progress_wait_seconds(args: argparse.Namespace) -> float:
 
 
 def startup_service_dynamic_quest_progress_wait_enabled(args: argparse.Namespace) -> bool:
+    starts_without_npc_dialog = bool(
+        getattr(args, "dynamic_quest_observe_final_progress", False)
+        and not getattr(args, "dynamic_quest_return_after_required_target", False)
+    )
     return bool(
-        getattr(args, "startup_service_accept_dialog", False)
+        (getattr(args, "startup_service_accept_dialog", False) or starts_without_npc_dialog)
         and startup_service_progress_wait_seconds(args) > 0.0
         and dynamic_quest_final_progress_enabled(args)
     )
@@ -15946,6 +16415,49 @@ def retry_startup_service_dynamic_quest_dialog(
     return actions
 
 
+def pulse_startup_service_autoaccept_position(
+    client,
+    args: argparse.Namespace,
+    action_counts: dict[str, int],
+    pulse_index: int,
+) -> int:
+    if getattr(args, "startup_service_accept_dialog", False):
+        return 0
+    if not getattr(args, "dynamic_quest_observe_final_progress", False):
+        return 0
+
+    try:
+        x = int(getattr(client, "x", 0) or 0)
+        y = int(getattr(client, "y", 0) or 0)
+        z = int(getattr(client, "z", 0) or 0)
+    except (TypeError, ValueError):
+        x = y = z = 0
+
+    move_towards = getattr(client, "move_towards_position", None)
+    if callable(move_towards) and x > 0 and y > 0:
+        step = max(16.0, min(160.0, float(getattr(args, "startup_service_progress_autoaccept_pulse_step", 64.0) or 64.0)))
+        direction = -1 if pulse_index % 2 else 1
+        moved = move_towards(
+            x + int(direction * step),
+            y,
+            z,
+            step=step,
+            min_distance=0.0,
+            send=True,
+        )
+        actions = add_action(action_counts, "startup_service_progress_autoaccept_pulse")
+        if moved:
+            actions += add_action(action_counts, "startup_service_progress_autoaccept_pulse_move")
+        return actions
+
+    send_position_update = getattr(client, "send_position_update", None)
+    if callable(send_position_update):
+        send_position_update(speed=0.0, target_in_view=False)
+        return add_action(action_counts, "startup_service_progress_autoaccept_pulse_position")
+
+    return 0
+
+
 def wait_for_startup_service_dynamic_quest_progress(
     args: argparse.Namespace,
     account: DummyAccount,
@@ -15957,16 +16469,21 @@ def wait_for_startup_service_dynamic_quest_progress(
     if not startup_service_dynamic_quest_progress_wait_enabled(args):
         return 0
 
+    setattr(client, "startup_service_dynamic_quest_progress_timeout", False)
+    setattr(client, "startup_service_dynamic_quest_progress_timeout_error", "")
     actions = add_action(action_counts, "startup_service_progress_wait")
     wait_seconds = startup_service_progress_wait_seconds(args)
     poll_interval = max(0.05, float(getattr(args, "startup_service_progress_poll_interval", 0.25) or 0.25))
     retry_after = max(0.0, float(getattr(args, "startup_service_progress_retry_after", 0.8) or 0.0))
     retry_interval = max(0.05, float(getattr(args, "startup_service_progress_retry_interval", 1.0) or 1.0))
     max_retries = max(0, int(getattr(args, "startup_service_progress_max_retries", 2) or 0))
+    pulse_interval = max(0.25, float(getattr(args, "startup_service_progress_autoaccept_pulse_interval", 1.0) or 1.0))
     started_at = time.monotonic()
     deadline = started_at + wait_seconds
     next_retry = started_at + retry_after
+    next_autoaccept_pulse = started_at
     retries = 0
+    autoaccept_pulses = 0
     api_error_logged = False
     last_error = ""
     read_packets_for = getattr(client, "read_packets_for", None)
@@ -16001,6 +16518,24 @@ def wait_for_startup_service_dynamic_quest_progress(
                     error=last_error,
                 )
 
+        if now >= next_autoaccept_pulse:
+            pulse_actions = pulse_startup_service_autoaccept_position(
+                client,
+                args,
+                action_counts,
+                autoaccept_pulses,
+            )
+            if pulse_actions > 0:
+                actions += pulse_actions
+                autoaccept_pulses += 1
+                log_encounter_event(
+                    "startup_service_progress_autoaccept_pulse",
+                    now,
+                    pulses=autoaccept_pulses,
+                    pulse_actions=pulse_actions,
+                )
+            next_autoaccept_pulse = now + pulse_interval
+
         if retries < max_retries and now >= next_retry:
             retry_actions = retry_startup_service_dynamic_quest_dialog(client, args, action_counts)
             actions += retry_actions
@@ -16016,6 +16551,12 @@ def wait_for_startup_service_dynamic_quest_progress(
             )
 
     actions += add_action(action_counts, "startup_service_progress_wait_timeout")
+    setattr(client, "startup_service_dynamic_quest_progress_timeout", True)
+    setattr(
+        client,
+        "startup_service_dynamic_quest_progress_timeout_error",
+        "startup service dynamic quest did not become active",
+    )
     log_encounter_event(
         "startup_service_progress_wait_timeout",
         time.monotonic(),
@@ -16029,6 +16570,12 @@ def dynamic_quest_progress_has_completed_item(
     snapshot: dict[str, object] | None,
     args: argparse.Namespace | None = None,
 ) -> bool:
+    if isinstance(snapshot, dict):
+        expected_quest_id = str(getattr(args, "dynamic_quest_expected_quest_id", "") or "").strip()
+        completed_ids = snapshot.get("completedQuestIds", snapshot.get("completed_quest_ids", []))
+        if expected_quest_id and isinstance(completed_ids, list) and completed_ids:
+            return any(str(quest_id or "").strip() == expected_quest_id for quest_id in completed_ids)
+
     return any(
         dynamic_quest_progress_item_indicates_terminal_completion(item)
         for item in dynamic_quest_progress_active_items(snapshot, args)
@@ -16438,6 +16985,16 @@ def dynamic_quest_timeline_event_text(event: dict[str, object], *keys: str) -> s
     return ""
 
 
+def dynamic_quest_timeline_event_int(event: dict[str, object], *keys: str) -> int:
+    value = dynamic_quest_timeline_event_text(event, *keys)
+    if not value:
+        return 0
+    try:
+        return max(0, int(value))
+    except ValueError:
+        return 0
+
+
 def dynamic_quest_timeline_events(snapshot: dict[str, object] | None) -> list[dict[str, object]]:
     if not isinstance(snapshot, dict):
         return []
@@ -16491,6 +17048,13 @@ def mark_dynamic_quest_timeline_snapshot(
     choice_ids: list[str] = []
     world_signals: list[str] = []
     presentation_triggers: list[str] = []
+    scene_actions: set[str] = set()
+    scene_motions: set[str] = set()
+    scene_actor_roles: set[str] = set()
+    scene_tactics: set[str] = set()
+    presentation_actions: set[str] = set()
+    presentation_roles: set[str] = set()
+    presentation_formations: set[str] = set()
     events = [
         event
         for event in dynamic_quest_timeline_events(snapshot)
@@ -16512,11 +17076,119 @@ def mark_dynamic_quest_timeline_snapshot(
             choice_id = dynamic_quest_timeline_event_text(event, "choiceId", "choice_id")
             if choice_id:
                 choice_ids.append(choice_id)
+        elif event_type == "choice_outcome_scene":
+            add_action(action_counts, "dynamic_quest_timeline_choice_outcome_scene")
+        elif event_type == "choice_consequence":
+            add_action(action_counts, "dynamic_quest_timeline_choice_consequence")
         elif event_type == "world_signal":
             add_action(action_counts, "dynamic_quest_timeline_world_signal")
             detail = dynamic_quest_timeline_event_text(event, "detail")
             if detail:
                 world_signals.append(detail)
+        elif event_type == "scene_world_signal":
+            add_action(action_counts, "dynamic_quest_timeline_scene_world_signal")
+            detail = dynamic_quest_timeline_event_text(event, "detail")
+            if detail:
+                world_signals.append(detail)
+            if dynamic_quest_is_scene_outcome_signal(detail):
+                add_action(action_counts, "dynamic_quest_timeline_scene_outcome_signal")
+        elif event_type == "world_signal_scene_shift":
+            add_action(action_counts, "dynamic_quest_timeline_world_signal_scene_shift")
+        elif event_type == "world_impact":
+            add_action(action_counts, "dynamic_quest_timeline_world_impact")
+        elif event_type == "world_impact_summary":
+            add_action(action_counts, "dynamic_quest_timeline_world_impact_summary")
+        elif event_type == "world_memory_marked":
+            add_action(action_counts, "dynamic_quest_timeline_world_memory_marked")
+        elif event_type == "scene_choreography_phase":
+            detail = dynamic_quest_timeline_event_text(event, "detail")
+            if detail:
+                add_action(action_counts, "dynamic_quest_timeline_scene_choreography_phase")
+        elif event_type == "scene_actor_exchange":
+            detail = dynamic_quest_timeline_event_text(event, "detail")
+            if detail:
+                add_action(action_counts, "dynamic_quest_timeline_scene_actor_exchange")
+        elif event_type == "scene_exchange_outcome":
+            detail = dynamic_quest_timeline_event_text(event, "detail")
+            if detail:
+                add_action(action_counts, "dynamic_quest_timeline_scene_exchange_outcome")
+        elif event_type == "scene_outcome_signal":
+            add_action(action_counts, "dynamic_quest_timeline_scene_outcome_signal")
+        elif event_type == "scene_consequence":
+            add_action(action_counts, "dynamic_quest_timeline_scene_consequence")
+        elif event_type == "cinematic_action":
+            add_action(action_counts, "dynamic_quest_timeline_cinematic_action")
+            detail = dynamic_quest_timeline_event_text(event, "detail")
+            actor_count = dynamic_quest_scene_actor_count(detail)
+            if actor_count > 0:
+                add_action_value(action_counts, "dynamic_quest_timeline_cinematic_actor_instances", actor_count)
+                set_action_max(action_counts, "dynamic_quest_timeline_cinematic_actor_peak", actor_count)
+            if "scene_beat:" in detail:
+                add_action(action_counts, "dynamic_quest_timeline_scene_director_beat")
+                scene_action = dynamic_quest_scene_action_token(detail)
+                if scene_action:
+                    scene_actions.add(scene_action)
+                scene_motion = dynamic_quest_scene_token(detail, "motion")
+                if scene_motion:
+                    scene_motions.add(scene_motion)
+                if dynamic_quest_scene_stagger_ms(detail) > 0:
+                    add_action(action_counts, "dynamic_quest_timeline_cinematic_staggered_scene")
+                if dynamic_quest_scene_token(detail, "focal") == "objective":
+                    add_action(action_counts, "dynamic_quest_timeline_cinematic_objective_focal_scene")
+                actor_role = dynamic_quest_scene_token(detail, "actorRole")
+                if actor_role:
+                    scene_actor_roles.add(actor_role)
+                if dynamic_quest_scene_choreography_phases(detail) >= 2:
+                    add_action(action_counts, "dynamic_quest_timeline_cinematic_choreographed_scene")
+                interaction = dynamic_quest_scene_token(detail, "interact")
+                if interaction and interaction != "none":
+                    add_action(action_counts, "dynamic_quest_timeline_cinematic_interaction_scene")
+                tactic = dynamic_quest_scene_token(detail, "tactic")
+                if tactic and tactic not in {"none", "support"}:
+                    scene_tactics.add(tactic)
+        elif event_type == "cinematic_actor_spawn_summary":
+            add_action(action_counts, "dynamic_quest_timeline_cinematic_actor_spawn_summary")
+            detail = dynamic_quest_timeline_event_text(event, "detail")
+            spawned = dynamic_quest_scene_token_int(detail, "spawned")
+            failed = dynamic_quest_scene_token_int(detail, "failed")
+            cleanup = dynamic_quest_scene_token_int(detail, "cleanup")
+            if spawned > 0:
+                add_action_value(action_counts, "dynamic_quest_timeline_cinematic_actor_spawned_total", spawned)
+                set_action_max(action_counts, "dynamic_quest_timeline_cinematic_actor_spawned_peak", spawned)
+            if failed > 0:
+                add_action_value(action_counts, "dynamic_quest_timeline_cinematic_actor_spawn_failed", failed)
+            if cleanup > 0:
+                add_action_value(action_counts, "dynamic_quest_timeline_cinematic_actor_cleanup_scheduled", cleanup)
+        elif event_type == "cinematic_actor_motion_summary":
+            add_action(action_counts, "dynamic_quest_timeline_cinematic_actor_motion_summary")
+            detail = dynamic_quest_timeline_event_text(event, "detail")
+            commands = dynamic_quest_scene_token_int(detail, "commands")
+            commands_per_actor = dynamic_quest_scene_token_int(detail, "commandsPerActor")
+            spawned = dynamic_quest_scene_token_int(detail, "spawned")
+            if commands > 0:
+                add_action_value(action_counts, "dynamic_quest_timeline_cinematic_actor_motion_commands", commands)
+                set_action_max(action_counts, "dynamic_quest_timeline_cinematic_actor_motion_commands_peak", commands)
+            if commands_per_actor > 0:
+                set_action_max(action_counts, "dynamic_quest_timeline_cinematic_actor_motion_commands_per_actor_peak", commands_per_actor)
+            if spawned > 0:
+                add_action_value(action_counts, "dynamic_quest_timeline_cinematic_actor_motion_spawned_total", spawned)
+        elif event_type == "cinematic_actor_engagement_summary":
+            add_action(action_counts, "dynamic_quest_timeline_cinematic_actor_engagement_summary")
+            detail = dynamic_quest_timeline_event_text(event, "detail")
+            pairs = dynamic_quest_scene_token_int(detail, "pairs")
+            engaged_actors = dynamic_quest_scene_token_int(detail, "engagedActors")
+            spawned = dynamic_quest_scene_token_int(detail, "spawned")
+            if pairs > 0:
+                add_action_value(action_counts, "dynamic_quest_timeline_cinematic_actor_engagement_pairs", pairs)
+                set_action_max(action_counts, "dynamic_quest_timeline_cinematic_actor_engagement_pairs_peak", pairs)
+            if engaged_actors > 0:
+                add_action_value(action_counts, "dynamic_quest_timeline_cinematic_actor_engaged_total", engaged_actors)
+            if spawned > 0:
+                add_action_value(action_counts, "dynamic_quest_timeline_cinematic_actor_engagement_spawned_total", spawned)
+        elif event_type == "scene_beat_outcome":
+            add_action(action_counts, "dynamic_quest_timeline_scene_beat_outcome")
+        elif event_type == "narrative_scene":
+            add_action(action_counts, "dynamic_quest_timeline_narrative_scene")
 
     for beat in presentation_beats:
         trigger = dynamic_quest_timeline_event_text(beat, "trigger")
@@ -16526,6 +17198,47 @@ def mark_dynamic_quest_timeline_snapshot(
         seen.add(f"presentation:{trigger.lower()}")
         add_action(action_counts, "dynamic_quest_timeline_presentation_beat")
         presentation_triggers.append(trigger)
+
+        presentation_action = dynamic_quest_timeline_event_text(beat, "cinematicAction", "cinematic_action").lower()
+        presentation_role = dynamic_quest_timeline_event_text(beat, "sceneRole", "scene_role").lower()
+        presentation_formation = dynamic_quest_timeline_event_text(beat, "formation").lower()
+        presentation_actor_count = dynamic_quest_timeline_event_int(beat, "actorCount", "actor_count")
+        presentation_delay_ms = dynamic_quest_timeline_event_int(beat, "delayMs", "delay_ms")
+        if presentation_action or presentation_role or presentation_formation or presentation_actor_count > 0:
+            add_action(action_counts, "dynamic_quest_timeline_presentation_staged_beat")
+            add_action_value(
+                action_counts,
+                "dynamic_quest_timeline_presentation_staged_actor_total",
+                presentation_actor_count,
+            )
+            set_action_max(
+                action_counts,
+                "dynamic_quest_timeline_presentation_staged_actor_peak",
+                presentation_actor_count,
+            )
+        if presentation_action:
+            presentation_actions.add(presentation_action)
+        if presentation_role:
+            presentation_roles.add(presentation_role)
+        if presentation_formation:
+            presentation_formations.add(presentation_formation)
+        if presentation_delay_ms > 0:
+            add_action(action_counts, "dynamic_quest_timeline_presentation_staged_delayed_beat")
+
+    for _ in scene_actions:
+        add_action(action_counts, "dynamic_quest_timeline_cinematic_variety")
+    for _ in scene_motions:
+        add_action(action_counts, "dynamic_quest_timeline_cinematic_motion_variety")
+    for _ in scene_actor_roles:
+        add_action(action_counts, "dynamic_quest_timeline_cinematic_actor_role_variety")
+    for _ in scene_tactics:
+        add_action(action_counts, "dynamic_quest_timeline_cinematic_tactic_variety")
+    for _ in presentation_actions:
+        add_action(action_counts, "dynamic_quest_timeline_presentation_staged_action_variety")
+    for _ in presentation_roles:
+        add_action(action_counts, "dynamic_quest_timeline_presentation_staged_role_variety")
+    for _ in presentation_formations:
+        add_action(action_counts, "dynamic_quest_timeline_presentation_staged_formation_variety")
 
     required = dynamic_quest_required_timeline_events(args) | dynamic_quest_required_presentation_triggers(args)
     missing = sorted(required - seen)
@@ -16544,6 +17257,60 @@ def mark_dynamic_quest_timeline_snapshot(
     if missing:
         add_action(action_counts, "dynamic_quest_timeline_required_missing")
     return seen, missing
+
+
+def dynamic_quest_scene_action_token(detail: str) -> str:
+    return dynamic_quest_scene_token(detail, "action")
+
+
+def dynamic_quest_is_scene_outcome_signal(detail: str) -> bool:
+    value = str(detail or "").strip().lower()
+    return value in {
+        "scene:line_breached",
+        "scene:strike_checked",
+        "scene:line_held",
+        "scene:ritual_disrupted",
+        "scene:escape_cutoff",
+        "scene:standoff_escalated",
+        "scene:pressure_shifted",
+    }
+
+
+def dynamic_quest_scene_token(detail: str, key: str) -> str:
+    parts = [str(part or "").strip().lower() for part in str(detail or "").split(":")]
+    key = str(key or "").strip().lower()
+    for index, part in enumerate(parts[:-1]):
+        if part == key:
+            return parts[index + 1]
+    return ""
+
+
+def dynamic_quest_scene_stagger_ms(detail: str) -> int:
+    try:
+        return max(0, int(dynamic_quest_scene_token(detail, "stagger")))
+    except ValueError:
+        return 0
+
+
+def dynamic_quest_scene_choreography_phases(detail: str) -> int:
+    try:
+        return max(0, int(dynamic_quest_scene_token(detail, "choreo")))
+    except ValueError:
+        return 0
+
+
+def dynamic_quest_scene_token_int(detail: str, key: str) -> int:
+    try:
+        return max(0, int(dynamic_quest_scene_token(detail, key)))
+    except ValueError:
+        return 0
+
+
+def dynamic_quest_scene_actor_count(detail: str) -> int:
+    try:
+        return max(0, int(dynamic_quest_scene_token(detail, "actors")))
+    except ValueError:
+        return 0
 
 
 def accept_dynamic_quest_return_dialog(client, args: argparse.Namespace, action_counts: dict[str, int]) -> int:
@@ -16617,7 +17384,7 @@ def dynamic_quest_progress_item_indicates_completion(item: dict[str, object] | N
         target_name = dynamic_quest_progress_objective_text(item, "targetName", "target_name")
 
     current_count = dynamic_quest_objective_int(item, "count", "currentCount", "current_count")
-    return bool(target_name and target_count > 0 and current_count >= target_count)
+    return bool(target_count > 0 and current_count >= target_count)
 
 
 def dynamic_quest_progress_items_indicate_completion(items: list[dict[str, object]]) -> bool:
@@ -18552,9 +19319,6 @@ def flee_home_egress_destination(
     if distance_from_danger > egress_radius:
         return None
 
-    if dynamic_flee_safe_destination(args, client) is None:
-        return None
-
     return flee_home_overrun_destination(args, client, home_destination)
 
 
@@ -18836,6 +19600,8 @@ def should_flee_multi_aggro_combat(
 
     off_target_damage = max(0, int(active_combat.get("off_target_damage_taken", 0) or 0))
     if off_target_damage <= 0:
+        return False
+    if not str(active_combat.get("off_target_attacker_name", "") or "").strip():
         return False
 
     min_damage_taken = max(0, int(getattr(args, "flee_min_damage_taken", 0) or 0))
@@ -20654,6 +21420,24 @@ def add_action(action_counts: dict[str, int], name: str) -> int:
     return 1
 
 
+def add_action_value(action_counts: dict[str, int], name: str, value: int) -> int:
+    amount = max(0, int(value or 0))
+    if amount <= 0:
+        return 0
+
+    action_counts[name] = action_counts.get(name, 0) + amount
+    return amount
+
+
+def set_action_max(action_counts: dict[str, int], name: str, value: int) -> int:
+    amount = max(0, int(value or 0))
+    if amount <= 0:
+        return 0
+
+    action_counts[name] = max(action_counts.get(name, 0), amount)
+    return 1
+
+
 def normalize_destination_name(value: str) -> str:
     return " ".join(str(value or "").strip().lower().split())
 
@@ -21267,9 +22051,14 @@ def run_dummy_round(
         startup_train_level = int(getattr(args, "startup_train_level", 0) or 0)
         startup_train_delay = max(0.0, float(getattr(args, "startup_train_command_delay", 0.0) or 0.0))
         if getattr(args, "startup_auto_train", False):
+            trained = False
             for train_command in auto_train_commands_from_specs(account.specs, startup_train_level):
                 client.send_command(train_command)
                 actions += add_action(action_counts, "startup_auto_train")
+                trained = True
+            if trained and startup_train_delay > 0.0:
+                time.sleep(startup_train_delay)
+                actions += add_action(action_counts, "startup_train_delay")
         if getattr(args, "startup_train_full_specs", False):
             for train_command in auto_train_commands_from_specs(account.specs, startup_train_level, full_spec=True):
                 client.send_command(train_command)
@@ -21366,6 +22155,7 @@ def run_dummy_round(
         follow_player_last_visible_at = 0.0
         next_player_greet = time.monotonic() + rng.uniform(8.0, max(args.player_greet_interval, 8.0))
         next_companion_chat_reply = 0.0
+        next_companion_post_combat_reflection = 0.0
         companion_personality_name = choose_companion_personality_name(args, account, index)
         companion_dialogue_catalog = load_companion_dialogue_catalog(getattr(args, "companion_dialogue_pools", ""))
         companion_dialogue_pools = normalize_dialogue_pool_mapping(companion_dialogue_catalog.get("pools", {}))
@@ -21468,6 +22258,7 @@ def run_dummy_round(
         dynamic_quest_explore_cached_destination = None
         dynamic_quest_explore_cached_quest_id = ""
         dynamic_quest_explore_cached_location = ""
+        startup_service_progress_hard_failed = False
         pending_required_target_complete_id = 0
         pending_required_target_complete_name = ""
         pending_required_target_complete_level = 0
@@ -22639,7 +23430,7 @@ def run_dummy_round(
 
         def finish_combat(outcome: str, now: float, end_distance: float = 0.0) -> bool:
             nonlocal active_combat
-            nonlocal actions, safe_exit_deadline
+            nonlocal actions, safe_exit_deadline, next_companion_post_combat_reflection
 
             if active_combat is None:
                 return False
@@ -22665,6 +23456,37 @@ def run_dummy_round(
                 end_distance=final_distance,
             )
             combat_metrics.append(metric)
+            if (
+                getattr(args, "companion_chat_reply", False)
+                and now >= next_companion_post_combat_reflection
+                and outcome
+                not in {
+                    "round_end",
+                    "post_objective_disconnect",
+                    "player_death_disconnect",
+                    "target_switched",
+                }
+            ):
+                reflection = companion_post_combat_reflection_line(
+                    companion_personality_name,
+                    outcome,
+                    trust=getattr(args, "mercenary_trust", 50),
+                    target_name=metric.target_name,
+                )
+                if reflection and reflection not in recent_companion_chat_replies[-4:]:
+                    channel = str(getattr(args, "companion_chat_reply_channel", "party") or "party")
+                    client.send_command(format_live_control_speech_command(channel, reflection))
+                    recent_companion_chat_replies.append(reflection)
+                    del recent_companion_chat_replies[:-8]
+                    actions += add_action(action_counts, "companion_post_combat_reflection")
+                    log_encounter_event(
+                        "companion_post_combat_reflection",
+                        now,
+                        outcome=outcome,
+                        target_name=metric.target_name,
+                        reply=short_text(reflection),
+                    )
+                    next_companion_post_combat_reflection = now + 18.0
             if outcome in POST_ABANDON_TARGET_REMOVED_OUTCOMES:
                 recent_finished_combats[metric.target_id] = (
                     metric,
@@ -23334,13 +24156,23 @@ def run_dummy_round(
                             travel_requested = False
                             if queued_kind == "guide":
                                 travel_requested = bool(companion_guide_travel_request_intent(busy_body))
+                                guide_player_context = companion_guide_player_context_from_context(
+                                    party_state,
+                                    busy_speaker,
+                                )
                                 queued_payload = build_companion_guide_payload(
                                     busy_body,
                                     role=busy_role,
-                                    realm=getattr(account, "realm", ""),
+                                    realm=guide_player_context.get("player_realm") or getattr(account, "realm", ""),
+                                    player_class=str(guide_player_context.get("player_class") or ""),
+                                    player_class_id=guide_player_context.get("player_class_id") or 0,
+                                    player_specs=str(guide_player_context.get("player_specs") or ""),
                                     region=guide_region,
                                     player_level=int(
-                                        getattr(args, "player_level", 0) or getattr(account, "level", 0) or 0
+                                        guide_player_context.get("player_level")
+                                        or getattr(args, "player_level", 0)
+                                        or getattr(account, "level", 0)
+                                        or 0
                                     ),
                                     in_combat=guide_combat_active,
                                     memory=busy_memory,
@@ -23359,6 +24191,10 @@ def run_dummy_round(
                                     in_combat=guide_combat_active,
                                     companion_health_band=companion_health_band_from_percent(
                                         getattr(client, "health_percent", 100)
+                                    ),
+                                    player_context=companion_guide_player_context_from_context(
+                                        party_state,
+                                        busy_speaker,
                                     ),
                                     memory=busy_memory,
                                     now=now,
@@ -23540,13 +24376,23 @@ def run_dummy_round(
                                 )
                             )
                             actions += add_action(action_counts, "companion_guide_thinking")
+                            guide_player_context = companion_guide_player_context_from_context(
+                                party_state,
+                                speaker,
+                            )
                             guide_payload = build_companion_guide_payload(
                                 body,
                                 role=companion_role,
-                                realm=getattr(account, "realm", ""),
+                                realm=guide_player_context.get("player_realm") or getattr(account, "realm", ""),
+                                player_class=str(guide_player_context.get("player_class") or ""),
+                                player_class_id=guide_player_context.get("player_class_id") or 0,
+                                player_specs=str(guide_player_context.get("player_specs") or ""),
                                 region=guide_region,
                                 player_level=int(
-                                    getattr(args, "player_level", 0) or getattr(account, "level", 0) or 0
+                                    guide_player_context.get("player_level")
+                                    or getattr(args, "player_level", 0)
+                                    or getattr(account, "level", 0)
+                                    or 0
                                 ),
                                 in_combat=guide_combat_active,
                                 memory=speaker_memory,
@@ -23571,14 +24417,24 @@ def run_dummy_round(
                             in_combat=guide_combat_active,
                             unsafe_recovery=guide_unsafe_recovery,
                         ):
+                            guide_player_context = companion_guide_player_context_from_context(
+                                party_state,
+                                speaker,
+                            )
                             pending_companion_guide_question = build_pending_companion_guide_question(
                                 body,
                                 channel=channel,
                                 role=companion_role,
-                                realm=getattr(account, "realm", ""),
+                                realm=guide_player_context.get("player_realm") or getattr(account, "realm", ""),
+                                player_class=str(guide_player_context.get("player_class") or ""),
+                                player_class_id=guide_player_context.get("player_class_id") or 0,
+                                player_specs=str(guide_player_context.get("player_specs") or ""),
                                 region=guide_region,
                                 player_level=int(
-                                    getattr(args, "player_level", 0) or getattr(account, "level", 0) or 0
+                                    guide_player_context.get("player_level")
+                                    or getattr(args, "player_level", 0)
+                                    or getattr(account, "level", 0)
+                                    or 0
                                 ),
                                 now=now,
                                 memory=speaker_memory,
@@ -23631,6 +24487,10 @@ def run_dummy_round(
                                     companion_health_band=companion_health_band_from_percent(
                                         getattr(client, "health_percent", 100)
                                     ),
+                                    player_context=companion_guide_player_context_from_context(
+                                        party_state,
+                                        speaker,
+                                    ),
                                     memory=speaker_memory,
                                     now=now,
                                 )
@@ -23673,6 +24533,18 @@ def run_dummy_round(
                                     personality_pools=companion_personality_chat_pools,
                                     recent=recent_companion_chat_replies,
                                     role=companion_role,
+                                    status_context=build_companion_chat_status_context(
+                                        role=companion_role,
+                                        command_mode=companion_command_mode,
+                                        health_percent=getattr(client, "health_percent", 100),
+                                        trust=getattr(args, "mercenary_trust", 50),
+                                        fatigue=getattr(args, "mercenary_fatigue", 0),
+                                        guide_enabled=bool(getattr(args, "companion_guide_rag", False)),
+                                        free_chat_enabled=bool(getattr(args, "companion_free_chat", False)),
+                                        combat_metrics=combat_metrics,
+                                        action_counts=action_counts,
+                                        mercenary_record=build_runtime_mercenary_record(args),
+                                    ),
                                 )
                             client.send_command(
                                 format_live_control_speech_command(channel, reply, template_vars=dialogue_template_vars)
@@ -24182,6 +25054,12 @@ def run_dummy_round(
                                     last_damage_at=now,
                                     now=now,
                                     grace_seconds=1.0,
+                                ) or active_combat_target_is_current_melee_actor(
+                                    client,
+                                    args,
+                                    active_combat,
+                                    current_target=current_target,
+                                    current_target_intent=current_target_intent,
                                 ):
                                     active_combat["last_combat_message_at"] = now
                                     current_target_last_visible_at = now
@@ -24803,6 +25681,28 @@ def run_dummy_round(
                     mark_dynamic_quest_progress_snapshot,
                     log_encounter_event,
                 )
+                if (
+                    not dynamic_quest_progress_seen
+                    and bool(getattr(client, "startup_service_dynamic_quest_progress_timeout", False))
+                    and bool(getattr(args, "startup_service_progress_timeout_hard_fail", True))
+                ):
+                    safe_exit_failed = True
+                    safe_exit_error = str(
+                        getattr(
+                            client,
+                            "startup_service_dynamic_quest_progress_timeout_error",
+                            "startup service dynamic quest did not become active",
+                        )
+                        or "startup service dynamic quest did not become active"
+                    )
+                    actions += add_action(action_counts, "startup_service_progress_timeout_hard_fail")
+                    startup_service_progress_hard_failed = True
+                    log_encounter_event(
+                        "startup_service_progress_timeout_hard_fail",
+                        time.monotonic(),
+                        error=safe_exit_error,
+                    )
+                    end_time = time.monotonic()
 
         initial_state = initial_behavior_state_for_objective(
             client,
@@ -24820,6 +25720,15 @@ def run_dummy_round(
                 args.movement_speed = args.base_movement_speed * client.max_speed_percent / 100.0
 
             now = time.monotonic()
+            if startup_service_progress_hard_failed:
+                client.set_attack_mode(False)
+                current_target = 0
+                current_target_intent = TargetIntent.none
+                client.clear_target()
+                actions += add_action(action_counts, "startup_service_progress_timeout_exit")
+                log_encounter_event("startup_service_progress_timeout_exit", now)
+                break
+
             if (
                 not companion_startup_guide_sent
                 and getattr(args, "companion_chat_reply", False)
@@ -26806,12 +27715,24 @@ def run_dummy_round(
                 untracked_damage_leader_engaged = (
                     float(party_snapshot_for_untracked_damage.get("leader_target_engaged_at", 0.0) or 0.0) > 0.0
                 )
+                party_objective_damage_for_counterattack = bool(
+                    name_matches_required_or_party_objective(
+                        args,
+                        party_snapshot_for_untracked_damage,
+                        last_incoming_damage_attacker_name,
+                    )
+                    or name_matches_active_combat_target(
+                        active_combat,
+                        last_incoming_damage_attacker_name,
+                    )
+                )
                 if should_drop_new_damage_during_safe_exit(
                     safe_exit_active=safe_exit_active,
                     current_target=current_target,
                     current_health_percent=current_health_percent,
                     previous_health_percent=previous_health_percent,
                     last_damage_attacker_name=last_incoming_damage_attacker_name,
+                    objective_damage=party_objective_damage_for_counterattack,
                 ):
                     client.set_attack_mode(False)
                     if current_target:
@@ -26834,17 +27755,6 @@ def run_dummy_round(
                     send_position_heartbeat(now)
                     client.drain(args.tick)
                     continue
-                party_objective_damage_for_counterattack = bool(
-                    name_matches_required_or_party_objective(
-                        args,
-                        party_snapshot_for_untracked_damage,
-                        last_incoming_damage_attacker_name,
-                    )
-                    or name_matches_active_combat_target(
-                        active_combat,
-                        last_incoming_damage_attacker_name,
-                    )
-                )
                 force_flee_from_health_drop = should_force_flee_from_non_required_health_drop(
                     args,
                     current_health_percent=current_health_percent,
@@ -33214,7 +34124,8 @@ def write_metrics_csv(path: str, results: list[DummyResult]) -> None:
         for result in results:
             for metric in result.metrics or []:
                 combats = metric.combat_metrics or []
-                durations = [combat.duration for combat in combats if combat.outcome == "target_removed"]
+                removed_combats = confirmed_target_removed_combats(combats, metric.action_counts or {})
+                durations = [combat.duration for combat in removed_combats]
                 combat_player_deaths = sum(1 for combat in combats if combat.outcome == "player_death")
                 detected_player_deaths = int((metric.action_counts or {}).get("death_detected", 0) or 0)
                 writer.writerow(
@@ -33229,7 +34140,7 @@ def write_metrics_csv(path: str, results: list[DummyResult]) -> None:
                         metric.actions,
                         f"{metric.elapsed:.3f}",
                         len(combats),
-                        sum(1 for combat in combats if combat.outcome == "target_removed"),
+                        len(removed_combats),
                         max(combat_player_deaths, detected_player_deaths),
                         sum(1 for combat in combats if combat.outcome == "target_timeout"),
                         f"{(sum(durations) / len(durations)):.3f}" if durations else "0.000",
@@ -33336,8 +34247,15 @@ def format_movement_failure_sample(failures: list[MovementFailure]) -> str:
 
 
 def summarize_combat(results: list[DummyResult]) -> dict[str, object]:
-    combats = list(iter_combat_metrics(results))
-    kills = [combat for combat in combats if combat.outcome == "target_removed"]
+    combats: list[CombatMetric] = []
+    kills: list[CombatMetric] = []
+    for result in results:
+        for metric in result.metrics or []:
+            metric_combats = metric.combat_metrics or []
+            combats.extend(metric_combats)
+            kills.extend(confirmed_target_removed_combats(metric_combats, metric.action_counts or {}))
+
+    kill_ids = {id(combat) for combat in kills}
     kill_durations = [combat.duration for combat in kills]
     player_deaths = sum(1 for combat in combats if combat.outcome == "player_death")
     target_timeouts = sum(1 for combat in combats if combat.outcome == "target_timeout")
@@ -33360,7 +34278,7 @@ def summarize_combat(results: list[DummyResult]) -> dict[str, object]:
         )
         row["engagements"] = int(row["engagements"]) + 1
 
-        if combat.outcome == "target_removed":
+        if id(combat) in kill_ids:
             row["kills"] = int(row["kills"]) + 1
             row["kill_duration_total"] = float(row["kill_duration_total"]) + combat.duration
         elif combat.outcome == "player_death":
@@ -33799,7 +34717,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--graceful-shutdown-timeout",
         type=float,
-        default=25.0,
+        default=75.0,
         help="seconds to wait for /quit logout before force-closing the socket on shutdown",
     )
     parser.add_argument("--concurrency", type=int, default=1)
@@ -34222,6 +35140,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--companion-chat-reply-channel", choices=["say", "party"], default="say")
     parser.add_argument("--companion-dialogue-pools", default=DEFAULT_COMPANION_DIALOGUE_POOL_PATH)
     parser.add_argument("--companion-personality", choices=["auto", *COMPANION_PERSONALITIES], default="auto")
+    parser.add_argument("--mercenary-trust", type=int, default=50)
+    parser.add_argument("--mercenary-fatigue", type=int, default=0)
+    parser.add_argument("--mercenary-total-contracts", type=int, default=0)
+    parser.add_argument("--mercenary-total-contract-minutes", type=int, default=0)
+    parser.add_argument("--mercenary-kills-together", type=int, default=0)
+    parser.add_argument("--mercenary-deaths-together", type=int, default=0)
+    parser.add_argument("--mercenary-rescues", type=int, default=0)
+    parser.add_argument("--mercenary-quests-completed", type=int, default=0)
+    parser.add_argument("--mercenary-earned-titles", default="")
+    parser.add_argument("--mercenary-personal-quest-state", default="")
+    parser.add_argument("--mercenary-relationship-event-state", default="")
     parser.add_argument("--companion-free-chat", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--ai-gateway-config", default=os.environ.get("OPENDAOC_AI_GATEWAY_CONFIG", ""))
     parser.add_argument("--ai-gateway-model-alias", default="small-dialogue")
@@ -34692,6 +35621,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--startup-service-progress-retry-after", type=float, default=0.8)
     parser.add_argument("--startup-service-progress-retry-interval", type=float, default=1.0)
     parser.add_argument("--startup-service-progress-max-retries", type=int, default=2)
+    parser.add_argument(
+        "--startup-service-progress-timeout-hard-fail",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="fail dynamic quest E2E before hunting when startup dialog acceptance never becomes active in the progress API",
+    )
     parser.add_argument("--startup-service-buy-slot", action="append", type=parse_int_list, default=[])
     parser.add_argument("--startup-service-buy-count", type=int, default=1)
     parser.add_argument("--startup-service-sell-slot", action="append", type=parse_int_list, default=[])

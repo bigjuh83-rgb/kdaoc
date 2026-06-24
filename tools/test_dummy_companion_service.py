@@ -12,6 +12,7 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SERVICE_PATH = ROOT / "tools" / "dummy-companion-service.py"
+BEHAVIOR_PATH = ROOT / "tools" / "behavior-dummy-client.py"
 SMOKE_PATH = ROOT / "tools" / "run-live-companion-party-smoke.py"
 SUMMARY_PATH = ROOT / "tools" / "summarize-live-companion-requests.py"
 PERSONALITY_MATRIX_PATH = ROOT / "tools" / "run-live-companion-personality-matrix.py"
@@ -22,6 +23,15 @@ def load_service():
     spec = importlib.util.spec_from_file_location("dummy_companion_service", SERVICE_PATH)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_behavior():
+    spec = importlib.util.spec_from_file_location("behavior_dummy_client_for_companion_tests", BEHAVIOR_PATH)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -422,6 +432,15 @@ class DummyCompanionServiceTests(unittest.TestCase):
             "mercenaryFatigue": 8,
             "mercenaryTraits": "응급치료|도망 빠름",
             "mercenaryAdventureMemory": "브리튼 남쪽 숲에서 초보 파티를 무사히 호위했다.",
+            "mercenaryTotalContracts": 6,
+            "mercenaryTotalContractMinutes": 143,
+            "mercenaryKillsTogether": 22,
+            "mercenaryDeathsTogether": 1,
+            "mercenaryRescues": 4,
+            "mercenaryQuestsCompleted": 2,
+            "mercenaryEarnedTitles": "위기 구원자|의뢰 해결사",
+            "mercenaryPersonalQuestState": "completed:first_bond",
+            "mercenaryRelationshipEventState": "bond_acknowledged",
         }
         args = mock.Mock(host="127.0.0.1", port=10300, api_port=5000, party_size=1, force_companion_personality="")
 
@@ -442,6 +461,46 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(last_option_value("--party-heal-leader-health-percent"), "95")
         self.assertEqual(last_option_value("--flee-movement-speed"), "360")
         self.assertEqual(last_option_value("--combat-interval"), "0.5")
+        self.assertEqual(last_option_value("--mercenary-trust"), "86")
+        self.assertEqual(last_option_value("--mercenary-fatigue"), "8")
+        self.assertEqual(last_option_value("--mercenary-total-contracts"), "6")
+        self.assertEqual(last_option_value("--mercenary-total-contract-minutes"), "143")
+        self.assertEqual(last_option_value("--mercenary-kills-together"), "22")
+        self.assertEqual(last_option_value("--mercenary-deaths-together"), "1")
+        self.assertEqual(last_option_value("--mercenary-rescues"), "4")
+        self.assertEqual(last_option_value("--mercenary-quests-completed"), "2")
+        self.assertEqual(last_option_value("--mercenary-earned-titles"), "위기 구원자|의뢰 해결사")
+        self.assertEqual(last_option_value("--mercenary-personal-quest-state"), "completed:first_bond")
+        self.assertEqual(last_option_value("--mercenary-relationship-event-state"), "bond_acknowledged")
+
+    def test_owned_mercenary_empty_progression_strings_are_not_forwarded_as_blank_args(self) -> None:
+        service = load_service()
+        request = {
+            "id": "req1",
+            "requesterName": "LiveLeader",
+            "requestedRole": "healer",
+            "realm": 1,
+            "mercenaryPersonality": "calm_support",
+            "mercenaryTrust": 50,
+            "mercenaryFatigue": 0,
+            "mercenaryEarnedTitles": "",
+            "mercenaryPersonalQuestState": "",
+            "mercenaryRelationshipEventState": "",
+        }
+        args = mock.Mock(host="127.0.0.1", port=10300, api_port=5000, party_size=1, force_companion_personality="")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            account_csv = Path(temp_dir) / "accounts.csv"
+            account_csv.write_text(
+                "username,password,realm,char_index,class_id,class_name,roles,home_x,home_y,home_z\n"
+                "albcleric,dummy-pass,1,0,6,Cleric,healer|support,531504,479073,2200\n",
+                encoding="utf-8",
+            )
+            command = service.build_behavior_command(args, request, account_csv, Path(temp_dir) / "run")
+
+        self.assertNotIn("--mercenary-earned-titles", command)
+        self.assertNotIn("--mercenary-personal-quest-state", command)
+        self.assertNotIn("--mercenary-relationship-event-state", command)
 
     def test_companion_dialogue_payload_uses_owned_mercenary_state_memory(self) -> None:
         service = load_service()
@@ -456,6 +515,13 @@ class DummyCompanionServiceTests(unittest.TestCase):
                 "mercenaryFatigue": 72,
                 "mercenaryTraits": "돈 밝힘|탈출로 확인",
                 "mercenaryAdventureMemory": "이전 전투에서 후퇴로를 먼저 확인해 파티를 살렸다.",
+                "mercenaryTotalContracts": 5,
+                "mercenaryKillsTogether": 13,
+                "mercenaryRescues": 1,
+                "mercenaryQuestsCompleted": 1,
+                "mercenaryEarnedTitles": "사냥길 용병",
+                "mercenaryPersonalQuestState": "available:field_oath",
+                "mercenaryRelationshipEventState": "bond_acknowledged",
             },
             mock.Mock(),
             account="albmerc",
@@ -470,8 +536,16 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(payload["personality"], "shifty_traitor")
         self.assertEqual(payload["state"]["mercenary"]["tactic"], "aggressive")
         self.assertEqual(payload["state"]["mercenary"]["trust"], 33)
+        self.assertEqual(payload["state"]["mercenary"]["trust_stage"], "낯섦")
         self.assertEqual(payload["state"]["mercenary"]["fatigue"], 72)
+        self.assertIn("친밀도 말투: 낯섦", payload["memory"])
+        self.assertIn("과한 친근함을 피함", payload["memory"])
         self.assertIn("탈출로 확인", payload["memory"])
+        self.assertIn("현재 칭호: 사냥길 용병", payload["memory"])
+        self.assertIn("누적 기록: 계약 5회", payload["memory"])
+        self.assertIn("개인 의뢰: 전장의 맹세 진행 중", payload["memory"])
+        self.assertIn("관계 이벤트: 처음으로 리더를 믿겠다고 인정", payload["memory"])
+        self.assertEqual(payload["state"]["mercenary"]["record"]["kills_together"], 13)
 
     def test_tank_selection_prefers_defensive_self_sustain_when_home_ties(self) -> None:
         service = load_service()
@@ -854,7 +928,7 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         self.assertEqual(service.choose_release_candidate(members)["name"], "CompanionDps")
 
-    def test_real_player_join_release_request_uses_active_companion_priority(self) -> None:
+    def test_real_player_join_does_not_auto_release_active_companion(self) -> None:
         service = load_service()
         active = {
             "tank-req": service.ActiveCompanion(
@@ -893,9 +967,9 @@ class DummyCompanionServiceTests(unittest.TestCase):
             release_counts={},
         )
 
-        self.assertEqual(request_id, "dps-req")
+        self.assertEqual(request_id, "")
 
-    def test_real_player_join_release_credit_prevents_releasing_twice_for_one_player(self) -> None:
+    def test_real_player_join_release_credit_is_ignored_without_explicit_leave(self) -> None:
         service = load_service()
         active = {
             "dps-req": service.ActiveCompanion(
@@ -1710,6 +1784,193 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(payload["guide_lines"][0], "20레벨이면 안전한 사냥터부터 보세요.")
         self.assertEqual(payload["source_ids"], ["docs/leveling.md"])
 
+    def test_behavior_guide_payload_carries_speaker_class_for_my_class_questions(self) -> None:
+        behavior = load_behavior()
+        party_state = behavior.PartyState("Leader", ["Leader"])
+        party_state.update_member_condition(
+            "Leader",
+            behavior.PlayerConditionSnapshot(name="Leader", level=30, class_name="Cleric", class_id=6, realm=1),
+        )
+
+        player_context = behavior.companion_guide_player_context_from_context(party_state, "Leader")
+        payload = behavior.build_companion_guide_payload(
+            "용병아 내 직업이면 스킬 뭐 찍어?",
+            role="healer",
+            realm=player_context.get("player_realm") or 1,
+            player_class=str(player_context.get("player_class") or ""),
+            player_class_id=player_context.get("player_class_id") or 0,
+            player_level=int(player_context.get("player_level") or 0),
+        )
+
+        self.assertEqual(player_context["player_class"], "Cleric")
+        self.assertEqual(player_context["player_class_id"], 6)
+        self.assertEqual(player_context["player_realm"], 1)
+        self.assertEqual(payload["player_class"], "Cleric")
+        self.assertEqual(payload["player_class_id"], 6)
+        self.assertEqual(payload["realm"], "1")
+        self.assertEqual(payload["player_level"], 30)
+
+    def test_behavior_free_chat_payload_carries_safe_player_context(self) -> None:
+        behavior = load_behavior()
+        player_context = {
+            "player_class": "Cleric",
+            "player_class_id": 6,
+            "player_level": 30,
+            "player_realm": 1,
+        }
+
+        payload = behavior.build_companion_free_chat_payload(
+            "용병아 오늘 컨디션 어때?",
+            {"name": "Albtest005", "role": "healer", "personality": "calm_support"},
+            player_context=player_context,
+        )
+
+        self.assertEqual(payload["player_context"]["player_class"], "Cleric")
+        self.assertEqual(payload["player_context"]["player_class_id"], 6)
+        self.assertEqual(payload["player_context"]["player_level"], 30)
+        self.assertNotIn("player_name", payload)
+
+    def test_behavior_persona_followup_short_question_uses_memory_topic(self) -> None:
+        behavior = load_behavior()
+        memory = behavior.create_companion_short_memory()
+        now = 100.0
+        behavior.remember_companion_persona_result(
+            memory,
+            question="너 어디 출신이야?",
+            reply="Camelot Hills 변방 초소 출신입니다.",
+            topic="origin",
+            now=now,
+        )
+
+        self.assertEqual(behavior.resolve_companion_identity_intent("그럼?", memory=memory, now=now + 5.0), "background")
+        self.assertEqual(
+            behavior.resolve_companion_identity_intent("누구한테 배웠어?", memory=memory, now=now + 5.0),
+            "mentor",
+        )
+
+    def test_behavior_identity_question_detects_spaced_origin_wording(self) -> None:
+        behavior = load_behavior()
+
+        self.assertEqual(behavior.resolve_companion_identity_intent("용병아 너 어디 출신이야?"), "origin")
+
+    def test_behavior_profile_reply_adds_personality_tone_without_commands(self) -> None:
+        behavior = load_behavior()
+        reply = behavior.companion_profile_reply(
+            "너 어디 출신이야?",
+            {
+                "name": "Albtest005",
+                "origin": "Camelot Hills 변방 초소",
+                "background": "국경 경비대 출신",
+                "personality": "calm_support",
+                "leader_address": "대장",
+            },
+            intent="origin",
+        )
+
+        self.assertIn("Camelot Hills", reply)
+        self.assertIn("오래 버티는", reply)
+        self.assertNotIn("/", reply)
+
+    def test_behavior_profile_reply_answers_mentor_without_repeating_background(self) -> None:
+        behavior = load_behavior()
+        reply = behavior.companion_profile_reply(
+            "누구한테 배웠어?",
+            {
+                "name": "Albtest005",
+                "origin": "Camelot Hills 변방 초소",
+                "background": "야전 치료소 조수",
+                "personality": "calm_support",
+                "leader_address": "대장",
+            },
+            intent="mentor",
+        )
+
+        self.assertIn("현장에서 배웠습니다", reply)
+        self.assertIn("오래 버티는", reply)
+        self.assertNotIn("예전엔", reply)
+
+    def test_behavior_companion_chat_intent_handles_natural_command_phrases(self) -> None:
+        behavior = load_behavior()
+
+        examples = {
+            "용병아 여기 있어": "wait",
+            "용병아 움직이지마": "wait",
+            "용병아 나 따라와": "summon",
+            "용병아 옆에 있어": "summon",
+            "용병아 공격하지마": "passive",
+            "용병아 나 지켜": "defensive",
+            "용병아 같이 쳐": "combat",
+            "용병아 위험하면 도망쳐": "flee",
+            "용병아 피로도 보여줘": "status",
+            "용병아 친밀도 어때": "status",
+            "용병아 기록 보여줘": "record",
+        }
+
+        for body, expected in examples.items():
+            with self.subTest(body=body):
+                self.assertEqual(behavior.companion_chat_intent(body), expected)
+
+    def test_behavior_companion_chat_intent_does_not_treat_thanks_as_go(self) -> None:
+        behavior = load_behavior()
+
+        self.assertEqual(behavior.companion_chat_intent("용병아 고마워"), "thanks")
+
+    def test_behavior_companion_status_and_record_include_contract_details(self) -> None:
+        behavior = load_behavior()
+        context = behavior.build_companion_chat_status_context(
+            role="healer",
+            command_mode=behavior.CompanionCommandMode.stay,
+            health_percent=82,
+            trust=77,
+            fatigue=58,
+            guide_enabled=True,
+            free_chat_enabled=True,
+            combat_metrics=[],
+            action_counts={"party_heal": 3, "death_detected": 1},
+            mercenary_record={
+                "total_contracts": 6,
+                "total_contract_minutes": 143,
+                "persistent_kills": 22,
+                "persistent_rescues": 4,
+                "persistent_quests_completed": 2,
+                "earned_titles": "위기 구원자|의뢰 해결사",
+                "personal_quest_state": "completed:first_bond",
+            },
+        )
+
+        status = behavior.companion_status_reply(context)
+        record = behavior.companion_record_reply(context)
+
+        self.assertIn("치유/해제", status)
+        self.assertIn("대기", status)
+        self.assertIn("친밀도 77", status)
+        self.assertIn("피로도 58", status)
+        self.assertIn("안내/대화", status)
+        self.assertIn("지원 3회", record)
+        self.assertIn("전투불능 1회", record)
+        self.assertIn("계약 6회/143분", record)
+        self.assertIn("처치 22회", record)
+        self.assertIn("칭호는 위기 구원자", record)
+        self.assertIn("개인 의뢰는 신뢰의 첫 증표 완료", record)
+
+    def test_growth_mysql_resolver_prefers_windows_client_on_windows(self) -> None:
+        smoke = load_smoke()
+
+        def fake_exists(path: Path) -> bool:
+            return str(path) in {
+                r"C:\Program Files\MariaDB 12.3\bin\mariadb.exe",
+                "/home/bigjuh/.local/opendaoc-mariadb/current/bin/mariadb",
+            }
+
+        with mock.patch.object(smoke.growth.os, "name", "nt"), mock.patch.object(
+            smoke.growth.shutil,
+            "which",
+            return_value=None,
+        ), mock.patch.object(smoke.growth.Path, "exists", fake_exists):
+            resolved = smoke.growth.resolve_mysql_bin(None)
+
+        self.assertEqual(resolved, r"C:\Program Files\MariaDB 12.3\bin\mariadb.exe")
+
     def test_call_ai_gateway_can_route_companion_guide_feature(self) -> None:
         service = load_service()
         args = mock.Mock(
@@ -1801,7 +2062,98 @@ class DummyCompanionServiceTests(unittest.TestCase):
             service.handle_request(args, request, {})
 
         popen.assert_not_called()
-        update_status.assert_called_once_with(args, "req1", "failed", "cannot spawn companion: requester dead")
+        update_status.assert_called_once_with(
+            args,
+            "req1",
+            "failed",
+            "cannot spawn companion: requester dead",
+            close_reason="system_spawn_blocked",
+        )
+
+    def test_handle_request_rejects_full_party_before_spawning(self) -> None:
+        service = load_service()
+        args = mock.Mock(accounts_csv="accounts.csv", dry_run=False)
+        request = {"id": "req1", "requesterAccount": "leader1", "requesterName": "Leader"}
+        state = {
+            "player": {"name": "Leader", "isAlive": True, "isDead": False},
+            "groupMembers": [
+                {"name": "Leader", "account": "leader1"},
+                {"name": "Player2", "account": "real2"},
+                {"name": "Player3", "account": "real3"},
+                {"name": "Player4", "account": "real4"},
+                {"name": "Player5", "account": "real5"},
+                {"name": "Player6", "account": "real6"},
+                {"name": "Player7", "account": "real7"},
+                {"name": "Player8", "account": "real8"},
+            ],
+        }
+
+        with mock.patch.object(service, "fetch_requester_state", return_value=state), mock.patch.object(
+            service, "update_request_status"
+        ) as update_status, mock.patch.object(service.subprocess, "Popen") as popen:
+            service.handle_request(args, request, {})
+
+        popen.assert_not_called()
+        update_status.assert_called_once_with(
+            args,
+            "req1",
+            "failed",
+            "cannot spawn companion: group is full (8/8)",
+            close_reason="party_full",
+        )
+
+    def test_handle_request_rejects_when_pending_companion_reserves_last_slot(self) -> None:
+        service = load_service()
+        args = mock.Mock(accounts_csv="accounts.csv", dry_run=False)
+        request = {"id": "req2", "requesterAccount": "leader1", "requesterName": "Leader"}
+        state = {
+            "player": {"name": "Leader", "isAlive": True, "isDead": False},
+            "groupMembers": [
+                {"name": "Leader", "account": "leader1"},
+                {"name": "Player2", "account": "real2"},
+                {"name": "Player3", "account": "real3"},
+                {"name": "Player4", "account": "real4"},
+                {"name": "Player5", "account": "real5"},
+                {"name": "Player6", "account": "real6"},
+                {"name": "Player7", "account": "real7"},
+            ],
+        }
+        active = {
+            "req1": service.ActiveCompanion(
+                {"id": "req1", "requesterAccount": "leader1", "requestedRole": "healer"},
+                mock.Mock(),
+                account="albhealer",
+            )
+        }
+
+        with mock.patch.object(service, "fetch_requester_state", return_value=state), mock.patch.object(
+            service, "update_request_status"
+        ) as update_status, mock.patch.object(service.subprocess, "Popen") as popen:
+            service.handle_request(args, request, active)
+
+        popen.assert_not_called()
+        update_status.assert_called_once_with(
+            args,
+            "req2",
+            "failed",
+            "cannot spawn companion: pending companion already reserves remaining group slot",
+            close_reason="party_full",
+        )
+        self.assertIn("req1", active)
+
+    def test_companion_slot_block_allows_vacant_party_slot(self) -> None:
+        service = load_service()
+        state = {
+            "player": {"name": "Leader", "isAlive": True, "isDead": False},
+            "groupMembers": [
+                {"name": "Leader", "account": "leader1"},
+                {"name": "Player2", "account": "real2"},
+            ],
+        }
+
+        reason = service.companion_slot_block_reason({}, {"requesterAccount": "leader1"}, state)
+
+        self.assertEqual(reason, "")
 
     def test_handle_request_marks_failed_when_no_companion_accounts_available(self) -> None:
         service = load_service()
@@ -1821,7 +2173,13 @@ class DummyCompanionServiceTests(unittest.TestCase):
             service.handle_request(args, request, {})
 
         popen.assert_not_called()
-        update_status.assert_called_once_with(args, "req1", "failed", "cannot spawn companion: no companion accounts left")
+        update_status.assert_called_once_with(
+            args,
+            "req1",
+            "failed",
+            "cannot spawn companion: no companion accounts left",
+            close_reason="system_spawn_failed",
+        )
 
     def test_handle_request_attaches_online_companion_before_active(self) -> None:
         service = load_service()
@@ -1995,6 +2353,31 @@ class DummyCompanionServiceTests(unittest.TestCase):
             self.assertEqual(payload["quit_after_sit_seconds"], 4.0)
             self.assertGreater(payload["revision"], 0)
 
+    def test_request_companion_quit_can_send_leave_farewell_before_quit(self) -> None:
+        service = load_service()
+        with tempfile.TemporaryDirectory() as tmp:
+            control_path = Path(tmp) / "live-control.json"
+
+            service.request_companion_quit(control_path, farewell_line=service.companion_leave_farewell_line("party_kick"))
+
+            payload = json.loads(control_path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["commands"][0], "/g 알겠습니다. 계약을 정리하고 파티에서 빠지겠습니다. 빈자리는 제가 비워두겠습니다.")
+            self.assertEqual(payload["commands"][1], "/quit")
+            self.assertEqual(payload["intent_hint"], "leave")
+
+    def test_service_stop_file_defaults_to_run_dir_and_is_detected(self) -> None:
+        service = load_service()
+        with tempfile.TemporaryDirectory() as tmp:
+            args = mock.Mock(run_dir=tmp, stop_file="")
+            stop_file = service.service_stop_file(args)
+
+            self.assertEqual(stop_file, Path(tmp) / "companion-service.stop")
+            self.assertFalse(service.service_stop_requested(args))
+
+            stop_file.write_text("stop", encoding="utf-8")
+
+            self.assertTrue(service.service_stop_requested(args))
+
     def test_handle_leave_request_releases_active_companions_for_requester(self) -> None:
         service = load_service()
         args = mock.Mock()
@@ -2020,10 +2403,21 @@ class DummyCompanionServiceTests(unittest.TestCase):
             service.handle_request(args, leave_request, active)
 
         detach.assert_called_once_with(args, "active1", "albdps")
-        stop_companion.assert_called_once_with(leader_process, control_path=None)
+        stop_companion.assert_called_once_with(
+            leader_process,
+            control_path=None,
+            farewell_line="알겠습니다. 계약을 정리하고 파티에서 빠지겠습니다. 빈자리는 제가 비워두겠습니다.",
+        )
         update_status.assert_has_calls(
             [
-                mock.call(args, "active1", "completed", "leave request; companion released", "albdps"),
+                mock.call(
+                    args,
+                    "active1",
+                    "completed",
+                    "leave request; companion released",
+                    "albdps",
+                    close_reason="leader_dismissed",
+                ),
                 mock.call(args, "leave1", "completed", "leave request acknowledged; released 1 companion(s)"),
             ]
         )
@@ -2434,8 +2828,12 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(args.reset_start_location, "objective")
         self.assertIn("companion_chat_reply", args.expect_companion_actions)
         self.assertIn("companion_command_attack", args.expect_companion_actions)
-        self.assertIn("damage_done", args.expect_companion_actions)
-        self.assertEqual(args.leader_party_command_start_delay, 43.0)
+        self.assertNotIn("party_assist", args.expect_companion_actions)
+        self.assertNotIn("damage_done", args.expect_companion_actions)
+        self.assertEqual(
+            args.leader_party_command_start_delay,
+            smoke.PLAYER_COMMAND_DEFAULT_COMMAND_START_DELAY_AFTER_STARTUP_SECONDS,
+        )
         self.assertEqual(args.leader_party_command_gap, 5.0)
         self.assertEqual(args.leader_control_apply_timeout, 20.0)
         self.assertEqual(args.allow_leader_deaths, 1)
@@ -2456,6 +2854,11 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertIn("companion_command_stay", args.expect_companion_actions)
         self.assertIn("companion_command_summon", args.expect_companion_actions)
         self.assertIn("companion_command_follow", args.expect_companion_actions)
+        self.assertNotIn("companion_command_clear_target", args.expect_companion_actions)
+        self.assertEqual(
+            args.leader_party_command_start_delay,
+            smoke.PLAYER_COMMAND_DEFAULT_COMMAND_START_DELAY_AFTER_STARTUP_SECONDS,
+        )
         self.assertEqual(args.leader_party_command_gap, 4.0)
         self.assertEqual(args.allow_leader_deaths, 1)
         self.assertGreaterEqual(args.allow_companion_deaths, 2)
@@ -2477,10 +2880,11 @@ class DummyCompanionServiceTests(unittest.TestCase):
         )
         self.assertEqual(args.expect_companion_actions, ["companion_chat_reply"])
         self.assertEqual(args.allow_leader_deaths, 0)
-        self.assertEqual(args.leader_hold, 40.0)
+        self.assertEqual(args.leader_hold, 110.0)
         self.assertEqual(args.leader_startup_delay, 8.0)
-        self.assertEqual(args.companion_hold, 40.0)
-        self.assertEqual(args.service_max_runtime, 70.0)
+        self.assertEqual(args.companion_hold, 90.0)
+        self.assertEqual(args.service_max_runtime, 130.0)
+        self.assertEqual(args.request_active_timeout, 90.0)
         self.assertEqual(args.leader_party_command_start_delay, 1.0)
         self.assertEqual(args.leader_party_command_gap, 1.0)
 
@@ -2526,6 +2930,10 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertIn("party_assist", args.expect_companion_actions)
         self.assertIn("damage_done", args.expect_companion_actions)
         self.assertIn("heal", args.expect_companion_actions)
+        self.assertEqual(
+            args.leader_party_command_start_delay,
+            smoke.PLAYER_COMMAND_DEFAULT_COMMAND_START_DELAY_AFTER_STARTUP_SECONDS,
+        )
         self.assertEqual(args.allow_leader_deaths, 1)
 
     def test_live_companion_party_smoke_support_speed_song_profile_sets_support_defaults(self) -> None:
@@ -3801,7 +4209,13 @@ class DummyCompanionServiceTests(unittest.TestCase):
             service.poll_active(args, active)
 
         stop_companion.assert_called_once_with(process, control_path=None)
-        update_status.assert_called_once_with(args, "req1", "completed", "requester offline grace expired; companion stopped")
+        update_status.assert_called_once_with(
+            args,
+            "req1",
+            "completed",
+            "requester offline grace expired; companion stopped",
+            close_reason="offline_grace_expired",
+        )
         self.assertEqual(active, {})
 
     def test_poll_active_waits_for_requester_reconnect_during_offline_grace(self) -> None:
@@ -3874,6 +4288,79 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         update_status.assert_called_once_with(args, "req1", "active", "live companion heartbeat", "albhealer")
 
+    def test_completion_metrics_choose_resurrection_save_reason(self) -> None:
+        service = load_service()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            run_dir = Path(temp_dir)
+            (run_dir / "req1-metrics.csv").write_text(
+                (
+                    "username,target_removed,player_deaths,damage_done,healing_done,"
+                    "action_validated_party_resurrect_member\n"
+                    "albhealer,0,0,0,120,1\n"
+                ),
+                encoding="utf-8",
+            )
+
+            reason = service.live_companion_success_close_reason({"id": "req1"}, run_dir)
+
+        self.assertEqual(reason, "resurrection_save")
+
+    def test_completion_metrics_choose_boss_defeated_reason_for_objective_kill(self) -> None:
+        service = load_service()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            run_dir = Path(temp_dir)
+            (run_dir / "req1-metrics.csv").write_text(
+                "username,target_removed,player_deaths,damage_done,healing_done\nalbdps,1,0,500,0\n",
+                encoding="utf-8",
+            )
+
+            reason = service.live_companion_success_close_reason(
+                {
+                    "id": "req1",
+                    "objectiveTarget": "Boss",
+                    "encounterMode": "boss",
+                },
+                run_dir,
+            )
+
+        self.assertEqual(reason, "boss_defeated")
+
+    def test_poll_active_completed_process_reports_metrics_close_reason(self) -> None:
+        service = load_service()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            request_dir = Path(temp_dir) / "req1"
+            request_dir.mkdir()
+            (request_dir / "req1-metrics.csv").write_text(
+                (
+                    "username,target_removed,player_deaths,damage_done,healing_done,"
+                    "action_validated_party_resurrect_member\n"
+                    "albhealer,0,0,0,120,1\n"
+                ),
+                encoding="utf-8",
+            )
+            args = mock.Mock(run_dir=temp_dir, account_reuse_cooldown=0.0)
+            process = mock.Mock()
+            process.poll.return_value = 0
+            active = {
+                "req1": service.ActiveCompanion(
+                    {"id": "req1", "requesterAccount": "leader1", "requestedRole": "healer"},
+                    process,
+                    account="albhealer",
+                )
+            }
+
+            with mock.patch.object(service, "update_request_status") as update_status:
+                service.poll_active(args, active, release_counts={}, dialogue_state={})
+
+        update_status.assert_called_once_with(
+            args,
+            "req1",
+            "completed",
+            "behavior client exited with 0",
+            close_reason="resurrection_save",
+        )
+        self.assertEqual(active, {})
+
     def test_poll_active_keeps_companion_when_real_player_joins_with_vacant_slots(self) -> None:
         service = load_service()
         args = mock.Mock(active_lease_refresh_interval=0.0)
@@ -3910,9 +4397,9 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertIn("req1", active)
         self.assertEqual(release_counts, {})
 
-    def test_poll_active_releases_low_priority_companion_when_full_party_real_player_joins(self) -> None:
+    def test_poll_active_keeps_companion_when_full_party_real_player_joins(self) -> None:
         service = load_service()
-        args = mock.Mock()
+        args = mock.Mock(active_lease_refresh_interval=0.0)
         process = mock.Mock()
         process.poll.return_value = None
         active = {
@@ -3944,11 +4431,12 @@ class DummyCompanionServiceTests(unittest.TestCase):
         ) as update_status:
             service.poll_active(args, active, release_counts)
 
-        detach.assert_called_once_with(args, "req1", "albdps")
-        stop_companion.assert_called_once_with(process, control_path=None)
-        update_status.assert_any_call(args, "req1", "completed", "real player joined; companion released", "albdps")
-        self.assertEqual(active, {})
-        self.assertEqual(release_counts["account:leader1"], 1)
+        detach.assert_not_called()
+        stop_companion.assert_not_called()
+        for call in update_status.mock_calls:
+            self.assertNotIn("real player joined; companion released", str(call))
+        self.assertIn("req1", active)
+        self.assertEqual(release_counts, {})
 
     def test_poll_active_stops_companion_when_group_membership_is_lost(self) -> None:
         service = load_service()
@@ -3976,7 +4464,14 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         detach.assert_called_once_with(args, "req1", "albhealer")
         stop_companion.assert_called_once_with(process, control_path=None)
-        update_status.assert_called_once_with(args, "req1", "completed", "party disbanded or companion removed; companion released", "albhealer")
+        update_status.assert_called_once_with(
+            args,
+            "req1",
+            "completed",
+            "party disbanded or companion removed; companion released",
+            "albhealer",
+            close_reason="party_lost",
+        )
         self.assertEqual(active, {})
 
     def test_poll_active_stops_companion_when_request_is_canceled_externally(self) -> None:
@@ -4087,11 +4582,13 @@ class DummyCompanionServerSurfaceTests(unittest.TestCase):
         self.assertIn("용병 고용관", source)
         self.assertNotIn("[파티 용병]", source)
         self.assertNotIn('case "파티 용병":', source)
-        self.assertIn("고용: [치유형 고용] [방어형 고용] [공격형 고용]", source)
+        self.assertIn("고용: [추천 고용] [치유형 고용] [방어형 고용] [공격형 고용] [지원형 고용]", source)
         self.assertIn("관리: [용병 상세] [휴식] [상태 확인] [소문] [요청 취소] [용병 해산]", source)
+        self.assertIn('case "추천 고용":', source)
         self.assertIn('case "치유형 고용":', source)
         self.assertIn('case "방어형 고용":', source)
         self.assertIn('case "공격형 고용":', source)
+        self.assertIn('case "지원형 고용":', source)
         self.assertIn('case "상태 확인":', source)
         self.assertIn("치유 용병", source)
         self.assertIn("방어 용병", source)
@@ -4270,6 +4767,9 @@ class DummyCompanionServerSurfaceTests(unittest.TestCase):
         request_source = (ROOT / "GameServer" / "LiveCompanion" / "CompanionRequestService.cs").read_text(
             encoding="utf-8"
         )
+        routes = (ROOT / "GameServer" / "API" / "DummyCompanion" / "DummyCompanionRoutes.cs").read_text(
+            encoding="utf-8"
+        )
         hire_npc_source = (ROOT / "GameServer" / "scripts" / "customnpc" / "CompanionHireNpc.cs").read_text(
             encoding="utf-8"
         )
@@ -4281,14 +4781,45 @@ class DummyCompanionServerSurfaceTests(unittest.TestCase):
             "AdventureMemory",
             "RumorHint",
             "TotalContracts",
+            "TotalContractMinutes",
+            "KillsTogether",
+            "DeathsTogether",
+            "RevivesReceived",
+            "Rescues",
+            "QuestsCompleted",
+            "EarnedTitles",
+            "PersonalQuestState",
+            "RelationshipEventState",
             "LastHiredAt",
         ):
             self.assertIn(field, table_source)
             self.assertIn(f"Mercenary{field}", request_source)
 
         self.assertIn("RecordContractStarted", service_source)
+        self.assertIn("RecordContractCompleted", service_source)
+        self.assertIn("RecordContractFailed", service_source)
+        self.assertIn("TrustGainForCompletedReason", service_source)
+        self.assertIn("TrustStageLabel", service_source)
+        self.assertIn("ApplyMercenaryContractOutcome", request_source)
+        self.assertIn("IsPlayerAccountableMercenaryFailure", request_source)
+        self.assertIn("request.CloseReason", request_source)
+        self.assertIn("string closeReason = \"\"", request_source)
+        self.assertIn('Query(context, "closeReason", Query(context, "reason"))', routes)
+        live_service_source = (ROOT / "tools" / "dummy-companion-service.py").read_text(encoding="utf-8")
+        self.assertIn("close_reason", live_service_source)
+        self.assertIn("real_player_joined", live_service_source)
+        self.assertIn("system_attach_failed", live_service_source)
+        self.assertIn("mercenary_death", request_source)
+        self.assertIn("companion active lease expired", request_source)
+        self.assertIn("RefreshTitlesAndPersonalQuest", service_source)
+        self.assertIn("BuildMercenaryProgressLine", request_source)
+        self.assertIn("request_mercenary_record", live_service_source)
+        self.assertIn("--mercenary-earned-titles", live_service_source)
         self.assertIn("ShowMercenaryRumors", hire_npc_source)
         self.assertIn("[소문]", hire_npc_source)
+        self.assertIn("친밀도 {row.Trust}", hire_npc_source)
+        self.assertIn("RecordSummary", hire_npc_source)
+        self.assertIn("PersonalQuestLine", hire_npc_source)
 
     def test_owned_mercenary_detail_and_rest_controls_exist_on_hire_npc(self) -> None:
         service_source = (ROOT / "GameServer" / "LiveCompanion" / "PlayerMercenaryService.cs").read_text(

@@ -27,6 +27,15 @@ namespace DOL.Database
         private string m_adventureMemory = string.Empty;
         private string m_rumorHint = string.Empty;
         private int m_totalContracts;
+        private int m_totalContractMinutes;
+        private int m_killsTogether;
+        private int m_deathsTogether;
+        private int m_revivesReceived;
+        private int m_rescues;
+        private int m_questsCompleted;
+        private string m_earnedTitles = string.Empty;
+        private string m_personalQuestState = string.Empty;
+        private string m_relationshipEventState = string.Empty;
         private DateTime m_lastHiredAt = DateTime.UtcNow;
         private string m_sourceId = string.Empty;
         private DateTime m_createdAt = DateTime.UtcNow;
@@ -177,6 +186,69 @@ namespace DOL.Database
         {
             get { return m_totalContracts; }
             set { Dirty = true; m_totalContracts = value; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public int TotalContractMinutes
+        {
+            get { return m_totalContractMinutes; }
+            set { Dirty = true; m_totalContractMinutes = value; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public int KillsTogether
+        {
+            get { return m_killsTogether; }
+            set { Dirty = true; m_killsTogether = value; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public int DeathsTogether
+        {
+            get { return m_deathsTogether; }
+            set { Dirty = true; m_deathsTogether = value; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public int RevivesReceived
+        {
+            get { return m_revivesReceived; }
+            set { Dirty = true; m_revivesReceived = value; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public int Rescues
+        {
+            get { return m_rescues; }
+            set { Dirty = true; m_rescues = value; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public int QuestsCompleted
+        {
+            get { return m_questsCompleted; }
+            set { Dirty = true; m_questsCompleted = value; }
+        }
+
+        [DataElement(AllowDbNull = false, Varchar = 255)]
+        public string EarnedTitles
+        {
+            get { return m_earnedTitles; }
+            set { Dirty = true; m_earnedTitles = value; }
+        }
+
+        [DataElement(AllowDbNull = false, Varchar = 255)]
+        public string PersonalQuestState
+        {
+            get { return m_personalQuestState; }
+            set { Dirty = true; m_personalQuestState = value; }
+        }
+
+        [DataElement(AllowDbNull = false, Varchar = 255)]
+        public string RelationshipEventState
+        {
+            get { return m_relationshipEventState; }
+            set { Dirty = true; m_relationshipEventState = value; }
         }
 
         [DataElement(AllowDbNull = false)]

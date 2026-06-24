@@ -55,11 +55,74 @@ namespace DOL.GS.Scripts
 
             SendReply(
                 player,
-                $"{CompanionHireNpcName}입니다. 어떤 용병을 고용하시겠습니까?\n" +
-                "보유: [내 용병]\n" +
-                "고용: [치유형 고용] [방어형 고용] [공격형 고용]\n" +
-                "관리: [용병 상세] [휴식] [상태 확인] [소문] [요청 취소] [용병 해산]");
+                BuildMainMenuText());
             return true;
+        }
+
+        public static string BuildMainMenuText()
+        {
+            return $"{CompanionHireNpcName}입니다. 어떤 용병을 고용하시겠습니까?\n" +
+                "안내: [처음 안내] [운용 팁]\n" +
+                "보유: [내 용병]\n" +
+                "고용: [추천 고용] [치유형 고용] [방어형 고용] [공격형 고용] [지원형 고용]\n" +
+                "관리: [용병 상세] [휴식] [상태 확인] [소문] [요청 취소] [용병 해산]";
+        }
+
+        public static string BuildBeginnerGuideText()
+        {
+            return "처음이라면 치유형부터 고용해 보세요. 체력 회복과 해제가 안정적입니다.\n" +
+                "용병에게 파티말로 `상태`, `기록`, `대기`, `따라와`, `ㄱㄱ`처럼 말하면 바로 반응합니다.\n" +
+                "사냥터나 스킬이 궁금하면 `5렙 사냥 어디서 해?`, `내 직업이면 스킬 뭐 찍어?`처럼 물어보세요.\n" +
+                "실제 플레이어 자리가 필요하면 파티장이 먼저 [용병 해산]으로 빈자리를 만들면 됩니다.";
+        }
+
+        public static string BuildVeteranGuideText()
+        {
+            return "역할은 치유형, 방어형, 공격형, 지원형으로 나뉩니다. 지원형은 메즈, 스피드송, 보조 유틸을 기대할 때 고릅니다.\n" +
+                "보유 용병은 성격, 전술, 친밀도, 피로도가 달라 같은 역할이라도 움직임이 달라집니다.\n" +
+                "[용병 상세]로 전술과 특성을 보고, 피로가 높으면 [휴식]을 먼저 쓰는 편이 안정적입니다.\n" +
+                "서버/서비스 문제로 실패한 계약은 친밀도 불이익 없이 다시 고용하면 됩니다.";
+        }
+
+        public static string BuildNoRequestStatusText()
+        {
+            return "아직 접수된 용병 요청이 없습니다.\n" +
+                "처음이면 [처음 안내]를 보고, 바로 시작하려면 [추천 고용]이나 [치유형 고용]을 눌러 보세요.";
+        }
+
+        public static string RecommendRoleForPlayer(int level, string className, int groupSize = 1)
+        {
+            int safeLevel = Math.Max(1, level);
+            int safeGroupSize = Math.Max(1, groupSize);
+            string normalizedClass = (className ?? string.Empty).Trim().ToLowerInvariant();
+
+            if (safeGroupSize >= 3 && safeLevel >= 10)
+                return CompanionRequestRoles.Support;
+
+            if (ClassNameLooksLikeHealer(normalizedClass))
+                return CompanionRequestRoles.Tank;
+
+            if (ClassNameLooksLikeTank(normalizedClass))
+                return CompanionRequestRoles.Healer;
+
+            if (safeLevel <= 12)
+                return CompanionRequestRoles.Healer;
+
+            return CompanionRequestRoles.Healer;
+        }
+
+        public static string BuildRecommendedHireLine(int level, string className, int groupSize = 1)
+        {
+            string role = RecommendRoleForPlayer(level, className, groupSize);
+            string roleLabel = RoleLabel(role);
+            string reason = role switch
+            {
+                CompanionRequestRoles.Support => "파티 인원이 있으면 메즈, 스피드송, 보조 유틸이 체감됩니다.",
+                CompanionRequestRoles.Tank => "회복 직업은 앞에서 붙잡아 줄 방어형이 있으면 안정적입니다.",
+                CompanionRequestRoles.Dps => "이미 생존과 방어가 충분하면 공격형으로 처치 속도를 올릴 수 있습니다.",
+                _ => "혼자 시작하거나 익숙하지 않다면 치유형이 가장 안전합니다."
+            };
+            return $"추천: {roleLabel} 용병. {reason}";
         }
 
         public override bool WhisperReceive(GameLiving source, string str)
@@ -73,6 +136,26 @@ namespace DOL.GS.Scripts
             string command = (str ?? string.Empty).Trim().ToLowerInvariant();
             switch (command)
             {
+                case "처음 안내":
+                case "초보 안내":
+                case "가이드":
+                case "guide":
+                case "beginner":
+                    SendReply(player, BuildBeginnerGuideText());
+                    return true;
+                case "운용 팁":
+                case "숙련 안내":
+                case "고급 안내":
+                case "advanced":
+                case "tips":
+                    SendReply(player, BuildVeteranGuideText());
+                    return true;
+                case "추천 고용":
+                case "추천":
+                case "추천 용병":
+                case "recommend":
+                    QueueRecommendedCompanion(player);
+                    return true;
                 case "내 용병":
                 case "보유 용병":
                 case "용병 목록":
@@ -116,6 +199,12 @@ namespace DOL.GS.Scripts
                 case "dps":
                     QueueCompanion(player, CompanionRequestRoles.Dps);
                     return true;
+                case "지원 용병":
+                case "지원형 고용":
+                case "지원":
+                case "support":
+                    QueueCompanion(player, CompanionRequestRoles.Support);
+                    return true;
                 case "용병 상태":
                 case "상태 확인":
                 case "상태":
@@ -155,7 +244,28 @@ namespace DOL.GS.Scripts
                 "pve",
                 Name);
 
-            SendReply(player, result.Success ? "용병에게 연락을 넣었습니다." : "지금 가능한 용병이 없습니다.");
+            SendReply(player, BuildHireReplyForResult(result, "용병에게 연락을 넣었습니다."));
+        }
+
+        private void QueueRecommendedCompanion(GamePlayer player)
+        {
+            int groupSize = CompanionRequestService.CurrentGroupSize(player);
+            string className = player?.CharacterClass?.Name ?? string.Empty;
+            string role = RecommendRoleForPlayer(player?.Level ?? 1, className, groupSize);
+
+            PlayerMercenaryService.EnsureStarterMercenary(player);
+            CompanionRequestResult result = CompanionRequestService.CreateRequest(
+                player,
+                role,
+                "hire_npc_recommended",
+                "pve",
+                Name);
+
+            SendReply(
+                player,
+                BuildHireReplyForResult(
+                    result,
+                    $"{BuildRecommendedHireLine(player?.Level ?? 1, className, groupSize)} 연락을 넣었습니다."));
         }
 
         private bool QueueOwnedMercenary(GamePlayer player, string mercenaryName)
@@ -173,9 +283,7 @@ namespace DOL.GS.Scripts
 
             SendReply(
                 player,
-                result.Success
-                    ? $"{mercenary.DisplayName}에게 연락을 넣었습니다."
-                    : result.Message);
+                BuildHireReplyForResult(result, $"{mercenary.DisplayName}에게 연락을 넣었습니다."));
             return true;
         }
 
@@ -193,7 +301,8 @@ namespace DOL.GS.Scripts
                 "\n",
                 mercenaries.Take(8).Select(row =>
                     $"[{row.DisplayName}] {TierLabel(row.ContractTier)} {row.ClassName} / {PersonalityLabel(row.Personality)} / {TacticLabel(row.TacticPreset)}\n" +
-                    $"신뢰 {row.Trust}, 피로 {row.Fatigue}, 계약 {row.TotalContracts}회\n" +
+                    $"칭호 {PlayerMercenaryService.PrimaryTitle(row)}, 친밀도 {row.Trust}({PlayerMercenaryService.TrustStageLabel(row.Trust)}), 피로 {row.Fatigue}, 계약 {row.TotalContracts}회\n" +
+                    $"{PlayerMercenaryService.RecordSummary(row)}\n" +
                     $"{row.Background}\n" +
                     $"관리: [{row.DisplayName} 상세] [{row.DisplayName} 휴식]"));
             SendReply(player, "보유 용병 목록입니다. 이름만 누르면 고용합니다.\n" + lines);
@@ -230,7 +339,9 @@ namespace DOL.GS.Scripts
                 mercenaries.Take(4).Select(row =>
                     $"[{row.DisplayName}] {TierLabel(row.ContractTier)} {row.ClassName}\n" +
                     $"성격 {PersonalityLabel(row.Personality)}, 전술 {TacticLabel(row.TacticPreset)}\n" +
-                    $"신뢰 {row.Trust}, 피로 {row.Fatigue}, 계약 {row.TotalContracts}회\n" +
+                    $"칭호 {PlayerMercenaryService.PrimaryTitle(row)}, 친밀도 {row.Trust}({PlayerMercenaryService.TrustStageLabel(row.Trust)}), 피로 {row.Fatigue}, 계약 {row.TotalContracts}회\n" +
+                    $"{PlayerMercenaryService.RecordSummary(row)}\n" +
+                    $"{PlayerMercenaryService.PersonalQuestLine(row)}\n" +
                     $"특성: {FormatPipeList(row.Traits)}\n" +
                     $"장비: {FirstNonEmpty(row.ItemProfile, "기본 장비")}\n" +
                     $"기억: {FirstNonEmpty(row.AdventureMemory, row.Background)}"));
@@ -319,16 +430,14 @@ namespace DOL.GS.Scripts
             CompanionRequest request = CompanionRequestService.LatestForPlayer(player.Name);
             if (request == null)
             {
-                SendReply(player, "아직 접수된 용병 요청이 없습니다.");
+                SendReply(player, BuildNoRequestStatusText());
                 return;
             }
 
-            string companion = string.IsNullOrWhiteSpace(request.AssignedCompanionName)
-                ? "배정 대기"
-                : request.AssignedCompanionName;
             SendReply(
                 player,
-                $"최근 용병 요청: 상태={request.Status}, 역할={request.RequestedRole}, 용병={companion}\n{request.Message}");
+                "최근 용병 요청입니다.\n" +
+                string.Join("\n", CompanionRequestService.BuildDisplaySummary(request).Lines));
         }
 
         private static string TierLabel(string tier)
@@ -369,6 +478,36 @@ namespace DOL.GS.Scripts
             };
         }
 
+        private static string RoleLabel(string role)
+        {
+            return CompanionRequestRoles.Normalize(role) switch
+            {
+                CompanionRequestRoles.Healer => "치유형",
+                CompanionRequestRoles.Tank => "방어형",
+                CompanionRequestRoles.Dps => "공격형",
+                CompanionRequestRoles.Support => "지원형",
+                _ => "빈자리 보충"
+            };
+        }
+
+        private static bool ClassNameLooksLikeHealer(string normalizedClass)
+        {
+            return normalizedClass.Contains("cleric") ||
+                normalizedClass.Contains("druid") ||
+                normalizedClass.Contains("healer") ||
+                normalizedClass.Contains("shaman") ||
+                normalizedClass.Contains("friar");
+        }
+
+        private static bool ClassNameLooksLikeTank(string normalizedClass)
+        {
+            return normalizedClass.Contains("armsman") ||
+                normalizedClass.Contains("hero") ||
+                normalizedClass.Contains("warrior") ||
+                normalizedClass.Contains("paladin") ||
+                normalizedClass.Contains("thane");
+        }
+
         private static string FirstNonEmpty(params string[] values)
         {
             foreach (string value in values)
@@ -378,6 +517,15 @@ namespace DOL.GS.Scripts
             }
 
             return "아직 특별한 이야기는 알려지지 않았습니다.";
+        }
+
+        public static string BuildHireReplyForResult(CompanionRequestResult result, string successMessage)
+        {
+            if (result != null && result.Success)
+                return string.IsNullOrWhiteSpace(successMessage) ? "용병에게 연락을 넣었습니다." : successMessage;
+
+            string message = result?.Message;
+            return string.IsNullOrWhiteSpace(message) ? "지금 가능한 용병이 없습니다." : message.Trim();
         }
 
         private static string FormatPipeList(string value)

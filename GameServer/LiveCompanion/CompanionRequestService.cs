@@ -135,6 +135,15 @@ namespace DOL.GS.LiveCompanion
         public string MercenaryAdventureMemory { get; set; } = string.Empty;
         public string MercenaryRumorHint { get; set; } = string.Empty;
         public int MercenaryTotalContracts { get; set; }
+        public int MercenaryTotalContractMinutes { get; set; }
+        public int MercenaryKillsTogether { get; set; }
+        public int MercenaryDeathsTogether { get; set; }
+        public int MercenaryRevivesReceived { get; set; }
+        public int MercenaryRescues { get; set; }
+        public int MercenaryQuestsCompleted { get; set; }
+        public string MercenaryEarnedTitles { get; set; } = string.Empty;
+        public string MercenaryPersonalQuestState { get; set; } = string.Empty;
+        public string MercenaryRelationshipEventState { get; set; } = string.Empty;
         public DateTime MercenaryLastHiredAt { get; set; }
         public string ContentType { get; set; } = "pve";
         public string ObjectiveTarget { get; set; } = string.Empty;
@@ -174,6 +183,22 @@ namespace DOL.GS.LiveCompanion
         public IList<CompanionRequest> ActiveRequests { get; set; } = new List<CompanionRequest>();
         public IList<CompanionRequest> OpenRequests { get; set; } = new List<CompanionRequest>();
         public IList<CompanionRequest> RecentRequests { get; set; } = new List<CompanionRequest>();
+    }
+
+    public sealed class CompanionRequestDisplaySummary
+    {
+        public string StatusLabel { get; set; } = string.Empty;
+        public string RoleLabel { get; set; } = string.Empty;
+        public string TierLabel { get; set; } = string.Empty;
+        public string CompanionName { get; set; } = string.Empty;
+        public string MercenaryLine { get; set; } = string.Empty;
+        public string ContractLine { get; set; } = string.Empty;
+        public string PartyLine { get; set; } = string.Empty;
+        public string ProgressLine { get; set; } = string.Empty;
+        public string ResultLine { get; set; } = string.Empty;
+        public string RecoveryLine { get; set; } = string.Empty;
+        public string MessageLine { get; set; } = string.Empty;
+        public IList<string> Lines { get; set; } = new List<string>();
     }
 
     public static class CompanionRequestService
@@ -479,6 +504,51 @@ namespace DOL.GS.LiveCompanion
             }
         }
 
+        public static CompanionRequestDisplaySummary BuildDisplaySummary(CompanionRequest request, DateTime? nowUtc = null)
+        {
+            if (request == null)
+                return new CompanionRequestDisplaySummary
+                {
+                    StatusLabel = "요청 없음",
+                    Lines = new List<string> { "아직 접수된 용병 요청이 없습니다." }
+                };
+
+            DateTime now = nowUtc ?? DateTime.UtcNow;
+            string companionName = FirstNonEmpty(request.AssignedCompanionName, request.MercenaryName, "배정 대기");
+            CompanionRequestDisplaySummary summary = new()
+            {
+                StatusLabel = StatusLabel(request.Status),
+                RoleLabel = RoleLabel(request.RequestedRole),
+                TierLabel = TierLabel(request.ContractTier),
+                CompanionName = companionName,
+                MercenaryLine = BuildMercenaryLine(request),
+                ContractLine = BuildContractLine(request, now),
+                PartyLine = $"파티: 요청 시 {request.GroupSize}명, 빈자리 {request.VacantSlots}칸",
+                ProgressLine = BuildProgressLine(request),
+                ResultLine = BuildResultLine(request),
+                RecoveryLine = BuildRecoveryLine(request),
+                MessageLine = string.IsNullOrWhiteSpace(request.Message) ? "" : $"최근 메시지: {request.Message.Trim()}"
+            };
+
+            List<string> lines = new()
+            {
+                $"상태: {summary.StatusLabel}",
+                $"역할: {summary.RoleLabel} / 등급: {summary.TierLabel}",
+                $"용병: {summary.CompanionName}"
+            };
+
+            AddIfPresent(lines, summary.MercenaryLine);
+            AddIfPresent(lines, BuildMercenaryProgressLine(request));
+            AddIfPresent(lines, summary.ContractLine);
+            AddIfPresent(lines, summary.PartyLine);
+            AddIfPresent(lines, summary.ProgressLine);
+            AddIfPresent(lines, summary.ResultLine);
+            AddIfPresent(lines, summary.RecoveryLine);
+            AddIfPresent(lines, summary.MessageLine);
+            summary.Lines = lines;
+            return summary;
+        }
+
         public static CompanionRequest LatestForPlayer(string playerName)
         {
             if (string.IsNullOrWhiteSpace(playerName))
@@ -578,7 +648,12 @@ namespace DOL.GS.LiveCompanion
             }
         }
 
-        public static CompanionRequest UpdateStatus(string id, string status, string message, string assignedCompanionName)
+        public static CompanionRequest UpdateStatus(
+            string id,
+            string status,
+            string message,
+            string assignedCompanionName,
+            string closeReason = "")
         {
             if (string.IsNullOrWhiteSpace(status))
                 return null;
@@ -595,15 +670,20 @@ namespace DOL.GS.LiveCompanion
                 if (!CanTransitionStatus(request.Status, normalizedStatus))
                     return null;
 
+                string previousStatus = request.Status;
                 request.Status = normalizedStatus;
                 request.UpdatedUtc = DateTime.UtcNow;
                 if (!string.IsNullOrWhiteSpace(message))
                     request.Message = message.Trim();
                 if (!string.IsNullOrWhiteSpace(assignedCompanionName))
                     request.AssignedCompanionName = assignedCompanionName.Trim();
+                if (!string.IsNullOrWhiteSpace(closeReason))
+                    request.CloseReason = closeReason.Trim();
                 if (normalizedStatus.Equals(CompanionRequestStatus.Active, StringComparison.OrdinalIgnoreCase) &&
                     request.ContractStartedUtc == default)
                     request.ContractStartedUtc = DateTime.UtcNow;
+                if (TerminalStatuses.Contains(normalizedStatus) && !TerminalStatuses.Contains(previousStatus))
+                    ApplyMercenaryContractOutcome(request, normalizedStatus, previousStatus);
 
                 return Clone(request);
             }
@@ -669,6 +749,15 @@ namespace DOL.GS.LiveCompanion
                 MercenaryAdventureMemory = ownedMercenary?.AdventureMemory ?? string.Empty,
                 MercenaryRumorHint = ownedMercenary?.RumorHint ?? string.Empty,
                 MercenaryTotalContracts = ownedMercenary?.TotalContracts ?? 0,
+                MercenaryTotalContractMinutes = ownedMercenary?.TotalContractMinutes ?? 0,
+                MercenaryKillsTogether = ownedMercenary?.KillsTogether ?? 0,
+                MercenaryDeathsTogether = ownedMercenary?.DeathsTogether ?? 0,
+                MercenaryRevivesReceived = ownedMercenary?.RevivesReceived ?? 0,
+                MercenaryRescues = ownedMercenary?.Rescues ?? 0,
+                MercenaryQuestsCompleted = ownedMercenary?.QuestsCompleted ?? 0,
+                MercenaryEarnedTitles = ownedMercenary?.EarnedTitles ?? string.Empty,
+                MercenaryPersonalQuestState = ownedMercenary?.PersonalQuestState ?? string.Empty,
+                MercenaryRelationshipEventState = ownedMercenary?.RelationshipEventState ?? string.Empty,
                 MercenaryLastHiredAt = ownedMercenary?.LastHiredAt ?? default,
                 ContentType = string.IsNullOrWhiteSpace(contentType) ? "pve" : contentType.Trim().ToLowerInvariant(),
                 ObjectiveTarget = string.IsNullOrWhiteSpace(objectiveTarget) ? string.Empty : objectiveTarget.Trim(),
@@ -702,8 +791,324 @@ namespace DOL.GS.LiveCompanion
             request.MercenaryTrust = mercenary.Trust;
             request.MercenaryFatigue = mercenary.Fatigue;
             request.MercenaryTotalContracts = mercenary.TotalContracts;
+            request.MercenaryTotalContractMinutes = mercenary.TotalContractMinutes;
+            request.MercenaryKillsTogether = mercenary.KillsTogether;
+            request.MercenaryDeathsTogether = mercenary.DeathsTogether;
+            request.MercenaryRevivesReceived = mercenary.RevivesReceived;
+            request.MercenaryRescues = mercenary.Rescues;
+            request.MercenaryQuestsCompleted = mercenary.QuestsCompleted;
+            request.MercenaryEarnedTitles = mercenary.EarnedTitles;
+            request.MercenaryPersonalQuestState = mercenary.PersonalQuestState;
+            request.MercenaryRelationshipEventState = mercenary.RelationshipEventState;
             request.MercenaryLastHiredAt = mercenary.LastHiredAt;
             request.UpdatedUtc = DateTime.UtcNow;
+        }
+
+        private static void ApplyMercenaryContractOutcome(
+            CompanionRequest request,
+            string normalizedStatus,
+            string previousStatus)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.MercenaryId))
+                return;
+
+            DbPlayerMercenary mercenary = GameServer.Database.FindObjectByKey<DbPlayerMercenary>(request.MercenaryId);
+            if (mercenary == null)
+                return;
+
+            bool wasActive =
+                previousStatus.Equals(CompanionRequestStatus.Active, StringComparison.OrdinalIgnoreCase) ||
+                request.ContractStartedUtc != default;
+            if (normalizedStatus.Equals(CompanionRequestStatus.Completed, StringComparison.OrdinalIgnoreCase))
+            {
+                TimeSpan activeDuration = request.ContractStartedUtc == default
+                    ? TimeSpan.Zero
+                    : DateTime.UtcNow - request.ContractStartedUtc;
+                PlayerMercenaryService.RecordContractCompleted(
+                    mercenary,
+                    activeDuration,
+                    request.CloseReason,
+                    request.SuppressedKillCredits);
+            }
+            else if (normalizedStatus.Equals(CompanionRequestStatus.Failed, StringComparison.OrdinalIgnoreCase))
+            {
+                PlayerMercenaryService.RecordContractFailed(mercenary, wasActive && IsPlayerAccountableMercenaryFailure(request));
+            }
+
+            ApplyMercenaryProgressionSnapshot(request, mercenary);
+        }
+
+        private static bool IsPlayerAccountableMercenaryFailure(CompanionRequest request)
+        {
+            string reason = (request?.CloseReason ?? string.Empty).Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(reason))
+                reason = (request?.Message ?? string.Empty).Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(reason))
+                return false;
+
+            return reason.Contains("mercenary_death", StringComparison.OrdinalIgnoreCase) ||
+                   reason.Contains("companion_death", StringComparison.OrdinalIgnoreCase) ||
+                   reason.Contains("abandoned_mercenary", StringComparison.OrdinalIgnoreCase) ||
+                   reason.Contains("abandoned_companion", StringComparison.OrdinalIgnoreCase) ||
+                   reason.Contains("reckless_order", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string BuildMercenaryLine(CompanionRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.MercenaryId) &&
+                string.IsNullOrWhiteSpace(request.MercenaryClassName) &&
+                string.IsNullOrWhiteSpace(request.MercenaryPersonality))
+                return string.Empty;
+
+            string name = FirstNonEmpty(request.MercenaryName, request.AssignedCompanionName, "이름 미정");
+            string className = FirstNonEmpty(request.MercenaryClassName, "직업 미정");
+            string title = FirstTitle(request.MercenaryEarnedTitles);
+            string titlePart = string.IsNullOrWhiteSpace(title) ? "" : $", 칭호 {title}";
+            return $"보유 용병: {name} {className}, 성격 {PersonalityLabel(request.MercenaryPersonality)}, 전술 {TacticLabel(request.MercenaryTacticPreset)}, 친밀도 {request.MercenaryTrust}({PlayerMercenaryService.TrustStageLabel(request.MercenaryTrust)}), 피로 {request.MercenaryFatigue}{titlePart}";
+        }
+
+        private static string BuildMercenaryProgressLine(CompanionRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.MercenaryId))
+                return string.Empty;
+
+            string quest = PersonalQuestLabel(request.MercenaryPersonalQuestState);
+            return
+                $"용병 기록: 계약 {request.MercenaryTotalContracts}회/{request.MercenaryTotalContractMinutes}분, " +
+                $"처치 기여 {request.MercenaryKillsTogether}회, 구출 {request.MercenaryRescues}회, 개인 의뢰 {quest}";
+        }
+
+        private static string BuildContractLine(CompanionRequest request, DateTime now)
+        {
+            if (request.ContractDurationSeconds <= 0)
+                return string.Empty;
+
+            if (request.ContractStartedUtc == default)
+                return $"계약: 최대 {FormatDuration(TimeSpan.FromSeconds(request.ContractDurationSeconds))}, 아직 시작 전";
+
+            TimeSpan elapsed = now - request.ContractStartedUtc;
+            if (elapsed < TimeSpan.Zero)
+                elapsed = TimeSpan.Zero;
+
+            TimeSpan duration = TimeSpan.FromSeconds(request.ContractDurationSeconds);
+            TimeSpan remaining = duration - elapsed;
+            if (remaining < TimeSpan.Zero)
+                remaining = TimeSpan.Zero;
+
+            if (request.Status.Equals(CompanionRequestStatus.Active, StringComparison.OrdinalIgnoreCase))
+                return $"계약: 남은 시간 약 {FormatDuration(remaining)} / 진행 {FormatDuration(elapsed)}";
+
+            return $"계약: 진행 {FormatDuration(elapsed)} / 최대 {FormatDuration(duration)}";
+        }
+
+        private static string BuildProgressLine(CompanionRequest request)
+        {
+            string status = CompanionRequestStatus.Normalize(request.Status);
+            if (status == CompanionRequestStatus.Queued)
+                return "진행: 고용 요청 대기 중입니다.";
+            if (status == CompanionRequestStatus.Spawning)
+                return "진행: 용병을 부르는 중입니다.";
+            if (status == CompanionRequestStatus.Grouping)
+                return "진행: 파티 합류를 확인하는 중입니다.";
+            if (status == CompanionRequestStatus.Leaving)
+                return "진행: 용병 해산을 처리하는 중입니다.";
+            if (status == CompanionRequestStatus.Active)
+                return "진행: 계약이 활성 상태입니다.";
+            return string.Empty;
+        }
+
+        private static string BuildResultLine(CompanionRequest request)
+        {
+            string status = CompanionRequestStatus.Normalize(request.Status);
+            if (!TerminalStatuses.Contains(status))
+                return string.Empty;
+
+            string reason = FirstNonEmpty(request.CloseReason, request.Message, status);
+            string result = status switch
+            {
+                CompanionRequestStatus.Completed => $"결과: {CloseReasonLabel(reason)}",
+                CompanionRequestStatus.Failed => $"결과: 실패 - {CloseReasonLabel(reason)}",
+                CompanionRequestStatus.Canceled => $"결과: 취소 - {CloseReasonLabel(reason)}",
+                _ => $"결과: {CloseReasonLabel(reason)}"
+            };
+
+            string contribution = BuildContributionLine(request);
+            return string.IsNullOrWhiteSpace(contribution) ? result : $"{result} / {contribution}";
+        }
+
+        private static string BuildContributionLine(CompanionRequest request)
+        {
+            List<string> parts = new();
+            if (request.SuppressedKillCredits > 0)
+                parts.Add($"처치 기여 {request.SuppressedKillCredits}");
+            if (request.SuppressedRealmPoints > 0)
+                parts.Add($"RVR 보상 제한 {request.SuppressedRealmPoints}");
+            if (request.SuppressedBountyPoints > 0)
+                parts.Add($"BP 제한 {request.SuppressedBountyPoints}");
+            if (request.SuppressedMoney > 0)
+                parts.Add($"돈 보상 제한 {request.SuppressedMoney}");
+
+            return parts.Count == 0 ? string.Empty : $"기록: {string.Join(", ", parts)}";
+        }
+
+        private static string BuildRecoveryLine(CompanionRequest request)
+        {
+            string status = CompanionRequestStatus.Normalize(request.Status);
+            if (status == CompanionRequestStatus.Active)
+                return $"복구: 재접속 후 용병이 안 보이면 잠시 기다려 주세요. 상태 갱신이 끊기면 자동 정리됩니다. 접속 유예 {FormatDuration(TimeSpan.FromSeconds(Math.Max(0, request.OfflineGraceSeconds)))}";
+            if (status is CompanionRequestStatus.Queued or CompanionRequestStatus.Spawning or CompanionRequestStatus.Grouping)
+                return "복구: 오래 멈춰 있으면 요청 취소 후 다시 고용하면 됩니다.";
+            if (status == CompanionRequestStatus.Failed && IsSystemFailure(request))
+                return "복구: 서버/서비스 문제로 보이면 친밀도 불이익 없이 다시 고용해도 됩니다.";
+            return string.Empty;
+        }
+
+        private static bool IsSystemFailure(CompanionRequest request)
+        {
+            string reason = FirstNonEmpty(request.CloseReason, request.Message).Trim().ToLowerInvariant();
+            return reason.StartsWith("system_", StringComparison.OrdinalIgnoreCase) ||
+                   reason.Contains("service", StringComparison.OrdinalIgnoreCase) ||
+                   reason.Contains("offline_grace_expired", StringComparison.OrdinalIgnoreCase) ||
+                   reason.Contains("lease expired", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string StatusLabel(string status)
+        {
+            return CompanionRequestStatus.Normalize(status) switch
+            {
+                CompanionRequestStatus.Queued => "대기 중",
+                CompanionRequestStatus.Spawning => "소집 중",
+                CompanionRequestStatus.Grouping => "파티 합류 중",
+                CompanionRequestStatus.Active => "계약 진행 중",
+                CompanionRequestStatus.Leaving => "해산 처리 중",
+                CompanionRequestStatus.Completed => "계약 종료",
+                CompanionRequestStatus.Failed => "실패",
+                CompanionRequestStatus.Canceled => "취소됨",
+                _ => "알 수 없음"
+            };
+        }
+
+        private static string RoleLabel(string role)
+        {
+            return CompanionRequestRoles.Normalize(role) switch
+            {
+                CompanionRequestRoles.Healer => "치유",
+                CompanionRequestRoles.Tank => "방어",
+                CompanionRequestRoles.Dps => "공격",
+                CompanionRequestRoles.Support => "지원",
+                _ => "빈자리 보충"
+            };
+        }
+
+        private static string TierLabel(string tier)
+        {
+            return CompanionContractTiers.Normalize(tier) switch
+            {
+                CompanionContractTiers.Skilled => "숙련",
+                CompanionContractTiers.Elite => "정예",
+                CompanionContractTiers.Legendary => "전설",
+                _ => "일반"
+            };
+        }
+
+        private static string PersonalityLabel(string personality)
+        {
+            return (personality ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "reckless_berserker" => "돌격형",
+                "wary_survivor" => "생존형",
+                "eager_rookie" => "신참형",
+                "proud_veteran" => "고참형",
+                "shifty_traitor" => "배신자형",
+                "cunning_opportunist" => "얍삽한형",
+                _ => "침착형"
+            };
+        }
+
+        private static string TacticLabel(string tactic)
+        {
+            return (tactic ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "safe" => "안전 우선",
+                "aggressive" => "공격 우선",
+                "heal_priority" => "힐 우선",
+                "mez_priority" => "메즈 우선",
+                "leader_protect" => "리더 보호",
+                _ => "균형"
+            };
+        }
+
+        private static string FirstTitle(string titles)
+        {
+            return (titles ?? string.Empty)
+                .Split(new[] { '|', ';', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(title => title.Trim())
+                .FirstOrDefault(title => !string.IsNullOrWhiteSpace(title)) ?? string.Empty;
+        }
+
+        private static string PersonalQuestLabel(string state)
+        {
+            return (state ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "available:first_bond" => "신뢰의 첫 증표 진행 가능",
+                "completed:first_bond" => "신뢰의 첫 증표 완료",
+                "available:field_oath" => "전장의 맹세 진행 가능",
+                "completed:field_oath" => "전장의 맹세 완료",
+                _ => "없음"
+            };
+        }
+
+        private static string CloseReasonLabel(string reason)
+        {
+            string normalized = (reason ?? string.Empty).Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(normalized))
+                return "세부 사유 없음";
+
+            return normalized switch
+            {
+                "leader_dismissed" => "파티장이 해산함",
+                "party_lost" => "파티에서 이탈함",
+                "offline_grace_expired" => "접속 유예 시간이 지나 계약 정리됨",
+                "party_full" => "파티 자리가 부족함",
+                "request_canceled" => "요청 취소",
+                "system_spawn_blocked" => "소집 조건 미충족",
+                "system_spawn_failed" => "용병 소집 실패",
+                "system_grouping_timeout" => "파티 합류 시간 초과",
+                "system_attach_failed" => "파티 합류 실패",
+                "system_behavior_client_exit" => "용병 행동 서비스 종료",
+                "resurrection_save" => "부활 지원으로 파티를 살림",
+                "boss_defeated" => "강적 처치 완료",
+                "objective_completed" => "목표 완료",
+                _ => reason.Trim()
+            };
+        }
+
+        private static string FormatDuration(TimeSpan duration)
+        {
+            if (duration <= TimeSpan.Zero)
+                return "0분";
+            if (duration.TotalHours >= 1)
+                return $"{(int)duration.TotalHours}시간 {duration.Minutes}분";
+            if (duration.TotalMinutes >= 1)
+                return $"{Math.Max(1, (int)Math.Ceiling(duration.TotalMinutes))}분";
+            return $"{Math.Max(1, (int)Math.Ceiling(duration.TotalSeconds))}초";
+        }
+
+        private static string FirstNonEmpty(params string[] values)
+        {
+            foreach (string value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                    return value.Trim();
+            }
+
+            return string.Empty;
+        }
+
+        private static void AddIfPresent(IList<string> lines, string line)
+        {
+            if (!string.IsNullOrWhiteSpace(line))
+                lines.Add(line.Trim());
         }
 
         private static void AddRequestLocked(CompanionRequest request)
@@ -827,6 +1232,15 @@ namespace DOL.GS.LiveCompanion
                 MercenaryAdventureMemory = request.MercenaryAdventureMemory,
                 MercenaryRumorHint = request.MercenaryRumorHint,
                 MercenaryTotalContracts = request.MercenaryTotalContracts,
+                MercenaryTotalContractMinutes = request.MercenaryTotalContractMinutes,
+                MercenaryKillsTogether = request.MercenaryKillsTogether,
+                MercenaryDeathsTogether = request.MercenaryDeathsTogether,
+                MercenaryRevivesReceived = request.MercenaryRevivesReceived,
+                MercenaryRescues = request.MercenaryRescues,
+                MercenaryQuestsCompleted = request.MercenaryQuestsCompleted,
+                MercenaryEarnedTitles = request.MercenaryEarnedTitles,
+                MercenaryPersonalQuestState = request.MercenaryPersonalQuestState,
+                MercenaryRelationshipEventState = request.MercenaryRelationshipEventState,
                 MercenaryLastHiredAt = request.MercenaryLastHiredAt,
                 ContentType = request.ContentType,
                 ObjectiveTarget = request.ObjectiveTarget,

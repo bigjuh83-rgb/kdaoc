@@ -145,6 +145,15 @@ namespace DOL.GS.LiveCompanion
                 AdventureMemory = adventureMemory,
                 RumorHint = BuildRumorHint(displayName, template, tactic, normalizedTier),
                 TotalContracts = 0,
+                TotalContractMinutes = 0,
+                KillsTogether = 0,
+                DeathsTogether = 0,
+                RevivesReceived = 0,
+                Rescues = 0,
+                QuestsCompleted = 0,
+                EarnedTitles = string.Empty,
+                PersonalQuestState = string.Empty,
+                RelationshipEventState = string.Empty,
                 LastHiredAt = now,
                 SourceId = string.IsNullOrWhiteSpace(sourceId) ? "event" : sourceId.Trim(),
                 CreatedAt = now,
@@ -168,6 +177,49 @@ namespace DOL.GS.LiveCompanion
             GameServer.Database.SaveObject(mercenary);
         }
 
+        public static void RecordContractCompleted(
+            DbPlayerMercenary mercenary,
+            TimeSpan activeDuration,
+            string closeReason = "",
+            long killCredits = 0)
+        {
+            if (mercenary == null)
+                return;
+
+            string reason = (closeReason ?? string.Empty).Trim();
+            mercenary.TotalContractMinutes = Math.Max(
+                0,
+                mercenary.TotalContractMinutes + Math.Max(0, (int)Math.Round(activeDuration.TotalMinutes)));
+            long nextKillsTogether = Math.Max(0, mercenary.KillsTogether) + Math.Max(0, killCredits);
+            mercenary.KillsTogether = (int)Math.Min(int.MaxValue, nextKillsTogether);
+            if (IsQuestCompletionReason(reason))
+                mercenary.QuestsCompleted = Math.Max(0, mercenary.QuestsCompleted) + 1;
+            if (IsRescueReason(reason))
+                mercenary.Rescues = Math.Max(0, mercenary.Rescues) + 1;
+
+            int trustGain = TrustGainForCompletedContract(activeDuration) +
+                TrustGainForCompletedReason(reason);
+
+            if (trustGain > 0)
+                mercenary.Trust = Math.Min(100, Math.Max(0, mercenary.Trust) + trustGain);
+            RefreshTitlesAndPersonalQuest(mercenary);
+            mercenary.UpdatedAt = DateTime.UtcNow;
+            GameServer.Database.SaveObject(mercenary);
+        }
+
+        public static void RecordContractFailed(DbPlayerMercenary mercenary, bool wasActive)
+        {
+            if (mercenary == null || !wasActive)
+                return;
+
+            mercenary.Trust = Math.Max(0, Math.Min(100, mercenary.Trust) - 2);
+            mercenary.Fatigue = Math.Min(100, Math.Max(0, mercenary.Fatigue) + 3);
+            mercenary.DeathsTogether = Math.Max(0, mercenary.DeathsTogether) + 1;
+            RefreshTitlesAndPersonalQuest(mercenary);
+            mercenary.UpdatedAt = DateTime.UtcNow;
+            GameServer.Database.SaveObject(mercenary);
+        }
+
         public static int RestMercenary(DbPlayerMercenary mercenary, int fatigueRecovery = 25)
         {
             if (mercenary == null)
@@ -181,12 +233,134 @@ namespace DOL.GS.LiveCompanion
             return recovered;
         }
 
+        public static string TrustStageLabel(int trust)
+        {
+            int normalizedTrust = Math.Max(0, Math.Min(100, trust));
+            if (normalizedTrust >= 90)
+                return "충성";
+            if (normalizedTrust >= 75)
+                return "두터운 신뢰";
+            if (normalizedTrust >= 55)
+                return "익숙함";
+            if (normalizedTrust >= 35)
+                return "조심스러움";
+            return "낯섦";
+        }
+
+        public static string PrimaryTitle(DbPlayerMercenary mercenary)
+        {
+            return TitleList(mercenary?.EarnedTitles).FirstOrDefault() ?? "칭호 없음";
+        }
+
+        public static string RecordSummary(DbPlayerMercenary mercenary)
+        {
+            if (mercenary == null)
+                return "기록 없음";
+
+            return
+                $"누적 {Math.Max(0, mercenary.TotalContractMinutes)}분, 처치 기여 {Math.Max(0, mercenary.KillsTogether)}회, " +
+                $"구출 {Math.Max(0, mercenary.Rescues)}회, 개인 의뢰 {Math.Max(0, mercenary.QuestsCompleted)}회, 전투불능 {Math.Max(0, mercenary.DeathsTogether)}회";
+        }
+
+        public static string PersonalQuestLine(DbPlayerMercenary mercenary)
+        {
+            string state = (mercenary?.PersonalQuestState ?? string.Empty).Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(state))
+                return "개인 의뢰: 아직 없음";
+            if (state == "available:first_bond")
+                return "개인 의뢰: 신뢰의 첫 증표 - 함께 10회 처치하거나 의뢰 하나를 끝내면 보상이 열립니다.";
+            if (state == "completed:first_bond")
+                return "개인 의뢰: 신뢰의 첫 증표 완료";
+            if (state == "available:field_oath")
+                return "개인 의뢰: 전장의 맹세 - 긴 계약과 구출 기록으로 더 강한 특성을 노립니다.";
+            if (state == "completed:field_oath")
+                return "개인 의뢰: 전장의 맹세 완료";
+            return $"개인 의뢰: {state}";
+        }
+
         public static int RestAll(GamePlayer player, int fatigueRecovery = 25)
         {
             int recovered = 0;
             foreach (DbPlayerMercenary mercenary in OwnedBy(player))
                 recovered += RestMercenary(mercenary, fatigueRecovery);
             return recovered;
+        }
+
+        private static void RefreshTitlesAndPersonalQuest(DbPlayerMercenary mercenary)
+        {
+            if (mercenary == null)
+                return;
+
+            mercenary.EarnedTitles = string.Join("|", BuildTitles(mercenary));
+            string state = (mercenary.PersonalQuestState ?? string.Empty).Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(state) &&
+                (mercenary.TotalContracts >= 3 || mercenary.TotalContractMinutes >= 60 || mercenary.KillsTogether >= 10))
+            {
+                mercenary.PersonalQuestState = "available:first_bond";
+            }
+            else if (state == "available:first_bond" &&
+                     (mercenary.QuestsCompleted >= 1 || mercenary.KillsTogether >= 20 || mercenary.Trust >= 75))
+            {
+                mercenary.PersonalQuestState = "completed:first_bond";
+                mercenary.RelationshipEventState = AppendToken(mercenary.RelationshipEventState, "bond_acknowledged");
+            }
+            else if (state == "completed:first_bond" &&
+                     (mercenary.TotalContractMinutes >= 180 || mercenary.Rescues >= 3 || mercenary.Trust >= 90))
+            {
+                mercenary.PersonalQuestState = "available:field_oath";
+            }
+            else if (state == "available:field_oath" &&
+                     mercenary.Trust >= 90 &&
+                     (mercenary.Rescues >= 5 || mercenary.KillsTogether >= 50 || mercenary.QuestsCompleted >= 3))
+            {
+                mercenary.PersonalQuestState = "completed:field_oath";
+                mercenary.RelationshipEventState = AppendToken(mercenary.RelationshipEventState, "field_oath");
+            }
+        }
+
+        private static IList<string> BuildTitles(DbPlayerMercenary mercenary)
+        {
+            List<string> titles = new();
+            if (mercenary.TotalContracts >= 5)
+                titles.Add("오랜 계약자");
+            if (mercenary.TotalContractMinutes >= 120)
+                titles.Add("긴 여정의 동행");
+            if (mercenary.KillsTogether >= 10)
+                titles.Add("사냥길 용병");
+            if (mercenary.KillsTogether >= 50)
+                titles.Add("전장의 해결사");
+            if (mercenary.Rescues >= 3)
+                titles.Add("위기 구원자");
+            if (mercenary.QuestsCompleted >= 1)
+                titles.Add("의뢰 해결사");
+            if (mercenary.Trust >= 90)
+                titles.Add("맹세한 방패");
+            if (mercenary.DeathsTogether >= 3)
+                titles.Add("다시 일어선 자");
+            return titles;
+        }
+
+        private static IEnumerable<string> TitleList(string titles)
+        {
+            return (titles ?? string.Empty)
+                .Split(new[] { '|', ';', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(title => title.Trim())
+                .Where(title => !string.IsNullOrWhiteSpace(title));
+        }
+
+        private static string AppendToken(string current, string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+                return current ?? string.Empty;
+
+            HashSet<string> tokens = new(
+                (current ?? string.Empty)
+                    .Split(new[] { '|', ';', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(row => row.Trim())
+                    .Where(row => !string.IsNullOrWhiteSpace(row)),
+                StringComparer.OrdinalIgnoreCase);
+            tokens.Add(token.Trim());
+            return string.Join("|", tokens);
         }
 
         private static string OwnerCharacterId(GamePlayer player)
@@ -286,6 +460,55 @@ namespace DOL.GS.LiveCompanion
                 CompanionContractTiers.Skilled => 7,
                 _ => 5
             };
+        }
+
+        private static int TrustGainForCompletedContract(TimeSpan activeDuration)
+        {
+            if (activeDuration >= TimeSpan.FromMinutes(20))
+                return 3;
+            if (activeDuration >= TimeSpan.FromMinutes(5))
+                return 2;
+            if (activeDuration >= TimeSpan.FromMinutes(1))
+                return 1;
+            return 0;
+        }
+
+        private static int TrustGainForCompletedReason(string closeReason)
+        {
+            string reason = (closeReason ?? string.Empty).Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(reason))
+                return 0;
+
+            if (reason.Contains("objective_completed", StringComparison.OrdinalIgnoreCase) ||
+                reason.Contains("quest_completed", StringComparison.OrdinalIgnoreCase) ||
+                reason.Contains("boss_defeated", StringComparison.OrdinalIgnoreCase))
+                return 3;
+
+            if (reason.Contains("party_saved", StringComparison.OrdinalIgnoreCase) ||
+                reason.Contains("protected_leader", StringComparison.OrdinalIgnoreCase) ||
+                reason.Contains("resurrection_save", StringComparison.OrdinalIgnoreCase))
+                return 2;
+
+            if (reason.Contains("real_player_joined", StringComparison.OrdinalIgnoreCase) ||
+                reason.Contains("honorable_release", StringComparison.OrdinalIgnoreCase))
+                return 1;
+
+            return 0;
+        }
+
+        private static bool IsQuestCompletionReason(string closeReason)
+        {
+            string reason = (closeReason ?? string.Empty).Trim().ToLowerInvariant();
+            return reason.Contains("quest_completed", StringComparison.OrdinalIgnoreCase) ||
+                   reason.Contains("objective_completed", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsRescueReason(string closeReason)
+        {
+            string reason = (closeReason ?? string.Empty).Trim().ToLowerInvariant();
+            return reason.Contains("party_saved", StringComparison.OrdinalIgnoreCase) ||
+                   reason.Contains("protected_leader", StringComparison.OrdinalIgnoreCase) ||
+                   reason.Contains("resurrection_save", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string BuildRumorHint(
