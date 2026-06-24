@@ -1946,6 +1946,8 @@ class DummyCompanionServiceTests(unittest.TestCase):
             "용병아 피로도 보여줘": "status",
             "용병아 친밀도 어때": "status",
             "용병아 기록 보여줘": "record",
+            "용병아 다음 뭐하지": "next_action",
+            "용병아 운용 추천해줘": "next_action",
         }
 
         for body, expected in examples.items():
@@ -1988,12 +1990,40 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertIn("친밀도 77", status)
         self.assertIn("피로도 58", status)
         self.assertIn("안내/대화", status)
+        self.assertIn("다음은 무리해서 이어가기보다", status)
         self.assertIn("지원 3회", record)
         self.assertIn("전투불능 1회", record)
         self.assertIn("계약 6회/143분", record)
         self.assertIn("처치 22회", record)
         self.assertIn("칭호는 위기 구원자", record)
         self.assertIn("개인 의뢰는 신뢰의 첫 증표 완료", record)
+
+    def test_behavior_companion_next_action_reply_uses_current_state(self) -> None:
+        behavior = load_behavior()
+        tired_context = behavior.build_companion_chat_status_context(
+            role="healer",
+            command_mode=behavior.CompanionCommandMode.defensive,
+            health_percent=91,
+            trust=80,
+            fatigue=83,
+            mercenary_record={"tactic": "heal_priority"},
+        )
+        mez_context = behavior.build_companion_chat_status_context(
+            role="support",
+            command_mode=behavior.CompanionCommandMode.defensive,
+            health_percent=91,
+            trust=80,
+            fatigue=12,
+            mercenary_record={"tactic": "mez_priority"},
+        )
+
+        tired = behavior.choose_companion_chat_reply("용병아 다음 뭐하지?", [], random.Random(2), status_context=tired_context)
+        mez = behavior.choose_companion_chat_reply("운용 추천해줘", [], random.Random(3), status_context=mez_context)
+
+        self.assertIn("휴식", tired)
+        self.assertIn("치유/해제", tired)
+        self.assertIn("둘 이상 붙으면", mez)
+        self.assertIn("메즈 우선", mez)
 
     def test_growth_mysql_resolver_prefers_windows_client_on_windows(self) -> None:
         smoke = load_smoke()

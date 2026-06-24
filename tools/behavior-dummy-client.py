@@ -2467,6 +2467,8 @@ def companion_chat_intent(body: str) -> str:
         return "beginner_tip"
     if any(token in normalized or token in compact for token in {"숙련", "고인물", "운용팁", "심화", "veteran", "expert"}):
         return "veteran_tip"
+    if any(token in normalized or token in compact for token in {"다음뭐", "뭐하지", "뭐할까", "뭘하지", "뭘할까", "추천행동", "운용추천", "nextstep"}):
+        return "next_action"
     if any(token in normalized or token in compact for token in {"전술", "성격", "버릇", "운용", "특성", "tactic", "personality"}):
         return "tactic"
     if any(token in normalized or token in compact for token in {"기록", "활약", "전적", "도감", "리포트", "report", "record"}):
@@ -2945,8 +2947,55 @@ def companion_status_reply(status_context: dict[str, object] | None = None) -> s
         f"현재 {context.get('role_label', '빈자리 보조')} 역할, {context.get('mode_label', '방어태세')}입니다. "
         f"체력 {context.get('health_percent', 100)}%, 친밀도 {context.get('trust', 50)}({context.get('trust_stage', '익숙함')}), "
         f"피로도 {context.get('fatigue', 0)}({context.get('fatigue_stage', '가벼움')}), "
-        f"전술은 {context.get('tactic_label', '균형')}이고 {ai_text} 가능합니다."
+        f"전술은 {context.get('tactic_label', '균형')}이고 {ai_text} 가능합니다. "
+        f"다음은 {companion_next_action_hint(context)}"
     )
+
+
+def companion_next_action_hint(status_context: dict[str, object] | None = None) -> str:
+    context = dict(status_context or {})
+    try:
+        health = int(context.get("health_percent", 100) or 100)
+    except (TypeError, ValueError):
+        health = 100
+    try:
+        fatigue = int(context.get("fatigue", 0) or 0)
+    except (TypeError, ValueError):
+        fatigue = 0
+    mode = str(context.get("mode_label", "") or "")
+    tactic = str(context.get("tactic_label", "") or "")
+    role = str(context.get("role_label", "") or "")
+    deaths = int(context.get("deaths", 0) or 0)
+    retreats = int(context.get("retreats", 0) or 0)
+
+    if health <= 45:
+        return "잠깐 대기하고 체력부터 안정시키는 게 좋겠습니다."
+    if deaths > 0:
+        return "무리해서 이어가기보다 부활/거리/대기 상태를 먼저 맞추는 편이 안전합니다."
+    if fatigue >= 80:
+        return "이번 계약 뒤에는 휴식을 주는 편이 좋겠습니다."
+    if fatigue >= 55:
+        return "긴 전투보다 짧게 끊고, 필요하면 `휴식`을 고려해 주세요."
+    if retreats > 0:
+        return "방금은 빠진 기록이 있으니 `방어태세`로 거리부터 다시 잡겠습니다."
+    if mode == "대기":
+        return "`따라와`로 이동을 재개하거나, 바로 싸울 땐 대상 잡고 `ㄱㄱ`라고 해 주세요."
+    if tactic == "치유 우선" or "치유" in role:
+        return "대상만 잡아 주시면 저는 체력/해제를 먼저 보고 `ㄱㄱ`에 맞춰 붙겠습니다."
+    if tactic == "메즈 우선":
+        return "둘 이상 붙으면 먼저 묶을 수 있게 `방어태세`를 유지하는 쪽이 좋습니다."
+    if tactic == "공격 우선":
+        return "잡을 대상을 고르고 `ㄱㄱ`라고 하면 처치 속도 위주로 맞추겠습니다."
+    if tactic == "리더 보호":
+        return "리더에게 붙는 적을 먼저 떼어내게 `나 지켜`나 `방어태세`로 쓰면 좋습니다."
+    return "사냥이면 대상 잡고 `ㄱㄱ`, 이동이면 `따라와`, 질문은 레벨/지역을 붙여 물어보세요."
+
+
+def companion_next_action_reply(status_context: dict[str, object] | None = None) -> str:
+    context = dict(status_context or {})
+    role = str(context.get("role_label", "빈자리 보조") or "빈자리 보조")
+    tactic = str(context.get("tactic_label", "균형") or "균형")
+    return f"지금 기준으로는 {companion_next_action_hint(context)} 저는 {role} 역할, {tactic} 전술에 맞춰 움직이겠습니다."
 
 
 def companion_record_reply(status_context: dict[str, object] | None = None) -> str:
@@ -3135,6 +3184,8 @@ def choose_companion_chat_reply(
         return companion_beginner_tip_reply(status_context)
     if intent == "veteran_tip":
         return companion_veteran_tip_reply(status_context)
+    if intent == "next_action":
+        return companion_next_action_reply(status_context)
     if intent == "combat" and companion_role_uses_one_shot_combat_command(role):
         if personality_pools:
             category_lines = personality_pools.get("combat_healer") or []
@@ -3180,6 +3231,7 @@ def choose_companion_chat_reply(
         "tactic": companion_tactic_reply(status_context),
         "beginner_tip": companion_beginner_tip_reply(status_context),
         "veteran_tip": companion_veteran_tip_reply(status_context),
+        "next_action": companion_next_action_reply(status_context),
         "thanks": "천만에요. 계속 옆에서 맞춰가겠습니다.",
     }
     if pool_intent in fallback_by_intent:
