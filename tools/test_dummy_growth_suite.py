@@ -18,7 +18,7 @@ from unittest import mock
 
 
 def load_module():
-    module_path = Path(__file__).with_name("run-dummy-growth-suite.py")
+    module_path = Path(__file__).with_name("dummy_growth_suite.py")
     spec = importlib.util.spec_from_file_location("run_dummy_growth_suite_for_tests", module_path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"failed to load {module_path}")

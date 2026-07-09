@@ -24,7 +24,7 @@ def load_module(name: str, filename: str):
     return module
 
 
-behavior = load_module("behavior_dummy_for_heading_tests", "behavior-dummy-client.py")
+behavior = load_module("behavior_dummy_for_heading_tests", "behavior_dummy_client.py")
 headless = load_module("headless_for_heading_tests", "headless-daoc-client.py")
 
 

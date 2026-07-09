@@ -13,7 +13,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 SERVICE_PATH = ROOT / "tools" / "dummy-companion-service.py"
-BEHAVIOR_PATH = ROOT / "tools" / "behavior-dummy-client.py"
+BEHAVIOR_PATH = ROOT / "tools" / "behavior_dummy_client.py"
 
 
 def load_module(path: Path, name: str):

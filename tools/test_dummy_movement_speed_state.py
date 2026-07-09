@@ -23,7 +23,7 @@ def load_module(name: str, filename: str):
     return module
 
 
-behavior = load_module("behavior_dummy_for_speed_state_tests", "behavior-dummy-client.py")
+behavior = load_module("behavior_dummy_for_speed_state_tests", "behavior_dummy_client.py")
 
 
 class DummyMovementSpeedStateTests(unittest.TestCase):

@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GROWTH_SUITE = ROOT / "tools" / "run-dummy-growth-suite.py"
+GROWTH_SUITE = ROOT / "tools" / "dummy_growth_suite.py"
 
 
 def load_growth_suite():

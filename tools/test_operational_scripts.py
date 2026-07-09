@@ -1233,7 +1233,7 @@ class OperationalScriptTests(unittest.TestCase):
         self.assertIn("waypoints=ALBION_LOW_LEVEL_WAYPOINTS", scenario)
 
     def test_behavior_dummy_does_not_send_invalid_face_or_stick_commands(self) -> None:
-        script = (ROOT / "tools" / "behavior-dummy-client.py").read_text(encoding="utf-8")
+        script = (ROOT / "tools" / "behavior_dummy_client.py").read_text(encoding="utf-8")
 
         self.assertNotIn('send_command("/face")', script)
         self.assertNotIn('send_command("/stick")', script)
@@ -1241,7 +1241,7 @@ class OperationalScriptTests(unittest.TestCase):
         self.assertIn("stick_command_skipped_unavailable", script)
 
     def test_behavior_dummy_default_commands_are_player_safe(self) -> None:
-        script = (ROOT / "tools" / "behavior-dummy-client.py").read_text(encoding="utf-8")
+        script = (ROOT / "tools" / "behavior_dummy_client.py").read_text(encoding="utf-8")
 
         self.assertIn('DEFAULT_COMMANDS = ["/worldnews"]', script)
         self.assertNotIn('DEFAULT_COMMANDS = ["/mobgrowth status"', script)

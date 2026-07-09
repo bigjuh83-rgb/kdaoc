@@ -228,7 +228,7 @@ def load_module(path: Path, name: str):
     return module
 
 
-growth = load_module(TOOLS / "run-dummy-growth-suite.py", "dummy_growth_suite_for_live_companion_smoke")
+growth = load_module(TOOLS / "dummy_growth_suite.py", "dummy_growth_suite_for_live_companion_smoke")
 companion_service = load_module(
     TOOLS / "dummy-companion-service.py",
     "dummy_companion_service_for_live_companion_smoke",

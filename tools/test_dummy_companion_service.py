@@ -13,7 +13,7 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SERVICE_PATH = ROOT / "tools" / "dummy-companion-service.py"
-BEHAVIOR_PATH = ROOT / "tools" / "behavior-dummy-client.py"
+BEHAVIOR_PATH = ROOT / "tools" / "behavior_dummy_client.py"
 SMOKE_PATH = ROOT / "tools" / "run-live-companion-party-smoke.py"
 SUMMARY_PATH = ROOT / "tools" / "summarize-live-companion-requests.py"
 PERSONALITY_MATRIX_PATH = ROOT / "tools" / "run-live-companion-personality-matrix.py"

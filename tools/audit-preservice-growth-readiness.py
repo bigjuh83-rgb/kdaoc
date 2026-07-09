@@ -23,7 +23,7 @@ TOOLS = ROOT / "tools"
 
 
 def load_growth_module():
-    module_path = TOOLS / "run-dummy-growth-suite.py"
+    module_path = TOOLS / "dummy_growth_suite.py"
     spec = importlib.util.spec_from_file_location("run_dummy_growth_suite", module_path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"failed to load {module_path}")

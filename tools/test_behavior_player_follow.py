@@ -19,7 +19,7 @@ from unittest.mock import patch
 
 
 def load_behavior_module():
-    module_path = Path(__file__).with_name("behavior-dummy-client.py")
+    module_path = Path(__file__).with_name("behavior_dummy_client.py")
     spec = importlib.util.spec_from_file_location("behavior_dummy_client_for_tests", module_path)
 
     if spec is None or spec.loader is None:

@@ -37,7 +37,7 @@ def load_module(path: Path, name: str):
     return module
 
 
-growth = load_module(TOOLS / "run-dummy-growth-suite.py", "dummy_growth_suite_for_rvr")
+growth = load_module(TOOLS / "dummy_growth_suite.py", "dummy_growth_suite_for_rvr")
 provision = load_module(TOOLS / "provision-dummy-accounts.py", "dummy_provision_for_rvr")
 
 
