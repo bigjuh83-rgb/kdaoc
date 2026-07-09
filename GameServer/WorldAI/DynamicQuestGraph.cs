@@ -72,6 +72,9 @@ namespace DOL.GS.WorldAI
                 return true;
             }
 
+            if (TryParseSafeTokenSuffix(value, "scene:"))
+                return true;
+
             return value == "region-entered" ||
                    TryParseUInt16Suffix(value, "region-entered:") ||
                    TryParseUInt16Suffix(value, "region:");

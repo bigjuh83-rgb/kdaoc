@@ -6,6 +6,7 @@ albtest001,dummy-pass,1,0,1,Paladin,tank|support,531504,479073,2200,albion_hub,S
 albtest007,dummy-pass,1,0,7,Wizard,dps,531504,479073,2200,albion_hub,Fire Magic|50;Earth Magic|15;Cold Magic|10
 albtest008,dummy-pass,1,0,5,Theurgist,support|dps,531504,479073,2200,albion_hub,Earth Magic|45;Cold Magic|25;Wind Magic|8
 albtest012,dummy-pass,1,0,4,Minstrel,support|dps,531504,479073,2200,albion_hub,Instruments|44;Slash|39;Stealth|25
+albtest029,dummy-pass,1,0,3,Scout,dps,531504,479073,2200,albion_hub,Longbows|50;Stealth|35;Shields|42;Slash|18
 midtest001,dummy-pass,2,10,22,Warrior,tank|dps,774601,755307,4600,midgard_hub,Hammer|50;Shields|42;Parry|39;Sword|1;Axe|1;Thrown Weapons|1
 midtest005,dummy-pass,2,10,26,Healer,healer|support,774601,755307,4600,midgard_hub,Mending|40;Augmentation|36;Pacification|1
 midtest007,dummy-pass,2,10,28,Shaman,healer|support,774601,755307,4600,midgard_hub,Augmentation|40;Mending|36;Subterranean|1

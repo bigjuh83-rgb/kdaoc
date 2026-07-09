@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import importlib.util
+import csv
 import re
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -67,6 +69,60 @@ class ProvisionDummyAccountsTests(unittest.TestCase):
 
         self.assertEqual(slot, provision.FIRST_BACKPACK_SLOT)
 
+    def test_existing_partial_inventory_gets_missing_starter_slots_only(self):
+        def template(template_id, item_type, object_type):
+            return {
+                "TemplateID": template_id,
+                "Item_Type": str(item_type),
+                "Object_Type": str(object_type),
+                "PackSize": "1",
+                "Color": "0",
+                "Emblem": "0",
+                "Extension": "0",
+                "SalvageExtension": "",
+                "MaxCondition": "100",
+                "MaxDurability": "100",
+                "Charges": "0",
+                "MaxCharges": "0",
+                "Charges1": "0",
+                "MaxCharges1": "0",
+                "PoisonSpellID": "0",
+                "PoisonMaxCharges": "0",
+                "PoisonCharges": "0",
+            }
+
+        args = SimpleNamespace()
+        character = {
+            "DOLCharacters_ID": "char-hib",
+            "Class": "44",
+            "SerializedSpecs": "Blades|50;Shields|42",
+        }
+        templates = [
+            template("training_sword_hib", provision.LEFT_HAND_SLOT, 19),
+            template("training_shield", provision.LEFT_HAND_SLOT, provision.SHIELD_OBJECT_TYPE),
+            template("leaf_tacuil_helm3", 21, 37),
+            template("leaf_tacuil_vest3", 25, 37),
+        ]
+
+        with (
+            patch.object(provision, "get_single_row", return_value=character),
+            patch.object(provision, "starter_templates_for_specs", return_value=templates),
+            patch.object(
+                provision,
+                "inventory_slot_positions",
+                return_value={provision.RIGHT_HAND_SLOT, provision.LEFT_HAND_SLOT},
+            ),
+            patch.object(provision, "run_mysql") as run_mysql,
+        ):
+            inserted = provision.add_starter_equipment(args, "growthhib741", "GrowthHib741")
+
+        self.assertEqual(inserted, 2)
+        combined_sql = "\n".join(call.args[1] for call in run_mysql.call_args_list)
+        self.assertIn("leaf_tacuil_helm3", combined_sql)
+        self.assertIn("leaf_tacuil_vest3", combined_sql)
+        self.assertNotIn("training_sword_hib", combined_sql)
+        self.assertNotIn("training_shield", combined_sql)
+
     def test_character_insert_can_override_start_location(self):
         args = SimpleNamespace(
             start_x=523520,
@@ -115,6 +171,47 @@ class ProvisionDummyAccountsTests(unittest.TestCase):
         self.assertIn("490560 AS `BindYpos`", sql)
         self.assertIn("2543 AS `BindZpos`", sql)
         self.assertIn("1 AS `BindRegion`", sql)
+
+    def test_accounts_csv_includes_start_location_for_client_fallback(self):
+        rows = [
+            {
+                "username": "growthalb741",
+                "password": "dummy-pass",
+                "realm": 1,
+                "char_index": 0,
+                "class_id": 1,
+                "class_name": "Paladin",
+                "specs": "Slash|39",
+                "start_x": 534900,
+                "start_y": 477500,
+                "start_z": 2200,
+                "zone_id": 1,
+            },
+            {
+                "username": "growthalb742",
+                "password": "dummy-pass",
+                "realm": 1,
+                "char_index": 0,
+                "class_id": 6,
+                "class_name": "Cleric",
+                "specs": "Rejuvenation|40",
+                "start_x": 534980,
+                "start_y": 477580,
+                "start_z": 2200,
+                "zone_id": 1,
+            },
+        ]
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "accounts.csv"
+            provision.write_accounts_csv(path, rows)
+            with path.open(encoding="utf-8", newline="") as handle:
+                written = list(csv.DictReader(handle))
+
+        self.assertEqual(written[0]["start_x"], "534900")
+        self.assertEqual(written[1]["start_y"], "477580")
+        self.assertEqual(written[1]["start_z"], "2200")
+        self.assertEqual(written[1]["zone_id"], "1")
 
     def test_character_insert_can_randomize_race_from_cycle_deterministically(self):
         args = SimpleNamespace(

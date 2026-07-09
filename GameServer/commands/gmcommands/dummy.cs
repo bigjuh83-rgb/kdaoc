@@ -166,19 +166,16 @@ namespace DOL.GS.Commands
                 return;
             }
 
-            client.Out.SendCustomTextWindow(
-                "용병 요청 상태",
-                new List<string>
-                {
-                    $"요청: {request.Id}",
-                    $"플레이어: {request.RequesterName}",
-                    $"상태: {request.Status}",
-                    $"역할: {request.RequestedRole}",
-                    $"소집 방식: {request.Source}",
-                    $"용병명: {request.AssignedCompanionName}",
-                    $"파티 인원/빈자리: {request.GroupSize}/{request.VacantSlots}",
-                    $"메시지: {request.Message}",
-                });
+            CompanionRequestDisplaySummary summary = CompanionRequestService.BuildDisplaySummary(request);
+            List<string> lines = new()
+            {
+                $"요청: {request.Id}",
+                $"플레이어: {request.RequesterName}",
+                $"소집 방식: {request.Source}"
+            };
+            lines.AddRange(summary.Lines);
+
+            client.Out.SendCustomTextWindow("용병 요청 상태", lines);
         }
 
         private static GamePlayer FindPlayer(string name)

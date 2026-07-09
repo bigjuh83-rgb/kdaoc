@@ -91,6 +91,32 @@ class BehaviorDummyDynamicQuestDialogTests(unittest.TestCase):
                         "eventType": "world_signal",
                         "detail": "mob-growth:killed:region:1",
                     },
+                    {
+                        "questId": "quest-branch",
+                        "eventType": "world_signal_scene_shift",
+                        "detail": "world_signal_scene_shift:signal:mob-growth:killed:region:1",
+                    },
+                    {
+                        "questId": "quest-branch",
+                        "eventType": "scene_world_signal",
+                        "detail": "scene:line_held",
+                    },
+                    {
+                        "questId": "quest-branch",
+                        "eventType": "scene_choreography_phase",
+                        "detail": "scene_choreography_phase:role:ambush_wave:phase:1:action:ambush_reveal",
+                    },
+                    {
+                        "questId": "quest-branch",
+                        "eventType": "scene_actor_exchange",
+                        "detail": "scene_actor_exchange:role:ambush_wave:interact:clash:actors:12",
+                    },
+                    {
+                        "questId": "quest-branch",
+                        "eventType": "scene_exchange_outcome",
+                        "detail": "scene_exchange_outcome:role:ambush_wave:outcome:line_held",
+                    },
+                    {"questId": "quest-branch", "eventType": "scene_consequence"},
                 ]
             },
             action_counts,
@@ -100,10 +126,109 @@ class BehaviorDummyDynamicQuestDialogTests(unittest.TestCase):
         )
 
         self.assertEqual(missing, [])
-        self.assertEqual(seen, {"choice_selected", "world_signal"})
+        self.assertEqual(
+            seen,
+            {
+                "choice_selected",
+                "world_signal",
+                "world_signal_scene_shift",
+                "scene_world_signal",
+                "scene_choreography_phase",
+                "scene_actor_exchange",
+                "scene_exchange_outcome",
+                "scene_consequence",
+            },
+        )
         self.assertEqual(action_counts["dynamic_quest_timeline_choice_selected"], 1)
         self.assertEqual(action_counts["dynamic_quest_timeline_world_signal"], 1)
+        self.assertEqual(action_counts["dynamic_quest_timeline_world_signal_scene_shift"], 1)
+        self.assertEqual(action_counts["dynamic_quest_timeline_scene_choreography_phase"], 1)
+        self.assertEqual(action_counts["dynamic_quest_timeline_scene_actor_exchange"], 1)
+        self.assertEqual(action_counts["dynamic_quest_timeline_scene_exchange_outcome"], 1)
+        self.assertEqual(action_counts["dynamic_quest_timeline_scene_outcome_signal"], 1)
+        self.assertEqual(action_counts["dynamic_quest_timeline_scene_consequence"], 1)
         self.assertEqual(logged[0]["choice_ids"], ["followup"])
+
+    def test_timeline_snapshot_requires_detail_for_action_scene_counters(self) -> None:
+        args = argparse.Namespace(
+            dynamic_quest_expected_quest_id="quest-branch",
+            dynamic_quest_require_timeline_events="scene_choreography_phase,scene_actor_exchange,scene_exchange_outcome",
+        )
+        action_counts: dict[str, int] = {}
+
+        seen, missing = behavior.mark_dynamic_quest_timeline_snapshot(
+            args,
+            {
+                "events": [
+                    {"questId": "quest-branch", "eventType": "scene_choreography_phase"},
+                    {"questId": "quest-branch", "eventType": "scene_actor_exchange", "detail": ""},
+                    {"questId": "quest-branch", "eventType": "scene_exchange_outcome"},
+                ]
+            },
+            action_counts,
+            now=123.0,
+            source="final",
+            log_encounter_event=lambda *_args, **_fields: None,
+        )
+
+        self.assertEqual(missing, [])
+        self.assertEqual(
+            seen,
+            {"scene_choreography_phase", "scene_actor_exchange", "scene_exchange_outcome"},
+        )
+        self.assertNotIn("dynamic_quest_timeline_scene_choreography_phase", action_counts)
+        self.assertNotIn("dynamic_quest_timeline_scene_actor_exchange", action_counts)
+        self.assertNotIn("dynamic_quest_timeline_scene_exchange_outcome", action_counts)
+
+    def test_timeline_snapshot_tracks_hundred_actor_cinematic_budget(self) -> None:
+        args = argparse.Namespace(
+            dynamic_quest_expected_quest_id="quest-cinematic",
+            dynamic_quest_require_timeline_events="cinematic_action",
+            dynamic_quest_require_presentation_triggers="",
+        )
+        action_counts: dict[str, int] = {}
+
+        seen, missing = behavior.mark_dynamic_quest_timeline_snapshot(
+            args,
+            {
+                "events": [
+                    {
+                        "questId": "quest-cinematic",
+                        "eventType": "cinematic_action",
+                        "detail": "scene_beat:OnKill:kill:beat:1:delay:0:role:ambush:action:ambush_reveal:formation:ambush:motion:pincer:stagger:90:focal:objective:actorRole:strike:choreo:3:interact:clash:tactic:flank:model:1:actors:100",
+                    },
+                    {
+                        "questId": "quest-cinematic",
+                        "eventType": "cinematic_actor_motion_summary",
+                        "detail": "action:ambush_reveal:role:fighter:motion:pincer:interact:clash:tactic:flank:actors:100:spawned:100:commandsPerActor:3:commands:300:formation:ambush",
+                    },
+                    {
+                        "questId": "quest-cinematic",
+                        "eventType": "cinematic_actor_engagement_summary",
+                        "detail": "action:ambush_reveal:role:fighter:exchange:ambush_clash:interact:clash:tactic:flank:actors:100:spawned:100:engagedActors:100:pairs:50:choreo:3:formation:ambush",
+                    }
+                ]
+            },
+            action_counts,
+            now=123.0,
+            source="final",
+            log_encounter_event=lambda *_, **__: None,
+        )
+
+        self.assertEqual(missing, [])
+        self.assertIn("cinematic_action", seen)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_actor_instances"], 100)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_actor_peak"], 100)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_actor_motion_summary"], 1)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_actor_motion_commands"], 300)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_actor_motion_commands_peak"], 300)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_actor_motion_commands_per_actor_peak"], 3)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_actor_motion_spawned_total"], 100)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_actor_engagement_summary"], 1)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_actor_engagement_pairs"], 50)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_actor_engagement_pairs_peak"], 50)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_actor_engaged_total"], 100)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_actor_engagement_spawned_total"], 100)
 
     def test_timeline_snapshot_reports_missing_required_event(self) -> None:
         args = argparse.Namespace(
@@ -150,6 +275,11 @@ class BehaviorDummyDynamicQuestDialogTests(unittest.TestCase):
                         "speaker": "System",
                         "emotion": "hope",
                         "emote": "Cheer",
+                        "cinematicAction": "witness_point",
+                        "sceneRole": "witness",
+                        "formation": "escort",
+                        "actorCount": 4,
+                        "delayMs": 700,
                     },
                     {
                         "questId": "quest-branch",
@@ -158,6 +288,11 @@ class BehaviorDummyDynamicQuestDialogTests(unittest.TestCase):
                         "speaker": "StartNpc",
                         "emotion": "gratitude",
                         "emote": "Bow",
+                        "cinematicAction": "hold_ground",
+                        "sceneRole": "aftermath_guard",
+                        "formation": "line",
+                        "actorCount": 6,
+                        "delayMs": 0,
                     },
                 ]
             },
@@ -170,6 +305,13 @@ class BehaviorDummyDynamicQuestDialogTests(unittest.TestCase):
         self.assertEqual(missing, [])
         self.assertEqual(seen, {"presentation:onaccept", "presentation:oncomplete"})
         self.assertEqual(action_counts["dynamic_quest_timeline_presentation_beat"], 2)
+        self.assertEqual(action_counts["dynamic_quest_timeline_presentation_staged_beat"], 2)
+        self.assertEqual(action_counts["dynamic_quest_timeline_presentation_staged_actor_total"], 10)
+        self.assertEqual(action_counts["dynamic_quest_timeline_presentation_staged_actor_peak"], 6)
+        self.assertEqual(action_counts["dynamic_quest_timeline_presentation_staged_action_variety"], 2)
+        self.assertEqual(action_counts["dynamic_quest_timeline_presentation_staged_role_variety"], 2)
+        self.assertEqual(action_counts["dynamic_quest_timeline_presentation_staged_formation_variety"], 2)
+        self.assertEqual(action_counts["dynamic_quest_timeline_presentation_staged_delayed_beat"], 1)
         self.assertEqual(logged[0]["presentation_triggers"], ["OnAccept", "OnComplete"])
 
     def test_timeline_snapshot_reports_missing_required_presentation_trigger(self) -> None:

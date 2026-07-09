@@ -5,11 +5,14 @@ from __future__ import annotations
 
 import importlib.util
 import csv
+import io
 import json
 import random
 import sys
 import tempfile
 import unittest
+import urllib.error
+import urllib.parse
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -74,6 +77,64 @@ class AccountCsvTests(unittest.TestCase):
         self.assertEqual(account.start_z, 3007)
         self.assertEqual(account.zone_id, 116)
 
+    def test_apply_account_start_position_preserves_live_anchor_z_when_configured(self) -> None:
+        account = behavior.DummyAccount(
+            username="growthhib70481",
+            password="pw",
+            realm=3,
+            char_index=0,
+            start_x=348164,
+            start_y=498725,
+            start_z=4598,
+            zone_id=200,
+        )
+        client = SimpleNamespace(x=0, y=0, z=0, zone_id=0, refresh_calls=0)
+
+        def refresh_ground_z_here():
+            client.refresh_calls += 1
+            client.z = 4214
+            return True
+
+        client.refresh_ground_z_here = refresh_ground_z_here
+
+        behavior.apply_account_start_position(
+            client,
+            account,
+            SimpleNamespace(route_home_preserve_z=True),
+        )
+
+        self.assertEqual((client.x, client.y, client.z, client.zone_id), (348164, 498725, 4598, 200))
+        self.assertEqual(client.refresh_calls, 0)
+
+    def test_apply_account_start_position_keeps_existing_ground_snap_by_default(self) -> None:
+        account = behavior.DummyAccount(
+            username="growthhib70481",
+            password="pw",
+            realm=3,
+            char_index=0,
+            start_x=348164,
+            start_y=498725,
+            start_z=4598,
+            zone_id=200,
+        )
+        client = SimpleNamespace(x=0, y=0, z=0, zone_id=0, refresh_calls=0)
+
+        def refresh_ground_z_here():
+            client.refresh_calls += 1
+            client.z = 4214
+            return True
+
+        client.refresh_ground_z_here = refresh_ground_z_here
+
+        behavior.apply_account_start_position(
+            client,
+            account,
+            SimpleNamespace(route_home_preserve_z=False),
+        )
+
+        self.assertEqual((client.x, client.y, client.z, client.zone_id), (348164, 498725, 4214, 200))
+        self.assertEqual(client.refresh_calls, 1)
+
     def test_auto_train_command_uses_first_configured_combat_spec_line(self) -> None:
         command = behavior.auto_train_command_from_specs("Slash|1;Crush|50;Polearm|1", 5)
 
@@ -123,6 +184,178 @@ class AccountCsvTests(unittest.TestCase):
         self.assertFalse(promoted)
         self.assertEqual(metric.outcome, "flee")
 
+    def test_experience_reward_promotes_recent_finished_drop_aggro_combat(self) -> None:
+        metric = behavior.CombatMetric(
+            target_id=17354,
+            target_name="adder",
+            target_level=7,
+            outcome="critical_health_drop_aggro",
+            duration=34.5,
+        )
+        recent = {17354: (metric, 100.0, 121)}
+
+        promoted = behavior.promote_recent_finished_combat_reward(recent, now=101.25)
+
+        self.assertIs(promoted, metric)
+        self.assertEqual(metric.outcome, "target_removed")
+        self.assertEqual(metric.duration, 35.75)
+        self.assertEqual(recent, {})
+
+    def test_no_experience_kill_message_is_detected(self) -> None:
+        self.assertTrue(behavior.is_no_experience_kill_message("You gain no experience from this kill!"))
+        self.assertFalse(behavior.is_no_experience_kill_message("You gain 120 experience points."))
+
+    def test_experience_reward_message_is_detected(self) -> None:
+        self.assertTrue(behavior.is_experience_reward_message("You gain 120 experience points."))
+        self.assertTrue(behavior.is_experience_reward_message("경험치 4,044점을 얻었습니다. (44 캠프 보너스)"))
+        self.assertFalse(behavior.is_experience_reward_message("You gain no experience from this kill!"))
+
+    def test_no_experience_kill_marks_recent_target_removed_no_reward(self) -> None:
+        metric = behavior.CombatMetric(
+            target_id=22674,
+            target_name="giant spider",
+            target_level=7,
+            outcome="target_removed",
+            duration=10.0,
+        )
+        recent = [(metric, 100.0)]
+        action_counts = {"target_removed": 1}
+
+        marked = behavior.mark_recent_target_removed_no_reward(recent, action_counts, now=101.5)
+
+        self.assertIs(marked, metric)
+        self.assertEqual(metric.outcome, "target_removed_no_reward")
+        self.assertEqual(action_counts["target_removed"], 0)
+        self.assertEqual(recent, [])
+
+    def test_no_experience_kill_ignores_expired_target_removed(self) -> None:
+        metric = behavior.CombatMetric(
+            target_id=22674,
+            target_name="giant spider",
+            target_level=7,
+            outcome="target_removed",
+            duration=10.0,
+        )
+        recent = [(metric, 100.0)]
+        action_counts = {"target_removed": 1}
+
+        marked = behavior.mark_recent_target_removed_no_reward(recent, action_counts, now=110.0)
+
+        self.assertIsNone(marked)
+        self.assertEqual(metric.outcome, "target_removed")
+        self.assertEqual(action_counts["target_removed"], 1)
+        self.assertEqual(recent, [])
+
+    def test_experience_reward_promotes_recent_rejected_target_removed(self) -> None:
+        metric = behavior.CombatMetric(
+            target_id=16620,
+            target_name="mudman",
+            target_level=4,
+            outcome="target_removed_without_combat_rejected",
+            duration=0.0,
+        )
+        recent = [(metric, 100.0)]
+        action_counts = {"target_removed_without_combat_rejected": 1}
+
+        promoted = behavior.promote_recent_rejected_target_removed_reward(recent, action_counts, now=101.5)
+
+        self.assertIs(promoted, metric)
+        self.assertEqual(metric.outcome, "target_removed")
+        self.assertEqual(metric.duration, 1.5)
+        self.assertEqual(action_counts["target_removed_without_combat_rejected"], 0)
+        self.assertEqual(recent, [])
+
+    def test_removed_target_without_combat_rejects_object_and_kind(self) -> None:
+        rejected_targets: dict[int, float] = {}
+        rejected_target_kinds: dict[tuple[str, int], float] = {}
+
+        rejected = behavior.mark_removed_target_without_combat_rejected(
+            rejected_targets,
+            rejected_target_kinds,
+            object_id=11370,
+            now=100.0,
+            target_failure_cooldown=25.0,
+            target_failure_name_cooldown=120.0,
+            target_name="Snarls",
+            target_level=7,
+        )
+
+        self.assertTrue(rejected)
+        self.assertEqual(rejected_targets[11370], 125.0)
+        self.assertEqual(rejected_target_kinds[("snarls", 7)], 220.0)
+
+    def test_rejected_target_object_records_retreat_cooldown(self) -> None:
+        rejected_targets: dict[int, float] = {}
+
+        rejected = behavior.mark_rejected_target_object(
+            rejected_targets,
+            target_id=22502,
+            now=100.0,
+            cooldown=18.0,
+        )
+
+        self.assertTrue(rejected)
+        self.assertEqual(rejected_targets[22502], 118.0)
+
+    def test_rejected_target_object_ignores_empty_target(self) -> None:
+        rejected_targets: dict[int, float] = {}
+
+        rejected = behavior.mark_rejected_target_object(
+            rejected_targets,
+            target_id=0,
+            now=100.0,
+            cooldown=18.0,
+        )
+
+        self.assertFalse(rejected)
+        self.assertEqual(rejected_targets, {})
+
+    def test_survival_retreat_target_object_cooldown_spans_recovery_loop(self) -> None:
+        args = SimpleNamespace(
+            target_timeout=65.0,
+            target_failure_cooldown=25.0,
+            target_retreat_cooldown=18.0,
+        )
+
+        self.assertEqual(behavior.survival_retreat_target_object_cooldown(args), 130.0)
+
+    def test_target_removed_target_object_cooldown_spans_respawn_loop(self) -> None:
+        args = SimpleNamespace(
+            target_timeout=65.0,
+            target_failure_cooldown=25.0,
+            target_death_cooldown=24.0,
+        )
+
+        self.assertEqual(behavior.target_removed_target_object_cooldown(args), 130.0)
+
+    def test_target_removed_target_object_cooldown_has_floor(self) -> None:
+        args = SimpleNamespace(
+            target_timeout=10.0,
+            target_failure_cooldown=5.0,
+            target_death_cooldown=10.0,
+        )
+
+        self.assertEqual(behavior.target_removed_target_object_cooldown(args), 120.0)
+
+    def test_survival_retreat_target_object_cooldown_has_minimum_floor(self) -> None:
+        args = SimpleNamespace(
+            target_timeout=20.0,
+            target_failure_cooldown=5.0,
+            target_retreat_cooldown=18.0,
+        )
+
+        self.assertEqual(behavior.survival_retreat_target_object_cooldown(args), 120.0)
+
+    def test_growth_prefix_travel_aggro_memory_spans_survival_retreat(self) -> None:
+        args = SimpleNamespace(
+            travel_aggro_avoid_seconds=30.0,
+            target_timeout=65.0,
+            target_failure_cooldown=25.0,
+            target_retreat_cooldown=18.0,
+        )
+
+        self.assertEqual(behavior.growth_prefix_travel_aggro_avoid_seconds(args), 130.0)
+
     def test_target_removed_credit_requires_contact_or_close_range(self) -> None:
         args = SimpleNamespace(
             attack_range=350.0,
@@ -137,6 +370,229 @@ class AccountCsvTests(unittest.TestCase):
         self.assertFalse(behavior.target_removed_creditable(args, untouched_far, 8500.0))
         self.assertTrue(behavior.target_removed_creditable(args, attacked_far, 8500.0))
         self.assertTrue(behavior.target_removed_creditable(args, untouched_close, 1200.0))
+
+    def test_damage_done_feedback_confirms_current_target_for_late_combat(self) -> None:
+        actor = SimpleNamespace(object_id=24184, name="silverscale drakeling")
+
+        confirmed = behavior.server_feedback_confirms_current_target_combat(
+            current_target=24184,
+            actor=actor,
+            metric_name="damage_done",
+            message_text="스이르브에르스크아르에 드레이크 새끼를 당신의 청동 배틀 해머으로 공격하여 37 피해를 입혔습니다!",
+        )
+
+        self.assertTrue(confirmed)
+
+    def test_damage_taken_feedback_requires_current_target_attacker_match(self) -> None:
+        actor = SimpleNamespace(object_id=24184, name="silverscale drakeling")
+
+        confirmed = behavior.server_feedback_confirms_current_target_combat(
+            current_target=24184,
+            actor=actor,
+            metric_name="damage_taken",
+            message_text="black mauler juvenile가 당신의 몸통에 32 (-4) 피해를 입혔습니다!",
+        )
+
+        self.assertFalse(confirmed)
+
+    def test_damage_taken_feedback_confirms_matching_current_target_attacker(self) -> None:
+        actor = SimpleNamespace(object_id=24143, name="black mauler juvenile")
+
+        confirmed = behavior.server_feedback_confirms_current_target_combat(
+            current_target=24143,
+            actor=actor,
+            metric_name="damage_taken",
+            message_text="black mauler juvenile가 당신의 몸통에 32 (-4) 피해를 입혔습니다!",
+        )
+
+        self.assertTrue(confirmed)
+
+    def test_korean_target_death_message_matches_localized_active_target(self) -> None:
+        active = {"target_name": "mudman", "damage_done": 63, "attacks": 4, "skills": 1}
+
+        self.assertEqual(behavior.parse_target_death_message_name("머드맨이 죽었습니다!"), "머드맨")
+        self.assertEqual(
+            behavior.active_target_death_message_match_reason(active, "머드맨이 죽었습니다!"),
+            "localized_alias",
+        )
+
+    def test_target_death_message_ignores_self_death_even_after_damage(self) -> None:
+        active = {"target_name": "mudman", "damage_done": 63, "attacks": 4, "skills": 1}
+
+        self.assertEqual(
+            behavior.active_target_death_message_match_reason(
+                active,
+                "Growthhib1360이 죽었습니다!",
+                ignored_names={"Growthhib1360"},
+            ),
+            "",
+        )
+
+    def test_rest_recover_incoming_preferred_target_becomes_party_rescue(self) -> None:
+        args = SimpleNamespace(prefer_target_name="rot worm", require_target_name="", objective_add_target_name="")
+        npc = FakeNpc(10, "rot worm", 5, 120.0)
+
+        self.assertEqual(
+            behavior.target_intent_for_selected_npc(
+                args,
+                npc,
+                selected_npc_is_rescue=True,
+                behavior_state=behavior.DummyBehaviorState.RestRecover,
+            ),
+            behavior.TargetIntent.party_rescue,
+        )
+        self.assertEqual(
+            behavior.target_intent_for_selected_npc(
+                args,
+                npc,
+                selected_npc_is_rescue=True,
+                behavior_state=behavior.DummyBehaviorState.HuntObjective,
+            ),
+            behavior.TargetIntent.objective,
+        )
+
+    def test_rest_recover_allows_only_defensive_counterattack_commit(self) -> None:
+        args = SimpleNamespace(
+            player_level=5,
+            min_target_level=1,
+            max_target_level=10,
+            max_target_level_delta=5,
+            prefer_target_name="rot worm",
+            require_target_name="",
+            objective_add_target_name="",
+            party_encounter_mode="standard",
+            low_health_rest_percent=30,
+            required_target_tank_commit_health_percent=5,
+            target_home_max_distance=0.0,
+            max_target_distance=1500.0,
+        )
+        npc = FakeNpc(10, "rot worm", 5, 120.0)
+
+        class DistanceClient:
+            def distance_to(self, actor):
+                return float(getattr(actor, "distance", 0.0) or 0.0)
+
+        context = behavior.EngagementContext(
+            behavior_state=behavior.DummyBehaviorState.RestRecover,
+            current_target=0,
+            current_target_intent=behavior.TargetIntent.none,
+            is_party_leader=True,
+            is_party_follower=False,
+            party_ready=True,
+            leader_engaged=False,
+            current_health_percent=70,
+            objective_home_reached=True,
+            objective_hunt_ready=True,
+            drop_aggro_active=False,
+            rest_active=True,
+            flee_active=False,
+        )
+
+        defensive = behavior.evaluate_engagement_candidate(
+            behavior.engagement_candidate_from_actor(
+                npc,
+                source=behavior.TargetSource.incoming_damage_counterattack,
+                intent=behavior.TargetIntent.party_rescue,
+            ),
+            context,
+            DistanceClient(),
+            args,
+            {},
+        )
+        ordinary = behavior.evaluate_engagement_candidate(
+            behavior.engagement_candidate_from_actor(
+                npc,
+                source=behavior.TargetSource.hunter_selection,
+                intent=behavior.TargetIntent.objective,
+            ),
+            context,
+            DistanceClient(),
+            args,
+            {},
+        )
+
+        self.assertTrue(defensive.allowed)
+        self.assertFalse(ordinary.allowed)
+        self.assertEqual(ordinary.reject_reason, "rest_active")
+        self.assertTrue(
+            behavior.can_enable_hostile_attack_mode(
+                behavior.DummyBehaviorState.RestRecover,
+                10,
+                behavior.TargetIntent.party_rescue,
+                rest_active=True,
+            )
+        )
+        self.assertTrue(
+            behavior.can_enable_hostile_attack_mode(
+                behavior.DummyBehaviorState.RestRecover,
+                10,
+                behavior.TargetIntent.objective,
+                rest_active=True,
+            )
+        )
+
+    def test_confirmed_dynamic_quest_completion_counts_pending_target_removed(self) -> None:
+        combat = behavior.CombatMetric(
+            target_id=5317,
+            target_name="black wolf pup",
+            target_level=1,
+            outcome="target_removed_pending_confirmation",
+            duration=11.406,
+            attacks=43,
+            skills=0,
+        )
+
+        without_completion = behavior.confirmed_target_removed_combats(
+            [combat],
+            {"target_removed_pending_confirmation": 1},
+        )
+        with_completion = behavior.confirmed_target_removed_combats(
+            [combat],
+            {
+                "target_removed_pending_confirmation": 1,
+                "required_target_complete_exit": 1,
+                "dynamic_quest_reward_observed": 1,
+            },
+        )
+
+        self.assertEqual(without_completion, [])
+        self.assertEqual(with_completion, [combat])
+
+    def test_combat_summary_counts_confirmed_pending_target_removed(self) -> None:
+        combat = behavior.CombatMetric(
+            target_id=5317,
+            target_name="black wolf pup",
+            target_level=1,
+            outcome="target_removed_pending_confirmation",
+            duration=11.406,
+            attacks=43,
+            skills=0,
+        )
+        result = behavior.DummyResult(
+            username="albtest013",
+            ok=True,
+            metrics=[
+                behavior.RoundMetric(
+                    username="albtest013",
+                    round_index=1,
+                    ok=True,
+                    actions=100,
+                    elapsed=72.3,
+                    error="",
+                    action_counts={
+                        "target_removed_pending_confirmation": 1,
+                        "required_target_complete_exit": 1,
+                    },
+                    combat_metrics=[combat],
+                )
+            ],
+        )
+
+        summary = behavior.summarize_combat([result])
+
+        self.assertEqual(summary["kills"], 1)
+        self.assertEqual(summary["avg_kill_seconds"], combat.duration)
+        self.assertEqual(summary["by_target"][0]["kills"], 1)
 
     def test_required_target_completion_waits_for_safe_exit_after_recent_damage(self) -> None:
         args = SimpleNamespace(
@@ -414,7 +870,7 @@ class AccountCsvTests(unittest.TestCase):
     def test_dynamic_quest_return_skips_api_when_cached_npc_is_interactable(self) -> None:
         cached_npc = FakeNpc(5252, "Brother Penric", 40, 120.0)
 
-        self.assertFalse(
+        self.assertTrue(
             behavior.dynamic_quest_return_should_query_npc_api(
                 cached_npc,
                 return_npc_distance=120.0,
@@ -425,7 +881,7 @@ class AccountCsvTests(unittest.TestCase):
     def test_dynamic_quest_return_queries_api_when_internal_id_is_required(self) -> None:
         cached_npc = FakeNpc(5252, "Master Elementalist", 40, 120.0)
 
-        self.assertTrue(
+        self.assertFalse(
             behavior.dynamic_quest_return_should_query_npc_api(
                 cached_npc,
                 return_npc_distance=120.0,
@@ -500,6 +956,19 @@ class AccountCsvTests(unittest.TestCase):
         self.assertIsNone(
             behavior.dynamic_quest_progress_return_item(
                 {"active": [{"currentNodeId": "return", "currentNodeType": 2, "isComplete": True}]}
+            )
+        )
+
+    def test_dynamic_quest_progress_completed_ids_match_expected_quest(self) -> None:
+        args = SimpleNamespace(dynamic_quest_expected_quest_id="seed-100-ba989ad700b4b7b3")
+
+        self.assertFalse(
+            behavior.dynamic_quest_progress_has_completed_item(
+                {
+                    "active": [],
+                    "completedQuestIds": ["seed-100-ba989ad700b4b7b3"],
+                },
+                args,
             )
         )
 
@@ -1214,6 +1683,71 @@ class AccountCsvTests(unittest.TestCase):
             behavior.MovementDestination("companion-guide:game_db:hunting_spot:1:5:9:near", 531300, 477000, 2200),
         )
         self.assertIsNone(behavior.companion_guide_navigation_destination_from_gateway_result({"allowed": False}))
+
+    def test_companion_guide_backstep_probe_preserves_no_policy_direct_move(self) -> None:
+        client = PathClient()
+        client.x = 1100
+        client.y = 1000
+        client.z = 12
+        party_state = SimpleNamespace(member_positions={"Leader": (1000, 1000, 12)})
+        args = SimpleNamespace(
+            party_follow_step=400.0,
+            movement_speed=240.0,
+            movement_update_interval=0.0,
+        )
+
+        moved = behavior.companion_guide_travel_backstep_probe(
+            client,
+            args,
+            party_state,
+            "Leader",
+        )
+
+        self.assertTrue(moved)
+        self.assertEqual(client.moves[-1][:3], (1200, 1000, 12))
+        self.assertEqual(client.movement_speeds[-1], 240.0)
+
+    def test_companion_guide_backstep_probe_uses_policy_boundary_when_unreachable(self) -> None:
+        client = StepPathClient()
+        client.x = 1100
+        client.y = 1000
+        client.z = 12
+        party_state = SimpleNamespace(member_positions={"Leader": (1000, 1000, 12)})
+        args = SimpleNamespace(
+            party_follow_step=400.0,
+            movement_speed=240.0,
+            movement_update_interval=0.0,
+            nav_api_url="",
+            path_last_mile_distance=50.0,
+            path_replan_interval=60.0,
+            path_max_node_distance=50.0,
+            path_node_arrival_distance=50.0,
+            path_max_edge_length=1500.0,
+        )
+        path_state = behavior.PathMovementState(
+            behavior.PathGraph(),
+            1,
+            behavior.PathSafety(max_direct_distance=50.0, max_edge_length=1500.0),
+        )
+        action_counts: dict[str, int] = {}
+        movement_failures: list[behavior.MovementFailure] = []
+
+        moved = behavior.companion_guide_travel_backstep_probe(
+            client,
+            args,
+            party_state,
+            "Leader",
+            path_state=path_state,
+            action_counts=action_counts,
+            movement_failures=movement_failures,
+        )
+
+        self.assertFalse(moved)
+        self.assertEqual(client.moves, [])
+        self.assertEqual(client.position_updates, [(0.0, False)])
+        self.assertEqual(action_counts["path_failed"], 1)
+        self.assertEqual(len(movement_failures), 1)
+        self.assertEqual(movement_failures[0].context, "companion_guide_travel_backstep")
 
     def test_companion_guide_player_following_is_inferred_from_distance_change(self) -> None:
         self.assertTrue(behavior.companion_guide_player_following(current_distance=340.0, previous_distance=0.0))
@@ -1971,6 +2505,7 @@ class FakeClient:
         self.x = 0
         self.y = 0
         self.z = 0
+        self.endurance_percent = 100
 
     def visible_players(self, max_age: float = 30.0):
         return list(self.players)
@@ -1992,6 +2527,7 @@ class FakeClient:
 class FakeCombatClient:
     def __init__(self) -> None:
         self.health_percent = 100
+        self.mana_percent = 100
         self.last_position_speed = 0.0
         self.spells: list[tuple[int, int]] = []
         self.skills: list[tuple[int, int]] = []
@@ -2049,12 +2585,13 @@ class StartupServiceTests(unittest.TestCase):
                 startup_service_sell_slot=[[40]],
                 startup_service_equip_slot=[[41]],
                 startup_service_accept_dialog=True,
+                startup_service_dialog_settle_seconds=0.5,
                 npc_max_age=30.0,
             ),
             action_counts,
         )
 
-        self.assertEqual(actions, 7)
+        self.assertEqual(actions, 8)
         self.assertIn(("target", 10), calls)
         self.assertIn(("interact", 10), calls)
         self.assertIn(("buy", 3, 2), calls)
@@ -2062,10 +2599,315 @@ class StartupServiceTests(unittest.TestCase):
         self.assertIn(("sell", 40), calls)
         self.assertIn(("move", 41, 100, 1), calls)
         self.assertIn(("dialog",), calls)
+        self.assertLess(calls.index(("dialog",)), calls.index(("move", 41, 100, 1)))
+        self.assertLess(calls.index(("dialog",)), calls.index(("read", 0.5)))
+        self.assertLess(calls.index(("read", 0.5)), calls.index(("move", 41, 100, 1)))
         self.assertEqual(action_counts["startup_service_target"], 1)
+        self.assertEqual(action_counts["startup_service_dialog_settle"], 1)
         self.assertEqual(getattr(client.startup_service_last_npc, "object_id", 0), 10)
 
-    def test_startup_service_progress_wait_enabled_only_for_dynamic_quest_dialog_start(self) -> None:
+    def test_startup_service_equip_can_be_limited_to_party_slots(self) -> None:
+        client = FakeClient(npcs=[])
+        calls = []
+        client.move_item = lambda from_slot, to_slot, count=1: calls.append(("move", from_slot, to_slot, count)) or 0
+        action_counts: dict[str, int] = {}
+
+        actions = behavior.run_startup_service_actions(
+            client,
+            SimpleNamespace(
+                startup_service_npc_name="",
+                startup_service_buy_slot=[],
+                startup_service_buy_count=1,
+                startup_service_sell_slot=[],
+                startup_service_equip_slot=[[41]],
+                startup_service_equip_party_slot=[[0, 1, 2]],
+                startup_service_accept_dialog=False,
+            ),
+            action_counts,
+            party_slot=3,
+        )
+
+        self.assertEqual(actions, 1)
+        self.assertEqual(calls, [])
+        self.assertEqual(action_counts["startup_service_equip_skipped_party_slot"], 1)
+
+        actions = behavior.run_startup_service_actions(
+            client,
+            SimpleNamespace(
+                startup_service_npc_name="",
+                startup_service_buy_slot=[],
+                startup_service_buy_count=1,
+                startup_service_sell_slot=[],
+                startup_service_equip_slot=[[41]],
+                startup_service_equip_party_slot=[[0, 1, 2]],
+                startup_service_accept_dialog=False,
+            ),
+            action_counts,
+            party_slot=2,
+        )
+
+        self.assertEqual(actions, 1)
+        self.assertEqual(calls, [("move", 41, 100, 1)])
+
+    def test_startup_merchant_targets_after_teleport_and_sells_before_buying(self) -> None:
+        client = FakeClient(npcs=[FakeNpc(20, "Alburn Hale", 1, 80.0)])
+        calls = []
+        client.read_packets_for = lambda seconds: calls.append(("read", seconds)) or []
+        client.target_object = lambda object_id: calls.append(("target", object_id)) or 0
+        client.interact_object = lambda object_id: calls.append(("interact", object_id)) or 0
+        client.buy_item = lambda slot, count=1: calls.append(("buy", slot, count)) or 0
+        client.sell_item = lambda slot: calls.append(("sell", slot)) or 0
+        client.move_item = lambda from_slot, to_slot, count=1: calls.append(("move", from_slot, to_slot, count)) or 0
+        client.clear_target = lambda: calls.append(("clear_target",)) or 0
+        party_state = behavior.PartyState("Leader", ["Leader"])
+        party_state.update_shared_target(FakeNpc(20, "Alburn Hale", 1, 80.0))
+        action_counts: dict[str, int] = {}
+
+        actions = behavior.run_startup_service_actions(
+            client,
+            SimpleNamespace(
+                startup_service_npc_name="",
+                startup_service_scan_seconds=0.0,
+                startup_service_interact=False,
+                startup_service_buy_slot=[],
+                startup_service_buy_count=1,
+                startup_service_sell_slot=[],
+                startup_service_equip_slot=[],
+                startup_service_accept_dialog=False,
+                startup_teleport_destination="",
+                startup_merchant_npc_name="alburn",
+                startup_merchant_scan_seconds=0.25,
+                startup_merchant_interact=True,
+                startup_merchant_sell_slot=[[40]],
+                startup_merchant_buy_slot=[[11]],
+                startup_merchant_buy_count=1,
+                startup_merchant_equip_slot=[[40]],
+                npc_max_age=30.0,
+            ),
+            action_counts,
+            party_state=party_state,
+        )
+
+        self.assertEqual(actions, 7)
+        self.assertEqual(
+            [call for call in calls if call[0] in {"sell", "buy", "move"}],
+            [("sell", 40), ("buy", 11, 1), ("move", 40, 100, 1)],
+        )
+        self.assertEqual(calls[-1], ("clear_target",))
+        self.assertEqual(action_counts["startup_merchant_target"], 1)
+        self.assertEqual(action_counts["startup_merchant_clear_target"], 1)
+        self.assertEqual(action_counts["startup_merchant_clear_leader_target"], 1)
+        self.assertEqual(party_state.snapshot()["leader_target_id"], 0)
+        self.assertEqual(getattr(client.startup_merchant_last_npc, "object_id", 0), 20)
+
+    def test_startup_merchant_party_slot_maps_only_apply_to_matching_member(self) -> None:
+        client = FakeClient(npcs=[FakeNpc(20, "Alburn Hale", 1, 80.0)])
+        calls = []
+        client.read_packets_for = lambda seconds: calls.append(("read", seconds)) or []
+        client.target_object = lambda object_id: calls.append(("target", object_id)) or 0
+        client.interact_object = lambda object_id: calls.append(("interact", object_id)) or 0
+        client.buy_item = lambda slot, count=1: calls.append(("buy", slot, count)) or 0
+        client.sell_item = lambda slot: calls.append(("sell", slot)) or 0
+        client.move_item = lambda from_slot, to_slot, count=1: calls.append(("move", from_slot, to_slot, count)) or 0
+        client.clear_target = lambda: calls.append(("clear_target",)) or 0
+        action_counts: dict[str, int] = {}
+
+        actions = behavior.run_startup_service_actions(
+            client,
+            SimpleNamespace(
+                startup_service_npc_name="",
+                startup_service_scan_seconds=0.0,
+                startup_service_interact=False,
+                startup_service_buy_slot=[],
+                startup_service_buy_count=1,
+                startup_service_sell_slot=[],
+                startup_service_equip_slot=[],
+                startup_service_accept_dialog=False,
+                startup_teleport_destination="",
+                startup_merchant_npc_name="alburn",
+                startup_merchant_scan_seconds=0.0,
+                startup_merchant_interact=True,
+                startup_merchant_sell_slot=[],
+                startup_merchant_buy_slot=[],
+                startup_merchant_buy_count=1,
+                startup_merchant_equip_slot=[],
+                startup_merchant_sell_party_slot=[(0, [40]), (1, [41])],
+                startup_merchant_buy_party_slot=[(1, [7])],
+                startup_merchant_equip_party_slot=[(1, [42])],
+                npc_max_age=30.0,
+            ),
+            action_counts,
+            party_slot=1,
+        )
+
+        self.assertEqual(actions, 6)
+        self.assertEqual(
+            [call for call in calls if call[0] in {"sell", "buy", "move"}],
+            [("sell", 41), ("buy", 7, 1), ("move", 42, 100, 1)],
+        )
+        self.assertNotIn(("sell", 40), calls)
+        self.assertEqual(action_counts["startup_merchant_sell"], 1)
+        self.assertEqual(action_counts["startup_merchant_buy"], 1)
+        self.assertEqual(action_counts["startup_merchant_equip"], 1)
+
+    def test_startup_merchant_approaches_before_buying(self) -> None:
+        merchant = FakeNpc(20, "Calldir Edyn", 1, 420.0)
+        merchant.x = 300
+        merchant.y = 300
+        merchant.z = 100
+        client = FakeClient(npcs=[merchant])
+        calls = []
+        client.read_packets_for = lambda seconds: calls.append(("read", seconds)) or []
+        client.target_object = lambda object_id: calls.append(("target", object_id)) or 0
+        client.interact_object = lambda object_id: calls.append(("interact", object_id)) or 0
+        client.buy_item = lambda slot, count=1: calls.append(("buy", slot, count)) or 0
+        client.sell_item = lambda slot: calls.append(("sell", slot)) or 0
+        client.move_item = lambda from_slot, to_slot, count=1: calls.append(("move", from_slot, to_slot, count)) or 0
+        client.clear_target = lambda: calls.append(("clear_target",)) or 0
+
+        def move_towards_position(_x, _y, _z, **_kwargs):
+            calls.append(("approach", _kwargs.get("step")))
+            client.x = 205
+            client.y = 205
+            client.z = 100
+            return True
+
+        client.move_towards_position = move_towards_position
+        action_counts: dict[str, int] = {}
+
+        actions = behavior.run_startup_service_actions(
+            client,
+            SimpleNamespace(
+                startup_service_npc_name="",
+                startup_service_scan_seconds=0.0,
+                startup_service_interact=False,
+                startup_service_buy_slot=[],
+                startup_service_buy_count=1,
+                startup_service_sell_slot=[],
+                startup_service_equip_slot=[],
+                startup_service_accept_dialog=False,
+                startup_teleport_destination="",
+                startup_merchant_npc_name="calldir",
+                startup_merchant_scan_seconds=0.0,
+                startup_merchant_approach_distance=150.0,
+                startup_merchant_approach_timeout=5.0,
+                startup_merchant_interact=True,
+                startup_merchant_sell_slot=[],
+                startup_merchant_buy_slot=[[34]],
+                startup_merchant_buy_count=1,
+                startup_merchant_equip_slot=[],
+                npc_max_age=30.0,
+                smooth_movement=False,
+                move_step=260.0,
+                movement_speed=240.0,
+                smooth_move_interval=0.01,
+            ),
+            action_counts,
+        )
+
+        self.assertEqual(actions, 5)
+        self.assertIn(("approach", 260.0), calls)
+        self.assertIn(("buy", 34, 1), calls)
+        self.assertIn(("clear_target",), calls)
+        self.assertEqual(action_counts["startup_merchant_approach"], 1)
+        self.assertEqual(action_counts["startup_merchant_clear_target"], 1)
+        self.assertNotIn("startup_merchant_too_far", action_counts)
+
+    def test_startup_merchant_approach_uses_policy_boundary_when_unreachable(self) -> None:
+        class StartupApproachClient(StepPathClient):
+            def __init__(self, npc) -> None:
+                super().__init__()
+                self.npc = npc
+                self.calls: list[tuple[str, object]] = []
+
+            def visible_npcs(self, max_age: float = 60.0, include_peace: bool = False):
+                return [self.npc]
+
+            def read_packets_for(self, seconds: float):
+                self.calls.append(("read", seconds))
+                return []
+
+            def target_object(self, object_id: int) -> int:
+                self.calls.append(("target", object_id))
+                return 0
+
+            def interact_object(self, object_id: int) -> int:
+                self.calls.append(("interact", object_id))
+                return 0
+
+            def buy_item(self, slot: int, count: int = 1) -> int:
+                self.calls.append(("buy", slot))
+                return 0
+
+        merchant = FakeNpc(20, "Calldir Edyn", 1, 420.0)
+        merchant.x = 3000
+        merchant.y = 0
+        merchant.z = 0
+        client = StartupApproachClient(merchant)
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [{"id": "start", "x": 0, "y": 0, "z": 0}],
+                        "edges": [],
+                    }
+                }
+            }
+        )
+        action_counts: dict[str, int] = {}
+
+        actions = behavior.run_startup_service_actions(
+            client,
+            SimpleNamespace(
+                startup_service_npc_name="",
+                startup_service_scan_seconds=0.0,
+                startup_service_interact=False,
+                startup_service_buy_slot=[],
+                startup_service_buy_count=1,
+                startup_service_sell_slot=[],
+                startup_service_equip_slot=[],
+                startup_service_accept_dialog=False,
+                startup_teleport_destination="",
+                startup_merchant_npc_name="calldir",
+                startup_merchant_scan_seconds=0.0,
+                startup_merchant_approach_distance=150.0,
+                startup_merchant_approach_timeout=5.0,
+                startup_merchant_interact=True,
+                startup_merchant_sell_slot=[],
+                startup_merchant_buy_slot=[[34]],
+                startup_merchant_buy_count=1,
+                startup_merchant_equip_slot=[],
+                npc_max_age=30.0,
+                smooth_movement=False,
+                move_step=260.0,
+                movement_speed=240.0,
+                movement_update_interval=0.0,
+                smooth_move_interval=0.0,
+                nav_api_url="",
+                path_last_mile_distance=150.0,
+                path_replan_interval=0.0,
+                path_max_node_distance=500.0,
+                path_node_arrival_distance=100.0,
+                path_max_edge_length=1500.0,
+            ),
+            action_counts,
+            path_state=behavior.PathMovementState(
+                graph,
+                1,
+                behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0, max_height_delta=500),
+            ),
+        )
+
+        self.assertEqual(actions, 2)
+        self.assertEqual(client.moves, [])
+        self.assertEqual(client.position_updates, [(0.0, False)])
+        self.assertEqual(action_counts["path_failed"], 1)
+        self.assertEqual(action_counts["startup_merchant_too_far"], 1)
+        self.assertNotIn("startup_merchant_approach", action_counts)
+        self.assertNotIn(("target", 20), client.calls)
+        self.assertNotIn(("buy", 34), client.calls)
+
+    def test_startup_service_progress_wait_enabled_for_dialog_and_autoaccept_starts(self) -> None:
         args = SimpleNamespace(
             startup_service_accept_dialog=True,
             startup_service_progress_wait_seconds=2.0,
@@ -2078,6 +2920,9 @@ class StartupServiceTests(unittest.TestCase):
         self.assertTrue(behavior.startup_service_dynamic_quest_progress_wait_enabled(args))
 
         args.startup_service_accept_dialog = False
+        self.assertTrue(behavior.startup_service_dynamic_quest_progress_wait_enabled(args))
+
+        args.dynamic_quest_return_after_required_target = True
         self.assertFalse(behavior.startup_service_dynamic_quest_progress_wait_enabled(args))
 
     def test_startup_service_progress_wait_retries_dialog_until_active_progress(self) -> None:
@@ -2134,6 +2979,121 @@ class StartupServiceTests(unittest.TestCase):
         self.assertEqual(action_counts["startup_service_progress_wait_active"], 1)
         self.assertTrue(any(event == "startup_service_progress_wait_active" for event, _ in events))
 
+    def test_startup_service_progress_wait_pulses_position_for_autoaccept_start(self) -> None:
+        client = FakeClient(npcs=[])
+        client.x = 797022
+        client.y = 725025
+        client.z = 4684
+        calls = []
+        client.read_packets_for = lambda seconds: calls.append(("read", round(seconds, 2))) or []
+
+        def move_towards_position(x, y, z, **kwargs):
+            calls.append(("move", x, y, z, kwargs.get("step")))
+            client.x = x
+            client.y = y
+            client.z = z
+            return True
+
+        client.move_towards_position = move_towards_position
+        args = SimpleNamespace(
+            startup_service_accept_dialog=False,
+            startup_service_progress_wait_seconds=0.25,
+            startup_service_progress_poll_interval=0.01,
+            startup_service_progress_retry_after=0.0,
+            startup_service_progress_retry_interval=0.01,
+            startup_service_progress_max_retries=0,
+            startup_service_progress_autoaccept_pulse_interval=0.01,
+            dynamic_quest_return_after_required_target=False,
+            dynamic_quest_return_npc_name="",
+            dynamic_quest_return_home=None,
+            dynamic_quest_observe_final_progress=True,
+            dynamic_quest_progress_api_url="http://127.0.0.1/progress",
+            dynamic_quest_progress_api_timeout=0.01,
+            host="127.0.0.1",
+            api_port=8088,
+        )
+        account = SimpleNamespace(username="midtest002")
+        action_counts: dict[str, int] = {}
+        events = []
+
+        def fake_fetch(_args, _account):
+            if any(call[0] == "move" for call in calls):
+                return {"active": [{"questId": "q1", "currentNodeId": "explore"}]}
+            return {"active": []}
+
+        def mark(snapshot, _now, _reason):
+            return behavior.dynamic_quest_progress_active_items(snapshot)
+
+        with patch.object(behavior, "fetch_dynamic_quest_progress_snapshot", side_effect=fake_fetch):
+            actions = behavior.wait_for_startup_service_dynamic_quest_progress(
+                args,
+                account,
+                client,
+                action_counts,
+                mark,
+                lambda event, _now, **kwargs: events.append((event, kwargs)),
+            )
+
+        self.assertGreaterEqual(actions, 3)
+        self.assertTrue(any(call[0] == "move" for call in calls))
+        self.assertEqual(action_counts["startup_service_progress_autoaccept_pulse"], 1)
+        self.assertEqual(action_counts["startup_service_progress_autoaccept_pulse_move"], 1)
+        self.assertEqual(action_counts["startup_service_progress_wait_active"], 1)
+        self.assertTrue(any(event == "startup_service_progress_autoaccept_pulse" for event, _ in events))
+
+    def test_dynamic_quest_timeline_snapshot_counts_cinematic_variety(self) -> None:
+        args = SimpleNamespace(
+            dynamic_quest_expected_quest_id="seed-1-test",
+            dynamic_quest_require_timeline_events="cinematic_action",
+            dynamic_quest_require_presentation_triggers="OnKill",
+        )
+        snapshot = {
+            "events": [
+                {
+                    "questId": "seed-1-test",
+                    "eventType": "cinematic_action",
+                    "detail": "scene_beat:OnKill:kill:beat:1:delay:0:role:ambush:action:ambush_reveal:formation:ambush:motion:pincer:stagger:90:focal:objective:actorRole:strike:choreo:3:interact:clash:tactic:flank:model:1:actors:5",
+                },
+                {
+                    "questId": "seed-1-test",
+                    "eventType": "cinematic_action",
+                    "detail": "scene_beat:OnChoiceShown:choice:beat:1:delay:0:role:standoff:action:threat_standoff:formation:line:motion:standoff:stagger:80:focal:objective:actorRole:brace:choreo:3:interact:standoff:tactic:pressure:model:1:actors:2",
+                },
+                {
+                    "questId": "seed-1-test",
+                    "eventType": "cinematic_action",
+                    "detail": "scene_beat:OnChoiceSelected:choice:beat:2:delay:700:role:standoff:action:threat_standoff:formation:line:motion:standoff:stagger:80:focal:objective:actorRole:brace:choreo:3:interact:standoff:tactic:pressure:model:1:actors:2",
+                },
+            ],
+            "presentationBeats": [{"questId": "seed-1-test", "trigger": "OnKill"}],
+        }
+        action_counts: dict[str, int] = {}
+        events = []
+
+        seen, missing = behavior.mark_dynamic_quest_timeline_snapshot(
+            args,
+            snapshot,
+            action_counts,
+            now=10.0,
+            source="unit",
+            log_encounter_event=lambda event, _now, **kwargs: events.append((event, kwargs)),
+        )
+
+        self.assertFalse(missing)
+        self.assertIn("cinematic_action", seen)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_action"], 3)
+        self.assertEqual(action_counts["dynamic_quest_timeline_scene_director_beat"], 3)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_variety"], 2)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_motion_variety"], 2)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_staggered_scene"], 3)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_objective_focal_scene"], 3)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_actor_role_variety"], 2)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_choreographed_scene"], 3)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_interaction_scene"], 3)
+        self.assertEqual(action_counts["dynamic_quest_timeline_cinematic_tactic_variety"], 2)
+        self.assertEqual(behavior.dynamic_quest_scene_action_token("scene_beat:x:action:guard_advance:actors:2"), "guard_advance")
+        self.assertEqual(behavior.dynamic_quest_scene_token("scene_beat:x:motion:pincer:actors:2", "motion"), "pincer")
+
     def test_startup_service_whispers_teleport_destination_to_nearest_teleporter(self) -> None:
         client = FakeClient(
             npcs=[
@@ -2181,6 +3141,116 @@ class StartupServiceTests(unittest.TestCase):
         self.assertEqual(action_counts["startup_teleport_target"], 1)
         self.assertEqual(action_counts["startup_teleport_whisper"], 1)
         self.assertEqual(action_counts["startup_teleport_wait"], 1)
+
+    def test_startup_teleporter_approach_uses_policy_boundary_when_unreachable(self) -> None:
+        class StartupTeleporterClient(StepPathClient):
+            def __init__(self, npc) -> None:
+                super().__init__()
+                self.npc = npc
+                self.calls: list[tuple[str, object]] = []
+                self.move_kwargs: list[dict[str, object]] = []
+
+            def move_towards_position(
+                self,
+                x: int,
+                y: int,
+                z: int,
+                step: float = 250.0,
+                stop_distance: float = 250.0,
+                **kwargs,
+            ) -> bool:
+                self.move_kwargs.append(dict(kwargs))
+                return super().move_towards_position(x, y, z, step=step, stop_distance=stop_distance, **kwargs)
+
+            def visible_npcs(self, max_age: float = 60.0, include_peace: bool = False):
+                return [self.npc]
+
+            def distance_to(self, actor) -> float:
+                return behavior.horizontal_distance_between_points(self.x, self.y, int(actor.x), int(actor.y))
+
+            def read_packets_for(self, seconds: float):
+                self.calls.append(("read", seconds))
+                return []
+
+            def target_object(self, object_id: int) -> int:
+                self.calls.append(("target", object_id))
+                return 0
+
+            def interact_object(self, object_id: int) -> int:
+                self.calls.append(("interact", object_id))
+                return 0
+
+            def send_command(self, command: str) -> int:
+                self.calls.append(("command", command))
+                return 0
+
+        teleporter = FakeNpc(10, "Town Teleporter", 23, 3000.0)
+        teleporter.x = 3000
+        teleporter.y = 0
+        teleporter.z = 0
+        client = StartupTeleporterClient(teleporter)
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [{"id": "start", "x": 0, "y": 0, "z": 0}],
+                        "edges": [],
+                    }
+                }
+            }
+        )
+        action_counts: dict[str, int] = {}
+
+        actions = behavior.run_startup_service_actions(
+            client,
+            SimpleNamespace(
+                startup_service_npc_name="",
+                startup_service_scan_seconds=0.0,
+                startup_service_interact=False,
+                startup_service_buy_slot=[],
+                startup_service_buy_count=1,
+                startup_service_sell_slot=[],
+                startup_service_equip_slot=[],
+                startup_service_accept_dialog=False,
+                startup_teleporter_npc_name="teleporter",
+                startup_teleport_destination="Cotswold Village",
+                startup_teleport_scan_seconds=0.0,
+                startup_teleport_approach_distance=150.0,
+                startup_teleport_approach_timeout=20.0,
+                startup_teleport_interact=True,
+                startup_teleport_warmup_whisper=[],
+                startup_teleport_warmup_delay=0.0,
+                startup_teleport_wait_seconds=0.0,
+                npc_max_age=30.0,
+                smooth_movement=False,
+                move_step=260.0,
+                movement_speed=240.0,
+                movement_update_interval=0.0,
+                smooth_move_interval=0.0,
+                nav_api_url="",
+                path_last_mile_distance=150.0,
+                path_replan_interval=0.0,
+                path_max_node_distance=500.0,
+                path_node_arrival_distance=100.0,
+                path_max_edge_length=1500.0,
+            ),
+            action_counts,
+            path_state=behavior.PathMovementState(
+                graph,
+                1,
+                behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0, max_height_delta=500),
+            ),
+        )
+
+        self.assertEqual(client.moves, [(3000, 0, 0, 1.0, 150.0)])
+        self.assertEqual(client.move_kwargs[-1]["movement_speed"], 0.0)
+        self.assertEqual(client.position_updates, [(0.0, False)])
+        self.assertEqual(action_counts["path_failed"], 1)
+        self.assertNotIn("startup_teleport_approach", action_counts)
+        self.assertIn(("target", 10), client.calls)
+        self.assertIn(("interact", 10), client.calls)
+        self.assertIn(("command", '/whisper "Cotswold Village"'), client.calls)
+        self.assertGreaterEqual(actions, 4)
 
     def test_startup_teleporter_home_keeps_closing_until_teleporter_visible(self) -> None:
         class HomeSearchClient(StepPathClient):
@@ -2771,6 +3841,97 @@ class RequiredTargetApiTests(unittest.TestCase):
         self.assertTrue(observed.is_mezzed)
         self.assertTrue(observed.is_stunned)
 
+    def test_parse_required_target_observation_rejects_prefix_only_required_match(self) -> None:
+        args = self.make_args(
+            require_target_name="spindly rock crab",
+            prefer_target_name="spindly rock crab",
+        )
+        payload = [
+            {"objectId": 17016, "name": "노련한 spindly rock crab", "x": 775728, "y": 837263, "z": 4491, "level": 10},
+        ]
+
+        observed = behavior.parse_required_target_observation(args, payload, require_matching_name=True)
+
+        self.assertIsNone(observed)
+
+    def test_parse_required_target_observation_keeps_plain_required_match_after_prefix_result(self) -> None:
+        args = self.make_args(
+            require_target_name="spindly rock crab",
+            prefer_target_name="spindly rock crab",
+        )
+        payload = [
+            {"objectId": 17016, "name": "노련한 spindly rock crab", "x": 775728, "y": 837263, "z": 4491, "level": 10},
+            {"objectId": 11190, "name": "spindly rock crab", "x": 775206, "y": 836524, "z": 4473, "level": 9},
+        ]
+
+        observed = behavior.parse_required_target_observation(args, payload, require_matching_name=True)
+
+        self.assertIsNotNone(observed)
+        self.assertEqual(observed.object_id, 11190)
+        self.assertEqual(observed.name, "spindly rock crab")
+
+    def test_required_target_filter_rejects_growth_prefix_alias_for_plain_required_name(self) -> None:
+        args = self.make_args(
+            require_target_name="spindly rock crab",
+            prefer_target_name="spindly rock crab",
+        )
+        prefixed = FakeNpc(17016, "노련한 마른 바위게", 10, 100.0)
+        plain = FakeNpc(11190, "spindly rock crab", 9, 150.0)
+
+        self.assertTrue(behavior.target_name_has_growth_prefix("노련한 마른 바위게"))
+        self.assertFalse(behavior.passes_required_target_filter(args, prefixed))
+        self.assertFalse(behavior.is_required_target(args, prefixed))
+        self.assertFalse(behavior.name_matches_required_target(args, prefixed.name))
+        self.assertTrue(behavior.target_names_match_after_growth_prefix_strip(plain.name, prefixed.name))
+        self.assertTrue(behavior.passes_required_target_filter(args, plain))
+        self.assertTrue(behavior.is_required_target(args, plain))
+
+    def test_growth_prefix_required_base_is_objective_base_but_not_selectable(self) -> None:
+        args = self.make_args(
+            require_target_name="spindly rock crab",
+            prefer_target_name="spindly rock crab",
+        )
+
+        for name in (
+            "노련한 spindly rock crab",
+            "정예 spindly rock crab",
+            "흉포한 spindly rock crab",
+            "elite spindly rock crab",
+            "veteran spindly rock crab",
+        ):
+            with self.subTest(name=name):
+                prefixed = FakeNpc(17016, name, 10, 100.0)
+
+                self.assertFalse(behavior.passes_required_target_filter(args, prefixed))
+                self.assertFalse(behavior.is_required_target(args, prefixed))
+                self.assertTrue(behavior.is_route_objective_base_target(args, prefixed))
+
+    def test_shared_objective_visible_target_ignores_prefixed_shared_id_for_plain_required_name(self) -> None:
+        args = self.make_args(
+            require_target_name="spindly rock crab",
+            prefer_target_name="spindly rock crab",
+            party_encounter_mode="standard",
+            required_target_home=None,
+            min_target_level=8,
+            max_target_level=10,
+            max_target_level_delta=0,
+            player_level=10,
+            max_target_distance=1000.0,
+            target_home_max_distance=0.0,
+        )
+        prefixed = FakeNpc(17016, "노련한 마른 바위게", 10, 100.0)
+        plain = FakeNpc(11190, "spindly rock crab", 9, 150.0)
+
+        selected = behavior.choose_shared_objective_visible_target(
+            FakeClient(npcs=[prefixed, plain]),
+            [prefixed, plain],
+            args,
+            shared_target_id=17016,
+        )
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, 11190)
+
     def test_build_required_target_api_url_uses_region_and_exact_name(self) -> None:
         args = self.make_args(required_target_api_name="Lord Elidyn", required_target_api_region=1)
 
@@ -2818,6 +3979,135 @@ class RequiredTargetApiTests(unittest.TestCase):
         self.assertIn("name=black+wolf+pup", url)
         self.assertIn("region=1", url)
 
+    def test_build_hunter_target_api_url_requests_nearby_avoid_counts(self) -> None:
+        args = SimpleNamespace(
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=6500,
+            hunter_target_api_limit=80,
+            min_target_level=5,
+            max_target_level=5,
+            player_level=7,
+            max_target_level_delta=0,
+            require_target_name="dragon ant worker",
+            required_target_api_name="",
+            avoid_target_name="dragon ant soldier,bandit",
+            target_nearby_avoid_radius=1800,
+        )
+        client = SimpleNamespace(x=595117, y=506793)
+
+        url = behavior.build_hunter_target_api_url(args, client, region=1)
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+
+        self.assertEqual(query["nearbyRadius"], ["1800"])
+        self.assertEqual(query["nearbyAvoidName"], ["dragon ant soldier,bandit"])
+
+    def test_build_hunter_target_api_url_includes_nearby_add_only_names(self) -> None:
+        args = SimpleNamespace(
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=6500,
+            hunter_target_api_limit=80,
+            min_target_level=7,
+            max_target_level=7,
+            player_level=9,
+            max_target_level_delta=0,
+            require_target_name="river racer",
+            required_target_api_name="",
+            avoid_target_name="bandit",
+            target_nearby_avoid_name="river racer",
+            target_nearby_avoid_radius=1800,
+        )
+        client = SimpleNamespace(x=592858, y=549006)
+
+        url = behavior.build_hunter_target_api_url(args, client, region=1)
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+
+        self.assertEqual(query["nearbyRadius"], ["1800"])
+        self.assertEqual(query["nearbyAvoidName"], ["bandit,river racer"])
+
+    def test_build_hunter_target_api_url_excludes_required_target_variants_from_auto_nearby_avoid(self) -> None:
+        args = SimpleNamespace(
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=6500,
+            hunter_target_api_limit=80,
+            min_target_level=7,
+            max_target_level=8,
+            player_level=10,
+            max_target_level_delta=1,
+            require_target_name="adder",
+            prefer_target_name="adder",
+            required_target_api_name="",
+            avoid_target_name="veteran adder,노련한 adder,spirit,bandit",
+            target_nearby_avoid_radius=1800,
+        )
+        client = SimpleNamespace(x=594457, y=499932)
+
+        url = behavior.build_hunter_target_api_url(args, client, region=1)
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+
+        self.assertEqual(query["nearbyRadius"], ["1800"])
+        self.assertEqual(query["nearbyAvoidName"], ["spirit,bandit"])
+
+    def test_target_nearby_avoid_name_rejects_same_kind_add_without_avoiding_target(self) -> None:
+        args = SimpleNamespace(
+            avoid_target_name="bandit",
+            target_nearby_avoid_name="river racer",
+            target_nearby_avoid_radius=1800,
+        )
+        target = FakeNpc(10, "river racer", 7, 0.0)
+        target.x = 1000
+        target.y = 1000
+        same_target = FakeNpc(10, "river racer", 7, 0.0)
+        same_target.x = 1000
+        same_target.y = 1000
+        nearby_add = FakeNpc(11, "river racer", 7, 0.0)
+        nearby_add.x = 1800
+        nearby_add.y = 1000
+
+        self.assertFalse(behavior.is_avoid_target(args, target))
+        self.assertFalse(behavior.target_has_nearby_avoid_npc(args, target, [same_target]))
+        self.assertTrue(behavior.target_has_nearby_avoid_npc(args, target, [nearby_add]))
+
+    def test_target_nearby_growth_prefix_rejects_plain_same_base_add_risk(self) -> None:
+        args = SimpleNamespace(target_nearby_avoid_radius=1800)
+        target = FakeNpc(10, "river racer", 7, 0.0)
+        target.x = 1000
+        target.y = 1000
+        prefixed_add = FakeNpc(11, "노련한 강 질주자", 8, 0.0)
+        prefixed_add.x = 1500
+        prefixed_add.y = 1000
+
+        self.assertTrue(
+            behavior.target_has_nearby_growth_prefixed_same_base_npc(
+                args,
+                target,
+                [prefixed_add],
+            )
+        )
+
+    def test_build_hunter_target_api_url_allows_level_zero_targets(self) -> None:
+        args = SimpleNamespace(
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=2200,
+            hunter_target_api_limit=5,
+            min_target_level=0,
+            max_target_level=0,
+            player_level=1,
+            max_target_level_delta=0,
+            require_target_name="badger cub",
+            required_target_api_name="",
+        )
+        client = SimpleNamespace(x=344500, y=474500)
+
+        url = behavior.build_hunter_target_api_url(args, client, region=200)
+
+        self.assertIn("minLevel=0", url)
+        self.assertIn("maxLevel=0", url)
+        self.assertIn("name=badger+cub", url)
+
     def test_dynamic_quest_target_api_scout_enabled_uses_read_only_target_lookup(self) -> None:
         args = self.make_args(
             dynamic_quest_target_api_scout=True,
@@ -2840,7 +4130,7 @@ class RequiredTargetApiTests(unittest.TestCase):
             require_target_name="\ub178\ub828\ud55c Vestus",
         )
 
-        self.assertTrue(
+        self.assertFalse(
             behavior.required_target_name_matches_for_args(
                 args,
                 "\ufffd\ufffd\ufffd\ufffd\ufffd Vestus",
@@ -2999,6 +4289,21 @@ class PathClient:
         return 0
 
 
+class VisibleFleeClient(PathClient):
+    def __init__(self, npcs) -> None:
+        super().__init__()
+        self._npcs = list(npcs)
+
+    def visible_npcs(self, max_age: float = 60.0, include_peace: bool = False):
+        return list(self._npcs)
+
+    def distance_to(self, actor) -> float:
+        dx = int(getattr(actor, "x", 0) or 0) - self.x
+        dy = int(getattr(actor, "y", 0) or 0) - self.y
+        dz = int(getattr(actor, "z", 0) or 0) - self.z
+        return float((dx * dx + dy * dy + dz * dz) ** 0.5)
+
+
 class StepPathClient:
     def __init__(self) -> None:
         self.x = 0
@@ -3006,6 +4311,7 @@ class StepPathClient:
         self.z = 0
         self.zone_id = 1
         self.moves: list[tuple[int, int, int, float, float]] = []
+        self.position_updates: list[tuple[float, bool]] = []
 
     def move_towards_position(
         self,
@@ -3032,6 +4338,7 @@ class StepPathClient:
         return True
 
     def send_position_update(self, speed: float = 0.0, target_in_view: bool = False) -> int:
+        self.position_updates.append((speed, target_in_view))
         return 0
 
 
@@ -3073,6 +4380,34 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         args = behavior.build_parser().parse_args(["--startup-command", "/whisper Green Knight defend", "--startup-command", "/bow"])
 
         self.assertEqual(args.startup_command, ["/whisper Green Knight defend", "/bow"])
+
+    def test_visible_attack_starts_missing_active_combat_tracking(self):
+        npc = SimpleNamespace(object_id=21083)
+
+        self.assertTrue(
+            behavior.should_start_combat_on_visible_attack(
+                active_combat=None,
+                current_target=21083,
+                npc=npc,
+                attack_enabled=True,
+            )
+        )
+        self.assertTrue(
+            behavior.should_start_combat_on_visible_attack(
+                active_combat={"target_id": 21083},
+                current_target=21083,
+                npc=npc,
+                attack_enabled=True,
+            )
+        )
+        self.assertFalse(
+            behavior.should_start_combat_on_visible_attack(
+                active_combat=None,
+                current_target=21073,
+                npc=npc,
+                attack_enabled=True,
+            )
+        )
 
     def test_parser_accepts_required_target_home_point(self):
         args = behavior.build_parser().parse_args(["--required-target-home", "391326,755351,388"])
@@ -3137,6 +4472,32 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             max_target_distance=2200.0,
         )
 
+        self.assertFalse(behavior.required_target_home_hunt_ready(client, args))
+
+    def test_required_target_home_hunt_ready_rejects_large_entry_z_mismatch(self):
+        client = FakeClient(npcs=[])
+        client.x = 522306
+        client.y = 626021
+        client.z = 3982
+        args = SimpleNamespace(
+            required_target_home=behavior.Waypoint(527242, 624780, 1971),
+            required_target_home_hunt_distance=10000.0,
+            target_home_max_distance=10000.0,
+            required_target_home_entry_max_z_delta=800.0,
+            route_home_preserve_z=False,
+            npc_max_age=60.0,
+            include_peace_npcs=True,
+            min_target_level=7,
+            max_target_level=8,
+            player_level=9,
+            max_target_level_delta=1,
+            require_target_name="rotting zombie",
+            prefer_target_name="",
+            avoid_target_name="",
+            max_target_distance=2200.0,
+        )
+
+        self.assertFalse(behavior.required_target_home_entry_z_aligned(client, args))
         self.assertFalse(behavior.required_target_home_hunt_ready(client, args))
 
     def test_flee_escape_destination_prefers_required_target_home(self):
@@ -3257,6 +4618,41 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         after = behavior.horizontal_distance_between_points(destination.x, destination.y, args.required_target_home.x, args.required_target_home.y)
         self.assertGreater(after, before)
         self.assertNotEqual((destination.x, destination.y, destination.z), (771152, 836380, 4624))
+
+    def test_critical_health_flee_stages_egress_even_without_visible_threat(self):
+        client = FakeClient(npcs=[])
+        client.x = 518270
+        client.y = 629658
+        client.z = 3000
+        client.health_percent = 40
+        args = SimpleNamespace(
+            flee_dynamic_safe_point=True,
+            flee_safe_threat_radius=6000.0,
+            flee_safe_point_distance=5200.0,
+            flee_critical_health_percent=45,
+            flee_critical_safe_point_distance=9000.0,
+            flee_town_health_percent=99,
+            flee_home=behavior.Waypoint(518270, 629658, 3000),
+            required_target_home=behavior.Waypoint(518120, 629520, 3000),
+            npc_max_age=30.0,
+            player_level=2,
+            avoid_target_name="",
+            flee_safe_api_scout=False,
+            target_home_max_distance=2800.0,
+            combat_home_leash_distance=2800.0,
+            required_target_home_hunt_distance=2800.0,
+            flee_step=900.0,
+        )
+
+        with patch.object(behavior, "dynamic_flee_safe_destination", return_value=None):
+            destination = behavior.flee_escape_destination(args, client)
+
+        self.assertIsNotNone(destination)
+        self.assertTrue(destination.key.startswith("flee-safe:"))
+        self.assertNotEqual((destination.x, destination.y, destination.z), (args.flee_home.x, args.flee_home.y, args.flee_home.z))
+        before = behavior.horizontal_distance_between_points(client.x, client.y, args.required_target_home.x, args.required_target_home.y)
+        after = behavior.horizontal_distance_between_points(destination.x, destination.y, args.required_target_home.x, args.required_target_home.y)
+        self.assertGreater(after, before)
 
     def test_combat_flee_destination_stages_egress_before_home_near_objective(self):
         threat = FakeNpc(10, "moorlich", 48, 120.0)
@@ -3398,7 +4794,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertTrue(destination.key.startswith("flee-safe:"))
         self.assertNotEqual((destination.x, destination.y, destination.z), (344500, 474500, 5372))
 
-    def test_critical_health_flee_falls_back_to_town_path_when_no_dynamic_safe_point_exists(self):
+    def test_critical_health_flee_uses_objective_egress_when_no_dynamic_safe_point_exists(self):
         client = FakeClient(npcs=[])
         client.x = 335720
         client.y = 521630
@@ -3419,8 +4815,11 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         destination = behavior.flee_escape_destination(args, client)
 
         self.assertIsNotNone(destination)
-        self.assertEqual((destination.x, destination.y, destination.z), (344500, 474500, 5372))
-        self.assertTrue(destination.key.startswith("flee-home:"))
+        self.assertNotEqual((destination.x, destination.y, destination.z), (344500, 474500, 5372))
+        self.assertTrue(destination.key.startswith("flee-safe:"))
+        before = behavior.horizontal_distance_between_points(client.x, client.y, args.required_target_home.x, args.required_target_home.y)
+        after = behavior.horizontal_distance_between_points(destination.x, destination.y, args.required_target_home.x, args.required_target_home.y)
+        self.assertGreater(after, before)
 
     def test_critical_flee_under_pressure_keeps_safe_point_outside_objective_egress_radius(self):
         threat = FakeNpc(10, "moorlich", 48, 120.0)
@@ -3807,6 +5206,41 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertTrue(behavior.flee_threat_snapshot_is_active({"flee_threat_in_combat": True}))
         self.assertTrue(behavior.flee_threat_snapshot_is_active({"flee_threat_targets_dummy": True}))
         self.assertFalse(behavior.flee_threat_snapshot_is_active({"flee_threat_target": "OtherPlayer"}))
+        self.assertFalse(
+            behavior.flee_threat_snapshot_is_active(
+                {
+                    "flee_threat_active": True,
+                    "flee_threat_has_aggro": True,
+                    "flee_threat_in_combat": True,
+                    "flee_threat_targets_dummy": False,
+                    "flee_threat_target": "GrowthAlb15001",
+                }
+            )
+        )
+
+    def test_flee_threat_snapshot_does_not_extend_for_other_lane_target(self):
+        threat = FakeNpc(11, "black wolf pup", 2, 900.0)
+        threat.has_aggro = True
+        threat.in_combat = True
+        threat.target = "GrowthAlb15001"
+        client = FakeClient(npcs=[threat])
+        args = SimpleNamespace(
+            flee_safe_threat_radius=3200.0,
+            flee_safe_point_distance=2200.0,
+            player_level=2,
+            avoid_target_name="",
+            flee_safe_api_scout=False,
+            npc_max_age=30.0,
+            include_peace_npcs=False,
+        )
+
+        snapshot = behavior.flee_threat_snapshot(args, client, member_name="GrowthAlb17001")
+
+        self.assertIsNotNone(snapshot)
+        self.assertEqual(snapshot["flee_threat_name"], "black wolf pup")
+        self.assertFalse(snapshot["flee_threat_targets_dummy"])
+        self.assertFalse(snapshot["flee_threat_active"])
+        self.assertFalse(behavior.should_continue_flee_for_active_threat(snapshot))
 
     def test_flee_pressure_replan_cooldown_keeps_escape_direction_stable(self):
         args = SimpleNamespace(flee_duration=16.0, flee_move_interval=0.35)
@@ -4015,6 +5449,59 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertFalse(behavior.should_flee_losing_combat(args, active_combat, health_percent=55, now=20.0))
         self.assertTrue(behavior.should_flee_losing_combat(args, active_combat, health_percent=45, now=20.0))
 
+    def test_preferred_nearly_finished_target_blocks_losing_combat_flee_above_commit_floor(self):
+        args = SimpleNamespace(
+            flee_health_percent=55,
+            low_health_rest_percent=70,
+            flee_pressure_health_percent=85,
+            flee_critical_health_percent=45,
+            flee_min_combat_seconds=4.0,
+            flee_min_damage_taken=20,
+            flee_damage_taken_ratio=1.5,
+            prefer_target_name="young lynx,lupine snarler",
+            require_target_name="",
+            required_target_api_name="",
+            required_target_tank_commit_health_percent=70,
+        )
+        active_combat = {
+            "started": 10.0,
+            "target_name": "young lynx",
+            "target_intent": behavior.TargetIntent.objective.value,
+            "target_max_health": 46,
+            "damage_done": 34,
+            "damage_taken": 71,
+        }
+
+        self.assertFalse(behavior.should_flee_losing_combat(args, active_combat, health_percent=82, now=70.0))
+        self.assertTrue(behavior.should_flee_losing_combat(args, active_combat, health_percent=70, now=70.0))
+
+    def test_preferred_growth_target_does_not_flee_when_damage_trade_is_viable_above_critical(self):
+        args = SimpleNamespace(
+            flee_health_percent=55,
+            low_health_rest_percent=70,
+            flee_pressure_health_percent=85,
+            flee_critical_health_percent=65,
+            flee_min_combat_seconds=4.0,
+            flee_min_damage_taken=20,
+            flee_damage_taken_ratio=0.5,
+            prefer_target_name="black mauler juvenile",
+            require_target_name="",
+            required_target_api_name="",
+            required_target_tank_commit_health_percent=45,
+        )
+        active_combat = {
+            "started": 10.0,
+            "target_name": "black mauler juvenile",
+            "target_intent": behavior.TargetIntent.objective.value,
+            "target_max_health": 97,
+            "target_health": 50,
+            "damage_done": 47,
+            "damage_taken": 26,
+        }
+
+        self.assertFalse(behavior.should_flee_losing_combat(args, active_combat, health_percent=68, now=36.0))
+        self.assertTrue(behavior.should_flee_losing_combat(args, active_combat, health_percent=65, now=36.0))
+
     def test_party_tank_holds_required_objective_when_healer_alive(self):
         args = SimpleNamespace(
             require_target_name="moorlich",
@@ -4045,6 +5532,165 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 "tank",
                 active_combat,
                 health_percent=45,
+            )
+        )
+
+    def test_party_tank_holds_growth_objective_when_healer_alive(self):
+        args = SimpleNamespace(
+            require_target_name="",
+            flee_health_percent=35,
+            flee_critical_health_percent=65,
+            required_target_tank_commit_health_percent=65,
+        )
+        active_combat = {
+            "target_name": "small freshwater crab",
+            "target_intent": behavior.TargetIntent.objective.value,
+            "damage_done": 21,
+            "damage_taken": 126,
+        }
+        snapshot = {
+            "active_tank_name": "tank",
+            "members": [
+                {"name": "tank", "object_id": 1, "health_percent": 54, "role": "melee-basic"},
+                {"name": "druid", "object_id": 2, "health_percent": 100, "role": "healer-support"},
+            ],
+        }
+
+        self.assertTrue(
+            behavior.should_party_tank_hold_required_objective_for_healer(
+                args,
+                snapshot,
+                "tank",
+                active_combat,
+                health_percent=54,
+            )
+        )
+        self.assertFalse(
+            behavior.should_party_tank_hold_required_objective_for_healer(
+                args,
+                snapshot,
+                "tank",
+                active_combat,
+                health_percent=35,
+            )
+        )
+
+    def test_growth_prefix_objective_breaks_tank_hold_at_pressure_threshold(self):
+        args = SimpleNamespace(
+            require_target_name="",
+            flee_health_percent=45,
+            flee_pressure_health_percent=55,
+            growth_prefix_flee_health_percent=80,
+            flee_critical_health_percent=25,
+            required_target_tank_commit_health_percent=45,
+            party_survival_active_tank_health_percent=0,
+        )
+        active_combat = {
+            "target_name": "river racer",
+            "target_intent": behavior.TargetIntent.objective.value,
+            "damage_done": 35,
+            "damage_taken": 74,
+            "growth_prefix_observed": True,
+        }
+        snapshot = {
+            "active_tank_name": "tank",
+            "members": [
+                {"name": "tank", "object_id": 1, "health_percent": 45, "role": "melee-burst"},
+                {"name": "cleric", "object_id": 2, "health_percent": 100, "role": "healer-support"},
+            ],
+        }
+
+        self.assertFalse(
+            behavior.should_party_tank_hold_required_objective_for_healer(
+                args,
+                snapshot,
+                "tank",
+                active_combat,
+                health_percent=45,
+                action_rotation="melee-burst",
+            )
+        )
+        self.assertFalse(
+            behavior.should_delay_early_flee_for_melee_counterattack(
+                args,
+                active_combat,
+                health_percent=45,
+                recent_incoming_melee=True,
+                target_distance=30.0,
+            )
+        )
+
+    def test_growth_prefix_objective_breaks_tank_hold_at_growth_threshold(self):
+        args = SimpleNamespace(
+            require_target_name="",
+            flee_health_percent=45,
+            flee_pressure_health_percent=55,
+            growth_prefix_flee_health_percent=80,
+            flee_critical_health_percent=25,
+            required_target_tank_commit_health_percent=45,
+            party_survival_active_tank_health_percent=0,
+        )
+        active_combat = {
+            "target_name": "river racer",
+            "target_intent": behavior.TargetIntent.objective.value,
+            "damage_done": 0,
+            "damage_taken": 33,
+            "growth_prefix_observed": True,
+        }
+        snapshot = {
+            "active_tank_name": "tank",
+            "members": [
+                {"name": "tank", "object_id": 1, "health_percent": 80, "role": "melee-burst"},
+                {"name": "cleric", "object_id": 2, "health_percent": 100, "role": "healer-support"},
+            ],
+        }
+
+        self.assertFalse(
+            behavior.should_party_tank_hold_required_objective_for_healer(
+                args,
+                snapshot,
+                "tank",
+                active_combat,
+                health_percent=80,
+                action_rotation="melee-burst",
+            )
+        )
+        self.assertFalse(
+            behavior.should_delay_early_flee_for_melee_counterattack(
+                args,
+                active_combat,
+                health_percent=80,
+                recent_incoming_melee=True,
+                target_distance=437.0,
+            )
+        )
+
+    def test_party_tank_does_not_hold_non_objective_target_for_healer(self):
+        args = SimpleNamespace(
+            require_target_name="",
+            flee_critical_health_percent=45,
+        )
+        active_combat = {
+            "target_name": "wandering add",
+            "target_intent": behavior.TargetIntent.none.value,
+            "damage_done": 21,
+            "damage_taken": 126,
+        }
+        snapshot = {
+            "active_tank_name": "tank",
+            "members": [
+                {"name": "tank", "object_id": 1, "health_percent": 54, "role": "melee-basic"},
+                {"name": "druid", "object_id": 2, "health_percent": 100, "role": "healer-support"},
+            ],
+        }
+
+        self.assertFalse(
+            behavior.should_party_tank_hold_required_objective_for_healer(
+                args,
+                snapshot,
+                "tank",
+                active_combat,
+                health_percent=54,
             )
         )
 
@@ -4550,14 +6196,124 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             "damage_done": 160,
             "damage_taken": 53,
             "off_target_damage_taken": 35,
+            "off_target_attacker_name": "angry add",
         }
 
         self.assertTrue(behavior.should_flee_multi_aggro_combat(args, active_combat, health_percent=82))
         self.assertFalse(behavior.should_flee_multi_aggro_combat(args, active_combat, health_percent=90))
+        active_combat["off_target_attacker_name"] = ""
+        self.assertFalse(behavior.should_flee_multi_aggro_combat(args, active_combat, health_percent=82))
+        rescue_add_combat = {
+            "target_id": 17658,
+            "damage_done": 53,
+            "damage_taken": 35,
+            "off_target_damage_taken": 0,
+            "off_target_attacker_name": "",
+        }
+        self.assertTrue(
+            behavior.should_flee_multi_aggro_combat(
+                args,
+                rescue_add_combat,
+                health_percent=57,
+                current_target=17658,
+                party_rescue_target_id=10784,
+            )
+        )
+        self.assertFalse(
+            behavior.should_flee_multi_aggro_combat(
+                args,
+                rescue_add_combat,
+                health_percent=57,
+                current_target=17658,
+                party_rescue_target_id=17658,
+            )
+        )
+        tank_args = SimpleNamespace(
+            flee_pressure_health_percent=90,
+            flee_min_damage_taken=20,
+            required_target_tank_commit_health_percent=25,
+            require_target_name="moorlich",
+        )
+        tank_multi_aggro_combat = {
+            "damage_done": 160,
+            "damage_taken": 53,
+            "off_target_damage_taken": 35,
+            "off_target_attacker_name": "angry add",
+        }
+        self.assertFalse(
+            behavior.should_flee_multi_aggro_combat(
+                tank_args,
+                tank_multi_aggro_combat,
+                health_percent=79,
+                current_target=3358,
+                current_target_intent=behavior.TargetIntent.objective,
+                is_active_tank=True,
+            )
+        )
+        self.assertFalse(
+            behavior.should_flee_multi_aggro_combat(
+                tank_args,
+                {
+                    **tank_multi_aggro_combat,
+                    "target_name": "moorlich",
+                },
+                health_percent=40,
+                current_target=3358,
+                current_target_intent=behavior.TargetIntent.none,
+                action_rotation="melee-basic",
+            )
+        )
+        self.assertTrue(
+            behavior.should_flee_multi_aggro_combat(
+                tank_args,
+                tank_multi_aggro_combat,
+                health_percent=24,
+                current_target=3358,
+                current_target_intent=behavior.TargetIntent.objective,
+                is_active_tank=True,
+            )
+        )
         self.assertTrue(
             behavior.should_attempt_multi_aggro_crowd_control(
                 crowd_control_due=True,
                 multi_aggro_counterattack_hold=False,
+            )
+        )
+
+    def test_localized_current_target_damage_stays_on_active_combat(self):
+        client = FakeClient(npcs=[])
+        client.x = 518087
+        client.y = 630848
+        args = SimpleNamespace(
+            attack_range=350,
+            melee_range_buffer=300,
+            minimum_melee_stop_distance=60,
+        )
+        active_combat = {
+            "target_id": 1467,
+            "target_name": "ant drone",
+            "target_x": 518087,
+            "target_y": 630848,
+            "target_z": 1764,
+            "target_level": 2,
+        }
+
+        self.assertTrue(
+            behavior.active_combat_target_is_current_melee_actor(
+                client,
+                args,
+                active_combat,
+                current_target=1467,
+                current_target_intent=behavior.TargetIntent.objective,
+            )
+        )
+        self.assertFalse(
+            behavior.recent_incoming_damage_matches_actor(
+                behavior.actor_from_active_combat(active_combat),
+                "개미 드르오느에",
+                last_damage_at=10.0,
+                now=10.0,
+                grace_seconds=1.0,
             )
         )
 
@@ -4635,6 +6391,291 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
+    def test_mark_rejected_target_kind_prefers_active_combat(self):
+        rejected: dict[tuple[str, int], float] = {}
+
+        marked = behavior.mark_rejected_target_kind(
+            rejected,
+            now=100.0,
+            cooldown=60.0,
+            active_combat={"target_name": " Emerald Snake ", "target_level": 5},
+            fallback_name="wrong fallback",
+            fallback_level=9,
+        )
+
+        self.assertTrue(marked)
+        self.assertEqual(rejected, {("emerald snake", 5): 160.0})
+
+    def test_mark_rejected_target_kind_uses_recent_attacker_fallback(self):
+        rejected: dict[tuple[str, int], float] = {}
+
+        marked = behavior.mark_rejected_target_kind(
+            rejected,
+            now=25.0,
+            cooldown=45.0,
+            active_combat=None,
+            fallback_name="Young Grendelorm",
+            fallback_level=7,
+        )
+
+        self.assertTrue(marked)
+        self.assertEqual(rejected, {("young grendelorm", 7): 70.0})
+
+    def test_mark_rejected_target_kind_strips_visible_con_prefixes(self):
+        rejected: dict[tuple[str, int], float] = {}
+
+        marked = behavior.mark_rejected_target_kind(
+            rejected,
+            now=100.0,
+            cooldown=60.0,
+            active_combat={"target_name": "노련한 water beetle", "target_level": 8},
+        )
+
+        self.assertTrue(marked)
+        self.assertEqual(rejected, {("water beetle", 8): 160.0})
+
+    def test_mark_rejected_target_kind_ignores_unknown_kind(self):
+        rejected: dict[tuple[str, int], float] = {}
+
+        marked = behavior.mark_rejected_target_kind(
+            rejected,
+            now=25.0,
+            cooldown=45.0,
+            active_combat=None,
+            fallback_name="",
+            fallback_level=0,
+        )
+
+        self.assertFalse(marked)
+        self.assertEqual(rejected, {})
+
+    def test_mark_attack_z_mismatch_target_kind_uses_active_combat_even_for_required_target(self):
+        rejected: dict[tuple[str, int], float] = {}
+        target_actor = FakeNpc(22520, "노련한 forest lion", 7, 335.0)
+
+        marked = behavior.mark_attack_z_mismatch_target_kind(
+            rejected,
+            now=100.0,
+            cooldown=45.0,
+            active_combat={"target_name": "노련한 forest lion", "target_level": 7},
+            target_actor=target_actor,
+        )
+
+        self.assertTrue(marked)
+        self.assertEqual(rejected, {("forest lion", 7): 145.0})
+
+    def test_mark_attack_z_mismatch_target_kind_falls_back_to_actor(self):
+        rejected: dict[tuple[str, int], float] = {}
+        target_actor = FakeNpc(22520, "노련한 forest lion", 7, 335.0)
+
+        marked = behavior.mark_attack_z_mismatch_target_kind(
+            rejected,
+            now=100.0,
+            cooldown=45.0,
+            active_combat=None,
+            target_actor=target_actor,
+        )
+
+        self.assertTrue(marked)
+        self.assertEqual(rejected, {("forest lion", 7): 145.0})
+
+    def test_required_target_pre_hunt_recovery_uses_objective_recovery_threshold(self):
+        client = FakeClient()
+        client.x = 1000
+        client.y = 1000
+        args = SimpleNamespace(
+            required_target_home=SimpleNamespace(x=1000, y=1000, z=0),
+            required_target_home_stop_distance=250.0,
+            required_target_home_hunt_distance=1500.0,
+            target_home_max_distance=1500.0,
+            required_target_recover_before_home_health_percent=88,
+            low_health_rest_resume_percent=75,
+            party_size=1,
+        )
+
+        self.assertEqual(
+            behavior.required_target_pre_hunt_recovery_health_percent(args, client, current_target=0),
+            88,
+        )
+        self.assertEqual(
+            behavior.low_health_rest_resume_health_percent(args, client, current_target=0),
+            88,
+        )
+        self.assertTrue(
+            behavior.should_recover_before_required_target_hunt(
+                args,
+                client,
+                health_percent=70,
+                current_target=0,
+                flee_until=0.0,
+                now=10.0,
+            )
+        )
+        self.assertFalse(
+            behavior.should_recover_before_required_target_hunt(
+                args,
+                client,
+                health_percent=88,
+                current_target=0,
+                flee_until=0.0,
+                now=10.0,
+            )
+        )
+        self.assertFalse(
+            behavior.should_recover_before_required_target_hunt(
+                args,
+                client,
+                health_percent=70,
+                current_target=123,
+                flee_until=0.0,
+                now=10.0,
+            )
+        )
+
+    def test_required_target_pre_hunt_recovery_does_not_inherit_low_health_resume_gate(self):
+        client = FakeClient()
+        client.x = 1000
+        client.y = 1000
+        args = SimpleNamespace(
+            required_target_home=SimpleNamespace(x=1000, y=1000, z=0),
+            required_target_home_stop_distance=250.0,
+            required_target_home_hunt_distance=1500.0,
+            target_home_max_distance=1500.0,
+            required_target_recover_before_home_health_percent=60,
+            low_health_rest_resume_percent=75,
+            party_size=1,
+        )
+
+        self.assertEqual(
+            behavior.required_target_pre_hunt_recovery_health_percent(args, client, current_target=0),
+            60,
+        )
+        self.assertTrue(
+            behavior.should_recover_before_required_target_hunt(
+                args,
+                client,
+                health_percent=59,
+                current_target=0,
+                flee_until=0.0,
+                now=10.0,
+            )
+        )
+        self.assertFalse(
+            behavior.should_recover_before_required_target_hunt(
+                args,
+                client,
+                health_percent=60,
+                current_target=0,
+                flee_until=0.0,
+                now=10.0,
+            )
+        )
+
+    def test_required_target_pre_hunt_recovery_waits_for_low_endurance(self):
+        client = FakeClient()
+        client.x = 1000
+        client.y = 1000
+        args = SimpleNamespace(
+            required_target_home=SimpleNamespace(x=1000, y=1000, z=0),
+            required_target_home_stop_distance=250.0,
+            required_target_home_hunt_distance=1500.0,
+            target_home_max_distance=1500.0,
+            required_target_recover_before_home_health_percent=88,
+            required_target_recover_before_hunt_endurance_percent=40,
+            low_health_rest_resume_percent=75,
+            party_size=1,
+        )
+
+        self.assertEqual(
+            behavior.required_target_pre_hunt_recovery_endurance_percent(args, client, current_target=0),
+            40,
+        )
+        self.assertEqual(
+            behavior.low_health_rest_resume_endurance_percent(args, client, current_target=0),
+            40,
+        )
+        self.assertTrue(
+            behavior.should_recover_before_required_target_hunt(
+                args,
+                client,
+                health_percent=100,
+                endurance_percent=29,
+                current_target=0,
+                flee_until=0.0,
+                now=10.0,
+            )
+        )
+        self.assertFalse(
+            behavior.should_recover_before_required_target_hunt(
+                args,
+                client,
+                health_percent=100,
+                endurance_percent=40,
+                current_target=0,
+                flee_until=0.0,
+                now=10.0,
+            )
+        )
+        self.assertFalse(
+            behavior.should_recover_before_required_target_hunt(
+                args,
+                client,
+                health_percent=100,
+                endurance_percent=29,
+                current_target=123,
+                flee_until=0.0,
+                now=10.0,
+            )
+        )
+
+    def test_active_travel_aggro_memory_blocks_objective_area_hunt_entry(self):
+        client = FakeClient()
+        client.x = 1000
+        client.y = 1000
+        args = SimpleNamespace(
+            required_target_home=SimpleNamespace(x=1000, y=1000, z=0),
+            required_target_home_stop_distance=250.0,
+            required_target_home_hunt_distance=1500.0,
+            target_home_max_distance=1500.0,
+            required_target_recover_before_home_health_percent=30,
+            required_target_recover_before_hunt_endurance_percent=0,
+            party_size=1,
+            party_min_ready=0,
+        )
+
+        self.assertFalse(
+            behavior.should_enter_hunt_after_objective_area_ready(
+                args,
+                client,
+                None,
+                behavior_state=behavior.DummyBehaviorState.ReturnToObjective,
+                is_party_leader=True,
+                current_target=0,
+                health_percent=100,
+                endurance_percent=100,
+                flee_until=0.0,
+                party_forming_since=0.0,
+                now=10.0,
+                travel_aggro_recovery_blocked=True,
+            )
+        )
+        self.assertTrue(
+            behavior.should_enter_hunt_after_objective_area_ready(
+                args,
+                client,
+                None,
+                behavior_state=behavior.DummyBehaviorState.ReturnToObjective,
+                is_party_leader=True,
+                current_target=0,
+                health_percent=100,
+                endurance_percent=100,
+                flee_until=0.0,
+                party_forming_since=0.0,
+                now=10.0,
+                travel_aggro_recovery_blocked=False,
+            )
+        )
+
     def test_should_flee_untracked_damage_when_target_is_lost(self):
         args = SimpleNamespace(flee_health_percent=55, low_health_rest_percent=70, flee_pressure_health_percent=85)
 
@@ -4696,6 +6737,21 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 current_target=0,
                 flee_until=12.0,
                 now=10.0,
+            )
+        )
+
+    def test_large_untracked_health_drop_forces_flee_above_normal_threshold(self):
+        args = SimpleNamespace(flee_health_percent=30, low_health_rest_percent=30, flee_pressure_health_percent=30)
+
+        self.assertTrue(
+            behavior.should_flee_untracked_damage(
+                args,
+                current_health_percent=48,
+                last_health_percent=100,
+                current_target=0,
+                flee_until=0.0,
+                now=10.0,
+                force_flee_from_health_drop=True,
             )
         )
 
@@ -5804,10 +7860,10 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertFalse(behavior.should_rest_after_flee_recovery(args, health_percent=90))
         self.assertFalse(behavior.should_rest_after_flee_recovery(args, health_percent=0))
 
-    def test_flee_recovery_does_not_rest_above_low_health_threshold(self):
+    def test_flee_recovery_rests_above_low_health_threshold_until_resume(self):
         args = SimpleNamespace(low_health_rest_percent=70, low_health_rest_resume_percent=88)
 
-        self.assertFalse(behavior.should_rest_after_flee_recovery(args, health_percent=86))
+        self.assertTrue(behavior.should_rest_after_flee_recovery(args, health_percent=86))
         self.assertTrue(behavior.should_rest_after_flee_recovery(args, health_percent=62))
 
     def test_required_target_recovery_threshold_rests_before_returning_home(self):
@@ -5826,6 +7882,26 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertTrue(behavior.should_extend_recovery_rest(args, health_percent=82))
         self.assertFalse(behavior.should_extend_recovery_rest(args, health_percent=90))
+
+    def test_recovery_rest_timer_extends_until_resume_endurance(self):
+        args = SimpleNamespace(low_health_rest_resume_percent=88, low_health_rest_min=6.0)
+
+        self.assertTrue(
+            behavior.should_extend_recovery_rest(
+                args,
+                health_percent=100,
+                endurance_percent=29,
+                endurance_resume_percent=40,
+            )
+        )
+        self.assertFalse(
+            behavior.should_extend_recovery_rest(
+                args,
+                health_percent=100,
+                endurance_percent=40,
+                endurance_resume_percent=40,
+            )
+        )
 
     def test_recovery_rest_timer_stops_when_above_low_health_threshold(self):
         args = SimpleNamespace(low_health_rest_percent=70, low_health_rest_resume_percent=88, low_health_rest_min=6.0)
@@ -6244,6 +8320,243 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         selected = behavior.choose_hunter_target(FakeClient(npcs=[risky]), random.Random(1), args, {}, {}, now=100.0)
         self.assertEqual(selected.object_id, risky.object_id)
 
+    def test_choose_hunter_target_deprefs_growth_prefix_when_plain_candidate_exists(self):
+        args = SimpleNamespace(
+            max_target_level=8,
+            player_level=10,
+            max_target_level_delta=0,
+            ideal_target_level=8,
+            prefer_target_name="river racer",
+            require_target_name="",
+            avoid_target_name="",
+            npc_max_age=30.0,
+            min_target_level=7,
+            max_target_distance=6500.0,
+            target_auto_lowest_visible_level=True,
+            allow_avoid_target_fallback=False,
+            target_pool=5,
+            target_selection="smart",
+            target_level_weight=80.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+        )
+        prefixed = FakeNpc(1, "노련한 river racer", 7, 100.0)
+        plain = FakeNpc(2, "river racer", 7, 900.0)
+
+        selected = behavior.choose_hunter_target(
+            FakeClient(npcs=[prefixed, plain]),
+            random.Random(1),
+            args,
+            {},
+            {},
+            now=100.0,
+        )
+
+        self.assertEqual(selected.object_id, plain.object_id)
+
+    def test_choose_hunter_target_rejects_growth_prefix_when_not_explicit(self):
+        args = SimpleNamespace(
+            max_target_level=12,
+            player_level=10,
+            max_target_level_delta=0,
+            ideal_target_level=11,
+            prefer_target_name="",
+            require_target_name="",
+            avoid_target_name="",
+            npc_max_age=30.0,
+            min_target_level=11,
+            max_target_distance=6500.0,
+            target_auto_lowest_visible_level=False,
+            allow_avoid_target_fallback=False,
+            target_pool=5,
+            target_selection="smart",
+            target_level_weight=80.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            target_nearby_avoid_name="",
+            target_nearby_avoid_radius=1800,
+        )
+        prefixed = FakeNpc(1, "노련한 wild lucradan", 11, 100.0)
+
+        selected = behavior.choose_hunter_target(
+            FakeClient(npcs=[prefixed]),
+            random.Random(1),
+            args,
+            {},
+            {},
+            now=100.0,
+        )
+
+        self.assertIsNone(selected)
+
+    def test_choose_hunter_target_allows_explicit_growth_prefix_required_target(self):
+        args = SimpleNamespace(
+            max_target_level=12,
+            player_level=10,
+            max_target_level_delta=0,
+            ideal_target_level=11,
+            prefer_target_name="",
+            require_target_name="노련한 wild lucradan",
+            avoid_target_name="",
+            npc_max_age=30.0,
+            min_target_level=11,
+            max_target_distance=6500.0,
+            target_auto_lowest_visible_level=False,
+            allow_avoid_target_fallback=False,
+            target_pool=5,
+            target_selection="smart",
+            target_level_weight=80.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            target_nearby_avoid_name="",
+            target_nearby_avoid_radius=1800,
+        )
+        prefixed = FakeNpc(1, "노련한 wild lucradan", 11, 100.0)
+
+        selected = behavior.choose_hunter_target(
+            FakeClient(npcs=[prefixed]),
+            random.Random(1),
+            args,
+            {},
+            {},
+            now=100.0,
+        )
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, prefixed.object_id)
+
+    def test_choose_hunter_target_rejects_plain_candidate_near_growth_prefix_same_base(self):
+        args = SimpleNamespace(
+            max_target_level=8,
+            player_level=10,
+            max_target_level_delta=0,
+            ideal_target_level=8,
+            prefer_target_name="river racer",
+            require_target_name="",
+            avoid_target_name="",
+            npc_max_age=30.0,
+            min_target_level=7,
+            max_target_distance=6500.0,
+            target_auto_lowest_visible_level=True,
+            allow_avoid_target_fallback=False,
+            target_pool=5,
+            target_selection="smart",
+            target_level_weight=80.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            target_nearby_avoid_name="",
+            target_nearby_avoid_radius=1800,
+        )
+        risky_plain = FakeNpc(1, "river racer", 7, 100.0)
+        risky_plain.x = 1000
+        risky_plain.y = 1000
+        prefixed_add = FakeNpc(2, "노련한 강 질주자", 8, 200.0)
+        prefixed_add.x = 1500
+        prefixed_add.y = 1000
+        safe_plain = FakeNpc(3, "river racer", 7, 900.0)
+        safe_plain.x = 5000
+        safe_plain.y = 1000
+
+        selected = behavior.choose_hunter_target(
+            FakeClient(npcs=[risky_plain, prefixed_add, safe_plain]),
+            random.Random(1),
+            args,
+            {},
+            {},
+            now=100.0,
+        )
+
+        self.assertEqual(selected.object_id, safe_plain.object_id)
+
+    def test_choose_hunter_target_fallback_keeps_specific_avoid_under_broad_prefer_blocked(self):
+        args = SimpleNamespace(
+            max_target_level=5,
+            player_level=4,
+            max_target_level_delta=1,
+            ideal_target_level=5,
+            prefer_target_name="wood-eater",
+            require_target_name="",
+            avoid_target_name="wood-eater worker",
+            npc_max_age=30.0,
+            min_target_level=3,
+            max_target_distance=6000.0,
+            target_auto_lowest_visible_level=False,
+            allow_avoid_target_fallback=True,
+            target_pool=5,
+            target_selection="smart",
+            target_level_weight=80.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+        )
+        worker = FakeNpc(1, "wood-eater worker", 4, 100.0)
+        plain = FakeNpc(2, "wood-eater", 4, 300.0)
+
+        selected = behavior.choose_hunter_target(FakeClient(npcs=[worker]), random.Random(1), args, {}, {}, now=100.0)
+        self.assertIsNone(selected)
+
+        selected = behavior.choose_hunter_target(
+            FakeClient(npcs=[worker, plain]),
+            random.Random(1),
+            args,
+            {},
+            {},
+            now=100.0,
+        )
+        self.assertEqual(selected.object_id, plain.object_id)
+
+    def test_choose_hunter_target_keeps_exact_prefer_when_broad_avoid_conflicts(self):
+        args = SimpleNamespace(
+            max_target_level=5,
+            player_level=5,
+            max_target_level_delta=0,
+            ideal_target_level=5,
+            prefer_target_name="water beetle collector",
+            require_target_name="",
+            avoid_target_name="water beetle,water beetle collector",
+            npc_max_age=30.0,
+            min_target_level=5,
+            max_target_distance=6000.0,
+            target_auto_lowest_visible_level=False,
+            allow_avoid_target_fallback=False,
+            target_pool=5,
+            target_selection="smart",
+            target_level_weight=80.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+        )
+        collector = FakeNpc(1, "water beetle collector", 5, 300.0)
+
+        selected = behavior.choose_hunter_target(FakeClient(npcs=[collector]), random.Random(1), args, {}, {}, now=100.0)
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, collector.object_id)
+
+    def test_required_target_name_match_rejects_collector_suffix_for_base_target(self):
+        self.assertFalse(
+            behavior.required_target_name_matches("water beetle collector", "water beetle")
+        )
+        self.assertTrue(
+            behavior.required_target_name_matches("water beetle collector", "water beetle collector")
+        )
+
     def test_choose_hunter_target_rejects_ground_z_mismatched_visible_npc(self):
         args = SimpleNamespace(
             max_target_level=8,
@@ -6267,6 +8580,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             required_target_home=None,
             target_home_max_distance=0.0,
             hunter_target_max_ground_z_delta=220.0,
+            attack_range=350.0,
         )
         bad = FakeNpc(1, "water beetle", 7, 100.0)
         bad.x = 292898
@@ -6283,6 +8597,340 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         selected = behavior.choose_hunter_target(client, random.Random(1), args, {}, {}, now=100.0)
 
         self.assertEqual(selected.object_id, good.object_id)
+
+    def test_choose_hunter_target_rejects_attack_z_mismatch_when_route_delta_is_loose(self):
+        args = SimpleNamespace(
+            max_target_level=6,
+            player_level=5,
+            max_target_level_delta=0,
+            ideal_target_level=6,
+            prefer_target_name="water beetle",
+            require_target_name="",
+            avoid_target_name="",
+            npc_max_age=30.0,
+            min_target_level=6,
+            max_target_distance=2200.0,
+            target_auto_lowest_visible_level=False,
+            allow_avoid_target_fallback=False,
+            target_pool=5,
+            target_selection="smart",
+            target_level_weight=80.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            hunter_target_max_ground_z_delta=500.0,
+            attack_range=350.0,
+        )
+        bad = FakeNpc(1, "water beetle", 6, 80.0)
+        bad.x = 348382
+        bad.y = 533485
+        bad.z = 4598
+        good = FakeNpc(2, "water beetle", 6, 200.0)
+        good.x = 348900
+        good.y = 533900
+        good.z = 4288
+        client = FakeClient(npcs=[bad, good])
+        client.zone_id = 200
+        client.x = 348382
+        client.y = 533485
+        client.z = 4228
+        client.ground_z_sampler = lambda x, y, zone: 4228 if x == bad.x and y == bad.y else 4268
+
+        selected = behavior.choose_hunter_target(client, random.Random(1), args, {}, {}, now=100.0)
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, good.object_id)
+
+    def test_choose_hunter_target_allows_close_client_z_aligned_target_despite_ground_z_spike(self):
+        args = SimpleNamespace(
+            max_target_level=6,
+            player_level=5,
+            max_target_level_delta=0,
+            ideal_target_level=6,
+            prefer_target_name="water beetle",
+            require_target_name="",
+            avoid_target_name="",
+            npc_max_age=30.0,
+            min_target_level=6,
+            max_target_distance=2200.0,
+            target_auto_lowest_visible_level=False,
+            allow_avoid_target_fallback=False,
+            target_pool=5,
+            target_selection="smart",
+            target_level_weight=80.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            hunter_target_max_ground_z_delta=220.0,
+            hunter_target_max_attack_z_delta=220.0,
+            attack_range=350.0,
+        )
+        npc = FakeNpc(1, "water beetle", 6, 80.0)
+        npc.x = 349251
+        npc.y = 532854
+        npc.z = 4598
+        client = FakeClient(npcs=[npc])
+        client.zone_id = 200
+        client.x = 349464
+        client.y = 532858
+        client.z = 4598
+        client.ground_z_sampler = lambda x, y, zone: 5397 if x == npc.x and y == npc.y else 4598
+
+        self.assertTrue(behavior.hunter_target_ground_z_aligned(args, client, npc))
+        selected = behavior.choose_hunter_target(client, random.Random(1), args, {}, {}, now=100.0)
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, npc.object_id)
+
+    def test_hunter_target_scan_snapshot_counts_close_client_z_aligned_spike_as_eligible(self):
+        args = SimpleNamespace(
+            max_target_level=6,
+            player_level=5,
+            max_target_level_delta=0,
+            prefer_target_name="water beetle",
+            require_target_name="",
+            avoid_target_name="",
+            npc_max_age=30.0,
+            min_target_level=6,
+            max_target_distance=2200.0,
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            include_peace_npcs=True,
+            hunter_target_max_ground_z_delta=220.0,
+            hunter_target_max_attack_z_delta=220.0,
+            attack_range=350.0,
+        )
+        npc = FakeNpc(1, "water beetle", 6, 100.0)
+        npc.x = 349251
+        npc.y = 532854
+        npc.z = 4598
+        client = FakeClient(npcs=[npc])
+        client.zone_id = 200
+        client.x = 349464
+        client.y = 532858
+        client.z = 4598
+        client.ground_z_sampler = lambda x, y, zone: 5397
+
+        snapshot = behavior.hunter_target_scan_snapshot(client, args, {}, {}, now=100.0)
+
+        self.assertEqual(snapshot["hunter_eligible_npcs"], 1)
+        self.assertEqual(snapshot["hunter_reject_counts"]["ground_z"], 0)
+        self.assertEqual(snapshot["hunter_nearest_eligible"][0]["id"], npc.object_id)
+
+    def test_attack_z_mismatch_rejects_only_after_close_approach(self):
+        args = SimpleNamespace(
+            hunter_target_max_ground_z_delta=500.0,
+            hunter_target_max_attack_z_delta=220.0,
+            attack_range=350.0,
+        )
+
+        self.assertFalse(behavior.target_attack_z_mismatch_rejectable(args, 2400.0, 900.0))
+        self.assertFalse(behavior.target_attack_z_mismatch_rejectable(args, 800.0, 900.0))
+        self.assertTrue(behavior.target_attack_z_mismatch_rejectable(args, 700.0, 900.0))
+        self.assertTrue(behavior.target_attack_z_mismatch_rejectable(args, 400.0, 900.0))
+        self.assertTrue(behavior.target_attack_z_mismatch_rejectable(args, 300.0, 900.0))
+        self.assertFalse(behavior.target_attack_z_mismatch_rejectable(args, 380.0, 309.0))
+
+    def test_choose_hunter_target_keeps_far_z_mismatch_until_close_approach(self):
+        args = SimpleNamespace(
+            max_target_level=8,
+            player_level=10,
+            max_target_level_delta=0,
+            ideal_target_level=8,
+            prefer_target_name="roaming dirge",
+            require_target_name="",
+            avoid_target_name="",
+            npc_max_age=30.0,
+            min_target_level=8,
+            max_target_distance=2200.0,
+            target_auto_lowest_visible_level=False,
+            allow_avoid_target_fallback=False,
+            target_pool=5,
+            target_selection="smart",
+            target_level_weight=80.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            hunter_target_max_ground_z_delta=220.0,
+            attack_range=350.0,
+        )
+        target = FakeNpc(1, "roaming dirge", 8, 1800.0)
+        target.x = 101800
+        target.y = 100000
+        target.z = 6620
+        client = FakeClient(npcs=[target])
+        client.zone_id = 100
+        client.x = 100000
+        client.y = 100000
+        client.z = 4668
+        client.ground_z_sampler = lambda x, y, zone: 4668
+
+        self.assertTrue(behavior.hunter_target_ground_z_aligned(args, client, target))
+        self.assertTrue(behavior.hunter_target_client_z_aligned(args, client, target))
+        selected = behavior.choose_hunter_target(client, random.Random(1), args, {}, {}, now=100.0)
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, target.object_id)
+
+    def test_attack_z_mismatch_uses_configured_tolerance(self):
+        args = SimpleNamespace(
+            hunter_target_max_attack_z_delta=220.0,
+            hunter_target_attack_z_delta_tolerance=24.0,
+            attack_range=350.0,
+        )
+
+        self.assertFalse(behavior.target_attack_z_mismatch_rejectable(args, 205.0, 241.0))
+        self.assertTrue(behavior.target_attack_z_mismatch_rejectable(args, 205.0, 245.0))
+
+    def test_attack_z_mismatch_cooldown_uses_terrain_failure_floor(self):
+        args = SimpleNamespace(
+            server_los_failure_target_cooldown=45.0,
+            server_los_failure_kind_cooldown=20.0,
+            target_failure_cooldown=15.0,
+            target_failure_name_cooldown=30.0,
+            target_timeout=65.0,
+        )
+
+        self.assertEqual(behavior.attack_z_mismatch_target_cooldown(args), 130.0)
+        self.assertEqual(behavior.attack_z_mismatch_kind_cooldown(args), 130.0)
+
+    def test_preserved_z_target_selection_allows_ground_mismatch_until_attack_z_mismatch(self):
+        args = SimpleNamespace(
+            max_target_level=6,
+            player_level=5,
+            max_target_level_delta=0,
+            ideal_target_level=6,
+            prefer_target_name="water beetle",
+            require_target_name="",
+            avoid_target_name="",
+            npc_max_age=30.0,
+            min_target_level=6,
+            max_target_distance=2200.0,
+            target_auto_lowest_visible_level=False,
+            allow_avoid_target_fallback=False,
+            target_pool=5,
+            target_selection="smart",
+            target_level_weight=80.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            hunter_target_max_ground_z_delta=220.0,
+            hunter_target_max_attack_z_delta=220.0,
+            route_home_preserve_z=True,
+            attack_range=350.0,
+        )
+        npc = FakeNpc(1, "water beetle", 6, 290.0)
+        npc.x = 348462
+        npc.y = 533493
+        npc.z = 4598
+        client = FakeClient(npcs=[npc])
+        client.zone_id = 200
+        client.x = 348710
+        client.y = 533644
+        client.z = 4416
+        client.ground_z_sampler = lambda x, y, zone: 4161
+
+        self.assertTrue(behavior.hunter_target_ground_z_aligned(args, client, npc))
+        selected = behavior.choose_hunter_target(client, random.Random(1), args, {}, {}, now=100.0)
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, npc.object_id)
+
+        client.z = 4300
+        self.assertFalse(behavior.hunter_target_ground_z_aligned(args, client, npc))
+
+    def test_choose_hunter_target_rejects_close_client_z_mismatch_without_ground_sampler(self):
+        args = SimpleNamespace(
+            max_target_level=6,
+            player_level=5,
+            max_target_level_delta=0,
+            ideal_target_level=6,
+            prefer_target_name="water beetle",
+            require_target_name="",
+            avoid_target_name="",
+            npc_max_age=30.0,
+            min_target_level=6,
+            max_target_distance=2200.0,
+            target_auto_lowest_visible_level=False,
+            allow_avoid_target_fallback=False,
+            target_pool=5,
+            target_selection="smart",
+            target_level_weight=80.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            hunter_target_max_ground_z_delta=500.0,
+            attack_range=350.0,
+        )
+        bad = FakeNpc(1, "water beetle", 6, 6.0)
+        bad.x = 348382
+        bad.y = 533485
+        bad.z = 4598
+        good = FakeNpc(2, "water beetle", 6, 180.0)
+        good.x = 348520
+        good.y = 533560
+        good.z = 4270
+        client = FakeClient(npcs=[bad, good])
+        client.x = 348382
+        client.y = 533485
+        client.z = 4228
+
+        selected = behavior.choose_hunter_target(client, random.Random(1), args, {}, {}, now=100.0)
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, good.object_id)
+
+    def test_choose_hunter_target_rejects_non_attackable_visible_npc(self):
+        args = SimpleNamespace(
+            max_target_level=8,
+            player_level=10,
+            max_target_level_delta=0,
+            ideal_target_level=8,
+            prefer_target_name="water beetle",
+            require_target_name="",
+            avoid_target_name="",
+            npc_max_age=30.0,
+            min_target_level=7,
+            max_target_distance=2200.0,
+            target_auto_lowest_visible_level=False,
+            allow_avoid_target_fallback=False,
+            target_pool=5,
+            target_selection="smart",
+            target_level_weight=80.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            hunter_target_max_ground_z_delta=220.0,
+            attack_range=350.0,
+        )
+        friendly = FakeNpc(1, "water beetle", 7, 80.0)
+        friendly.target_can_attack = False
+        friendly.target_relation = "friendly"
+        hostile = FakeNpc(2, "water beetle", 7, 300.0)
+        hostile.target_can_attack = True
+        hostile.target_relation = "hostile"
+
+        selected = behavior.choose_hunter_target(
+            FakeClient(npcs=[friendly, hostile]),
+            random.Random(1),
+            args,
+            {},
+            {},
+            now=100.0,
+        )
+
+        self.assertEqual(selected.object_id, hostile.object_id)
 
     def test_hunter_target_scan_snapshot_reports_ground_z_rejections(self):
         args = SimpleNamespace(
@@ -6313,6 +8961,35 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(snapshot["hunter_eligible_npcs"], 0)
         self.assertEqual(snapshot["hunter_reject_counts"]["ground_z"], 1)
         self.assertEqual(snapshot["hunter_nearest_rejected"][0]["reason"], "ground_z")
+
+    def test_hunter_target_scan_snapshot_reports_non_attackable_rejections(self):
+        args = SimpleNamespace(
+            max_target_level=8,
+            player_level=10,
+            max_target_level_delta=0,
+            prefer_target_name="water beetle",
+            require_target_name="",
+            avoid_target_name="",
+            npc_max_age=30.0,
+            min_target_level=7,
+            max_target_distance=2200.0,
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            include_peace_npcs=True,
+            hunter_target_max_ground_z_delta=220.0,
+        )
+        friendly = FakeNpc(1, "water beetle", 7, 100.0)
+        friendly.target_can_attack = False
+        friendly.target_relation = "friendly"
+        client = FakeClient(npcs=[friendly])
+
+        snapshot = behavior.hunter_target_scan_snapshot(client, args, {}, {}, now=100.0)
+
+        self.assertEqual(snapshot["hunter_eligible_npcs"], 0)
+        self.assertEqual(snapshot["hunter_reject_counts"]["attackable"], 1)
+        self.assertEqual(snapshot["hunter_nearest_rejected"][0]["reason"], "attackable")
+        self.assertFalse(snapshot["hunter_nearest_rejected"][0]["can_attack"])
+        self.assertEqual(snapshot["hunter_nearest_rejected"][0]["relation"], "friendly")
 
     def test_choose_hunter_target_does_not_prefer_below_minimum_target(self):
         args = SimpleNamespace(
@@ -6498,6 +9175,86 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertIsNone(selected)
 
+    def test_choose_hunter_target_auto_lowest_can_use_unknown_level_zero_fallback(self):
+        args = SimpleNamespace(
+            max_target_level=4,
+            player_level=3,
+            max_target_level_delta=1,
+            ideal_target_level=4,
+            prefer_target_name="mud snake,tawny lynx cub",
+            require_target_name="",
+            avoid_target_name="lupine gnawer",
+            npc_max_age=30.0,
+            min_target_level=2,
+            max_target_distance=1500.0,
+            target_auto_lowest_visible_level=True,
+            allow_avoid_target_fallback=False,
+            target_pool=5,
+            target_selection="smart",
+            target_level_weight=80.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            required_target_home=behavior.Waypoint(773538, 749971, 4552),
+            target_home_max_distance=6200.0,
+        )
+        unknown_preferred = FakeNpc(1, "mud snake", 0, 130.0)
+        unknown_preferred.x = 771837
+        unknown_preferred.y = 748856
+        avoided_unknown = FakeNpc(2, "lupine gnawer", 0, 80.0)
+        avoided_unknown.x = 771900
+        avoided_unknown.y = 748900
+        known_too_low = FakeNpc(3, "weak skeleton", 1, 40.0)
+        known_too_low.x = 771930
+        known_too_low.y = 748880
+
+        selected = behavior.choose_hunter_target(
+            FakeClient(npcs=[known_too_low, avoided_unknown, unknown_preferred]),
+            random.Random(1),
+            args,
+            {},
+            {},
+            now=100.0,
+        )
+
+        self.assertEqual(selected.object_id, unknown_preferred.object_id)
+
+    def test_choose_hunter_target_auto_lowest_rejects_unknown_level_after_level_five(self):
+        args = SimpleNamespace(
+            max_target_level=6,
+            player_level=5,
+            max_target_level_delta=1,
+            ideal_target_level=6,
+            prefer_target_name="dappled lynx cub",
+            require_target_name="",
+            avoid_target_name="",
+            npc_max_age=30.0,
+            min_target_level=5,
+            max_target_distance=1500.0,
+            target_auto_lowest_visible_level=True,
+            allow_avoid_target_fallback=False,
+            target_pool=5,
+            target_selection="smart",
+            target_level_weight=80.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+        )
+        unknown_preferred = FakeNpc(1, "dappled lynx cub", 0, 130.0)
+
+        selected = behavior.choose_hunter_target(
+            FakeClient(npcs=[unknown_preferred]),
+            random.Random(1),
+            args,
+            {},
+            {},
+            now=100.0,
+        )
+
+        self.assertIsNone(selected)
+
     def test_choose_hunter_target_can_use_preferred_low_con_fallback_when_enabled(self):
         args = SimpleNamespace(
             max_target_level=8,
@@ -6630,6 +9387,820 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertIsNotNone(selected)
         self.assertEqual(selected.object_id, 2)
         self.assertEqual(selected.level, 4)
+
+    def test_required_target_exact_rejects_prefixed_visible_target(self):
+        args = SimpleNamespace(
+            max_target_level=5,
+            player_level=7,
+            max_target_level_delta=0,
+            ideal_target_level=5,
+            prefer_target_name="vein spider",
+            require_target_name="vein spider",
+            require_target_name_exact=True,
+            avoid_target_name="",
+            min_target_level=5,
+            max_target_distance=1200.0,
+            target_pool=2,
+            target_selection="nearest",
+            target_level_weight=120.0,
+            target_distance_weight=120.0,
+            target_randomness=0.0,
+            prefer_target_bonus=300.0,
+            npc_max_age=60.0,
+            include_peace_npcs=False,
+            target_auto_lowest_visible_level=False,
+            allow_avoid_target_fallback=False,
+        )
+        prefixed = FakeNpc(10, "노련한 vein spider", 5, 100.0)
+        plain = FakeNpc(20, "vein spider", 5, 300.0)
+
+        selected = behavior.choose_hunter_target(
+            FakeClient(npcs=[prefixed, plain]),
+            random.Random(1),
+            args,
+            {},
+            {},
+            now=100.0,
+        )
+
+        self.assertEqual(selected.object_id, 20)
+        self.assertFalse(behavior.passes_required_target_filter(args, prefixed))
+
+    def test_hunter_target_api_scout_exact_rejects_prefixed_required_target(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=100,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=1200,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=1200.0,
+            min_target_level=5,
+            max_target_level=5,
+            player_level=7,
+            max_target_level_delta=0,
+            prefer_target_name="vein spider",
+            require_target_name="vein spider",
+            require_target_name_exact=True,
+            avoid_target_name="",
+            target_home_max_distance=1200.0,
+            required_target_home=None,
+            max_target_distance=1200.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            allow_avoid_target_fallback=False,
+            npc_max_age=30.0,
+            include_peace_npcs=True,
+        )
+        payload = (
+            b'{"items":['
+            b'{"objectId":1,"name":"\\ub178\\ub828\\ud55c vein spider","level":5,"x":100,"y":0,"z":0},'
+            b'{"objectId":2,"name":"vein spider","level":5,"x":300,"y":0,"z":0}'
+            b"]}"
+        )
+        client = FakeClient()
+        client.zone_id = 100
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(behavior.urllib.request, "urlopen", return_value=FakeResponse()):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, 2)
+
+    def test_hunter_target_api_scout_rejects_candidate_with_nearby_avoid_count(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=1,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=6500,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=6500.0,
+            min_target_level=5,
+            max_target_level=5,
+            player_level=7,
+            max_target_level_delta=0,
+            prefer_target_name="dragon ant worker",
+            require_target_name="dragon ant worker",
+            required_target_api_name="",
+            avoid_target_name="dragon ant soldier,bandit",
+            target_nearby_avoid_radius=1800,
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            max_target_distance=6500.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            allow_avoid_target_fallback=False,
+            npc_max_age=30.0,
+            include_peace_npcs=True,
+        )
+        payload = (
+            b'{"items":['
+            b'{"objectId":1,"name":"dragon ant worker","level":5,"x":100,"y":0,"z":0,'
+            b'"nearbyAvoidRadius":1800,"nearbyAvoidCount":1},'
+            b'{"objectId":2,"name":"dragon ant worker","level":5,"x":300,"y":0,"z":0,'
+            b'"nearbyAvoidRadius":1800,"nearbyAvoidCount":0}'
+            b"]}"
+        )
+        client = FakeClient()
+        client.zone_id = 1
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(behavior.urllib.request, "urlopen", return_value=FakeResponse()):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, 2)
+        snapshot = args._hunter_target_api_last_scan_snapshot
+        self.assertEqual(snapshot["hunter_api_reject_counts"]["nearby_avoid"], 1)
+        self.assertEqual(snapshot["hunter_api_nearest_rejected"][0]["nearby_avoid_count"], 1)
+
+    def test_hunter_target_api_scout_deprefs_growth_prefix_when_plain_candidate_exists(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=1,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=6500,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=6500.0,
+            min_target_level=7,
+            max_target_level=8,
+            player_level=10,
+            max_target_level_delta=0,
+            prefer_target_name="river racer",
+            require_target_name="",
+            required_target_api_name="",
+            avoid_target_name="",
+            target_nearby_avoid_name="",
+            target_nearby_avoid_radius=1800,
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            max_target_distance=6500.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            allow_avoid_target_fallback=False,
+            npc_max_age=30.0,
+            include_peace_npcs=True,
+        )
+        payload = (
+            b'{"items":['
+            b'{"objectId":1,"name":"\\ub178\\ub828\\ud55c river racer","level":7,"x":100,"y":0,"z":0,'
+            b'"nearbyAvoidRadius":1800,"nearbyAvoidCount":0},'
+            b'{"objectId":2,"name":"river racer","level":7,"x":900,"y":0,"z":0,'
+            b'"nearbyAvoidRadius":1800,"nearbyAvoidCount":0}'
+            b"]}"
+        )
+        client = FakeClient()
+        client.zone_id = 1
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(behavior.urllib.request, "urlopen", return_value=FakeResponse()):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, 2)
+
+    def test_hunter_target_api_scout_rejects_growth_prefix_when_not_explicit(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=1,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=6500,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=6500.0,
+            min_target_level=11,
+            max_target_level=12,
+            player_level=10,
+            max_target_level_delta=0,
+            prefer_target_name="",
+            require_target_name="",
+            required_target_api_name="",
+            avoid_target_name="",
+            target_nearby_avoid_name="",
+            target_nearby_avoid_radius=1800,
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            max_target_distance=6500.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            allow_avoid_target_fallback=False,
+            npc_max_age=30.0,
+            include_peace_npcs=True,
+        )
+        payload = (
+            b'{"items":['
+            b'{"objectId":1,"name":"\\ub178\\ub828\\ud55c wild lucradan","level":11,"x":100,"y":0,"z":0,'
+            b'"nearbyAvoidRadius":1800,"nearbyAvoidCount":0}'
+            b"]}"
+        )
+        client = FakeClient()
+        client.zone_id = 1
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(behavior.urllib.request, "urlopen", return_value=FakeResponse()):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNone(selected)
+        snapshot = args._hunter_target_api_last_scan_snapshot
+        self.assertEqual(snapshot["hunter_api_reject_counts"]["growth_prefix"], 1)
+
+    def test_hunter_target_api_scout_rejects_plain_candidate_near_growth_prefix_same_base(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=1,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=6500,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=6500.0,
+            min_target_level=7,
+            max_target_level=8,
+            player_level=10,
+            max_target_level_delta=0,
+            prefer_target_name="river racer",
+            require_target_name="",
+            required_target_api_name="",
+            avoid_target_name="",
+            target_nearby_avoid_name="",
+            target_nearby_avoid_radius=1800,
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            max_target_distance=6500.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            allow_avoid_target_fallback=False,
+            npc_max_age=30.0,
+            include_peace_npcs=True,
+        )
+        payload = (
+            b'{"items":['
+            b'{"objectId":1,"name":"river racer","level":7,"x":1000,"y":1000,"z":0,'
+            b'"nearbyAvoidRadius":0,"nearbyAvoidCount":0},'
+            b'{"objectId":2,"name":"\\ub178\\ub828\\ud55c river racer","level":8,"x":1500,"y":1000,"z":0,'
+            b'"nearbyAvoidRadius":0,"nearbyAvoidCount":0},'
+            b'{"objectId":3,"name":"river racer","level":7,"x":5000,"y":1000,"z":0,'
+            b'"nearbyAvoidRadius":0,"nearbyAvoidCount":0}'
+            b"]}"
+        )
+        client = FakeClient()
+        client.zone_id = 1
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(behavior.urllib.request, "urlopen", return_value=FakeResponse()):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, 3)
+        snapshot = args._hunter_target_api_last_scan_snapshot
+        self.assertEqual(snapshot["hunter_api_reject_counts"]["nearby_growth_prefix"], 1)
+
+    def test_hunter_target_api_scout_allows_close_required_target_with_auto_nearby_avoid_count(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=1,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=2200,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=1500.0,
+            min_target_level=7,
+            max_target_level=8,
+            player_level=10,
+            max_target_level_delta=0,
+            prefer_target_name="adder",
+            require_target_name="adder",
+            required_target_api_name="",
+            avoid_target_name="spirit,bandit henchman",
+            target_nearby_avoid_name="",
+            target_nearby_avoid_radius=1800,
+            target_home_max_distance=6200.0,
+            required_target_home=behavior.Waypoint(594457, 499932, 2059),
+            max_target_distance=2200.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            allow_avoid_target_fallback=False,
+            npc_max_age=30.0,
+            include_peace_npcs=True,
+        )
+        payload = (
+            b'{"items":['
+            b'{"objectId":1,"name":"\\ub178\\ub828\\ud55c adder","level":8,"x":594457,"y":499932,"z":2057,'
+            b'"nearbyAvoidRadius":1800,"nearbyAvoidCount":2}'
+            b"]}"
+        )
+        client = FakeClient()
+        client.zone_id = 1
+        client.x = 594457
+        client.y = 499943
+        client.z = 2059
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(behavior.urllib.request, "urlopen", return_value=FakeResponse()):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, 1)
+        snapshot = args._hunter_target_api_last_scan_snapshot
+        self.assertEqual(snapshot["hunter_api_reject_counts"]["nearby_avoid"], 0)
+        self.assertEqual(snapshot["hunter_api_eligible"], 1)
+
+    def test_hunter_target_api_scout_keeps_explicit_nearby_avoid_name_for_close_required_target(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=1,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=2200,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=1500.0,
+            min_target_level=7,
+            max_target_level=8,
+            player_level=10,
+            max_target_level_delta=0,
+            prefer_target_name="adder",
+            require_target_name="adder",
+            required_target_api_name="",
+            avoid_target_name="spirit,bandit henchman",
+            target_nearby_avoid_name="spirit",
+            target_nearby_avoid_radius=1800,
+            target_home_max_distance=6200.0,
+            required_target_home=behavior.Waypoint(594457, 499932, 2059),
+            max_target_distance=2200.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            allow_avoid_target_fallback=False,
+            npc_max_age=30.0,
+            include_peace_npcs=True,
+        )
+        payload = (
+            b'{"items":['
+            b'{"objectId":1,"name":"\\ub178\\ub828\\ud55c adder","level":8,"x":594457,"y":499932,"z":2057,'
+            b'"nearbyAvoidRadius":1800,"nearbyAvoidCount":1}'
+            b"]}"
+        )
+        client = FakeClient()
+        client.zone_id = 1
+        client.x = 594457
+        client.y = 499943
+        client.z = 2059
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(behavior.urllib.request, "urlopen", return_value=FakeResponse()):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNone(selected)
+        snapshot = args._hunter_target_api_last_scan_snapshot
+        self.assertEqual(snapshot["hunter_api_reject_counts"]["nearby_avoid"], 1)
+
+    def test_hunter_target_api_scout_ignores_nearby_avoid_count_without_name_tokens(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=1,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=6500,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=6500.0,
+            min_target_level=7,
+            max_target_level=8,
+            player_level=10,
+            max_target_level_delta=1,
+            prefer_target_name="adder",
+            require_target_name="adder",
+            required_target_api_name="",
+            avoid_target_name="veteran adder,노련한 adder",
+            target_nearby_avoid_name="",
+            target_nearby_avoid_radius=1800,
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            max_target_distance=6500.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            allow_avoid_target_fallback=False,
+            npc_max_age=30.0,
+            include_peace_npcs=True,
+        )
+        payload = (
+            b'{"items":['
+            b'{"objectId":4508,"name":"adder","level":8,"x":100,"y":0,"z":0,'
+            b'"nearbyAvoidRadius":1800,"nearbyAvoidCount":1}'
+            b"]}"
+        )
+        client = FakeClient()
+        client.zone_id = 1
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(behavior.urllib.request, "urlopen", return_value=FakeResponse()):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, 4508)
+        snapshot = args._hunter_target_api_last_scan_snapshot
+        self.assertEqual(snapshot["hunter_api_reject_counts"]["nearby_avoid"], 0)
+
+    def test_hunter_target_api_scout_checks_nearby_avoid_with_legacy_api(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=1,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=6500,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=6500.0,
+            min_target_level=5,
+            max_target_level=5,
+            player_level=7,
+            max_target_level_delta=0,
+            prefer_target_name="dragon ant worker",
+            require_target_name="dragon ant worker",
+            required_target_api_name="",
+            avoid_target_name="dragon ant soldier,bandit",
+            target_nearby_avoid_radius=1800,
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            max_target_distance=6500.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            allow_avoid_target_fallback=False,
+            npc_max_age=30.0,
+            include_peace_npcs=True,
+        )
+        primary_payload = (
+            b'{"items":['
+            b'{"objectId":1,"name":"dragon ant worker","level":5,"x":100,"y":10,"z":0},'
+            b'{"objectId":2,"name":"dragon ant worker","level":5,"x":300,"y":10,"z":0}'
+            b"]}"
+        )
+        unsafe_nearby_payload = (
+            b'{"items":[{"objectId":9,"name":"dragon ant soldier","level":5,"x":150,"y":10,"z":0}]}'
+        )
+        empty_nearby_payload = b'{"items":[]}'
+        client = FakeClient()
+        client.zone_id = 1
+
+        class FakeResponse:
+            def __init__(self, payload: bytes):
+                self.payload = payload
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return self.payload
+
+        def fake_urlopen(request, timeout=0):
+            url = request.full_url if hasattr(request, "full_url") else str(request)
+            query = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+            if query.get("name") == ["dragon ant worker"]:
+                return FakeResponse(primary_payload)
+            if query.get("x") == ["100"] and query.get("name") == ["dragon ant soldier"]:
+                return FakeResponse(unsafe_nearby_payload)
+            return FakeResponse(empty_nearby_payload)
+
+        with patch.object(behavior.urllib.request, "urlopen", side_effect=fake_urlopen):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, 2)
+        self.assertEqual(args._hunter_target_api_last_scan_snapshot["hunter_api_reject_counts"]["nearby_avoid"], 1)
+
+    def test_hunter_target_api_scout_can_use_unknown_level_zero_fallback(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=100,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=2200,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=1500.0,
+            min_target_level=2,
+            max_target_level=4,
+            player_level=3,
+            max_target_level_delta=1,
+            prefer_target_name="mud snake,tawny lynx cub",
+            require_target_name="",
+            avoid_target_name="lupine gnawer",
+            target_home_max_distance=6200.0,
+            required_target_home=behavior.Waypoint(773538, 749971, 4552),
+            max_target_distance=1500.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            target_auto_lowest_visible_level=True,
+        )
+        payload = (
+            b'{"items":['
+            b'{"objectId":1,"name":"mud snake","level":0,"x":771837,"y":748856,"z":4473},'
+            b'{"objectId":2,"name":"lupine gnawer","level":0,"x":771900,"y":748900,"z":4552},'
+            b'{"objectId":3,"name":"weak skeleton","level":1,"x":771930,"y":748880,"z":4552}'
+            b"]}"
+        )
+        client = FakeClient()
+        client.zone_id = 100
+        client.x = 771958
+        client.y = 748805
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(behavior.urllib.request, "urlopen", return_value=FakeResponse()):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, 1)
+        self.assertEqual(selected.level, 0)
+
+    def test_hunter_target_api_fallback_keeps_specific_avoid_under_broad_prefer_blocked(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=100,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=2200,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=1500.0,
+            min_target_level=3,
+            max_target_level=5,
+            player_level=4,
+            max_target_level_delta=1,
+            prefer_target_name="wood-eater",
+            require_target_name="",
+            avoid_target_name="wood-eater worker",
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            max_target_distance=2200.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            allow_avoid_target_fallback=True,
+        )
+        payload = b'{"items":[{"objectId":1,"name":"wood-eater worker","level":4,"x":100,"y":0,"z":0}]}'
+        client = FakeClient()
+        client.zone_id = 100
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(behavior.urllib.request, "urlopen", return_value=FakeResponse()):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNone(selected)
+
+    def test_hunter_target_api_keeps_exact_prefer_when_broad_avoid_conflicts(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=200,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=6500,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=6500.0,
+            min_target_level=5,
+            max_target_level=5,
+            player_level=5,
+            max_target_level_delta=0,
+            prefer_target_name="water beetle collector",
+            require_target_name="",
+            avoid_target_name="water beetle,water beetle collector",
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            max_target_distance=6500.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            allow_avoid_target_fallback=False,
+        )
+        payload = b'{"items":[{"objectId":1,"name":"water beetle collector","level":5,"x":348164,"y":498725,"z":4598}]}'
+        client = FakeClient()
+        client.zone_id = 200
+        client.x = 348417
+        client.y = 498923
+        client.z = 4056
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(behavior.urllib.request, "urlopen", return_value=FakeResponse()):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, 1)
 
     def test_dynamic_quest_e2e_enables_hunter_target_api_scout(self):
         args = SimpleNamespace(
@@ -6779,6 +10350,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             hunter_target_api_limit=5,
             hunter_target_api_engage_distance=4000.0,
             hunter_target_max_ground_z_delta=220.0,
+            attack_range=350.0,
             min_target_level=7,
             max_target_level=8,
             player_level=10,
@@ -6827,6 +10399,273 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertIsNotNone(selected)
         self.assertEqual(selected.object_id, 2)
+
+    def test_hunter_target_api_scout_rejects_attack_z_mismatch_when_route_delta_is_loose(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=200,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=2200,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=4000.0,
+            hunter_target_max_ground_z_delta=500.0,
+            attack_range=350.0,
+            min_target_level=6,
+            max_target_level=6,
+            player_level=5,
+            max_target_level_delta=0,
+            prefer_target_name="water beetle",
+            require_target_name="",
+            avoid_target_name="",
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            max_target_distance=2200.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+        )
+        payload = (
+            b'{"items":['
+            b'{"objectId":1,"name":"water beetle","level":6,"x":348382,"y":533485,"z":4598},'
+            b'{"objectId":2,"name":"water beetle","level":6,"x":348900,"y":533900,"z":4288}'
+            b"]}"
+        )
+        client = FakeClient()
+        client.zone_id = 200
+        client.x = 348382
+        client.y = 533485
+        client.z = 4228
+        client.ground_z_sampler = lambda x, y, zone: 4228 if x == 348382 and y == 533485 else 4268
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(behavior.urllib.request, "urlopen", return_value=FakeResponse()):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, 2)
+        self.assertEqual(args._hunter_target_api_last_scan_snapshot["hunter_api_reject_counts"]["ground_z"], 1)
+
+    def test_hunter_target_api_scout_records_ground_z_rejection_snapshot(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=200,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=6500,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=6500.0,
+            hunter_target_max_ground_z_delta=220.0,
+            attack_range=350.0,
+            min_target_level=5,
+            max_target_level=5,
+            player_level=5,
+            max_target_level_delta=0,
+            prefer_target_name="water beetle collector",
+            require_target_name="",
+            avoid_target_name="",
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            max_target_distance=6500.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            npc_max_age=30.0,
+            include_peace_npcs=True,
+        )
+        payload = (
+            b'{"items":['
+            b'{"objectId":1,"name":"water beetle collector","level":5,'
+            b'"x":350688,"y":534196,"z":4598}'
+            b"]}"
+        )
+        client = FakeClient()
+        client.zone_id = 200
+        client.x = 350688
+        client.y = 534196
+        client.z = 3586
+        client.ground_z_sampler = lambda x, y, zone: 3586
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(behavior.urllib.request, "urlopen", return_value=FakeResponse()):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNone(selected)
+        api_snapshot = args._hunter_target_api_last_scan_snapshot
+        self.assertEqual(api_snapshot["hunter_api_items"], 1)
+        self.assertEqual(api_snapshot["hunter_api_eligible"], 0)
+        self.assertEqual(api_snapshot["hunter_api_reject_counts"]["ground_z"], 1)
+        self.assertEqual(api_snapshot["hunter_api_nearest_rejected"][0]["reason"], "ground_z")
+        self.assertEqual(api_snapshot["hunter_api_nearest_rejected"][0]["ground_z_delta"], 1012.0)
+
+        scan_snapshot = behavior.hunter_target_scan_snapshot(client, args, {}, {}, now=101.0)
+        self.assertEqual(scan_snapshot["hunter_api_reject_counts"]["ground_z"], 1)
+
+    def test_hunter_target_api_scout_keeps_far_z_mismatch_until_close_approach(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=100,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=6500,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=6500.0,
+            hunter_target_max_ground_z_delta=220.0,
+            attack_range=350.0,
+            min_target_level=8,
+            max_target_level=8,
+            player_level=10,
+            max_target_level_delta=0,
+            prefer_target_name="roaming dirge",
+            require_target_name="",
+            avoid_target_name="",
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            max_target_distance=6500.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+        )
+        payload = (
+            b'{"items":['
+            b'{"objectId":6620,"name":"roaming dirge","level":8,'
+            b'"x":101800,"y":100000,"z":6620}'
+            b"]}"
+        )
+        client = FakeClient()
+        client.zone_id = 100
+        client.x = 100000
+        client.y = 100000
+        client.z = 4668
+        client.ground_z_sampler = lambda x, y, zone: 4668
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(behavior.urllib.request, "urlopen", return_value=FakeResponse()):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, 6620)
+        api_snapshot = args._hunter_target_api_last_scan_snapshot
+        self.assertEqual(api_snapshot["hunter_api_eligible"], 1)
+        self.assertEqual(api_snapshot["hunter_api_reject_counts"]["ground_z"], 0)
+        self.assertEqual(api_snapshot["hunter_api_reject_counts"]["client_z"], 0)
+
+    def test_hunter_target_api_scout_rejects_large_client_z_gap(self):
+        args = SimpleNamespace(
+            hunter_target_api_scout=True,
+            path_region=100,
+            hunter_target_api_timeout=1.0,
+            hunter_target_api_url="",
+            host="127.0.0.1",
+            api_port=5000,
+            hunter_target_api_radius=6500,
+            hunter_target_api_limit=5,
+            hunter_target_api_engage_distance=6500.0,
+            hunter_target_max_ground_z_delta=1200.0,
+            min_target_level=6,
+            max_target_level=6,
+            player_level=9,
+            max_target_level_delta=0,
+            prefer_target_name="carrion crawler",
+            require_target_name="",
+            avoid_target_name="",
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            max_target_distance=6500.0,
+            target_distance_weight=1000.0,
+            prefer_target_bonus=400.0,
+            target_randomness=0.0,
+            attack_range=350.0,
+        )
+        payload = (
+            b'{"items":['
+            b'{"objectId":16635,"name":"carrion crawler","level":6,"x":786950,"y":873259,"z":4715},'
+            b'{"objectId":16636,"name":"carrion crawler","level":6,"x":787050,"y":868900,"z":9600}'
+            b"]}"
+        )
+        client = FakeClient()
+        client.zone_id = 100
+        client.x = 787192
+        client.y = 868637
+        client.z = 9806
+        client.ground_z_sampler = lambda x, y, zone: 4715 if x == 786950 else 9600
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(behavior.urllib.request, "urlopen", return_value=FakeResponse()):
+            selected = behavior.fetch_hunter_target_api_observation(
+                args,
+                client,
+                random.Random(1),
+                {},
+                {},
+                now=100.0,
+            )
+
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.object_id, 16636)
 
     def test_choose_current_visible_target_keeps_active_target(self):
         current = FakeNpc(42, "current piglet", 1, 900.0)
@@ -7109,6 +10948,34 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertIn("friendly_target", categories)
         self.assertTrue(behavior.should_reject_current_target_for_friendly_feedback(categories))
 
+    def test_party_state_can_clear_shared_target_after_friendly_feedback(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        client = SimpleNamespace(
+            session_id=1,
+            player_object_id=10,
+            x=100,
+            y=200,
+            z=300,
+            heading=0,
+            health_percent=100,
+            is_dead=False,
+        )
+        target = SimpleNamespace(
+            object_id=1234,
+            name="friendly player",
+            x=150,
+            y=250,
+            z=300,
+            level=7,
+            target_can_attack=False,
+            target_relation="friendly",
+        )
+
+        state.update_leader(client, target, engaged=True)
+
+        self.assertTrue(state.clear_leader_target_if_match(1234))
+        self.assertEqual(state.snapshot()["leader_target_id"], 0)
+
     def test_active_target_combat_contact_accepts_chat_type_thirty_for_target_name(self):
         active_combat = {"target_name": "water beetle"}
 
@@ -7166,6 +11033,56 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(action_counts["server_los_failure_reposition_move"], 1)
         self.assertTrue(client.headings)
 
+    def test_close_server_los_failure_reposition_uses_policy_boundary_when_unreachable(self):
+        class RepositionClient(StepPathClient):
+            def __init__(self) -> None:
+                super().__init__()
+                self.heading = 0
+                self.headings: list[int] = []
+
+            def send_heading(self, heading: int, *, drain_after: bool = True) -> int:
+                self.heading = heading
+                self.headings.append(heading)
+                return 0
+
+        client = RepositionClient()
+        client.x = 50
+        target = SimpleNamespace(object_id=2, x=0, y=0, z=0)
+        args = SimpleNamespace(
+            attack_range=350.0,
+            minimum_melee_stop_distance=60.0,
+            movement_speed=240.0,
+            movement_update_interval=0.0,
+            nav_api_url="",
+            path_last_mile_distance=50.0,
+            path_replan_interval=60.0,
+            path_max_node_distance=50.0,
+            path_node_arrival_distance=50.0,
+            path_max_edge_length=1500.0,
+        )
+        path_state = behavior.PathMovementState(
+            behavior.PathGraph(),
+            1,
+            behavior.PathSafety(max_direct_distance=50.0, max_edge_length=1500.0),
+        )
+        action_counts: dict[str, int] = {}
+
+        moved = behavior.reposition_after_close_server_los_failure(
+            client,
+            args,
+            target,
+            action_counts,
+            path_state,
+        )
+
+        self.assertFalse(moved)
+        self.assertEqual(client.moves, [])
+        self.assertEqual(client.position_updates, [(0.0, True), (0.0, True)])
+        self.assertEqual(action_counts["path_failed"], 1)
+        self.assertEqual(action_counts["server_los_failure_reposition_policy"], 1)
+        self.assertEqual(action_counts["server_los_failure_reposition_hold"], 1)
+        self.assertTrue(client.headings)
+
     def test_server_los_retry_keeps_closing_until_retry_stop_distance(self):
         args = SimpleNamespace(
             minimum_melee_stop_distance=60.0,
@@ -7178,6 +11095,63 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(behavior.server_los_retry_stop_distance(args, "melee-basic"), 30.0)
         self.assertTrue(behavior.should_close_for_server_los_retry(args, "melee-basic", 51.0))
         self.assertFalse(behavior.should_close_for_server_los_retry(args, "melee-basic", 31.0))
+
+    def test_combat_destination_policy_preserves_no_policy_direct_move(self):
+        client = PathClient()
+        args = SimpleNamespace(movement_speed=240.0, movement_update_interval=0.0)
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_combat_destination_with_policy(
+            client,
+            behavior.MovementDestination("target:1", 200, 0, 0),
+            step=120.0,
+            stop_distance=30.0,
+            args=args,
+            path_state=None,
+            action_counts=action_counts,
+            movement_speed=260.0,
+            target_in_view=True,
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual(client.moves[-1][:3], (200, 0, 0))
+        self.assertEqual(client.movement_speeds[-1], 240.0)
+
+    def test_combat_destination_policy_blocks_unreachable_close_target(self):
+        client = StepPathClient()
+        args = SimpleNamespace(
+            movement_speed=240.0,
+            movement_update_interval=0.0,
+            nav_api_url="",
+            path_last_mile_distance=50.0,
+            path_replan_interval=60.0,
+            path_max_node_distance=50.0,
+            path_node_arrival_distance=50.0,
+            path_max_edge_length=1500.0,
+        )
+        path_state = behavior.PathMovementState(
+            behavior.PathGraph(),
+            1,
+            behavior.PathSafety(max_direct_distance=50.0, max_edge_length=1500.0),
+        )
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_combat_destination_with_policy(
+            client,
+            behavior.MovementDestination("target:1", 120, 0, 0),
+            step=120.0,
+            stop_distance=30.0,
+            args=args,
+            path_state=path_state,
+            action_counts=action_counts,
+            movement_speed=260.0,
+            target_in_view=True,
+        )
+
+        self.assertFalse(outcome.moved)
+        self.assertEqual(client.moves, [])
+        self.assertEqual(client.position_updates, [(0.0, True)])
+        self.assertEqual(action_counts["path_failed"], 1)
 
     def test_server_los_retry_prefers_server_observation_over_stale_visible_cache(self):
         stale_visible = FakeNpc(42, "boar piglet", 1, 35.0)
@@ -7276,6 +11250,43 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             behavior.combat_stop_distance(args, "caster-basic"),
         )
 
+    def test_repeated_melee_out_of_range_feedback_closes_inside_retry_distance(self):
+        args = SimpleNamespace(
+            minimum_melee_stop_distance=60.0,
+            attack_range=350.0,
+            melee_range_buffer=300.0,
+            ranged_stop_distance=1100.0,
+            spell_range=1500.0,
+        )
+        active_combat = {"server_range_close_until": 25.0, "server_range_close_count": 2}
+
+        self.assertEqual(behavior.server_los_retry_stop_distance(args, "melee-basic"), 30.0)
+        self.assertEqual(
+            behavior.server_los_retry_stop_distance_after_feedback(
+                args,
+                "melee-basic",
+                active_combat,
+            ),
+            6.0,
+        )
+        self.assertTrue(
+            behavior.should_close_for_server_los_retry(
+                args,
+                "melee-basic",
+                30.0,
+                active_combat,
+            )
+        )
+        self.assertEqual(
+            behavior.combat_stop_distance_after_server_feedback(
+                args,
+                "melee-basic",
+                active_combat,
+                now=20.0,
+            ),
+            6.0,
+        )
+
     def test_melee_out_of_range_feedback_blocks_attack_until_retry_stop_distance(self):
         args = SimpleNamespace(
             minimum_melee_stop_distance=70.0,
@@ -7303,6 +11314,17 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 args,
                 "melee-basic",
                 35.0,
+                active_combat,
+                now=20.0,
+            )
+        )
+        args.melee_stick_attack = True
+        self.assertFalse(behavior.should_enable_attack_mode(args, "melee-basic", 1000.0))
+        self.assertFalse(
+            behavior.should_enable_attack_mode_after_server_feedback(
+                args,
+                "melee-basic",
+                1000.0,
                 active_combat,
                 now=20.0,
             )
@@ -7416,6 +11438,79 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
+    def test_repeated_close_range_out_of_range_while_taking_damage_stops_retry_during_grace(self):
+        active_combat = {
+            "target_id": 42,
+            "target_name": "water beetle",
+            "target_level": 6,
+            "damage_done": 0,
+            "damage_taken": 70,
+            "last_combat_message_at": 0.0,
+            "server_los_failures": 2,
+            "server_range_close_count": 3,
+        }
+
+        self.assertFalse(
+            behavior.should_retry_server_los_failure(
+                active_combat,
+                now=102.0,
+                target_age=2.0,
+                los_failure_grace=8.0,
+                max_retries_after_hit=8,
+            )
+        )
+
+    def test_repeated_close_range_out_of_range_without_damage_stops_retry_during_grace(self):
+        active_combat = {
+            "target_id": 42,
+            "target_name": "water beetle",
+            "target_level": 6,
+            "damage_done": 0,
+            "damage_taken": 0,
+            "last_combat_message_at": 0.0,
+            "server_los_failures": 3,
+            "server_range_close_count": 3,
+        }
+
+        self.assertFalse(
+            behavior.should_retry_server_los_failure(
+                active_combat,
+                now=102.0,
+                target_age=2.0,
+                los_failure_grace=8.0,
+                max_retries_after_hit=8,
+            )
+        )
+
+    def test_close_out_of_range_feedback_records_xy_failure_for_z_blocked_target(self):
+        active_combat = {
+            "target_id": 42,
+            "target_name": "water beetle",
+            "target_level": 6,
+            "damage_done": 0,
+            "damage_taken": 0,
+            "server_range_close_count": 3,
+            "server_los_failures": 0,
+        }
+
+        self.assertTrue(
+            behavior.record_close_out_of_range_failure(
+                active_combat,
+                observed_distance=225.0,
+                close_distance=350.0,
+            )
+        )
+        self.assertEqual(active_combat["server_los_failures"], 3)
+        self.assertFalse(
+            behavior.should_retry_server_los_failure(
+                active_combat,
+                now=102.0,
+                target_age=20.0,
+                los_failure_grace=8.0,
+                max_retries_after_hit=8,
+            )
+        )
+
     def test_target_loss_after_repeated_los_and_damage_is_los_failure(self):
         active_combat = {
             "target_id": 42,
@@ -7508,10 +11603,24 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertEqual(behavior.api_region_for_client(args, client), 1)
 
-    def test_range_only_server_message_does_not_count_as_los_failure(self):
+    def test_range_only_server_message_counts_as_failure_when_close(self):
         self.assertFalse(behavior.should_count_server_los_failure({"out_of_range"}))
         self.assertTrue(behavior.should_count_server_los_failure({"not_visible"}))
         self.assertTrue(behavior.should_count_server_los_failure({"out_of_range", "not_visible"}))
+        self.assertFalse(
+            behavior.should_count_server_los_failure(
+                {"out_of_range"},
+                target_distance=260.0,
+                close_distance=140.0,
+            )
+        )
+        self.assertTrue(
+            behavior.should_count_server_los_failure(
+                {"out_of_range"},
+                target_distance=90.0,
+                close_distance=140.0,
+            )
+        )
         self.assertFalse(
             behavior.should_count_server_los_failure(
                 {"not_visible"},
@@ -7677,6 +11786,73 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertEqual(selected.name, "green snake")
 
+    def test_hunter_avoids_rejected_target_kind_with_con_prefix(self):
+        args = SimpleNamespace(
+            npc_max_age=60.0,
+            include_peace_npcs=False,
+            player_level=8,
+            ideal_target_level=8,
+            min_target_level=7,
+            max_target_level=8,
+            max_target_level_delta=0,
+            max_target_distance=0.0,
+            target_auto_lowest_visible_level=False,
+            allow_avoid_target_fallback=False,
+            target_pool=5,
+            target_selection="nearest",
+            target_level_weight=120.0,
+            target_distance_weight=120.0,
+            target_randomness=0.0,
+            prefer_target_name="",
+            require_target_name="",
+            avoid_target_name="",
+            prefer_target_bonus=300.0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+        )
+        npcs = [
+            FakeNpc(1, "노련한 water beetle", 8, 100),
+            FakeNpc(2, "hill toad", 7, 450),
+        ]
+
+        selected = behavior.choose_hunter_target(
+            FakeClient(npcs=npcs),
+            behavior.random.Random(1),
+            args,
+            rejected_targets={},
+            rejected_target_kinds={("water beetle", 8): 999.0},
+            now=100.0,
+        )
+
+        self.assertEqual(selected.name, "hill toad")
+
+    def test_recent_damage_rejection_prefers_attacker_over_active_combat_target(self):
+        rejected_target_kinds = {}
+        active_combat = {"target_name": "ghost light", "target_level": 8}
+        visible_npcs = [
+            FakeNpc(1, "haunt", 8, 150),
+            FakeNpc(2, "ghost light", 8, 200),
+        ]
+
+        marked = behavior.mark_rejected_recent_damage_target_kind(
+            rejected_target_kinds,
+            now=100.0,
+            cooldown=30.0,
+            attacker_name="haunt",
+            visible_npcs=visible_npcs,
+            active_combat=active_combat,
+        )
+
+        self.assertTrue(marked)
+        self.assertEqual(rejected_target_kinds.get(("haunt", 8)), 130.0)
+        self.assertNotIn(("ghost light", 8), rejected_target_kinds)
+
+    def test_target_actor_attackable_rejects_same_realm_flag(self):
+        npc = FakeNpc(1, "underhill ally", 11, 100)
+        npc.flags = 194
+
+        self.assertFalse(behavior.target_actor_attackable(npc))
+
     def test_hunter_target_pool_uses_nearest_candidates_first(self):
         args = SimpleNamespace(
             npc_max_age=60.0,
@@ -7790,7 +11966,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertEqual(behavior.melee_stop_distance(args), 95.0)
 
-    def test_melee_attack_mode_waits_until_melee_stop_distance(self):
+    def test_melee_attack_mode_stays_enabled_inside_real_attack_range(self):
         args = SimpleNamespace(
             attack_range=350.0,
             melee_range_buffer=250.0,
@@ -7799,9 +11975,10 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             melee_stick_attack_distance=1200.0,
         )
 
-        self.assertFalse(behavior.should_enable_attack_mode(args, "melee-basic", 145.0))
+        self.assertTrue(behavior.should_enable_attack_mode(args, "melee-basic", 145.0))
         self.assertTrue(behavior.should_enable_attack_mode(args, "melee-basic", 100.0))
         self.assertTrue(behavior.should_enable_attack_mode(args, "melee-basic", 120.0))
+        self.assertFalse(behavior.should_enable_attack_mode(args, "melee-basic", 351.0))
 
     def test_recent_incoming_melee_proof_allows_healer_close_counterattack(self):
         args = SimpleNamespace(
@@ -7826,7 +12003,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertLessEqual(effective_distance, args.attack_range)
         self.assertTrue(behavior.should_enable_attack_mode(args, "healer-support", effective_distance))
 
-    def test_melee_stick_attack_counts_approach_as_attack_attempt(self):
+    def test_melee_stick_attack_waits_until_real_melee_range(self):
         args = SimpleNamespace(
             attack_range=350.0,
             melee_range_buffer=250.0,
@@ -7835,25 +12012,35 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             melee_stick_attack_distance=1800.0,
         )
 
-        self.assertTrue(behavior.should_enable_attack_mode(args, "melee-basic", 1500.0))
+        self.assertFalse(behavior.should_enable_attack_mode(args, "melee-basic", 1500.0))
+        self.assertFalse(
+            behavior.should_count_attack_attempt(
+                args,
+                "melee-basic",
+                attack_enabled=False,
+                action_distance=1500.0,
+            )
+        )
+        self.assertTrue(behavior.should_enable_attack_mode(args, "melee-basic", 100.0))
         self.assertTrue(
             behavior.should_count_attack_attempt(
                 args,
                 "melee-basic",
                 attack_enabled=True,
-                action_distance=1500.0,
+                action_distance=100.0,
             )
         )
-        self.assertFalse(behavior.should_enable_attack_mode(args, "melee-basic", 1900.0))
 
     def test_melee_stick_attack_does_not_mark_leader_engaged_outside_real_attack_range(self):
         args = SimpleNamespace(
             attack_range=350.0,
+            melee_range_buffer=250.0,
+            minimum_melee_stop_distance=70.0,
             melee_stick_attack=True,
             melee_stick_attack_distance=1800.0,
         )
 
-        self.assertTrue(behavior.should_enable_attack_mode(args, "melee-basic", 1500.0))
+        self.assertFalse(behavior.should_enable_attack_mode(args, "melee-basic", 1500.0))
         self.assertFalse(
             behavior.should_mark_leader_target_engaged(
                 args,
@@ -7871,21 +12058,34 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
-    def test_party_pull_flag_marks_melee_leader_engaged_while_closing(self):
+    def test_party_pull_flag_marks_melee_leader_engaged_while_closing_without_attack_mode(self):
         args = SimpleNamespace(
             attack_range=350.0,
+            melee_range_buffer=250.0,
+            minimum_melee_stop_distance=70.0,
             melee_stick_attack=True,
             melee_stick_attack_distance=1800.0,
             party_mark_pull_engaged=True,
             party_pull_engage_distance=1800.0,
         )
 
-        self.assertTrue(behavior.should_enable_attack_mode(args, "melee-basic", 1500.0))
+        self.assertFalse(behavior.should_enable_attack_mode(args, "melee-basic", 1500.0))
+        self.assertTrue(
+            behavior.should_mark_pull_engaged_while_closing(
+                args,
+                "melee-basic",
+                action_distance=1500.0,
+            )
+        )
         self.assertTrue(
             behavior.should_mark_leader_target_engaged(
                 args,
                 "melee-basic",
-                attack_enabled=True,
+                attack_enabled=behavior.should_mark_pull_engaged_while_closing(
+                    args,
+                    "melee-basic",
+                    action_distance=1500.0,
+                ),
                 action_distance=1500.0,
             )
         )
@@ -7933,6 +12133,167 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 now=100.0,
             ),
             behavior.melee_stop_distance(args),
+        )
+
+    def test_recent_incoming_damage_matches_korean_target_alias(self):
+        npc = FakeNpc(10, "water beetle", 6, 250.0)
+
+        self.assertTrue(
+            behavior.recent_incoming_damage_matches_actor(
+                npc,
+                "노련한 물방개",
+                last_damage_at=98.0,
+                now=100.0,
+                grace_seconds=4.0,
+            )
+        )
+        self.assertFalse(
+            behavior.recent_incoming_damage_matches_actor(
+                npc,
+                "물방개 수집꾼",
+                last_damage_at=98.0,
+                now=100.0,
+                grace_seconds=4.0,
+            )
+        )
+
+    def test_prefixed_mixed_target_alias_matches_same_mob_only(self):
+        self.assertTrue(
+            behavior.target_name_matches_known_alias(
+                "노련한 water beetle",
+                "노련한 물방개",
+            )
+        )
+        self.assertTrue(
+            behavior.target_name_matches_known_alias(
+                "water beetle",
+                "노련한 물방개",
+            )
+        )
+        self.assertFalse(
+            behavior.target_name_matches_known_alias(
+                "water beetle",
+                "노련한 물방개 수집꾼",
+            )
+        )
+        self.assertFalse(
+            behavior.target_name_matches_known_alias(
+                "노련한 water beetle",
+                "노련한 물방개 수집꾼",
+            )
+        )
+        self.assertTrue(
+            behavior.target_name_matches_known_alias(
+                "river racer",
+                "노련한 강 질주자",
+            )
+        )
+        self.assertTrue(
+            behavior.target_name_matches_known_alias(
+                "hobgoblin prowler",
+                "노련한 홉고블린 배회자",
+            )
+        )
+        self.assertTrue(behavior.target_name_has_growth_prefix("a 노련한 river racer"))
+        for prefixed_name in (
+            "흉포한 river racer",
+            "우두머리 river racer",
+            "돌연변이 river racer",
+            "돌연변이 우두머리 river racer",
+            "정예 river racer",
+            "챔피언 river racer",
+            "an elite river racer",
+            "the mutant champion river racer",
+        ):
+            self.assertTrue(behavior.target_name_has_growth_prefix(prefixed_name), prefixed_name)
+
+        active_combat = {"target_name": "river racer"}
+        self.assertTrue(
+            behavior.record_active_combat_growth_prefix_observation(
+                active_combat,
+                "노련한 강 질주자",
+            )
+        )
+        self.assertTrue(behavior.active_combat_growth_prefix_observed(active_combat))
+
+        hobgoblin_combat = {"target_name": "hobgoblin prowler"}
+        self.assertTrue(
+            behavior.record_active_combat_growth_prefix_observation(
+                hobgoblin_combat,
+                "노련한 홉고블린 배회자",
+            )
+        )
+        self.assertTrue(behavior.active_combat_growth_prefix_observed(hobgoblin_combat))
+
+        champion_combat = {"target_name": "river racer"}
+        self.assertTrue(
+            behavior.record_active_combat_growth_prefix_observation(
+                champion_combat,
+                "흉포한 강 질주자",
+            )
+        )
+        self.assertTrue(behavior.active_combat_growth_prefix_observed(champion_combat))
+
+        boss_combat = {"target_name": "river racer"}
+        self.assertTrue(
+            behavior.record_active_combat_growth_prefix_observation(
+                boss_combat,
+                "돌연변이 우두머리 강 질주자",
+            )
+        )
+        self.assertTrue(behavior.active_combat_growth_prefix_observed(boss_combat))
+
+    def test_growth_prefix_damage_triggers_early_losing_combat_flee(self):
+        args = SimpleNamespace(
+            required_target_tank_commit_health_percent=45,
+            flee_pressure_health_percent=55,
+            flee_health_percent=45,
+            low_health_rest_percent=25,
+            flee_critical_health_percent=25,
+            flee_min_combat_seconds=4.0,
+            flee_min_damage_taken=20,
+            flee_damage_taken_ratio=1.5,
+            require_target_name="",
+            required_target_api_name="",
+            prefer_target_name="river racer",
+        )
+        active_combat = {
+            "target_name": "river racer",
+            "target_intent": behavior.TargetIntent.objective.value,
+            "target_max_health": 100,
+            "damage_done": 0,
+            "damage_taken": 48,
+            "healing_received": 0,
+            "started": 100.0,
+        }
+        behavior.record_active_combat_growth_prefix_observation(active_combat, "노련한 강 질주자")
+
+        self.assertTrue(
+            behavior.should_flee_losing_combat(
+                args,
+                active_combat,
+                health_percent=72,
+                now=101.0,
+            )
+        )
+        early_prefix_combat = {
+            "target_name": "river racer",
+            "target_intent": behavior.TargetIntent.objective.value,
+            "target_max_health": 137,
+            "damage_done": 0,
+            "damage_taken": 31,
+            "healing_received": 0,
+            "started": 100.0,
+        }
+        behavior.record_active_combat_growth_prefix_observation(early_prefix_combat, "노련한 강 질주자")
+
+        self.assertTrue(
+            behavior.should_flee_losing_combat(
+                args,
+                early_prefix_combat,
+                health_percent=82,
+                now=100.5,
+            )
         )
 
     def test_recent_incoming_damage_does_not_shorten_stale_far_target_distance(self):
@@ -8107,6 +12468,44 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertEqual(behavior.combat_distance_to(client, actor), 100.0)
 
+    def test_combat_server_range_distance_includes_z_delta(self):
+        client = SimpleNamespace(
+            x=1000,
+            y=1000,
+            z=4431,
+            horizontal_distance_to=lambda _actor: 6.0,
+            distance_to=lambda _actor: 6.0,
+        )
+        actor = SimpleNamespace(x=1006, y=1000, z=4598)
+
+        self.assertEqual(behavior.combat_z_delta_to(client, actor), 167.0)
+        self.assertGreater(behavior.combat_server_range_distance_to(client, actor), 167.0)
+
+    def test_attack_z_limit_rejects_current_target_mismatch(self):
+        args = SimpleNamespace(hunter_target_max_attack_z_delta=220.0)
+
+        self.assertTrue(behavior.target_attack_z_delta_exceeds_limit(args, 296.0))
+        self.assertFalse(behavior.target_attack_z_delta_exceeds_limit(args, 236.0))
+        self.assertFalse(behavior.target_attack_z_delta_exceeds_limit(args, 220.0))
+
+    def test_melee_attack_control_uses_xy_distance_after_z_aware_measurement(self):
+        self.assertEqual(
+            behavior.attack_mode_control_distance(
+                "melee-basic",
+                horizontal_distance=60.0,
+                action_distance=172.0,
+            ),
+            60.0,
+        )
+        self.assertEqual(
+            behavior.attack_mode_control_distance(
+                "caster-basic",
+                horizontal_distance=60.0,
+                action_distance=1200.0,
+            ),
+            1200.0,
+        )
+
     def test_smooth_movement_step_uses_speed_and_interval(self):
         args = SimpleNamespace(movement_speed=220.0, smooth_move_interval=0.25)
 
@@ -8204,6 +12603,359 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(client.movement_speeds[-1], 360.0)
         self.assertEqual(action_counts["flee_safe_direct_move"], 1)
         self.assertNotIn("path_plan", action_counts)
+
+    def test_route_home_preserve_z_forces_flee_safe_direct_move_z(self):
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=150.0,
+            path_replan_interval=60.0,
+            path_max_node_distance=1200.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            flee_safe_point_distance=1200.0,
+            route_home_preserve_z=True,
+            movement_update_interval=0.0,
+        )
+        state = behavior.PathMovementState(None, 1, behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0))
+        client = CaptureGroundZClient()
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("flee-safe:1", 1000, -1000, 4598),
+            step=250.0,
+            stop_distance=100.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+            movement_speed=360.0,
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertTrue(client.last_kwargs["force_target_z"])
+        self.assertEqual(client.moves[-1][:3], (1000, -1000, 4598))
+
+    def test_flee_safe_destination_avoids_direct_move_over_large_ground_z_spike(self):
+        class SpikeGroundSampler:
+            def sample(self, x: int, y: int, region: int) -> int:
+                return 3000 if x > 0 or y < 0 else 0
+
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [
+                            {"id": "start", "x": 0, "y": 0, "z": 0},
+                            {"id": "safe-road", "x": 0, "y": 1000, "z": 0},
+                            {"id": "goal", "x": 1000, "y": -1000, "z": 0},
+                        ],
+                        "edges": [
+                            {"from": "start", "to": "safe-road"},
+                            {"from": "safe-road", "to": "goal"},
+                        ],
+                    }
+                }
+            }
+        )
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=150.0,
+            path_replan_interval=60.0,
+            path_max_node_distance=1200.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=2500.0,
+            flee_safe_point_distance=1200.0,
+            flee_safe_direct_ground_z_samples=4,
+        )
+        state = behavior.PathMovementState(
+            graph,
+            1,
+            behavior.PathSafety(max_direct_distance=150.0, max_edge_length=2500.0, max_height_delta=900.0),
+        )
+        client = PathClient()
+        client.ground_z_sampler = SpikeGroundSampler()
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("flee-safe:1", 1000, -1000, 0),
+            step=250.0,
+            stop_distance=100.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+            movement_speed=360.0,
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual(client.moves[-1][:3], (0, 1000, 0))
+        self.assertEqual(action_counts["flee_safe_direct_height_blocked"], 1)
+        self.assertEqual(action_counts["path_plan"], 1)
+        self.assertNotIn("flee_safe_direct_move", action_counts)
+
+    def test_flee_safe_destination_uses_callable_ground_z_sampler_before_direct_move(self):
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [
+                            {"id": "start", "x": 0, "y": 0, "z": 0},
+                            {"id": "safe-road", "x": 0, "y": 1000, "z": 0},
+                            {"id": "goal", "x": 1000, "y": -1000, "z": 0},
+                        ],
+                        "edges": [
+                            {"from": "start", "to": "safe-road"},
+                            {"from": "safe-road", "to": "goal"},
+                        ],
+                    }
+                }
+            }
+        )
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=150.0,
+            path_replan_interval=60.0,
+            path_max_node_distance=1200.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=2500.0,
+            flee_safe_point_distance=1200.0,
+            flee_safe_direct_ground_z_samples=4,
+        )
+        state = behavior.PathMovementState(
+            graph,
+            1,
+            behavior.PathSafety(max_direct_distance=150.0, max_edge_length=2500.0, max_height_delta=900.0),
+        )
+        client = PathClient()
+        client.ground_z_sampler = lambda x, y, region: 3000 if x > 0 or y < 0 else 0
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("flee-safe:1", 1000, -1000, 0),
+            step=250.0,
+            stop_distance=100.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+            movement_speed=360.0,
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual(client.moves[-1][:3], (0, 1000, 0))
+        self.assertEqual(action_counts["flee_safe_direct_height_blocked"], 1)
+        self.assertEqual(action_counts["path_plan"], 1)
+        self.assertNotIn("flee_safe_direct_move", action_counts)
+
+    def test_unreachable_flee_safe_tries_alternate_safe_route_before_home(self):
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [
+                            {"id": "distant-road", "x": 20000, "y": 20000, "z": 0},
+                            {"id": "distant-goal", "x": 21000, "y": 20000, "z": 0},
+                        ],
+                        "edges": [
+                            {"from": "distant-road", "to": "distant-goal"},
+                        ],
+                    }
+                }
+            }
+        )
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=150.0,
+            path_replan_interval=60.0,
+            path_max_node_distance=800.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            flee_safe_point_distance=1200.0,
+            flee_safe_direct_ground_z_samples=4,
+            flee_dynamic_safe_point=True,
+            flee_safe_threat_radius=6000.0,
+            flee_path_threat_corridor_radius=900.0,
+            flee_path_origin_ignore_radius=0.0,
+            flee_safe_api_scout=False,
+            npc_max_age=60.0,
+            player_level=10,
+            avoid_target_name="",
+            flee_step=900.0,
+            flee_movement_speed=520.0,
+            flee_home_stop_distance=900.0,
+            flee_home=behavior.Waypoint(0, 1500, 0),
+            required_target_home=None,
+            route_home_preserve_z=False,
+            movement_update_interval=0.0,
+        )
+        state = behavior.PathMovementState(
+            graph,
+            1,
+            behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0, max_height_delta=900.0),
+        )
+        threat = SimpleNamespace(
+            object_id=99,
+            name="노련한 river racer",
+            level=12,
+            x=-1000,
+            y=1000,
+            z=0,
+            has_aggro=True,
+            in_combat=True,
+            target="",
+        )
+        client = VisibleFleeClient([threat])
+        client.ground_z_sampler = lambda x, y, region: 3000 if x > 700 and y < -700 else 0
+        failed_destination = behavior.destination_from_point("flee-safe", 848, -848, 0, bucket=100)
+        action_counts: dict[str, int] = {}
+
+        outcome, actions = behavior.move_towards_flee_destination(
+            client,
+            args,
+            state,
+            action_counts,
+            failed_destination,
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertIsNotNone(outcome.replacement_destination)
+        self.assertTrue(outcome.replacement_destination.key.startswith("flee-safe:"))
+        self.assertNotEqual(outcome.replacement_destination.key, failed_destination.key)
+        self.assertFalse(outcome.replacement_destination.key.startswith("flee-home:"))
+        self.assertNotEqual(client.moves[-1][:3], (0, 1500, 0))
+        self.assertEqual(actions, outcome.actions + 1)
+        self.assertEqual(action_counts["flee_safe_direct_height_blocked"], 1)
+        self.assertEqual(action_counts["path_failed"], 1)
+        self.assertEqual(action_counts["flee_safe_path_fallback_alternate"], 1)
+        self.assertEqual(action_counts["flee_safe_direct_move"], 1)
+        self.assertNotIn("flee_safe_path_fallback_home", action_counts)
+
+    def test_unreachable_flee_safe_tries_multiple_alternates_before_home(self):
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [
+                            {"id": "distant-road", "x": 20000, "y": 20000, "z": 0},
+                            {"id": "distant-goal", "x": 21000, "y": 20000, "z": 0},
+                        ],
+                        "edges": [
+                            {"from": "distant-road", "to": "distant-goal"},
+                        ],
+                    }
+                }
+            }
+        )
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=150.0,
+            path_replan_interval=60.0,
+            path_max_node_distance=800.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            flee_safe_point_distance=1200.0,
+            flee_safe_direct_ground_z_samples=4,
+            flee_step=900.0,
+            flee_movement_speed=520.0,
+            flee_home_stop_distance=900.0,
+            flee_home=behavior.Waypoint(0, 1500, 0),
+            required_target_home=None,
+            route_home_preserve_z=False,
+            movement_update_interval=0.0,
+        )
+        state = behavior.PathMovementState(
+            graph,
+            1,
+            behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0, max_height_delta=900.0),
+        )
+        client = PathClient()
+        client.ground_z_sampler = lambda x, y, region: 3000 if x > 0 or y < 0 else 0
+        failed_destination = behavior.MovementDestination("flee-safe:failed", 1000, -1000, 0)
+        blocked_alternate = behavior.MovementDestination("flee-safe:blocked", 1000, 1000, 0)
+        reachable_alternate = behavior.MovementDestination("flee-safe:reachable", -1000, 1000, 0)
+        action_counts: dict[str, int] = {}
+
+        with patch.object(
+            behavior,
+            "dynamic_flee_candidate_destinations_from_npcs",
+            return_value=[blocked_alternate, reachable_alternate],
+        ):
+            outcome, _actions = behavior.move_towards_flee_destination(
+                client,
+                args,
+                state,
+                action_counts,
+                failed_destination,
+            )
+
+        self.assertTrue(outcome.moved)
+        self.assertIsNotNone(outcome.replacement_destination)
+        self.assertEqual(outcome.replacement_destination.key, reachable_alternate.key)
+        self.assertEqual(client.moves[-1][:3], (-1000, 1000, 0))
+        self.assertEqual(action_counts["flee_safe_direct_height_blocked"], 1)
+        self.assertEqual(action_counts["flee_safe_path_fallback_alternate"], 1)
+        self.assertNotIn("flee_safe_path_fallback_home", action_counts)
+
+    def test_unreachable_flee_safe_falls_back_to_flee_home(self):
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [
+                            {"id": "distant-road", "x": 20000, "y": 20000, "z": 0},
+                            {"id": "distant-goal", "x": 21000, "y": 20000, "z": 0},
+                        ],
+                        "edges": [
+                            {"from": "distant-road", "to": "distant-goal"},
+                        ],
+                    }
+                }
+            }
+        )
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=150.0,
+            path_replan_interval=60.0,
+            path_max_node_distance=800.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            flee_safe_point_distance=1200.0,
+            flee_safe_direct_ground_z_samples=4,
+            flee_step=900.0,
+            flee_movement_speed=520.0,
+            flee_home_stop_distance=900.0,
+            flee_home=behavior.Waypoint(0, 1500, 0),
+            required_target_home=None,
+            route_home_preserve_z=False,
+            movement_update_interval=0.0,
+        )
+        state = behavior.PathMovementState(
+            graph,
+            1,
+            behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0, max_height_delta=900.0),
+        )
+        client = PathClient()
+        client.ground_z_sampler = lambda x, y, region: 3000 if x > 0 or y < 0 else 0
+        action_counts: dict[str, int] = {}
+
+        outcome, actions = behavior.move_towards_flee_destination(
+            client,
+            args,
+            state,
+            action_counts,
+            behavior.MovementDestination("flee-safe:1", 1000, -1000, 0),
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertIsNotNone(outcome.replacement_destination)
+        self.assertTrue(outcome.replacement_destination.key.startswith("flee-home:"))
+        self.assertEqual(client.moves[-1][:3], (0, 1500, 0))
+        self.assertEqual(actions, outcome.actions + 1)
+        self.assertEqual(action_counts["flee_safe_direct_height_blocked"], 1)
+        self.assertEqual(action_counts["path_failed"], 1)
+        self.assertEqual(action_counts["flee_safe_path_fallback_home"], 1)
+        self.assertEqual(action_counts["path_offgraph_return_move"], 1)
+        self.assertNotIn("flee_safe_direct_move", action_counts)
 
     def test_startup_teleporter_home_uses_direct_town_move_before_graph_route(self):
         graph = behavior.PathGraph.from_payload(
@@ -8653,13 +13405,18 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             required_target_home_stop_distance=100.0,
             required_target_home_hunt_distance=300.0,
             target_home_max_distance=0.0,
+            party_ready_max_leader_distance=1500.0,
         )
         client = SimpleNamespace(x=750, y=0, z=0)
+        state = behavior.PartyState("leader", ["member"])
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=1, x=1000, y=0, z=0, heading=0))
 
         self.assertTrue(
             behavior.should_mark_party_ready_after_follow(
                 client,
                 args,
+                state,
+                member_name="member",
                 is_party_follower=True,
                 current_target=0,
             )
@@ -8668,6 +13425,8 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             behavior.should_mark_party_ready_after_follow(
                 client,
                 args,
+                state,
+                member_name="member",
                 is_party_follower=True,
                 current_target=99,
             )
@@ -8676,8 +13435,108 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             behavior.should_mark_party_ready_after_follow(
                 client,
                 args,
+                state,
+                member_name="member",
                 is_party_follower=False,
                 current_target=0,
+            )
+        )
+
+    def test_healer_support_waits_for_preengage_safe_distance_before_ready(self):
+        args = SimpleNamespace(
+            party_size=2,
+            party_assist_only=True,
+            party_pre_pull_home_stop_distance=1800.0,
+            required_target_home=behavior.Waypoint(1000, 0, 0),
+            required_target_home_stop_distance=900.0,
+            required_target_home_hunt_distance=6200.0,
+            target_home_max_distance=0.0,
+            party_preengage_ranged_safe_distance=3000.0,
+            party_ready_max_leader_distance=1500.0,
+        )
+        client = SimpleNamespace(x=1200, y=0, z=0)
+        state = behavior.PartyState("leader", ["member"])
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=1, x=4500, y=0, z=0, heading=0))
+
+        self.assertFalse(
+            behavior.party_member_ready_for_pull(
+                client,
+                args,
+                action_rotation="healer-support",
+            )
+        )
+        self.assertFalse(
+            behavior.should_mark_party_ready_after_follow(
+                client,
+                args,
+                state,
+                member_name="member",
+                is_party_follower=True,
+                current_target=0,
+                action_rotation="healer-support",
+            )
+        )
+
+        client.x = 4500
+        self.assertTrue(
+            behavior.party_member_ready_for_pull(
+                client,
+                args,
+                action_rotation="healer-support",
+            )
+        )
+        self.assertTrue(
+            behavior.should_mark_party_ready_after_follow(
+                client,
+                args,
+                state,
+                member_name="member",
+                is_party_follower=True,
+                current_target=0,
+                action_rotation="healer-support",
+            )
+        )
+
+    def test_party_follower_ready_mark_waits_until_near_leader_anchor(self):
+        args = SimpleNamespace(
+            required_target_home=behavior.Waypoint(1000, 0, 0),
+            required_target_home_stop_distance=100.0,
+            required_target_home_hunt_distance=300.0,
+            target_home_max_distance=0.0,
+            party_ready_max_leader_distance=1500.0,
+            party_follow_distance=600.0,
+        )
+        client = SimpleNamespace(x=750, y=0, z=0)
+        state = behavior.PartyState("leader", ["member"])
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=1, x=3000, y=0, z=0, heading=0))
+
+        self.assertTrue(behavior.party_member_ready_for_pull(client, args))
+        self.assertFalse(
+            behavior.party_member_ready_to_mark(
+                client,
+                args,
+                state,
+                member_name="member",
+            )
+        )
+        self.assertFalse(
+            behavior.should_mark_party_ready_after_follow(
+                client,
+                args,
+                state,
+                member_name="member",
+                is_party_follower=True,
+                current_target=0,
+            )
+        )
+
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=1, x=1600, y=0, z=0, heading=0))
+        self.assertTrue(
+            behavior.party_member_ready_to_mark(
+                client,
+                args,
+                state,
+                member_name="member",
             )
         )
 
@@ -8773,6 +13632,38 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 now=100.0,
             )
         )
+
+    def test_healer_resurrection_bypasses_follow_anchor_wait_when_due(self):
+        args = SimpleNamespace(party_resurrect_interval=2.0)
+        dead_member = {"name": "Leader", "object_id": 7, "health_percent": 0, "x": 3000, "y": 100, "z": 40}
+
+        self.assertTrue(
+            behavior.should_bypass_follow_anchor_for_party_resurrection(
+                args,
+                action_rotation="healer-support",
+                dead_member=dead_member,
+                current_target=0,
+                behavior_state=behavior.DummyBehaviorState.TravelToObjective,
+                now=100.0,
+                next_party_resurrect=99.0,
+            )
+        )
+        self.assertFalse(
+            behavior.should_bypass_follow_anchor_for_party_resurrection(
+                args,
+                action_rotation="healer-support",
+                dead_member=dead_member,
+                current_target=0,
+                behavior_state=behavior.DummyBehaviorState.TravelToObjective,
+                now=98.0,
+                next_party_resurrect=99.0,
+            )
+        )
+
+    def test_party_resurrection_approach_stops_inside_safe_cast_range(self):
+        args = SimpleNamespace(spell_range=1500.0, party_resurrect_cast_range_buffer=200.0)
+
+        self.assertEqual(behavior.party_resurrection_target_approach_stop_distance(args), 1200.0)
 
     def test_follow_anchor_wait_destination_prefers_flee_home(self):
         args = SimpleNamespace(
@@ -8879,6 +13770,38 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             behavior.DummyBehaviorState.HuntObjective,
         )
 
+    def test_party_leader_required_home_starts_in_travel_state_until_party_ready_gate(self):
+        args = SimpleNamespace(
+            party_size=2,
+            party_assist_only=True,
+            party_min_ready=2,
+            party_pre_pull_home_stop_distance=1600.0,
+            required_target_home=behavior.Waypoint(1000, 0, 0),
+            required_target_home_stop_distance=100.0,
+            required_target_home_hunt_distance=300.0,
+            target_home_max_distance=0.0,
+        )
+        client = SimpleNamespace(x=1000, y=0, z=0)
+
+        self.assertEqual(
+            behavior.initial_behavior_state_for_objective(
+                client,
+                args,
+                is_party_leader=True,
+                current_target=0,
+            ),
+            behavior.DummyBehaviorState.TravelToObjective,
+        )
+        self.assertEqual(
+            behavior.initial_behavior_state_for_objective(
+                client,
+                args,
+                is_party_leader=True,
+                current_target=42,
+            ),
+            behavior.DummyBehaviorState.TravelToObjective,
+        )
+
     def test_required_home_movement_continues_until_stop_range_even_if_hunt_ready(self):
         args = SimpleNamespace(
             party_size=2,
@@ -8897,6 +13820,21 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         client.x = 500
         self.assertTrue(behavior.should_move_to_required_target_home(client, args, is_party_leader=True, current_target=0))
+        self.assertFalse(behavior.should_move_to_required_target_home(client, args, is_party_leader=False, current_target=0))
+
+    def test_solo_required_home_hunt_ready_stops_before_exact_home(self):
+        args = SimpleNamespace(
+            party_size=1,
+            required_target_home=behavior.Waypoint(1000, 0, 0),
+            required_target_home_stop_distance=100.0,
+            required_target_home_hunt_distance=600.0,
+            target_home_max_distance=0.0,
+            hunter_target_api_scout=False,
+        )
+        client = SimpleNamespace(x=500, y=0, z=0)
+
+        self.assertTrue(behavior.required_target_home_hunt_ready(client, args))
+        self.assertFalse(behavior.should_move_to_required_target_home(client, args, is_party_leader=True, current_target=0))
         self.assertFalse(behavior.should_move_to_required_target_home(client, args, is_party_leader=False, current_target=0))
 
     def test_required_home_hunt_ring_keeps_moving_until_required_target_visible(self):
@@ -8974,6 +13912,355 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertTrue(behavior.required_target_home_hunt_ready(client, args))
         client.x = 950
         self.assertFalse(behavior.should_move_to_required_target_home(client, args, is_party_leader=True, current_target=0))
+
+    def test_party_leader_enters_hunt_when_objective_area_ready(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=10, health_percent=100, x=500, y=0, z=0, heading=0))
+        state.update_member("member", SimpleNamespace(player_object_id=11, health_percent=100, x=550, y=0, z=0))
+        state.mark_ready("member")
+        args = SimpleNamespace(
+            party_size=2,
+            party_assist_only=True,
+            party_min_ready=2,
+            party_ready_max_leader_distance=1500.0,
+            party_pre_pull_home_stop_distance=1800.0,
+            hunter_target_api_scout=True,
+            required_target_home=behavior.Waypoint(1000, 0, 0),
+            required_target_home_stop_distance=100.0,
+            required_target_home_hunt_distance=600.0,
+            target_home_max_distance=800.0,
+        )
+        client = SimpleNamespace(x=500, y=0, z=0)
+
+        self.assertFalse(behavior.required_target_home_reached(client, args))
+        self.assertTrue(behavior.required_target_home_hunt_ready(client, args))
+        self.assertTrue(behavior.party_ready_for_pull(args, state))
+        self.assertTrue(
+            behavior.should_enter_hunt_after_objective_area_ready(
+                args,
+                client,
+                state,
+                behavior_state=behavior.DummyBehaviorState.TravelToObjective,
+                is_party_leader=True,
+                current_target=0,
+            )
+        )
+
+    def test_preserved_z_home_mismatch_keeps_objective_traveling(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=10, health_percent=100, x=500, y=0, z=3642, heading=0))
+        state.update_member("member", SimpleNamespace(player_object_id=11, health_percent=100, x=550, y=0, z=3642))
+        state.mark_ready("member")
+        args = SimpleNamespace(
+            party_size=2,
+            party_assist_only=True,
+            party_min_ready=2,
+            party_ready_max_leader_distance=1500.0,
+            party_pre_pull_home_stop_distance=1800.0,
+            hunter_target_api_scout=True,
+            hunter_target_max_attack_z_delta=220.0,
+            route_home_preserve_z=True,
+            required_target_home=behavior.Waypoint(1000, 0, 4598),
+            required_target_home_stop_distance=100.0,
+            required_target_home_hunt_distance=600.0,
+            target_home_max_distance=800.0,
+        )
+        client = SimpleNamespace(x=500, y=0, z=3642)
+
+        self.assertFalse(behavior.required_target_home_z_aligned(client, args))
+        self.assertFalse(behavior.required_target_home_hunt_ready(client, args))
+        self.assertFalse(behavior.required_target_home_objective_hunt_ready(client, args))
+        self.assertTrue(behavior.should_move_to_required_target_home(client, args, is_party_leader=True, current_target=0))
+        self.assertFalse(
+            behavior.should_enter_hunt_after_objective_area_ready(
+                args,
+                client,
+                state,
+                behavior_state=behavior.DummyBehaviorState.TravelToObjective,
+                is_party_leader=True,
+                current_target=0,
+            )
+        )
+
+        client.z = 4500
+        self.assertTrue(behavior.required_target_home_z_aligned(client, args))
+        self.assertTrue(behavior.required_target_home_hunt_ready(client, args))
+        self.assertTrue(
+            behavior.should_enter_hunt_after_objective_area_ready(
+                args,
+                client,
+                state,
+                behavior_state=behavior.DummyBehaviorState.TravelToObjective,
+                is_party_leader=True,
+                current_target=0,
+            )
+        )
+
+    def test_party_leader_waits_for_pre_hunt_endurance_recovery_when_objective_area_ready(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=10, health_percent=66, x=500, y=0, z=0, heading=0))
+        state.update_member("member", SimpleNamespace(player_object_id=11, health_percent=100, x=550, y=0, z=0))
+        state.mark_ready("member")
+        args = SimpleNamespace(
+            party_size=2,
+            party_assist_only=True,
+            party_min_ready=2,
+            party_ready_max_leader_distance=1500.0,
+            party_pre_pull_home_stop_distance=1800.0,
+            hunter_target_api_scout=True,
+            required_target_home=behavior.Waypoint(1000, 0, 0),
+            required_target_home_stop_distance=100.0,
+            required_target_home_hunt_distance=600.0,
+            required_target_recover_before_home_health_percent=60,
+            required_target_recover_before_hunt_endurance_percent=40,
+            target_home_max_distance=800.0,
+        )
+        client = SimpleNamespace(x=500, y=0, z=0)
+
+        self.assertFalse(
+            behavior.should_enter_hunt_after_objective_area_ready(
+                args,
+                client,
+                state,
+                behavior_state=behavior.DummyBehaviorState.TravelToObjective,
+                is_party_leader=True,
+                current_target=0,
+                health_percent=66,
+                endurance_percent=8,
+                flee_until=0.0,
+                now=100.0,
+            )
+        )
+        self.assertTrue(
+            behavior.should_enter_hunt_after_objective_area_ready(
+                args,
+                client,
+                state,
+                behavior_state=behavior.DummyBehaviorState.TravelToObjective,
+                is_party_leader=True,
+                current_target=0,
+                health_percent=66,
+                endurance_percent=55,
+                flee_until=0.0,
+                now=100.0,
+            )
+        )
+
+    def test_party_leader_suppresses_required_home_move_inside_api_scout_hunt_ring(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=10, health_percent=100, x=500, y=0, z=0, heading=0))
+        state.update_member("member", SimpleNamespace(player_object_id=11, health_percent=100, x=550, y=0, z=0))
+        state.mark_ready("member")
+        args = SimpleNamespace(
+            party_size=2,
+            party_assist_only=True,
+            party_min_ready=2,
+            party_ready_max_leader_distance=1500.0,
+            party_pre_pull_home_stop_distance=1800.0,
+            hunter_target_api_scout=True,
+            required_target_home=behavior.Waypoint(1000, 0, 0),
+            required_target_home_stop_distance=100.0,
+            required_target_home_hunt_distance=600.0,
+            target_home_max_distance=800.0,
+        )
+        client = SimpleNamespace(x=500, y=0, z=0)
+
+        self.assertTrue(behavior.should_move_to_required_target_home(client, args, is_party_leader=True, current_target=0))
+        self.assertTrue(
+            behavior.should_suppress_required_home_move_for_objective_hunt(
+                args,
+                client,
+                state,
+                is_party_leader=True,
+                current_target=0,
+            )
+        )
+
+    def test_party_leader_suppresses_required_home_move_for_recent_api_target_chase(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=10, health_percent=100, x=7000, y=0, z=0, heading=0))
+        state.update_member("member", SimpleNamespace(player_object_id=11, health_percent=100, x=7050, y=0, z=0))
+        state.mark_ready("member")
+        target = FakeNpc(11881, "water beetle collector", 6, 2400.0)
+        target.x = 7600
+        target.y = 0
+        target.z = 0
+        state.update_shared_target(target, engaged=False)
+        now = float(state.snapshot()["leader_target_updated_at"]) + 1.0
+        args = SimpleNamespace(
+            party_size=2,
+            party_assist_only=True,
+            party_min_ready=2,
+            party_ready_max_leader_distance=1500.0,
+            party_pre_pull_home_stop_distance=1800.0,
+            hunter_target_api_scout=True,
+            required_target_home=behavior.Waypoint(0, 0, 0),
+            required_target_home_stop_distance=900.0,
+            required_target_home_hunt_distance=6200.0,
+            target_home_max_distance=6200.0,
+            party_objective_target_home_defer_grace=6.0,
+        )
+        client = SimpleNamespace(x=7000, y=0, z=0)
+
+        self.assertTrue(behavior.should_move_to_required_target_home(client, args, is_party_leader=True, current_target=0))
+        self.assertFalse(behavior.required_target_home_objective_hunt_ready(client, args))
+        self.assertTrue(
+            behavior.should_suppress_required_home_move_for_objective_hunt(
+                args,
+                client,
+                state,
+                is_party_leader=True,
+                current_target=0,
+                now=now,
+            )
+        )
+
+    def test_pre_pull_attack_gate_can_use_raw_ready_count_after_target_commit(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=10, health_percent=100, x=0, y=0, z=0, heading=0))
+        state.update_member("member", SimpleNamespace(player_object_id=11, health_percent=100, x=10, y=0, z=0))
+        state.member_roles["member"] = "healer-support"
+        state.mark_ready("member")
+        args = SimpleNamespace(
+            party_min_ready=2,
+            party_ready_max_leader_distance=0.0,
+            party_preengage_ranged_safe_distance=1200.0,
+            required_target_home=behavior.Waypoint(0, 0, 0),
+        )
+
+        self.assertFalse(behavior.party_ready_for_pull(args, state))
+        self.assertTrue(behavior.pre_pull_attack_gate_bypassed_by_ready_count(args, state))
+
+    def test_pre_pull_attack_gate_bypassed_for_committed_leader_objective_target(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        target = FakeNpc(4312, "water beetle", 6, 300.0)
+        state.update_shared_target(target, engaged=False)
+
+        self.assertTrue(
+            behavior.pre_pull_attack_gate_bypassed_by_committed_leader_target(
+                state,
+                4312,
+                behavior.TargetIntent.objective,
+            )
+        )
+        self.assertFalse(
+            behavior.pre_pull_attack_gate_bypassed_by_committed_leader_target(
+                state,
+                4312,
+                behavior.TargetIntent.party_assist,
+            )
+        )
+
+    def test_party_leader_keeps_moving_when_api_scout_cannot_reach_home_targets(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=10, health_percent=100, x=5400, y=0, z=0, heading=0))
+        state.update_member("member", SimpleNamespace(player_object_id=11, health_percent=100, x=5450, y=0, z=0))
+        state.mark_ready("member")
+        args = SimpleNamespace(
+            party_size=2,
+            party_assist_only=True,
+            party_min_ready=2,
+            party_ready_max_leader_distance=1500.0,
+            party_pre_pull_home_stop_distance=1800.0,
+            hunter_target_api_scout=True,
+            hunter_target_api_radius=2200.0,
+            hunter_target_api_engage_distance=1500.0,
+            max_target_distance=1500.0,
+            required_target_home=behavior.Waypoint(0, 0, 0),
+            required_target_home_stop_distance=900.0,
+            required_target_home_hunt_distance=6200.0,
+            target_home_max_distance=6200.0,
+        )
+        client = SimpleNamespace(x=5400, y=0, z=0)
+
+        self.assertTrue(behavior.required_target_home_hunt_ready(client, args))
+        self.assertFalse(behavior.required_target_home_objective_hunt_ready(client, args))
+        self.assertTrue(behavior.should_move_to_required_target_home(client, args, is_party_leader=True, current_target=0))
+        self.assertFalse(
+            behavior.should_suppress_required_home_move_for_objective_hunt(
+                args,
+                client,
+                state,
+                is_party_leader=True,
+                current_target=0,
+            )
+        )
+        self.assertFalse(
+            behavior.should_enter_hunt_after_objective_area_ready(
+                args,
+                client,
+                state,
+                behavior_state=behavior.DummyBehaviorState.TravelToObjective,
+                is_party_leader=True,
+                current_target=0,
+            )
+        )
+        client.x = 2100
+        self.assertTrue(behavior.required_target_home_hunt_ready(client, args))
+        self.assertFalse(behavior.required_target_home_objective_hunt_ready(client, args))
+        client.x = 1400
+        self.assertTrue(behavior.required_target_home_objective_hunt_ready(client, args))
+
+    def test_party_leader_keeps_required_home_move_when_api_scout_party_not_ready(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=10, health_percent=100, x=500, y=0, z=0, heading=0))
+        state.update_member("member", SimpleNamespace(player_object_id=11, health_percent=100, x=550, y=0, z=0))
+        args = SimpleNamespace(
+            party_size=2,
+            party_assist_only=True,
+            party_min_ready=2,
+            party_ready_max_leader_distance=1500.0,
+            party_pre_pull_home_stop_distance=1800.0,
+            hunter_target_api_scout=True,
+            required_target_home=behavior.Waypoint(1000, 0, 0),
+            required_target_home_stop_distance=100.0,
+            required_target_home_hunt_distance=600.0,
+            target_home_max_distance=800.0,
+            party_form_up_timeout=0.0,
+        )
+        client = SimpleNamespace(x=500, y=0, z=0)
+
+        self.assertTrue(behavior.should_move_to_required_target_home(client, args, is_party_leader=True, current_target=0))
+        self.assertFalse(
+            behavior.should_suppress_required_home_move_for_objective_hunt(
+                args,
+                client,
+                state,
+                is_party_leader=True,
+                current_target=0,
+            )
+        )
+
+    def test_party_leader_waits_when_objective_area_party_not_ready(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=10, health_percent=100, x=500, y=0, z=0, heading=0))
+        state.update_member("member", SimpleNamespace(player_object_id=11, health_percent=100, x=550, y=0, z=0))
+        args = SimpleNamespace(
+            party_size=2,
+            party_assist_only=True,
+            party_min_ready=2,
+            party_ready_max_leader_distance=1500.0,
+            party_pre_pull_home_stop_distance=1800.0,
+            hunter_target_api_scout=True,
+            required_target_home=behavior.Waypoint(1000, 0, 0),
+            required_target_home_stop_distance=100.0,
+            required_target_home_hunt_distance=600.0,
+            target_home_max_distance=800.0,
+            party_form_up_timeout=0.0,
+        )
+        client = SimpleNamespace(x=500, y=0, z=0)
+
+        self.assertFalse(behavior.party_ready_for_pull(args, state))
+        self.assertFalse(
+            behavior.should_enter_hunt_after_objective_area_ready(
+                args,
+                client,
+                state,
+                behavior_state=behavior.DummyBehaviorState.TravelToObjective,
+                is_party_leader=True,
+                current_target=0,
+            )
+        )
 
     def test_healer_defer_required_home_move_while_precasting_party_heal(self):
         self.assertTrue(
@@ -9168,67 +14455,73 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(client.moves[0]["stop_distance"], 1300.0)
         self.assertEqual(client.moves[0]["target_in_view"], False)
 
-    def test_party_heal_approach_uses_direct_member_move_when_path_graph_cannot_route(self):
+    def test_party_support_target_approach_uses_policy_boundary_when_unreachable(self):
         args = SimpleNamespace(
             spell_range=1500.0,
             party_heal_cast_range_buffer=200.0,
+            party_resurrect_cast_range_buffer=200.0,
             party_follow_step=320.0,
+            party_protection_close_distance=220.0,
             nav_api_url="",
+            path_last_mile_distance=150.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=500.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
             movement_speed=240.0,
             movement_update_interval=0.2,
         )
-        path_state = SimpleNamespace(graph=object(), client_grid=None)
-        action_counts: dict[str, int] = {}
-        hurt_member = {"name": "Leader", "object_id": 7, "health_percent": 50, "x": 2100, "y": 0, "z": 0}
-
-        class DirectHealMoveClient:
-            def __init__(self) -> None:
-                self.x = 0
-                self.y = 0
-                self.z = 0
-                self.moves: list[dict[str, float | int | bool | None]] = []
-
-            def set_attack_mode(self, _enabled: bool) -> None:
-                pass
-
-            def move_towards_position(
-                self,
-                x: int,
-                y: int,
-                z: int,
-                *,
-                step: float,
-                stop_distance: float,
-                movement_speed: float | None = None,
-                packet_speed: float | None = None,
-                min_position_send_interval: float = 0.0,
-                target_in_view: bool = False,
-                **_kwargs,
-            ) -> bool:
-                self.moves.append(
-                    {
-                        "x": x,
-                        "y": y,
-                        "z": z,
-                        "step": step,
-                        "stop_distance": stop_distance,
-                        "movement_speed": movement_speed,
-                        "packet_speed": packet_speed,
-                        "min_position_send_interval": min_position_send_interval,
-                        "target_in_view": target_in_view,
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [{"id": "start", "x": 0, "y": 0, "z": 0}],
+                        "edges": [],
                     }
+                }
+            }
+        )
+
+        cases = [
+            (
+                behavior.move_towards_party_heal_target,
+                {"name": "Leader", "object_id": 7, "health_percent": 50, "x": 3000, "y": 0, "z": 0},
+                [(0.0, False)],
+            ),
+            (
+                behavior.move_towards_party_resurrection_target,
+                {"name": "Leader", "object_id": 7, "health_percent": 0, "x": 3000, "y": 0, "z": 0},
+                [(0.0, False)],
+            ),
+            (
+                behavior.move_towards_party_buff_target,
+                {"name": "Leader", "object_id": 7, "health_percent": 100, "x": 3000, "y": 0, "z": 0},
+                [(0.0, False)],
+            ),
+            (
+                behavior.move_towards_party_protection_target,
+                {"name": "Leader", "object_id": 7, "health_percent": 100, "x": 3000, "y": 0, "z": 0},
+                [(0.0, True)],
+            ),
+        ]
+
+        for move_func, target, expected_updates in cases:
+            with self.subTest(move_func=move_func.__name__):
+                client = StepPathClient()
+                path_state = behavior.PathMovementState(
+                    graph,
+                    1,
+                    behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0, max_height_delta=500),
                 )
-                return True
+                action_counts: dict[str, int] = {}
 
-        client = DirectHealMoveClient()
+                outcome = move_func(client, args, path_state, action_counts, target)
 
-        outcome = behavior.move_towards_party_heal_target(client, args, path_state, action_counts, hurt_member)
-
-        self.assertIsNotNone(outcome)
-        self.assertTrue(outcome.moved)
-        self.assertEqual(client.moves[0]["x"], 2100)
-        self.assertEqual(client.moves[0]["stop_distance"], 1300.0)
-        self.assertEqual(client.moves[0]["movement_speed"], 240.0)
+                self.assertIsNotNone(outcome)
+                self.assertFalse(outcome.moved)
+                self.assertEqual(client.moves, [])
+                self.assertEqual(client.position_updates, expected_updates)
+                self.assertEqual(action_counts["path_failed"], 1)
 
     def test_party_healer_approaches_support_target_even_with_enemy_target(self):
         args = SimpleNamespace()
@@ -10186,7 +15479,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertTrue(behavior.required_target_home_hunt_ready(client, args))
         self.assertTrue(behavior.should_return_home_before_low_health_rest(client, args))
-        self.assertTrue(behavior.should_move_to_required_target_home(client, args, is_party_leader=False, current_target=0))
+        self.assertFalse(behavior.should_move_to_required_target_home(client, args, is_party_leader=False, current_target=0))
 
     def test_required_target_recover_before_home_can_override_low_health_return(self):
         args = SimpleNamespace(
@@ -10266,6 +15559,20 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertTrue(behavior.should_start_combat_after_target_commit(args, 120.0))
         args.max_target_distance = 9000.0
         self.assertFalse(behavior.should_start_combat_after_target_commit(args, 2600.0))
+
+    def test_melee_stick_distance_does_not_start_active_combat_tracking(self):
+        args = SimpleNamespace(
+            attack_range=350.0,
+            combat_direct_move_distance=450.0,
+            melee_stick_attack=True,
+            melee_stick_attack_distance=1800.0,
+            melee_range_buffer=300.0,
+            minimum_melee_stop_distance=60.0,
+        )
+
+        self.assertFalse(behavior.should_start_combat_after_target_commit(args, 1636.0))
+        self.assertFalse(behavior.should_start_combat_after_target_commit(args, 350.0))
+        self.assertTrue(behavior.should_start_combat_after_target_commit(args, 80.0))
 
     def test_required_target_api_retarget_starts_combat_tracking(self):
         args = SimpleNamespace(max_target_distance=9000.0)
@@ -10712,6 +16019,541 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(action_counts["path_failed"], 1)
         self.assertEqual(action_counts["path_replan_wait"], 1)
 
+    def test_route_home_fast_travel_repositions_when_nav_has_no_path(self):
+        args = SimpleNamespace(
+            nav_api_url="http://127.0.0.1:5000",
+            path_last_mile_distance=150.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=200.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            startup_route_home_after_services=behavior.MovementDestination("home", 0, 0, 0),
+        )
+        state = behavior.PathMovementState(None, 1, behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0))
+        client = PathClient()
+        action_counts: dict[str, int] = {}
+        original_request_nav_path = behavior.request_nav_path
+        original_request_player_move_api = behavior.request_player_move_api
+
+        def fake_request_nav_path(_args, _region, _start, _goal):
+            return behavior.NavPathResult(False, "NavmeshUnavailable", [])
+
+        def fake_request_player_move_api(_args, _client, _destination):
+            return True, ""
+
+        behavior.request_nav_path = fake_request_nav_path
+        behavior.request_player_move_api = fake_request_player_move_api
+
+        try:
+            outcome = behavior.move_towards_destination(
+                client,
+                behavior.MovementDestination("waypoint:far", 1000, 0, 75),
+                step=250.0,
+                stop_distance=100.0,
+                args=args,
+                path_state=state,
+                action_counts=action_counts,
+            )
+        finally:
+            behavior.request_nav_path = original_request_nav_path
+            behavior.request_player_move_api = original_request_player_move_api
+
+        self.assertTrue(outcome.moved)
+        self.assertTrue(outcome.arrived)
+        self.assertEqual((client.x, client.y, client.z), (1000, 0, 75))
+        self.assertEqual(action_counts["nav_path_failed"], 1)
+        self.assertEqual(action_counts["route_home_fast_travel_reposition"], 1)
+        self.assertNotIn("path_failed", action_counts)
+        self.assertNotIn("path_rejoin_graph", action_counts)
+
+    def test_route_home_fast_travel_does_not_reposition_to_target_after_nav_failure(self):
+        args = SimpleNamespace(
+            nav_api_url="http://127.0.0.1:5000",
+            path_last_mile_distance=150.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=200.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            startup_route_home_after_services=behavior.MovementDestination("home", 0, 0, 0),
+        )
+        state = behavior.PathMovementState(None, 1, behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0))
+        client = PathClient()
+        action_counts: dict[str, int] = {}
+        original_request_nav_path = behavior.request_nav_path
+        original_request_player_move_api = behavior.request_player_move_api
+
+        def fake_request_nav_path(_args, _region, _start, _goal):
+            return behavior.NavPathResult(False, "NavmeshUnavailable", [])
+
+        def fail_if_player_move_api_called(_args, _client, _destination):
+            raise AssertionError("route-home fast travel must not reposition directly to combat targets")
+
+        behavior.request_nav_path = fake_request_nav_path
+        behavior.request_player_move_api = fail_if_player_move_api_called
+
+        try:
+            outcome = behavior.move_towards_destination(
+                client,
+                behavior.MovementDestination("target:5396", 1000, 0, 75),
+                step=250.0,
+                stop_distance=100.0,
+                args=args,
+                path_state=state,
+                action_counts=action_counts,
+            )
+        finally:
+            behavior.request_nav_path = original_request_nav_path
+            behavior.request_player_move_api = original_request_player_move_api
+
+        self.assertFalse(outcome.moved)
+        self.assertFalse(outcome.arrived)
+        self.assertEqual((client.x, client.y, client.z), (0, 0, 0))
+        self.assertEqual(action_counts["nav_path_failed"], 1)
+        self.assertEqual(action_counts["path_failed"], 1)
+        self.assertNotIn("route_home_fast_travel_reposition", action_counts)
+        self.assertNotIn("route_home_fast_travel_failed", action_counts)
+
+    def test_route_home_fast_travel_preempts_offgraph_rejoin(self):
+        args = SimpleNamespace(
+            nav_api_url="http://127.0.0.1:5000",
+            path_last_mile_distance=150.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=200.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            startup_route_home_after_services=behavior.MovementDestination("home", 0, 0, 0),
+            route_home_api_retries=1,
+        )
+        state = behavior.PathMovementState(None, 1, behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0))
+        client = PathClient()
+        action_counts: dict[str, int] = {}
+        original_request_nav_path = behavior.request_nav_path
+        original_request_player_move_api = behavior.request_player_move_api
+        original_should_attempt_offgraph_rejoin = behavior.should_attempt_offgraph_rejoin
+        original_graph_rejoin_point_after_offgraph_flee = behavior.graph_rejoin_point_after_offgraph_flee
+
+        def fake_request_nav_path(_args, _region, _start, _goal):
+            return behavior.NavPathResult(False, "CrossZonePathUnsupported", [])
+
+        def fake_request_player_move_api(_args, _client, _destination):
+            return True, ""
+
+        def fake_should_attempt_offgraph_rejoin(_path_state, _destination, _reason):
+            return True
+
+        def fail_if_rejoin_called(*_args, **_kwargs):
+            raise AssertionError("offgraph rejoin should not run before route-home fast travel")
+
+        behavior.request_nav_path = fake_request_nav_path
+        behavior.request_player_move_api = fake_request_player_move_api
+        behavior.should_attempt_offgraph_rejoin = fake_should_attempt_offgraph_rejoin
+        behavior.graph_rejoin_point_after_offgraph_flee = fail_if_rejoin_called
+
+        try:
+            outcome = behavior.move_towards_destination(
+                client,
+                behavior.MovementDestination("required-target-home:far", 1000, 0, 75),
+                step=250.0,
+                stop_distance=100.0,
+                args=args,
+                path_state=state,
+                action_counts=action_counts,
+            )
+        finally:
+            behavior.request_nav_path = original_request_nav_path
+            behavior.request_player_move_api = original_request_player_move_api
+            behavior.should_attempt_offgraph_rejoin = original_should_attempt_offgraph_rejoin
+            behavior.graph_rejoin_point_after_offgraph_flee = original_graph_rejoin_point_after_offgraph_flee
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual(action_counts["route_home_fast_travel_reposition"], 1)
+        self.assertNotIn("path_rejoin_graph", action_counts)
+
+    def test_route_home_fast_travel_recent_success_holds_after_stale_correction(self):
+        args = SimpleNamespace(
+            nav_api_url="http://127.0.0.1:5000",
+            route_home_api_retries=1,
+            route_home_api_retry_delay=0.0,
+            route_home_fast_travel_correction_grace=30.0,
+        )
+        state = behavior.PathMovementState(None, 1, behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0))
+        client = PathClient()
+        destination = behavior.MovementDestination("required-target-home:far", 1000, 0, 75)
+        action_counts: dict[str, int] = {}
+        calls = []
+        original_request_player_move_api = behavior.request_player_move_api
+
+        def fake_request_player_move_api(_args, _client, _destination):
+            calls.append(_destination.key)
+            return True, ""
+
+        behavior.request_player_move_api = fake_request_player_move_api
+        try:
+            first = behavior.route_home_fast_travel_reposition(
+                client,
+                destination,
+                args=args,
+                path_state=state,
+                action_counts=action_counts,
+                target_in_view=False,
+                reason="no nearby start graph node",
+            )
+            client.x = 2200
+            client.y = 300
+            client.z = 90
+
+            def fail_if_called(*_args, **_kwargs):
+                raise AssertionError("recent route-home success should not call player-move again")
+
+            behavior.request_player_move_api = fail_if_called
+            second = behavior.route_home_fast_travel_reposition(
+                client,
+                destination,
+                args=args,
+                path_state=state,
+                action_counts=action_counts,
+                target_in_view=False,
+                reason="no nearby start graph node",
+            )
+        finally:
+            behavior.request_player_move_api = original_request_player_move_api
+
+        self.assertTrue(first.moved)
+        self.assertTrue(second.moved)
+        self.assertEqual(calls, [destination.key])
+        self.assertEqual((client.x, client.y, client.z), (1000, 0, 75))
+        self.assertEqual(action_counts["route_home_fast_travel_reposition"], 1)
+        self.assertEqual(action_counts["route_home_fast_travel_recent_success_hold"], 1)
+
+    def test_route_home_fast_travel_preserve_z_skips_ground_refresh(self):
+        args = SimpleNamespace(
+            nav_api_url="http://127.0.0.1:5000",
+            route_home_api_retries=1,
+            route_home_api_retry_delay=0.0,
+            route_home_fast_travel_correction_grace=30.0,
+            route_home_preserve_z=True,
+        )
+        state = behavior.PathMovementState(None, 1, behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0))
+        client = PathClient()
+        client.refresh_calls = 0
+
+        def refresh_ground_z_here():
+            client.refresh_calls += 1
+            client.z = 3586
+            return True
+
+        client.refresh_ground_z_here = refresh_ground_z_here
+        destination = behavior.MovementDestination("required-target-home:live-anchor", 350688, 534196, 4598)
+        action_counts: dict[str, int] = {}
+        original_request_player_move_api = behavior.request_player_move_api
+        behavior.request_player_move_api = lambda _args, _client, _destination: (True, "")
+        try:
+            outcome = behavior.route_home_fast_travel_reposition(
+                client,
+                destination,
+                args=args,
+                path_state=state,
+                action_counts=action_counts,
+                target_in_view=False,
+                reason="live anchor",
+            )
+        finally:
+            behavior.request_player_move_api = original_request_player_move_api
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual((client.x, client.y, client.z), (350688, 534196, 4598))
+        self.assertEqual(client.refresh_calls, 0)
+
+    def test_route_home_preserve_z_forces_target_z_during_direct_waypoint_move(self):
+        args = SimpleNamespace(
+            nav_api_url="",
+            route_home_preserve_z=True,
+            movement_update_interval=0.0,
+        )
+        state = behavior.PathMovementState(None, 1, behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0))
+        client = CaptureGroundZClient()
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("waypoint:live-anchor", 1000, 0, 4598),
+            step=250.0,
+            stop_distance=100.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertTrue(client.last_kwargs["force_target_z"])
+        self.assertEqual(client.moves[-1][:3], (1000, 0, 4598))
+
+    def test_route_home_preserve_z_does_not_force_combat_target_z_without_fast_travel(self):
+        args = SimpleNamespace(route_home_preserve_z=True, growth_fast_travel="off")
+        destination = behavior.MovementDestination("target:19287", 294363, 647757, 4707)
+
+        self.assertEqual(behavior.forced_destination_target_z_kwargs(args, destination), {})
+
+        args.route_home_preserve_z = False
+        self.assertEqual(behavior.forced_destination_target_z_kwargs(args, destination), {})
+
+    def test_route_home_preserve_z_does_not_force_combat_target_z_with_route_home_fast_travel(self):
+        args = SimpleNamespace(route_home_preserve_z=True, growth_fast_travel="route-home")
+        destination = behavior.MovementDestination("target:19287", 294363, 647757, 4707)
+
+        self.assertEqual(behavior.forced_destination_target_z_kwargs(args, destination), {})
+
+    def test_route_home_preserve_z_does_not_force_combat_last_known_target_z(self):
+        args = SimpleNamespace(route_home_preserve_z=True, growth_fast_travel="route-home")
+
+        for destination in (
+            behavior.MovementDestination("target-last-known:19287", 294363, 647757, 5381),
+            behavior.MovementDestination("combat-target-last-known:19287", 294363, 647757, 5381),
+            behavior.MovementDestination("party-target-last-known:19287", 294363, 647757, 5381),
+            behavior.MovementDestination("party-target-unshared:19287", 294363, 647757, 5381),
+            behavior.MovementDestination("party-rescue-last-known:19287", 294363, 647757, 5381),
+        ):
+            with self.subTest(destination=destination.key):
+                self.assertEqual(
+                    behavior.forced_destination_target_z_kwargs(args, destination),
+                    {},
+                )
+
+        args.route_home_preserve_z = False
+        self.assertEqual(
+            behavior.forced_destination_target_z_kwargs(
+                args,
+                behavior.MovementDestination("target-last-known:19287", 294363, 647757, 5381),
+            ),
+            {},
+        )
+
+    def test_route_home_preserve_z_does_not_force_target_last_known_z_during_move(self):
+        args = SimpleNamespace(
+            nav_api_url="",
+            route_home_preserve_z=True,
+            movement_update_interval=0.0,
+        )
+        state = behavior.PathMovementState(None, 1, behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0))
+        client = CaptureGroundZClient()
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("target-last-known:19287", 1000, 0, 5381),
+            step=250.0,
+            stop_distance=100.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+            target_in_view=True,
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertNotIn("force_target_z", client.last_kwargs)
+
+    def test_combat_target_move_uses_ground_z_sampler_instead_of_live_target_z(self):
+        args = SimpleNamespace(
+            nav_api_url="",
+            route_home_preserve_z=True,
+            movement_update_interval=0.0,
+            path_last_mile_distance=10000.0,
+        )
+        state = behavior.PathMovementState(None, 1, behavior.PathSafety(max_direct_distance=10000.0, max_edge_length=1500.0, max_height_delta=10000))
+        client = CaptureGroundZClient()
+        client.ground_z_sampler = lambda x, y, region: 4674
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("target:15951", 1000, 0, 8980),
+            step=250.0,
+            stop_distance=100.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+            target_in_view=True,
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertNotIn("force_target_z", client.last_kwargs)
+        self.assertEqual(client.moves[-1][:3], (1000, 0, 4674))
+
+    def test_route_home_fast_travel_player_not_found_uses_local_sync(self):
+        args = SimpleNamespace(
+            nav_api_url="http://127.0.0.1:5000",
+            route_home_api_retries=1,
+            route_home_api_retry_delay=0.0,
+            route_home_fast_travel_correction_grace=30.0,
+        )
+        state = behavior.PathMovementState(None, 1, behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0))
+        client = PathClient()
+        destination = behavior.MovementDestination("required-target-home:far", 1000, 0, 75)
+        action_counts: dict[str, int] = {}
+        original_request_player_move_api = behavior.request_player_move_api
+
+        def fake_request_player_move_api(_args, _client, _destination):
+            return False, 'player move api error: HTTP Error 404: Not Found body={"error":"PlayerNotFound"}'
+
+        behavior.request_player_move_api = fake_request_player_move_api
+        try:
+            outcome = behavior.route_home_fast_travel_reposition(
+                client,
+                destination,
+                args=args,
+                path_state=state,
+                action_counts=action_counts,
+                target_in_view=False,
+                reason="no nearby start graph node",
+            )
+        finally:
+            behavior.request_player_move_api = original_request_player_move_api
+
+        self.assertTrue(outcome.moved)
+        self.assertTrue(outcome.arrived)
+        self.assertEqual((client.x, client.y, client.z), (1000, 0, 75))
+        self.assertEqual(action_counts["route_home_fast_travel_failed"], 1)
+        self.assertEqual(action_counts["route_home_fast_travel_player_not_found_local_sync"], 1)
+
+    def test_player_move_api_http_error_includes_response_body(self):
+        args = SimpleNamespace(
+            nav_api_url="http://127.0.0.1:5000",
+            nav_api_timeout=0.1,
+            region=100,
+        )
+        client = SimpleNamespace(
+            dummy_account_name="growthmid60081",
+            dummy_character_name="GrowthMid60081",
+            region=100,
+            heading=0,
+        )
+        destination = behavior.MovementDestination("required-target-home", 757484, 847726, 4671)
+        error = urllib.error.HTTPError(
+            "http://127.0.0.1:5000/api/dummy/combat/player-move",
+            500,
+            "Internal Server Error",
+            None,
+            io.BytesIO(b'{"error":"player is still loading"}'),
+        )
+
+        with patch.object(behavior.urllib.request, "urlopen", side_effect=error):
+            moved, message = behavior.request_player_move_api(args, client, destination)
+
+        self.assertFalse(moved)
+        self.assertIn("HTTP Error 500", message)
+        self.assertIn("player is still loading", message)
+
+    def test_player_move_api_url_uses_client_zone_id_as_region(self):
+        args = SimpleNamespace(
+            nav_api_url="http://127.0.0.1:5000",
+            path_region=100,
+            region=1,
+        )
+        client = SimpleNamespace(
+            dummy_account_name="growthhib60565",
+            dummy_character_name="GrowthHib60565",
+            zone_id=200,
+            heading=17,
+        )
+        destination = behavior.MovementDestination("required-target-home", 311136, 436475, 5418)
+
+        url = behavior.build_player_move_api_url(args, client, destination)
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+
+        self.assertEqual(query["region"], ["200"])
+        self.assertEqual(query["heading"], ["17"])
+
+    def test_player_move_api_url_falls_back_to_path_region(self):
+        args = SimpleNamespace(
+            nav_api_url="http://127.0.0.1:5000",
+            path_region=100,
+            region=1,
+        )
+        client = SimpleNamespace(
+            dummy_account_name="growthmid60522",
+            dummy_character_name="GrowthMid60522",
+            heading=0,
+        )
+        destination = behavior.MovementDestination("required-target-home", 757484, 847726, 4671)
+
+        url = behavior.build_player_move_api_url(args, client, destination)
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+
+        self.assertEqual(query["region"], ["100"])
+
+    def test_passive_leech_route_home_reposition_uses_xp_staging_offset(self):
+        args = SimpleNamespace(passive_xp_leech_follow_distance=1200.0)
+        home = behavior.MovementDestination("route-home", 100000, 200000, 3000)
+
+        staged = behavior.route_home_destination_for_party_member(
+            args,
+            home,
+            action_rotation="none",
+            is_party_follower=True,
+        )
+        leader = behavior.route_home_destination_for_party_member(
+            args,
+            home,
+            action_rotation="none",
+            is_party_follower=False,
+        )
+        carry = behavior.route_home_destination_for_party_member(
+            args,
+            home,
+            action_rotation="melee-burst",
+            is_party_follower=True,
+        )
+
+        self.assertEqual((staged.x, staged.y, staged.z), (101000, 200000, 3000))
+        self.assertEqual(staged.key, "route-home:passive-leech")
+        self.assertEqual((leader.x, leader.y, leader.z), (100000, 200000, 3000))
+        self.assertEqual((carry.x, carry.y, carry.z), (100000, 200000, 3000))
+        waypoint_home = behavior.route_home_destination_for_party_member(
+            args,
+            behavior.Waypoint(100000, 200000, 3000),
+            action_rotation="none",
+            is_party_follower=True,
+        )
+        self.assertEqual((waypoint_home.x, waypoint_home.y, waypoint_home.z), (101000, 200000, 3000))
+        self.assertEqual(waypoint_home.key, "route-home:passive-leech")
+
+    def test_passive_leech_holds_required_home_when_inside_hunt_radius(self):
+        args = SimpleNamespace(
+            required_target_home=behavior.Waypoint(100000, 200000, 3000),
+            required_target_home_hunt_distance=6500.0,
+            target_home_max_distance=6500.0,
+            party_size=4,
+            party_assist_only=True,
+            party_min_ready=4,
+            hunter_target_api_scout=True,
+        )
+        client = SimpleNamespace(x=101000, y=200000, z=3000)
+
+        self.assertTrue(
+            behavior.should_hold_passive_xp_leech_required_home(
+                args,
+                client,
+                "none",
+                is_party_follower=True,
+            )
+        )
+        self.assertFalse(
+            behavior.should_hold_passive_xp_leech_required_home(
+                args,
+                client,
+                "melee-basic",
+                is_party_follower=True,
+            )
+        )
+        self.assertFalse(
+            behavior.should_hold_passive_xp_leech_required_home(
+                args,
+                client,
+                "none",
+                is_party_follower=False,
+            )
+        )
+
     def test_nav_segment_validation_blocks_next_step(self):
         args = SimpleNamespace(
             nav_api_url="http://127.0.0.1:5000",
@@ -11096,6 +16938,54 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(action_counts["path_rejoin_graph"], 1)
         self.assertNotIn("path_failed", action_counts)
 
+    def test_offgraph_target_rejoins_nearest_graph_node_when_stale_z_blocks_progress_node(self):
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [
+                            {"id": "rejoin", "x": 1000, "y": 1000, "z": 0},
+                        ],
+                        "edges": [],
+                    }
+                }
+            }
+        )
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=150.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=500.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=3500.0,
+            flee_safe_point_distance=0.0,
+            flee_critical_safe_point_distance=9000.0,
+        )
+        state = behavior.PathMovementState(
+            graph,
+            1,
+            behavior.PathSafety(max_direct_distance=150.0, max_edge_length=3500.0, max_height_delta=500),
+        )
+        client = StepPathClient()
+        client.z = 6000
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("target:15951", 0, -2000, 0),
+            step=250.0,
+            stop_distance=100.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+            target_in_view=True,
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual(client.moves[-1][:3], (1000, 1000, 0))
+        self.assertEqual(action_counts["path_rejoin_graph"], 1)
+        self.assertNotIn("path_failed", action_counts)
+
     def test_far_offgraph_return_home_walks_toward_home_until_graph_rejoins(self):
         graph = behavior.PathGraph.from_payload(
             {
@@ -11140,6 +17030,52 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertTrue(outcome.moved)
         self.assertEqual(client.moves[-1][:3], (20000, 0, 0))
         self.assertEqual(action_counts["path_offgraph_return_move"], 1)
+        self.assertNotIn("path_failed", action_counts)
+
+    def test_offgraph_waypoint_walks_direct_until_graph_rejoins(self):
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [
+                            {"id": "home", "x": 20000, "y": 0, "z": 0},
+                        ],
+                        "edges": [],
+                    }
+                }
+            }
+        )
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=150.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=500.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            flee_safe_point_distance=3000.0,
+            flee_critical_safe_point_distance=4000.0,
+        )
+        state = behavior.PathMovementState(
+            graph,
+            1,
+            behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0, max_height_delta=500),
+        )
+        client = StepPathClient()
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("waypoint:route-home-entry", 20000, 0, 0),
+            step=250.0,
+            stop_distance=100.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual(client.moves[-1][:3], (20000, 0, 0))
+        self.assertEqual(action_counts["path_offgraph_waypoint_move"], 1)
         self.assertNotIn("path_failed", action_counts)
 
     def test_party_anchor_offgraph_goal_uses_direct_regroup_fallback(self):
@@ -11187,6 +17123,182 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(client.moves[-1][:3], (3000, 0, 0))
         self.assertEqual(action_counts["path_party_anchor_direct_fallback"], 1)
         self.assertNotIn("path_failed", action_counts)
+
+    def test_party_anchor_direct_regroup_blocks_large_ground_z_spike(self):
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [
+                            {"id": "start", "x": 0, "y": 0, "z": 0},
+                        ],
+                        "edges": [],
+                    }
+                }
+            }
+        )
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=150.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=500.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            party_follow_step=320.0,
+            movement_update_interval=0.0,
+            flee_safe_direct_ground_z_samples=4,
+        )
+        state = behavior.PathMovementState(
+            graph,
+            1,
+            behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0, max_height_delta=500),
+        )
+        state.destination_key = "party-anchor:offgraph"
+        state.resolved_goal = behavior.PathPoint(3000, 0, 0)
+        state.last_plan_at = 123.0
+        client = StepPathClient()
+        client.ground_z_sampler = lambda x, y, region: 1600 if x > 0 else 0
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("party-anchor:offgraph", 3000, 0, 0),
+            step=320.0,
+            stop_distance=500.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+        )
+
+        self.assertFalse(outcome.moved)
+        self.assertEqual(outcome.reason, "ground_z_delta:1600")
+        self.assertEqual(client.moves, [])
+        self.assertEqual(client.position_updates, [(0.0, False)])
+        self.assertEqual(state.destination_key, "")
+        self.assertIsNone(state.resolved_goal)
+        self.assertEqual(state.last_plan_at, 0.0)
+        self.assertEqual(state.follower.route, [])
+        self.assertEqual(action_counts["party_anchor_direct_height_blocked"], 1)
+        self.assertNotIn("path_party_anchor_direct_fallback", action_counts)
+        self.assertNotIn("path_failed", action_counts)
+
+    def test_travel_aggro_detour_uses_policy_boundary_when_unreachable(self):
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [
+                            {"id": "start", "x": 0, "y": 0, "z": 0},
+                        ],
+                        "edges": [],
+                    }
+                }
+            }
+        )
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=150.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=500.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            movement_update_interval=0.0,
+        )
+        state = behavior.PathMovementState(
+            graph,
+            1,
+            behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0, max_height_delta=500),
+        )
+        client = StepPathClient()
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("travel-aggro-detour:offgraph", 3000, 0, 0),
+            step=320.0,
+            stop_distance=500.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+        )
+
+        self.assertFalse(outcome.moved)
+        self.assertFalse(outcome.arrived)
+        self.assertEqual(outcome.reason, "no nearby goal graph node")
+        self.assertEqual(client.moves, [])
+        self.assertEqual(client.position_updates, [(0.0, False)])
+        self.assertEqual(action_counts["path_failed"], 1)
+        self.assertNotIn("travel_aggro_detour_direct_move", action_counts)
+
+    def test_travel_aggro_detour_projects_offgraph_candidate_to_reachable_graph_node(self):
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [
+                            {"id": "start", "x": 1000, "y": 1000, "z": 0},
+                            {"id": "safe-detour", "x": 6000, "y": 4600, "z": 0},
+                        ],
+                        "edges": [{"from": "start", "to": "safe-detour"}],
+                    }
+                }
+            }
+        )
+        args = SimpleNamespace(
+            path_max_node_distance=500.0,
+            path_max_edge_length=8000.0,
+            travel_aggro_avoid_radius=2000.0,
+            travel_aggro_detour_distance=5000.0,
+            flee_safe_point_distance=0.0,
+            flee_safe_threat_radius=0.0,
+        )
+        state = behavior.PathMovementState(
+            graph,
+            1,
+            behavior.PathSafety(max_direct_distance=500.0, max_edge_length=8000.0, max_height_delta=500),
+        )
+        client = SimpleNamespace(x=1000, y=1000, z=0)
+        objective = behavior.MovementDestination("required-target-home:test", 11000, 1000, 0)
+
+        raw_detour = behavior.travel_aggro_detour_destination(
+            args,
+            client,
+            objective,
+            danger_x=6000,
+            danger_y=1000,
+            danger_z=0,
+        )
+        self.assertIsNotNone(raw_detour)
+        raw_route = graph.route_between_points(
+            1,
+            behavior.PathPoint(client.x, client.y, client.z),
+            behavior.PathPoint(raw_detour.x, raw_detour.y, raw_detour.z),
+            max_node_distance=args.path_max_node_distance,
+            safety=state.safety,
+        )
+        self.assertFalse(raw_route.ok)
+        self.assertEqual(raw_route.reason, "no nearby goal graph node")
+
+        detour = behavior.travel_aggro_detour_destination(
+            args,
+            client,
+            objective,
+            danger_x=6000,
+            danger_y=1000,
+            danger_z=0,
+            path_state=state,
+        )
+
+        self.assertIsNotNone(detour)
+        self.assertEqual((detour.x, detour.y, detour.z), (6000, 4600, 0))
+        routed = graph.route_between_points(
+            1,
+            behavior.PathPoint(client.x, client.y, client.z),
+            behavior.PathPoint(detour.x, detour.y, detour.z),
+            max_node_distance=args.path_max_node_distance,
+            safety=state.safety,
+        )
+        self.assertTrue(routed.ok)
 
     def test_party_anchor_route_end_uses_direct_regroup_fallback_to_actual_leader(self):
         graph = behavior.PathGraph.from_payload(
@@ -11544,6 +17656,104 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(action_counts["path_direct_fallback"], 1)
         self.assertNotIn("path_failed", action_counts)
 
+    def test_offgraph_target_uses_ground_checked_direct_progress_when_goal_node_missing(self):
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=1200.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=100.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            combat_direct_move_distance=3000.0,
+            movement_speed=None,
+            movement_update_interval=0.0,
+        )
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [
+                            {"id": "start", "x": 0, "y": 0, "z": 0},
+                        ],
+                        "edges": [],
+                    }
+                }
+            }
+        )
+        state = behavior.PathMovementState(
+            graph,
+            1,
+            behavior.PathSafety(max_direct_distance=1200.0, max_edge_length=1500.0, max_height_delta=500.0),
+        )
+        client = StepPathClient()
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("target:offgraph", 2500, 0, 0),
+            step=250.0,
+            stop_distance=95.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+            target_in_view=True,
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual(client.moves[-1][:3], (2500, 0, 0))
+        self.assertEqual(action_counts["path_offgraph_target_move"], 1)
+        self.assertNotIn("path_failed", action_counts)
+
+    def test_offgraph_target_direct_progress_keeps_height_guard(self):
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=1200.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=100.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            combat_direct_move_distance=3000.0,
+            movement_speed=None,
+            movement_update_interval=0.0,
+            flee_safe_direct_ground_z_samples=4,
+        )
+        graph = behavior.PathGraph.from_payload(
+            {
+                "regions": {
+                    "1": {
+                        "nodes": [
+                            {"id": "start", "x": 0, "y": 0, "z": 0},
+                        ],
+                        "edges": [],
+                    }
+                }
+            }
+        )
+        state = behavior.PathMovementState(
+            graph,
+            1,
+            behavior.PathSafety(max_direct_distance=1200.0, max_edge_length=1500.0, max_height_delta=100.0),
+        )
+        client = StepPathClient()
+        client.ground_z_sampler = lambda _x, _y, _region: 1000
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("target:offgraph", 2500, 0, 0),
+            step=250.0,
+            stop_distance=95.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+            target_in_view=True,
+        )
+
+        self.assertFalse(outcome.moved)
+        self.assertEqual(outcome.reason, "no nearby goal graph node")
+        self.assertEqual(action_counts["path_failed"], 1)
+        self.assertNotIn("path_offgraph_target_move", action_counts)
+
     def test_cross_zone_required_home_uses_direct_return_fallback_when_graph_has_no_route(self):
         args = SimpleNamespace(
             nav_api_url="http://127.0.0.1:5000",
@@ -11647,6 +17857,168 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(outcome.reason, "route ended before last mile")
         self.assertEqual(state.follower.route, [])
         self.assertEqual(state.destination_key, "")
+
+    def test_target_resolved_graph_endpoint_outside_last_mile_fails_instead_of_arrived(self):
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=150.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=1200.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            movement_update_interval=0.0,
+        )
+        graph = behavior.PathGraph.from_payload(
+            {"regions": {"1": {"nodes": [{"id": "shore", "x": 0, "y": 0, "z": 0}], "edges": []}}}
+        )
+        state = behavior.PathMovementState(graph, 1, behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0))
+        state.destination_key = "target:15611"
+        state.resolved_goal = behavior.PathPoint(0, 0, 0)
+        client = PathClient()
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("target:15611", 1000, 0, 0),
+            step=250.0,
+            stop_distance=100.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+            target_in_view=True,
+        )
+
+        self.assertFalse(outcome.moved)
+        self.assertFalse(outcome.arrived)
+        self.assertEqual(outcome.reason, "route ended before last mile")
+        self.assertEqual(action_counts["target_route_incomplete"], 1)
+        self.assertEqual(action_counts["path_failed"], 1)
+        self.assertNotIn("path_arrived", action_counts)
+        self.assertEqual(state.follower.route, [])
+        self.assertEqual(state.destination_key, "")
+        self.assertEqual(client.moves, [])
+
+    def test_target_releases_reached_graph_endpoint_for_actual_last_mile(self):
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=1200.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=1200.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            movement_speed=None,
+            movement_update_interval=0.0,
+        )
+        graph = behavior.PathGraph.from_payload(
+            {"regions": {"1": {"nodes": [{"id": "shore", "x": 0, "y": 50, "z": 0}], "edges": []}}}
+        )
+        state = behavior.PathMovementState(
+            graph,
+            1,
+            behavior.PathSafety(max_direct_distance=1200.0, max_edge_length=1500.0),
+        )
+        state.destination_key = "target:9558"
+        state.resolved_goal = behavior.PathPoint(0, 50, 0)
+        client = PathClient()
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("target:9558", 0, 1000, 0),
+            step=250.0,
+            stop_distance=100.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+            target_in_view=True,
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertFalse(outcome.arrived)
+        self.assertEqual(client.moves[-1][:3], (0, 1000, 0))
+        self.assertEqual(action_counts["target_last_mile_resolved_goal_release"], 1)
+        self.assertEqual(action_counts["path_last_mile"], 1)
+        self.assertNotIn("path_arrived", action_counts)
+        self.assertEqual(state.resolved_goal, behavior.PathPoint(0, 1000, 0))
+
+    def test_target_releases_finished_graph_route_for_actual_last_mile(self):
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=1200.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=1200.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            movement_speed=None,
+            movement_update_interval=0.0,
+        )
+        graph = behavior.PathGraph.from_payload(
+            {"regions": {"1": {"nodes": [{"id": "shore", "x": 0, "y": 50, "z": 0}], "edges": []}}}
+        )
+        state = behavior.PathMovementState(
+            graph,
+            1,
+            behavior.PathSafety(max_direct_distance=1200.0, max_edge_length=1500.0),
+        )
+        state.destination_key = "target:9558"
+        state.resolved_goal = behavior.PathPoint(0, 50, 0)
+        state.follower.set_route([behavior.PathPoint(0, 50, 0)])
+        client = PathClient()
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("target:9558", 0, 1000, 0),
+            step=250.0,
+            stop_distance=20.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+            target_in_view=True,
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertFalse(outcome.arrived)
+        self.assertEqual(client.moves[-1][:3], (0, 1000, 0))
+        self.assertEqual(action_counts["target_last_mile_resolved_goal_release"], 1)
+        self.assertEqual(action_counts["path_last_mile"], 1)
+        self.assertNotIn("path_arrived", action_counts)
+        self.assertEqual(state.resolved_goal, behavior.PathPoint(0, 1000, 0))
+
+    def test_opening_pull_target_uses_pull_range_direct_approach_past_sparse_graph_endpoint(self):
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=450.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=1200.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            movement_speed=None,
+            movement_update_interval=0.0,
+        )
+        state = behavior.PathMovementState(
+            behavior.PathGraph(),
+            1,
+            behavior.PathSafety(max_direct_distance=450.0, max_edge_length=1500.0, max_height_delta=5000.0),
+        )
+        client = StepPathClient()
+        action_counts: dict[str, int] = {}
+
+        outcome = behavior.move_towards_destination(
+            client,
+            behavior.MovementDestination("opening-pull-target:16216", 4000, 0, 0),
+            step=250.0,
+            stop_distance=2700.0,
+            args=args,
+            path_state=state,
+            action_counts=action_counts,
+            target_in_view=False,
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual(client.moves[-1][:3], (4000, 0, 0))
+        self.assertEqual(action_counts["path_last_mile"], 1)
+        self.assertNotIn("path_plan", action_counts)
 
     def test_nav_segment_validation_blocks_last_mile(self):
         args = SimpleNamespace(
@@ -11891,6 +18263,13 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
     def test_combat_text_metric_parser_tracks_damage_and_healing_amounts(self):
         self.assertEqual(behavior.parse_combat_text_metric("당신은 123 피해를 입혔습니다."), ("damage_done", 123))
         self.assertEqual(behavior.parse_combat_text_metric("bear에게 62 피해를 입혔습니다!"), ("damage_done", 62))
+        self.assertEqual(behavior.parse_damage_done_target_name("노련한 물방개에게 31 피해를 입혔습니다!"), "노련한 물방개")
+        self.assertTrue(
+            behavior.target_name_matches_known_alias(
+                "노련한 water beetle",
+                behavior.parse_damage_done_target_name("노련한 물방개에게 31 피해를 입혔습니다!"),
+            )
+        )
         self.assertEqual(
             behavior.parse_combat_text_metric("공격합니다이(가) boar piglet 당신의 sword하여 5 (-1) 피해를 입혔습니다!"),
             ("damage_done", 5),
@@ -11899,6 +18278,10 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(
             behavior.parse_combat_text_metric("drakulv executioner이(가) 당신의 몸통에게 195 (-27) 피해를 입혔습니다!"),
             ("damage_taken", 195),
+        )
+        self.assertEqual(
+            behavior.parse_combat_text_metric("어린 스라소니가 당신의 몸통에 6 피해를 입혔습니다!"),
+            ("damage_taken", 6),
         )
         self.assertEqual(
             behavior.parse_combat_text_metric("wintery dirge이(가) 당신에게 106 (-6) 피해를 입혔습니다!"),
@@ -12036,6 +18419,49 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertIn("희귀: 숲지기의 장검", payload)
         self.assertIn("전설: 달빛 망토", payload)
 
+    def test_fixed_realm_report_uses_account_realm(self):
+        path = Path("dummy-report-fixed-realm-test.md")
+        args = SimpleNamespace(
+            host="127.0.0.1",
+            port=10300,
+            concurrency=1,
+            behavior_profile="cautious-solo",
+            ai_player=False,
+            hunter=True,
+            combat=True,
+            move=True,
+            use_skills=True,
+            recovery=False,
+            party_size=1,
+            ai_persona="auto",
+            realm_strategy="fixed",
+            realm=1,
+            waypoints=[],
+        )
+        accounts = [
+            behavior.DummyAccount("hibtest001", "pass", 3, 0),
+            behavior.DummyAccount("hibtest002", "pass", 3, 0),
+        ]
+        results = [
+            behavior.DummyResult(
+                "hibtest001",
+                ok=True,
+                actions=1,
+                rounds=1,
+                successful_rounds=1,
+                metrics=[],
+            )
+        ]
+
+        try:
+            behavior.apply_realm_strategy(accounts, args)
+            behavior.write_report_md(str(path), results, 1.25, args)
+            payload = path.read_text(encoding="utf-8")
+        finally:
+            path.unlink(missing_ok=True)
+
+        self.assertIn("Realm strategy: `fixed`, selected `Hibernia`", payload)
+
     def test_party_slot_rotations_override_mixed_strategy(self):
         args = SimpleNamespace(
             party_slot_rotations=["melee-basic", "melee-burst", "healer-support"],
@@ -12120,6 +18546,28 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertEqual(behavior.resolve_effective_action_rotation(args, "melee-burst", plan, True), "caster-basic")
 
+    def test_effective_rotation_keeps_dynamic_quest_required_melee_without_styles(self):
+        args = SimpleNamespace(
+            allow_unvalidated_spells=False,
+            allow_unvalidated_skills=False,
+            required_target_home=behavior.MovementDestination("required-target-home", 509819, 492466, 2763),
+            dynamic_quest_return_after_required_target=True,
+            dynamic_quest_observe_final_progress=False,
+            require_target_name="black wolf pup",
+        )
+        plan = behavior.CombatUsablePlan(
+            attack_spells=[
+                behavior.UsableSpellRef(
+                    line_index=3,
+                    spell_level=44,
+                    name="Fire Bolt",
+                    level=44,
+                )
+            ]
+        )
+
+        self.assertEqual(behavior.resolve_effective_action_rotation(args, "melee-basic", plan, True), "melee-basic")
+
     def test_effective_rotation_keeps_known_melee_hybrid_without_validated_styles(self):
         args = SimpleNamespace(allow_unvalidated_spells=False, allow_unvalidated_skills=False)
         account = behavior.DummyAccount("champion", "pass", 3, 0, class_id=45, class_name="Champion")
@@ -12149,6 +18597,18 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             {
                 "skills": [
                     {"kind": "Style", "useSkillIndex": 1, "useSkillType": 1, "name": "Slash", "level": 50},
+                    {"kind": "Style", "useSkillIndex": 2, "useSkillType": 1, "name": "Provoke", "level": 15},
+                ]
+            }
+        )
+
+        self.assertEqual([skill.name for skill in plan.taunt_skills], ["Provoke"])
+
+    def test_combat_plan_does_not_classify_engage_as_literal_taunt(self):
+        plan = behavior.parse_combat_usable_plan(
+            {
+                "skills": [
+                    {"kind": "Style", "useSkillIndex": 1, "useSkillType": 1, "name": "Engage", "level": 7},
                     {"kind": "Style", "useSkillIndex": 2, "useSkillType": 1, "name": "Provoke", "level": 15},
                 ]
             }
@@ -12207,6 +18667,92 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertTrue(behavior.should_preserve_unshared_party_target(args, 77, active))
         self.assertFalse(behavior.should_preserve_unshared_party_target(args, 0, active))
         self.assertFalse(behavior.should_preserve_unshared_party_target(args, 77, {"target_name": "forest add"}))
+
+    def test_required_target_timeout_needs_contact_before_unconditional_preserve(self):
+        args = SimpleNamespace(party_assist_only=True, require_target_name="water beetle")
+        no_contact = {
+            "target_id": 3222,
+            "target_name": "water beetle",
+            "target_level": 8,
+            "attacks": 0,
+            "skills": 0,
+            "damage_done": 0,
+            "damage_taken": 0,
+        }
+        with_contact = dict(no_contact, attacks=1)
+
+        self.assertTrue(behavior.should_preserve_current_party_target(args, None, 3222, no_contact))
+        self.assertFalse(
+            behavior.should_preserve_current_party_target_timeout(
+                args,
+                None,
+                3222,
+                no_contact,
+                behavior_state=behavior.DummyBehaviorState.HuntObjective,
+                current_target_intent=behavior.TargetIntent.objective,
+            )
+        )
+        self.assertTrue(
+            behavior.should_preserve_current_party_target_timeout(
+                args,
+                None,
+                3222,
+                with_contact,
+                behavior_state=behavior.DummyBehaviorState.HuntObjective,
+                current_target_intent=behavior.TargetIntent.objective,
+            )
+        )
+
+    def test_party_leader_objective_target_survives_empty_assist_visibility(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            require_target_name="",
+            party_encounter_mode="standard",
+            dynamic_quest_followup_target_name="",
+        )
+        active = {"target_id": 10276, "target_name": "small freshwater crab", "target_level": 4}
+
+        self.assertFalse(behavior.should_preserve_party_target_on_loss(args))
+        self.assertTrue(
+            behavior.should_preserve_unshared_party_target(
+                args,
+                10276,
+                active,
+                is_party_leader=True,
+                behavior_state=behavior.DummyBehaviorState.HuntObjective,
+                current_target_intent=behavior.TargetIntent.objective,
+            )
+        )
+        self.assertTrue(
+            behavior.should_preserve_unshared_party_target(
+                args,
+                10276,
+                None,
+                is_party_leader=True,
+                behavior_state=behavior.DummyBehaviorState.HuntObjective,
+                current_target_intent=behavior.TargetIntent.objective,
+            )
+        )
+        self.assertFalse(
+            behavior.should_preserve_unshared_party_target(
+                args,
+                10276,
+                active,
+                is_party_leader=False,
+                behavior_state=behavior.DummyBehaviorState.HuntObjective,
+                current_target_intent=behavior.TargetIntent.objective,
+            )
+        )
+        self.assertFalse(
+            behavior.should_preserve_unshared_party_target(
+                args,
+                10277,
+                active,
+                is_party_leader=True,
+                behavior_state=behavior.DummyBehaviorState.HuntObjective,
+                current_target_intent=behavior.TargetIntent.objective,
+            )
+        )
 
     def test_dynamic_quest_followup_target_loss_is_preservable_without_party_assist(self):
         args = SimpleNamespace(
@@ -12277,6 +18823,48 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertTrue(behavior.should_preserve_unshared_party_target(args, 24443, active))
         self.assertTrue(behavior.should_preserve_current_party_target(args, state, 24443, active))
+
+    def test_active_party_assist_reject_preserves_contact_leader_target(self):
+        args = SimpleNamespace(party_assist_only=True)
+        snapshot = {
+            "leader_target_id": 12715,
+            "leader_target_engaged_at": 10.0,
+        }
+        active = {
+            "target_id": 12715,
+            "target_name": "fishing bear",
+            "target_level": 19,
+            "target_intent": "party_assist",
+            "attacks": 0,
+            "skills": 0,
+            "damage_done": 35,
+            "damage_taken": 0,
+        }
+
+        self.assertTrue(
+            behavior.should_preserve_active_party_assist_reject(
+                args,
+                snapshot,
+                current_target=12715,
+                current_target_intent=behavior.TargetIntent.party_assist,
+                active_combat=active,
+                rejected_target_id=12715,
+                is_party_follower=True,
+                behavior_state=behavior.DummyBehaviorState.HuntObjective,
+            )
+        )
+        self.assertFalse(
+            behavior.should_preserve_active_party_assist_reject(
+                args,
+                snapshot,
+                current_target=12715,
+                current_target_intent=behavior.TargetIntent.party_assist,
+                active_combat=active,
+                rejected_target_id=21231,
+                is_party_follower=True,
+                behavior_state=behavior.DummyBehaviorState.HuntObjective,
+            )
+        )
 
     def test_removed_party_target_preserve_allows_short_visible_loss_under_limit(self):
         args = SimpleNamespace(party_target_loss_grace=4.0, party_target_removed_preserve_limit=3)
@@ -12546,6 +19134,29 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 primed_at=0.0,
                 now=10.0,
                 prime_delay=1.1,
+            )
+        )
+
+    def test_active_combat_visibility_gap_keeps_attack_mode_briefly(self):
+        args = SimpleNamespace(target_loss_grace=1.0, combat_interval=1.5)
+        active = {"target_id": 22520}
+
+        self.assertTrue(
+            behavior.should_keep_attack_mode_during_target_visibility_gap(
+                args,
+                active,
+                current_target=22520,
+                current_target_last_visible_at=100.0,
+                now=102.5,
+            )
+        )
+        self.assertFalse(
+            behavior.should_keep_attack_mode_during_target_visibility_gap(
+                args,
+                active,
+                current_target=22520,
+                current_target_last_visible_at=100.0,
+                now=104.5,
             )
         )
 
@@ -13012,6 +19623,20 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             behavior.parse_party_member_join_message("Albtest005이(가) 그룹에 참가했습니다."),
             "Albtest005",
         )
+        self.assertEqual(
+            behavior.parse_party_member_join_message("Albtest005가 그룹에 참가했습니다."),
+            "Albtest005",
+        )
+        self.assertEqual(
+            behavior.parse_party_member_join_message("테스트이 그룹에 참가했습니다."),
+            "테스트",
+        )
+
+    def test_parse_party_invite_received_message_supports_korean_group_invite(self):
+        self.assertEqual(
+            behavior.parse_party_invite_received_message("GrowthAlb701님이 당신을 그룹에 초대했습니다."),
+            "GrowthAlb701",
+        )
 
     def test_parse_party_member_death_message_supports_korean_party_death(self):
         self.assertEqual(
@@ -13029,12 +19654,14 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         names = ["Dummy300", "Albtest007"]
         for text in (
             "Albtest007\uC774(\uAC00) \uC0AC\uB9DD\uD588\uC2B5\uB2C8\uB2E4!",
+            "Albtest007\uC774 \uC0AC\uB9DD\uD588\uC2B5\uB2C8\uB2E4!",
+            "Dummy300\uAC00 \uC0AC\uB9DD\uD588\uC2B5\uB2C8\uB2E4!",
             "Albtest007\uC774(\uAC00) \uC0B7\uC640\uC758 \uB465\uC9C0\uC5D0\uC11C \uC0AC\uB9DD\uD588\uC2B5\uB2C8\uB2E4!",
             "Albtest007\uC774(\uAC00) \uC0AC\uB9DD\uD588\uC2B5\uB2C8\uB2E4. Albtest007\uC758 \uC2DC\uCCB4\uAC00 \uB545\uC5D0 \uB180\uC5EC \uC788\uC2B5\uB2C8\uB2E4.",
         ):
             self.assertEqual(
                 behavior.parse_party_member_death_message(text, names),
-                "Albtest007",
+                "Dummy300" if text.startswith("Dummy300") else "Albtest007",
                 msg=f"failed to parse killer-less death: {text!r}",
             )
 
@@ -13227,6 +19854,129 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertEqual(selected.object_id, 20)
 
+    def test_named_rescue_attacker_matches_prefixed_korean_alias(self):
+        attacker = FakeNpc(20, "노련한 water beetle", 6, 120.0)
+        args = SimpleNamespace(
+            require_target_name="",
+            objective_add_target_name="",
+            party_encounter_mode="standard",
+            player_level=6,
+            max_target_level=6,
+            max_target_level_delta=0,
+            min_target_level=0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            combat_home_leash_distance=0.0,
+        )
+
+        selected = behavior.choose_named_rescue_attacker(
+            [attacker],
+            FakeClient(npcs=[attacker]),
+            args,
+            leader_target_id=0,
+            attacker_name="노련한 물방개",
+        )
+
+        self.assertEqual(selected.object_id, 20)
+
+    def test_named_rescue_attacker_falls_back_for_localized_damage_name(self):
+        far = FakeNpc(20, "bandit", 4, 1800.0)
+        near = FakeNpc(21, "seasoned bandit", 5, 650.0)
+        near.target_can_attack = True
+        near.target_relation = "hostile"
+        args = SimpleNamespace(
+            party_rescue_max_distance=2200.0,
+            party_encounter_mode="standard",
+            player_level=4,
+            max_target_level=6,
+            max_target_level_delta=1,
+            require_target_name="",
+            objective_add_target_name="",
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            combat_home_leash_distance=0.0,
+        )
+
+        selected = behavior.choose_named_rescue_attacker(
+            [far, near],
+            FakeClient(npcs=[far, near]),
+            args,
+            leader_target_id=0,
+            attacker_name="노련한 도적",
+        )
+
+        self.assertEqual(selected.object_id, 21)
+
+    def test_named_rescue_attacker_fallback_rejects_non_attackable_localized_candidate(self):
+        friendly = FakeNpc(21, "minor nature spirit", 7, 450.0)
+        friendly.target_can_attack = False
+        friendly.target_relation = "friendly"
+        hostile = FakeNpc(22, "red wolfhound", 7, 950.0)
+        hostile.target_can_attack = True
+        hostile.target_relation = "hostile"
+        args = SimpleNamespace(
+            party_rescue_max_distance=2200.0,
+            party_encounter_mode="standard",
+            player_level=4,
+            max_target_level=8,
+            max_target_level_delta=1,
+            require_target_name="",
+            objective_add_target_name="",
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            combat_home_leash_distance=0.0,
+        )
+
+        selected = behavior.choose_named_rescue_attacker(
+            [friendly, hostile],
+            FakeClient(npcs=[friendly, hostile]),
+            args,
+            leader_target_id=0,
+            attacker_name="노련한 러프 늑대",
+        )
+
+        self.assertEqual(selected.object_id, 22)
+
+    def test_party_rescue_target_rejects_non_attackable_relation(self):
+        friendly = FakeNpc(21, "minor nature spirit", 7, 450.0)
+        friendly.target_can_attack = False
+        friendly.target_relation = "friendly"
+        args = SimpleNamespace(
+            party_encounter_mode="standard",
+            player_level=4,
+            max_target_level=8,
+            max_target_level_delta=1,
+            require_target_name="",
+            objective_add_target_name="",
+        )
+
+        self.assertFalse(behavior.should_accept_party_rescue_target(args, friendly))
+
+    def test_named_rescue_attacker_does_not_fallback_for_unmatched_latin_name(self):
+        near = FakeNpc(21, "seasoned bandit", 5, 650.0)
+        args = SimpleNamespace(
+            party_rescue_max_distance=2200.0,
+            party_encounter_mode="standard",
+            player_level=4,
+            max_target_level=6,
+            max_target_level_delta=1,
+            require_target_name="",
+            objective_add_target_name="",
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            combat_home_leash_distance=0.0,
+        )
+
+        selected = behavior.choose_named_rescue_attacker(
+            [near],
+            FakeClient(npcs=[near]),
+            args,
+            leader_target_id=0,
+            attacker_name="veteran bandit",
+        )
+
+        self.assertIsNone(selected)
+
     def test_korean_damage_refreshes_exact_rescue_threat_as_combat_proven_encounter_add(self):
         boss = FakeNpc(10, "Gjalpinulva", 80, 100.0)
         boss.x = 1000
@@ -13283,6 +20033,148 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertTrue(refreshed)
         self.assertEqual(snapshot["rescue_target_id"], 20)
         self.assertFalse(snapshot["rescue_target_objective_add"])
+
+    def test_localized_required_damage_refreshes_rescue_even_above_selection_max(self):
+        required = FakeNpc(20, "army ant soldier", 13, 320.0)
+        state = behavior.PartyState("Tank", ["Tank", "Leech"])
+        args = SimpleNamespace(
+            require_target_name="army ant soldier",
+            objective_add_target_name="",
+            npc_max_age=60.0,
+            party_rescue_min_hold=0.0,
+            party_rescue_max_distance=2200.0,
+            party_encounter_mode="standard",
+            player_level=6,
+            max_target_level=9,
+            max_target_level_delta=1,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            combat_home_leash_distance=0.0,
+        )
+
+        refreshed = behavior.refresh_exact_rescue_threat_from_attacker_name(
+            state,
+            FakeClient(npcs=[required]),
+            args,
+            "Leech",
+            "노련한 군대개미 병정",
+        )
+
+        snapshot = state.snapshot()
+        self.assertTrue(refreshed)
+        self.assertEqual(snapshot["rescue_target_id"], 20)
+        self.assertEqual(snapshot["rescue_member_name"], "Leech")
+
+    def test_localized_required_damage_does_not_promote_same_objective_name_clone(self):
+        leader_target = FakeNpc(10, "노련한 water beetle", 7, 1200.0)
+        same_name_clone = FakeNpc(20, "water beetle", 6, 350.0)
+        state = behavior.PartyState("Tank", ["Tank"])
+        state.update_shared_target(leader_target, engaged=True)
+        args = SimpleNamespace(
+            require_target_name="water beetle",
+            objective_add_target_name="",
+            npc_max_age=60.0,
+            party_rescue_min_hold=0.0,
+            party_rescue_max_distance=2200.0,
+            party_encounter_mode="standard",
+            player_level=10,
+            max_target_level=7,
+            max_target_level_delta=0,
+            min_target_level=0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            combat_home_leash_distance=0.0,
+        )
+
+        refreshed = behavior.refresh_exact_rescue_threat_from_attacker_name(
+            state,
+            FakeClient(npcs=[same_name_clone]),
+            args,
+            "Tank",
+            "노련한 물방개",
+        )
+
+        snapshot = state.snapshot()
+        self.assertFalse(refreshed)
+        self.assertEqual(snapshot["leader_target_id"], 10)
+        self.assertEqual(snapshot["rescue_target_id"], 0)
+
+    def test_localized_required_damage_promotes_same_objective_name_add_when_leader_too_far(self):
+        leader_target = FakeNpc(10, "노련한 water beetle", 7, 1200.0)
+        same_name_add = FakeNpc(20, "water beetle", 6, 180.0)
+        state = behavior.PartyState("Tank", ["Tank", "Healer"])
+        state.update_shared_target(leader_target, engaged=True)
+        args = SimpleNamespace(
+            require_target_name="water beetle",
+            objective_add_target_name="",
+            npc_max_age=60.0,
+            party_rescue_min_hold=0.0,
+            party_rescue_max_distance=2200.0,
+            party_encounter_mode="standard",
+            player_level=10,
+            max_target_level=7,
+            max_target_level_delta=0,
+            min_target_level=0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            combat_home_leash_distance=0.0,
+            attack_range=250.0,
+            melee_range_buffer=0.0,
+            minimum_melee_stop_distance=0.0,
+        )
+
+        refreshed = behavior.refresh_exact_rescue_threat_from_attacker_name(
+            state,
+            FakeClient(npcs=[same_name_add, leader_target]),
+            args,
+            "Healer",
+            "노련한 물방개",
+        )
+
+        snapshot = state.snapshot()
+        self.assertTrue(refreshed)
+        self.assertEqual(snapshot["leader_target_id"], 10)
+        self.assertEqual(snapshot["rescue_target_id"], 20)
+        self.assertEqual(snapshot["rescue_member_name"], "Healer")
+        self.assertTrue(snapshot["rescue_target_objective_add"])
+
+    def test_localized_required_damage_promotes_same_objective_name_add_with_focus_evidence(self):
+        leader_target = FakeNpc(10, "노련한 water beetle", 7, 260.0)
+        same_name_add = FakeNpc(20, "water beetle", 6, 180.0)
+        same_name_add.target = "Healer"
+        state = behavior.PartyState("Tank", ["Tank", "Healer"])
+        state.update_shared_target(leader_target, engaged=True)
+        args = SimpleNamespace(
+            require_target_name="water beetle",
+            objective_add_target_name="",
+            npc_max_age=60.0,
+            party_rescue_min_hold=0.0,
+            party_rescue_max_distance=2200.0,
+            party_encounter_mode="standard",
+            player_level=10,
+            max_target_level=7,
+            max_target_level_delta=0,
+            min_target_level=0,
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            combat_home_leash_distance=0.0,
+            attack_range=250.0,
+            melee_range_buffer=0.0,
+            minimum_melee_stop_distance=0.0,
+        )
+
+        refreshed = behavior.refresh_exact_rescue_threat_from_attacker_name(
+            state,
+            FakeClient(npcs=[same_name_add, leader_target]),
+            args,
+            "Healer",
+            "노련한 물방개",
+        )
+
+        snapshot = state.snapshot()
+        self.assertTrue(refreshed)
+        self.assertEqual(snapshot["rescue_target_id"], 20)
+        self.assertTrue(snapshot["rescue_target_objective_add"])
 
     def test_local_rescue_role_policy_keeps_support_and_casters_out_by_default(self):
         args = SimpleNamespace(
@@ -13662,6 +20554,14 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertFalse(
             behavior.should_treat_disconnect_as_completed(BrokenPipeError(), SimpleNamespace(is_dead=False), False)
         )
+        self.assertTrue(
+            behavior.should_treat_disconnect_as_completed(
+                BrokenPipeError(),
+                SimpleNamespace(is_dead=False),
+                False,
+                allow_network_disconnect_success=True,
+            )
+        )
 
     def test_post_objective_disconnect_is_completed_round(self):
         self.assertTrue(
@@ -13766,6 +20666,98 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertTrue(ok)
         self.assertEqual(error, "")
+
+    def test_safe_exit_deadline_after_removed_target_is_productive_round_success(self):
+        ok, error = behavior.final_round_completion_status(
+            safe_exit_failed=True,
+            safe_exit_error="safe_exit_deadline_reached",
+            target_removed_count=1,
+            player_death_count=0,
+        )
+
+        self.assertTrue(ok)
+        self.assertEqual(error, "")
+
+    def test_safe_exit_deadline_without_removed_target_still_fails_round(self):
+        ok, error = behavior.final_round_completion_status(
+            safe_exit_failed=True,
+            safe_exit_error="safe_exit_deadline_reached",
+            target_removed_count=0,
+            player_death_count=0,
+        )
+
+        self.assertFalse(ok)
+        self.assertEqual(error, "safe_exit_deadline_reached")
+
+    def test_safe_exit_deadline_with_player_death_still_fails_round(self):
+        ok, error = behavior.final_round_completion_status(
+            safe_exit_failed=True,
+            safe_exit_error="safe_exit_deadline_reached",
+            target_removed_count=1,
+            player_death_count=1,
+        )
+
+        self.assertFalse(ok)
+        self.assertEqual(error, "safe_exit_deadline_reached")
+
+    def test_party_partial_safe_exit_deadline_can_complete_run(self):
+        args = SimpleNamespace(allow_party_safe_exit_partial_success=True, party_size=8)
+        results = [
+            behavior.DummyResult("growthmid001", ok=True),
+            behavior.DummyResult("growthmid002", ok=False, error="safe_exit_deadline_reached"),
+        ]
+
+        self.assertTrue(behavior.should_treat_partial_party_safe_exit_as_success(args, results))
+
+    def test_party_partial_safe_exit_deadline_needs_some_success(self):
+        args = SimpleNamespace(allow_party_safe_exit_partial_success=True, party_size=8)
+        results = [
+            behavior.DummyResult("growthmid001", ok=False, error="safe_exit_deadline_reached"),
+            behavior.DummyResult("growthmid002", ok=False, error="safe_exit_deadline_reached"),
+        ]
+
+        self.assertFalse(behavior.should_treat_partial_party_safe_exit_as_success(args, results))
+
+    def test_round_wall_timeout_success_is_disabled_for_dynamic_quest_e2e(self):
+        args = SimpleNamespace(allow_round_wall_timeout_success=True)
+
+        self.assertFalse(
+            behavior.should_treat_round_wall_timeout_as_success(
+                args,
+                dynamic_quest_e2e_enabled=True,
+            )
+        )
+        self.assertTrue(
+            behavior.should_treat_round_wall_timeout_as_success(
+                args,
+                dynamic_quest_e2e_enabled=False,
+            )
+        )
+
+    def test_round_wall_timeout_success_force_closes_socket(self):
+        args = SimpleNamespace(allow_round_wall_timeout_success=True)
+
+        self.assertTrue(
+            behavior.should_force_close_after_round_wall_timeout(
+                args,
+                round_wall_timeout_reached=True,
+                dynamic_quest_e2e_enabled=False,
+            )
+        )
+        self.assertFalse(
+            behavior.should_force_close_after_round_wall_timeout(
+                args,
+                round_wall_timeout_reached=True,
+                dynamic_quest_e2e_enabled=True,
+            )
+        )
+        self.assertFalse(
+            behavior.should_force_close_after_round_wall_timeout(
+                args,
+                round_wall_timeout_reached=False,
+                dynamic_quest_e2e_enabled=False,
+            )
+        )
 
     def test_dynamic_quest_shared_party_completion_waits_for_progress_confirmation(self):
         args = SimpleNamespace(
@@ -14241,6 +21233,336 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 behavior.DummyBehaviorState.TravelToObjective,
                 add,
                 behavior.TargetIntent.party_rescue,
+            )
+        )
+
+    def test_carry_growth_combat_slot_counterattacks_travel_aggro(self):
+        add = FakeNpc(20, "wintery dirge", 44, 140.0)
+        args = SimpleNamespace(
+            require_target_name="icestrider interceptor",
+            party_carry_counterattack_travel_aggro=True,
+        )
+
+        self.assertFalse(
+            behavior.should_handle_travel_aggro_target(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                add,
+                behavior.TargetIntent.party_rescue,
+                action_rotation="melee-burst",
+            )
+        )
+        self.assertFalse(
+            behavior.should_handle_travel_aggro_damage(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                "wintery dirge",
+                attacker_level=8,
+                player_level=14,
+                health_percent=70,
+                previous_health_percent=100,
+                action_rotation="melee-burst",
+            )
+        )
+
+    def test_carry_growth_active_tank_selects_travel_aggro_attacker(self):
+        attacker = FakeNpc(20, "forest adder", 14, 180.0)
+        client = SimpleNamespace(
+            x=0,
+            y=0,
+            z=0,
+            distance_to=lambda actor: float(getattr(actor, "distance", 0.0) or 0.0),
+        )
+        args = SimpleNamespace(
+            party_rescue_aggro=False,
+            party_carry_counterattack_travel_aggro=True,
+            party_rescue_ignore_low_level_delta=8,
+            party_encounter_mode="standard",
+            player_level=17,
+            max_target_level=17,
+            max_target_level_delta=3,
+            require_target_name="",
+            objective_add_target_name="",
+            required_target_home=None,
+            target_home_max_distance=0.0,
+            combat_home_leash_distance=0.0,
+            max_target_distance=10000.0,
+        )
+        snapshot = {
+            "active_tank_name": "GrowthAlb50361",
+            "leader_target_id": 0,
+            "rescue_target_id": 0,
+        }
+
+        selected = behavior.choose_incoming_damage_counterattack_target(
+            [attacker],
+            client,
+            args,
+            snapshot,
+            member_name="GrowthAlb50361",
+            action_rotation="melee-burst",
+            health_percent=80,
+            attacker_name="forest adder",
+            current_target=0,
+            behavior_state=behavior.DummyBehaviorState.TravelToObjective,
+            rejected_targets={},
+            now=100.0,
+            active_combat=None,
+        )
+
+        self.assertIs(selected, attacker)
+
+    def test_unengaged_pull_offtarget_damage_drops_before_critical(self):
+        args = SimpleNamespace(
+            require_target_name="",
+            prefer_target_name="vein spider",
+            objective_add_target_name="",
+            flee_untracked_health_drop_percent=15,
+            flee_pressure_health_percent=85,
+        )
+
+        self.assertTrue(
+            behavior.should_drop_unengaged_pull_for_offtarget_damage(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                current_target=5393,
+                current_target_intent=behavior.TargetIntent.objective,
+                current_target_name="vein spider",
+                active_combat=None,
+                last_damage_attacker_name="huldu stalker",
+                current_health_percent=65,
+                previous_health_percent=100,
+                flee_until=0.0,
+                now=100.0,
+            )
+        )
+
+    def test_unengaged_pull_offtarget_damage_preserves_real_target_contact(self):
+        args = SimpleNamespace(
+            require_target_name="",
+            prefer_target_name="vein spider",
+            objective_add_target_name="",
+            flee_untracked_health_drop_percent=15,
+            flee_pressure_health_percent=85,
+        )
+
+        self.assertFalse(
+            behavior.should_drop_unengaged_pull_for_offtarget_damage(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                current_target=5393,
+                current_target_intent=behavior.TargetIntent.objective,
+                current_target_name="vein spider",
+                active_combat=None,
+                last_damage_attacker_name="vein spider",
+                current_health_percent=65,
+                previous_health_percent=100,
+                flee_until=0.0,
+                now=100.0,
+            )
+        )
+        self.assertTrue(
+            behavior.should_drop_unengaged_pull_for_offtarget_damage(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                current_target=5393,
+                current_target_intent=behavior.TargetIntent.objective,
+                current_target_name="vein spider",
+                active_combat=None,
+                last_damage_attacker_name="노련한 vein spider",
+                current_health_percent=65,
+                previous_health_percent=100,
+                flee_until=0.0,
+                now=100.0,
+                resolved_damage_attacker_name="노련한 vein spider",
+                resolved_damage_attacker_id=8123,
+            )
+        )
+        self.assertFalse(
+            behavior.should_drop_unengaged_pull_for_offtarget_damage(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                current_target=5393,
+                current_target_intent=behavior.TargetIntent.objective,
+                current_target_name="vein spider",
+                active_combat=None,
+                last_damage_attacker_name="노련한 vein spider",
+                current_health_percent=65,
+                previous_health_percent=100,
+                flee_until=0.0,
+                now=100.0,
+                resolved_damage_attacker_name="노련한 vein spider",
+                resolved_damage_attacker_id=5393,
+            )
+        )
+        self.assertFalse(
+            behavior.should_drop_unengaged_pull_for_offtarget_damage(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                current_target=5393,
+                current_target_intent=behavior.TargetIntent.objective,
+                current_target_name="노련한 vein spider",
+                active_combat=None,
+                last_damage_attacker_name="노련한 광맥 거미",
+                current_health_percent=65,
+                previous_health_percent=100,
+                flee_until=0.0,
+                now=100.0,
+                resolved_damage_attacker_name="����� vein spider",
+                resolved_damage_attacker_id=8123,
+            )
+        )
+        self.assertTrue(
+            behavior.should_drop_unengaged_pull_for_offtarget_damage(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                current_target=5393,
+                current_target_intent=behavior.TargetIntent.objective,
+                current_target_name="노련한 vein spider",
+                active_combat=None,
+                last_damage_attacker_name="노련한 훌두 추적자",
+                current_health_percent=65,
+                previous_health_percent=100,
+                flee_until=0.0,
+                now=100.0,
+                resolved_damage_attacker_name="노련한 huldu stalker",
+                resolved_damage_attacker_id=9123,
+            )
+        )
+        self.assertTrue(
+            behavior.should_drop_unengaged_pull_for_offtarget_damage(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                current_target=5393,
+                current_target_intent=behavior.TargetIntent.objective,
+                current_target_name="vein spider",
+                active_combat={"target_name": "vein spider", "damage_done": 12, "attacks": 1},
+                last_damage_attacker_name="huldu stalker",
+                current_health_percent=65,
+                previous_health_percent=100,
+                flee_until=0.0,
+                now=100.0,
+            )
+        )
+        self.assertFalse(
+            behavior.should_drop_unengaged_pull_for_offtarget_damage(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                current_target=5393,
+                current_target_intent=behavior.TargetIntent.objective,
+                current_target_name="vein spider",
+                active_combat={"target_name": "vein spider", "damage_done": 12, "attacks": 1},
+                last_damage_attacker_name="vein spider",
+                current_health_percent=65,
+                previous_health_percent=100,
+                flee_until=0.0,
+                now=100.0,
+            )
+        )
+
+    def test_unengaged_pull_offtarget_damage_handles_korean_growth_alias(self):
+        args = SimpleNamespace(
+            require_target_name="hobgoblin prowler",
+            prefer_target_name="hobgoblin prowler",
+            objective_add_target_name="",
+            flee_untracked_health_drop_percent=15,
+            flee_pressure_health_percent=85,
+        )
+
+        self.assertTrue(
+            behavior.should_drop_unengaged_pull_for_offtarget_damage(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                current_target=5393,
+                current_target_intent=behavior.TargetIntent.objective,
+                current_target_name="hobgoblin prowler",
+                active_combat=None,
+                last_damage_attacker_name="노련한 홉고블린 배회자",
+                current_health_percent=65,
+                previous_health_percent=100,
+                flee_until=0.0,
+                now=100.0,
+                resolved_damage_attacker_name="노련한 hobgoblin prowler",
+                resolved_damage_attacker_id=8123,
+            )
+        )
+        self.assertFalse(
+            behavior.should_drop_unengaged_pull_for_offtarget_damage(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                current_target=5393,
+                current_target_intent=behavior.TargetIntent.objective,
+                current_target_name="노련한 hobgoblin prowler",
+                active_combat=None,
+                last_damage_attacker_name="노련한 홉고블린 배회자",
+                current_health_percent=65,
+                previous_health_percent=100,
+                flee_until=0.0,
+                now=100.0,
+                resolved_damage_attacker_name="노련한 홉고블린 배회자",
+                resolved_damage_attacker_id=8123,
+            )
+        )
+
+    def test_passive_xp_leech_backs_off_when_too_close(self):
+        args = SimpleNamespace(passive_xp_leech_follow_distance=3000.0)
+
+        self.assertTrue(behavior.should_back_off_passive_xp_leech(args, "none", 1200.0))
+        self.assertFalse(behavior.should_back_off_passive_xp_leech(args, "none", 2900.0))
+        self.assertFalse(behavior.should_back_off_passive_xp_leech(args, "melee-basic", 1200.0))
+
+    def test_passive_xp_leech_holds_near_required_home_before_pull(self):
+        args = SimpleNamespace(
+            party_size=8,
+            party_assist_only=True,
+            party_min_ready=8,
+            party_pre_pull_home_stop_distance=1600.0,
+            party_ready_max_leader_distance=3200.0,
+            passive_xp_leech_follow_distance=3000.0,
+            party_follow_distance=700.0,
+            required_target_home=behavior.Waypoint(1000, 1000, 0),
+            required_target_home_hunt_distance=1200.0,
+            target_home_max_distance=0.0,
+        )
+
+        self.assertTrue(
+            behavior.should_hold_passive_xp_leech_pre_pull(
+                args,
+                "none",
+                current_target=0,
+                leader_engaged=False,
+                required_home_distance=500.0,
+                anchor_distance=700.0,
+            )
+        )
+        self.assertFalse(
+            behavior.should_hold_passive_xp_leech_pre_pull(
+                args,
+                "none",
+                current_target=42,
+                leader_engaged=True,
+                required_home_distance=500.0,
+                anchor_distance=700.0,
+            )
+        )
+        self.assertFalse(
+            behavior.should_hold_passive_xp_leech_pre_pull(
+                args,
+                "melee-basic",
+                current_target=0,
+                leader_engaged=False,
+                required_home_distance=500.0,
+                anchor_distance=700.0,
+            )
+        )
+        self.assertFalse(
+            behavior.should_hold_passive_xp_leech_pre_pull(
+                args,
+                "none",
+                current_target=0,
+                leader_engaged=False,
+                required_home_distance=500.0,
+                anchor_distance=1400.0,
             )
         )
 
@@ -14867,6 +22189,14 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 dynamic_quest_return_completed=True,
             )
         )
+        self.assertFalse(
+            behavior.should_extend_round_for_dynamic_quest_return(
+                dynamic_quest_return_pending=True,
+                dynamic_quest_return_completed=False,
+                now=191.0,
+                safe_exit_deadline=190.0,
+            )
+        )
 
     def test_safe_exit_stops_extending_at_deadline(self):
         args = SimpleNamespace(
@@ -14890,6 +22220,33 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 rest_until=0.0,
             )
         )
+
+    def test_safe_exit_defers_once_for_death_release(self):
+        args = SimpleNamespace(
+            auto_release_on_death=True,
+            death_release_delay=2.0,
+            death_recovery_cooldown=8.0,
+        )
+
+        self.assertTrue(
+            behavior.should_defer_safe_exit_for_death_release(
+                args,
+                now=190.0,
+                end_time=190.0,
+                is_dead=True,
+                death_seen=False,
+            )
+        )
+        self.assertFalse(
+            behavior.should_defer_safe_exit_for_death_release(
+                args,
+                now=191.0,
+                end_time=190.0,
+                is_dead=True,
+                death_seen=True,
+            )
+        )
+        self.assertEqual(behavior.safe_exit_death_release_extension_seconds(args), 10.0)
 
     def test_safe_exit_deadline_does_not_extend_after_post_end_target_removed(self):
         args = SimpleNamespace(safe_exit_max_seconds=90.0)
@@ -14925,6 +22282,44 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 now=150.0,
             ),
             190.0,
+        )
+
+    def test_safe_exit_recent_damage_refreshes_deadline_with_bounded_window(self):
+        args = SimpleNamespace(
+            safe_exit_max_seconds=25.0,
+            safe_exit_recent_damage_grace=5.0,
+            flee_duration=24.0,
+        )
+
+        self.assertEqual(
+            behavior.refresh_safe_exit_deadline_after_recent_damage(
+                args,
+                safe_exit_active=True,
+                safe_exit_deadline=205.0,
+                now=204.0,
+                end_time=180.0,
+            ),
+            228.0,
+        )
+        self.assertEqual(
+            behavior.refresh_safe_exit_deadline_after_recent_damage(
+                args,
+                safe_exit_active=True,
+                safe_exit_deadline=205.0,
+                now=230.0,
+                end_time=180.0,
+            ),
+            205.0,
+        )
+        self.assertEqual(
+            behavior.refresh_safe_exit_deadline_after_recent_damage(
+                args,
+                safe_exit_active=False,
+                safe_exit_deadline=205.0,
+                now=204.0,
+                end_time=180.0,
+            ),
+            205.0,
         )
 
     def test_safe_exit_deadline_can_complete_when_recovered_above_floor(self):
@@ -14980,6 +22375,16 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 current_health_percent=80,
                 previous_health_percent=86,
                 last_damage_attacker_name="giant spider",
+            )
+        )
+        self.assertFalse(
+            behavior.should_drop_new_damage_during_safe_exit(
+                safe_exit_active=True,
+                current_target=0,
+                current_health_percent=80,
+                previous_health_percent=86,
+                last_damage_attacker_name="lough wolf cadger",
+                objective_damage=True,
             )
         )
         self.assertFalse(
@@ -15042,6 +22447,34 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 behavior.DummyBehaviorState.HuntObjective,
                 current_target=23268,
                 health_percent=100,
+                recent_damage_age_seconds=1.0,
+            )
+        )
+
+    def test_safe_exit_disengage_disabled_still_allows_danger_flee(self):
+        args = SimpleNamespace(
+            safe_exit_disengage_current_target=False,
+            safe_exit_recent_damage_grace=12.0,
+            low_health_rest_resume_percent=88,
+            flee_health_percent=35,
+            flee_critical_health_percent=20,
+        )
+
+        self.assertFalse(
+            behavior.should_disengage_current_target_for_safe_exit(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                current_target=23268,
+                health_percent=57,
+                recent_damage_age_seconds=1.0,
+            )
+        )
+        self.assertTrue(
+            behavior.should_disengage_current_target_for_safe_exit(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                current_target=23268,
+                health_percent=20,
                 recent_damage_age_seconds=1.0,
             )
         )
@@ -15707,6 +23140,333 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertFalse(decision.allowed)
         self.assertEqual(decision.reject_reason, "combat_home_leash")
 
+    def test_engagement_gate_rejects_new_objective_commit_below_commit_health_floor(self):
+        npc = FakeNpc(302, "water beetle", 6, 300.0)
+        args = SimpleNamespace(
+            require_target_name="water beetle",
+            max_target_distance=1500.0,
+            required_target_tank_commit_health_percent=30,
+        )
+        client = FakeClient(npcs=[npc])
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.hunter_selection,
+                intent=behavior.TargetIntent.objective,
+            ),
+            self._engagement_context(current_health_percent=30),
+            client,
+            args,
+            {},
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reject_reason, "commit_health_too_low")
+
+    def test_engagement_gate_rejects_party_opening_pull_beyond_pull_distance(self):
+        npc = FakeNpc(303, "water beetle", 6, 2633.0)
+        npc.x = 2633
+        npc.y = 0
+        client = FakeClient(npcs=[npc])
+        args = SimpleNamespace(
+            require_target_name="water beetle",
+            max_target_distance=6500.0,
+            party_assist_only=True,
+            party_pull_engage_distance=1800.0,
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.hunter_selection,
+                intent=behavior.TargetIntent.objective,
+            ),
+            self._engagement_context(
+                is_party_leader=True,
+                leader_engaged=False,
+            ),
+            client,
+            args,
+            {},
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reject_reason, "opening_pull_too_far")
+
+    def test_engagement_gate_allows_party_objective_repull_inside_required_home_hunt_ring(self):
+        npc = FakeNpc(304, "water beetle", 6, 2633.0)
+        npc.x = 2633
+        npc.y = 0
+        client = FakeClient(npcs=[npc])
+        client.x = 0
+        client.y = 0
+        client.z = 0
+        args = SimpleNamespace(
+            require_target_name="water beetle",
+            max_target_distance=6500.0,
+            party_assist_only=True,
+            party_pull_engage_distance=1800.0,
+            required_target_home=behavior.Waypoint(0, 0, 0),
+            required_target_home_stop_distance=900.0,
+            required_target_home_hunt_distance=10000.0,
+            target_home_max_distance=10000.0,
+            hunter_target_api_scout=True,
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.hunter_selection,
+                intent=behavior.TargetIntent.objective,
+            ),
+            self._engagement_context(
+                is_party_leader=True,
+                leader_engaged=False,
+            ),
+            client,
+            args,
+            {},
+        )
+
+        self.assertTrue(decision.allowed)
+
+    def test_engagement_gate_allows_near_route_home_api_objective_opening_pull(self):
+        npc = FakeNpc(306, "roaming dirge", 8, 1996.0)
+        npc.x = 1996
+        npc.y = 0
+        client = FakeClient(npcs=[npc])
+        client.x = 0
+        client.y = 0
+        client.z = 0
+        args = SimpleNamespace(
+            require_target_name="roaming dirge",
+            max_target_distance=6500.0,
+            party_assist_only=True,
+            party_pull_engage_distance=1800.0,
+            required_target_home=behavior.Waypoint(0, 0, 0),
+            required_target_home_stop_distance=900.0,
+            required_target_home_hunt_distance=10000.0,
+            target_home_max_distance=10000.0,
+            hunter_target_api_scout=True,
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.current_target_api_refresh,
+                intent=behavior.TargetIntent.objective,
+            ),
+            self._engagement_context(
+                is_party_leader=True,
+                leader_engaged=False,
+            ),
+            client,
+            args,
+            {},
+        )
+
+        self.assertTrue(decision.allowed)
+
+    def test_engagement_gate_rejects_far_api_scout_opening_pull_inside_required_home_hunt_ring(self):
+        npc = FakeNpc(305, "hobgoblin prowler", 8, 4500.0)
+        npc.x = 4500
+        npc.y = 0
+        client = FakeClient(npcs=[npc])
+        client.x = 0
+        client.y = 0
+        client.z = 0
+        args = SimpleNamespace(
+            require_target_name="hobgoblin prowler",
+            max_target_distance=6500.0,
+            party_assist_only=True,
+            party_pull_engage_distance=1800.0,
+            required_target_home=behavior.Waypoint(0, 0, 0),
+            required_target_home_stop_distance=900.0,
+            required_target_home_hunt_distance=6500.0,
+            target_home_max_distance=6500.0,
+            hunter_target_api_scout=True,
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.current_target_api_refresh,
+                intent=behavior.TargetIntent.objective,
+            ),
+            self._engagement_context(
+                is_party_leader=True,
+                leader_engaged=False,
+            ),
+            client,
+            args,
+            {},
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reject_reason, "opening_pull_too_far")
+
+    def test_far_api_scout_opening_pull_reject_is_preapproach_candidate(self):
+        npc = FakeNpc(307, "silverscale drakeling", 9, 3047.0)
+        npc.x = 3047
+        npc.y = 0
+        client = FakeClient(npcs=[npc])
+        args = SimpleNamespace(
+            require_target_name="silverscale drakeling",
+            max_target_distance=6500.0,
+            party_assist_only=True,
+            party_pull_engage_distance=1800.0,
+            required_target_home=behavior.Waypoint(0, 0, 0),
+            required_target_home_stop_distance=900.0,
+            required_target_home_hunt_distance=6500.0,
+            target_home_max_distance=6500.0,
+            hunter_target_api_scout=True,
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.current_target_api_refresh,
+                intent=behavior.TargetIntent.objective,
+            ),
+            self._engagement_context(
+                is_party_leader=True,
+                leader_engaged=False,
+            ),
+            client,
+            args,
+            {},
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reject_reason, "opening_pull_too_far")
+        self.assertEqual(behavior.current_target_api_refresh_opening_pull_allowed_distance(args), 2700.0)
+        self.assertTrue(behavior.should_approach_opening_pull_rejected_target(decision, client, args))
+
+    def test_api_scout_opening_pull_reject_does_not_preapproach_before_home_ready(self):
+        npc = FakeNpc(309, "silverscale drakeling", 9, 3047.0)
+        npc.x = 3047
+        npc.y = 0
+        client = FakeClient(npcs=[npc])
+        client.x = 5400
+        client.y = 0
+        args = SimpleNamespace(
+            require_target_name="silverscale drakeling",
+            max_target_distance=1500.0,
+            party_assist_only=True,
+            party_pull_engage_distance=1800.0,
+            required_target_home=behavior.Waypoint(0, 0, 0),
+            required_target_home_stop_distance=900.0,
+            required_target_home_hunt_distance=6200.0,
+            target_home_max_distance=6200.0,
+            hunter_target_api_scout=True,
+            hunter_target_api_engage_distance=1500.0,
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.current_target_api_refresh,
+                intent=behavior.TargetIntent.objective,
+            ),
+            self._engagement_context(
+                is_party_leader=True,
+                leader_engaged=False,
+                objective_hunt_ready=False,
+            ),
+            client,
+            args,
+            {},
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reject_reason, "opening_pull_too_far")
+        self.assertFalse(behavior.required_target_home_objective_hunt_ready(client, args))
+        self.assertFalse(behavior.should_approach_opening_pull_rejected_target(decision, client, args))
+
+    def test_recent_api_scout_opening_pull_reject_continues_after_home_z_transient(self):
+        npc = FakeNpc(310, "silverscale drakeling", 9, 3047.0)
+        npc.x = 3047
+        npc.y = 0
+        npc.z = 500
+        client = FakeClient(npcs=[npc])
+        client.x = 100
+        client.y = 0
+        client.z = 100
+        args = SimpleNamespace(
+            require_target_name="silverscale drakeling",
+            max_target_distance=6500.0,
+            party_assist_only=True,
+            party_pull_engage_distance=1800.0,
+            required_target_home=behavior.Waypoint(0, 0, 500),
+            required_target_home_stop_distance=900.0,
+            required_target_home_hunt_distance=6500.0,
+            target_home_max_distance=6500.0,
+            hunter_target_api_scout=True,
+            hunter_target_max_attack_z_delta=220.0,
+            route_home_preserve_z=True,
+            current_target_api_refresh_interval=1.0,
+            path_replan_interval=1.0,
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.current_target_api_refresh,
+                intent=behavior.TargetIntent.objective,
+            ),
+            self._engagement_context(
+                is_party_leader=True,
+                leader_engaged=False,
+                objective_hunt_ready=False,
+            ),
+            client,
+            args,
+            {},
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reject_reason, "opening_pull_too_far")
+        self.assertFalse(behavior.required_target_home_objective_hunt_ready(client, args))
+        self.assertTrue(behavior.required_target_home_xy_hunt_ready(client, args))
+        self.assertFalse(behavior.should_approach_opening_pull_rejected_target(decision, client, args, now=100.0))
+
+        behavior.remember_opening_pull_target_approach(client, npc.object_id, 100.0, args)
+
+        self.assertTrue(behavior.should_approach_opening_pull_rejected_target(decision, client, args, now=101.0))
+
+    def test_non_api_opening_pull_reject_is_not_preapproach_candidate(self):
+        npc = FakeNpc(308, "silverscale drakeling", 9, 3047.0)
+        npc.x = 3047
+        npc.y = 0
+        client = FakeClient(npcs=[npc])
+        args = SimpleNamespace(
+            require_target_name="silverscale drakeling",
+            max_target_distance=6500.0,
+            party_assist_only=True,
+            party_pull_engage_distance=1800.0,
+            hunter_target_api_scout=True,
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.hunter_selection,
+                intent=behavior.TargetIntent.objective,
+            ),
+            self._engagement_context(
+                is_party_leader=True,
+                leader_engaged=False,
+            ),
+            client,
+            args,
+            {},
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reject_reason, "opening_pull_too_far")
+        self.assertFalse(behavior.should_approach_opening_pull_rejected_target(decision, client, args))
+
     def test_party_assist_only_follower_rejects_own_hunter_selection_quietly(self):
         npc = FakeNpc(300, "giant boar", 35, 300.0)
         args = SimpleNamespace(party_assist_only=True, max_target_distance=1500.0)
@@ -15793,6 +23553,72 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertFalse(decision.allowed)
         self.assertEqual(decision.reject_reason, "leader_not_engaged_objective")
+
+    def test_engagement_gate_rejects_non_active_follower_objective_pre_pull(self):
+        npc = FakeNpc(24382, "roaming dirge", 8, 4433.0)
+        npc.x = 4433
+        args = SimpleNamespace(
+            require_target_name="roaming dirge",
+            prefer_target_name="roaming dirge",
+            avoid_target_name="",
+            objective_add_target_name="",
+            party_encounter_mode="standard",
+            party_size=2,
+            party_assist_only=True,
+            min_target_level=8,
+            max_target_level=8,
+            player_level=10,
+            max_target_level_delta=0,
+            max_target_distance=6500.0,
+            required_target_home=behavior.Waypoint(0, 0, 0),
+            target_home_max_distance=10000.0,
+            combat_home_leash_distance=10000.0,
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.current_target_api_refresh,
+                intent=behavior.TargetIntent.objective,
+            ),
+            self._engagement_context(
+                state=behavior.DummyBehaviorState.HuntObjective,
+                is_party_follower=True,
+                is_active_tank=False,
+                party_ready=True,
+                leader_engaged=False,
+                objective_home_reached=True,
+                objective_hunt_ready=True,
+            ),
+            FakeClient(npcs=[npc]),
+            args,
+            {},
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reject_reason, "party_assist_pre_pull_wait")
+
+        active_tank_decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.current_target_api_refresh,
+                intent=behavior.TargetIntent.objective,
+            ),
+            self._engagement_context(
+                state=behavior.DummyBehaviorState.HuntObjective,
+                is_party_follower=True,
+                is_active_tank=True,
+                party_ready=True,
+                leader_engaged=False,
+                objective_home_reached=True,
+                objective_hunt_ready=True,
+            ),
+            FakeClient(npcs=[npc]),
+            args,
+            {},
+        )
+
+        self.assertTrue(active_tank_decision.allowed, active_tank_decision.reject_reason)
 
     def test_engagement_gate_allows_command_attack_objective_before_leader_combat(self):
         npc = FakeNpc(352, "small gray wolf", 5, 350.0)
@@ -16115,6 +23941,84 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         )
 
         self.assertTrue(decision.allowed)
+        self.assertFalse(decision.should_publish_party_leader_target)
+
+    def test_engagement_gate_allows_objective_party_assist_in_hunt_ring_before_ready(self):
+        npc = FakeNpc(348, "moorlich", 48, 350.0)
+        args = SimpleNamespace(
+            min_target_level=46,
+            max_target_level=50,
+            player_level=50,
+            max_target_level_delta=2,
+            max_target_distance=1500.0,
+            party_require_leader_engaged=False,
+            require_target_name="moorlich",
+            prefer_target_name="moorlich",
+            avoid_target_name="",
+            party_encounter_mode="boss",
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.party_assist,
+                intent=behavior.TargetIntent.objective,
+            ),
+            self._engagement_context(
+                state=behavior.DummyBehaviorState.TravelToObjective,
+                is_party_follower=True,
+                party_ready=False,
+                leader_engaged=False,
+                objective_home_reached=False,
+                objective_hunt_ready=True,
+            ),
+            FakeClient(npcs=[npc]),
+            args,
+            {},
+        )
+
+        self.assertTrue(decision.allowed)
+        self.assertFalse(decision.should_publish_party_leader_target)
+
+    def test_engagement_gate_allows_ready_leader_target_reacquire_objective_during_travel(self):
+        npc = FakeNpc(349, "moorlich", 48, 350.0)
+        args = SimpleNamespace(
+            min_target_level=46,
+            max_target_level=50,
+            player_level=50,
+            max_target_level_delta=2,
+            max_target_distance=1500.0,
+            party_require_leader_engaged=False,
+            require_target_name="moorlich",
+            prefer_target_name="moorlich",
+            avoid_target_name="",
+            party_encounter_mode="boss",
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.leader_target_reacquire,
+                intent=behavior.TargetIntent.objective,
+            ),
+            self._engagement_context(
+                state=behavior.DummyBehaviorState.TravelToObjective,
+                is_party_follower=True,
+                party_ready=True,
+                leader_engaged=False,
+                objective_home_reached=False,
+                objective_hunt_ready=False,
+            ),
+            FakeClient(npcs=[npc]),
+            args,
+            {
+                "leader_target_id": npc.object_id,
+                "leader_target_name": npc.name,
+                "leader_target_can_attack": True,
+            },
+        )
+
+        self.assertTrue(decision.allowed, decision.reject_reason)
         self.assertFalse(decision.should_publish_party_leader_target)
 
     def test_engagement_gate_allows_engaged_party_rescue_during_travel(self):
@@ -16591,7 +24495,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         )
 
         self.assertFalse(decision.allowed)
-        self.assertEqual(decision.reject_reason, "target_home_max_distance")
+        self.assertEqual(decision.reject_reason, "max_target_distance")
 
     def test_engagement_gate_allows_engaged_party_assist_target_inside_combat_home_leash(self):
         npc = FakeNpc(345, "moorlich", 48, 900.0)
@@ -16629,6 +24533,44 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             client,
             args,
             {"leader_target_id": 345, "leader_target_name": "moorlich", "leader_target_engaged_at": 10.0},
+        )
+
+        self.assertTrue(decision.allowed)
+
+    def test_engagement_gate_allows_engaged_party_assist_visible_target_with_unknown_position(self):
+        npc = FakeNpc(345, "tawny lynx cub", 0, 250.0)
+        client = FakeClient(npcs=[npc])
+        client.x = 775367
+        client.y = 748248
+        args = SimpleNamespace(
+            min_target_level=0,
+            max_target_level=0,
+            player_level=1,
+            max_target_level_delta=0,
+            max_target_distance=1500.0,
+            required_target_home=SimpleNamespace(x=774968, y=748210, z=4542),
+            target_home_max_distance=6200.0,
+            combat_home_leash_distance=6200.0,
+            party_encounter_mode="normal",
+            require_target_name="",
+            preferred_target_name="",
+        )
+
+        decision = behavior.evaluate_engagement_candidate(
+            self._engagement_candidate(
+                npc,
+                source=behavior.TargetSource.party_assist,
+                intent=behavior.TargetIntent.party_assist,
+            ),
+            self._engagement_context(
+                state=behavior.DummyBehaviorState.HuntObjective,
+                is_party_follower=True,
+                party_ready=True,
+                leader_engaged=True,
+            ),
+            client,
+            args,
+            {"leader_target_id": 345, "leader_target_name": "tawny lynx cub", "leader_target_engaged_at": 10.0},
         )
 
         self.assertTrue(decision.allowed)
@@ -17006,6 +24948,173 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertFalse(decision.allowed)
         self.assertEqual(decision.reject_reason, "leader_target_not_attackable")
 
+    def test_party_assist_leader_target_allows_engaged_required_target_with_unreliable_attack_flag(self):
+        snapshot = {
+            "leader_target_id": 606,
+            "leader_target_name": "shadow",
+            "leader_target_x": 9000,
+            "leader_target_y": 0,
+            "leader_target_z": 0,
+            "leader_target_level": 11,
+            "leader_target_can_attack": False,
+        }
+        args = SimpleNamespace(
+            require_target_name="shadow",
+            max_target_distance=300.0,
+            required_target_home=SimpleNamespace(x=0, y=0, z=0),
+            target_home_max_distance=10000.0,
+            combat_home_leash_distance=500.0,
+            player_level=13,
+            max_target_level_delta=3,
+        )
+        client = FakeClient()
+        client.x = 0
+        client.y = 0
+
+        decision = behavior.evaluate_party_assist_leader_target(
+            args,
+            snapshot,
+            self._engagement_context(
+                state=behavior.DummyBehaviorState.HuntObjective,
+                is_party_follower=True,
+                party_ready=True,
+                leader_engaged=True,
+            ),
+            client,
+        )
+
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.candidate.object_id, 606)
+
+    def test_party_assist_leader_target_prefers_visible_actor_position_and_snapshot_level(self):
+        visible = FakeNpc(606, "Thraxia", 0, 219.0)
+        visible.x = 219
+        visible.y = 0
+        client = FakeClient(npcs=[visible])
+        client.x = 0
+        client.y = 0
+        snapshot = {
+            "leader_target_id": 606,
+            "leader_target_name": "Thraxia",
+            "leader_target_x": 9000,
+            "leader_target_y": 0,
+            "leader_target_z": 0,
+            "leader_target_level": 20,
+            "leader_target_engaged_at": 10.0,
+            "leader_target_can_attack": False,
+            "leader_target_relation": "neutral",
+        }
+        args = SimpleNamespace(
+            max_target_distance=300.0,
+            min_target_level=19,
+            max_target_level=22,
+            player_level=11,
+            max_target_level_delta=11,
+            required_target_home=SimpleNamespace(x=0, y=0, z=0),
+            target_home_max_distance=6500.0,
+            combat_home_leash_distance=6500.0,
+            party_encounter_mode="normal",
+            require_target_name="",
+            preferred_target_name="",
+            include_peace_npcs=True,
+        )
+
+        decision = behavior.evaluate_party_assist_leader_target(
+            args,
+            snapshot,
+            self._engagement_context(
+                state=behavior.DummyBehaviorState.HuntObjective,
+                is_party_follower=True,
+                party_ready=True,
+                leader_engaged=True,
+            ),
+            client,
+        )
+
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.candidate.object_id, 606)
+        self.assertEqual(decision.candidate.level, 20)
+
+    def test_party_assist_only_allows_unseen_engaged_leader_target(self):
+        snapshot = {
+            "leader_target_id": 606,
+            "leader_target_name": "Thraxia",
+            "leader_target_can_attack": False,
+            "leader_target_engaged_at": 10.0,
+        }
+        args = SimpleNamespace(
+            party_assist_only=True,
+            max_target_distance=300.0,
+            required_target_home=SimpleNamespace(x=7000, y=7000, z=0),
+            target_home_max_distance=1200.0,
+            combat_home_leash_distance=6500.0,
+            player_level=11,
+            max_target_level_delta=11,
+            require_target_name="",
+            preferred_target_name="",
+            include_peace_npcs=True,
+        )
+        client = FakeClient()
+        client.x = 7000
+        client.y = 7000
+
+        decision = behavior.evaluate_party_assist_leader_target(
+            args,
+            snapshot,
+            self._engagement_context(
+                state=behavior.DummyBehaviorState.HuntObjective,
+                current_target=606,
+                current_target_intent=behavior.TargetIntent.party_assist,
+                is_party_follower=True,
+                party_ready=True,
+                leader_engaged=True,
+            ),
+            client,
+        )
+
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.candidate.object_id, 606)
+
+    def test_party_assist_only_still_rejects_unseen_service_leader_target(self):
+        snapshot = {
+            "leader_target_id": 19462,
+            "leader_target_name": "용병 고용관",
+            "leader_target_can_attack": False,
+            "leader_target_engaged_at": 10.0,
+        }
+        args = SimpleNamespace(
+            party_assist_only=True,
+            max_target_distance=300.0,
+            required_target_home=SimpleNamespace(x=7000, y=7000, z=0),
+            target_home_max_distance=1200.0,
+            combat_home_leash_distance=6500.0,
+            player_level=11,
+            max_target_level_delta=11,
+            require_target_name="",
+            preferred_target_name="",
+            include_peace_npcs=True,
+        )
+        client = FakeClient()
+        client.x = 7000
+        client.y = 7000
+
+        decision = behavior.evaluate_party_assist_leader_target(
+            args,
+            snapshot,
+            self._engagement_context(
+                state=behavior.DummyBehaviorState.HuntObjective,
+                current_target=19462,
+                current_target_intent=behavior.TargetIntent.party_assist,
+                is_party_follower=True,
+                party_ready=True,
+                leader_engaged=True,
+            ),
+            client,
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reject_reason, "leader_target_not_attackable")
+
     def test_party_assist_leader_target_gate_blocks_travel_state(self):
         snapshot = {
             "leader_target_id": 602,
@@ -17068,6 +25177,42 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(decision.source, behavior.TargetSource.party_assist)
         self.assertEqual(decision.intent, behavior.TargetIntent.party_assist)
 
+    def test_party_assist_leader_target_allows_following_engaged_target_inside_home(self):
+        snapshot = {
+            "leader_target_id": 605,
+            "leader_target_name": "small freshwater crab",
+            "leader_target_x": 1500,
+            "leader_target_y": 0,
+            "leader_target_z": 0,
+            "leader_target_level": 4,
+        }
+        args = SimpleNamespace(
+            max_target_distance=300.0,
+            required_target_home=SimpleNamespace(x=0, y=0, z=0),
+            target_home_max_distance=2000.0,
+            combat_home_leash_distance=2000.0,
+            player_level=2,
+            max_target_level_delta=3,
+        )
+        client = FakeClient()
+        client.x = 0
+        client.y = 0
+
+        decision = behavior.evaluate_party_assist_leader_target(
+            args,
+            snapshot,
+            self._engagement_context(
+                state=behavior.DummyBehaviorState.HuntObjective,
+                is_party_follower=True,
+                party_ready=True,
+                leader_engaged=True,
+            ),
+            client,
+        )
+
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.candidate.object_id, 605)
+
     def test_party_assist_leader_target_unknown_non_objective_position_stays_rejected(self):
         snapshot = {
             "leader_target_id": 604,
@@ -17099,7 +25244,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         )
 
         self.assertFalse(decision.allowed)
-        self.assertEqual(decision.reject_reason, "target_home_max_distance")
+        self.assertEqual(decision.reject_reason, "max_target_distance")
 
     def test_party_assist_command_waits_for_leader_engaged_when_required(self):
         args = SimpleNamespace(party_use_assist_command=True, party_require_leader_engaged=True)
@@ -17192,6 +25337,23 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 party_ready_for_objective=True,
             )
         )
+        permissive_args = SimpleNamespace(
+            party_assist_only=True,
+            party_assist_travel_leader_target=True,
+            required_target_home=SimpleNamespace(x=1, y=2, z=3),
+        )
+        self.assertTrue(
+            behavior.should_enter_hunt_for_party_assist_leader_target(
+                permissive_args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                is_party_follower=True,
+                action_rotation="caster-basic",
+                leader_target_id=44,
+                leader_engaged=False,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=True,
+            )
+        )
         self.assertFalse(
             behavior.should_enter_hunt_for_party_assist_leader_target(
                 args,
@@ -17244,6 +25406,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             x=100,
             y=200,
             z=300,
+            level=19,
             health_percent=44.0,
             health=440,
             max_health=1000,
@@ -17252,7 +25415,9 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         state.update_leader(client, target)
         state.mark_leader_target_engaged(99)
-        self.assertEqual(state.snapshot()["leader_target_focus_name"], "member")
+        pre_clear_snapshot = state.snapshot()
+        self.assertEqual(pre_clear_snapshot["leader_target_focus_name"], "member")
+        self.assertEqual(pre_clear_snapshot["leader_target_level"], 19)
 
         self.assertTrue(
             behavior.clear_party_leader_target_on_abandon(
@@ -17266,6 +25431,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(snapshot["leader_target_engaged_at"], 0.0)
         self.assertEqual(snapshot["leader_target_focus_name"], "")
         self.assertEqual(snapshot["leader_target_focus_updated_at"], 0.0)
+        self.assertEqual(snapshot["leader_target_level"], 0)
         self.assertEqual(snapshot["leader_target_health"], 0)
         self.assertEqual(snapshot["leader_target_max_health"], 0)
 
@@ -18165,6 +26331,41 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
+    def test_party_follower_anchor_defer_can_be_disabled_for_carry_growth(self):
+        args = SimpleNamespace(
+            required_target_home=SimpleNamespace(x=664136, y=726812, z=6512),
+            party_assist_only=True,
+            party_min_ready=8,
+            party_pre_pull_home_stop_distance=1800,
+            required_target_home_stop_distance=900,
+            party_follow_distance=500,
+            party_ready_max_leader_distance=1500,
+            party_disable_required_home_anchor_defer=True,
+        )
+        party_state = behavior.PartyState("tank", ["tank", "follower"])
+        party_state.update_leader(
+            SimpleNamespace(
+                session_id=1,
+                player_object_id=11,
+                x=680247,
+                y=731659,
+                z=8066,
+                heading=0,
+                health_percent=100,
+            )
+        )
+        follower_client = SimpleNamespace(x=667031, y=726807, z=6365)
+
+        self.assertFalse(
+            behavior.should_defer_required_home_move_for_party_anchor(
+                follower_client,
+                args,
+                party_state,
+                is_party_follower=True,
+                current_target=0,
+            )
+        )
+
     def test_party_follower_defers_required_home_while_tank_is_far_even_when_trailing(self):
         args = SimpleNamespace(
             required_target_home=SimpleNamespace(x=664136, y=726812, z=6512),
@@ -18636,6 +26837,161 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
+    def test_pre_pull_party_gate_delays_objective_selection_even_in_hunt_state(self):
+        args = SimpleNamespace(
+            party_size=2,
+            party_assist_only=True,
+            party_min_ready=2,
+            party_pre_pull_home_stop_distance=1600.0,
+            required_target_home=SimpleNamespace(x=1000, y=1000, z=0),
+        )
+
+        self.assertTrue(
+            behavior.should_delay_target_selection_until_objective_ready(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                behavior.TargetIntent.objective,
+                current_target=0,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=False,
+            )
+        )
+        self.assertTrue(
+            behavior.should_delay_target_selection_until_objective_ready(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                behavior.TargetIntent.required_retaliation,
+                current_target=42,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=False,
+            )
+        )
+        self.assertFalse(
+            behavior.should_delay_target_selection_until_objective_ready(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                behavior.TargetIntent.party_rescue,
+                current_target=42,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=False,
+            )
+        )
+
+    def test_pre_pull_party_gate_allows_active_tank_follower_objective_selection(self):
+        args = SimpleNamespace(
+            party_size=2,
+            party_assist_only=True,
+            party_min_ready=2,
+            party_pre_pull_home_stop_distance=1600.0,
+            required_target_home=SimpleNamespace(x=1000, y=1000, z=0),
+        )
+
+        self.assertFalse(
+            behavior.should_delay_target_selection_until_objective_ready(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                behavior.TargetIntent.objective,
+                current_target=0,
+                required_home_hunt_ready=False,
+                party_ready_for_objective=False,
+                is_party_follower=True,
+                is_active_tank=True,
+                leader_engaged=False,
+            )
+        )
+
+    def test_pre_pull_party_gate_delays_non_active_follower_until_leader_engages(self):
+        args = SimpleNamespace(
+            party_size=2,
+            party_assist_only=True,
+            party_min_ready=2,
+            party_pre_pull_home_stop_distance=1600.0,
+            required_target_home=SimpleNamespace(x=1000, y=1000, z=0),
+        )
+
+        self.assertTrue(
+            behavior.should_delay_target_selection_until_objective_ready(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                behavior.TargetIntent.objective,
+                current_target=0,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=True,
+                is_party_follower=True,
+                is_active_tank=False,
+                leader_engaged=False,
+            )
+        )
+        self.assertTrue(
+            behavior.should_delay_target_selection_until_objective_ready(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                behavior.TargetIntent.required_retaliation,
+                current_target=0,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=True,
+                is_party_follower=True,
+                is_active_tank=False,
+                leader_engaged=False,
+            )
+        )
+        self.assertFalse(
+            behavior.should_delay_target_selection_until_objective_ready(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                behavior.TargetIntent.objective,
+                current_target=0,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=True,
+                is_party_follower=True,
+                is_active_tank=False,
+                leader_engaged=True,
+            )
+        )
+
+    def test_pre_pull_party_gate_allows_objective_selection_after_force_pull(self):
+        args = SimpleNamespace(
+            party_size=2,
+            party_assist_only=True,
+            party_min_ready=2,
+            party_pre_pull_home_stop_distance=1600.0,
+            required_target_home=SimpleNamespace(x=1000, y=1000, z=0),
+        )
+
+        self.assertFalse(
+            behavior.should_delay_target_selection_until_objective_ready(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                behavior.TargetIntent.objective,
+                current_target=0,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=False,
+                force_pull_active=True,
+            )
+        )
+
+    def test_pre_pull_party_gate_keeps_already_engaged_current_target(self):
+        args = SimpleNamespace(
+            party_size=2,
+            party_assist_only=True,
+            party_min_ready=2,
+            party_pre_pull_home_stop_distance=1600.0,
+            required_target_home=SimpleNamespace(x=1000, y=1000, z=0),
+        )
+
+        self.assertFalse(
+            behavior.should_delay_target_selection_until_objective_ready(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                behavior.TargetIntent.objective,
+                current_target=42,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=False,
+                leader_engaged=True,
+                active_target_engaged=True,
+            )
+        )
+
     def test_objective_selection_does_not_bypass_travel_ready_gate_with_existing_target(self):
         args = SimpleNamespace(required_target_home=SimpleNamespace(x=1000, y=1000, z=0))
 
@@ -18684,6 +27040,28 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 required_home_hunt_ready=False,
                 party_ready_for_objective=False,
                 is_party_follower=True,
+                leader_engaged=False,
+            )
+        )
+
+    def test_party_rescue_at_hunt_area_bypasses_full_ready_gate(self):
+        args = SimpleNamespace(
+            required_target_home=SimpleNamespace(x=1000, y=1000, z=0),
+            party_size=4,
+            party_assist_only=True,
+            party_min_ready=4,
+            party_pre_pull_home_stop_distance=1800.0,
+        )
+
+        self.assertFalse(
+            behavior.should_delay_target_selection_until_objective_ready(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                behavior.TargetIntent.party_rescue,
+                current_target=0,
+                required_home_hunt_ready=True,
+                party_ready_for_objective=False,
+                is_party_follower=False,
                 leader_engaged=False,
             )
         )
@@ -19110,6 +27488,561 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             1000.0,
         )
 
+    def test_growth_prefix_objective_damage_counts_as_travel_aggro_on_return(self):
+        args = SimpleNamespace(
+            require_target_name="river racer",
+            prefer_target_name="river racer",
+            objective_add_target_name="",
+            party_carry_counterattack_travel_aggro=False,
+        )
+
+        self.assertTrue(
+            behavior.should_handle_growth_prefix_travel_damage(
+                args,
+                behavior.DummyBehaviorState.ReturnToObjective,
+                "노련한 강 질주자",
+            )
+        )
+
+    def test_blocked_growth_prefix_damage_counts_despite_party_counterattack_policy(self):
+        args = SimpleNamespace(
+            require_target_name="hobgoblin prowler",
+            prefer_target_name="hobgoblin prowler",
+            objective_add_target_name="",
+            party_carry_counterattack_travel_aggro=True,
+        )
+
+        self.assertTrue(
+            behavior.should_handle_growth_prefix_travel_damage(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                "노련한 hobgoblin prowler",
+                action_rotation="melee-burst",
+            )
+        )
+        self.assertTrue(
+            behavior.should_handle_growth_prefix_travel_damage(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                "노련한 홉고블린 배회자",
+                action_rotation="melee-burst",
+            )
+        )
+
+    def test_blocked_growth_prefix_damage_counts_during_unengaged_hunt_objective(self):
+        args = SimpleNamespace(
+            require_target_name="hobgoblin prowler",
+            prefer_target_name="hobgoblin prowler",
+            objective_add_target_name="",
+            party_carry_counterattack_travel_aggro=True,
+        )
+
+        self.assertTrue(
+            behavior.should_handle_growth_prefix_travel_damage(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                "정예 hobgoblin prowler",
+                action_rotation="melee-burst",
+                allow_hunt_objective=True,
+            )
+        )
+        self.assertTrue(
+            behavior.should_handle_growth_prefix_travel_damage(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                "정예 홉고블린 배회자",
+                action_rotation="melee-burst",
+                allow_hunt_objective=True,
+            )
+        )
+        self.assertFalse(
+            behavior.should_handle_growth_prefix_travel_damage(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                "정예 hobgoblin prowler",
+                action_rotation="melee-burst",
+                allow_hunt_objective=False,
+            )
+        )
+
+    def test_explicitly_allowed_growth_prefix_keeps_party_counterattack_policy(self):
+        args = SimpleNamespace(
+            require_target_name="노련한 hobgoblin prowler",
+            prefer_target_name="노련한 hobgoblin prowler",
+            objective_add_target_name="",
+            party_carry_counterattack_travel_aggro=True,
+        )
+
+        self.assertFalse(
+            behavior.should_handle_growth_prefix_travel_damage(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                "노련한 hobgoblin prowler",
+                action_rotation="melee-burst",
+            )
+        )
+
+    def test_plain_objective_damage_does_not_count_as_growth_prefix_travel_aggro(self):
+        args = SimpleNamespace(
+            require_target_name="river racer",
+            prefer_target_name="river racer",
+            objective_add_target_name="",
+            party_carry_counterattack_travel_aggro=False,
+        )
+
+        self.assertFalse(
+            behavior.should_handle_growth_prefix_travel_damage(
+                args,
+                behavior.DummyBehaviorState.ReturnToObjective,
+                "river racer",
+            )
+        )
+
+    def test_travel_aggro_detour_covers_growth_river_racer_return_path(self):
+        args = SimpleNamespace(
+            travel_aggro_avoid_radius=0.0,
+            travel_aggro_detour_distance=0.0,
+            flee_safe_point_distance=5200.0,
+            flee_safe_threat_radius=6000.0,
+        )
+        client = SimpleNamespace(x=487344, y=603295, z=1057)
+        objective = behavior.MovementDestination("required-target-home:river-racer", 485411, 597539, 1726)
+
+        detour = behavior.travel_aggro_detour_destination(
+            args,
+            client,
+            objective,
+            danger_x=485387,
+            danger_y=598565,
+            danger_z=1748,
+            attempt_count=1,
+        )
+
+        self.assertIsNotNone(detour)
+        self.assertEqual(detour.key.split(":")[0], "travel-aggro-detour")
+        self.assertGreaterEqual(
+            behavior.horizontal_distance_between_points(detour.x, detour.y, 485387, 598565),
+            3900.0,
+        )
+
+    def test_travel_aggro_detour_lock_reuses_first_destination_for_nearby_origins(self):
+        args = SimpleNamespace(
+            travel_aggro_avoid_radius=3900.0,
+            travel_aggro_detour_distance=7000.0,
+            flee_safe_point_distance=5200.0,
+            flee_safe_threat_radius=6000.0,
+        )
+        objective = behavior.MovementDestination("required-target-home:river-racer", 485411, 597539, 1726)
+        first, lock_key, reused = behavior.choose_travel_aggro_detour_destination(
+            args,
+            SimpleNamespace(x=487332, y=603237, z=1055),
+            objective,
+            danger_x=485283,
+            danger_y=597961,
+            danger_z=1808,
+            attempt_count=1,
+        )
+
+        self.assertIsNotNone(first)
+        self.assertFalse(reused)
+        second, second_key, reused = behavior.choose_travel_aggro_detour_destination(
+            args,
+            SimpleNamespace(x=486383, y=603038, z=1474),
+            objective,
+            danger_x=485283,
+            danger_y=597961,
+            danger_z=1808,
+            attempt_count=1,
+            locked_key=lock_key,
+            locked_destination=first,
+        )
+
+        self.assertIsNotNone(second)
+        self.assertEqual(second_key, lock_key)
+        self.assertTrue(reused)
+        self.assertEqual((second.x, second.y), (first.x, first.y))
+        self.assertEqual(second.z, 1474)
+
+    def test_travel_aggro_detour_rejects_high_ground_z_candidate(self):
+        args = SimpleNamespace(
+            travel_aggro_avoid_radius=5200.0,
+            travel_aggro_detour_distance=7000.0,
+            flee_safe_point_distance=5200.0,
+            flee_safe_threat_radius=6000.0,
+            path_max_height_delta=900.0,
+            path_region=1,
+        )
+
+        def sample_ground_z(x, y, region):
+            return 3988 if x < 486000 else 1800
+
+        client = SimpleNamespace(x=485287, y=603418, z=1892, ground_z_sampler=sample_ground_z)
+        objective = behavior.MovementDestination("required-target-home:river-racer", 485411, 597539, 1726)
+
+        detour = behavior.travel_aggro_detour_destination(
+            args,
+            client,
+            objective,
+            danger_x=485283,
+            danger_y=597961,
+            danger_z=1808,
+            attempt_count=1,
+        )
+
+        self.assertIsNotNone(detour)
+        self.assertGreaterEqual(detour.x, 480000)
+
+    def test_travel_aggro_memory_blocks_recovery_until_clear_distance(self):
+        args = SimpleNamespace(
+            travel_aggro_avoid_radius=3900.0,
+            flee_safe_threat_radius=6000.0,
+            travel_aggro_detour_distance=7000.0,
+            travel_aggro_clear_grace=3.0,
+        )
+
+        self.assertTrue(
+            behavior.travel_aggro_avoid_memory_blocks_recovery(
+                args,
+                SimpleNamespace(x=486119, y=602992),
+                now=84.0,
+                danger_until=180.0,
+                danger_x=485283,
+                danger_y=597961,
+                last_damage_taken_at=81.7,
+            )
+        )
+        self.assertFalse(
+            behavior.travel_aggro_avoid_memory_blocks_recovery(
+                args,
+                SimpleNamespace(x=472650, y=598494),
+                now=120.0,
+                danger_until=180.0,
+                danger_x=485283,
+                danger_y=597961,
+                last_damage_taken_at=81.7,
+            )
+        )
+
+    def test_objective_entry_aggro_detour_inserted_for_danger_on_home_corridor(self):
+        args = SimpleNamespace(
+            objective_entry_aggro_avoid=True,
+            objective_entry_aggro_avoid_radius=1600.0,
+            travel_aggro_avoid_radius=0.0,
+            travel_aggro_detour_distance=2800.0,
+            flee_safe_point_distance=1800.0,
+            flee_safe_threat_radius=2500.0,
+            player_level=7,
+            min_target_level=5,
+            require_target_name="rot worm",
+            prefer_target_name="",
+            objective_add_target_name="",
+            avoid_target_name="faerie bell-wether",
+        )
+        client = SimpleNamespace(
+            x=1000,
+            y=1000,
+            z=100,
+            horizontal_distance_to=lambda npc: behavior.horizontal_distance_between_points(1000, 1000, npc.x, npc.y),
+        )
+        objective = behavior.MovementDestination("required-target-home:1", 9000, 1000, 100)
+        danger = SimpleNamespace(
+            object_id=11,
+            name="노련한 faerie bell-wether",
+            level=8,
+            x=5000,
+            y=1100,
+            z=100,
+            can_attack=True,
+            relation="hostile",
+        )
+
+        result = behavior.objective_entry_aggro_detour_destination(args, client, objective, [danger])
+
+        self.assertIsNotNone(result)
+        result_npc, detour = result
+        self.assertEqual(result_npc.object_id, 11)
+        self.assertEqual(detour.key.split(":")[0], "travel-aggro-detour")
+        self.assertGreaterEqual(
+            behavior.horizontal_distance_between_points(detour.x, detour.y, danger.x, danger.y),
+            2700.0,
+        )
+
+    def test_objective_entry_aggro_detour_keeps_approach_clear_of_danger(self):
+        args = SimpleNamespace(
+            objective_entry_aggro_avoid=True,
+            objective_entry_aggro_avoid_radius=1800.0,
+            travel_aggro_avoid_radius=0.0,
+            travel_aggro_detour_distance=7000.0,
+            flee_safe_point_distance=1800.0,
+            flee_safe_threat_radius=2500.0,
+            player_level=9,
+            min_target_level=7,
+            require_target_name="rotting zombie",
+            prefer_target_name="",
+            objective_add_target_name="",
+            avoid_target_name="devout filidh",
+        )
+        client = SimpleNamespace(
+            x=520037,
+            y=621620,
+            z=2021,
+            horizontal_distance_to=lambda npc: behavior.horizontal_distance_between_points(520037, 621620, npc.x, npc.y),
+        )
+        objective = behavior.MovementDestination("required-target-home:rotting-zombie", 527242, 624780, 1971)
+        danger = SimpleNamespace(
+            object_id=17,
+            name="노련한 devout filidh",
+            level=9,
+            x=520225,
+            y=623131,
+            z=1871,
+            can_attack=True,
+            relation="hostile",
+        )
+
+        result = behavior.objective_entry_aggro_detour_destination(args, client, objective, [danger])
+
+        self.assertIsNotNone(result)
+        _result_npc, detour = result
+        current_distance = behavior.horizontal_distance_between_points(client.x, client.y, danger.x, danger.y)
+        detour_distance = behavior.horizontal_distance_between_points(detour.x, detour.y, danger.x, danger.y)
+        away_dot = (detour.x - client.x) * (client.x - danger.x) + (detour.y - client.y) * (client.y - danger.y)
+
+        self.assertLess(current_distance, args.objective_entry_aggro_avoid_radius)
+        self.assertGreater(detour_distance, args.objective_entry_aggro_avoid_radius * 1.1)
+        self.assertGreater(away_dot, 0.0)
+
+    def test_objective_entry_aggro_detour_prefers_progress_toward_home_when_outside_danger_radius(self):
+        args = SimpleNamespace(
+            objective_entry_aggro_avoid=True,
+            objective_entry_aggro_avoid_radius=2200.0,
+            travel_aggro_avoid_radius=5200.0,
+            travel_aggro_detour_distance=7000.0,
+            flee_safe_point_distance=5200.0,
+            flee_safe_threat_radius=6000.0,
+            player_level=10,
+            min_target_level=7,
+            require_target_name="adder",
+            prefer_target_name="adder",
+            objective_add_target_name="",
+            avoid_target_name="bandit henchman",
+        )
+        client = SimpleNamespace(
+            x=587423,
+            y=499279,
+            z=2601,
+            horizontal_distance_to=lambda npc: behavior.horizontal_distance_between_points(587423, 499279, npc.x, npc.y),
+        )
+        objective = behavior.MovementDestination("required-target-home:adder", 594457, 499932, 2059)
+        danger = SimpleNamespace(
+            object_id=23,
+            name="노련한 bandit henchman",
+            level=10,
+            x=593424,
+            y=501469,
+            z=2518,
+            can_attack=True,
+            relation="hostile",
+        )
+
+        result = behavior.objective_entry_aggro_detour_destination(args, client, objective, [danger])
+
+        self.assertIsNotNone(result)
+        _result_npc, detour = result
+        current_objective_distance = behavior.horizontal_distance_between_points(client.x, client.y, objective.x, objective.y)
+        detour_objective_distance = behavior.horizontal_distance_between_points(detour.x, detour.y, objective.x, objective.y)
+
+        self.assertGreater(
+            behavior.horizontal_distance_between_points(client.x, client.y, danger.x, danger.y),
+            args.objective_entry_aggro_avoid_radius,
+        )
+        self.assertLessEqual(detour_objective_distance, current_objective_distance + args.objective_entry_aggro_avoid_radius * 0.25)
+        self.assertGreaterEqual(
+            behavior.horizontal_distance_between_points(detour.x, detour.y, danger.x, danger.y),
+            args.objective_entry_aggro_avoid_radius,
+        )
+
+    def test_objective_entry_aggro_detour_zero_radius_does_not_fallback_to_travel_radius(self):
+        args = SimpleNamespace(
+            objective_entry_aggro_avoid=True,
+            objective_entry_aggro_avoid_radius=0.0,
+            travel_aggro_avoid_radius=5200.0,
+            travel_aggro_detour_distance=7000.0,
+            flee_safe_point_distance=5200.0,
+            flee_safe_threat_radius=6000.0,
+            player_level=10,
+            min_target_level=8,
+            require_target_name="silverscale drakeling",
+            prefer_target_name="silverscale drakeling",
+            objective_add_target_name="",
+            avoid_target_name="black mauler juvenile",
+        )
+        client = SimpleNamespace(
+            x=757633,
+            y=786921,
+            z=4584,
+            horizontal_distance_to=lambda npc: behavior.horizontal_distance_between_points(757633, 786921, npc.x, npc.y),
+        )
+        objective = behavior.MovementDestination("required-target-home:silverscale", 758649, 784955, 4584)
+        low_level_avoid = SimpleNamespace(
+            object_id=24143,
+            name="black mauler juvenile",
+            level=5,
+            x=757279,
+            y=780953,
+            z=4685,
+            can_attack=True,
+            relation="hostile",
+        )
+
+        self.assertEqual(behavior.objective_entry_aggro_avoid_radius(args), 0.0)
+        self.assertIsNone(
+            behavior.objective_entry_aggro_detour_destination(args, client, objective, [low_level_avoid])
+        )
+
+    def test_objective_entry_aggro_detour_ignores_danger_off_home_corridor(self):
+        args = SimpleNamespace(
+            objective_entry_aggro_avoid=True,
+            objective_entry_aggro_avoid_radius=900.0,
+            travel_aggro_avoid_radius=0.0,
+            travel_aggro_detour_distance=2800.0,
+            flee_safe_point_distance=1800.0,
+            flee_safe_threat_radius=2500.0,
+            player_level=7,
+            min_target_level=5,
+            require_target_name="rot worm",
+            prefer_target_name="",
+            objective_add_target_name="",
+            avoid_target_name="faerie bell-wether",
+        )
+        client = SimpleNamespace(
+            x=1000,
+            y=1000,
+            z=100,
+            horizontal_distance_to=lambda npc: behavior.horizontal_distance_between_points(1000, 1000, npc.x, npc.y),
+        )
+        objective = behavior.MovementDestination("required-target-home:1", 9000, 1000, 100)
+        off_path = SimpleNamespace(
+            object_id=12,
+            name="노련한 faerie bell-wether",
+            level=8,
+            x=5000,
+            y=3500,
+            z=100,
+            can_attack=True,
+            relation="hostile",
+        )
+
+        self.assertIsNone(behavior.objective_entry_aggro_detour_destination(args, client, objective, [off_path]))
+
+    def test_objective_entry_aggro_detour_ignores_required_target_itself(self):
+        args = SimpleNamespace(
+            objective_entry_aggro_avoid=True,
+            objective_entry_aggro_avoid_radius=1600.0,
+            travel_aggro_avoid_radius=0.0,
+            travel_aggro_detour_distance=2800.0,
+            flee_safe_point_distance=1800.0,
+            flee_safe_threat_radius=2500.0,
+            player_level=7,
+            min_target_level=5,
+            require_target_name="rot worm",
+            prefer_target_name="",
+            objective_add_target_name="",
+            avoid_target_name="",
+            require_target_name_exact=False,
+        )
+        client = SimpleNamespace(
+            x=1000,
+            y=1000,
+            z=100,
+            horizontal_distance_to=lambda npc: behavior.horizontal_distance_between_points(1000, 1000, npc.x, npc.y),
+        )
+        objective = behavior.MovementDestination("required-target-home:1", 9000, 1000, 100)
+        target = SimpleNamespace(
+            object_id=13,
+            name="노련한 rot worm",
+            level=6,
+            x=5000,
+            y=1100,
+            z=100,
+            can_attack=True,
+            relation="hostile",
+        )
+
+        self.assertIsNone(behavior.objective_entry_aggro_detour_destination(args, client, objective, [target]))
+
+    def test_objective_entry_aggro_detour_ignores_unknown_relation_non_avoid_npc(self):
+        args = SimpleNamespace(
+            objective_entry_aggro_avoid=True,
+            objective_entry_aggro_avoid_radius=1600.0,
+            travel_aggro_avoid_radius=0.0,
+            travel_aggro_detour_distance=2800.0,
+            flee_safe_point_distance=1800.0,
+            flee_safe_threat_radius=2500.0,
+            player_level=7,
+            min_target_level=5,
+            require_target_name="rot worm",
+            prefer_target_name="",
+            objective_add_target_name="",
+            avoid_target_name="faerie bell-wether",
+        )
+        client = SimpleNamespace(
+            x=1000,
+            y=1000,
+            z=100,
+            horizontal_distance_to=lambda npc: behavior.horizontal_distance_between_points(1000, 1000, npc.x, npc.y),
+        )
+        objective = behavior.MovementDestination("required-target-home:1", 9000, 1000, 100)
+        unknown_relation = SimpleNamespace(
+            object_id=14,
+            name="plain nearby npc",
+            level=8,
+            x=5000,
+            y=1100,
+            z=100,
+        )
+
+        self.assertIsNone(
+            behavior.objective_entry_aggro_detour_destination(args, client, objective, [unknown_relation])
+        )
+
+    def test_objective_entry_aggro_detour_ignores_zero_level_avoid_npc(self):
+        args = SimpleNamespace(
+            objective_entry_aggro_avoid=True,
+            objective_entry_aggro_avoid_radius=1600.0,
+            travel_aggro_avoid_radius=0.0,
+            travel_aggro_detour_distance=2800.0,
+            flee_safe_point_distance=1800.0,
+            flee_safe_threat_radius=2500.0,
+            player_level=7,
+            min_target_level=5,
+            require_target_name="emerald snake",
+            prefer_target_name="",
+            objective_add_target_name="",
+            avoid_target_name="dappled lynx cub",
+        )
+        client = SimpleNamespace(
+            x=1000,
+            y=1000,
+            z=100,
+            horizontal_distance_to=lambda npc: behavior.horizontal_distance_between_points(1000, 1000, npc.x, npc.y),
+        )
+        objective = behavior.MovementDestination("required-target-home:1", 9000, 1000, 100)
+        zero_level_avoid = SimpleNamespace(
+            object_id=15,
+            name="dappled lynx cub",
+            level=0,
+            x=5000,
+            y=1100,
+            z=100,
+            can_attack=True,
+            relation="hostile",
+        )
+
+        self.assertIsNone(
+            behavior.objective_entry_aggro_detour_destination(args, client, objective, [zero_level_avoid])
+        )
+
     def test_travel_aggro_avoid_memory_clears_after_safe_distance_and_damage_grace(self):
         args = SimpleNamespace(
             travel_aggro_avoid_radius=2500.0,
@@ -19288,6 +28221,37 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertTrue(behavior.should_accept_party_rescue_target(args, FakeNpc(20, "lough wolf cadger", 3, 300.0)))
         self.assertFalse(behavior.should_accept_party_rescue_target(args, FakeNpc(21, "orchard nipper", 5, 300.0)))
+
+    def test_party_rescue_target_respects_min_target_level_for_growth(self):
+        args = SimpleNamespace(
+            party_encounter_mode="standard",
+            player_level=7,
+            min_target_level=8,
+            max_target_level=11,
+            max_target_level_delta=0,
+            party_rescue_ignore_low_level_delta=8,
+            require_target_name="",
+            objective_add_target_name="",
+        )
+
+        self.assertFalse(behavior.should_accept_party_rescue_target(args, FakeNpc(20, "mudman", 4, 300.0)))
+        self.assertTrue(behavior.should_accept_party_rescue_target(args, FakeNpc(21, "lough wolf", 8, 300.0)))
+
+    def test_standard_party_rescue_rejects_avoid_target(self):
+        args = SimpleNamespace(
+            party_encounter_mode="standard",
+            player_level=7,
+            min_target_level=5,
+            max_target_level=7,
+            max_target_level_delta=0,
+            party_rescue_ignore_low_level_delta=8,
+            avoid_target_name="young grendelorm",
+            require_target_name="",
+            objective_add_target_name="",
+        )
+
+        self.assertFalse(behavior.should_accept_party_rescue_target(args, FakeNpc(20, "young grendelorm", 7, 300.0)))
+        self.assertTrue(behavior.should_accept_party_rescue_target(args, FakeNpc(21, "vein spider", 5, 300.0)))
 
     def test_choose_party_rescue_threat_target_keeps_active_tank_on_boss(self):
         add = FakeNpc(20, "granite giant oracle", 60, 200.0)
@@ -20238,6 +29202,26 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(snapshot["active_tank_object_id"], 10)
         self.assertEqual(snapshot["rescue_tank_name"], "leader")
 
+    def test_party_state_prefers_external_dedicated_tank_over_leader_melee_burst(self):
+        state = behavior.PartyState(
+            "leader",
+            ["leader"],
+            active_tank_handoff_health_percent=92,
+        )
+        state.update_member_role("leader", "melee-burst")
+        state.update_member("leader", SimpleNamespace(player_object_id=10, health_percent=100, x=1, y=2, z=3))
+        state.update_external_member(
+            "tank",
+            SimpleNamespace(object_id=11, health_percent=100, x=4, y=5, z=6),
+            role="melee-basic",
+        )
+
+        snapshot = state.snapshot()
+
+        self.assertEqual(snapshot["active_tank_name"], "tank")
+        self.assertEqual(snapshot["active_tank_object_id"], 11)
+        self.assertEqual((snapshot["active_tank_x"], snapshot["active_tank_y"], snapshot["active_tank_z"]), (4, 5, 6))
+
     def test_party_state_keeps_low_dedicated_tank_without_healthy_backup(self):
         state = behavior.PartyState(
             "leader",
@@ -20430,6 +29414,136 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 last_damage_attacker_name="moorlich",
                 party_ready_for_objective=True,
                 party_objective_damage=True,
+            )
+        )
+
+    def test_active_tank_holds_rescue_counterattack_above_commit_floor_without_healer(self):
+        args = SimpleNamespace(
+            flee_melee_counterattack_health_floor=55,
+            required_target_tank_commit_health_percent=35,
+            flee_critical_health_percent=25,
+            require_target_name="moorlich",
+            objective_add_target_name="",
+            party_rescue_aggro=True,
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            combat_home_leash_distance=0.0,
+        )
+        party_snapshot = {
+            "leader_target_id": 23240,
+            "leader_target_name": "moorlich",
+            "rescue_target_id": 23240,
+            "rescue_target_name": "moorlich",
+            "active_tank_name": "Albtest002",
+            "members": [
+                {"name": "Albtest002", "role": "melee-basic", "health_percent": 41},
+                {"name": "Dummy041", "role": "external", "health_percent": 100},
+            ],
+        }
+
+        self.assertFalse(
+            behavior.should_abandon_party_rescue_counterattack_for_flee(
+                args,
+                party_snapshot,
+                current_target=23240,
+                current_health_percent=41,
+                previous_health_percent=46,
+                member_name="Albtest002",
+            )
+        )
+
+    def test_active_tank_rescue_counterattack_can_flee_below_commit_floor(self):
+        args = SimpleNamespace(
+            flee_melee_counterattack_health_floor=55,
+            required_target_tank_commit_health_percent=35,
+            flee_critical_health_percent=25,
+            require_target_name="moorlich",
+            objective_add_target_name="",
+            party_rescue_aggro=True,
+            target_home_max_distance=0.0,
+            required_target_home=None,
+            combat_home_leash_distance=0.0,
+        )
+        party_snapshot = {
+            "leader_target_id": 23240,
+            "leader_target_name": "moorlich",
+            "rescue_target_id": 23240,
+            "rescue_target_name": "moorlich",
+            "active_tank_name": "Albtest002",
+            "members": [
+                {"name": "Albtest002", "role": "melee-basic", "health_percent": 29},
+                {"name": "Dummy041", "role": "external", "health_percent": 100},
+            ],
+        }
+
+        self.assertTrue(
+            behavior.should_abandon_party_rescue_counterattack_for_flee(
+                args,
+                party_snapshot,
+                current_target=23240,
+                current_health_percent=29,
+                previous_health_percent=41,
+                member_name="Albtest002",
+            )
+        )
+
+    def test_active_tank_required_objective_flee_hold_blocks_multi_aggro_above_commit_floor(self):
+        args = SimpleNamespace(
+            required_target_tank_commit_health_percent=35,
+            flee_critical_health_percent=25,
+            require_target_name="moorlich",
+            objective_add_target_name="",
+        )
+        party_snapshot = {
+            "active_tank_name": "Albtest002",
+            "leader_target_id": 23240,
+            "leader_target_name": "moorlich",
+        }
+        active_combat = {
+            "target_id": 23240,
+            "target_name": "moorlich",
+            "damage_taken": 819,
+            "off_target_damage_taken": 70,
+            "off_target_attacker_name": "moorlich",
+        }
+
+        self.assertTrue(
+            behavior.should_hold_active_tank_required_objective_flee(
+                args,
+                party_snapshot,
+                "Albtest002",
+                active_combat,
+                current_target=23240,
+                current_target_intent=behavior.TargetIntent.objective,
+                health_percent=42,
+                action_rotation="melee-basic",
+            )
+        )
+
+    def test_active_tank_required_objective_flee_hold_allows_flee_below_commit_floor(self):
+        args = SimpleNamespace(
+            required_target_tank_commit_health_percent=35,
+            flee_critical_health_percent=25,
+            require_target_name="moorlich",
+            objective_add_target_name="",
+        )
+        party_snapshot = {
+            "active_tank_name": "Albtest002",
+            "leader_target_id": 23240,
+            "leader_target_name": "moorlich",
+        }
+        active_combat = {"target_id": 23240, "target_name": "moorlich", "damage_taken": 819}
+
+        self.assertFalse(
+            behavior.should_hold_active_tank_required_objective_flee(
+                args,
+                party_snapshot,
+                "Albtest002",
+                active_combat,
+                current_target=23240,
+                current_target_intent=behavior.TargetIntent.objective,
+                health_percent=29,
+                action_rotation="melee-basic",
             )
         )
 
@@ -21791,6 +30905,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         state.update_shared_target(observed, engaged=True)
 
         snapshot = state.snapshot()
+        self.assertEqual(snapshot["leader_target_level"], 64)
         self.assertEqual(snapshot["leader_target_health_percent"], 3.5)
         self.assertEqual(snapshot["leader_target_health"], 171)
         self.assertEqual(snapshot["leader_target_max_health"], 4882)
@@ -22529,6 +31644,60 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             strong,
         )
 
+    def test_party_heal_spell_uses_raw_mana_cost_when_max_mana_is_known(self):
+        args = SimpleNamespace(combat_plan_spell_pool=3)
+        minor = behavior.UsableSpellRef(0, 5, "Minor Amelioration", 5, value=31.0, power=5)
+        major = behavior.UsableSpellRef(0, 8, "Major Amelioration", 8, value=82.0, power=15)
+        greater = behavior.UsableSpellRef(0, 10, "Greater Amelioration", 10, value=145.0, power=29)
+
+        self.assertIs(
+            behavior.choose_party_heal_spell(
+                args,
+                [greater, major, minor],
+                current_mana_percent=50,
+                max_mana=56,
+            ),
+            major,
+        )
+        self.assertIs(
+            behavior.choose_party_heal_spell(
+                args,
+                [greater, major, minor],
+                current_mana_percent=52,
+                max_mana=56,
+            ),
+            greater,
+        )
+
+    def test_party_heal_spell_downranks_beyond_pool_when_top_spells_are_unaffordable(self):
+        args = SimpleNamespace(combat_plan_spell_pool=2)
+        greater = behavior.UsableSpellRef(0, 12, "Greater Heal", 12, value=145.0, power=40)
+        major = behavior.UsableSpellRef(0, 10, "Major Heal", 10, value=82.0, power=25)
+        minor = behavior.UsableSpellRef(0, 5, "Minor Heal", 5, value=31.0, power=5)
+
+        self.assertIs(
+            behavior.choose_party_heal_spell(
+                args,
+                [greater, major, minor],
+                current_mana_percent=20,
+                max_mana=100,
+            ),
+            minor,
+        )
+
+    def test_party_heal_spell_returns_none_when_no_heal_is_affordable(self):
+        args = SimpleNamespace(combat_plan_spell_pool=3)
+        minor = behavior.UsableSpellRef(0, 5, "Minor Heal", 5, value=31.0, power=5)
+
+        self.assertIsNone(
+            behavior.choose_party_heal_spell(
+                args,
+                [minor],
+                current_mana_percent=4,
+                max_mana=100,
+            )
+        )
+
     def test_party_heal_spell_ignores_self_only_for_party_target(self):
         args = SimpleNamespace(combat_plan_spell_pool=3)
         self_only = behavior.UsableSpellRef(0, 40, "Self Restoration", 40, target="SELF", value=500.0)
@@ -23044,6 +32213,24 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertIsNotNone(destination)
         self.assertEqual((destination.x, destination.y, destination.z), (123, 456, 7))
 
+    def test_last_known_chase_rejects_matching_leader_target_with_unknown_position(self):
+        snapshot = {
+            "leader_target_id": 77,
+            "leader_target_x": 0,
+            "leader_target_y": 0,
+            "leader_target_z": 0,
+            "rescue_target_id": 0,
+        }
+
+        self.assertFalse(
+            behavior.should_chase_last_known_shared_target(
+                snapshot,
+                current_target=77,
+                tactical_backoff=False,
+            )
+        )
+        self.assertIsNone(behavior.shared_target_last_known_destination(snapshot, 77))
+
     def test_shared_target_backoff_point_allows_empty_current_target(self):
         snapshot = {"leader_target_id": 77}
 
@@ -23258,6 +32445,38 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         hurt_member = {"name": "tank", "health_percent": 61}
 
         self.assertTrue(
+            behavior.should_defer_party_support_for_preengage_position(
+                args,
+                behavior.DummyBehaviorState.TravelToObjective,
+                "healer-support",
+                client,
+                current_health_percent=100,
+                hurt_member=hurt_member,
+            )
+        )
+
+    def test_healer_anchor_defer_can_be_disabled_for_fast_growth_runs(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            require_target_name="barfog",
+            party_encounter_mode="boss",
+            party_preengage_ranged_safe_distance=3000,
+            boss_ranged_safe_distance=2500,
+            attack_range=350,
+            melee_range_buffer=250,
+            minimum_melee_stop_distance=85,
+            ranged_stop_distance=900,
+            spell_range=1500,
+            healer_self_health_percent=65,
+            flee_health_percent=35,
+            party_heal_leader_health_percent=95,
+            party_disable_required_home_anchor_defer=True,
+            required_target_home=behavior.PathPoint(1000, 1000, 0),
+        )
+        client = SimpleNamespace(x=2000, y=1000)
+        hurt_member = {"name": "tank", "health_percent": 61}
+
+        self.assertFalse(
             behavior.should_defer_party_support_for_preengage_position(
                 args,
                 behavior.DummyBehaviorState.TravelToObjective,
@@ -23576,8 +32795,55 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         args = SimpleNamespace(party_follow_teleport_distance=2500)
 
         self.assertFalse(behavior.party_follow_should_teleport(args, anchor_distance=2400, combat_locked=False))
-        self.assertTrue(behavior.party_follow_should_teleport(args, anchor_distance=2600, combat_locked=False))
-        self.assertFalse(behavior.party_follow_should_teleport(args, anchor_distance=2600, combat_locked=True))
+        self.assertTrue(
+            behavior.party_follow_should_teleport(
+                args,
+                anchor_distance=2600,
+                combat_locked=False,
+                anchor_z_delta=128,
+            )
+        )
+        self.assertFalse(
+            behavior.party_follow_should_teleport(
+                args,
+                anchor_distance=2600,
+                combat_locked=True,
+                anchor_z_delta=128,
+            )
+        )
+        self.assertTrue(
+            behavior.party_follow_should_teleport(
+                args,
+                anchor_distance=2600,
+                combat_locked=True,
+                anchor_z_delta=128,
+                allow_combat_locked=True,
+            )
+        )
+
+    def test_party_follow_teleport_blocks_large_z_delta(self):
+        args = SimpleNamespace(party_follow_teleport_distance=2500)
+
+        self.assertFalse(
+            behavior.party_follow_should_teleport(
+                args,
+                anchor_distance=2600,
+                combat_locked=False,
+                anchor_z_delta=700,
+            )
+        )
+
+    def test_party_follow_teleport_uses_configured_z_delta_limit(self):
+        args = SimpleNamespace(party_follow_teleport_distance=2500, party_follow_teleport_max_z_delta=900)
+
+        self.assertTrue(
+            behavior.party_follow_should_teleport(
+                args,
+                anchor_distance=2600,
+                combat_locked=False,
+                anchor_z_delta=700,
+            )
+        )
 
     def test_party_follow_combat_locked_allows_stale_hunt_state_without_combat(self):
         self.assertFalse(
@@ -23611,6 +32877,25 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertFalse(behavior.should_send_position_heartbeat_for_client(SimpleNamespace(is_dead=False, last_position_speed=191.0)))
         self.assertTrue(behavior.should_send_position_heartbeat_for_client(SimpleNamespace(is_dead=False, last_position_speed=0.0)))
         self.assertFalse(behavior.should_send_position_heartbeat_for_client(SimpleNamespace(is_dead=True, last_position_speed=0.0)))
+
+    def test_rest_sit_command_stops_before_sitting(self):
+        calls = []
+        client = SimpleNamespace(
+            send_position_update=lambda **kwargs: calls.append(("position", kwargs)) or 0,
+            drain=lambda seconds: calls.append(("drain", seconds)) or 0,
+            send_command=lambda command: calls.append(("command", command)) or 0,
+        )
+
+        behavior.send_rest_sit_command(client, target_in_view=True)
+
+        self.assertEqual(
+            calls,
+            [
+                ("position", {"speed": 0.0, "target_in_view": True}),
+                ("drain", 0.1),
+                ("command", "/sit"),
+            ],
+        )
 
     def test_boss_hazard_message_detects_dragon_telegraphs(self):
         args = SimpleNamespace(boss_hazard_message_backoff_duration=9.0)
@@ -23655,6 +32940,218 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertTrue(moved)
         self.assertGreater(client.x, 100)
 
+    def test_move_away_from_actor_with_policy_preserves_no_policy_direct_move(self):
+        client = StepPathClient()
+        client.x = 100
+        client.y = 0
+        actor = SimpleNamespace(object_id=77, x=0, y=0, z=0)
+        args = SimpleNamespace(movement_speed=165, movement_update_interval=0.25)
+
+        outcome = behavior.move_away_from_actor_with_policy(
+            client,
+            actor,
+            step=50,
+            min_distance=240,
+            args=args,
+            target_in_view=True,
+            path_state=None,
+            destination_key="boss-ranged-backoff",
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual(client.moves[-1][:3], (240, 0, 0))
+        self.assertGreater(client.x, 100)
+
+    def test_move_away_from_actor_with_policy_uses_path_boundary_when_unreachable(self):
+        client = StepPathClient()
+        client.x = 100
+        client.y = 0
+        actor = SimpleNamespace(object_id=77, x=0, y=0, z=0)
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=25.0,
+            path_replan_interval=60.0,
+            path_max_node_distance=25.0,
+            path_node_arrival_distance=50.0,
+            path_max_edge_length=1500.0,
+            movement_update_interval=0.0,
+        )
+        path_state = behavior.PathMovementState(
+            behavior.PathGraph(),
+            1,
+            behavior.PathSafety(max_direct_distance=25.0, max_edge_length=1500.0),
+        )
+        action_counts: dict[str, int] = {}
+        movement_failures: list[dict[str, object]] = []
+
+        outcome = behavior.move_away_from_actor_with_policy(
+            client,
+            actor,
+            step=50,
+            min_distance=240,
+            args=args,
+            target_in_view=True,
+            path_state=path_state,
+            action_counts=action_counts,
+            destination_key="boss-ranged-backoff",
+            movement_failures=movement_failures,
+            movement_failure_context="boss_ranged_backoff",
+        )
+
+        self.assertFalse(outcome.moved)
+        self.assertEqual(client.moves, [])
+        self.assertEqual(client.position_updates, [(0.0, True)])
+        self.assertEqual(action_counts["path_failed"], 1)
+        self.assertEqual(len(movement_failures), 1)
+        self.assertEqual(movement_failures[0].context, "boss_ranged_backoff")
+
+    def test_move_away_from_actor_with_policy_caps_destination_to_step(self):
+        client = StepPathClient()
+        client.x = 100
+        client.y = 0
+        actor = SimpleNamespace(object_id=77, x=0, y=0, z=0)
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=150.0,
+            path_replan_interval=60.0,
+            path_max_node_distance=150.0,
+            path_node_arrival_distance=50.0,
+            path_max_edge_length=1500.0,
+            movement_update_interval=0.0,
+        )
+        path_state = behavior.PathMovementState(
+            behavior.PathGraph(),
+            1,
+            behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0),
+        )
+        action_counts: dict[str, int] = {}
+        movement_failures: list[dict[str, object]] = []
+
+        outcome = behavior.move_away_from_actor_with_policy(
+            client,
+            actor,
+            step=50,
+            min_distance=240,
+            args=args,
+            target_in_view=True,
+            path_state=path_state,
+            action_counts=action_counts,
+            destination_key="boss-ranged-backoff",
+            movement_failures=movement_failures,
+            movement_failure_context="boss_ranged_backoff",
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual(client.moves[-1][:3], (150, 0, 0))
+        self.assertEqual(movement_failures, [])
+        self.assertNotIn("path_failed", action_counts)
+
+    def test_move_away_from_point_with_policy_preserves_no_policy_direct_move(self):
+        client = StepPathClient()
+        client.x = 100
+        client.y = 0
+        args = SimpleNamespace(movement_speed=165, movement_update_interval=0.25)
+
+        outcome = behavior.move_away_from_point_with_policy(
+            client,
+            0,
+            0,
+            step=50,
+            min_distance=240,
+            args=args,
+            target_in_view=False,
+            path_state=None,
+            destination_key="party-preengage-ranged-backoff",
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual(client.moves[-1][:3], (240, 0, 0))
+        self.assertGreater(client.x, 100)
+
+    def test_move_away_from_point_with_policy_uses_path_boundary_when_unreachable(self):
+        client = StepPathClient()
+        client.x = 100
+        client.y = 0
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=25.0,
+            path_replan_interval=60.0,
+            path_max_node_distance=25.0,
+            path_node_arrival_distance=50.0,
+            path_max_edge_length=1500.0,
+            movement_update_interval=0.0,
+        )
+        path_state = behavior.PathMovementState(
+            behavior.PathGraph(),
+            1,
+            behavior.PathSafety(max_direct_distance=25.0, max_edge_length=1500.0),
+        )
+        action_counts: dict[str, int] = {}
+        movement_failures: list[dict[str, object]] = []
+
+        outcome = behavior.move_away_from_point_with_policy(
+            client,
+            0,
+            0,
+            step=50,
+            min_distance=240,
+            args=args,
+            target_in_view=False,
+            path_state=path_state,
+            action_counts=action_counts,
+            destination_key="party-preengage-ranged-backoff",
+            movement_failures=movement_failures,
+            movement_failure_context="party_preengage_ranged_backoff",
+        )
+
+        self.assertFalse(outcome.moved)
+        self.assertEqual(client.moves, [])
+        self.assertEqual(client.position_updates, [(0.0, False)])
+        self.assertEqual(action_counts["path_failed"], 1)
+        self.assertEqual(len(movement_failures), 1)
+        self.assertEqual(movement_failures[0].context, "party_preengage_ranged_backoff")
+
+    def test_move_away_from_point_with_policy_caps_destination_to_step(self):
+        client = StepPathClient()
+        client.x = 100
+        client.y = 0
+        args = SimpleNamespace(
+            nav_api_url="",
+            path_last_mile_distance=150.0,
+            path_replan_interval=60.0,
+            path_max_node_distance=150.0,
+            path_node_arrival_distance=50.0,
+            path_max_edge_length=1500.0,
+            movement_update_interval=0.0,
+        )
+        path_state = behavior.PathMovementState(
+            behavior.PathGraph(),
+            1,
+            behavior.PathSafety(max_direct_distance=150.0, max_edge_length=1500.0),
+        )
+        action_counts: dict[str, int] = {}
+        movement_failures: list[dict[str, object]] = []
+
+        outcome = behavior.move_away_from_point_with_policy(
+            client,
+            0,
+            0,
+            step=50,
+            min_distance=240,
+            args=args,
+            target_in_view=False,
+            path_state=path_state,
+            action_counts=action_counts,
+            destination_key="party-preengage-ranged-backoff",
+            movement_failures=movement_failures,
+            movement_failure_context="party_preengage_ranged_backoff",
+        )
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual(client.moves[-1][:3], (150, 0, 0))
+        self.assertEqual(movement_failures, [])
+        self.assertNotIn("path_failed", action_counts)
+
     def test_party_state_ready_members_gate_pull(self):
         state = behavior.PartyState("leader", ["leader", "member"])
         args = SimpleNamespace(party_min_ready=2)
@@ -23675,6 +33172,8 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertFalse(behavior.party_ready_for_pull(args, state))
 
         state.mark_invited("member")
+        self.assertFalse(state.member_has_invite("member"))
+        state.mark_invite_received("member")
         self.assertTrue(state.member_has_invite("member"))
         self.assertFalse(state.member_has_accepted("member"))
         self.assertFalse(behavior.party_ready_for_pull(args, state))
@@ -23685,6 +33184,40 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         state.mark_ready("member")
         self.assertTrue(behavior.party_ready_for_pull(args, state))
+
+    def test_party_invite_rotation_skips_accepted_members(self):
+        state = behavior.PartyState("leader", ["leader", "member", "late"])
+
+        state.mark_accepted("member")
+
+        self.assertEqual(state.next_managed_invite_name(), "late")
+
+    def test_party_invite_rotation_waits_on_pending_before_next_member(self):
+        state = behavior.PartyState("leader", ["leader", "member1", "member2", "member3"])
+
+        self.assertEqual(state.next_managed_invite_name(), "member1")
+        state.mark_invited("member1")
+
+        self.assertEqual(state.next_managed_invite_name(), "")
+
+        state.mark_accepted("member1")
+        self.assertEqual(state.next_managed_invite_name(), "member2")
+        state.mark_invited("member2")
+
+        state.invited_at_by_name["member2"] -= behavior.PARTY_INVITE_PENDING_RETRY_SECONDS + 0.1
+        self.assertEqual(state.next_managed_invite_name(), "member2")
+
+        state.mark_accepted("member2")
+        self.assertEqual(state.next_managed_invite_name(), "member3")
+
+    def test_party_join_message_marks_managed_member_accepted(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+
+        joined = behavior.parse_party_member_join_message("member가 그룹에 참가했습니다.")
+        state.mark_accepted(joined)
+
+        self.assertTrue(state.member_has_accepted("member"))
+        self.assertEqual(state.next_managed_invite_name(), "")
 
     def test_party_ready_gate_requires_ready_member_near_leader_when_configured(self):
         state = behavior.PartyState("leader", ["leader", "member"])
@@ -23697,6 +33230,101 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         state.update_member("member", SimpleNamespace(player_object_id=11, health_percent=100, x=1200, y=0, z=0))
         self.assertTrue(behavior.party_ready_for_pull(args, state))
+
+    def test_party_ready_gate_requires_passive_xp_leech_near_share_distance(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=10, health_percent=100, x=0, y=0, z=0, heading=0))
+        state.update_member("member", SimpleNamespace(player_object_id=11, health_percent=100, x=1500, y=0, z=0))
+        state.mark_ready("member")
+        args = SimpleNamespace(
+            party_min_ready=2,
+            party_ready_max_leader_distance=1800.0,
+            passive_xp_leech_follow_distance=900.0,
+        )
+
+        state.update_member_role("member", "none")
+        self.assertFalse(behavior.party_ready_for_pull(args, state))
+
+        state.update_member("member", SimpleNamespace(player_object_id=11, health_percent=100, x=1000, y=0, z=0))
+        self.assertTrue(behavior.party_ready_for_pull(args, state))
+
+    def test_party_ready_gate_excludes_healer_before_preengage_safe_distance(self):
+        state = behavior.PartyState("leader", ["leader", "cleric"])
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=10, health_percent=100, x=0, y=0, z=0, heading=0))
+        state.update_member("cleric", SimpleNamespace(player_object_id=11, health_percent=100, x=1200, y=0, z=0))
+        state.update_member_role("cleric", "healer-support")
+        state.mark_ready("cleric")
+        args = SimpleNamespace(
+            party_min_ready=2,
+            party_ready_max_leader_distance=10000.0,
+            required_target_home=behavior.Waypoint(1000, 0, 0),
+            party_preengage_ranged_safe_distance=3000.0,
+            passive_xp_leech_follow_distance=0.0,
+        )
+
+        self.assertFalse(behavior.party_ready_for_pull(args, state))
+        self.assertFalse(behavior.party_snapshot_has_live_healer_support(state.snapshot(), args=args))
+
+        state.update_member("cleric", SimpleNamespace(player_object_id=11, health_percent=100, x=4500, y=0, z=0))
+        self.assertTrue(behavior.party_ready_for_pull(args, state))
+        self.assertTrue(behavior.party_snapshot_has_live_healer_support(state.snapshot(), args=args))
+
+    def test_pre_pull_attack_gate_allows_existing_engaged_leader_target(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        state.update_leader(
+            SimpleNamespace(session_id=1, player_object_id=10, health_percent=100, x=0, y=0, z=0, heading=0),
+            target=SimpleNamespace(
+                object_id=77,
+                name="fishing bear",
+                x=100,
+                y=100,
+                z=0,
+                level=20,
+                health_percent=90,
+                health=450,
+                max_health=500,
+            ),
+            engaged=True,
+        )
+
+        self.assertTrue(behavior.pre_pull_attack_gate_bypassed_by_engaged_leader_target(state, 77))
+        self.assertFalse(behavior.pre_pull_attack_gate_bypassed_by_engaged_leader_target(state, 78))
+
+    def test_pre_pull_attack_gate_allows_active_combat_target(self):
+        active_combat = {"target_id": 77, "damage_taken": 25, "damage_done": 0, "attacks": 0}
+
+        self.assertTrue(behavior.pre_pull_attack_gate_bypassed_by_active_combat(active_combat, 77))
+        self.assertFalse(behavior.pre_pull_attack_gate_bypassed_by_active_combat(active_combat, 78))
+        self.assertFalse(behavior.pre_pull_attack_gate_bypassed_by_active_combat({"target_id": 77}, 77))
+
+    def test_pre_pull_attack_gate_still_blocks_unengaged_leader_target(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        state.update_leader(
+            SimpleNamespace(session_id=1, player_object_id=10, health_percent=100, x=0, y=0, z=0, heading=0),
+            target=SimpleNamespace(
+                object_id=77,
+                name="fishing bear",
+                x=100,
+                y=100,
+                z=0,
+                level=20,
+                health_percent=100,
+                health=500,
+                max_health=500,
+            ),
+            engaged=False,
+        )
+
+        self.assertFalse(behavior.pre_pull_attack_gate_bypassed_by_engaged_leader_target(state, 77))
+
+    def test_clear_client_spatial_cache_after_fast_reposition(self):
+        client = SimpleNamespace(npcs={1: object()}, players={2: object()}, removed_object_ids=[3])
+
+        behavior.clear_client_spatial_cache_after_reposition(client)
+
+        self.assertEqual(client.npcs, {})
+        self.assertEqual(client.players, {})
+        self.assertEqual(client.removed_object_ids, [])
 
     def test_party_form_up_delay_waits_for_near_ready_members(self):
         state = behavior.PartyState("leader", ["leader", "member"])
@@ -23927,6 +33555,106 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             )
         )
 
+    def test_party_leader_waypoint_is_suppressed_until_party_forms(self):
+        state = behavior.PartyState("leader", ["leader", "member"])
+        state.update_leader(SimpleNamespace(session_id=1, player_object_id=10, health_percent=100, x=0, y=0, z=0, heading=0))
+        state.update_member("member", SimpleNamespace(player_object_id=11, health_percent=100, x=3500, y=0, z=0))
+        args = SimpleNamespace(
+            party_assist_only=True,
+            party_min_ready=2,
+            party_size=2,
+            party_ready_max_leader_distance=1500.0,
+            party_form_up_delay=4.0,
+        )
+
+        self.assertTrue(
+            behavior.should_suppress_party_leader_waypoint(
+                args,
+                state,
+                is_party_leader=True,
+                current_target=0,
+                party_forming_since=0.0,
+                now=100.0,
+            )
+        )
+
+        state.update_member("member", SimpleNamespace(player_object_id=11, health_percent=100, x=900, y=0, z=0))
+        state.mark_accepted("member")
+        state.mark_ready("member")
+        self.assertFalse(
+            behavior.should_suppress_party_leader_waypoint(
+                args,
+                state,
+                is_party_leader=True,
+                current_target=0,
+                party_forming_since=100.0,
+                now=105.0,
+            )
+        )
+
+    def test_party_leader_waypoint_is_suppressed_without_party_state_for_expected_party(self):
+        args = SimpleNamespace(
+            party_assist_only=True,
+            party_min_ready=2,
+            party_size=2,
+            party_ready_max_leader_distance=1500.0,
+            party_form_up_delay=4.0,
+        )
+
+        self.assertTrue(
+            behavior.should_suppress_party_leader_waypoint(
+                args,
+                None,
+                is_party_leader=True,
+                current_target=0,
+                party_forming_since=0.0,
+                now=100.0,
+            )
+        )
+
+    def test_startup_low_health_rest_is_disabled_when_route_home_fast_travel_is_enabled(self):
+        self.assertFalse(
+            behavior.startup_low_health_rest_allowed(
+                SimpleNamespace(startup_route_home_after_services=SimpleNamespace(x=1, y=2, z=3))
+            )
+        )
+        self.assertFalse(
+            behavior.startup_low_health_rest_allowed(
+                SimpleNamespace(startup_route_home_after_services=None, growth_fast_travel="route-home")
+            )
+        )
+        self.assertTrue(
+            behavior.startup_low_health_rest_allowed(
+                SimpleNamespace(startup_route_home_after_services=None, growth_fast_travel="off")
+            )
+        )
+
+    def test_should_startup_low_health_rest_allows_critical_route_home_recovery(self):
+        args = SimpleNamespace(
+            startup_route_home_after_services=SimpleNamespace(x=1, y=2, z=3),
+            growth_fast_travel="route-home",
+            low_health_rest_percent=30,
+            low_health_rest_resume_percent=75,
+            flee_health_percent=30,
+        )
+
+        self.assertTrue(
+            behavior.should_startup_low_health_rest(
+                args,
+                45,
+                75,
+                behavior.DummyBehaviorState.TravelToObjective,
+            )
+        )
+        self.assertFalse(
+            behavior.should_startup_low_health_rest(
+                args,
+                60,
+                75,
+                behavior.DummyBehaviorState.TravelToObjective,
+            )
+        )
+
     def test_party_pre_pull_home_stop_distance_keeps_leader_outside_aggro_until_ready(self):
         state = behavior.PartyState("leader", ["leader", "member"])
         state.update_leader(SimpleNamespace(session_id=1, player_object_id=10, health_percent=100, x=0, y=0, z=0, heading=0))
@@ -24020,6 +33748,24 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertEqual(action, "skill")
         self.assertEqual(client.skills, [(2, 1)])
+
+    def test_rotation_skips_melee_style_when_endurance_is_too_low(self):
+        client = FakeCombatClient()
+        client.endurance_percent = 6
+        args = SimpleNamespace(
+            attack_range=120,
+            spell_range=1500,
+            skill_indexes=[2],
+            skill_type=1,
+            use_skills=True,
+            allow_unvalidated_skills=True,
+            melee_style_endurance_floor=12,
+        )
+
+        action = behavior.perform_rotation_action(client, __import__("random").Random(1), args, "melee-burst", 80)
+
+        self.assertIsNone(action)
+        self.assertEqual(client.skills, [])
 
     def test_due_rotation_uses_skill_during_smooth_melee_engage(self):
         client = FakeCombatClient()
@@ -24134,6 +33880,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
     def test_combat_plan_sorts_heal_spells_by_heal_value_before_level(self):
         payload = {
+            "player": {"maxMana": 56},
             "skills": [],
             "spellLines": [
                 {
@@ -24154,6 +33901,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                                 "damage": 0,
                                 "range": 1500,
                                 "castTime": 2000,
+                                "power": 5,
                             },
                         },
                         {
@@ -24172,6 +33920,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                                 "damage": 0,
                                 "range": 1500,
                                 "castTime": 2500,
+                                "power": 29,
                             },
                         },
                     ]
@@ -24183,6 +33932,8 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertEqual([spell.name for spell in plan.heal_spells], ["Major Restoration", "Minor Refocillation"])
         self.assertEqual(plan.heal_spells[0].value, 330.0)
+        self.assertEqual(plan.heal_spells[0].power, 29)
+        self.assertEqual(plan.player_max_mana, 56)
 
     def test_combat_plan_parses_resurrection_and_crowd_control_spells(self):
         payload = {
@@ -24531,8 +34282,9 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                     "kind": "Specialization",
                     "useSkillIndex": 9,
                     "useSkillType": 0,
-                    "name": "Stealth",
-                    "internalId": "Stealth",
+                    "name": "스텔스",
+                    "keyName": "Stealth",
+                    "internalId": 403,
                     "level": 25,
                     "skillType": "Specialization",
                 }
@@ -25439,6 +35191,79 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual([ability.name for ability in plan.protect_abilities], ["Protect"])
         self.assertEqual([ability.name for ability in plan.party_protection_abilities], ["Guard", "Protect"])
 
+    def test_combat_plan_classifies_party_protection_abilities_from_spell_lines(self):
+        payload = {
+            "skills": [],
+            "spellLines": [
+                {
+                    "entries": [
+                        {
+                            "kind": "Ability",
+                            "useSkillIndex": 8,
+                            "useSkillType": 1,
+                            "name": "Guard",
+                            "id": 8,
+                            "internalId": "Guard",
+                            "level": 5,
+                            "ability": {"specLevelRequirement": 5, "spec": "Shield"},
+                        }
+                    ]
+                }
+            ],
+        }
+
+        plan = behavior.parse_combat_usable_plan(payload)
+
+        self.assertEqual([ability.name for ability in plan.guard_abilities], ["Guard"])
+        self.assertEqual([ability.name for ability in plan.party_protection_abilities], ["Guard"])
+
+    def test_combat_plan_classifies_localized_party_protection_abilities_by_internal_id(self):
+        payload = {
+            "skills": [
+                {
+                    "kind": "Ability",
+                    "useSkillIndex": 9,
+                    "useSkillType": 1,
+                    "name": "프로텍트",
+                    "id": 55,
+                    "internalId": 7,
+                    "level": 3,
+                    "ability": {"specLevelRequirement": 27, "spec": "ArmsmanCareer"},
+                },
+                {
+                    "kind": "Ability",
+                    "useSkillIndex": 10,
+                    "useSkillType": 1,
+                    "name": "인터셉트",
+                    "id": 148,
+                    "internalId": 9,
+                    "level": 0,
+                    "ability": {"specLevelRequirement": 12, "spec": "ArmsmanCareer"},
+                },
+                {
+                    "kind": "Ability",
+                    "useSkillIndex": 27,
+                    "useSkillType": 1,
+                    "name": "가드 III",
+                    "id": 45,
+                    "internalId": 8,
+                    "level": 3,
+                    "ability": {"specLevelRequirement": 15, "spec": "Shields"},
+                },
+            ],
+            "spellLines": [],
+        }
+
+        plan = behavior.parse_combat_usable_plan(payload)
+
+        self.assertEqual([ability.name for ability in plan.protect_abilities], ["프로텍트"])
+        self.assertEqual([ability.name for ability in plan.intercept_abilities], ["인터셉트"])
+        self.assertEqual([ability.name for ability in plan.guard_abilities], ["가드 III"])
+        self.assertEqual(
+            sorted(ability.category for ability in plan.party_protection_abilities),
+            ["guard", "intercept", "protect"],
+        )
+
     def test_party_protection_ability_targets_alive_support_member(self):
         client = FakeCombatClient()
         client.target_calls = []
@@ -25471,6 +35296,87 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertIsNone(behavior.choose_party_protection_target(state, exclude_name="tank"))
 
+    def test_party_protection_can_pre_guard_leader_without_pressure(self):
+        state = behavior.PartyState("leader", ["leader", "tank", "cleric"])
+        state.update_member_role("leader", "leader")
+        state.update_member_role("tank", "melee-basic")
+        state.update_member_role("cleric", "healer-support")
+        state.update_member("leader", SimpleNamespace(player_object_id=10, health_percent=100, x=100, y=200, z=300))
+        state.update_member("tank", SimpleNamespace(player_object_id=11, health_percent=100, x=120, y=220, z=300))
+        state.update_member("cleric", SimpleNamespace(player_object_id=12, health_percent=100, x=130, y=230, z=300))
+
+        target = behavior.choose_party_protection_target(
+            state,
+            exclude_name="tank",
+            allow_leader_without_pressure=True,
+        )
+
+        self.assertIsNotNone(target)
+        self.assertEqual(target["name"], "leader")
+        self.assertEqual(target["object_id"], 10)
+        self.assertNotIn("allow_stale_position_protection", target)
+
+    def test_party_protection_leader_fallback_allows_active_tank_with_leader_target(self):
+        state = behavior.PartyState("leader", ["leader", "tank"])
+        state.update_member_role("leader", "melee-burst")
+        state.update_member_role("tank", "melee-basic")
+        state.update_member("leader", SimpleNamespace(player_object_id=10, health_percent=100, x=100, y=200, z=300))
+        state.update_member("tank", SimpleNamespace(player_object_id=11, health_percent=100, x=120, y=220, z=300))
+        with state.lock:
+            state.active_tank_name = "tank"
+            state.leader_target_id = 99
+            state.leader_target_name = "moorlich"
+
+        self.assertTrue(
+            behavior.should_allow_leader_party_protection_fallback(
+                state,
+                "tank",
+                current_target=0,
+                current_target_intent="none",
+            )
+        )
+        target = behavior.choose_party_protection_target(
+            state,
+            exclude_name="tank",
+            allow_leader_without_pressure=behavior.should_allow_leader_party_protection_fallback(
+                state,
+                "tank",
+                current_target=0,
+                current_target_intent="none",
+            ),
+        )
+
+        self.assertIsNotNone(target)
+        self.assertEqual(target["name"], "leader")
+        self.assertEqual(target["object_id"], 10)
+        self.assertEqual(target["allow_stale_position_protection"], 1)
+
+    def test_party_protection_leader_fallback_allows_stale_position_attempt(self):
+        client = PathClient()
+        client.x = 10000
+        client.y = 10000
+        args = SimpleNamespace(party_protection_close_distance=220.0)
+        state = behavior.PartyState("leader", ["leader", "tank"])
+        state.update_member_role("leader", "melee-burst")
+        state.update_member_role("tank", "melee-basic")
+        state.update_member("leader", SimpleNamespace(player_object_id=10, health_percent=100, x=100, y=200, z=300))
+        state.update_member("tank", SimpleNamespace(player_object_id=11, health_percent=100, x=120, y=220, z=300))
+        with state.lock:
+            state.active_tank_name = "tank"
+            state.leader_target_id = 99
+            state.leader_target_name = "moorlich"
+
+        target = behavior.choose_party_protection_target(
+            state,
+            exclude_name="tank",
+            allow_leader_without_pressure=True,
+        )
+
+        self.assertIsNotNone(target)
+        self.assertEqual(target["name"], "leader")
+        self.assertTrue(behavior.party_protection_target_in_close_range(client, args, target))
+        self.assertFalse(behavior.should_approach_party_protection_target(client, args, target))
+
     def test_party_protection_ability_targets_focused_full_health_support_member(self):
         state = behavior.PartyState("tank", ["tank", "cleric", "dps"])
         state.update_member_role("tank", "melee-basic")
@@ -25489,6 +35395,84 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertIsNotNone(target)
         self.assertEqual(target["name"], "cleric")
 
+    def test_active_tank_can_use_party_protection_when_support_is_focused(self):
+        args = SimpleNamespace(
+            party_protection_interval=20.0,
+            party_focus_target_max_age=12.0,
+        )
+        combat_plan = behavior.CombatUsablePlan(
+            party_protection_abilities=[
+                behavior.UsableAbilityRef(use_skill_index=8, use_skill_type=1, name="Guard", level=5, category="guard")
+            ],
+        )
+        state = behavior.PartyState("tank", ["tank", "cleric"])
+        state.update_member_role("tank", "melee-burst")
+        state.update_member_role("cleric", "healer-support")
+        state.update_member("tank", SimpleNamespace(player_object_id=10, health_percent=72, x=0, y=0, z=0))
+        state.update_member("cleric", SimpleNamespace(player_object_id=11, health_percent=100, x=0, y=0, z=0))
+        with state.lock:
+            state.active_tank_name = "tank"
+            state.leader_target_id = 99
+            state.leader_target_name = "envy drakeling"
+            state.leader_target_engaged_at = 90.0
+            state.leader_target_focus_name = "cleric"
+            state.leader_target_focus_updated_at = 100.0
+
+        self.assertTrue(
+            behavior.should_use_party_protection_ability(
+                args,
+                combat_plan,
+                state,
+                action_rotation="melee-burst",
+                is_party_leader=True,
+                party_member_name="tank",
+                current_target=99,
+                behavior_state=behavior.DummyBehaviorState.HuntObjective,
+                now=109.0,
+                next_party_protection=100.0,
+                current_target_intent=behavior.TargetIntent.objective,
+            )
+        )
+        target = behavior.choose_party_protection_target(
+            state,
+            exclude_name="tank",
+            focus_now=109.0,
+            focus_max_age=12.0,
+        )
+        self.assertIsNotNone(target)
+        self.assertEqual(target["name"], "cleric")
+
+    def test_party_protection_ignores_stale_focus_member_for_target_selection(self):
+        state = behavior.PartyState("tank", ["tank", "cleric", "dps"])
+        state.update_member_role("tank", "melee-basic")
+        state.update_member_role("cleric", "healer-support")
+        state.update_member_role("dps", "melee-burst")
+        state.update_member("tank", SimpleNamespace(player_object_id=10, health_percent=100, x=0, y=0, z=0))
+        state.update_member("cleric", SimpleNamespace(player_object_id=11, health_percent=100, x=1000, y=0, z=0))
+        state.update_member("dps", SimpleNamespace(player_object_id=12, health_percent=100, x=200, y=0, z=0))
+        with state.lock:
+            state.leader_target_id = 99
+            state.leader_target_name = "water beetle"
+            state.leader_target_focus_name = "cleric"
+            state.leader_target_focus_updated_at = 100.0
+
+        recent_target = behavior.choose_party_protection_target(
+            state,
+            exclude_name="tank",
+            focus_now=104.9,
+            focus_max_age=5.0,
+        )
+        stale_target = behavior.choose_party_protection_target(
+            state,
+            exclude_name="tank",
+            focus_now=106.1,
+            focus_max_age=5.0,
+        )
+
+        self.assertIsNotNone(recent_target)
+        self.assertEqual(recent_target["name"], "cleric")
+        self.assertIsNone(stale_target)
+
     def test_party_protection_approaches_member_before_using_close_range_guard(self):
         client = PathClient()
         args = SimpleNamespace(
@@ -25496,6 +35480,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             party_protection_close_distance=220.0,
             movement_speed=None,
             movement_update_interval=0.0,
+            nav_api_url="",
         )
         target = {"name": "cleric", "object_id": 11, "x": 1000, "y": 0, "z": 0}
 
@@ -25963,6 +35948,14 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
 
         self.assertEqual(state.managed_invite_names(), ["dummy"])
 
+    def test_party_state_next_managed_invite_name_rotates_one_member_at_a_time(self):
+        state = behavior.PartyState("leader", ["leader", "dummy1", "dummy2", "dummy3"])
+
+        self.assertEqual(state.next_managed_invite_name(), "dummy1")
+        self.assertEqual(state.next_managed_invite_name(), "dummy2")
+        self.assertEqual(state.next_managed_invite_name(), "dummy3")
+        self.assertEqual(state.next_managed_invite_name(), "dummy1")
+
     def test_build_party_states_registers_configured_external_players_as_support_only(self):
         args = SimpleNamespace(
             party_size=2,
@@ -26072,6 +36065,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             party_follow_step=360.0,
             movement_speed=280.0,
             movement_update_interval=0.1,
+            nav_api_url="",
         )
         target = {"name": "RealPlayer", "object_id": 90, "x": 2500, "y": 100, "z": 20}
 
@@ -26084,7 +36078,13 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 behavior_state=behavior.DummyBehaviorState.HuntObjective,
             )
         )
-        outcome = behavior.move_towards_party_buff_target(client, args, SimpleNamespace(), {}, target)
+        outcome = behavior.move_towards_party_buff_target(
+            client,
+            args,
+            behavior.PathMovementState(None, 1, None),
+            {},
+            target,
+        )
 
         self.assertTrue(outcome.moved)
         self.assertEqual(attack_modes, [False])
@@ -27138,6 +37138,46 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(client.position_updates[-1], (0.0, True))
         self.assertEqual(client.spell_calls[-1]["speed"], 0.0)
 
+    def test_rotation_validated_self_heal_downranks_when_mana_is_low(self):
+        client = FakeCombatClient()
+        client.health_percent = 40
+        client.mana_percent = 20
+        args = SimpleNamespace(
+            attack_range=120,
+            spell_range=1500,
+            combat_plan_spell_pool=3,
+            healer_self_health_percent=65,
+            support_spell_chance=0.0,
+            allow_unvalidated_spells=False,
+            stationary_cast_actions=True,
+        )
+        plan = behavior.CombatUsablePlan(
+            heal_spells=[
+                behavior.UsableSpellRef(
+                    line_index=7,
+                    spell_level=10,
+                    name="Greater Heal",
+                    level=10,
+                    value=145.0,
+                    power=40,
+                ),
+                behavior.UsableSpellRef(
+                    line_index=7,
+                    spell_level=5,
+                    name="Minor Heal",
+                    level=5,
+                    value=31.0,
+                    power=5,
+                ),
+            ],
+            player_max_mana=100,
+        )
+
+        action = behavior.perform_rotation_action(client, __import__("random").Random(1), args, "healer-support", 800, plan)
+
+        self.assertEqual(action, "validated_self_heal_spell")
+        self.assertEqual(client.spells, [(5, 7)])
+
     def test_rotation_raw_self_heal_marks_target_in_view(self):
         client = FakeCombatClient()
         client.health_percent = 40
@@ -27352,6 +37392,377 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 ranged_safety_backoff_due=True,
             )
         )
+
+    def test_companion_status_reply_reports_role_mode_trust_and_ai_features(self):
+        context = behavior.build_companion_chat_status_context(
+            role="healer-support",
+            command_mode=behavior.CompanionCommandMode.stay,
+            health_percent=83,
+            trust=91,
+            fatigue=12,
+            guide_enabled=True,
+            free_chat_enabled=True,
+        )
+
+        reply = behavior.choose_companion_chat_reply(
+            "용병아 상태 알려줘",
+            [],
+            random.Random(1),
+            role="healer-support",
+            status_context=context,
+        )
+
+        self.assertIn("치유/해제", reply)
+        self.assertIn("대기", reply)
+        self.assertIn("충성", reply)
+        self.assertIn("안내/대화", reply)
+
+    def test_companion_record_reply_summarizes_current_contract_metrics(self):
+        context = behavior.build_companion_chat_status_context(
+            role="dps",
+            command_mode=behavior.CompanionCommandMode.defensive,
+            combat_metrics=[
+                behavior.CombatMetric(1, "wolf", 5, "target_removed", 3.0),
+                behavior.CombatMetric(2, "bear", 6, "flee", 4.0),
+            ],
+            action_counts={"party_heal": 2, "party_resurrect": 1},
+        )
+
+        reply = behavior.choose_companion_chat_reply(
+            "용병 기록 보여줘",
+            [],
+            random.Random(1),
+            role="dps",
+            status_context=context,
+        )
+
+        self.assertIn("교전 2회", reply)
+        self.assertIn("마무리 1회", reply)
+        self.assertIn("지원 3회", reply)
+        self.assertIn("후퇴 1회", reply)
+
+    def test_companion_post_combat_reflection_uses_personality_and_trust(self):
+        reply = behavior.companion_post_combat_reflection_line(
+            "calm_support",
+            "target_removed",
+            trust=92,
+            target_name="green snake",
+        )
+
+        self.assertIn("green snake", reply)
+        self.assertIn("리더 판단 좋았습니다", reply)
+
+    def test_critical_health_holds_nearly_finished_required_target(self):
+        args = SimpleNamespace(
+            flee_critical_health_percent=20,
+            required_target_tank_commit_health_percent=10,
+            require_target_name="mudman",
+            required_target_api_name="",
+            healer_focused_self_health_percent=0,
+            party_healer_escape_health_percent=0,
+            preserve_party_target_on_loss=False,
+        )
+        active_combat = {
+            "target_id": 6007,
+            "target_name": "mudman",
+            "target_max_health": 79,
+            "damage_done": 69,
+        }
+
+        self.assertFalse(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=11,
+                current_target=6007,
+                current_target_intent=behavior.TargetIntent.objective,
+                action_rotation="melee-basic",
+                active_combat=active_combat,
+            )
+        )
+
+    def test_critical_health_holds_nearly_finished_preferred_target(self):
+        args = SimpleNamespace(
+            flee_critical_health_percent=20,
+            required_target_tank_commit_health_percent=10,
+            require_target_name="",
+            required_target_api_name="",
+            prefer_target_name="emerald snake",
+            healer_focused_self_health_percent=0,
+            party_healer_escape_health_percent=0,
+            preserve_party_target_on_loss=False,
+        )
+        active_combat = {
+            "target_id": 23148,
+            "target_name": "emerald snake",
+            "target_max_health": 100,
+            "damage_done": 84,
+        }
+
+        self.assertFalse(
+            behavior.required_target_nearly_finished(
+                args,
+                active_combat,
+                remaining_health_percent=20.0,
+            )
+        )
+        self.assertTrue(
+            behavior.required_target_nearly_finished(
+                args,
+                active_combat,
+                remaining_health_percent=20.0,
+                include_preferred=True,
+            )
+        )
+        self.assertFalse(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=11,
+                current_target=23148,
+                current_target_intent=behavior.TargetIntent.objective,
+                action_rotation="melee-basic",
+                active_combat=active_combat,
+            )
+        )
+
+    def test_critical_health_holds_nearly_finished_target_when_commit_floor_exceeds_critical(self):
+        args = SimpleNamespace(
+            flee_critical_health_percent=45,
+            required_target_tank_commit_health_percent=55,
+            require_target_name="vein spider",
+            required_target_api_name="",
+            healer_focused_self_health_percent=0,
+            party_healer_escape_health_percent=0,
+            preserve_party_target_on_loss=False,
+        )
+        active_combat = {
+            "target_id": 24076,
+            "target_name": "vein spider",
+            "target_max_health": 97,
+            "damage_done": 94,
+        }
+
+        self.assertFalse(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=33,
+                current_target=24076,
+                current_target_intent=behavior.TargetIntent.objective,
+                action_rotation="melee-basic",
+                active_combat=active_combat,
+            )
+        )
+        self.assertTrue(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=25,
+                current_target=24076,
+                current_target_intent=behavior.TargetIntent.objective,
+                action_rotation="melee-basic",
+                active_combat=active_combat,
+            )
+        )
+
+    def test_critical_health_still_drops_when_required_target_not_nearly_finished(self):
+        args = SimpleNamespace(
+            flee_critical_health_percent=20,
+            required_target_tank_commit_health_percent=10,
+            require_target_name="mudman",
+            required_target_api_name="",
+            healer_focused_self_health_percent=0,
+            party_healer_escape_health_percent=0,
+            preserve_party_target_on_loss=False,
+        )
+        active_combat = {
+            "target_id": 6007,
+            "target_name": "mudman",
+            "target_max_health": 79,
+            "damage_done": 48,
+        }
+
+        self.assertTrue(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=11,
+                current_target=6007,
+                current_target_intent=behavior.TargetIntent.objective,
+                action_rotation="melee-basic",
+                active_combat=active_combat,
+            )
+        )
+
+    def test_critical_health_holds_nearly_finished_target_from_observed_health_when_damage_counter_stale(self):
+        args = SimpleNamespace(
+            flee_critical_health_percent=45,
+            required_target_tank_commit_health_percent=55,
+            require_target_name="black mauler juvenile",
+            required_target_api_name="",
+            prefer_target_name="",
+            healer_focused_self_health_percent=0,
+            party_healer_escape_health_percent=0,
+            preserve_party_target_on_loss=False,
+        )
+        active_combat = {
+            "target_id": 9957,
+            "target_name": "black mauler juvenile",
+            "target_max_health": 97,
+            "target_health": 4,
+            "damage_done": 0,
+        }
+
+        self.assertTrue(
+            behavior.required_target_nearly_finished(
+                args,
+                active_combat,
+                remaining_health_percent=20.0,
+                include_preferred=True,
+            )
+        )
+        self.assertFalse(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=43,
+                current_target=9957,
+                current_target_intent=behavior.TargetIntent.objective,
+                action_rotation="melee-basic",
+                active_combat=active_combat,
+            )
+        )
+
+    def test_critical_health_holds_finishable_required_target_under_thirty_percent(self):
+        args = SimpleNamespace(
+            flee_critical_health_percent=45,
+            required_target_tank_commit_health_percent=55,
+            require_target_name="wood-eater worker",
+            required_target_api_name="",
+            prefer_target_name="",
+            healer_focused_self_health_percent=0,
+            party_healer_escape_health_percent=0,
+            preserve_party_target_on_loss=False,
+        )
+        active_combat = {
+            "target_id": 24311,
+            "target_name": "wood-eater worker",
+            "target_max_health": 79,
+            "target_health": 17,
+            "damage_done": 0,
+        }
+
+        self.assertTrue(
+            behavior.required_target_nearly_finished(
+                args,
+                active_combat,
+                remaining_health_percent=30.0,
+                include_preferred=True,
+            )
+        )
+        self.assertFalse(
+            behavior.should_force_drop_aggro_for_critical_health(
+                args,
+                behavior.DummyBehaviorState.HuntObjective,
+                health_percent=45,
+                current_target=24311,
+                current_target_intent=behavior.TargetIntent.objective,
+                action_rotation="melee-basic",
+                active_combat=active_combat,
+            )
+        )
+
+    def test_active_combat_observation_accepts_api_camel_case_health(self):
+        active_combat = {
+            "target_id": 6007,
+            "target_name": "mudman",
+            "target_level": 4,
+            "damage_done": 69,
+        }
+        observed = SimpleNamespace(
+            x=346409,
+            y=471831,
+            z=6082,
+            health=79,
+            maxHealth=79,
+            healthPercent=100,
+        )
+
+        behavior.update_active_combat_target_observation(active_combat, observed)
+
+        self.assertEqual(active_combat["target_x"], 346409)
+        self.assertEqual(active_combat["target_max_health"], 79)
+        self.assertEqual(active_combat["target_health_percent"], 100.0)
+        self.assertTrue(
+            behavior.required_target_nearly_finished(
+                SimpleNamespace(require_target_name="mudman", required_target_api_name=""),
+                active_combat,
+                remaining_health_percent=20.0,
+            )
+        )
+
+    def test_worker_join_timeout_seconds_prefers_round_wall_budget(self):
+        args = SimpleNamespace(
+            round_wall_timeout_seconds=200.0,
+            hold=150.0,
+            safe_exit_max_seconds=90.0,
+            startup_delay=4.0,
+            graceful_shutdown_timeout=25.0,
+            rounds=1,
+            round_delay=0.0,
+            ramp_up=5.0,
+            concurrency=2,
+        )
+
+        timeout = behavior.worker_join_timeout_seconds(args, worker_count=2)
+
+        self.assertAlmostEqual(timeout, 327.5)
+
+    def test_worker_join_timeout_seconds_falls_back_to_hold_and_safe_exit_budget(self):
+        args = SimpleNamespace(
+            round_wall_timeout_seconds=0.0,
+            hold=150.0,
+            safe_exit_max_seconds=90.0,
+            startup_delay=4.0,
+            graceful_shutdown_timeout=25.0,
+            rounds=2,
+            round_delay=3.0,
+            ramp_up=6.0,
+            concurrency=3,
+        )
+
+        timeout = behavior.worker_join_timeout_seconds(args, worker_count=3)
+
+        self.assertGreater(timeout, 500.0)
+
+    def test_worker_join_timeout_seconds_uses_full_graceful_shutdown_budget(self):
+        args = SimpleNamespace(
+            round_wall_timeout_seconds=350.0,
+            hold=0.0,
+            safe_exit_max_seconds=90.0,
+            startup_delay=0.0,
+            graceful_shutdown_timeout=25.0,
+            rounds=1,
+            round_delay=0.0,
+            ramp_up=0.0,
+            concurrency=1,
+        )
+
+        timeout = behavior.worker_join_timeout_seconds(args, worker_count=1)
+
+        self.assertEqual(timeout, 475.0)
+
+    def test_death_recovery_escape_flee_duration_is_shorter_than_full_flee_window(self):
+        args = SimpleNamespace(
+            flee_duration=24.0,
+            post_release_rest=3.0,
+            low_health_rest_min=6.0,
+        )
+
+        duration = behavior.death_recovery_escape_flee_duration(args)
+
+        self.assertEqual(duration, 8.0)
 
 
 if __name__ == "__main__":

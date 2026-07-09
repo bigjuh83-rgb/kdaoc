@@ -93,7 +93,12 @@ namespace DOL.GS.Tests
                     Assert.That(result.ProviderName, Is.EqualTo("main-local"));
                     Assert.That(result.Story.StructureRepaired, Is.True);
                     Assert.That(result.Story.NarrativeScenes, Has.Count.GreaterThanOrEqualTo(3));
-                    Assert.That(result.Story.PresentationBeats, Has.Count.GreaterThanOrEqualTo(2));
+                    Assert.That(result.Story.PresentationBeats, Has.Count.GreaterThanOrEqualTo(4));
+                    Assert.That(result.Story.PresentationBeats.Select(beat => beat.CinematicAction).Where(action => !string.IsNullOrWhiteSpace(action)).Distinct(StringComparer.OrdinalIgnoreCase).Count(), Is.GreaterThanOrEqualTo(3));
+                    Assert.That(result.Story.PresentationBeats.Select(beat => beat.SceneRole).Where(role => !string.IsNullOrWhiteSpace(role)).Distinct(StringComparer.OrdinalIgnoreCase).Count(), Is.GreaterThanOrEqualTo(3));
+                    Assert.That(result.Story.PresentationBeats.Select(beat => beat.Formation).Where(formation => !string.IsNullOrWhiteSpace(formation)).Distinct(StringComparer.OrdinalIgnoreCase).Count(), Is.GreaterThanOrEqualTo(2));
+                    Assert.That(result.Story.PresentationBeats.Any(beat => beat.ActorCount >= 4), Is.True);
+                    Assert.That(result.Story.PresentationBeats.Any(beat => beat.DelayMs > 0), Is.True);
                     Assert.That(result.Story.Quality.Reasons, Does.Contain("story_structure_repaired"));
                     Assert.That(result.Story.QualityScore, Is.GreaterThanOrEqualTo(75));
                 });
@@ -382,6 +387,123 @@ namespace DOL.GS.Tests
                 Assert.That(quality.Reasons, Does.Contain("generic_scaffold"));
                 Assert.That(quality.Reasons, Does.Contain("missing_specific_local_anchor"));
             });
+        }
+
+        [Test]
+        public void EvaluateQuality_CapsScoreForRepeatedTargetPhrasingWithoutBlockingCache()
+        {
+            DynamicQuestStoryText story = new()
+            {
+                Title = "숲길에 남은 같은 발자국",
+                OfferText = "{{start_npc}}은 {{realm}} 수도원 울타리의 찢긴 끈을 보여 주며 {{target}} 위협을 막아 달라고 말했다.",
+                ProgressText = "{{realm}} 수도원 울타리 주변에서 {{target}} 흔적과 {{target}} 울음이 같은 길로 이어진다.",
+                FinishText = "{{target}} 위협이 꺾이자 {{start_npc}}은 {{realm}} 길목의 횃불을 다시 세웠다.",
+                NarrativeScenes = new[]
+                {
+                    new DynamicQuestNarrativeScene
+                    {
+                        NodeId = "talk",
+                        SceneType = "Intro",
+                        Title = "찢긴 끈의 증언",
+                        Body = "{{start_npc}}은 {{realm}} 수도원 울타리 앞의 젖은 흙을 짚었다. {{target}} 발자국은 끊기지 않았고, {{target}} 냄새는 밤새 같은 문턱에 머물렀다.",
+                        JournalEntry = "{{start_npc}}에게서 {{realm}} 수도원 울타리 주변의 {{target}} 위협을 확인해 달라는 부탁을 받았다.",
+                        Mood = "ominous",
+                        RevealPolicy = "FirstSeenOnly"
+                    },
+                    new DynamicQuestNarrativeScene
+                    {
+                        NodeId = "explore",
+                        SceneType = "Discovery",
+                        Title = "돌아온 흔적",
+                        Body = "성벽 그림자와 수도원 종소리 사이로 {{target}} 흔적이 되돌아온다. 길목의 사람들은 {{target}} 이름을 낮게 부르며 문을 닫는다.",
+                        JournalEntry = "{{realm}} 길목에서 {{target}}가 같은 길을 반복해 지나간 흔적을 찾았다.",
+                        Mood = "urgent",
+                        RevealPolicy = "FirstSeenOnly"
+                    },
+                    new DynamicQuestNarrativeScene
+                    {
+                        NodeId = "complete",
+                        SceneType = "Completion",
+                        Title = "다시 선 횃불",
+                        Body = "{{target}} 위협이 물러나자 울타리 옆 횃불이 다시 곧게 섰다. {{realm}}의 밤길은 아직 조심스럽지만, 오늘의 공포는 한 번 꺾였다.",
+                        JournalEntry = "{{target}} 위협을 제압했고 {{realm}} 수도원 울타리 주변의 길이 다시 열렸다.",
+                        Mood = "relieved",
+                        RevealPolicy = "FirstSeenOnly"
+                    }
+                },
+                PresentationBeats = new[]
+                {
+                    new DynamicQuestPresentationBeat
+                    {
+                        NodeId = "talk",
+                        Trigger = "OnNpcInteract",
+                        Speaker = "StartNpc",
+                        Text = "저 울타리를 보십시오. {{target}}가 같은 자리로 돌아왔습니다.",
+                        Emotion = "fear",
+                        Emote = "Shiver"
+                    },
+                    new DynamicQuestPresentationBeat
+                    {
+                        NodeId = "explore",
+                        Trigger = "OnExplore",
+                        Speaker = "Companion",
+                        Text = "{{target}} 흔적이 수도원 종소리 쪽으로 이어집니다.",
+                        Emotion = "suspicion",
+                        Emote = "Point"
+                    },
+                    new DynamicQuestPresentationBeat
+                    {
+                        NodeId = "complete",
+                        Trigger = "OnComplete",
+                        Speaker = "StartNpc",
+                        Text = "오늘 밤은 사람들이 서로의 이름을 부르며 돌아올 수 있겠군요.",
+                        Emotion = "gratitude",
+                        Emote = "Bow"
+                    }
+                }
+            };
+
+            DynamicQuestStoryQuality quality = DynamicQuestStoryService.EvaluateQualityDetailsForTest(Request(), story);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(quality.TotalScore, Is.EqualTo(94));
+                Assert.That(quality.DiversityScore, Is.EqualTo(5));
+                Assert.That(quality.Reasons, Does.Contain("generic_repetition"));
+                Assert.That(DynamicQuestStoryService.IsStoryQualityAcceptableForCache(Request(), story), Is.True);
+            });
+        }
+
+        [Test]
+        public void IsStoryQualityAcceptableForCache_RejectsHighScoreStoryWithoutJournalReadyScenes()
+        {
+            DynamicQuestStoryText story = CacheReadyStory();
+            story.NarrativeScenes = story.NarrativeScenes
+                .Select(scene => new DynamicQuestNarrativeScene
+                {
+                    NodeId = scene.NodeId,
+                    SceneType = scene.SceneType,
+                    Title = scene.Title,
+                    Body = scene.Body,
+                    JournalEntry = string.Empty,
+                    Mood = scene.Mood,
+                    RevealPolicy = scene.RevealPolicy
+                })
+                .ToArray();
+
+            bool acceptable = DynamicQuestStoryService.IsStoryQualityAcceptableForCache(Request(), story);
+
+            Assert.That(acceptable, Is.False);
+        }
+
+        [Test]
+        public void IsStoryQualityAcceptableForCache_AcceptsJournalReadyCinematicStory()
+        {
+            DynamicQuestStoryText story = CacheReadyStory();
+
+            bool acceptable = DynamicQuestStoryService.IsStoryQualityAcceptableForCache(Request(), story);
+
+            Assert.That(acceptable, Is.True);
         }
 
         [Test]
@@ -805,6 +927,35 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void EvaluateQuality_RejectsRepeatedSentenceOpenings()
+        {
+            DynamicQuestStoryText story = Story();
+            story.NarrativeScenes = story.NarrativeScenes.Concat(new[]
+            {
+                new DynamicQuestNarrativeScene
+                {
+                    NodeId = "choice",
+                    SceneType = "Choice",
+                    Title = "유품의 선택",
+                    Body = "유품을 조용히 돌려주면 한 사람은 구원받지만, 진짜 주인의 이름은 묻힌다. 유품을 조용히 돌려주면 피난길은 안전해지지만, 장부를 연 손은 다시 숨는다.",
+                    JournalEntry = "{{realm}} 숲 가장자리에서 {{target}} 위협을 제압한 뒤 유품을 어떻게 처리할지 결정해야 한다.",
+                    Mood = "mysterious",
+                    RevealPolicy = "FirstSeenOnly"
+                }
+            }).ToArray();
+
+            DynamicQuestStoryQuality quality = DynamicQuestStoryService.EvaluateQualityDetailsForTest(Request(), story);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(quality.TotalScore, Is.LessThan(75));
+                Assert.That(quality.DiversityScore, Is.LessThanOrEqualTo(2));
+                Assert.That(quality.Reasons, Does.Contain("repetitive_sentence_opening"));
+                Assert.That(DynamicQuestStoryService.IsStoryQualityAcceptableForCache(Request(), story), Is.False);
+            });
+        }
+
+        [Test]
         public void OpenAiPrompt_DoesNotSendDefaultScaffoldSeedAsPositiveInstruction()
         {
             string payload = DynamicQuestStoryService.BuildOpenAiRequestJsonForTest("model-test", Request());
@@ -814,6 +965,36 @@ namespace DOL.GS.Tests
                 Assert.That(payload, Does.Not.Contain("지역 분위기에 맞는 짧은 처치 의뢰"));
                 Assert.That(payload, Does.Contain("story_seed"));
                 Assert.That(payload, Does.Contain("현재 세계 바인딩"));
+            });
+        }
+
+        [Test]
+        public void EvaluateQuality_RejectsAwkwardKoreanParticleJoins()
+        {
+            DynamicQuestStoryText story = Story();
+            story.OfferText = "마을 외곽 길목에 남은 안쪽에서 긁힌 경계석 조각와 단서 '안쪽에서 긁힌 경계석 조각'와 Talan와 되돌아온 발자국은 {{target}} 위협 뒤의 사건을 보여 줍니다.";
+            story.ProgressText = "목격자 'Nessa'이 단서를 들어 올리고, 경비는 Harrow Vale과 대치합니다.";
+            story.NarrativeScenes = story.NarrativeScenes.Concat(new[]
+            {
+                new DynamicQuestNarrativeScene
+                {
+                    NodeId = "complete",
+                    SceneType = "Completion",
+                    Title = "증언의 끝",
+                    Body = "경계석 조각와 목격자의 이름이 같은 기록에 남으며, {{target}} 위협이 끝난 뒤에도 길목의 불안은 오래 감시됩니다.",
+                    JournalEntry = "마을 외곽 길목에서 {{target}} 위협을 제압했고 경계석 조각와 증언을 남겼다.",
+                    Mood = "hopeful",
+                    RevealPolicy = "FirstSeenOnly"
+                }
+            }).ToArray();
+
+            DynamicQuestStoryQuality quality = DynamicQuestStoryService.EvaluateQualityDetailsForTest(Request(), story);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(quality.Reasons, Does.Contain("awkward_korean_particle"));
+                Assert.That(quality.TotalScore, Is.LessThan(75));
+                Assert.That(DynamicQuestStoryService.IsStoryQualityAcceptableForCache(Request(), story), Is.False);
             });
         }
 
@@ -875,7 +1056,12 @@ namespace DOL.GS.Tests
                   "speaker": "StartNpc",
                   "text": "저 소리를 들으셨습니까?",
                   "emotion": "fear",
-                  "emote": "Shiver"
+                  "emote": "Shiver",
+                  "cinematic_action": "ambush_reveal",
+                  "scene_role": "ambush_wave",
+                  "formation": "ambush",
+                  "actor_count": 12,
+                  "delay_ms": 900
                 }
               ]
             }
@@ -889,6 +1075,11 @@ namespace DOL.GS.Tests
                 Assert.That(parsed.PresentationBeats, Has.Count.EqualTo(1));
                 Assert.That(parsed.NarrativeScenes[0].Body, Does.Contain("울타리"));
                 Assert.That(parsed.PresentationBeats[0].Emote, Is.EqualTo("Shiver"));
+                Assert.That(parsed.PresentationBeats[0].CinematicAction, Is.EqualTo("ambush_reveal"));
+                Assert.That(parsed.PresentationBeats[0].SceneRole, Is.EqualTo("ambush_wave"));
+                Assert.That(parsed.PresentationBeats[0].Formation, Is.EqualTo("ambush"));
+                Assert.That(parsed.PresentationBeats[0].ActorCount, Is.EqualTo(12));
+                Assert.That(parsed.PresentationBeats[0].DelayMs, Is.EqualTo(900));
             });
         }
 
@@ -901,8 +1092,13 @@ namespace DOL.GS.Tests
             {
                 Assert.That(payload, Does.Contain("narrative_scenes"));
                 Assert.That(payload, Does.Contain("presentation_beats"));
+                Assert.That(payload, Does.Contain("cinematic_action"));
+                Assert.That(payload, Does.Contain("actor_count"));
+                Assert.That(payload, Does.Contain("delay_ms"));
+                Assert.That(payload, Does.Contain("warning"));
+                Assert.That(payload, Does.Contain("anxious"));
                 Assert.That(payload, Does.Contain("\"minItems\":3"));
-                Assert.That(payload, Does.Contain("\"minItems\":2"));
+                Assert.That(payload, Does.Contain("\"minItems\":4"));
                 Assert.That(payload, Does.Contain("\"max_tokens\":2048"));
                 Assert.That(payload, Does.Contain("Example JSON shape"));
                 Assert.That(payload, Does.Contain("\\\"narrative_scenes\\\":[{\\\"node_id\\\":\\\"talk\\\""));
@@ -912,8 +1108,16 @@ namespace DOL.GS.Tests
                 Assert.That(payload, Does.Not.Contain("\\\"mood\\\":\\\"uneasy\\\""));
                 Assert.That(payload, Does.Not.Contain("\\\"emote\\\":\\\"Thank\\\""));
                 Assert.That(payload, Does.Contain("Do not output raw emote ids"));
-                Assert.That(payload, Does.Contain("\"enum\":[\"choice\",\"complete\",\"explore\",\"kill\",\"return\",\"talk\"]"));
-                Assert.That(payload, Does.Contain("\"enum\":[\"OnChoiceShown\",\"OnComplete\",\"OnNodeEnter\",\"OnNpcInteract\"]"));
+                Assert.That(payload, Does.Contain("Do not invent model numbers"));
+                Assert.That(payload, Does.Contain("model:label:category"));
+                Assert.That(payload, Does.Contain("clue means tracks/evidence/path markers"));
+                Assert.That(payload, Does.Contain("record means tomes/journals/written warnings"));
+                Assert.That(payload, Does.Contain("relic means ritual stones/pendants/totems/realm symbols"));
+                Assert.That(payload, Does.Contain("flame means torches/campfires/omens/fresh danger"));
+                Assert.That(payload, Does.Contain("weapon means arrows/broken weapons/combat aftermath"));
+                Assert.That(payload, Does.Contain("structure means doors/gates/portals/keeps/relic pads"));
+                Assert.That(payload, Does.Contain("\"enum\":[\"choice\",\"complete\",\"explore\",\"kill\",\"observe_signal\",\"return\",\"talk\"]"));
+                Assert.That(payload, Does.Contain("\"enum\":[\"OnAccept\",\"OnChoiceSelected\",\"OnChoiceShown\",\"OnComplete\",\"OnExplore\",\"OnKill\",\"OnNodeEnter\",\"OnNpcInteract\",\"OnWorldSignal\"]"));
                 Assert.That(payload, Does.Contain("\"enum\":[\"Angry\",\"Bow\",\"Cheer\",\"Cower\",\"Cry\",\"No\",\"Point\",\"Ponder\",\"Salute\",\"Shiver\",\"Smile\"]"));
             });
         }
@@ -929,7 +1133,7 @@ namespace DOL.GS.Tests
                 Assert.That(payload, Does.Contain("\"max_output_tokens\":2048"));
                 Assert.That(payload, Does.Contain("\"format\""));
                 Assert.That(payload, Does.Contain("\"json_schema\""));
-                Assert.That(payload, Does.Contain("\"enum\":[\"choice\",\"complete\",\"explore\",\"kill\",\"return\",\"talk\"]"));
+                Assert.That(payload, Does.Contain("\"enum\":[\"choice\",\"complete\",\"explore\",\"kill\",\"observe_signal\",\"return\",\"talk\"]"));
             });
         }
 
@@ -1343,6 +1547,89 @@ namespace DOL.GS.Tests
                         Text = "{{target}} 소식 때문에 모두가 조용히 문을 걸어 잠그고 있습니다.",
                         Emotion = "fear",
                         Emote = "Shiver"
+                    }
+                }
+            };
+        }
+
+        private static DynamicQuestStoryText CacheReadyStory()
+        {
+            return new DynamicQuestStoryText
+            {
+                Title = "수도원 길목의 찢긴 보호끈",
+                OfferText = "{{start_npc}}은 {{realm}} 수도원 길목에서 발견된 찢긴 보호끈을 보여 주며 {{target}} 위협이 마을 가까이 왔다고 말합니다.",
+                ProgressText = "{{realm}} 수도원 길목의 젖은 흙과 부러진 표식을 따라가 {{target}} 위협을 끊어야 합니다.",
+                FinishText = "{{target}} 위협이 사라지자 {{start_npc}}은 {{realm}} 길목의 횃불을 다시 세웠습니다.",
+                NarrativeScenes = new[]
+                {
+                    new DynamicQuestNarrativeScene
+                    {
+                        NodeId = "talk",
+                        SceneType = "Intro",
+                        Title = "찢긴 보호끈",
+                        Body = "{{start_npc}}은 {{realm}} 수도원 길목의 젖은 흙을 짚으며 {{target}}의 발자국이 마을 울타리까지 번지고 있다고 말합니다.",
+                        JournalEntry = "{{start_npc}}에게서 {{realm}} 수도원 길목의 {{target}} 위협을 조사해 달라는 부탁을 받았다.",
+                        Mood = "ominous",
+                        RevealPolicy = "FirstSeenOnly"
+                    },
+                    new DynamicQuestNarrativeScene
+                    {
+                        NodeId = "explore",
+                        SceneType = "Discovery",
+                        Title = "되돌아온 발자국",
+                        Body = "부러진 표식과 젖은 흙 사이로 {{target}} 흔적이 같은 방향으로 되돌아옵니다. 길목의 침묵은 다음 싸움이 가까웠다는 증거처럼 남습니다.",
+                        JournalEntry = "{{realm}} 수도원 길목에서 {{target}}가 같은 길을 반복해 지나간 흔적을 찾았다.",
+                        Mood = "urgent",
+                        RevealPolicy = "FirstSeenOnly"
+                    },
+                    new DynamicQuestNarrativeScene
+                    {
+                        NodeId = "complete",
+                        SceneType = "Completion",
+                        Title = "다시 선 횃불",
+                        Body = "{{target}} 위협을 꺾자 수도원 길목의 횃불이 다시 곧게 섭니다. 사람들은 아직 조심스럽지만 오늘 밤 문을 조금 늦게 닫아도 됩니다.",
+                        JournalEntry = "{{target}} 위협을 제압했고 {{realm}} 수도원 길목 주변의 길이 다시 열렸다.",
+                        Mood = "hopeful",
+                        RevealPolicy = "FirstSeenOnly"
+                    }
+                },
+                PresentationBeats = new[]
+                {
+                    new DynamicQuestPresentationBeat
+                    {
+                        NodeId = "talk",
+                        Trigger = "OnNpcInteract",
+                        Speaker = "StartNpc",
+                        Text = "저 발자국은 방금 생긴 겁니다. 길목이 더 조용해지기 전에 막아야 합니다.",
+                        Emotion = "fear",
+                        Emote = "Shiver"
+                    },
+                    new DynamicQuestPresentationBeat
+                    {
+                        NodeId = "explore",
+                        Trigger = "OnExplore",
+                        Speaker = "System",
+                        Text = "젖은 흙 위의 표식이 흔들리고, 정찰자가 뒤쪽 길로 물러납니다.",
+                        Emotion = "suspicion",
+                        Emote = "Ponder",
+                        CinematicAction = "scout_retreat",
+                        SceneRole = "oathbreaker_lookout",
+                        Formation = "patrol",
+                        ActorCount = 12
+                    },
+                    new DynamicQuestPresentationBeat
+                    {
+                        NodeId = "kill",
+                        Trigger = "OnKill",
+                        Speaker = "System",
+                        Text = "매복 병력이 모습을 드러내자 경비들이 방패선을 세우고 탈출 경로를 막습니다.",
+                        Emotion = "urgency",
+                        Emote = "Point",
+                        CinematicAction = "defender_intercept",
+                        SceneRole = "shield_oath_intercept",
+                        Formation = "line",
+                        ActorCount = 12,
+                        DelayMs = 700
                     }
                 }
             };

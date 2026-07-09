@@ -641,7 +641,7 @@ namespace DOL.GS.ServerProperties
 		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_auto_seed_max_quests", "KDAOC: Maximum dynamic quest offers created by one automatic seed pass.", 3)]
 		public static int KDAOC_DYNAMIC_QUEST_AUTO_SEED_MAX_QUESTS;
 
-		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_auto_seed_definitions", "KDAOC: Semicolon-separated deterministic dynamic quest story hints: StartNpcNameOrSelector|RegionId|TargetNameOrSelector|Count|MinLevel|MaxLevel|StartMode|Trigger|BranchWorldSignal.", "selector:town-npc|1|selector:hostile-near-start|1|1|5|NpcOffer||mob-growth:killed:region:1;selector:town-npc|100|selector:hostile-near-start|1|1|5|NpcOffer||mob-growth:killed:region:100;selector:town-npc|200|selector:hostile-near-start|1|1|5|NpcOffer||mob-growth:killed:region:200")]
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_auto_seed_definitions", "KDAOC: Semicolon-separated deterministic dynamic quest story hints: StartNpcNameOrSelector|RegionId|TargetNameOrSelector|Count|MinLevel|MaxLevel|StartMode|Trigger|BranchWorldSignal.", "selector:town-npc|1|selector:hostile-near-start|1|1|5|NpcOffer||mob-growth:killed:region:1;selector:town-npc|100|selector:hostile-near-start|1|1|5|NpcOffer||time-window:night;selector:town-npc|200|selector:hostile-near-start|1|1|5|NpcOffer||item-acquired")]
 		public static string KDAOC_DYNAMIC_QUEST_AUTO_SEED_DEFINITIONS;
 
 		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_world_revision", "KDAOC: Dynamic quest world/lore revision. Change this value to cancel stale dynamic quest progress and rebind volatile quest offers.", "default")]
@@ -685,6 +685,18 @@ namespace DOL.GS.ServerProperties
 
 		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_cache_offer_min_slots", "KDAOC: Minimum automatic seed slots reserved for cached story offers when LLM quest generation and cache offers are enabled.", 3)]
 		public static int KDAOC_DYNAMIC_QUEST_STORY_CACHE_OFFER_MIN_SLOTS;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_cache_require_dummy_evaluation_for_offers", "KDAOC: Only promote story cache rows with a passing dummy-client evaluation into live dynamic quest offers. Enabled by default for production safety; disable only while intentionally building evaluation coverage.", true)]
+		public static bool KDAOC_DYNAMIC_QUEST_STORY_CACHE_REQUIRE_DUMMY_EVALUATION_FOR_OFFERS;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_dummy_evaluation_enabled", "KDAOC: Accept dummy-client dynamic quest evaluation scores and prune failed story cache rows.", true)]
+		public static bool KDAOC_DYNAMIC_QUEST_DUMMY_EVALUATION_ENABLED;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_dummy_evaluation_min_score", "KDAOC: Minimum dummy-client evaluation score required to keep a dynamic quest story cache row active.", 70)]
+		public static int KDAOC_DYNAMIC_QUEST_DUMMY_EVALUATION_MIN_SCORE;
+
+		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_cinematic_max_actors_per_action", "KDAOC: Maximum temporary NPC actors one dynamic quest cinematic action may spawn. Missing, non-positive, or legacy default 8 values fall back to 100; values above 100 are clamped.", 100)]
+		public static int KDAOC_DYNAMIC_QUEST_CINEMATIC_MAX_ACTORS_PER_ACTION;
 
 		[ServerProperty("kdaoc", "kdaoc_dynamic_quest_story_secondary_llm_api_url", "KDAOC: Secondary OpenAI-compatible local LLM API base URL for dynamic quest story fallback.", "http://192.168.0.28:8001")]
 		public static string KDAOC_DYNAMIC_QUEST_STORY_SECONDARY_LLM_API_URL;

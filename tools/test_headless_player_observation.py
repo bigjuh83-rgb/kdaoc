@@ -628,6 +628,23 @@ class HeadlessPlayerObservationTests(unittest.TestCase):
         self.assertEqual(sent_speeds, [0.0])
         self.assertEqual(client.last_position_speed, 0.0)
 
+    def test_send_heading_preserves_last_target_in_view_action_flag(self):
+        client = self.make_client()
+        client.session_id = 0x1234
+        client.last_position_target_in_view = True
+        packets = []
+
+        def capture_packet(code: int, data: bytes = b"", session_id: int | None = None) -> None:
+            packets.append((code, data))
+
+        client.send_packet = capture_packet
+        client.drain = lambda seconds=0.05: 0
+
+        client.send_heading(0x0200, force=True, drain_after=False)
+
+        self.assertEqual(packets[0][0], headless.CLIENT_PACKETS["heading"])
+        self.assertEqual(packets[0][1][7], 0x30)
+
     def test_action_payload_reuses_last_position_speed(self):
         client = self.make_client()
         client.x = 10
@@ -897,6 +914,37 @@ class HeadlessPlayerObservationTests(unittest.TestCase):
         self.assertEqual(move_step["target_y"], 1000)
         self.assertEqual(move_step["z_source"], "interpolated")
 
+    def test_force_target_z_overrides_far_ground_sampler(self):
+        client = self.make_client()
+        client.x = 0
+        client.y = 0
+        client.z = 4291
+        client.ground_z_sampler = lambda _x, _y, _zone: 4294
+        client.send_position_update = lambda *_args, **_kwargs: 0
+
+        trace_path = fresh_trace_path("test-force-target-z-trace.jsonl")
+        client.trace_movement_path = str(trace_path)
+
+        moved = client.move_towards_position(
+            0,
+            1000,
+            4598,
+            step=55,
+            stop_distance=0,
+            movement_speed=220.0,
+            force_target_z=True,
+        )
+
+        events = [json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines()]
+        trace_path.unlink(missing_ok=True)
+
+        move_step = next(event for event in events if event["event"] == "move_step")
+        self.assertTrue(moved)
+        self.assertEqual(client.z, 4598)
+        self.assertEqual(move_step["z"], 4598)
+        self.assertEqual(move_step["sampled_ground_z"], 4294)
+        self.assertEqual(move_step["z_source"], "target_z_forced")
+
     def test_read_packets_for_limits_socket_timeout_to_requested_window(self):
         class TimeoutSocket:
             def __init__(self) -> None:
@@ -975,6 +1023,32 @@ class HeadlessGracefulDisconnectTests(unittest.TestCase):
         def close(self) -> None:
             self.closed = True
 
+    class _TimeoutThenClosingSocket(_ClosingSocket):
+        def __init__(self, timeout_count: int) -> None:
+            super().__init__()
+            self.timeout_count = timeout_count
+
+        def recv(self, _size: int) -> bytes:
+            self.recv_calls += 1
+            if self.recv_calls <= self.timeout_count:
+                time.sleep(0.05)
+                raise socket.timeout()
+            return b""
+
+    class _QuitPacketSocket(_ClosingSocket):
+        def __init__(self) -> None:
+            super().__init__()
+            self.sent_quit_packet = False
+
+        def recv(self, _size: int) -> bytes:
+            self.recv_calls += 1
+            if b"&quit\x00" not in b"".join(self.sent):
+                raise socket.timeout()
+            if not self.sent_quit_packet:
+                self.sent_quit_packet = True
+                return b"\x00\x02\xA4\x00\x05"
+            return b""
+
     def test_disconnect_gracefully_sends_quit_and_waits_for_close(self):
         client = headless.HeadlessDaocClient("127.0.0.1", 10300, 1.0, verbose=False)
         mock = self._ClosingSocket()
@@ -992,6 +1066,47 @@ class HeadlessGracefulDisconnectTests(unittest.TestCase):
         self.assertIn(b"&sit\x00", payloads)
         self.assertIn(b"&quit\x00", payloads)
         self.assertTrue(mock.closed)
+
+    def test_disconnect_gracefully_keeps_position_heartbeat_after_quit(self):
+        client = headless.HeadlessDaocClient("127.0.0.1", 10300, 1.0, verbose=False)
+        mock = self._TimeoutThenClosingSocket(timeout_count=30)
+        client.session_id = 42
+        client.sequence = 1
+        client.x = 523520
+        client.y = 490520
+        client.z = 2543
+        client.sock = mock
+        position_updates = []
+
+        def record_position_update(*, speed: float = 0.0, target_in_view: bool = False) -> int:
+            position_updates.append((speed, target_in_view))
+            return 0
+
+        client.send_position_update = record_position_update
+
+        self.assertTrue(client.disconnect_gracefully(timeout=2.0))
+        self.assertIsNone(client.sock)
+
+        payloads = b"".join(mock.sent)
+        self.assertIn(b"&quit\x00", payloads)
+        self.assertGreaterEqual(len(position_updates), 2)
+        self.assertTrue(all(update == (0.0, False) for update in position_updates))
+
+    def test_disconnect_gracefully_treats_server_quit_packet_as_complete(self):
+        client = headless.HeadlessDaocClient("127.0.0.1", 10300, 1.0, verbose=False)
+        mock = self._QuitPacketSocket()
+        client.session_id = 42
+        client.sequence = 1
+        client.x = 523520
+        client.y = 490520
+        client.z = 2543
+        client.sock = mock
+
+        self.assertTrue(client.disconnect_gracefully(timeout=2.0))
+        self.assertIsNone(client.sock)
+
+        self.assertTrue(mock.closed)
+        self.assertTrue(client.received_quit_packet)
 
 
 if __name__ == "__main__":

@@ -120,7 +120,8 @@ namespace DOL.GS.API.DummyCompanion
                     id,
                     Query(context, "status"),
                     Query(context, "message"),
-                    Query(context, "companion"));
+                    Query(context, "companion"),
+                    Query(context, "closeReason", Query(context, "reason")));
 
                 return request == null ? Results.NotFound(new { error = "RequestNotFoundOrInvalidStatus", id }) : Results.Ok(request);
             });

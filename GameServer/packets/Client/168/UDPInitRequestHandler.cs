@@ -5,21 +5,24 @@ namespace DOL.GS.PacketHandler.Client.v168
 	{
 		protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
 		{
-			string localIP;
-			ushort localPort;
-			if (client.Version >= GameClient.eClientVersion.Version1124)
-			{
-				localIP = packet.ReadString(20);
-				localPort = packet.ReadShort();
-			}
-			else
-			{
-				localIP = packet.ReadString(22);
-				localPort = packet.ReadShort();
-			}
+			TryReadLocalEndpoint(packet, client.Version, out string localIP, out ushort localPort);
 			client.LocalIP = localIP;
 			// client.UdpEndPoint = new IPEndPoint(IPAddress.Parse(localIP), localPort);
 			client.Out.SendUDPInitReply();
+		}
+
+		public static bool TryReadLocalEndpoint(GSPacketIn packet, GameClient.eClientVersion version, out string localIP, out ushort localPort)
+		{
+			localPort = 0;
+
+			int ipLength = version >= GameClient.eClientVersion.Version1124 ? 20 : 22;
+			localIP = packet.ReadString(ipLength);
+
+			if (packet.Length - packet.Position < 2)
+				return false;
+
+			localPort = packet.ReadShort();
+			return true;
 		}
 	}
 }

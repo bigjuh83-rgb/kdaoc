@@ -18,6 +18,7 @@ namespace DOL.GS.Tests
             Properties.KDAOC_DYNAMIC_QUEST_AUTO_SEED_ENABLED = true;
             Properties.KDAOC_DYNAMIC_QUEST_AUTO_SEED_USE_LLM = false;
             Properties.KDAOC_DYNAMIC_QUEST_AUTO_SEED_TICK_MINUTES = 30;
+            Properties.KDAOC_DYNAMIC_QUEST_STORY_CACHE_PREFILL_BATCH_SIZE = 5;
         }
 
         [TearDown]

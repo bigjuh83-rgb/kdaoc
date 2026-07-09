@@ -231,7 +231,8 @@ namespace DOL.GS
             {
                 if (SessionID != 0 && Player != null)
                 {
-                    if (ClientState is eClientState.Playing or eClientState.WorldEnter or eClientState.Linkdead)
+                    if (ClientState is eClientState.Playing or eClientState.WorldEnter or eClientState.Linkdead
+                        && Player.ObjectState is GameObject.eObjectState.Active)
                     {
                         try
                         {
@@ -450,6 +451,12 @@ namespace DOL.GS
                        return;
 
                     if (state.SessionID == 0 || state.Player == null)
+                    {
+                        state.Quit();
+                        return;
+                    }
+
+                    if (state.Player.ObjectState is not GameObject.eObjectState.Active)
                     {
                         state.Quit();
                         return;

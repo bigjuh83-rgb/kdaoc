@@ -57,6 +57,17 @@ namespace DOL.GS.PacketHandler.Client.v168
 		private static HashSet<string> _clientsLoggingIn = new();
 		private static Lock _lock = new();
 
+		private static bool IsLocalAddress(string ipAddress)
+		{
+			if (string.IsNullOrWhiteSpace(ipAddress))
+				return false;
+
+			if (ipAddress.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+				return true;
+
+			return IPAddress.TryParse(ipAddress, out IPAddress address) && IPAddress.IsLoopback(address);
+		}
+
 		protected override async void HandlePacketInternal(GameClient client, GSPacketIn packet)
 		{
 			try
@@ -307,37 +318,42 @@ namespace DOL.GS.PacketHandler.Client.v168
 						}
 
 						TimeSpan timeSpan;
-						int totalAccount = 0;
-						var accountsFromSameIp = await DOLDB<DbAccount>.SelectObjectsAsync(DB.Column("LastLoginIP").IsEqualTo(ipAddress));
+						bool isLocalAccountCreation = IsLocalAddress(ipAddress);
 
-						foreach (DbAccount ac in accountsFromSameIp)
+						if (!isLocalAccountCreation)
 						{
-							timeSpan = DateTime.Now - ac.CreationDate;
+							int totalAccount = 0;
+							var accountsFromSameIp = await DOLDB<DbAccount>.SelectObjectsAsync(DB.Column("LastLoginIP").IsEqualTo(ipAddress));
 
-							if (timeSpan.TotalMinutes < Properties.TIME_BETWEEN_ACCOUNT_CREATION_SAMEIP)
+							foreach (DbAccount ac in accountsFromSameIp)
+							{
+								timeSpan = DateTime.Now - ac.CreationDate;
+
+								if (timeSpan.TotalMinutes < Properties.TIME_BETWEEN_ACCOUNT_CREATION_SAMEIP)
+								{
+									if (Log.IsWarnEnabled)
+										Log.Warn($"Account creation: too many from same IP within set minutes - {username}:{ipAddress}");
+
+									client.Out.SendLoginDenied(eLoginError.ServiceNotAvailable);
+									success = false;
+									return;
+								}
+
+								totalAccount++;
+							}
+
+							if (totalAccount >= Properties.TOTAL_ACCOUNTS_ALLOWED_SAMEIP)
 							{
 								if (Log.IsWarnEnabled)
-									Log.Warn($"Account creation: too many from same IP within set minutes - {username}:{ipAddress}");
+									Log.Warn($"Account creation: too many accounts created from same ip - {username}:{ipAddress}");
 
 								client.Out.SendLoginDenied(eLoginError.ServiceNotAvailable);
 								success = false;
 								return;
 							}
-
-							totalAccount++;
 						}
 
-						if (totalAccount >= Properties.TOTAL_ACCOUNTS_ALLOWED_SAMEIP)
-						{
-							if (Log.IsWarnEnabled)
-								Log.Warn($"Account creation: too many accounts created from same ip - {username}:{ipAddress}");
-
-							client.Out.SendLoginDenied(eLoginError.ServiceNotAvailable);
-							success = false;
-							return;
-						}
-
-						if (Properties.TIME_BETWEEN_ACCOUNT_CREATION > 0)
+						if (!isLocalAccountCreation && Properties.TIME_BETWEEN_ACCOUNT_CREATION > 0)
 						{
 							timeSpan = DateTime.Now - _lastAccountCreateTime;
 
@@ -352,7 +368,8 @@ namespace DOL.GS.PacketHandler.Client.v168
 							}
 						}
 
-						_lastAccountCreateTime = DateTime.Now;
+						if (!isLocalAccountCreation)
+							_lastAccountCreateTime = DateTime.Now;
 
 						playerAccount = new DbAccount();
 						playerAccount.Name = username;

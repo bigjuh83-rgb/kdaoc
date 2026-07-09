@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.IO;
 using System.Text.Json;
@@ -13,6 +14,11 @@ namespace DOL.GS.API.WorldAI
 {
     internal static class WorldAiRoutes
     {
+        private static readonly JsonSerializerOptions ApiJsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
         public static void MapWorldAiRoutes(this WebApplication api)
         {
             WorldNewsService provider = WorldNewsService.Instance;
@@ -63,6 +69,70 @@ namespace DOL.GS.API.WorldAI
 
             api.MapGet("/api/world/dynamic-quests/progress/summary", (HttpContext context) =>
                 Results.Ok(DynamicQuestRuntimeService.Instance.GetProgressSummary(ReadLimit(context, 100))));
+
+            api.MapGet("/api/world/dynamic-quests/autoaccept-diagnostics", (HttpContext context) =>
+            {
+                string playerName = Query(context, "player", Query(context, "name"));
+                string account = Query(context, "account");
+
+                if (string.IsNullOrWhiteSpace(playerName) && string.IsNullOrWhiteSpace(account))
+                    return Results.BadRequest(new { error = "MissingPlayer" });
+
+                PlayerProgressLookup player = FindPlayerProgressLookup(playerName, account);
+                if (player == null)
+                    return Results.NotFound(new { error = "PlayerNotFound", player = playerName, account });
+
+                int defaultLevel = player.Online ? player.OnlinePlayer.Level : 1;
+                ushort defaultRegion = player.Online ? player.OnlinePlayer.CurrentRegionID : (ushort)0;
+                int defaultX = player.Online ? player.OnlinePlayer.X : 0;
+                int defaultY = player.Online ? player.OnlinePlayer.Y : 0;
+
+                return Results.Ok(DynamicQuestRuntimeService.Instance.GetAutoAcceptDiagnostics(
+                    player.PlayerKey,
+                    player.PlayerName,
+                    ReadInt(context, "level", defaultLevel),
+                    ReadUShort(context, "region", defaultRegion),
+                    ReadInt(context, "x", defaultX),
+                    ReadInt(context, "y", defaultY)));
+            });
+
+            api.MapGet("/api/world/dynamic-quests/world-impact", (HttpContext context) =>
+                Results.Ok(DynamicQuestRuntimeService.Instance.GetWorldImpactSummary(ReadLimit(context, 50))));
+
+            api.MapGet("/api/world/dynamic-quests/world-memory", (HttpContext context) =>
+            {
+                string playerName = Query(context, "player", Query(context, "name"));
+                string account = Query(context, "account");
+
+                if (string.IsNullOrWhiteSpace(playerName) && string.IsNullOrWhiteSpace(account))
+                    return Results.BadRequest(new { error = "MissingPlayer" });
+
+                PlayerProgressLookup player = FindPlayerProgressLookup(playerName, account);
+                if (player == null)
+                    return Results.NotFound(new { error = "PlayerNotFound", player = playerName, account });
+
+                return player.Online
+                    ? Results.Ok(DynamicQuestRuntimeService.Instance.GetWorldMemorySnapshot(player.OnlinePlayer))
+                    : Results.Ok(DynamicQuestRuntimeService.Instance.GetWorldMemorySnapshot(player.PlayerKey, player.PlayerName, false));
+            });
+
+            api.MapGet("/api/world/dynamic-quests/validation", (HttpContext context) =>
+                Results.Ok(DynamicQuestRuntimeService.Instance.GetValidationSnapshot(ReadLimit(context, 100))));
+
+            api.MapGet("/api/world/dynamic-quests/cinematic-catalog", (HttpContext context) =>
+                Results.Ok(DynamicQuestRuntimeService.Instance.GetCinematicCatalogSnapshot(ReadLimit(context, 80))));
+
+            api.MapGet("/api/world/dynamic-quests/cinematic-plan", (HttpContext context) =>
+            {
+                string questId = Query(context, "questId", Query(context, "id"));
+                if (string.IsNullOrWhiteSpace(questId))
+                    return Results.BadRequest(new { error = "MissingQuestId" });
+
+                DynamicQuestCinematicPlanSnapshot snapshot = DynamicQuestRuntimeService.Instance.GetCinematicPlanSnapshot(questId);
+                return snapshot.Found
+                    ? Results.Ok(snapshot)
+                    : Results.NotFound(snapshot);
+            });
 
             api.MapGet("/api/world/dynamic-quests/progress/cleanup-plan", (HttpContext context) =>
                 Results.Ok(DynamicQuestRuntimeService.Instance.GetProgressCleanupPlan(
@@ -134,6 +204,14 @@ namespace DOL.GS.API.WorldAI
                     ReadLimit(context, 50),
                     ReadBool(context, "includeText"))));
 
+            api.MapPost(
+                "/api/world/dynamic-quests/story-cache/evaluation-offer",
+                (Func<HttpContext, Task<IResult>>)SubmitStoryCacheEvaluationOffer);
+
+            api.MapPost(
+                "/api/world/dynamic-quests/evaluation",
+                (Func<HttpContext, Task<IResult>>)SubmitDynamicQuestDummyEvaluation);
+
             api.MapGet("/api/world/dynamic-quests/story-cache/prefill-plan", (HttpContext context) =>
                 Results.Ok(DynamicQuestSeedService.Instance.GetStoryCachePrefillPlanSnapshotFromWorld(
                     ReadLimit(context, 20))));
@@ -191,6 +269,17 @@ namespace DOL.GS.API.WorldAI
                         openai = ReadDailyQuotaUsage("openai"),
                         gemini = ReadDailyQuotaUsage("gemini")
                     },
+                    systems = new
+                    {
+                        dynamicQuest = new
+                        {
+                            enabled = Properties.KDAOC_DYNAMIC_QUEST_ENABLED
+                        },
+                        mobGrowth = new
+                        {
+                            enabled = Properties.WORLDAI_MOB_GROWTH_ENABLED
+                        }
+                    },
                     cache = new
                     {
                         maxTemplates = Properties.KDAOC_DYNAMIC_QUEST_STORY_CACHE_MAX_TEMPLATES,
@@ -199,7 +288,8 @@ namespace DOL.GS.API.WorldAI
                         worldPrefillEnabled = Properties.KDAOC_DYNAMIC_QUEST_STORY_CACHE_WORLD_PREFILL_ENABLED,
                         worldPrefillMaxCandidates = Properties.KDAOC_DYNAMIC_QUEST_STORY_CACHE_WORLD_PREFILL_MAX_CANDIDATES,
                         offerEnabled = Properties.KDAOC_DYNAMIC_QUEST_STORY_CACHE_OFFER_ENABLED,
-                        offerMinSlots = Properties.KDAOC_DYNAMIC_QUEST_STORY_CACHE_OFFER_MIN_SLOTS
+                        offerMinSlots = Properties.KDAOC_DYNAMIC_QUEST_STORY_CACHE_OFFER_MIN_SLOTS,
+                        requireDummyEvaluationForOffers = Properties.KDAOC_DYNAMIC_QUEST_STORY_CACHE_REQUIRE_DUMMY_EVALUATION_FOR_OFFERS
                     }
                 });
             });
@@ -246,6 +336,75 @@ namespace DOL.GS.API.WorldAI
             });
 
             api.MapPost("/api/world/llm/jobs/{jobId}/reject", RejectLlmJob);
+        }
+
+        private sealed class StoryCacheEvaluationOfferRequest
+        {
+            public string TemplateId { get; set; } = string.Empty;
+            public string WorldRevision { get; set; } = string.Empty;
+            public bool AllowFailedDummyEvaluation { get; set; }
+        }
+
+        private static async Task<IResult> SubmitStoryCacheEvaluationOffer(HttpContext context)
+        {
+            StoryCacheEvaluationOfferRequest request = new()
+            {
+                TemplateId = Query(context, "templateId", Query(context, "id")),
+                WorldRevision = Query(context, "worldRevision")
+            };
+
+            try
+            {
+                if ((context.Request.ContentLength ?? 0) > 0)
+                {
+                    StoryCacheEvaluationOfferRequest body = await JsonSerializer.DeserializeAsync<StoryCacheEvaluationOfferRequest>(
+                        context.Request.Body,
+                        ApiJsonOptions);
+                    if (body != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(body.TemplateId))
+                            request.TemplateId = body.TemplateId;
+                        if (!string.IsNullOrWhiteSpace(body.WorldRevision))
+                            request.WorldRevision = body.WorldRevision;
+                    }
+                }
+
+                DynamicQuestStoryCacheEvaluationOfferResult result =
+                    DynamicQuestSeedService.Instance.OfferStoryCacheTemplateForEvaluationFromWorld(
+                        request.TemplateId,
+                        request.WorldRevision,
+                        allowFailedDummyEvaluation: false);
+                return result.Success ? Results.Ok(result) : Results.BadRequest(result);
+            }
+            catch (JsonException e)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "InvalidJson",
+                    message = e.Message
+                });
+            }
+        }
+
+        private static async Task<IResult> SubmitDynamicQuestDummyEvaluation(HttpContext context)
+        {
+            try
+            {
+                DynamicQuestDummyEvaluationRequest request = await JsonSerializer.DeserializeAsync<DynamicQuestDummyEvaluationRequest>(
+                    context.Request.Body,
+                    ApiJsonOptions) ?? new DynamicQuestDummyEvaluationRequest();
+
+                DynamicQuestDummyEvaluationResult result = DynamicQuestSeedService.Instance.SubmitDummyEvaluation(request);
+                return result.Accepted ? Results.Ok(result) : Results.BadRequest(result);
+            }
+            catch (JsonException e)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "InvalidJson",
+                    message = e.Message
+                });
+            }
         }
 
         private static object ReadDailyQuotaUsage(string providerName)
@@ -311,6 +470,16 @@ namespace DOL.GS.API.WorldAI
             string raw = context.Request.Query[key].FirstOrDefault();
 
             if (!ushort.TryParse(raw, out ushort value))
+                return defaultValue;
+
+            return value;
+        }
+
+        private static int ReadInt(HttpContext context, string key, int defaultValue = 0)
+        {
+            string raw = context.Request.Query[key].FirstOrDefault();
+
+            if (!int.TryParse(raw, out int value))
                 return defaultValue;
 
             return value;

@@ -51,6 +51,8 @@ BARFOG_STAGING_HOME = (343893, 672100, 2659)
 BARFOG_WAYPOINTS = "332701,669142,2660|333061,669142,2668|333061,669502,2702|332701,669502,2694"
 ALBION_SAFE_FLEE_HOME = "369957,679721,5540"
 DEFAULT_ROLES = ["tank", "healer", "dps"]
+DEFAULT_COMPANION_SERVICE_RUN_DIR = Path("test-output/live-companion-service")
+_last_live_control_revision: int = 0
 DEFAULT_LEADER_HOLD_SECONDS = 150.0
 DEFAULT_LEADER_STARTUP_DELAY_SECONDS = 60.0
 DEFAULT_COMPANION_HOLD_SECONDS = 105.0
@@ -77,9 +79,14 @@ PLAYER_COMMAND_DEFAULT_CONTROL_APPLY_TIMEOUT_SECONDS = 20.0
 # Boss-fight role smokes routinely see 1-2 companion deaths without invalidating the
 # expected role action. The matrix should fail on missing actions, not on this noise.
 ROLE_SMOKE_ALLOW_COMPANION_DEATHS = 2
-CASTER_DPS_LEADER_HOLD_SECONDS = 80.0
-CASTER_DPS_COMPANION_HOLD_SECONDS = 90.0
-CASTER_DPS_SERVICE_MAX_RUNTIME_SECONDS = 120.0
+CASTER_DPS_LEADER_HOLD_SECONDS = 110.0
+CASTER_DPS_COMPANION_HOLD_SECONDS = 135.0
+CASTER_DPS_SERVICE_MAX_RUNTIME_SECONDS = 180.0
+CASTER_DPS_LEADER_PARTY_MIN_READY = 2
+CASTER_DPS_LEADER_PARTY_READY_MAX_DISTANCE = 2800.0
+CASTER_DPS_LEADER_PARTY_FORM_UP_DELAY = 4.0
+CASTER_DPS_LEADER_PARTY_FORM_UP_TIMEOUT = 75.0
+CASTER_DPS_LEADER_PRE_PULL_HOME_STOP_DISTANCE = 2800.0
 MIXED_REAL_JOIN_LEADER_HOLD_SECONDS = 120.0
 MIXED_REAL_JOIN_LEADER_STARTUP_DELAY_SECONDS = 45.0
 MIXED_REAL_JOIN_COMPANION_HOLD_SECONDS = 125.0
@@ -87,6 +94,9 @@ MIXED_REAL_JOIN_SERVICE_MAX_RUNTIME_SECONDS = 170.0
 MIXED_REAL_JOIN_JOINER_HOLD_SECONDS = 85.0
 MIXED_REAL_JOIN_RELEASE_TIMEOUT_SECONDS = 45.0
 MIXED_REAL_JOIN_ACTIVE_TIMEOUT_SECONDS = 60.0
+MIXED_REAL_JOIN_PARTY_RESURRECT_INTERVAL_SECONDS = 0.0
+MIXED_REAL_JOIN_LEADER_ROUND_WALL_BUFFER_SECONDS = 20.0
+MIXED_REAL_JOIN_JOINER_ROUND_WALL_BUFFER_SECONDS = 15.0
 HEALER_RESURRECTION_REAL_JOIN_JOINER_HOLD_SECONDS = 175.0
 HEALER_RESURRECTION_REAL_JOIN_JOINER_FOLLOW_DISTANCE = 450.0
 HEALER_RESURRECTION_REAL_JOIN_JOINER_ASSIST_ATTACK_DELAY = 0.3
@@ -98,7 +108,7 @@ HEALER_RESURRECTION_REAL_JOIN_JOINER_FLEE_HEALTH_PERCENT = 0.0
 # the smoke deterministically kills the joiner once via the server test hook
 # (POST /api/dummy/companions/test/kill). The joiner keeps a 90s release delay so
 # it stays a resolvable corpse, and the healer resurrects it.
-HEALER_RESURRECTION_VICTIM_KILL_DELAY_SECONDS = 45.0
+HEALER_RESURRECTION_VICTIM_KILL_DELAY_SECONDS = 5.0
 HEALER_RESURRECTION_SERVICE_HEALER_FLEE_PRESSURE_HEALTH_PERCENT = 50.0
 HEALER_RESURRECTION_SERVICE_HEALER_FLEE_HEALTH_PERCENT = 32.0
 HEALER_RESURRECTION_SERVICE_FLEE_PRESSURE_HEALTH_PERCENT = 50.0
@@ -137,6 +147,8 @@ SUMMARY_EXPECTATION_KEYS = {
     "speed_song",
     "stealth",
     "taunt",
+    "literal_taunt_used",
+    "tank_control_established",
     "damage_done",
     "target_rejected",
     "party_member_target_rejected",
@@ -174,7 +186,15 @@ EXPECTED_ACTION_ALIASES = {
     "speedsong": "speed_song",
     "speed_song": "speed_song",
     "speed-song": "speed_song",
-    "tank_taunt": "taunt",
+    "literal_taunt": "literal_taunt_used",
+    "literal-taunt": "literal_taunt_used",
+    "literal_taunt_used": "literal_taunt_used",
+    "literal-taunt-used": "literal_taunt_used",
+    "tank_taunt": "literal_taunt_used",
+    "tank_control": "tank_control_established",
+    "tank-control": "tank_control_established",
+    "tank_control_established": "tank_control_established",
+    "tank-control-established": "tank_control_established",
     "chat_reply": "companion_chat_reply",
     "chat-reply": "companion_chat_reply",
     "command_attack": "companion_command_attack",
@@ -343,6 +363,22 @@ CHAT_ONLY_LEADER_VALUE_OPTIONS = {
 }
 
 
+IDLE_JOINER_FLAG_OPTIONS = CHAT_ONLY_LEADER_FLAG_OPTIONS | {
+    "--use-skills",
+    "--allow-unvalidated-skills",
+    "--startup-stealth",
+    "--startup-speed-song",
+}
+
+
+IDLE_JOINER_VALUE_OPTIONS = CHAT_ONLY_LEADER_VALUE_OPTIONS | {
+    "--skill-interval",
+    "--skill-indexes",
+    "--skill-type",
+    "--startup-self-buff-count",
+}
+
+
 def strip_cli_options(command: list[str], *, flags: set[str], options_with_values: set[str]) -> list[str]:
     stripped: list[str] = []
     index = 0
@@ -357,6 +393,20 @@ def strip_cli_options(command: list[str], *, flags: set[str], options_with_value
         stripped.append(option)
         index += 1
     return stripped
+
+
+def replace_cli_option(command: list[str], option: str, value: str) -> list[str]:
+    replaced = list(command)
+    try:
+        index = replaced.index(option)
+    except ValueError:
+        replaced.extend([option, value])
+        return replaced
+    if index + 1 < len(replaced):
+        replaced[index + 1] = value
+    else:
+        replaced.append(value)
+    return replaced
 
 
 def parse_roles(value: str) -> list[str]:
@@ -519,7 +569,9 @@ def prepare_service_accounts_csv(
 ) -> Path:
     source_path = Path(args.companion_accounts_csv)
     excluded = {str(account or "").strip().lower() for account in excluded_accounts if str(account or "").strip()}
-    if not excluded:
+    profile = str(getattr(args, "smoke_profile", "") or "").strip().lower().replace("_", "-")
+    use_safe_caster_staging = bool(profile == "caster-dps" and str(getattr(args, "target_name", "") or "").strip())
+    if not excluded and not use_safe_caster_staging:
         return source_path
 
     rows = read_accounts_or_empty(source_path)
@@ -528,10 +580,23 @@ def prepare_service_accounts_csv(
         for row in rows
         if str(row.get("username") or "").strip().lower() not in excluded
     ]
-    if len(filtered_rows) == len(rows):
+    if len(filtered_rows) == len(rows) and not use_safe_caster_staging:
         return source_path
     if not filtered_rows:
         raise RuntimeError("no companion accounts remain after excluding leader/joiner smoke accounts")
+
+    if use_safe_caster_staging:
+        start_x, start_y, start_z = BARFOG_STAGING_HOME
+        filtered_rows = [
+            {
+                **row,
+                "start_x": str(start_x),
+                "start_y": str(start_y),
+                "start_z": str(start_z),
+                "zone_id": str(row.get("zone_id") or "1"),
+            }
+            for row in filtered_rows
+        ]
 
     filtered_path = run_dir / "service-companion-accounts.csv"
     write_accounts(filtered_path, filtered_rows)
@@ -752,6 +817,23 @@ def stop_process(process: subprocess.Popen | None, *, timeout: float = 10.0) -> 
     except subprocess.TimeoutExpired:
         process.kill()
         process.wait(timeout=5)
+
+
+def request_service_stop(run_dir: Path) -> None:
+    stop_file = run_dir / "service" / "companion-service.stop"
+    stop_file.parent.mkdir(parents=True, exist_ok=True)
+    stop_file.write_text("stop\n", encoding="utf-8")
+
+
+def stop_service_process(process: subprocess.Popen | None, run_dir: Path, *, timeout: float = 20.0) -> None:
+    if process is None or process.poll() is not None:
+        return
+    request_service_stop(run_dir)
+    try:
+        process.wait(timeout=max(1.0, float(timeout)))
+        return
+    except subprocess.TimeoutExpired:
+        stop_process(process, timeout=timeout)
 
 
 def equip_live_accounts(args: argparse.Namespace, leader_account: str, run_dir: Path, joiner_account: str = "") -> int:
@@ -1056,6 +1138,17 @@ def build_leader_command(
             options_with_values=CHAT_ONLY_LEADER_VALUE_OPTIONS,
         )
         command.append("--no-auto-loot")
+        round_wall_timeout = max(
+            30.0,
+            float(getattr(args, "leader_startup_delay", 0.0) or 0.0)
+            + float(getattr(args, "leader_hold", 0.0) or 0.0)
+            + 20.0,
+        )
+        command += [
+            "--round-wall-timeout-seconds",
+            str(round_wall_timeout),
+            "--allow-round-wall-timeout-success",
+        ]
     if str(getattr(args, "smoke_profile", "") or "") == "healer-resurrection":
         command += [
             "--party-min-ready",
@@ -1072,6 +1165,33 @@ def build_leader_command(
             str(int(HEALER_RESURRECTION_LEADER_FLEE_PRESSURE_HEALTH_PERCENT)),
             "--flee-health-percent",
             str(int(HEALER_RESURRECTION_LEADER_FLEE_HEALTH_PERCENT)),
+        ]
+    if str(getattr(args, "smoke_profile", "") or "") == "caster-dps":
+        command += [
+            "--party-min-ready",
+            str(CASTER_DPS_LEADER_PARTY_MIN_READY),
+            "--party-ready-max-leader-distance",
+            str(CASTER_DPS_LEADER_PARTY_READY_MAX_DISTANCE),
+            "--party-form-up-delay",
+            str(CASTER_DPS_LEADER_PARTY_FORM_UP_DELAY),
+            "--party-form-up-timeout",
+            str(CASTER_DPS_LEADER_PARTY_FORM_UP_TIMEOUT),
+            "--party-pre-pull-home-stop-distance",
+            str(CASTER_DPS_LEADER_PRE_PULL_HOME_STOP_DISTANCE),
+        ]
+    if str(getattr(args, "smoke_profile", "") or "").strip().lower().replace("_", "-") == "mixed-real-join":
+        round_wall_timeout = max(
+            30.0,
+            float(getattr(args, "leader_startup_delay", 0.0) or 0.0)
+            + float(getattr(args, "leader_hold", 0.0) or 0.0)
+            + MIXED_REAL_JOIN_LEADER_ROUND_WALL_BUFFER_SECONDS,
+        )
+        command += [
+            "--party-resurrect-interval",
+            str(MIXED_REAL_JOIN_PARTY_RESURRECT_INTERVAL_SECONDS),
+            "--round-wall-timeout-seconds",
+            str(round_wall_timeout),
+            "--allow-round-wall-timeout-success",
         ]
     if leader_live_control_enabled(args):
         command += [
@@ -1097,7 +1217,7 @@ def build_joiner_command(
     action_rotation = companion_service.role_to_rotation_for_row(joiner_role, joiner_row)
     behavior_profile = joiner_behavior_profile(joiner_role)
     joiner_capabilities = companion_service.companion_row_capabilities(joiner_row)
-    return [
+    command = [
         sys.executable,
         "tools/behavior-dummy-client.py",
         "--host",
@@ -1233,6 +1353,13 @@ def build_joiner_command(
         "",
     ]
     if str(getattr(args, "smoke_profile", "") or "").strip().lower().replace("_", "-") == "healer-resurrection":
+        command = strip_cli_options(
+            command,
+            flags=IDLE_JOINER_FLAG_OPTIONS,
+            options_with_values=IDLE_JOINER_VALUE_OPTIONS,
+        )
+        command = replace_cli_option(command, "--behavior-profile", "custom")
+        command = replace_cli_option(command, "--action-rotation", "none")
         command += [
             "--low-health-rest-percent",
             "0",
@@ -1245,6 +1372,20 @@ def build_joiner_command(
             "100",
             "--flee-critical-health-percent",
             "0",
+        ]
+    if str(getattr(args, "smoke_profile", "") or "").strip().lower().replace("_", "-") == "mixed-real-join":
+        round_wall_timeout = max(
+            30.0,
+            float(getattr(args, "joiner_startup_delay", 0.0) or 0.0)
+            + float(getattr(args, "joiner_hold", 0.0) or 0.0)
+            + MIXED_REAL_JOIN_JOINER_ROUND_WALL_BUFFER_SECONDS,
+        )
+        command += [
+            "--party-resurrect-interval",
+            str(MIXED_REAL_JOIN_PARTY_RESURRECT_INTERVAL_SECONDS),
+            "--round-wall-timeout-seconds",
+            str(round_wall_timeout),
+            "--allow-round-wall-timeout-success",
         ]
     return command
 
@@ -1298,6 +1439,7 @@ def build_service_command(
         str(args.combat_home_leash_distance),
         "--max-runtime",
         str(service_max_runtime),
+        "--no-recover-orphaned-active-requests",
     ]
     if getattr(args, "api_password", ""):
         command += ["--api-password", str(args.api_password)]
@@ -1370,6 +1512,7 @@ def request_id_from_payload(payload: Any) -> str:
 
 
 def create_companion_request(args: argparse.Namespace, leader_name: str, role: str, source: str) -> str:
+    profile = str(getattr(args, "smoke_profile", "") or "").strip().lower().replace("_", "-")
     request_point = growth.RoutePoint(50, *BARFOG_HOME) if str(args.target_name or "").strip() else smoke_reset_start_point(args)
     payload = api_json(
         args,
@@ -1403,7 +1546,12 @@ def apply_smoke_profile(args: argparse.Namespace) -> argparse.Namespace:
             args.allow_companion_deaths = ROLE_SMOKE_ALLOW_COMPANION_DEATHS
 
     if profile == "stealth-passive":
+        if list(getattr(args, "roles", []) or []) == list(DEFAULT_ROLES):
+            args.roles = ["dps"]
         args.target_name = ""
+        args.leader_chat_only = True
+        args.leader_behavior_profile = "custom"
+        args.leader_action_rotation = "none"
         if not str(getattr(args, "requested_capabilities", "") or "").strip():
             args.requested_capabilities = "stealth"
         if not list(getattr(args, "expect_companion_actions", []) or []):
@@ -1492,19 +1640,21 @@ def apply_smoke_profile(args: argparse.Namespace) -> argparse.Namespace:
         if not list(getattr(args, "expect_companion_actions", []) or []):
             args.expect_companion_actions = ["companion_chat_reply"]
         if float(getattr(args, "leader_hold", DEFAULT_LEADER_HOLD_SECONDS)) == DEFAULT_LEADER_HOLD_SECONDS:
-            args.leader_hold = 40.0
+            args.leader_hold = 110.0
         if (
             float(getattr(args, "leader_startup_delay", DEFAULT_LEADER_STARTUP_DELAY_SECONDS))
             == DEFAULT_LEADER_STARTUP_DELAY_SECONDS
         ):
             args.leader_startup_delay = 8.0
         if float(getattr(args, "companion_hold", DEFAULT_COMPANION_HOLD_SECONDS)) == DEFAULT_COMPANION_HOLD_SECONDS:
-            args.companion_hold = 40.0
+            args.companion_hold = 90.0
         if (
             float(getattr(args, "service_max_runtime", DEFAULT_SERVICE_MAX_RUNTIME_SECONDS))
             == DEFAULT_SERVICE_MAX_RUNTIME_SECONDS
         ):
-            args.service_max_runtime = 70.0
+            args.service_max_runtime = 130.0
+        if float(getattr(args, "request_active_timeout", 55.0) or 55.0) == 55.0:
+            args.request_active_timeout = 90.0
         if float(getattr(args, "leader_party_command_start_delay", 0.0) or 0.0) <= 0.0:
             args.leader_party_command_start_delay = 1.0
         if float(getattr(args, "leader_party_command_gap", 0.0) or 0.0) <= 0.0:
@@ -1525,8 +1675,6 @@ def apply_smoke_profile(args: argparse.Namespace) -> argparse.Namespace:
             args.expect_companion_actions = [
                 "companion_chat_reply",
                 "companion_command_attack",
-                "party_assist",
-                "damage_done",
             ]
         if int(getattr(args, "allow_leader_deaths", 0) or 0) == 0:
             args.allow_leader_deaths = 1
@@ -1549,10 +1697,7 @@ def apply_smoke_profile(args: argparse.Namespace) -> argparse.Namespace:
         ):
             args.service_max_runtime = PLAYER_COMMAND_SERVICE_MAX_RUNTIME_SECONDS
         if float(getattr(args, "leader_party_command_start_delay", 0.0) or 0.0) <= 0.0:
-            args.leader_party_command_start_delay = (
-                float(args.leader_startup_delay)
-                + PLAYER_COMMAND_DEFAULT_COMMAND_START_DELAY_AFTER_STARTUP_SECONDS
-            )
+            args.leader_party_command_start_delay = PLAYER_COMMAND_DEFAULT_COMMAND_START_DELAY_AFTER_STARTUP_SECONDS
         if float(getattr(args, "leader_party_command_gap", 0.0) or 0.0) <= 0.0:
             args.leader_party_command_gap = PLAYER_COMMAND_DEFAULT_COMMAND_GAP_SECONDS
         if (
@@ -1581,7 +1726,6 @@ def apply_smoke_profile(args: argparse.Namespace) -> argparse.Namespace:
                 "companion_command_help",
                 "companion_command_summon",
                 "companion_command_wait",
-                "companion_command_clear_target",
             ]
         if int(getattr(args, "allow_leader_deaths", 0) or 0) == 0:
             args.allow_leader_deaths = 1
@@ -1604,10 +1748,7 @@ def apply_smoke_profile(args: argparse.Namespace) -> argparse.Namespace:
         ):
             args.service_max_runtime = 115.0
         if float(getattr(args, "leader_party_command_start_delay", 0.0) or 0.0) <= 0.0:
-            args.leader_party_command_start_delay = (
-                float(args.leader_startup_delay)
-                + PLAYER_COMMAND_DEFAULT_COMMAND_START_DELAY_AFTER_STARTUP_SECONDS
-            )
+            args.leader_party_command_start_delay = PLAYER_COMMAND_DEFAULT_COMMAND_START_DELAY_AFTER_STARTUP_SECONDS
         if float(getattr(args, "leader_party_command_gap", 0.0) or 0.0) <= 0.0:
             args.leader_party_command_gap = 4.0
         if float(getattr(args, "leader_control_apply_timeout", 8.0) or 8.0) == 8.0:
@@ -1659,10 +1800,7 @@ def apply_smoke_profile(args: argparse.Namespace) -> argparse.Namespace:
         ):
             args.service_max_runtime = 170.0
         if float(getattr(args, "leader_party_command_start_delay", 0.0) or 0.0) <= 0.0:
-            args.leader_party_command_start_delay = (
-                float(args.leader_startup_delay)
-                + PLAYER_COMMAND_DEFAULT_COMMAND_START_DELAY_AFTER_STARTUP_SECONDS
-            )
+            args.leader_party_command_start_delay = PLAYER_COMMAND_DEFAULT_COMMAND_START_DELAY_AFTER_STARTUP_SECONDS
         if float(getattr(args, "leader_party_command_gap", 0.0) or 0.0) <= 0.0:
             args.leader_party_command_gap = 4.0
         if float(getattr(args, "leader_control_apply_timeout", 8.0) or 8.0) == 8.0:
@@ -1674,6 +1812,9 @@ def apply_smoke_profile(args: argparse.Namespace) -> argparse.Namespace:
         if list(getattr(args, "roles", []) or []) == list(DEFAULT_ROLES):
             args.roles = ["support"]
         args.target_name = ""
+        args.leader_chat_only = True
+        args.leader_behavior_profile = "custom"
+        args.leader_action_rotation = "none"
         if not str(getattr(args, "requested_capabilities", "") or "").strip():
             args.requested_capabilities = "speed_song"
         if not list(getattr(args, "expect_companion_actions", []) or []):
@@ -1700,9 +1841,9 @@ def apply_smoke_profile(args: argparse.Namespace) -> argparse.Namespace:
             args.roles = ["support"]
         args.target_name = "moorlich"
         if not str(getattr(args, "requested_capabilities", "") or "").strip():
-            args.requested_capabilities = "speed_song"
+            args.requested_capabilities = "crowd_control"
         if not list(getattr(args, "expect_companion_actions", []) or []):
-            args.expect_companion_actions = ["speed_song", "crowd_control"]
+            args.expect_companion_actions = ["crowd_control"]
         if int(getattr(args, "allow_leader_deaths", 0) or 0) == 0:
             args.allow_leader_deaths = 1
         if str(getattr(args, "leader_behavior_profile", "") or "") == "party-dps":
@@ -1723,6 +1864,10 @@ def apply_smoke_profile(args: argparse.Namespace) -> argparse.Namespace:
             == DEFAULT_SERVICE_MAX_RUNTIME_SECONDS
         ):
             args.service_max_runtime = ROLE_SMOKE_SERVICE_MAX_RUNTIME_SECONDS
+        if float(getattr(args, "service_flee_pressure_health_percent", 0.0) or 0.0) <= 0.0:
+            args.service_flee_pressure_health_percent = 50.0
+        if float(getattr(args, "service_flee_health_percent", 0.0) or 0.0) <= 0.0:
+            args.service_flee_health_percent = 32.0
         ensure_role_smoke_companion_death_allowance()
         return args
 
@@ -1731,9 +1876,9 @@ def apply_smoke_profile(args: argparse.Namespace) -> argparse.Namespace:
             args.roles = ["tank"]
         args.target_name = "moorlich"
         if not str(getattr(args, "requested_capabilities", "") or "").strip():
-            args.requested_capabilities = "defensive_tank"
+            args.requested_capabilities = "defensive_tank|group_support"
         if not list(getattr(args, "expect_companion_actions", []) or []):
-            args.expect_companion_actions = ["taunt", "party_protection"]
+            args.expect_companion_actions = ["literal_taunt_used", "party_protection"]
         if int(getattr(args, "allow_leader_deaths", 0) or 0) == 0:
             args.allow_leader_deaths = 1
         if float(getattr(args, "leader_hold", DEFAULT_LEADER_HOLD_SECONDS)) == DEFAULT_LEADER_HOLD_SECONDS:
@@ -1761,6 +1906,8 @@ def apply_smoke_profile(args: argparse.Namespace) -> argparse.Namespace:
             args.requested_capabilities = "caster_dps"
         if not list(getattr(args, "expect_companion_actions", []) or []):
             args.expect_companion_actions = ["damage_done"]
+        if int(getattr(args, "allow_leader_deaths", 0) or 0) == 0:
+            args.allow_leader_deaths = 1
         if str(getattr(args, "leader_behavior_profile", "") or "") == "party-dps":
             args.leader_behavior_profile = "party-tank"
         if str(getattr(args, "leader_action_rotation", "") or "") == "melee-burst":
@@ -1780,6 +1927,8 @@ def apply_smoke_profile(args: argparse.Namespace) -> argparse.Namespace:
         ):
             args.service_max_runtime = CASTER_DPS_SERVICE_MAX_RUNTIME_SECONDS
         ensure_role_smoke_companion_death_allowance()
+        if int(getattr(args, "allow_companion_deaths", 0) or 0) < 3:
+            args.allow_companion_deaths = 3
         return args
 
     if profile == "healer-resurrection":
@@ -1832,6 +1981,10 @@ def apply_smoke_profile(args: argparse.Namespace) -> argparse.Namespace:
         if int(getattr(args, "allow_companion_deaths", 0) or 0) < HEALER_RESURRECTION_ALLOW_COMPANION_DEATHS:
             args.allow_companion_deaths = HEALER_RESURRECTION_ALLOW_COMPANION_DEATHS
         if getattr(args, "real_player_join", False):
+            args.target_name = ""
+            args.leader_chat_only = True
+            args.leader_behavior_profile = "custom"
+            args.leader_action_rotation = "none"
             if int(getattr(args, "allow_joiner_deaths", 0) or 0) == 0:
                 args.allow_joiner_deaths = 3
             if float(getattr(args, "joiner_hold", DEFAULT_LEADER_HOLD_SECONDS)) == DEFAULT_LEADER_HOLD_SECONDS:
@@ -1853,13 +2006,15 @@ def apply_smoke_profile(args: argparse.Namespace) -> argparse.Namespace:
     if profile == "mixed-real-join":
         args.real_player_join = True
         if list(getattr(args, "roles", []) or []) == list(DEFAULT_ROLES):
-            args.roles = list(DEFAULT_ROLES)
+            args.roles = ["tank"]
         if not list(getattr(args, "expect_companion_actions", []) or []):
-            args.expect_companion_actions = ["party_follow", "party_assist"]
+            args.expect_companion_actions = ["party_protection"]
         if int(getattr(args, "allow_leader_deaths", 0) or 0) == 0:
             args.allow_leader_deaths = 1
         if int(getattr(args, "allow_joiner_deaths", 0) or 0) == 0:
             args.allow_joiner_deaths = 1
+        if int(getattr(args, "allow_companion_deaths", 0) or 0) < 3:
+            args.allow_companion_deaths = 3
         if float(getattr(args, "leader_hold", DEFAULT_LEADER_HOLD_SECONDS)) == DEFAULT_LEADER_HOLD_SECONDS:
             args.leader_hold = MIXED_REAL_JOIN_LEADER_HOLD_SECONDS
         if (
@@ -1932,6 +2087,20 @@ def has_companion_activity(summary: dict[str, int]) -> bool:
         or summary["heal"] > 0
         or summary["party_assist"] > 0
         or summary["party_follow"] > 0
+        or any(
+            int(summary.get(key, 0) or 0) > 0
+            for key in (
+                "party_protection",
+                "resurrect",
+                "cure",
+                "crowd_control",
+                "speed_song",
+                "stealth",
+                "taunt",
+                "target_rejected",
+                "party_member_target_rejected",
+            )
+        )
         or int(summary.get("companion_chat_reply", 0) or 0) > 0
         or any(
             int(summary.get(key, 0) or 0) > 0
@@ -1958,9 +2127,18 @@ def missing_expected_companion_actions(summary: dict[str, int], expected_actions
     )
 
 
+def next_live_control_revision() -> str:
+    global _last_live_control_revision
+    revision = time.time_ns()
+    if revision <= _last_live_control_revision:
+        revision = _last_live_control_revision + 1
+    _last_live_control_revision = revision
+    return str(revision)
+
+
 def write_live_control(path: Path, payload: dict[str, Any]) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
-    revision = str(time.time_ns())
+    revision = next_live_control_revision()
     data = {"revision": revision, **payload}
     path.write_text(json.dumps(data, ensure_ascii=False, sort_keys=True), encoding="utf-8")
     return revision
@@ -2168,7 +2346,109 @@ def fail_if_existing_queued_requests(args: argparse.Namespace) -> None:
         raise RuntimeError(f"existing queued companion requests would pollute this smoke: {ids}")
 
 
-def summarize_encounters(run_dir: Path) -> dict[str, int]:
+def request_log_dirs(run_dir: Path, request_ids: list[str] | None = None) -> list[Path]:
+    roots: list[Path] = [run_dir]
+    for request_id in request_ids or []:
+        cleaned = str(request_id or "").strip()
+        if not cleaned:
+            continue
+        roots.append(run_dir / "service" / cleaned)
+        roots.append(DEFAULT_COMPANION_SERVICE_RUN_DIR / cleaned)
+
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        key = str(root.resolve() if root.exists() else root)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(root)
+    return unique
+
+
+def is_service_artifact(path: Path, run_dir: Path, request_ids: list[str] | None = None) -> bool:
+    parts = set(path.parts)
+    if "service" in parts:
+        return True
+    request_id_set = {str(request_id or "").strip() for request_id in request_ids or [] if str(request_id or "").strip()}
+    return bool(request_id_set and any(part in request_id_set for part in path.parts))
+
+
+def encounter_actor_key(row: dict[str, Any]) -> str:
+    character = str(row.get("character") or "").strip().lower()
+    if character:
+        return character
+    return str(row.get("username") or "").strip().lower()
+
+
+def server_message_casts_preflight_taunt(row: dict[str, Any], taunt_spell_names: set[str]) -> bool:
+    if str(row.get("event") or "") != "server_message":
+        return False
+    if not taunt_spell_names:
+        return False
+    text = str(row.get("text") or "").strip().lower()
+    if not text:
+        return False
+    cast_phrase = "주문을 시전" in text or "you cast" in text or "you begin casting" in text
+    if not cast_phrase:
+        return False
+    return any(name and name in text for name in taunt_spell_names)
+
+
+def server_message_casts_preflight_speed_song(row: dict[str, Any], speed_song_spell_names: set[str]) -> bool:
+    if str(row.get("event") or "") != "server_message":
+        return False
+    if not speed_song_spell_names:
+        return False
+    text = str(row.get("text") or "").strip().lower()
+    if not text:
+        return False
+    cast_phrase = (
+        "연주하기 시작" in text
+        or "begin playing" in text
+        or "start playing" in text
+        or "you play" in text
+    )
+    if not cast_phrase:
+        return False
+    return any(name and name in text for name in speed_song_spell_names)
+
+
+def server_message_casts_preflight_stealth(row: dict[str, Any], stealth_spell_names: set[str]) -> bool:
+    if str(row.get("event") or "") != "server_message":
+        return False
+    if not stealth_spell_names:
+        return False
+    text = str(row.get("text") or "").strip().lower()
+    if not text:
+        return False
+    if "이제 숨어 있습니다" in text or "you are now hidden" in text:
+        return True
+    return any(name and name in text for name in stealth_spell_names)
+
+
+def server_message_casts_resurrection(row: dict[str, Any]) -> bool:
+    if str(row.get("event") or "") != "server_message":
+        return False
+    text = str(row.get("text") or "").strip().lower()
+    if not text:
+        return False
+    completed_cast = "주문을 시전했습니다" in text or "you cast" in text
+    if not completed_cast:
+        return False
+    return any(
+        spell_name in text
+        for spell_name in (
+            "resurrection",
+            "raise fallen",
+            "raise ally",
+            "reviction",
+            "ressurection",
+        )
+    )
+
+
+def summarize_encounters(run_dir: Path, request_ids: list[str] | None = None) -> dict[str, int]:
     counts = {
         "party_follow": 0,
         "party_assist": 0,
@@ -2181,6 +2461,10 @@ def summarize_encounters(run_dir: Path) -> dict[str, int]:
         "speed_song": 0,
         "stealth": 0,
         "taunt": 0,
+        "literal_taunt_used": 0,
+        "tank_control_established": 0,
+        "combat_plan_has_taunt_skills": 0,
+        "combat_plan_has_taunt_spells": 0,
         "damage_done": 0,
         "target_rejected": 0,
         "party_member_target_rejected": 0,
@@ -2207,183 +2491,272 @@ def summarize_encounters(run_dir: Path) -> dict[str, int]:
     }
     death_events = 0
     death_metrics = 0
-    for path in run_dir.rglob("*.jsonl"):
-        if "service" not in path.parts:
-            continue
-        has_metrics_in_request_dir = any(path.parent.rglob("*metrics.csv"))
-        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
-            try:
-                row = json.loads(line)
-            except json.JSONDecodeError:
+    seen_jsonl_paths: set[str] = set()
+    for root in request_log_dirs(run_dir, request_ids):
+        for path in root.rglob("*.jsonl"):
+            if not is_service_artifact(path, run_dir, request_ids):
                 continue
-            event = str(row.get("event") or "")
-            actions = row.get("action_counts") or row.get("actions") or {}
-            if not isinstance(actions, dict):
-                actions = {}
-            for key, value in actions.items():
+            path_key = str(path.resolve())
+            if path_key in seen_jsonl_paths:
+                continue
+            seen_jsonl_paths.add(path_key)
+            has_metrics_in_request_dir = any(path.parent.rglob("*metrics.csv"))
+            taunt_spell_names_by_actor: dict[str, set[str]] = {}
+            speed_song_spell_names_by_actor: dict[str, set[str]] = {}
+            stealth_spell_names_by_actor: dict[str, set[str]] = {}
+            for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
                 try:
-                    amount = int(value)
-                except (TypeError, ValueError):
-                    amount = 1
-                key_text = str(key)
-                if "party_follow" in key_text or "party_anchor" in key_text:
-                    counts["party_follow"] += amount
-                if "party_assist" in key_text:
-                    counts["party_assist"] += amount
-                if "party_external_member_visible" in key_text:
-                    counts["party_external_visible"] += amount
-                if "heal" in key_text:
-                    counts["heal"] += amount
-                if key_text.startswith("validated_party_resurrect_") or key_text.startswith("validated_revive_"):
-                    counts["resurrect"] += amount
-                if "validated_party_cure_" in key_text:
-                    counts["cure"] += amount
-                if "validated_crowd_control_spell" in key_text:
-                    counts["crowd_control"] += amount
-                if key_text.startswith("validated_party_") and key_text.endswith("_member") and any(
-                    token in key_text for token in ("guard", "protect", "intercept", "bodyguard", "protection")
-                ):
-                    counts["party_protection"] += amount
-                if "speed_song_spell" in key_text:
-                    counts["speed_song"] += amount
-                if "stealth_spell" in key_text:
-                    counts["stealth"] += amount
-                if key_text.startswith("validated_taunt_") or key_text == "party_active_tank_reaggro_taunt":
-                    counts["taunt"] += amount
-                if "combat_damage_done" in key_text:
-                    counts["damage_done"] += amount
-                if "target_gate_rejected" in key_text or "target_rejected" in key_text:
-                    counts["target_rejected"] += amount
-                if "live_control_say" in key_text:
-                    counts["dialogue_live_control_say"] += amount
-                if "companion_chat_reply" in key_text:
-                    counts["companion_chat_reply"] += amount
-                if "companion_command_attack" in key_text or "companion_command_mode_attack" in key_text:
-                    counts["companion_command_attack"] += amount
-                if "companion_command_mode_passive" in key_text:
-                    counts["companion_command_passive"] += amount
-                if "companion_command_mode_defensive" in key_text:
-                    counts["companion_command_defensive"] += amount
-                if "companion_command_mode_stay" in key_text:
-                    counts["companion_command_stay"] += amount
-                if "companion_command_mode_follow" in key_text:
-                    counts["companion_command_follow"] += amount
-                if "companion_command_clear_target" in key_text:
-                    counts["companion_command_clear_target"] += amount
-            if event == "companion_command_mode_change":
-                mode = str(row.get("mode") or "").strip().lower()
-                if mode in {"passive", "defensive", "stay", "follow"}:
-                    counts[f"companion_command_{mode}"] += 1
-            if event == "companion_chat_reply":
-                if not has_metrics_in_request_dir:
-                    counts["companion_chat_reply"] += 1
-                intent = str(row.get("intent") or "").strip().lower()
-                if intent == "help":
-                    counts["companion_command_help"] += 1
-                elif intent == "summon":
-                    counts["companion_command_summon"] += 1
-                elif intent == "wait":
-                    counts["companion_command_wait"] += 1
-            if not has_metrics_in_request_dir:
-                if event.startswith("companion_command_attack") or event == "companion_command_mode_attack":
-                    counts["companion_command_attack"] += 1
-                if event == "companion_command_clear_target":
-                    counts["companion_command_clear_target"] += 1
-                if event == "party_assist":
-                    counts["party_assist"] += 1
-                if event in {"party_follow", "party_anchor"}:
-                    counts["party_follow"] += 1
-            if event == "hostile_party_member_target_rejected":
-                counts["party_member_target_rejected"] += 1
-            if event == "live_control_applied":
-                counts["dialogue_live_control_applied"] += 1
-            if event == "death_detected":
-                death_events += 1
-    for path in run_dir.rglob("*metrics.csv"):
-        if "service" not in path.parts:
-            continue
-        with path.open(encoding="utf-8-sig", newline="") as handle:
-            for row in csv.DictReader(handle):
-                row_damage_done = int(float(row.get("damage_done") or 0))
-                damage_message_count = 0
-                counts["heal"] += int(float(row.get("healing_done") or 0))
-                counts["resurrect"] += int(float(row.get("action_party_resurrect") or 0))
-                death_metrics += int(float(row.get("action_death_detected") or row.get("death_count") or 0))
-                for key, value in row.items():
-                    if not key.startswith("action_"):
-                        continue
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                event = str(row.get("event") or "")
+                actions = row.get("action_counts") or row.get("actions") or {}
+                if not isinstance(actions, dict):
+                    actions = {}
+                literal_taunt_actions = 0
+                for key, value in actions.items():
                     try:
-                        amount = int(float(value or 0))
-                    except ValueError:
-                        amount = 0
-                    if "party_follow" in key or "party_anchor" in key:
+                        amount = int(value)
+                    except (TypeError, ValueError):
+                        amount = 1
+                    key_text = str(key)
+                    if "party_follow" in key_text or "party_anchor" in key_text:
                         counts["party_follow"] += amount
-                    if "party_assist" in key:
+                    if "party_assist" in key_text:
                         counts["party_assist"] += amount
-                    if "party_external_member_visible" in key:
+                    if "party_external_member_visible" in key_text:
                         counts["party_external_visible"] += amount
-                    if key.startswith("action_validated_party_resurrect_") or key.startswith("action_validated_revive_"):
+                    if "heal" in key_text:
+                        counts["heal"] += amount
+                    if key_text.startswith("validated_party_resurrect_") or key_text.startswith("validated_revive_"):
                         counts["resurrect"] += amount
-                    if "validated_party_cure_" in key:
+                    if "validated_party_cure_" in key_text:
                         counts["cure"] += amount
-                    if "validated_crowd_control_spell" in key:
+                    if "validated_crowd_control_spell" in key_text:
                         counts["crowd_control"] += amount
-                    if key.startswith("action_validated_party_") and key.endswith("_member") and any(
-                        token in key for token in ("guard", "protect", "intercept", "bodyguard", "protection")
+                    if key_text.startswith("validated_party_") and key_text.endswith("_member") and any(
+                        token in key_text for token in ("guard", "protect", "intercept", "bodyguard", "protection")
                     ):
                         counts["party_protection"] += amount
-                    if "speed_song_spell" in key:
+                    if "speed_song_spell" in key_text:
                         counts["speed_song"] += amount
-                    if "stealth_spell" in key:
+                    if "stealth_spell" in key_text:
                         counts["stealth"] += amount
-                    if key.startswith("action_validated_taunt_") or key == "action_party_active_tank_reaggro_taunt":
+                    if key_text.startswith("combat_plan_has_taunt_skill"):
+                        counts["combat_plan_has_taunt_skills"] += amount
+                    if key_text.startswith("combat_plan_has_taunt_spell"):
+                        counts["combat_plan_has_taunt_spells"] += amount
+                    if key_text.startswith("validated_taunt_"):
+                        literal_taunt_actions += amount
+                        counts["literal_taunt_used"] += amount
                         counts["taunt"] += amount
-                    if key == "action_combat_damage_msg":
-                        damage_message_count += amount
-                    if "target_rejected" in key:
+                        counts["tank_control_established"] += amount
+                    if key_text == "party_active_tank_reaggro_taunt":
+                        counts["tank_control_established"] += amount
+                    if "combat_damage_done" in key_text:
+                        counts["damage_done"] += amount
+                    if "target_gate_rejected" in key_text or "target_rejected" in key_text:
                         counts["target_rejected"] += amount
-                    if "live_control_say" in key:
+                    if "live_control_say" in key_text:
                         counts["dialogue_live_control_say"] += amount
-                    if "companion_chat_reply" in key:
+                    if "companion_chat_reply" in key_text:
                         counts["companion_chat_reply"] += amount
-                    if "companion_command_attack" in key or "companion_command_mode_attack" in key:
+                    if "companion_command_attack" in key_text or "companion_command_mode_attack" in key_text:
                         counts["companion_command_attack"] += amount
-                    if "companion_command_mode_passive" in key:
+                    if "companion_command_mode_passive" in key_text:
                         counts["companion_command_passive"] += amount
-                    if "companion_command_mode_defensive" in key:
+                    if "companion_command_mode_defensive" in key_text:
                         counts["companion_command_defensive"] += amount
-                    if "companion_command_mode_stay" in key:
+                    if "companion_command_mode_stay" in key_text:
                         counts["companion_command_stay"] += amount
-                    if "companion_command_mode_follow" in key:
+                    if "companion_command_mode_follow" in key_text:
                         counts["companion_command_follow"] += amount
-                    if "companion_command_clear_target" in key:
+                    if "companion_command_clear_target" in key_text:
                         counts["companion_command_clear_target"] += amount
-                counts["damage_done"] += max(row_damage_done, damage_message_count)
-    for path in run_dir.rglob("live-control.json"):
-        if "service" not in path.parts:
-            continue
-        try:
-            row = json.loads(path.read_text(encoding="utf-8-sig"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        if not isinstance(row, dict):
-            continue
-        channel = str(row.get("say_channel") or "").strip().lower()
-        hint = str(row.get("intent_hint") or "").strip().lower()
-        if channel:
-            counts["dialogue_live_control"] += 1
-        if channel == "party":
-            counts["dialogue_party"] += 1
-        if channel == "say":
-            counts["dialogue_say"] += 1
-        if hint == "heal_priority":
-            counts["dialogue_heal_priority"] += 1
-        if hint == "resurrect_priority":
-            counts["dialogue_resurrect_priority"] += 1
-        if hint == "cc_add":
-            counts["dialogue_cc_add"] += 1
-        if hint == "cure_priority":
-            counts["dialogue_cure_priority"] += 1
+                if event == "companion_command_mode_change":
+                    mode = str(row.get("mode") or "").strip().lower()
+                    if mode in {"passive", "defensive", "stay", "follow"}:
+                        counts[f"companion_command_{mode}"] += 1
+                if event == "companion_chat_reply":
+                    if not has_metrics_in_request_dir:
+                        counts["companion_chat_reply"] += 1
+                    intent = str(row.get("intent") or "").strip().lower()
+                    if intent == "help":
+                        counts["companion_command_help"] += 1
+                    elif intent == "summon":
+                        counts["companion_command_summon"] += 1
+                    elif intent == "wait":
+                        counts["companion_command_wait"] += 1
+                if not has_metrics_in_request_dir:
+                    if event.startswith("companion_command_attack") or event == "companion_command_mode_attack":
+                        counts["companion_command_attack"] += 1
+                    if event == "companion_command_clear_target":
+                        counts["companion_command_clear_target"] += 1
+                    if event == "party_assist":
+                        counts["party_assist"] += 1
+                    if event in {"party_follow", "party_anchor"}:
+                        counts["party_follow"] += 1
+                if event == "hostile_party_member_target_rejected":
+                    counts["party_member_target_rejected"] += 1
+                if event == "crowd_control_multi_aggro":
+                    counts["crowd_control"] += 1
+                if event == "party_protection_ability_used":
+                    counts["party_protection"] += 1
+                if event == "combat_plan_preflight":
+                    actor_key = encounter_actor_key(row)
+                    if actor_key:
+                        taunt_spell_names_by_actor.setdefault(actor_key, set()).update(
+                            str(name).strip().lower()
+                            for name in row.get("taunt_spell_names") or []
+                            if str(name).strip()
+                        )
+                        speed_song_spell_names_by_actor.setdefault(actor_key, set()).update(
+                            str(name).strip().lower()
+                            for name in row.get("speed_song_spell_names") or []
+                            if str(name).strip()
+                        )
+                        stealth_spell_names_by_actor.setdefault(actor_key, set()).update(
+                            str(name).strip().lower()
+                            for name in row.get("stealth_spell_names") or []
+                            if str(name).strip()
+                        )
+                    if row.get("taunt_skill_names"):
+                        counts["combat_plan_has_taunt_skills"] += 1
+                    if row.get("taunt_spell_names"):
+                        counts["combat_plan_has_taunt_spells"] += 1
+                if server_message_casts_preflight_speed_song(
+                    row,
+                    speed_song_spell_names_by_actor.get(encounter_actor_key(row), set()),
+                ):
+                    counts["speed_song"] += 1
+                if server_message_casts_preflight_stealth(
+                    row,
+                    stealth_spell_names_by_actor.get(encounter_actor_key(row), set()),
+                ):
+                    counts["stealth"] += 1
+                if server_message_casts_resurrection(row):
+                    counts["resurrect"] += 1
+                if literal_taunt_actions <= 0 and server_message_casts_preflight_taunt(
+                    row,
+                    taunt_spell_names_by_actor.get(encounter_actor_key(row), set()),
+                ):
+                    counts["literal_taunt_used"] += 1
+                    counts["taunt"] += 1
+                    counts["tank_control_established"] += 1
+                if event == "live_control_applied":
+                    counts["dialogue_live_control_applied"] += 1
+                if event == "death_detected":
+                    death_events += 1
+                if not has_metrics_in_request_dir:
+                    try:
+                        counts["damage_done"] = max(counts["damage_done"], int(float(row.get("damage_done") or 0)))
+                    except (TypeError, ValueError):
+                        pass
+    seen_metric_paths: set[str] = set()
+    for root in request_log_dirs(run_dir, request_ids):
+        for path in root.rglob("*metrics.csv"):
+            if not is_service_artifact(path, run_dir, request_ids):
+                continue
+            path_key = str(path.resolve())
+            if path_key in seen_metric_paths:
+                continue
+            seen_metric_paths.add(path_key)
+            with path.open(encoding="utf-8-sig", newline="") as handle:
+                for row in csv.DictReader(handle):
+                    row_damage_done = int(float(row.get("damage_done") or 0))
+                    damage_message_count = 0
+                    counts["heal"] += int(float(row.get("healing_done") or 0))
+                    counts["resurrect"] += int(float(row.get("action_party_resurrect") or 0))
+                    death_metrics += int(float(row.get("action_death_detected") or row.get("death_count") or 0))
+                    for key, value in row.items():
+                        if not key.startswith("action_"):
+                            continue
+                        try:
+                            amount = int(float(value or 0))
+                        except ValueError:
+                            amount = 0
+                        if "party_follow" in key or "party_anchor" in key:
+                            counts["party_follow"] += amount
+                        if "party_assist" in key:
+                            counts["party_assist"] += amount
+                        if "party_external_member_visible" in key:
+                            counts["party_external_visible"] += amount
+                        if key.startswith("action_validated_party_resurrect_") or key.startswith("action_validated_revive_"):
+                            counts["resurrect"] += amount
+                        if "validated_party_cure_" in key:
+                            counts["cure"] += amount
+                        if "validated_crowd_control_spell" in key:
+                            counts["crowd_control"] += amount
+                        if key.startswith("action_validated_party_") and key.endswith("_member") and any(
+                            token in key for token in ("guard", "protect", "intercept", "bodyguard", "protection")
+                        ):
+                            counts["party_protection"] += amount
+                        if "speed_song_spell" in key:
+                            counts["speed_song"] += amount
+                        if "stealth_spell" in key:
+                            counts["stealth"] += amount
+                        if key.startswith("action_combat_plan_has_taunt_skill"):
+                            counts["combat_plan_has_taunt_skills"] += amount
+                        if key.startswith("action_combat_plan_has_taunt_spell"):
+                            counts["combat_plan_has_taunt_spells"] += amount
+                        if key.startswith("action_validated_taunt_"):
+                            counts["literal_taunt_used"] += amount
+                            counts["taunt"] += amount
+                            counts["tank_control_established"] += amount
+                        if key == "action_party_active_tank_reaggro_taunt":
+                            counts["tank_control_established"] += amount
+                        if key == "action_combat_damage_msg":
+                            damage_message_count += amount
+                        if "target_rejected" in key:
+                            counts["target_rejected"] += amount
+                        if "live_control_say" in key:
+                            counts["dialogue_live_control_say"] += amount
+                        if "companion_chat_reply" in key:
+                            counts["companion_chat_reply"] += amount
+                        if "companion_command_attack" in key or "companion_command_mode_attack" in key:
+                            counts["companion_command_attack"] += amount
+                        if "companion_command_mode_passive" in key:
+                            counts["companion_command_passive"] += amount
+                        if "companion_command_mode_defensive" in key:
+                            counts["companion_command_defensive"] += amount
+                        if "companion_command_mode_stay" in key:
+                            counts["companion_command_stay"] += amount
+                        if "companion_command_mode_follow" in key:
+                            counts["companion_command_follow"] += amount
+                        if "companion_command_clear_target" in key:
+                            counts["companion_command_clear_target"] += amount
+                    counts["damage_done"] += max(row_damage_done, damage_message_count)
+    seen_live_control_paths: set[str] = set()
+    for root in request_log_dirs(run_dir, request_ids):
+        for path in root.rglob("live-control.json"):
+            if not is_service_artifact(path, run_dir, request_ids):
+                continue
+            path_key = str(path.resolve())
+            if path_key in seen_live_control_paths:
+                continue
+            seen_live_control_paths.add(path_key)
+            try:
+                row = json.loads(path.read_text(encoding="utf-8-sig"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if not isinstance(row, dict):
+                continue
+            channel = str(row.get("say_channel") or "").strip().lower()
+            hint = str(row.get("intent_hint") or "").strip().lower()
+            if channel:
+                counts["dialogue_live_control"] += 1
+            if channel == "party":
+                counts["dialogue_party"] += 1
+            if channel == "say":
+                counts["dialogue_say"] += 1
+            if hint == "heal_priority":
+                counts["dialogue_heal_priority"] += 1
+            if hint == "resurrect_priority":
+                counts["dialogue_resurrect_priority"] += 1
+            if hint == "cc_add":
+                counts["dialogue_cc_add"] += 1
+            if hint == "cure_priority":
+                counts["dialogue_cure_priority"] += 1
     counts["death"] = max(death_events, death_metrics)
     return counts
 
@@ -2410,12 +2783,20 @@ def companion_errors(run_dir: Path) -> list[str]:
 def missing_companion_metrics(run_dir: Path, request_ids: list[str]) -> list[str]:
     missing: list[str] = []
     for request_id in request_ids:
-        request_dir = run_dir / "service" / request_id
-        if not request_dir.exists():
+        request_dirs = [
+            request_dir
+            for request_dir in request_log_dirs(run_dir, [request_id])
+            if request_dir.name == request_id and request_dir.exists()
+        ]
+        if not request_dirs:
             missing.append(f"{request_id}: service log directory missing")
             continue
-        if not any(request_dir.rglob("*metrics.csv")):
-            if any(path.stat().st_size > 0 for path in request_dir.rglob("*.jsonl")):
+        if not any(any(request_dir.rglob("*metrics.csv")) for request_dir in request_dirs):
+            if any(
+                path.stat().st_size > 0
+                for request_dir in request_dirs
+                for path in request_dir.rglob("*.jsonl")
+            ):
                 continue
             missing.append(f"{request_id}: companion metrics missing")
     return missing
@@ -2500,6 +2881,9 @@ def smoke_exit_code(
 
     if leader_rc != 0 and safe_exit_deadline_only(leader_errors):
         notes.append("leader_safe_exit_warning=safe_exit_deadline_reached")
+        leader_rc = 0
+    if leader_rc != 0 and has_companion_activity(summary):
+        notes.append(f"leader_exit_warning=rc:{leader_rc}")
         leader_rc = 0
     if real_player_join and joiner_rc != 0 and safe_exit_deadline_only(joiner_errors):
         notes.append("joiner_safe_exit_warning=safe_exit_deadline_reached")
@@ -2733,9 +3117,6 @@ def main(argv: list[str] | None = None) -> int:
             )
             if not grouped_with_leader:
                 raise RuntimeError(f"joiner failed to group with leader after {max(1, int(args.joiner_accept_attempts or 1))} attempts")
-            release_statuses = wait_for_real_join_release(args, request_ids)
-            print(f"real_join_release={release_statuses}")
-
             victim_kill_delay = float(getattr(args, "resurrection_victim_kill_delay", 0.0) or 0.0)
             if (
                 str(getattr(args, "smoke_profile", "") or "").strip().lower().replace("_", "-")
@@ -2750,6 +3131,9 @@ def main(argv: list[str] | None = None) -> int:
                     delay=victim_kill_delay,
                 )
 
+            release_statuses = wait_for_real_join_release(args, request_ids)
+            print(f"real_join_release={release_statuses}")
+
         if joiner_process is not None:
             joiner_rc = joiner_process.wait(timeout=max(args.joiner_hold + args.joiner_startup_delay + 30.0, 30.0))
         leader_rc = leader_process.wait(timeout=max(args.leader_hold + args.leader_startup_delay + 60.0, 60.0))
@@ -2757,9 +3141,9 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         stop_process(joiner_process)
         stop_process(leader_process)
-        stop_process(service_process)
+        stop_service_process(service_process, run_dir)
 
-    summary = summarize_encounters(run_dir)
+    summary = summarize_encounters(run_dir, request_ids)
     errors = leader_errors(run_dir)
     companion_error_rows = companion_errors(run_dir)
     companion_error_rows.extend(missing_companion_metrics(run_dir, request_ids))

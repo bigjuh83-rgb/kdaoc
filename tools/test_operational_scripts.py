@@ -262,7 +262,7 @@ class OperationalScriptTests(unittest.TestCase):
         for expected in [
             "용병 고용관",
             "고용: [치유형 고용] [방어형 고용] [공격형 고용]",
-            "관리: [상태 확인] [요청 취소] [용병 해산]",
+            "관리: [용병 상세] [휴식] [상태 확인] [소문] [요청 취소] [용병 해산]",
             "용병에게 연락을 넣었습니다.",
             "지금 가능한 용병이 없습니다.",
             "최근 용병 요청: 상태=",
@@ -997,39 +997,68 @@ class OperationalScriptTests(unittest.TestCase):
         self.assertNotIn("\npause >nul\nexit /b", script.lower())
 
     def test_visible_launcher_defers_companion_until_api_ready(self) -> None:
-        script = (ROOT / "start-main-server-visible.bat").read_text(encoding="utf-8")
+        script = (ROOT / "tools" / "start-main-visible-server-windows.ps1").read_text(encoding="utf-8")
 
         self.assertIn("start-companion-after-api-ready.ps1", script)
         self.assertIn("OPENDAOC_START_COMPANION_SERVICE", script)
-        self.assertNotIn('start "OpenDAoC Companion Service" "%SCRIPT_DIR%start-live-companion-service-visible.bat"', script)
+        self.assertNotIn('start "OpenDAoC Companion Service"', script)
 
-    def test_visible_launcher_exports_gemini_key_to_wsl(self) -> None:
+    def test_visible_launcher_uses_windows_powershell_server_runner(self) -> None:
         script = (ROOT / "start-main-server-visible.bat").read_text(encoding="utf-8")
 
-        self.assertIn("GEMINI_API_KEY/u", script)
-        self.assertIn("OPENAI_API_KEY/u", script)
-        self.assertLess(script.index("GEMINI_API_KEY/u"), script.index("wsl.exe -d Ubuntu"))
-        self.assertLess(script.index("OPENAI_API_KEY/u"), script.index("wsl.exe -d Ubuntu"))
+        self.assertIn("start-main-visible-server-windows.ps1", script)
+        self.assertIn("-RepoRoot", script)
+        self.assertNotIn("wsl.exe", script.lower())
+        self.assertNotIn("WSLENV", script)
 
     def test_companion_api_ready_helper_starts_visible_companion_launcher_after_probe(self) -> None:
         script = (ROOT / "tools" / "start-companion-after-api-ready.ps1").read_text(encoding="utf-8")
 
         self.assertIn("OPENDAOC_COMPANION_API_URL", script)
         self.assertIn("/api/dummy/companions/config", script)
-        self.assertIn("Invoke-WebRequest", script)
+        self.assertIn("HttpWebRequest", script)
         self.assertIn("start-live-companion-service-visible.bat", script)
-        self.assertLess(script.find("Invoke-WebRequest"), script.find("start-live-companion-service-visible.bat"))
+        self.assertLess(script.find("HttpWebRequest"), script.find("start-live-companion-service-visible.bat"))
         self.assertNotIn("OPENAI_API_KEY", script)
         self.assertNotIn("sk-", script.lower())
 
-    def test_live_companion_visible_launcher_uses_standard_wsl_service_runner(self) -> None:
+    def test_live_companion_visible_launcher_uses_windows_service_runner(self) -> None:
         script = (ROOT / "start-live-companion-service-visible.bat").read_text(encoding="utf-8")
 
         self.assertIn("OpenDAoC Companion Service", script)
-        self.assertIn("wsl.exe -d Ubuntu", script)
-        self.assertIn("tools/start-live-companion-service.sh", script)
+        self.assertIn("start-live-companion-service-windows.ps1", script)
+        self.assertIn("-RepoRoot", script)
         self.assertIn("OPENDAOC_COMPANION_PAUSE_ON_EXIT", script)
+        self.assertNotIn("wsl.exe", script.lower())
+        self.assertNotIn("WSLENV", script)
         self.assertNotIn("\npause >nul\nexit /b", script.lower())
+
+    def test_live_companion_windows_service_runner_uses_safe_operational_defaults(self) -> None:
+        script = (ROOT / "tools" / "start-live-companion-service-windows.ps1").read_text(encoding="utf-8")
+
+        self.assertIn('Get-EnvValue -Name "OPENDAOC_COMPANION_API_URL" -Default "http://localhost:5000"', script)
+        self.assertIn('Get-EnvValue -Name "OPENDAOC_COMPANION_ACCOUNTS" -Default "tools/dummy-live-companions.csv"', script)
+        self.assertIn('Get-EnvValue -Name "OPENDAOC_COMPANION_RUN_DIR" -Default "test-output/live-companion-service"', script)
+        self.assertIn('Get-EnvValue -Name "OPENDAOC_COMPANION_MAX_RUNTIME" -Default "0"', script)
+        self.assertIn("tools/dummy-companion-service.py", script)
+        self.assertIn("--max-runtime", script)
+        self.assertIn("OPENDAOC_COMPANION_ONCE", script)
+        self.assertIn("OPENDAOC_COMPANION_DRY_RUN", script)
+        self.assertIn("OPENDAOC_COMPANION_WAIT_API", script)
+        self.assertIn("OPENDAOC_COMPANION_WAIT_API_TIMEOUT", script)
+        self.assertIn("OPENDAOC_COMPANION_STOP_FILE", script)
+        self.assertIn("/api/dummy/companions/config", script)
+        self.assertIn("HttpWebRequest", script)
+        self.assertIn("Import-EnvFile", script)
+        self.assertIn("Stop-ExistingCompanionService", script)
+        self.assertIn("Previous companion service stopped gracefully", script)
+        self.assertIn("--ai-gateway-model-alias", script)
+        self.assertIn("--ai-guide-model-alias", script)
+        self.assertIn("--stop-file", script)
+        self.assertIn("small-dialogue", script)
+        self.assertIn("openai-small-guide", script)
+        self.assertNotIn("OPENAI_API_KEY=", script)
+        self.assertNotIn("sk-", script.lower())
 
     def test_live_companion_service_runner_uses_safe_operational_defaults(self) -> None:
         script = (ROOT / "tools" / "start-live-companion-service.sh").read_text(encoding="utf-8")
@@ -1225,6 +1254,88 @@ class OperationalScriptTests(unittest.TestCase):
         self.assertIn("read_serverconfig_password()", script)
         self.assertIn("CoreServer", script)
         self.assertIn("serverconfig.xml", script)
+
+    def test_preservice_growth_parallel_batch_uses_array_args_for_wsl(self) -> None:
+        script = (ROOT / "tools" / "run-preservice-growth-parallel-batch.ps1").read_text(encoding="utf-8")
+
+        self.assertIn("$growthArgs = @(", script)
+        self.assertIn('"--parallel-cases", "$ParallelCases"', script)
+        self.assertIn('"--case-repeats", "$CaseRepeats"', script)
+        self.assertIn('"--run-dir", $RunDir', script)
+        self.assertIn("[Parameter(ValueFromRemainingArguments = $true)]", script)
+        self.assertIn('$growthArgs += $ExtraArgs', script)
+        self.assertIn("& $WslExe @wslArgs", script)
+
+    def test_preservice_growth_parallel_batch_keeps_spaceful_mysql_path_as_one_arg(self) -> None:
+        script = (ROOT / "tools" / "run-preservice-growth-parallel-batch.ps1").read_text(encoding="utf-8")
+
+        self.assertIn('[string]$MysqlBin = "/mnt/c/Program Files/MariaDB 12.3/bin/mariadb.exe"', script)
+        self.assertIn('$WslWorkDir = (& $WslExe --exec wslpath -a $repoRoot.Path).Trim()', script)
+        self.assertNotIn("Start-Process", script)
+
+    def test_preservice_growth_variant_lanes_run_independent_condition_lanes(self) -> None:
+        script = (ROOT / "tools" / "run-preservice-growth-variant-lanes.ps1").read_text(encoding="utf-8")
+
+        self.assertIn('Name = "solo-s150-r2"', script)
+        self.assertIn('Name = "duo-s150"', script)
+        self.assertIn('Name = "party4-s180"', script)
+        self.assertIn("$realmOrder = @(\"alb\", \"mid\", \"hib\")", script)
+        self.assertIn("VariantName = $variant.Name", script)
+        self.assertIn("Realm = $realm", script)
+        self.assertIn("Realms = $realm", script)
+        self.assertIn('PartySizes = "1"', script)
+        self.assertIn('PartySizes = "2"', script)
+        self.assertIn('PartySizes = "4"', script)
+        self.assertIn("StartOffset = $LaneStartStride", script)
+        self.assertIn("StartOffset = 2 * $LaneStartStride", script)
+        self.assertIn("Start = $StartBase + [int]$variant.StartOffset + [int]$realmStartOffsets[$realm]", script)
+        self.assertIn("ParallelCases = 1", script)
+        self.assertIn('ExtraArgs = @("--travel-aggro-clear-grace", "18")', script)
+        self.assertIn('"--party-rescue-assist-after", "3"', script)
+        self.assertIn('"--party-rescue-emergency-assist-after", "1"', script)
+        self.assertIn('"$BaseRunDir/$($lane.Name)"', script)
+
+    def test_preservice_growth_variant_lanes_call_batch_wrapper_and_summarizer(self) -> None:
+        script = (ROOT / "tools" / "run-preservice-growth-variant-lanes.ps1").read_text(encoding="utf-8")
+
+        self.assertIn('Join-Path $scriptDir "run-preservice-growth-parallel-batch.ps1"', script)
+        self.assertIn("$wrapperParams = @", script)
+        self.assertIn("$LaneExtraArgsText -split", script)
+        self.assertIn("$wrapperParams.ExtraArgs = $laneExtraArgs", script)
+        self.assertIn("& $Wrapper @wrapperParams", script)
+        self.assertIn("ExtraArgsText", script)
+        self.assertIn("tools/summarize-dummy-growth-run.py", script)
+        self.assertIn("runner.stdout.log", script)
+        self.assertIn("runner.stderr.log", script)
+        self.assertIn("lanes.csv", script)
+        self.assertIn("lane-results.csv", script)
+        self.assertIn("MaxConcurrentLanes", script)
+        self.assertIn("ProgressIntervalSeconds", script)
+        self.assertIn("Write-ProgressSnapshot", script)
+        self.assertIn("Wait-Job -Job $jobs -Any -Timeout 5", script)
+        self.assertIn("realm={2,-3}", script)
+        self.assertIn("$_.Realm -eq $lane.Realm", script)
+        self.assertIn("timeline.csv", script)
+        self.assertIn('segment-*-metrics.csv', script)
+
+    def test_preservice_growth_visible_dummy_console_launcher(self) -> None:
+        batch = (ROOT / "start-preservice-growth-variant-lanes-visible.bat").read_text(encoding="utf-8")
+        launcher = (ROOT / "tools" / "start-preservice-growth-variant-lanes-visible.ps1").read_text(
+            encoding="utf-8"
+        )
+        console = (ROOT / "tools" / "run-preservice-growth-variant-lanes-console.ps1").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("start-preservice-growth-variant-lanes-visible.ps1", batch)
+        self.assertIn("Start-Process", launcher)
+        self.assertIn("-WindowStyle Normal", launcher)
+        self.assertIn("run-preservice-growth-variant-lanes-console.ps1", launcher)
+        self.assertIn("ProgressIntervalSeconds", launcher)
+        self.assertIn("WindowTitle", console)
+        self.assertIn("KDAOC Dummy Growth Progress", console)
+        self.assertIn("run-preservice-growth-variant-lanes.ps1", console)
+        self.assertIn("This console stays open for progress review", console)
 
 
 if __name__ == "__main__":

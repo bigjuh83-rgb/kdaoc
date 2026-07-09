@@ -13,7 +13,7 @@ echo ============================================
 C:\Windows\System32\wsl.exe -d Ubuntu --cd "%REPO_WSL%" --exec /bin/bash -lc "export LANG=C.UTF-8; exec /home/bigjuh/.dotnet/dotnet build GameServer/GameServer.csproj -c Debug"
 if %ERRORLEVEL% NEQ 0 (
     echo BUILD FAILED
-    pause
+    if /I not "%CODEX_SHELL%"=="1" pause
     exit /b 1
 )
 echo BUILD OK

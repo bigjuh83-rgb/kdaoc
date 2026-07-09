@@ -77,6 +77,34 @@ class ValidateDummy50SetupTests(unittest.TestCase):
         self.assertTrue(any("SerializedSpecs" in failure for failure in failures))
         self.assertTrue(any("SerializedAbilities" in failure for failure in failures))
 
+    def test_speed_song_profile_requires_instrument_slot_without_weapon_dps_threshold(self) -> None:
+        character = valid_character()
+        character.update(
+            {
+                "account": "albtest012",
+                "class": "4",
+                "specs": "Instruments|44;Slash|39;Stealth|25",
+            }
+        )
+        profile = validator.equip.CLASS_PROFILES[4]
+        equipment = {
+            "char-id": {
+                slot: {
+                    "template_id": f"slot_{slot}",
+                    "object_type": str(object_type),
+                    "item_type": str(slot),
+                    "dps_af": "2" if kind == "instrument" else "165" if kind == "weapon" else "102",
+                    "quality": "100",
+                }
+                for slot, (object_type, kind) in validator.expected_slots(profile).items()
+            }
+        }
+
+        failures = validator.validate_db_setup([character], equipment)
+
+        self.assertEqual(failures, [])
+        self.assertEqual(validator.expected_slots(profile)[13], (45, "instrument"))
+
 
 if __name__ == "__main__":
     raise SystemExit(unittest.main())

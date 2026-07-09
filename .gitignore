@@ -503,3 +503,20 @@ $RECYCLE.BIN/
 
 # OpenDAoC
 /Pathing/Detour/Build
+
+# Local integration and diagnostic artifacts
+/test-output/
+/tools/test-output/
+/test-run-*/
+/dummy-dynamic-quest-runs/
+/case-route-home/
+/opendaoc-mysql-*.ini
+
+# Temporary local build wrappers
+/tools/_bs.sh
+/tools/_build.sh
+/tools/_enable_db.sh
+/tools/_tmp_build.sh
+/tools/_tmp_enable_dialogue.sh
+/tools/_tmp_enable_output.txt
+/tools/_wsl_wrapper.sh

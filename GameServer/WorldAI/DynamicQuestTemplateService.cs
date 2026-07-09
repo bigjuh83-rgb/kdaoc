@@ -1,9 +1,11 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Numerics;
 using DOL.Database;
 using DOL.Language;
 
@@ -32,6 +34,10 @@ namespace DOL.GS.WorldAI
         public string StoryModel { get; set; } = string.Empty;
         public int StoryQualityScore { get; set; }
         public string StoryQualityJson { get; set; } = string.Empty;
+        public int DummyEvaluationScore { get; set; }
+        public int DummyEvaluationCount { get; set; }
+        public string DummyEvaluationJson { get; set; } = string.Empty;
+        public DateTime DummyEvaluatedAt { get; set; } = DateTime.MinValue;
         public string StoryNarrativeJson { get; set; } = string.Empty;
         public string StoryPresentationJson { get; set; } = string.Empty;
         public DateTime StoryGeneratedAt { get; set; } = DateTime.MinValue;
@@ -49,6 +55,7 @@ namespace DOL.GS.WorldAI
         public string Message { get; set; } = string.Empty;
         public string BindingKey { get; set; } = string.Empty;
         public DynamicQuestDefinition Quest { get; set; }
+        public DynamicQuestEvaluationResult OperationalEvaluation { get; set; }
 
         public static DynamicQuestTemplateBindingResult Fail(string message)
         {
@@ -73,6 +80,7 @@ namespace DOL.GS.WorldAI
         private const int NearStartExpandedSafeRadius = 12000;
         private const int StarterMaxSoloSafeTargetLevel = 2;
         private const int AutoAcceptFallbackMaxTargetLevel = 5;
+        private const int AutoAcceptMaxSoloTargetLevelOffset = 2;
         private const int TargetAreaThreatRadius = 900;
         private const int TargetRouteThreatRadius = 1200;
 
@@ -116,13 +124,61 @@ namespace DOL.GS.WorldAI
             DynamicQuestTargetPlan targetPlan = BuildTargetPlan(template, targetNpc, npcList);
             string bindingKey = BuildBindingKey(template, startNpc, targetNpc, targetPlan);
             DynamicQuestDefinition quest = BuildQuest(template, startNpc, targetNpc, targetPlan, bindingKey);
+            DynamicQuestEvaluationContext evaluationContext = BuildEvaluationContext(
+                template,
+                startNpc,
+                targetNpc,
+                targetPlan,
+                npcList);
+            DynamicQuestEvaluationResult evaluation = DynamicQuestOperationalEvaluator.Instance.Evaluate(
+                quest,
+                evaluationContext);
+            if (!evaluation.Passed)
+            {
+                string warningDetails = evaluation.Warnings.Count == 0
+                    ? string.Empty
+                    : $" warnings={string.Join("|", evaluation.Warnings)}";
+                return new DynamicQuestTemplateBindingResult
+                {
+                    Success = false,
+                    Message = $"dynamic quest operational evaluation failed: {string.Join("; ", evaluation.FailReasons)} score={evaluation.TotalScore} cinematic={evaluation.CinematicScore}{warningDetails}",
+                    BindingKey = bindingKey,
+                    Quest = quest,
+                    OperationalEvaluation = evaluation
+                };
+            }
+
             return new DynamicQuestTemplateBindingResult
             {
                 Success = true,
                 Message = $"dynamic quest template bound: {template.TemplateId}",
                 BindingKey = bindingKey,
-                Quest = quest
+                Quest = quest,
+                OperationalEvaluation = evaluation
             };
+        }
+
+        private static DynamicQuestEvaluationContext BuildEvaluationContext(
+            DynamicQuestTemplate template,
+            DynamicQuestSeedNpc startNpc,
+            DynamicQuestSeedNpc targetNpc,
+            DynamicQuestTargetPlan targetPlan,
+            IList<DynamicQuestSeedNpc> npcList)
+        {
+            DynamicQuestEvaluationContext context = new()
+            {
+                RequireWorldBindings = true,
+                StartNpc = startNpc,
+                TargetNpc = targetNpc,
+                TargetClusterCount = FindNearbyTargetCluster(template, targetNpc, npcList).Count(),
+                RequestedTargetCount = EffectiveRequestedTargetCount(template),
+                TargetDistance = startNpc == null || targetNpc == null
+                    ? 0
+                    : (int)Math.Sqrt(Math.Max(0, DistanceSquared(startNpc, targetNpc)))
+            };
+
+            ApplyRouteAccessibilityContext(context, template, startNpc, targetNpc);
+            return context;
         }
 
         internal static DbDynamicQuestTemplate ToRowForTest(DynamicQuestTemplate template)
@@ -169,6 +225,10 @@ namespace DOL.GS.WorldAI
                 StoryModel = template.StoryModel ?? string.Empty,
                 StoryQualityScore = Math.Clamp(template.StoryQualityScore, 0, 100),
                 StoryQualityJson = template.StoryQualityJson ?? string.Empty,
+                DummyEvaluationScore = Math.Clamp(template.DummyEvaluationScore, 0, 100),
+                DummyEvaluationCount = Math.Max(0, template.DummyEvaluationCount),
+                DummyEvaluationJson = template.DummyEvaluationJson ?? string.Empty,
+                DummyEvaluatedAt = template.DummyEvaluatedAt == default ? DateTime.MinValue : template.DummyEvaluatedAt,
                 StoryNarrativeJson = template.StoryNarrativeJson ?? string.Empty,
                 StoryPresentationJson = template.StoryPresentationJson ?? string.Empty,
                 StoryGeneratedAt = template.StoryGeneratedAt == default ? DateTime.MinValue : template.StoryGeneratedAt,
@@ -209,6 +269,10 @@ namespace DOL.GS.WorldAI
                 StoryModel = row.StoryModel ?? string.Empty,
                 StoryQualityScore = Math.Clamp(row.StoryQualityScore, 0, 100),
                 StoryQualityJson = row.StoryQualityJson ?? string.Empty,
+                DummyEvaluationScore = Math.Clamp(row.DummyEvaluationScore, 0, 100),
+                DummyEvaluationCount = Math.Max(0, row.DummyEvaluationCount),
+                DummyEvaluationJson = row.DummyEvaluationJson ?? string.Empty,
+                DummyEvaluatedAt = row.DummyEvaluatedAt,
                 StoryNarrativeJson = row.StoryNarrativeJson ?? string.Empty,
                 StoryPresentationJson = row.StoryPresentationJson ?? string.Empty,
                 StoryGeneratedAt = row.StoryGeneratedAt,
@@ -354,16 +418,17 @@ namespace DOL.GS.WorldAI
                 ? candidates
                     .OrderBy(npc => TargetAutoAcceptSoloRiskRank(npc, template))
                     .ThenBy(npc => TargetGrowthRiskRank(npc, template))
-                    .ThenBy(npc => TargetAreaThreatRank(npcs, npc, template))
+                    .ThenBy(npc => TargetStarterAutoAcceptLevelRank(npc, template))
                     .ThenBy(npc => TargetNameHintRank(npc, template))
-                    .ThenBy(npc => Math.Abs((npc.Level <= 0 ? template.MinLevel : npc.Level) - template.MinLevel))
+                    .ThenBy(npc => TargetAreaThreatRank(npcs, npc, template))
+                    .ThenBy(npc => TargetSafetyRankLevel(npc, template))
                     .ThenBy(npc => TargetStarterPreyNameRank(npc, template))
                     .ThenBy(npc => npc.Name, StringComparer.OrdinalIgnoreCase)
                 : candidates
                     .OrderBy(npc => TargetStarterUnsafeNameRank(npc, template))
                     .ThenBy(npc => TargetGrowthRiskRank(npc, template))
                     .ThenBy(npc => TargetNameHintRank(npc, template))
-                    .ThenBy(npc => Math.Abs((npc.Level <= 0 ? template.MinLevel : npc.Level) - template.MinLevel))
+                    .ThenBy(npc => TargetSafetyRankLevel(npc, template))
                     .ThenBy(npc => TargetStarterPreyNameRank(npc, template))
                     .ThenBy(npc => npc.Name, StringComparer.OrdinalIgnoreCase);
 
@@ -384,7 +449,7 @@ namespace DOL.GS.WorldAI
                 (template.PreferredRegionId == 0 || npc.RegionId == template.PreferredRegionId) &&
                 (startNpc == null || npc.RegionId == startNpc.RegionId) &&
                 (startNpc == null || !string.Equals(npc.InternalID, startNpc.InternalID, StringComparison.OrdinalIgnoreCase)) &&
-                (npc.Level <= 0 || (npc.Level >= template.MinLevel && npc.Level <= template.MaxLevel)));
+                IsTargetLevelCandidate(npc, template));
 
             if (pinned == null)
                 return null;
@@ -468,10 +533,99 @@ namespace DOL.GS.WorldAI
             return pdx * pdx + pdy * pdy;
         }
 
+        private static void ApplyRouteAccessibilityContext(
+            DynamicQuestEvaluationContext context,
+            DynamicQuestTemplate template,
+            DynamicQuestSeedNpc startNpc,
+            DynamicQuestSeedNpc targetNpc)
+        {
+            if (context == null || template == null || targetNpc == null)
+                return;
+
+            DynamicQuestSeedNpc routeStart = startNpc ?? targetNpc;
+            ushort regionId = routeStart.RegionId != 0
+                ? routeStart.RegionId
+                : (template.PreferredRegionId != 0 ? template.PreferredRegionId : targetNpc.RegionId);
+            if (regionId == 0)
+                return;
+
+            Region region = WorldMgr.GetRegion(regionId);
+            if (region == null)
+                return;
+
+            context.HasRouteAccessibility = true;
+            Zone startZone = region.GetZone(routeStart.X, routeStart.Y);
+            Zone targetZone = region.GetZone(targetNpc.X, targetNpc.Y);
+            context.StartInKnownZone = startZone != null;
+            context.TargetInKnownZone = targetZone != null;
+            context.SameZone = startZone != null && targetZone != null && startZone.ID == targetZone.ID;
+
+            if (startNpc == null || IsSameNpc(routeStart, targetNpc))
+                return;
+
+            if (!context.SameZone || startZone == null)
+                return;
+
+            context.NavmeshAvailable = startZone.IsPathfindingEnabled && PathfindingProvider.Instance.HasNavmesh(startZone);
+            if (!context.NavmeshAvailable)
+                return;
+
+            Vector3 start = new(routeStart.X, routeStart.Y, routeStart.Z);
+            Vector3 end = new(targetNpc.X, targetNpc.Y, targetNpc.Z);
+            const float snapRange = 96f;
+            PathfindingProvider.Instance.TrySnapToMesh(startZone, ref start, snapRange);
+            PathfindingProvider.Instance.TrySnapToMesh(startZone, ref end, snapRange);
+
+            const int nodeCapacity = 128;
+            WrappedPathfindingNode[] nodes = ArrayPool<WrappedPathfindingNode>.Shared.Rent(nodeCapacity);
+            try
+            {
+                PathfindingResult path = PathfindingProvider.Instance.GetPathStraight(
+                    startZone,
+                    start,
+                    end,
+                    PathfindingProvider.Instance.BlockingDoorAvoidanceFilters,
+                    nodes.AsSpan(0, nodeCapacity));
+                context.RouteChecked = true;
+                context.RouteFound = path.Status is PathfindingStatus.PathFound
+                    or PathfindingStatus.PartialPathFound
+                    or PathfindingStatus.BufferTooSmall;
+                context.RouteStatus = path.Status.ToString();
+            }
+            catch (Exception ex)
+            {
+                context.RouteChecked = false;
+                context.RouteFound = false;
+                context.RouteStatus = ex.GetType().Name;
+            }
+            finally
+            {
+                ArrayPool<WrappedPathfindingNode>.Shared.Return(nodes);
+            }
+        }
+
         private static int TargetSafetyRankLevel(DynamicQuestSeedNpc npc, DynamicQuestTemplate template)
         {
             int minLevel = Math.Clamp(template?.MinLevel ?? 1, 1, 50);
-            return Math.Abs(((npc?.Level ?? 0) <= 0 ? minLevel : npc.Level) - minLevel);
+            int effectiveLevel = (npc?.Level ?? 0) <= 0 ? minLevel : npc.Level;
+            if (IsStarterSafetyConstrained(template))
+                return Math.Max(0, effectiveLevel - 1);
+
+            return Math.Abs(effectiveLevel - minLevel);
+        }
+
+        private static int TargetStarterAutoAcceptLevelRank(DynamicQuestSeedNpc npc, DynamicQuestTemplate template)
+        {
+            if (npc == null ||
+                template == null ||
+                template.StartMode != DynamicQuestStartMode.AutoAccept ||
+                !IsStarterSafetyConstrained(template))
+            {
+                return 0;
+            }
+
+            int effectiveLevel = npc.Level <= 0 ? Math.Max(1, template.MinLevel) : npc.Level;
+            return Math.Max(0, effectiveLevel - 1);
         }
 
         private static int TargetAggressionRank(DynamicQuestSeedNpc targetNpc, DynamicQuestTemplate template)
@@ -531,17 +685,41 @@ namespace DOL.GS.WorldAI
                 return template.StartMode != DynamicQuestStartMode.AutoAccept ||
                        template.MinLevel <= AutoAcceptFallbackMaxTargetLevel;
 
+            if (template.StartMode == DynamicQuestStartMode.AutoAccept)
+            {
+                if (IsLikelyProperNamedTarget(npc.Name) && !IsAggressiveProperNamedAutoAcceptTarget(npc))
+                    return false;
+
+                int maxSoloLevel = Math.Min(
+                    Math.Clamp(template.MaxLevel <= 0 ? template.MinLevel : template.MaxLevel, 1, 50),
+                    Math.Clamp(template.MinLevel <= 0 ? 1 : template.MinLevel, 1, 50) + AutoAcceptMaxSoloTargetLevelOffset);
+                if (npc.Level >= template.MinLevel && npc.Level <= maxSoloLevel)
+                    return true;
+
+                if (IsStarterSafetyConstrained(template) &&
+                    npc.Level >= 1 &&
+                    npc.Level <= StarterMaxSoloSafeTargetLevel)
+                    return true;
+
+                return npc.Level >= 1 &&
+                       npc.Level <= AutoAcceptFallbackMaxTargetLevel;
+            }
+
             if (npc.Level >= template.MinLevel && npc.Level <= template.MaxLevel)
                 return true;
 
-            if (IsStarterSafetyConstrained(template) &&
-                npc.Level >= 1 &&
-                npc.Level <= StarterMaxSoloSafeTargetLevel)
-                return true;
-
-            return template.StartMode == DynamicQuestStartMode.AutoAccept &&
+            return IsStarterSafetyConstrained(template) &&
                    npc.Level >= 1 &&
-                   npc.Level <= AutoAcceptFallbackMaxTargetLevel;
+                   npc.Level <= StarterMaxSoloSafeTargetLevel;
+        }
+
+        private static bool IsAggressiveProperNamedAutoAcceptTarget(DynamicQuestSeedNpc npc)
+        {
+            if (npc == null || !npc.HasSourceNpcMetadata)
+                return false;
+
+            return DynamicQuestSeedService.IsLikelyWorldQuestTarget(npc) &&
+                   (npc.SourceAggroLevel > 0 || npc.SourceAggroRange > 0 || npc.HasGrowthState);
         }
 
         private static bool IsLikelyInvalidTargetDisplayName(string name)
@@ -589,7 +767,11 @@ namespace DOL.GS.WorldAI
             if (string.IsNullOrWhiteSpace(name))
                 return 0;
 
-            if (ContainsAny(name, "large ant", "dragon ant", "giant", "massive", "elder", "ancient", "raider", "brawler", "bandit", "nuisance"))
+            if (ContainsAny(name, "large ant", "dragon ant", "giant", "massive", "elder", "ancient", "raider", "brawler", "bandit", "nuisance", "lough wolf cadger", "lynx", "water goblin", "wild hog", "vendo grunt", "hobgoblin", "huldu outcast", "meandering spirit"))
+                return 30;
+
+            if (template.StartMode == DynamicQuestStartMode.NpcOffer &&
+                ContainsAny(name, "soft-shelled crab"))
                 return 30;
 
             return 0;
@@ -598,7 +780,7 @@ namespace DOL.GS.WorldAI
         private static bool IsStarterUnsafeName(string name)
         {
             string normalized = NormalizeNameForSafetyRank(name);
-            return ContainsAny(normalized, "large ant", "dragon ant", "giant", "massive", "elder", "ancient", "raider", "brawler", "bandit", "nuisance");
+            return ContainsAny(normalized, "large ant", "dragon ant", "giant", "massive", "elder", "ancient", "raider", "brawler", "bandit", "nuisance", "soft-shelled crab", "lough wolf cadger", "lynx", "water goblin", "wild hog", "vendo grunt", "hobgoblin", "huldu outcast", "meandering spirit");
         }
 
         private static List<DynamicQuestSeedNpc> PreferStarterSafeTargets(
@@ -819,7 +1001,7 @@ namespace DOL.GS.WorldAI
             if (string.IsNullOrWhiteSpace(name))
                 return 10;
 
-            if (ContainsAny(name, "pup", "piglet", "larva", "young ", "soft-shelled", "beetle larva"))
+            if (ContainsAny(name, "pup", "piglet", "larva", "young ", "beetle larva"))
                 return 0;
 
             return 10;
@@ -1138,6 +1320,13 @@ namespace DOL.GS.WorldAI
             ushort startRegionId = requiresStartNpc
                 ? startNpc.RegionId
                 : (template.PreferredRegionId > 0 ? template.PreferredRegionId : targetNpc.RegionId);
+            int questMinLevel = Math.Clamp(template.MinLevel, 1, 50);
+            int questMaxLevel = Math.Clamp(Math.Max(template.MaxLevel, template.MinLevel), 1, 50);
+            if (ShouldAlignQuestLevelToBoundTarget(template, targetPlan, questMinLevel))
+            {
+                questMinLevel = Math.Clamp(targetPlan.ObjectiveMinLevel, 1, 50);
+                questMaxLevel = Math.Clamp(Math.Max(targetPlan.ObjectiveMaxLevel, questMinLevel), 1, 50);
+            }
 
             return new DynamicQuestDefinition
             {
@@ -1158,8 +1347,8 @@ namespace DOL.GS.WorldAI
                 StartMode = template.StartMode,
                 TargetName = targetNpc.Name ?? string.Empty,
                 TargetCount = targetPlan.Count,
-                MinLevel = Math.Clamp(template.MinLevel, 1, 50),
-                MaxLevel = Math.Clamp(Math.Max(template.MaxLevel, template.MinLevel), 1, 50),
+                MinLevel = questMinLevel,
+                MaxLevel = questMaxLevel,
                 StartNodeId = requiresStartNpc ? "talk" : "explore",
                 Nodes = BuildGraph(template, startNpc, targetNpc, targetPlan, renderedOffer, renderedProgress, renderedFinish),
                 Reward = new DynamicQuestRewardDefinition
@@ -1173,6 +1362,18 @@ namespace DOL.GS.WorldAI
                 BindingKey = bindingKey,
                 WorldRevision = template.WorldRevision ?? string.Empty
             };
+        }
+
+        private static bool ShouldAlignQuestLevelToBoundTarget(
+            DynamicQuestTemplate template,
+            DynamicQuestTargetPlan targetPlan,
+            int requestedMinLevel)
+        {
+            return template != null &&
+                   targetPlan != null &&
+                   IsStarterSafetyConstrained(template) &&
+                   targetPlan.ObjectiveMaxLevel > 0 &&
+                   targetPlan.ObjectiveMaxLevel < requestedMinLevel;
         }
 
         private static IList<string> BuildTags(
@@ -1190,6 +1391,12 @@ namespace DOL.GS.WorldAI
                 .Where(tag => !IsWorldSignalTag(tag, out _))
                 .ToList();
             string worldSignal = ResolveWorldSignal(template);
+            if (!tags.Any(IsStoryFamilyTag))
+            {
+                string storyFamilyId = BuildDefaultStoryFamilyId(template);
+                if (!string.IsNullOrWhiteSpace(storyFamilyId))
+                    tags.Add($"story-family:{storyFamilyId}");
+            }
 
             tags.AddRange(new[]
             {
@@ -1208,7 +1415,10 @@ namespace DOL.GS.WorldAI
                 tags.Add($"trigger:{template.Trigger.Trim()}");
 
             if (!string.IsNullOrWhiteSpace(worldSignal))
+            {
+                tags.Add(BranchTagForWorldSignal(worldSignal));
                 tags.Add($"world-signal:{worldSignal}");
+            }
 
             if (!string.IsNullOrWhiteSpace(template.StoryProvider))
                 tags.Add($"llm-provider:{template.StoryProvider.Trim()}");
@@ -1222,6 +1432,24 @@ namespace DOL.GS.WorldAI
             return tags.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         }
 
+        private static string BranchTagForWorldSignal(string signal)
+        {
+            signal = (signal ?? string.Empty).Trim();
+            if (signal.StartsWith("mob-growth:", StringComparison.OrdinalIgnoreCase))
+                return "branch:mob-growth";
+            if (signal.StartsWith("time-window", StringComparison.OrdinalIgnoreCase))
+                return "branch:time-window";
+            if (signal.StartsWith("item-acquired", StringComparison.OrdinalIgnoreCase))
+                return "branch:item-acquired";
+            if (signal.StartsWith("region-entered", StringComparison.OrdinalIgnoreCase) ||
+                signal.StartsWith("region:", StringComparison.OrdinalIgnoreCase))
+            {
+                return "branch:region-entered";
+            }
+
+            return "branch:world-signal";
+        }
+
         private static bool ShouldIncludeTemplateTrigger(DynamicQuestTemplate template, string worldSignal)
         {
             string trigger = (template?.Trigger ?? string.Empty).Trim();
@@ -1229,10 +1457,21 @@ namespace DOL.GS.WorldAI
                 return false;
 
             bool itemAcquiredBranch = template.StartMode == DynamicQuestStartMode.AutoAccept &&
-                                      trigger.StartsWith("item-acquired", StringComparison.OrdinalIgnoreCase) &&
                                       (worldSignal ?? string.Empty).Trim().StartsWith("item-acquired", StringComparison.OrdinalIgnoreCase);
+            bool itemAcquiredStartTrigger = trigger.StartsWith("item-acquired", StringComparison.OrdinalIgnoreCase) ||
+                                            trigger.StartsWith("time-window", StringComparison.OrdinalIgnoreCase);
 
-            return !itemAcquiredBranch;
+            return !itemAcquiredBranch || !itemAcquiredStartTrigger;
+        }
+
+        private static bool IsStoryFamilyTag(string tag)
+        {
+            return (tag ?? string.Empty).Trim().StartsWith("story-family:", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string BuildDefaultStoryFamilyId(DynamicQuestTemplate template)
+        {
+            return (template?.TemplateId ?? string.Empty).Trim();
         }
 
         private static bool IsRuntimeBindingTag(string tag)
@@ -1271,6 +1510,7 @@ namespace DOL.GS.WorldAI
                 return BuildWorldGraph(template, targetNpc, targetPlan, renderedProgress, renderedFinish);
 
             string worldSignal = ResolveWorldSignal(template);
+            string targetTraceName = FormatStoryTargetPossessive(targetNpc.Name) + " 흔적";
             List<DynamicQuestNode> nodes = new()
             {
                 new DynamicQuestNode
@@ -1292,10 +1532,10 @@ namespace DOL.GS.WorldAI
                     Id = "explore",
                     Type = DynamicQuestNodeType.Explore,
                     Title = "흔적 조사",
-                    Text = $"{targetNpc.Name} 흔적을 조사하세요.",
+                    Text = $"{targetTraceName}을 조사하세요.",
                     Objective = new DynamicQuestObjective
                     {
-                        LocationName = $"{targetNpc.Name} 흔적",
+                        LocationName = targetTraceName,
                         RegionId = targetNpc.RegionId,
                         X = Math.Max(1, targetNpc.X),
                         Y = Math.Max(1, targetNpc.Y),
@@ -1319,6 +1559,10 @@ namespace DOL.GS.WorldAI
                         MinLevel = targetPlan.ObjectiveMinLevel,
                         MaxLevel = targetPlan.ObjectiveMaxLevel,
                         RegionId = targetNpc.RegionId,
+                        X = Math.Max(1, targetNpc.X),
+                        Y = Math.Max(1, targetNpc.Y),
+                        Z = Math.Max(0, targetNpc.Z),
+                        Radius = 6500,
                         AllowGroupCredit = true
                     },
                     Edges = new[] { new DynamicQuestEdge { ToNodeId = "return", Condition = DynamicQuestEdgeCondition.ObjectiveComplete } }
@@ -1353,7 +1597,13 @@ namespace DOL.GS.WorldAI
                     },
                     Edges = new[]
                     {
-                        new DynamicQuestEdge { ToNodeId = "complete", Condition = DynamicQuestEdgeCondition.ChoiceSelected, ConditionValue = "safe", Priority = 0 },
+                        new DynamicQuestEdge
+                        {
+                            ToNodeId = string.IsNullOrWhiteSpace(worldSignal) ? "complete" : "observe_signal",
+                            Condition = DynamicQuestEdgeCondition.ChoiceSelected,
+                            ConditionValue = "safe",
+                            Priority = 0
+                        },
                         new DynamicQuestEdge
                         {
                             ToNodeId = string.IsNullOrWhiteSpace(worldSignal) ? "complete" : "observe_signal",
@@ -1387,6 +1637,7 @@ namespace DOL.GS.WorldAI
             string renderedFinish)
         {
             string worldSignal = ResolveWorldSignal(template);
+            string targetTraceName = FormatStoryTargetPossessive(targetNpc.Name) + " 흔적";
             List<DynamicQuestNode> nodes = new()
             {
                 new DynamicQuestNode
@@ -1394,10 +1645,10 @@ namespace DOL.GS.WorldAI
                     Id = "explore",
                     Type = DynamicQuestNodeType.Explore,
                     Title = "흔적 조사",
-                    Text = $"{targetNpc.Name} 흔적을 조사하세요.",
+                    Text = $"{targetTraceName}을 조사하세요.",
                     Objective = new DynamicQuestObjective
                     {
-                        LocationName = $"{targetNpc.Name} 흔적",
+                        LocationName = targetTraceName,
                         RegionId = targetNpc.RegionId,
                         X = Math.Max(1, targetNpc.X),
                         Y = Math.Max(1, targetNpc.Y),
@@ -1421,6 +1672,10 @@ namespace DOL.GS.WorldAI
                         MinLevel = targetPlan.ObjectiveMinLevel,
                         MaxLevel = targetPlan.ObjectiveMaxLevel,
                         RegionId = targetNpc.RegionId,
+                        X = Math.Max(1, targetNpc.X),
+                        Y = Math.Max(1, targetNpc.Y),
+                        Z = Math.Max(0, targetNpc.Z),
+                        Radius = 6500,
                         AllowGroupCredit = true
                     },
                     Edges = new[]
@@ -1471,7 +1726,13 @@ namespace DOL.GS.WorldAI
                 },
                 Edges = new[]
                 {
-                    new DynamicQuestEdge { ToNodeId = "complete", Condition = DynamicQuestEdgeCondition.ChoiceSelected, ConditionValue = "safe", Priority = 0 },
+                    new DynamicQuestEdge
+                    {
+                        ToNodeId = string.IsNullOrWhiteSpace(worldSignal) ? "complete" : "observe_signal",
+                        Condition = DynamicQuestEdgeCondition.ChoiceSelected,
+                        ConditionValue = "safe",
+                        Priority = 0
+                    },
                     new DynamicQuestEdge
                     {
                         ToNodeId = string.IsNullOrWhiteSpace(worldSignal) ? "complete" : "observe_signal",
@@ -1485,15 +1746,20 @@ namespace DOL.GS.WorldAI
 
         private static DynamicQuestNode BuildSignalObservationNode(DynamicQuestSeedNpc targetNpc, string worldSignal)
         {
+            bool regionEntered = IsRegionEnteredSignal(worldSignal);
+            string targetNoun = FormatStoryTargetNoun(targetNpc.Name);
+            string targetPossessive = FormatStoryTargetPossessive(targetNpc.Name);
             return new DynamicQuestNode
             {
                 Id = "observe_signal",
                 Type = DynamicQuestNodeType.Explore,
-                Title = "변화 관측",
-                Text = $"{targetNpc.Name} 주변에서 성장한 위협의 움직임을 지켜보세요.",
+                Title = regionEntered ? "지역 정찰" : "변화 관측",
+                Text = regionEntered
+                    ? $"{targetPossessive} 흔적이 이어진 지역으로 이동해 현장을 확인하세요."
+                    : $"{targetNoun} 주변에서 성장한 위협의 움직임을 지켜보세요.",
                 Objective = new DynamicQuestObjective
                 {
-                    LocationName = $"{targetNpc.Name} 성장 징후",
+                    LocationName = regionEntered ? $"{targetNoun} 현장 정찰" : $"{targetNoun} 성장 징후",
                     RegionId = targetNpc.RegionId,
                     X = Math.Max(1, targetNpc.X),
                     Y = Math.Max(1, targetNpc.Y),
@@ -1518,6 +1784,18 @@ namespace DOL.GS.WorldAI
                     }
                 }
             };
+        }
+
+        private static bool IsRegionEnteredSignal(string signal)
+        {
+            signal = (signal ?? string.Empty).Trim();
+            return signal.StartsWith("region-entered", StringComparison.OrdinalIgnoreCase) ||
+                   signal.StartsWith("region:", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsItemAcquiredSignal(string signal)
+        {
+            return (signal ?? string.Empty).Trim().StartsWith("item-acquired", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string ResolveWorldSignal(DynamicQuestTemplate template)
@@ -1557,11 +1835,172 @@ namespace DOL.GS.WorldAI
             if (value.Length == 0)
                 return string.Empty;
 
-            value = value.Replace("{{target}}", targetNpc?.Name ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+            string targetName = targetNpc?.Name ?? string.Empty;
+            value = NaturalizeKoreanTargetPhrases(value, targetName);
+            value = value.Replace("{{target}}", targetName, StringComparison.OrdinalIgnoreCase);
             value = value.Replace("{{start_npc}}", startNpc?.Name ?? template?.PreferredStartNpcName ?? string.Empty, StringComparison.OrdinalIgnoreCase);
             value = value.Replace("{{realm}}", template?.Realm ?? string.Empty, StringComparison.OrdinalIgnoreCase);
             value = value.Replace("{{count}}", Math.Max(1, count).ToString(), StringComparison.OrdinalIgnoreCase);
-            return LanguageMgr.ApplyKoreanParticles(value).Trim();
+            return NormalizeQuotedAsciiKoreanParticles(LanguageMgr.ApplyKoreanParticles(value)).Trim();
+        }
+
+        private static string NaturalizeKoreanTargetPhrases(string value, string targetName)
+        {
+            if (string.IsNullOrWhiteSpace(value) || string.IsNullOrWhiteSpace(targetName))
+                return value ?? string.Empty;
+
+            string noun = FormatStoryTargetNoun(targetName);
+            string possessive = $"{noun}의";
+            value = value.Replace("{{target}} 위협", $"{possessive} 위협", StringComparison.OrdinalIgnoreCase);
+            value = value.Replace("{{target}} 흔적", $"{possessive} 흔적", StringComparison.OrdinalIgnoreCase);
+            value = value.Replace("{{target}} 때문에", $"{noun} 때문에", StringComparison.OrdinalIgnoreCase);
+            value = value.Replace("{{target}} 소식", $"{noun} 소식", StringComparison.OrdinalIgnoreCase);
+            return value;
+        }
+
+        private static string FormatStoryTargetNoun(string targetName)
+        {
+            string value = (targetName ?? string.Empty).Trim();
+            if (value.Length == 0 || ContainsHangul(value) || IsAlreadyQuoted(value))
+                return value;
+
+            return $"'{value}'";
+        }
+
+        private static string FormatStoryTargetPossessive(string targetName)
+        {
+            string noun = FormatStoryTargetNoun(targetName);
+            return string.IsNullOrWhiteSpace(noun) ? string.Empty : $"{noun}의";
+        }
+
+        private static string NormalizeQuotedAsciiKoreanParticles(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return value ?? string.Empty;
+
+            StringBuilder builder = null;
+            int lastCopyStart = 0;
+            for (int index = 0; index < value.Length; index++)
+            {
+                if (value[index] != '\'')
+                    continue;
+
+                int close = value.IndexOf('\'', index + 1);
+                if (close <= index + 1 || !IsAsciiDisplayToken(value, index + 1, close - index - 1))
+                    continue;
+
+                bool hasFinalConsonant = HasAsciiFinalConsonant(value, index + 1, close - index - 1);
+                if (hasFinalConsonant)
+                    continue;
+
+                string replacement = null;
+                int particleLength = 0;
+                int particleStart = close + 1;
+                if (StartsWithAt(value, particleStart, "이라는"))
+                {
+                    replacement = "라는";
+                    particleLength = "이라는".Length;
+                }
+                else if (StartsWithAt(value, particleStart, "이라고"))
+                {
+                    replacement = "라고";
+                    particleLength = "이라고".Length;
+                }
+                else if (particleStart < value.Length)
+                {
+                    switch (value[particleStart])
+                    {
+                        case '이':
+                            replacement = "가";
+                            particleLength = 1;
+                            break;
+                        case '은':
+                            replacement = "는";
+                            particleLength = 1;
+                            break;
+                        case '을':
+                            replacement = "를";
+                            particleLength = 1;
+                            break;
+                        case '과':
+                            replacement = "와";
+                            particleLength = 1;
+                            break;
+                    }
+                }
+
+                if (replacement == null)
+                    continue;
+
+                builder ??= new StringBuilder(value.Length);
+                builder.Append(value, lastCopyStart, particleStart - lastCopyStart);
+                builder.Append(replacement);
+                lastCopyStart = particleStart + particleLength;
+                index = particleStart + particleLength - 1;
+            }
+
+            if (builder == null)
+                return value;
+
+            builder.Append(value, lastCopyStart, value.Length - lastCopyStart);
+            return builder.ToString();
+        }
+
+        private static bool StartsWithAt(string value, int index, string prefix)
+        {
+            return !string.IsNullOrEmpty(value) &&
+                !string.IsNullOrEmpty(prefix) &&
+                index >= 0 &&
+                index + prefix.Length <= value.Length &&
+                string.Compare(value, index, prefix, 0, prefix.Length, StringComparison.Ordinal) == 0;
+        }
+
+        private static bool IsAsciiDisplayToken(string value, int start, int length)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                char c = value[start + i];
+                if (c > 127)
+                    return false;
+                if (!char.IsLetterOrDigit(c) && c != ' ' && c != '-' && c != '_')
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static bool HasAsciiFinalConsonant(string value, int start, int length)
+        {
+            for (int i = start + length - 1; i >= start; i--)
+            {
+                char c = char.ToLowerInvariant(value[i]);
+                if (c < 'a' || c > 'z')
+                    continue;
+
+                return c is not ('a' or 'e' or 'i' or 'o' or 'u' or 'y');
+            }
+
+            return true;
+        }
+
+        private static bool ContainsHangul(string value)
+        {
+            foreach (char c in value ?? string.Empty)
+            {
+                if (c >= '\uAC00' && c <= '\uD7A3')
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsAlreadyQuoted(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value) || value.Length < 2)
+                return false;
+
+            return (value[0] == '\'' && value[value.Length - 1] == '\'') ||
+                (value[0] == '"' && value[value.Length - 1] == '"');
         }
 
         private static bool RequiresStartNpc(DynamicQuestTemplate template)

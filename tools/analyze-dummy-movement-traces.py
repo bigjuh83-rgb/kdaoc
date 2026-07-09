@@ -138,6 +138,16 @@ def analyze_paths(
                         continue
                     self_horizontal.append(to_float(row.get("horizontal_delta") or row.get("distance")))
                     self_abs_z.append(abs(to_float(row.get("delta_z"))))
+                elif event == "move_step":
+                    from_x = to_float(row.get("from_x"))
+                    from_y = to_float(row.get("from_y"))
+                    from_z = to_float(row.get("from_z"))
+                    x = to_float(row.get("x"))
+                    y = to_float(row.get("y"))
+                    z = to_float(row.get("z"))
+                    horizontal = ((x - from_x) ** 2 + (y - from_y) ** 2) ** 0.5
+                    self_horizontal.append(horizontal)
+                    self_abs_z.append(abs(z - from_z))
 
     observed_teleports = sum(1 for value in observed_horizontal if value > teleport_threshold)
     observed_z_spikes = sum(1 for value in observed_abs_z if value > z_threshold)

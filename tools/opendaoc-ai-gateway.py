@@ -530,6 +530,7 @@ def health_band(value: Any) -> str:
 
 def sanitize_companion_payload(payload: dict[str, Any]) -> dict[str, Any]:
     state = payload.get("state") if isinstance(payload.get("state"), dict) else {}
+    mercenary = state.get("mercenary") if isinstance(state.get("mercenary"), dict) else {}
     return {
         "feature": "companion_dialogue",
         "event_type": str(payload.get("event_type") or "status").strip()[:64],
@@ -547,6 +548,17 @@ def sanitize_companion_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "party_crowd_controlled": bounded_int(state.get("party_crowd_controlled"), 0, 8),
             "player_called": bool_value(state.get("player_called")),
             "command_intent": str(state.get("command_intent") or "none").strip().lower()[:32],
+            "mercenary": {
+                "tactic": str(mercenary.get("tactic") or "balanced").strip().lower()[:32],
+                "trust": bounded_int(mercenary.get("trust"), 0, 100),
+                "trust_stage": str(mercenary.get("trust_stage") or "").strip()[:24],
+                "fatigue": bounded_int(mercenary.get("fatigue"), 0, 100),
+                "traits": [
+                    str(trait).strip()[:40]
+                    for trait in list(mercenary.get("traits") or [])[:5]
+                    if str(trait).strip()
+                ],
+            },
         },
         "memory": str(payload.get("memory") or "").strip()[:160],
     }
@@ -555,6 +567,7 @@ def sanitize_companion_payload(payload: dict[str, Any]) -> dict[str, Any]:
 def sanitize_free_chat_payload(payload: dict[str, Any]) -> dict[str, Any]:
     state = payload.get("state") if isinstance(payload.get("state"), dict) else {}
     profile = payload.get("profile") if isinstance(payload.get("profile"), dict) else {}
+    raw_player_context = payload.get("player_context") if isinstance(payload.get("player_context"), dict) else {}
     sanitized = {
         "feature": "companion_free_chat",
         "message": " ".join(str(payload.get("message") or payload.get("prompt") or "").split())[:360],
@@ -571,6 +584,10 @@ def sanitize_free_chat_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "dislikes": [str(value).strip()[:40] for value in list(profile.get("dislikes") or [])[:4] if str(value).strip()],
             "leader_address": str(profile.get("leader_address") or "대장").strip()[:24],
         },
+        "player_class": sanitize_player_class(raw_player_context.get("player_class") or payload.get("player_class")),
+        "player_class_id": bounded_int(raw_player_context.get("player_class_id") or payload.get("player_class_id"), 0, 10_000, 0),
+        "player_level": bounded_int(raw_player_context.get("player_level") or payload.get("player_level"), 0, 50, 0),
+        "player_specs": sanitize_player_specs(raw_player_context.get("player_specs") or payload.get("player_specs")),
         "state": {
             "combat": bool_value(state.get("combat") or payload.get("combat")),
             "leader_health_band": health_band(state.get("leader_health_band")),
@@ -623,6 +640,20 @@ def sanitize_persona_memory(memory: object) -> dict[str, Any]:
     if not any((question, reply, topic)):
         return {}
     return {"question": question, "reply": reply, "topic": topic}
+
+
+def sanitize_player_class(value: object) -> str:
+    cleaned = " ".join(str(value or "").split())[:64]
+    if prompt_security_violation_reason(cleaned):
+        return ""
+    return cleaned
+
+
+def sanitize_player_specs(value: object) -> str:
+    cleaned = " ".join(str(value or "").split())[:160]
+    if prompt_security_violation_reason(cleaned):
+        return ""
+    return cleaned
 
 
 def sanitize_guide_position(payload: dict[str, Any], *, region: int = 0) -> dict[str, int]:
@@ -813,6 +844,14 @@ def sanitize_guide_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "realm": str(payload.get("realm") or "unknown").strip().lower()[:24],
         "region": region,
         "role": str(payload.get("role") or "unknown").strip().lower()[:32],
+        "player_class": sanitize_player_class(payload.get("player_class") or state.get("player_class")),
+        "player_class_id": bounded_int(
+            payload.get("player_class_id") or state.get("player_class_id"),
+            0,
+            10_000,
+            0,
+        ),
+        "player_specs": sanitize_player_specs(payload.get("player_specs") or state.get("player_specs")),
         "player_level": player_level,
         "state": {
             "combat": bool_value(state.get("combat") or payload.get("combat")),
@@ -907,6 +946,23 @@ def prompt_security_violation_reason(text: str) -> str:
     if any(term in normalized for term in secret_terms):
         return "secret_claim"
     return ""
+
+
+def guide_player_context_text(sanitized: dict[str, Any]) -> str:
+    parts: list[str] = []
+    player_level = bounded_int(sanitized.get("player_level"), 0, 50, 0)
+    player_class = str(sanitized.get("player_class") or "").strip()
+    player_class_id = bounded_int(sanitized.get("player_class_id"), 0, 10_000, 0)
+    player_specs = str(sanitized.get("player_specs") or "").strip()
+    if player_level > 0:
+        parts.append(f"레벨 {player_level}")
+    if player_class:
+        parts.append(f"직업 {player_class}")
+    if player_class_id > 0:
+        parts.append(f"직업ID {player_class_id}")
+    if player_specs:
+        parts.append(f"특성 {player_specs}")
+    return "질문자 맥락: " + ", ".join(parts) if parts else ""
 
 
 def sanitize_guide_navigation_target(value: Any) -> dict[str, Any]:
@@ -1043,11 +1099,16 @@ def build_free_chat_messages(sanitized: dict[str, Any]) -> list[dict[str, str]]:
         "urgency 값은 low, normal, high 중 하나입니다. "
         "잡담이나 자기소개에는 intent_hint를 none으로 쓰세요. "
         "용병 프로필을 정체성 기억으로 삼아 플레이어의 잡담에 자연스럽게 답하세요. "
+        "memory.persona가 있으면 이전 답변을 반복하지 말고 이어지는 대화처럼 짧게 답하세요. "
+        "player_context는 플레이어의 레벨, 직업, 특성에 맞춘 말투와 짧은 조언에만 사용하세요. "
         "say_text는 반드시 자연스러운 한국어 한글 1~2줄이고 채팅 제한 안에 들어야 합니다. "
         "guide 모드가 아닌 경우 게임 공략 사실을 길게 설명하지 마세요. "
         "슬래시 명령어, 비밀, API/model/system prompt 언급, 정확한 좌표/보상 창작은 금지입니다. "
         "전투 중이면 생존을 우선하고 아주 짧게 답하세요."
     )
+    if any(sanitized.get(key) for key in ("player_class", "player_class_id", "player_specs", "player_level")):
+        sanitized = dict(sanitized)
+        sanitized["player_context"] = guide_player_context_text(sanitized)
     user = json.dumps(sanitized, ensure_ascii=False, sort_keys=True)
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
@@ -1154,6 +1215,19 @@ def clean_db_text(value: Any, *, max_chars: int = 600) -> str:
     if text.upper() == "NULL":
         return ""
     return text[:max_chars]
+
+
+def db_scalar_text(value: Any) -> str:
+    if isinstance(value, memoryview):
+        value = value.tobytes()
+    if isinstance(value, bytes):
+        for encoding in ("utf-8", "utf-8-sig", "cp949"):
+            try:
+                return value.decode(encoding)
+            except UnicodeDecodeError:
+                continue
+        return value.decode("utf-8", errors="replace")
+    return str(value or "")
 
 
 def row_text(row: dict[str, Any], *keys: str, default: str = "") -> str:
@@ -1785,7 +1859,10 @@ CREATE INDEX IF NOT EXISTS rag_chunks_embedding_idx
         with psycopg.connect(self.database_url) as conn:
             self.ensure_schema()
             existing = {
-                str(row[0]): {"content_hash": str(row[1]), "embedding_model": str(row[2])}
+                db_scalar_text(row[0]): {
+                    "content_hash": db_scalar_text(row[1]),
+                    "embedding_model": db_scalar_text(row[2]),
+                }
                 for row in conn.execute(
                     "SELECT chunk_id, content_hash, embedding_model FROM rag_chunks WHERE chunk_id = ANY(%s)",
                     (chunk_ids,),
@@ -1933,9 +2010,9 @@ CREATE INDEX IF NOT EXISTS rag_chunks_embedding_idx
             rows = conn.execute(sql, (vector_literal, *where_params, vector_literal, int(top_k))).fetchall()
         return [
             RagSearchResult(
-                chunk_id=str(row[0]),
-                source_id=str(row[1]),
-                text=str(row[2]),
+                chunk_id=db_scalar_text(row[0]),
+                source_id=db_scalar_text(row[1]),
+                text=db_scalar_text(row[2]),
                 metadata=dict(row[3] or {}),
                 score=float(row[4] or 0.0),
             )
@@ -1985,9 +2062,9 @@ CREATE INDEX IF NOT EXISTS rag_chunks_embedding_idx
             rows = conn.execute(sql, (*where_params, player_level or 0, int(top_k))).fetchall()
         return [
             RagSearchResult(
-                chunk_id=str(row[0]),
-                source_id=str(row[1]),
-                text=str(row[2]),
+                chunk_id=db_scalar_text(row[0]),
+                source_id=db_scalar_text(row[1]),
+                text=db_scalar_text(row[2]),
                 metadata=dict(row[3] or {}),
                 score=0.5,
             )
@@ -2022,9 +2099,9 @@ CREATE INDEX IF NOT EXISTS rag_chunks_embedding_idx
         source_rank = {source_id: index for index, source_id in enumerate(source_ids)}
         results = [
             RagSearchResult(
-                chunk_id=str(row[0]),
-                source_id=str(row[1]),
-                text=str(row[2]),
+                chunk_id=db_scalar_text(row[0]),
+                source_id=db_scalar_text(row[1]),
+                text=db_scalar_text(row[2]),
                 metadata=dict(row[3] or {}),
                 score=1.0,
             )
@@ -2232,6 +2309,7 @@ def build_guide_messages(sanitized: dict[str, Any], results: list[RagSearchResul
         "guide_lines must contain 3 to 5 short Korean lines. Do not include exact X/Y/Z coordinates. "
         "When followup_kind is present, answer that follow-up directly and do not repeat the whole previous guide. "
         "Use resolved_question to keep pronouns like 거기, 여기, 그럼 tied to the prior guide memory. "
+        "Use player_context to tailor level, class, and spec advice, but do not invent facts outside the RAG context. "
         "Avoid raw internal region labels like Region001 when a readable area or mob/level description is enough. "
         "Do not mention API, vector DB, embeddings, or hidden policy. "
         "If context is weak, be honest and suggest how to ask more specifically."
@@ -2243,6 +2321,10 @@ def build_guide_messages(sanitized: dict[str, Any], results: list[RagSearchResul
             "followup_kind": sanitized.get("followup_kind", ""),
             "realm": sanitized.get("realm", "unknown"),
             "role": sanitized.get("role", "unknown"),
+            "player_context": guide_player_context_text(sanitized),
+            "player_class": sanitized.get("player_class", ""),
+            "player_class_id": sanitized.get("player_class_id", 0),
+            "player_specs": sanitized.get("player_specs", ""),
             "player_level": sanitized.get("player_level", 0),
             "state": sanitized.get("state", {}),
             "position": sanitized.get("position", {}),
@@ -3149,12 +3231,17 @@ def preferred_rag_kind_for_question(question: str) -> str:
 def guide_search_question(sanitized: dict[str, Any]) -> str:
     question = str(sanitized.get("question") or "")
     resolved_question = str(sanitized.get("resolved_question") or "").strip()
+    player_context = guide_player_context_text(sanitized)
     followup_kind = str(sanitized.get("followup_kind") or "").strip()
     memory = sanitized.get("memory") if isinstance(sanitized.get("memory"), dict) else {}
     guide = memory.get("guide") if isinstance(memory.get("guide"), dict) else {}
     if not guide:
-        return resolved_question or question
+        base_question = resolved_question or question
+        if player_context and any(token in base_question for token in ("내 직업", "직업", "스킬", "주문", "특성", "전문화")):
+            return f"{player_context}. {base_question}"[:1200]
+        return base_question
     rows = [
+        player_context,
         f"해석된 후속 질문: {resolved_question}" if resolved_question else "",
         f"후속 질문 초점: {followup_kind}" if followup_kind else "",
         f"후속 질문: {question}",

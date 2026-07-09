@@ -13,6 +13,7 @@ from pathlib import Path
 DISTANCE_EVENTS = {"hunter_target_scan_empty", "attack_decision"}
 BAD_IDLE_REASONS = {"distance", "combat_gap", "idle_ready", "level"}
 OBJECTIVE_TRAVEL_STATES = {"TravelToObjective", "ReturnToObjective", "DropAggroAndRecover"}
+LIVE_ABORT_FILE = "live-abort.json"
 
 
 def jsonl_tail(path: Path, max_lines: int = 80) -> list[dict[str, object]]:
@@ -141,6 +142,134 @@ def row_has_active_target(row: dict[str, object]) -> bool:
     return False
 
 
+def row_elapsed(row: dict[str, object]) -> float:
+    try:
+        return float(row.get("elapsed", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def row_number(row: dict[str, object], key: str) -> float:
+    try:
+        return float(row.get(key, 0.0) or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def write_abort(case_dir: Path, reason: str, details: dict[str, object]) -> None:
+    path = case_dir / LIVE_ABORT_FILE
+    if path.exists():
+        return
+    payload = {
+        "reason": reason,
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "details": details,
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def detect_fatal_stall(rows: list[dict[str, object]], *, min_elapsed: float = 60.0) -> tuple[str, dict[str, object]] | None:
+    if not rows:
+        return None
+
+    latest = rows[-1]
+    latest_elapsed = row_elapsed(latest)
+    if latest_elapsed < min_elapsed:
+        return None
+
+    recent_rows = rows[-120:]
+    recent_kills = [row for row in recent_rows if row.get("event") in {"target_removed", "target_object_removed"}]
+    if recent_kills:
+        return None
+
+    if row_has_active_target(latest) or bool(latest.get("leader_engaged", False)):
+        return None
+
+    rest_rows = [row for row in recent_rows if str(row.get("behavior_state", "") or "") == "RestRecover"]
+    rest_damage_rows = [
+        row
+        for row in rest_rows
+        if row.get("event") == "server_message"
+        and "damage_taken" in (row.get("categories", []) if isinstance(row.get("categories", []), list) else [])
+    ]
+    if rest_rows:
+        rest_span = row_elapsed(rest_rows[-1]) - row_elapsed(rest_rows[0])
+        damage_delta = row_number(rest_rows[-1], "damage_taken") - row_number(rest_rows[0], "damage_taken")
+        max_rest_age = max(row_number(row, "behavior_state_age") for row in rest_rows)
+        if (
+            rest_span >= 20.0
+            and max_rest_age >= 20.0
+            and (len(rest_damage_rows) >= 3 or damage_delta >= 25.0)
+            and row_number(latest, "damage_done") <= 0.0
+        ):
+            return (
+                "rest_recover_under_damage_no_progress",
+                {
+                    "elapsed": latest_elapsed,
+                    "rest_span": round(rest_span, 3),
+                    "rest_damage_events": len(rest_damage_rows),
+                    "damage_delta": round(damage_delta, 3),
+                    "latest_health_percent": row_number(latest, "health_percent"),
+                    "rescue_target_name": str(latest.get("rescue_target_name", "") or ""),
+                },
+            )
+
+    rest_pressure_rows = [row for row in recent_rows if row.get("event") == "flee_start" and row.get("reason") == "rest_pressure"]
+    if rest_pressure_rows and row_number(latest, "damage_done") <= 0.0:
+        return (
+            "rest_pressure_no_kill",
+            {
+                "elapsed": latest_elapsed,
+                "rest_pressure_events": len(rest_pressure_rows),
+                "latest_health_percent": row_number(latest, "health_percent"),
+            },
+        )
+
+    objective_rows = [row for row in recent_rows if is_objective_travel_row(row)]
+    if len(objective_rows) >= 12:
+        objective_span = row_elapsed(objective_rows[-1]) - row_elapsed(objective_rows[0])
+        state_counts: dict[str, int] = {}
+        for row in objective_rows:
+            state = str(row.get("behavior_state", "") or "")
+            state_counts[state] = state_counts.get(state, 0) + 1
+        recent_flee_recovery_rows = [
+            row
+            for row in recent_rows
+            if row.get("event") in {"flee_start", "flee_extend", "flee_plan_replaced_after_path_failure"}
+            and latest_elapsed - row_elapsed(row) <= 45.0
+        ]
+        if recent_flee_recovery_rows:
+            return None
+        if objective_span >= 45.0 and row_number(latest, "damage_done") <= 0.0:
+            return (
+                "objective_recovery_loop_no_progress",
+                {
+                    "elapsed": latest_elapsed,
+                    "objective_span": round(objective_span, 3),
+                    "state_counts": state_counts,
+                    "latest_state": str(latest.get("behavior_state", "") or ""),
+                },
+            )
+
+    recent_empty = [
+        row
+        for row in recent_rows
+        if row.get("event") in DISTANCE_EVENTS
+        and (row_reason(row) in BAD_IDLE_REASONS or row.get("event") == "hunter_target_scan_empty")
+    ]
+    if len(recent_empty) >= 5 and latest_elapsed >= max(min_elapsed, 90.0) and row_number(latest, "damage_done") <= 0.0:
+        return (
+            "repeated_target_scan_empty_no_progress",
+            {
+                "elapsed": latest_elapsed,
+                "empty_events": len(recent_empty),
+                "latest_reason": row_reason(recent_empty[-1]),
+            },
+        )
+
+    return None
+
+
 def tune_control(case_dir: Path, *, max_engage: float, max_radius: float, step: float) -> tuple[bool, str]:
     control_path = case_dir / "live-control.json"
     payload = load_control(control_path)
@@ -227,6 +356,8 @@ def main() -> int:
     parser.add_argument("--max-engage", type=float, default=2800.0)
     parser.add_argument("--max-radius", type=float, default=5200.0)
     parser.add_argument("--hold", type=float, default=0.0, help="seconds to run; 0 runs until interrupted")
+    parser.add_argument("--abort-on-fatal-stall", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--fatal-stall-min-elapsed", type=float, default=60.0)
     args = parser.parse_args()
 
     end_at = time.monotonic() + args.hold if args.hold > 0 else float("inf")
@@ -239,6 +370,14 @@ def main() -> int:
         if primary_metrics_complete(args.case_dir):
             print(f"{time.strftime('%H:%M:%S')} changed=0 reason=metrics_complete", flush=True)
             return 0
+        rows = recent_case_rows(args.case_dir)
+        if args.abort_on_fatal_stall:
+            fatal = detect_fatal_stall(rows, min_elapsed=args.fatal_stall_min_elapsed)
+            if fatal is not None:
+                reason, details = fatal
+                write_abort(args.case_dir, reason, details)
+                print(f"{time.strftime('%H:%M:%S')} changed=0 reason={reason} abort=1", flush=True)
+                return 2
         changed, reason = tune_control(args.case_dir, max_engage=args.max_engage, max_radius=args.max_radius, step=args.step)
         print(f"{time.strftime('%H:%M:%S')} changed={int(changed)} reason={reason}", flush=True)
         time.sleep(max(0.5, args.interval))

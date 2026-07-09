@@ -11,10 +11,14 @@ import random
 import re
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 
 DEFAULT_MYSQL_CANDIDATES = [
+    str(Path(__file__).resolve().parents[2] / "_tools" / "mariadb-10.11.11-winx64" / "bin" / "mariadb.exe"),
+    r"C:\Program Files\MariaDB 12.3\bin\mariadb.exe",
+    r"C:\Program Files\MariaDB 12.3\bin\mysql.exe",
     "/home/bigjuh/.local/opendaoc-mariadb/current/bin/mariadb",
     "/usr/bin/mariadb",
     "/usr/local/bin/mariadb",
@@ -193,9 +197,38 @@ def build_character_name(args: argparse.Namespace, number: int, offset: int, nat
     return f"{args.character_prefix}{number:03d}"
 
 
+def windows_argument_path_for_wsl(path: str) -> str:
+    match = re.match(r"^/mnt/([a-zA-Z])/(.*)$", path)
+    if not match:
+        return path
+    drive = match.group(1).upper()
+    rest = match.group(2).replace("/", "\\")
+    return f"{drive}:\\{rest}"
+
+
+def writable_windows_client_defaults_dir(mysql_bin: str) -> str | None:
+    mysql_dir = os.path.dirname(str(mysql_bin))
+    if mysql_dir and os.path.isdir(mysql_dir) and os.access(mysql_dir, os.W_OK):
+        return mysql_dir
+
+    cwd = str(Path.cwd())
+    if re.match(r"^/mnt/[a-zA-Z]/", cwd) and os.access(cwd, os.W_OK):
+        return cwd
+
+    temp_dir = tempfile.gettempdir()
+    if re.match(r"^/mnt/[a-zA-Z]/", temp_dir) and os.access(temp_dir, os.W_OK):
+        return temp_dir
+
+    return None
+
+
 def run_mysql(args: argparse.Namespace, sql: str) -> str:
     env = os.environ.copy()
-    env["MYSQL_PWD"] = args.db_password
+    use_defaults_file = os.name != "nt" and str(args.mysql_bin).lower().endswith(".exe")
+    if use_defaults_file:
+        env.pop("MYSQL_PWD", None)
+    else:
+        env["MYSQL_PWD"] = args.db_password
     command_prefix = [args.mysql_bin]
     if os.name == "nt" and str(args.mysql_bin).startswith("/"):
         wslenv = env.get("WSLENV", "")
@@ -205,8 +238,26 @@ def run_mysql(args: argparse.Namespace, sql: str) -> str:
         env["WSLENV"] = ":".join(parts)
         command_prefix = [os.environ.get("WSL_EXE", r"C:\Windows\System32\wsl.exe"), "--exec", args.mysql_bin]
 
+    defaults_file = None
+    defaults_file_arg = None
+    if use_defaults_file:
+        handle = tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            delete=False,
+            dir=writable_windows_client_defaults_dir(str(args.mysql_bin)),
+            prefix="opendaoc-mysql-",
+            suffix=".ini",
+        )
+        defaults_file = handle.name
+        defaults_file_arg = windows_argument_path_for_wsl(defaults_file)
+        with handle:
+            handle.write("[client]\n")
+            handle.write(f"password={args.db_password}\n")
+
     command = [
         *command_prefix,
+        *([f"--defaults-extra-file={defaults_file_arg}"] if defaults_file_arg else []),
         "--batch",
         "--raw",
         "--protocol=tcp",
@@ -221,8 +272,12 @@ def run_mysql(args: argparse.Namespace, sql: str) -> str:
         "-e",
         sql,
     ]
-    process = subprocess.run(command, check=True, capture_output=True, text=True, env=env)
-    return process.stdout
+    try:
+        process = subprocess.run(command, check=True, capture_output=True, text=True, env=env)
+        return process.stdout
+    finally:
+        if defaults_file:
+            Path(defaults_file).unlink(missing_ok=True)
 
 
 def resolve_mysql_bin(value: str | None) -> str:
@@ -651,6 +706,24 @@ def inventory_count(args: argparse.Namespace, owner_id: str) -> int:
     return int(row["Count"]) if row else 0
 
 
+def inventory_slot_positions(args: argparse.Namespace, owner_id: str) -> set[int]:
+    rows = parse_mysql_rows(
+        run_mysql(
+            args,
+            f"SELECT `SlotPosition` FROM `inventory` WHERE `OwnerID`={sql_quote(owner_id)};",
+        )
+    )
+    return {int(row["SlotPosition"]) for row in rows if str(row.get("SlotPosition", "")).strip().isdigit()}
+
+
+def preferred_starter_slot(item_type: int, object_type: int, used_slots: set[int]) -> int | None:
+    if item_type not in EQUIP_SLOTS:
+        return None
+    if item_type == LEFT_HAND_SLOT and object_type != SHIELD_OBJECT_TYPE and RIGHT_HAND_SLOT not in used_slots:
+        return RIGHT_HAND_SLOT
+    return item_type
+
+
 def add_starter_equipment(args: argparse.Namespace, account_name: str, character_name: str) -> int:
     character = get_single_row(
         args,
@@ -663,18 +736,19 @@ def add_starter_equipment(args: argparse.Namespace, account_name: str, character
 
     owner_id = character["DOLCharacters_ID"]
 
-    if inventory_count(args, owner_id) > 0:
-        return 0
-
     class_id = int(character["Class"])
     starter_templates = starter_templates_for_specs(args, class_id, character.get("SerializedSpecs", ""))
-    used_slots: set[int] = set()
+    existing_slots = inventory_slot_positions(args, owner_id)
+    used_slots: set[int] = set(existing_slots)
     inserted = 0
     active_weapon_slot: int | None = None
 
     for template in starter_templates:
         item_type = int(template["Item_Type"])
         object_type = int(template["Object_Type"])
+        preferred_slot = preferred_starter_slot(item_type, object_type, used_slots)
+        if preferred_slot is not None and preferred_slot in existing_slots:
+            continue
         slot = choose_starter_slot(item_type, object_type, used_slots)
         count = max(int(template["PackSize"]), 1)
         charges = int(template["Charges"])
@@ -759,6 +833,7 @@ def sanitize_invalid_item_procs(args: argparse.Namespace, account_name: str, cha
 CLASS_NAMES = {
     1: "Paladin",
     2: "Armsman",
+    3: "Scout",
     4: "Minstrel",
     5: "Theurgist",
     6: "Cleric",
@@ -802,7 +877,19 @@ def write_accounts_csv(path: Path, rows: list[dict[str, str | int | None]]) -> N
     path.parent.mkdir(parents=True, exist_ok=True)
 
     with path.open("w", encoding="utf-8", newline="") as handle:
-        fieldnames = ["username", "password", "realm", "char_index", "class_id", "class_name", "specs"]
+        fieldnames = [
+            "username",
+            "password",
+            "realm",
+            "char_index",
+            "class_id",
+            "class_name",
+            "specs",
+            "start_x",
+            "start_y",
+            "start_z",
+            "zone_id",
+        ]
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
 
@@ -921,6 +1008,10 @@ def main() -> int:
                 "class_id": csv_class_id or "",
                 "class_name": CLASS_NAMES.get(csv_class_id or 0, ""),
                 "specs": specs or "",
+                "start_x": args.start_x + args.position_step * offset if args.start_x is not None else "",
+                "start_y": args.start_y + args.position_step * offset if args.start_y is not None else "",
+                "start_z": args.start_z if args.start_z is not None else "",
+                "zone_id": args.start_region if args.start_region is not None else "",
             }
         )
 

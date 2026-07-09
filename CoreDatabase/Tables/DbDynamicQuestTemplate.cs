@@ -25,6 +25,10 @@ namespace DOL.Database
         private string m_storyModel = string.Empty;
         private int m_storyQualityScore;
         private string m_storyQualityJson = string.Empty;
+        private int m_dummyEvaluationScore;
+        private int m_dummyEvaluationCount;
+        private string m_dummyEvaluationJson = string.Empty;
+        private DateTime m_dummyEvaluatedAt = DateTime.MinValue;
         private string m_storyNarrativeJson = string.Empty;
         private string m_storyPresentationJson = string.Empty;
         private DateTime m_storyGeneratedAt = DateTime.MinValue;
@@ -168,6 +172,34 @@ namespace DOL.Database
         {
             get { return m_storyQualityJson; }
             set { Dirty = true; m_storyQualityJson = value; }
+        }
+
+        [DataElement(AllowDbNull = false, Index = true)]
+        public int DummyEvaluationScore
+        {
+            get { return m_dummyEvaluationScore; }
+            set { Dirty = true; m_dummyEvaluationScore = value; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public int DummyEvaluationCount
+        {
+            get { return m_dummyEvaluationCount; }
+            set { Dirty = true; m_dummyEvaluationCount = value; }
+        }
+
+        [DataElement(AllowDbNull = false)]
+        public string DummyEvaluationJson
+        {
+            get { return m_dummyEvaluationJson; }
+            set { Dirty = true; m_dummyEvaluationJson = value; }
+        }
+
+        [DataElement(AllowDbNull = false, Index = true)]
+        public DateTime DummyEvaluatedAt
+        {
+            get { return m_dummyEvaluatedAt; }
+            set { Dirty = true; m_dummyEvaluatedAt = value; }
         }
 
         [DataElement(AllowDbNull = false)]

@@ -106,6 +106,7 @@ SERVER_PACKETS = {
     0xA9: "PlayerPosition",
     0xAD: "CharacterStatusUpdate",
     0xAE: "PlayerDeath",
+    0xA4: "Quit",
     0xD0: "CheckLOSRequest",
     0xD4: "PlayerCreate",
     0xFE: "Realm",
@@ -173,6 +174,7 @@ class HeadlessDaocClient:
         self.health_percent = 100
         self.mana_percent = 100
         self.endurance_percent = 100
+        self.is_sitting = False
         self.is_dead = False
         self.attack_mode_enabled: bool | None = None
         self.last_position_speed = 0.0
@@ -195,6 +197,7 @@ class HeadlessDaocClient:
         self.players: dict[int, KnownPlayer] = {}
         self.removed_object_ids: list[int] = []
         self.messages: list[ChatMessage] = []
+        self.received_quit_packet = False
 
     def connect(self) -> None:
         self.sock = socket.create_connection((self.host, self.port), timeout=self.timeout)
@@ -214,26 +217,52 @@ class HeadlessDaocClient:
             self.close()
             return True
 
-        deadline = time.monotonic() + max(timeout, 1.0)
+        timeout = max(timeout, 1.0)
+        deadline = time.monotonic() + timeout
         quit_sent = False
+        heartbeat_interval = min(1.0, max(0.2, timeout / 20.0))
+        next_heartbeat_at = 0.0
+
+        def graceful_heartbeat() -> None:
+            try:
+                self.send_position_update(speed=0.0, target_in_view=False)
+            except Exception:
+                pass
+
+        def wait_with_heartbeat(seconds: float) -> None:
+            nonlocal next_heartbeat_at
+            wait_deadline = min(deadline, time.monotonic() + max(0.0, seconds))
+
+            while time.monotonic() < wait_deadline and self.sock is not None:
+                now = time.monotonic()
+                if now >= next_heartbeat_at:
+                    graceful_heartbeat()
+                    next_heartbeat_at = time.monotonic() + heartbeat_interval
+                time.sleep(min(0.1, max(0.0, wait_deadline - time.monotonic())))
 
         try:
             for action in (
                 lambda: self.set_attack_mode(False),
                 lambda: self.clear_target(),
-                lambda: self.send_position_update(speed=0.0, target_in_view=False),
+                graceful_heartbeat,
                 lambda: self.send_command("/sit"),
             ):
                 try:
                     action()
                 except Exception:
                     pass
+            next_heartbeat_at = time.monotonic() + heartbeat_interval
 
             try:
                 remaining_before_quit = max(0.0, deadline - time.monotonic() - 0.1)
-                time.sleep(min(4.0, remaining_before_quit))
+                sit_delay = min(4.0, max(0.2, timeout / 5.0), remaining_before_quit)
+                wait_with_heartbeat(sit_delay)
                 self.send_command("/quit")
                 quit_sent = True
+                if self.received_quit_packet:
+                    return True
+                graceful_heartbeat()
+                next_heartbeat_at = time.monotonic() + heartbeat_interval
             except Exception:
                 pass
 
@@ -241,6 +270,10 @@ class HeadlessDaocClient:
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     break
+
+                if quit_sent and time.monotonic() >= next_heartbeat_at:
+                    graceful_heartbeat()
+                    next_heartbeat_at = time.monotonic() + heartbeat_interval
 
                 try:
                     self.sock.settimeout(min(0.25, max(remaining, 0.001)))
@@ -262,7 +295,11 @@ class HeadlessDaocClient:
                         break
                     raw = bytes(self.recv_buffer[:packet_size])
                     del self.recv_buffer[:packet_size]
-                    self.observe_packet(ServerPacket(raw[2], raw[3:]))
+                    packet = ServerPacket(raw[2], raw[3:])
+                    self.observe_packet(packet)
+                    if packet.code == 0xA4:
+                        self.received_quit_packet = True
+                        return True
         finally:
             self.close()
 
@@ -331,6 +368,8 @@ class HeadlessDaocClient:
                 packet = ServerPacket(raw[2], raw[3:])
                 packets.append(packet)
                 self.observe_packet(packet)
+                if packet.code == 0xA4:
+                    self.received_quit_packet = True
 
                 if packet.code == 0x28 and len(packet.data) >= 2:
                     self.session_id = int.from_bytes(packet.data[:2], "little")
@@ -403,9 +442,10 @@ class HeadlessDaocClient:
         data += b"\x00\x00"  # target/object id for 1.127.
         data += struct.pack(">H", self.heading)
         data += b"\x00"  # unknown.
-        data += b"\x00"  # action flags.
+        data += b"\x30" if self.last_position_target_in_view else b"\x00"  # action flags.
         data += b"\x00"  # steed slot.
-        data += b"\x00"  # state flags.
+        state_flags = 0x10 if self.is_sitting and float(self.last_position_speed) <= 0.0 else 0x00
+        data += bytes([state_flags])  # state flags.
         self.send_packet(CLIENT_PACKETS["heading"], bytes(data))
         self._last_heading_packet_at = time.monotonic()
         return self.drain(0.05) if drain_after else 0
@@ -711,12 +751,15 @@ class HeadlessDaocClient:
         movement_speed: float | None = None,
         packet_speed: float | None = None,
         max_z_step: float = 0.0,
+        min_distance: float = 0.0,
         min_position_send_interval: float = 0.0,
+        send: bool = True,
         movement_step_seconds: float | None = None,
         ground_z: int | None = None,
         snap_ground_z_on_stop: bool = False,
         target_in_view: bool = False,
         prefer_target_z: bool = False,
+        force_target_z: bool = False,
         use_elapsed_movement_time: bool = False,
         max_elapsed_movement_seconds: float = 1.5,
     ) -> bool:
@@ -734,8 +777,29 @@ class HeadlessDaocClient:
         dy = y - self.y
         horizontal_distance = math.sqrt(dx * dx + dy * dy)
 
+        def should_preserve_target_z_for_ground_spike(sampled_z: int | None) -> bool:
+            if not prefer_target_z or int(z) == 0 or sampled_z is None:
+                return False
+            current_z = int(self.z)
+            if abs(current_z - int(z)) > 96:
+                return False
+            return abs(int(sampled_z) - int(z)) > 220 and abs(int(sampled_z) - current_z) > 220
+
+        def preserve_or_refresh_ground_z() -> bool:
+            if force_target_z and int(z) != 0:
+                self.z = int(z)
+                return True
+            if self.ground_z_sampler:
+                sampled = self.ground_z_sampler(int(self.x), int(self.y), self.zone_id)
+                if should_preserve_target_z_for_ground_spike(sampled):
+                    self.z = int(z)
+                    return True
+            return self.refresh_ground_z_here()
+
         if horizontal_distance <= stop_distance or horizontal_distance <= 0:
-            if ground_z is not None and snap_ground_z_on_stop:
+            if force_target_z and int(z) != 0:
+                self.z = int(z)
+            elif ground_z is not None and snap_ground_z_on_stop:
                 self.z = int(ground_z)
             elif self.ground_z_sampler:
                 self.refresh_ground_z_here()
@@ -752,14 +816,14 @@ class HeadlessDaocClient:
                     self.heading = step_heading_towards(int(self.heading), target_heading, HEADING_TURN_STEP)
                     if not should_send_stop:
                         return False
-                    self.refresh_ground_z_here()
+                    preserve_or_refresh_ground_z()
                     self.send_position_update(speed=0.0, target_in_view=target_in_view)
                     return False
                 self.heading = step_heading_towards(int(self.heading), target_heading, abs(turn_delta))
                 if not should_send_stop:
                     return False
             if should_send_stop:
-                self.refresh_ground_z_here()
+                preserve_or_refresh_ground_z()
                 self.send_position_update(speed=0.0, target_in_view=target_in_view)
             else:
                 self.trace_movement(
@@ -811,7 +875,7 @@ class HeadlessDaocClient:
         if next_x == self.x and next_y == self.y:
             target_heading = heading_from_delta(dx, dy)
             self.heading = step_heading_towards(int(self.heading), target_heading, HEADING_TURN_STEP)
-            self.refresh_ground_z_here()
+            preserve_or_refresh_ground_z()
             self.send_position_update(speed=0.0, target_in_view=target_in_view)
             return False
 
@@ -819,7 +883,7 @@ class HeadlessDaocClient:
         turn_delta = heading_delta(int(self.heading), target_heading)
         if abs(turn_delta) > HEADING_LARGE_TURN:
             self.heading = step_heading_towards(int(self.heading), target_heading, HEADING_TURN_STEP)
-            self.refresh_ground_z_here()
+            preserve_or_refresh_ground_z()
             self.send_position_update(speed=0.0, target_in_view=target_in_view)
             return True
 
@@ -828,6 +892,8 @@ class HeadlessDaocClient:
         self.last_local_move_at = now
         z_source = "interpolated"
 
+        current_z = int(self.z)
+        target_z_is_forced = force_target_z and int(z) != 0
         target_z_is_plausible = (
             prefer_target_z
             and int(z) != 0
@@ -836,9 +902,27 @@ class HeadlessDaocClient:
                 or abs(int(z) - int(sampled_ground_z)) <= 160
             )
         )
-        if target_z_is_plausible:
+        target_z_preserve_spike = should_preserve_target_z_for_ground_spike(sampled_ground_z)
+        if target_z_is_forced:
+            self.z = int(z)
+            z_source = "target_z_forced"
+        elif target_z_is_plausible:
             self.z = int(z)
             z_source = "target_z"
+        elif target_z_preserve_spike:
+            self.z = current_z
+            z_source = "target_z_preserved"
+            self.trace_movement(
+                "ground_z_spike_preserved",
+                x=int(self.x),
+                y=int(self.y),
+                z=int(self.z),
+                target_x=int(x),
+                target_y=int(y),
+                target_z=int(z),
+                sampled_ground_z=int(sampled_ground_z),
+                zone=int(self.zone_id),
+            )
         elif sampled_ground_z is not None:
             self.z = int(sampled_ground_z)
             z_source = "ground_z_sampler"
@@ -1068,6 +1152,7 @@ class HeadlessDaocClient:
 
         self.health_percent = data[0]
         self.mana_percent = data[1]
+        self.is_sitting = (data[2] & 0x02) != 0
         self.endurance_percent = data[3]
 
         if self.health_percent == 0:

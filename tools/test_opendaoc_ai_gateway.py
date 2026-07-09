@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -19,6 +20,17 @@ def load_gateway():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def isolated_cli_env() -> dict[str, str]:
+    env = dict(os.environ)
+    for key in (
+        "OPENDAOC_RAG_DATABASE_URL",
+        "OPENDAOC_RAG_EMBEDDING_BASE_URL",
+        "OPENDAOC_RAG_EMBEDDING_API_KEY",
+    ):
+        env.pop(key, None)
+    return env
 
 
 class OpenDaocAiGatewayConfigTests(unittest.TestCase):
@@ -304,6 +316,14 @@ class OpenDaocAiGatewayValidationTests(unittest.TestCase):
                 "leader_health_band": "low",
                 "adds": 2,
                 "exact_position": "123,456,789",
+                "mercenary": {
+                    "tactic": "aggressive",
+                    "trust": 33,
+                    "trust_stage": "낯섦",
+                    "fatigue": 72,
+                    "traits": ["탈출로 확인", "돈 밝힘"],
+                    "secret_note": "do not pass",
+                },
             },
         }
 
@@ -317,6 +337,10 @@ class OpenDaocAiGatewayValidationTests(unittest.TestCase):
         self.assertNotIn("raw_chat", sanitized)
         self.assertNotIn("x", sanitized)
         self.assertNotIn("exact_position", sanitized["state"])
+        self.assertEqual(sanitized["state"]["mercenary"]["trust"], 33)
+        self.assertEqual(sanitized["state"]["mercenary"]["trust_stage"], "낯섦")
+        self.assertEqual(sanitized["state"]["mercenary"]["traits"], ["탈출로 확인", "돈 밝힘"])
+        self.assertNotIn("secret_note", sanitized["state"]["mercenary"])
 
     def test_validate_response_accepts_short_safe_json(self) -> None:
         gateway = load_gateway()
@@ -578,6 +602,12 @@ class OpenDaocAiGatewayValidationTests(unittest.TestCase):
                 "message": "오늘 컨디션 어때?",
                 "account": "secret_account",
                 "player_name": "Huhu",
+                "player_context": {
+                    "player_class": "Cleric",
+                    "player_class_id": 6,
+                    "player_level": 30,
+                    "player_specs": "Rejuvenation 30",
+                },
                 "profile": {
                     "name": "Albtest005",
                     "origin": "Camelot Hills 변방 초소",
@@ -596,8 +626,13 @@ class OpenDaocAiGatewayValidationTests(unittest.TestCase):
 
         self.assertEqual(sanitized["feature"], "companion_free_chat")
         self.assertEqual(sanitized["message"], "오늘 컨디션 어때?")
+        self.assertEqual(sanitized["player_class"], "Cleric")
+        self.assertEqual(sanitized["player_class_id"], 6)
+        self.assertEqual(sanitized["player_level"], 30)
         self.assertIn("Camelot Hills", combined)
         self.assertIn("국경 경비대", combined)
+        self.assertIn("질문자 맥락", combined)
+        self.assertIn("직업 Cleric", combined)
         self.assertIn("1~2", combined)
         self.assertNotIn("secret_account", combined)
         self.assertNotIn("Huhu", combined)
@@ -682,6 +717,27 @@ class OpenDaocAiGatewayValidationTests(unittest.TestCase):
         self.assertEqual(sanitized_memory_payload["followup_kind"], "route")
         self.assertIn("가는 길", sanitized_memory_payload["resolved_question"])
         self.assertEqual(gateway.sanitize_guide_payload({"question": "5렙 사냥", "region": 1})["region"], 1)
+        self.assertEqual(
+            gateway.sanitize_guide_payload(
+                {
+                    "question": "내 직업이면 스킬 뭐 찍어?",
+                    "player_class": "Cleric",
+                    "player_class_id": 6,
+                    "player_specs": "Rejuvenation 30",
+                }
+            )["player_class"],
+            "Cleric",
+        )
+        sanitized_class_payload = gateway.sanitize_guide_payload(
+            {
+                "question": "내 직업이면 스킬 뭐 찍어?",
+                "player_class": "Cleric",
+                "player_class_id": 6,
+                "player_specs": "Rejuvenation 30",
+            }
+        )
+        self.assertEqual(sanitized_class_payload["player_class_id"], 6)
+        self.assertEqual(sanitized_class_payload["player_specs"], "Rejuvenation 30")
 
     def test_sanitize_guide_payload_strips_vocative_invocation_only(self) -> None:
         gateway = load_gateway()
@@ -709,6 +765,13 @@ class OpenDaocAiGatewayValidationTests(unittest.TestCase):
 
 
 class OpenDaocAiGatewayRagTests(unittest.TestCase):
+    def test_db_scalar_text_decodes_bytes_without_repr_prefix(self) -> None:
+        gateway = load_gateway()
+
+        self.assertEqual(gateway.db_scalar_text("doc:guide"), "doc:guide")
+        self.assertEqual(gateway.db_scalar_text("한글 안내".encode("utf-8")), "한글 안내")
+        self.assertEqual(gateway.db_scalar_text(memoryview("아이템".encode("utf-8"))), "아이템")
+
     def test_chunk_knowledge_text_uses_stable_chunk_ids_and_hashes(self) -> None:
         gateway = load_gateway()
         text = "알비온 20레벨 사냥터 안내입니다.\n\n힐러 용병이 있으면 노란색 몬스터를 권장합니다."
@@ -1672,6 +1735,63 @@ class OpenDaocAiGatewayGenerationTests(unittest.TestCase):
         self.assertEqual(repository.search_calls[0]["filters"]["preferred_kind"], "hunting_spot")
         self.assertEqual(repository.search_calls[0]["filters"]["player_level"], 5)
 
+    def test_generate_guide_adds_player_class_to_my_class_skill_questions(self) -> None:
+        gateway = load_gateway()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config = self.config_with_paths(temp_dir)
+            repository = gateway.InMemoryRagRepository(
+                [
+                    gateway.RagSearchResult(
+                        chunk_id="spell:cleric:0",
+                        source_id="game_db:spell:cleric:rejuvenation",
+                        text="스킬/주문: Rejuvenation 라인 30레벨 Major Heal. Cleric은 치유 계열을 우선 확인합니다.",
+                        score=0.9,
+                        metadata={"kind": "spell"},
+                    )
+                ]
+            )
+            embedder = gateway.FakeEmbeddingProvider()
+            provider = gateway.SequenceGuideAnswerProvider(
+                [
+                    gateway.ProviderResult(
+                        response={
+                            "say_channel": "party",
+                            "guide_lines": [
+                                "Cleric이면 치유 계열을 먼저 확인하세요.",
+                                "파티 안정이 필요하면 회복 주문을 우선합니다.",
+                                "남는 포인트는 보조 역할에 맞춰 조정하세요.",
+                            ],
+                            "source_ids": ["game_db:spell:cleric:rejuvenation"],
+                            "confidence": "medium",
+                        },
+                        usage={"total_tokens": 12},
+                    )
+                ]
+            )
+
+            result = gateway.generate_guide(
+                {
+                    "question": "용병아 내 직업이면 스킬 뭐 찍어?",
+                    "player_class": "Cleric",
+                    "player_class_id": 6,
+                    "player_specs": "Rejuvenation 30",
+                    "player_level": 30,
+                },
+                config,
+                repository=repository,
+                embedding_provider=embedder,
+                answer_provider=provider,
+            )
+
+        self.assertTrue(result["allowed"])
+        self.assertIn("질문자 맥락: 레벨 30, 직업 Cleric, 직업ID 6, 특성 Rejuvenation 30", embedder.calls[0]["text"])
+        self.assertEqual(repository.search_calls[0]["filters"]["preferred_kind"], "spell")
+        user_payload = json.loads(provider.calls[0]["messages"][1]["content"])
+        self.assertIn("직업 Cleric", user_payload["player_context"])
+        self.assertEqual(user_payload["player_class"], "Cleric")
+        self.assertEqual(user_payload["player_class_id"], 6)
+        self.assertEqual(user_payload["player_specs"], "Rejuvenation 30")
+
     def test_generate_guide_uses_short_memory_for_followup_hunting_questions(self) -> None:
         gateway = load_gateway()
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2013,9 +2133,11 @@ class OpenDaocAiGatewayGenerationTests(unittest.TestCase):
         )
         messages = gateway.build_free_chat_messages(sanitized)
         user_payload = json.loads(messages[-1]["content"])
+        system = messages[0]["content"]
 
         self.assertEqual(user_payload["memory"]["persona"]["topic"], "origin")
         self.assertNotIn("guide", user_payload["memory"])
+        self.assertIn("이어지는 대화", system)
 
     def test_generate_guide_replaces_untrusted_model_source_ids_with_rag_sources(self) -> None:
         gateway = load_gateway()
@@ -2606,6 +2728,7 @@ class OpenDaocAiGatewayCliTests(unittest.TestCase):
                 text=True,
                 encoding="utf-8",
                 capture_output=True,
+                env=isolated_cli_env(),
                 check=False,
             )
 
@@ -2650,6 +2773,7 @@ class OpenDaocAiGatewayCliTests(unittest.TestCase):
                 text=True,
                 encoding="utf-8",
                 capture_output=True,
+                env=isolated_cli_env(),
                 check=False,
             )
 
@@ -2712,6 +2836,7 @@ class OpenDaocAiGatewayCliTests(unittest.TestCase):
                 text=True,
                 encoding="utf-8",
                 capture_output=True,
+                env=isolated_cli_env(),
                 check=False,
             )
 
@@ -2756,6 +2881,7 @@ class OpenDaocAiGatewayCliTests(unittest.TestCase):
                 text=True,
                 encoding="utf-8",
                 capture_output=True,
+                env=isolated_cli_env(),
                 check=False,
             )
 

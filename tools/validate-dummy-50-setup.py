@@ -85,6 +85,8 @@ def expected_slots(profile) -> dict[int, tuple[int, str]]:
         slots[11] = (42, "shield")
     if profile.offhand_object_type:
         slots[11] = (profile.offhand_object_type, "weapon")
+    if getattr(profile, "instrument", False):
+        slots[13] = (45, "instrument")
     for slot in equip.ARMOR_SLOTS:
         slots[slot] = (profile.armor_object_type, "armor")
     return slots

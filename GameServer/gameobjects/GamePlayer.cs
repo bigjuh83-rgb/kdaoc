@@ -7904,6 +7904,7 @@ namespace DOL.GS
             try
             {
                 DynamicQuestRuntimeService.Instance.TryAcceptRegionalAutoQuest(this);
+                DynamicQuestRuntimeService.Instance.SyncDynamicQuestJournal(this);
             }
             catch (Exception ex)
             {
@@ -11417,11 +11418,42 @@ namespace DOL.GS
         {
             foreach (AbstractQuest questInList in QuestList.Keys)
             {
+                if (quest is IDynamicQuestJournalAdapter incomingDynamicQuest &&
+                    questInList is IDynamicQuestJournalAdapter activeDynamicQuest)
+                {
+                    if (DynamicQuestJournalAdaptersRepresentSameProgress(activeDynamicQuest, incomingDynamicQuest) &&
+                        questInList.IsDoingQuest())
+                    {
+                        return questInList;
+                    }
+
+                    continue;
+                }
+
                 if (questInList.GetType().Equals(quest.GetType()) && questInList.IsDoingQuest())
                     return questInList;
             }
 
             return null;
+        }
+
+        internal static bool DynamicQuestJournalAdaptersRepresentSameProgressForTest(
+            IDynamicQuestJournalAdapter activeDynamicQuest,
+            IDynamicQuestJournalAdapter incomingDynamicQuest)
+        {
+            return DynamicQuestJournalAdaptersRepresentSameProgress(activeDynamicQuest, incomingDynamicQuest);
+        }
+
+        private static bool DynamicQuestJournalAdaptersRepresentSameProgress(
+            IDynamicQuestJournalAdapter activeDynamicQuest,
+            IDynamicQuestJournalAdapter incomingDynamicQuest)
+        {
+            return activeDynamicQuest != null &&
+                   incomingDynamicQuest != null &&
+                   string.Equals(
+                       activeDynamicQuest.DynamicProgressId,
+                       incomingDynamicQuest.DynamicProgressId,
+                       StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

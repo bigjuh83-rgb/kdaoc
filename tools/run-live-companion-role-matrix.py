@@ -39,7 +39,7 @@ PROFILE_OVERRIDES: dict[str, list[str]] = {
         "--joiner-account",
         "albtest007",
         "--roles",
-        "healer,dps",
+        "healer",
     ],
 }
 

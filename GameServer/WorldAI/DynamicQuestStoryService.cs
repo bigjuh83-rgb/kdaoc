@@ -56,6 +56,11 @@ namespace DOL.GS.WorldAI
         public string Text { get; set; } = string.Empty;
         public string Emotion { get; set; } = string.Empty;
         public string Emote { get; set; } = string.Empty;
+        public string CinematicAction { get; set; } = string.Empty;
+        public string SceneRole { get; set; } = string.Empty;
+        public string Formation { get; set; } = string.Empty;
+        public int ActorCount { get; set; }
+        public int DelayMs { get; set; }
     }
 
     public sealed class DynamicQuestStoryQuality
@@ -397,8 +402,30 @@ namespace DOL.GS.WorldAI
         {
             DynamicQuestStoryQuality quality = EvaluateQualityDetails(request, story);
             return MeetsStoryQualityGate(quality, Math.Max(75, StoryMinimumScore())) &&
+                   HasCacheReadyNarrativeText(story) &&
                    !(quality.Reasons ?? Array.Empty<string>()).Contains("generic_scaffold", StringComparer.OrdinalIgnoreCase) &&
                    !(quality.Reasons ?? Array.Empty<string>()).Contains("missing_specific_local_anchor", StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static bool HasCacheReadyNarrativeText(DynamicQuestStoryText story)
+        {
+            if (story == null)
+                return false;
+
+            List<DynamicQuestNarrativeScene> scenes = (story.NarrativeScenes ?? Array.Empty<DynamicQuestNarrativeScene>())
+                .Where(IsValidNarrativeScene)
+                .ToList();
+            List<DynamicQuestPresentationBeat> beats = (story.PresentationBeats ?? Array.Empty<DynamicQuestPresentationBeat>())
+                .Where(IsValidPresentationBeat)
+                .ToList();
+
+            int journalReadyScenes = scenes.Count(scene =>
+                !string.IsNullOrWhiteSpace(scene.JournalEntry) &&
+                scene.JournalEntry.Trim().Length >= 12);
+            if (scenes.Count >= 3 && journalReadyScenes < 3)
+                return false;
+
+            return true;
         }
 
         internal static DynamicQuestStoryText SanitizeStoryForTest(DynamicQuestStoryRequest request, DynamicQuestStoryText story)
@@ -467,6 +494,12 @@ namespace DOL.GS.WorldAI
             int koreanScore = ContainsHangul(combined) ? 12 : 0;
             if (ContainsOperationalEnglish(combined))
                 koreanScore = Math.Max(0, koreanScore - 4);
+            bool hasAwkwardKoreanParticle = ContainsAwkwardKoreanParticle(combined);
+            if (hasAwkwardKoreanParticle)
+            {
+                koreanScore = Math.Max(0, koreanScore - 6);
+                reasons.Add("awkward_korean_particle");
+            }
 
             int objectiveScore = 0;
             if (ContainsKillIntent(story.OfferText))
@@ -529,11 +562,18 @@ namespace DOL.GS.WorldAI
                 reasons.Add("unsafe_story_text");
 
             bool hasRepetitiveStorySkeleton = HasRepetitiveStorySkeleton(combined);
-            int diversityScore = HasRepeatedGenericPhrases(combined) ? 5 : 10;
+            bool hasRepeatedGenericPhrases = HasRepeatedGenericPhrases(combined);
+            bool hasRepeatedSentenceOpenings = HasRepeatedSentenceOpenings(story);
+            int diversityScore = hasRepeatedGenericPhrases ? 5 : 10;
             if (hasRepetitiveStorySkeleton)
             {
                 diversityScore = Math.Min(diversityScore, 1);
                 reasons.Add("repetitive_story_skeleton");
+            }
+            if (hasRepeatedSentenceOpenings)
+            {
+                diversityScore = Math.Min(diversityScore, 2);
+                reasons.Add("repetitive_sentence_opening");
             }
             if (hasGenericScaffold)
             {
@@ -564,7 +604,13 @@ namespace DOL.GS.WorldAI
                 total = Math.Min(total, 84);
             if (rebindabilityScore < 15)
                 total = Math.Min(total, 74);
+            if (hasRepeatedGenericPhrases)
+                total = Math.Min(total, 94);
             if (hasRepetitiveStorySkeleton)
+                total = Math.Min(total, 74);
+            if (hasRepeatedSentenceOpenings)
+                total = Math.Min(total, 74);
+            if (hasAwkwardKoreanParticle)
                 total = Math.Min(total, 74);
             if (hasSystemExpressionLeak)
                 total = 0;
@@ -603,7 +649,9 @@ namespace DOL.GS.WorldAI
             return reasons.Contains("generic_scaffold", StringComparer.OrdinalIgnoreCase) ||
                    reasons.Contains("missing_specific_local_anchor", StringComparer.OrdinalIgnoreCase) ||
                    reasons.Contains("weak_dynamic_rebindability", StringComparer.OrdinalIgnoreCase) ||
+                   reasons.Contains("awkward_korean_particle", StringComparer.OrdinalIgnoreCase) ||
                    reasons.Contains("system_expression_leak", StringComparer.OrdinalIgnoreCase) ||
+                   reasons.Contains("repetitive_sentence_opening", StringComparer.OrdinalIgnoreCase) ||
                    reasons.Contains("repetitive_story_skeleton", StringComparer.OrdinalIgnoreCase);
         }
 
@@ -739,7 +787,12 @@ namespace DOL.GS.WorldAI
                         Speaker = NormalizeAllowlisted(beat.Speaker, AllowedSpeakers),
                         Text = PlaceholderizeTarget(TrimTo(beat.Text, 240), request?.TargetName),
                         Emotion = NormalizeAllowlisted(beat.Emotion, AllowedEmotions),
-                        Emote = NormalizeAllowlisted(beat.Emote, AllowedEmotes)
+                        Emote = NormalizeAllowlisted(beat.Emote, AllowedEmotes),
+                        CinematicAction = NormalizeAllowlisted(beat.CinematicAction, AllowedCinematicActions),
+                        SceneRole = NormalizeSceneToken(beat.SceneRole),
+                        Formation = NormalizeAllowlisted(beat.Formation, AllowedCinematicFormations),
+                        ActorCount = Math.Clamp(beat.ActorCount, 0, 100),
+                        DelayMs = Math.Clamp(beat.DelayMs, 0, 6000)
                     })
                     .ToList()
             };
@@ -902,7 +955,66 @@ namespace DOL.GS.WorldAI
                         ? $"{landmark} 쪽에서 방금 비명이 멎었습니다. {{{{target}}}}를 오래 두면 안 됩니다."
                         : $"{landmark} 근처에 {{{{target}}}}가 지나간 자국과 급히 꺼진 횃불이 남아 있습니다.",
                     Emotion = hasNpc ? "fear" : "caution",
-                    Emote = hasNpc ? "Shiver" : "Point"
+                    Emote = hasNpc ? "Shiver" : "Point",
+                    CinematicAction = "witness_point",
+                    SceneRole = "contract_witness",
+                    Formation = "escort",
+                    ActorCount = 3
+                },
+                new DynamicQuestPresentationBeat
+                {
+                    NodeId = "explore",
+                    Trigger = "OnExplore",
+                    Speaker = "System",
+                    Text = $"{landmark} 바깥의 표식이 끊기자, 망보던 자가 뒤로 빠지고 남은 경비가 길을 가리킵니다.",
+                    Emotion = "suspicion",
+                    Emote = "Point",
+                    CinematicAction = "scout_retreat",
+                    SceneRole = "lookout_escape",
+                    Formation = "escape",
+                    ActorCount = 4,
+                    DelayMs = 700
+                },
+                new DynamicQuestPresentationBeat
+                {
+                    NodeId = "kill",
+                    Trigger = "OnKill",
+                    Speaker = "System",
+                    Text = $"{{{{target}}}} 위협이 쓰러지자 숨어 있던 매복 병력이 모습을 드러내고, 방패 든 경비가 탈출로를 막습니다.",
+                    Emotion = "urgency",
+                    Emote = "Point",
+                    CinematicAction = "ambush_reveal",
+                    SceneRole = "ambush_wave",
+                    Formation = "ambush",
+                    ActorCount = 8
+                },
+                new DynamicQuestPresentationBeat
+                {
+                    NodeId = "kill",
+                    Trigger = "OnKill",
+                    Speaker = "Companion",
+                    Text = "아직 끝난 게 아닙니다. 도망치는 목격자를 놓치면 이 표식은 다음 밤에 다시 돌아옵니다.",
+                    Emotion = "warning",
+                    Emote = "Salute",
+                    CinematicAction = "defender_intercept",
+                    SceneRole = "escape_intercept",
+                    Formation = "line",
+                    ActorCount = 6,
+                    DelayMs = 900
+                },
+                new DynamicQuestPresentationBeat
+                {
+                    NodeId = "return",
+                    Trigger = "OnNodeEnter",
+                    Speaker = "System",
+                    Text = $"{landmark}로 돌아오는 길에 남은 경비가 한 걸음 물러서며 보고할 길을 열어 줍니다.",
+                    Emotion = "relief",
+                    Emote = "Bow",
+                    CinematicAction = "fallback_guard",
+                    SceneRole = "debrief_guard",
+                    Formation = "escort",
+                    ActorCount = 3,
+                    DelayMs = 500
                 },
                 new DynamicQuestPresentationBeat
                 {
@@ -913,7 +1025,12 @@ namespace DOL.GS.WorldAI
                         ? "오늘 밤은 문을 걸어 잠그기 전에 서로의 이름을 부를 수 있겠군요."
                         : $"{landmark}의 경계 소리가 잦아들고, 길목의 불빛이 다시 안정됩니다.",
                     Emotion = hasNpc ? "gratitude" : "relief",
-                    Emote = hasNpc ? "Bow" : "Smile"
+                    Emote = hasNpc ? "Bow" : "Smile",
+                    CinematicAction = "hold_ground",
+                    SceneRole = "watch_restored",
+                    Formation = "line",
+                    ActorCount = 4,
+                    DelayMs = 1000
                 }
             };
         }
@@ -942,14 +1059,53 @@ namespace DOL.GS.WorldAI
             return "부러진 수레바퀴와 젖은 흙";
         }
 
-        private static readonly HashSet<string> AllowedNodeIds = NewSet("talk", "explore", "kill", "return", "choice", "complete");
+        private static readonly HashSet<string> AllowedNodeIds = NewSet("talk", "explore", "kill", "return", "choice", "observe_signal", "complete");
         private static readonly HashSet<string> AllowedSceneTypes = NewSet("Intro", "Discovery", "Threat", "Return", "Choice", "Completion", "Aftermath");
         private static readonly HashSet<string> AllowedMoods = NewSet("ominous", "urgent", "tragic", "hopeful", "grim", "mysterious", "relieved", "neutral");
         private static readonly HashSet<string> AllowedRevealPolicies = NewSet("FirstSeenOnly", "EveryInteraction", "ManualReviewOnly");
-        private static readonly HashSet<string> AllowedPresentationTriggers = NewSet("OnNodeEnter", "OnNpcInteract", "OnChoiceShown", "OnComplete");
+        private static readonly HashSet<string> AllowedPresentationTriggers = NewSet(
+            "OnAccept",
+            "OnNodeEnter",
+            "OnNpcInteract",
+            "OnExplore",
+            "OnKill",
+            "OnChoiceShown",
+            "OnChoiceSelected",
+            "OnWorldSignal",
+            "OnComplete");
         private static readonly HashSet<string> AllowedSpeakers = NewSet("StartNpc", "TargetNpc", "System", "Companion");
-        private static readonly HashSet<string> AllowedEmotions = NewSet("fear", "urgency", "relief", "anger", "sorrow", "suspicion", "pride", "caution", "gratitude", "neutral", "celebration");
+        private static readonly HashSet<string> AllowedEmotions = NewSet(
+            "fear",
+            "urgency",
+            "urgent",
+            "warning",
+            "ominous",
+            "anxious",
+            "hope",
+            "hopeful",
+            "confusion",
+            "relief",
+            "anger",
+            "sorrow",
+            "suspicion",
+            "pride",
+            "caution",
+            "gratitude",
+            "neutral",
+            "celebration");
         private static readonly HashSet<string> AllowedEmotes = NewSet("Shiver", "Point", "Smile", "Angry", "Cry", "Ponder", "Salute", "No", "Bow", "Cheer", "Cower");
+        private static readonly HashSet<string> AllowedCinematicActions = NewSet(
+            "witness_point",
+            "scout_retreat",
+            "ambush_reveal",
+            "defender_intercept",
+            "ritual_interrupt",
+            "threat_standoff",
+            "combat_stance",
+            "hold_ground",
+            "guard_advance",
+            "fallback_guard");
+        private static readonly HashSet<string> AllowedCinematicFormations = NewSet("escort", "patrol", "ambush", "line", "escape", "ring", "wedge");
 
         private static HashSet<string> NewSet(params string[] values)
         {
@@ -977,7 +1133,14 @@ namespace DOL.GS.WorldAI
                    IsAllowed(beat.Speaker, AllowedSpeakers) &&
                    IsAllowed(beat.Emotion, AllowedEmotions, allowEmpty: true) &&
                    IsAllowed(beat.Emote, AllowedEmotes, allowEmpty: true) &&
+                   IsAllowed(beat.CinematicAction, AllowedCinematicActions, allowEmpty: true) &&
+                   IsAllowed(beat.Formation, AllowedCinematicFormations, allowEmpty: true) &&
+                   beat.ActorCount >= 0 &&
+                   beat.ActorCount <= 100 &&
+                   beat.DelayMs >= 0 &&
+                   beat.DelayMs <= 6000 &&
                    !ContainsForbiddenOperationalText(beat.Text) &&
+                   !ContainsForbiddenOperationalText(beat.SceneRole) &&
                    !LooksLikeRawNumber(beat.Emote) &&
                    !string.IsNullOrWhiteSpace(beat.Text);
         }
@@ -992,6 +1155,14 @@ namespace DOL.GS.WorldAI
         {
             string normalized = (value ?? string.Empty).Trim();
             return allowed.FirstOrDefault(item => string.Equals(item, normalized, StringComparison.OrdinalIgnoreCase)) ?? string.Empty;
+        }
+
+        private static string NormalizeSceneToken(string value)
+        {
+            string normalized = Regex.Replace((value ?? string.Empty).Trim().ToLowerInvariant(), "[^a-z0-9_-]+", "_").Trim('_');
+            if (normalized.Length > 40)
+                normalized = normalized.Substring(0, 40);
+            return normalized;
         }
 
         private static string TrimTo(string value, int maxLength)
@@ -1382,6 +1553,56 @@ namespace DOL.GS.WorldAI
                    value.Contains("먼저 찾아내야 한다", StringComparison.OrdinalIgnoreCase);
         }
 
+        private static bool HasRepeatedSentenceOpenings(string text)
+        {
+            string value = Regex.Replace(text ?? string.Empty, @"\s+", " ").Trim();
+            if (value.Length == 0)
+                return false;
+
+            return Regex.Split(value, @"[.!?。？！]+")
+                .Select(NormalizeSentenceOpening)
+                .Where(opening => opening.Length >= 8)
+                .GroupBy(opening => opening, StringComparer.OrdinalIgnoreCase)
+                .Any(group => group.Count() >= 2);
+        }
+
+        private static bool HasRepeatedSentenceOpenings(DynamicQuestStoryText story)
+        {
+            if (HasRepeatedSentenceOpenings(story?.OfferText) ||
+                HasRepeatedSentenceOpenings(story?.ProgressText) ||
+                HasRepeatedSentenceOpenings(story?.FinishText))
+                return true;
+
+            foreach (DynamicQuestNarrativeScene scene in story?.NarrativeScenes ?? Array.Empty<DynamicQuestNarrativeScene>())
+            {
+                if (HasRepeatedSentenceOpenings(scene.Body) ||
+                    HasRepeatedSentenceOpenings(scene.JournalEntry))
+                    return true;
+            }
+
+            foreach (DynamicQuestPresentationBeat beat in story?.PresentationBeats ?? Array.Empty<DynamicQuestPresentationBeat>())
+            {
+                if (HasRepeatedSentenceOpenings(beat.Text))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static string NormalizeSentenceOpening(string sentence)
+        {
+            string value = Regex.Replace(sentence ?? string.Empty, @"[{}\[\]""'`“”‘’(),，,:;]+", " ");
+            value = Regex.Replace(value, @"\s+", " ").Trim();
+            if (value.Length < 12)
+                return string.Empty;
+
+            string[] tokens = value.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (tokens.Length >= 3)
+                return string.Join(" ", tokens.Take(3));
+
+            return value.Length <= 12 ? value : value.Substring(0, 12);
+        }
+
         private static bool HasGenericScaffoldText(string text)
         {
             string value = text ?? string.Empty;
@@ -1509,6 +1730,62 @@ namespace DOL.GS.WorldAI
             return (text ?? string.Empty).Any(ch => ch >= '\uac00' && ch <= '\ud7a3');
         }
 
+        private static bool ContainsAwkwardKoreanParticle(string text)
+        {
+            string value = text ?? string.Empty;
+            for (int i = 1; i < value.Length; i++)
+            {
+                char previous = value[i - 1];
+                char current = value[i];
+                if (IsAsciiLetter(previous) && (current == '와' || current == '과'))
+                    return true;
+                if (IsClosingQuote(previous) && i >= 2)
+                {
+                    if (IsAsciiLetter(value[i - 2]) && IsKoreanParticle(current))
+                        return true;
+                    previous = value[i - 2];
+                }
+
+                if (!IsHangulSyllable(previous))
+                    continue;
+
+                bool hasFinalConsonant = HasHangulFinalConsonant(previous);
+                if ((current == '와' || current == '를') && hasFinalConsonant)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsKoreanParticle(char ch)
+        {
+            return ch == '와' || ch == '과' ||
+                   ch == '이' || ch == '가' ||
+                   ch == '은' || ch == '는' ||
+                   ch == '을' || ch == '를';
+        }
+
+        private static bool IsAsciiLetter(char ch)
+        {
+            return (ch >= 'A' && ch <= 'Z') ||
+                   (ch >= 'a' && ch <= 'z');
+        }
+
+        private static bool IsClosingQuote(char ch)
+        {
+            return ch == '\'' || ch == '"' || ch == '’' || ch == '”';
+        }
+
+        private static bool IsHangulSyllable(char ch)
+        {
+            return ch >= '\uac00' && ch <= '\ud7a3';
+        }
+
+        private static bool HasHangulFinalConsonant(char ch)
+        {
+            return IsHangulSyllable(ch) && (ch - '\uac00') % 28 != 0;
+        }
+
         private static bool ContainsKillIntent(string text)
         {
             string value = text ?? string.Empty;
@@ -1578,16 +1855,25 @@ namespace DOL.GS.WorldAI
                    "title, offer, progress, and finish must be natural Korean Hangul text. " +
                    "narrative_scenes is required and must include at least three concise immersive Korean scenes across intro, discovery, return, or completion. " +
                    "Each narrative scene uses node_id, scene_type, title, body, journal_entry, mood, reveal_policy. " +
-                   "presentation_beats is required and must include at least two safe cosmetic NPC moments using node_id, trigger, speaker, text, emotion, emote. " +
+                   "presentation_beats is required and must include at least four staged moments using node_id, trigger, speaker, text, emotion, emote, cinematic_action, scene_role, formation, actor_count, and delay_ms. Use delay_ms 0 when there is no delay. " +
+                   "Include at least three distinct cinematic_action values, at least three distinct scene_role values, at least two formations, one delayed beat, one actor_count of 4 or more, and one combat or movement action scene. " +
+                   "Allowed cinematic_action values are witness_point, scout_retreat, ambush_reveal, defender_intercept, ritual_interrupt, threat_standoff, combat_stance, hold_ground, guard_advance, fallback_guard. " +
+                   "Allowed formation values are escort, patrol, ambush, line, escape, ring. Keep actor_count between 1 and 100 and delay_ms between 0 and 6000. " +
                    "Do not use generic scaffold titles or phrases such as '지역 분위기', '불안한 부탁', '흔적의 방향', '잠잠해진 길목', or '이제야 숨을 쉴 수 있겠군요'. " +
                    "Do not reuse repetitive skeleton phrases such as '말 없는 부탁', '열린 경고', '누군가 급히 남긴', '끊어진 발자국', '흔적 사이의 간격은 점점 좁아지고', '오늘 밤의 공포는 한 번 꺾였다', or '이제 사람들도 길을 다시 볼 겁니다'. " +
                    "Write reusable dynamic templates: use {{start_npc}} for the bound quest giver and {{realm}} for the bound realm instead of hard-coding NPC names or realm names in story text. " +
                    "Use at least two concrete local anchors from the NPC role, monster ecology, landmark, weather, injury, witness, or consequence; never expose raw fields such as region_id, numeric region names, or nearby settlement. " +
+                   DynamicQuestCinematicCatalog.DescribeCatalogForPrompt() + " " +
+                   "Every narrative scene and presentation beat should imply a fitting prop category when possible: use clue for investigation or tracks, record for written lore, relic for ritual or realm symbols, flame for danger or omens, weapon for combat aftermath, and structure for gates, portals, keeps, or relic pads. " +
+                   "Do not invent model numbers; describe the scene so the runtime can select a matching catalog category. " +
+                   "Write presentation beats as scene directions that the runtime can stage with temporary NPC actors walking, guarding, falling back, pointing, intercepting, interrupting rituals, revealing ambushes, or holding ground; do not rely on emotes alone. " +
+                   "For thriller or assassination style quests, stage the existing nodes as a sequence of contract, witness clue, ambush reveal, escape-route interception, fleeing witness, confrontation, and debrief beats; keep them server-checkable and never require a custom client camera. " +
+                   "For large battle-tableau scenes, describe the scale in words instead of raw actor counts; the runtime clamps temporary cinematic actors to the configured safe limit and never above 100 per action. " +
                    "Use {{target}} as the monster placeholder inside offer, progress, and finish; do not translate the DB target name inside the target field. " +
                    "target, count, min_level, and max_level must exactly match the provided values. " +
                    "Do not output raw emote ids, packet names, opcodes, arbitrary animation numbers, graph, rewards, commands, markdown, comments, or extra keys. " +
                    "The objective is kill/combat, so every narrative field must clearly describe defeating or subduing {{target}}. " +
-                   "Example JSON shape: {\"title\":\"{{start_npc}}의 젖은 길목 경고\",\"offer\":\"{{start_npc}}은 {{realm}} 길목의 젖은 흙 위에 남은 {{target}} 흔적을 가리키며 마을로 번지기 전에 제압해 달라고 낮게 말했다.\",\"progress\":\"{{realm}} 길목의 발자국을 따라가 {{target}} 위협을 끊어내야 한다.\",\"finish\":\"{{target}} 위협이 사라지자 {{start_npc}}은 찢긴 울타리를 다시 묶고 {{realm}} 길목의 횃불을 세웠다.\",\"target\":\"black wolf pup\",\"count\":1,\"min_level\":1,\"max_level\":5,\"narrative_scenes\":[{\"node_id\":\"talk\",\"scene_type\":\"Intro\",\"title\":\"찢긴 울타리\",\"body\":\"{{start_npc}}은 {{realm}} 길목의 젖은 흙 위에 남은 {{target}} 발자국을 가리켰다. 부러진 울타리와 꺼진 횃불은 위협이 밤새 가까워졌음을 보여 주었다.\",\"journal_entry\":\"{{start_npc}}에게서 {{realm}} 길목의 {{target}} 흔적을 조사해 달라는 부탁을 받았다.\",\"mood\":\"ominous\",\"reveal_policy\":\"FirstSeenOnly\"},{\"node_id\":\"explore\",\"scene_type\":\"Discovery\",\"title\":\"젖은 발자국\",\"body\":\"발자국은 낮은 덤불과 버려진 수레바퀴 사이로 이어졌다. {{target}}을 지금 막지 못하면 {{realm}}의 밤길은 더 오래 비게 될 것이다.\",\"journal_entry\":\"{{target}} 흔적은 마을 가까이 이어졌다.\",\"mood\":\"urgent\",\"reveal_policy\":\"EveryInteraction\"},{\"node_id\":\"return\",\"scene_type\":\"Return\",\"title\":\"숨 돌린 길목\",\"body\":\"{{target}} 위협이 사라지자 길목의 횃불이 다시 곧게 섰다. {{start_npc}}에게 돌아가면 {{realm}} 사람들이 문을 덜 두드리게 될 것이다.\",\"journal_entry\":\"{{start_npc}}에게 {{target}} 처치 소식을 전해야 한다.\",\"mood\":\"relieved\",\"reveal_policy\":\"FirstSeenOnly\"}],\"presentation_beats\":[{\"node_id\":\"talk\",\"trigger\":\"OnNpcInteract\",\"speaker\":\"StartNpc\",\"text\":\"목소리를 낮추세요. 저 발자국은 방금 생긴 겁니다.\",\"emotion\":\"fear\",\"emote\":\"Shiver\"},{\"node_id\":\"return\",\"trigger\":\"OnComplete\",\"speaker\":\"StartNpc\",\"text\":\"이제 길목의 아이들이 다시 불빛을 따라 걸을 수 있겠군요.\",\"emotion\":\"gratitude\",\"emote\":\"Bow\"}]}";
+                   "Example JSON shape: {\"title\":\"{{start_npc}}의 젖은 길목 경고\",\"offer\":\"{{start_npc}}은 {{realm}} 길목의 젖은 흙 위에 남은 {{target}} 흔적을 가리키며 마을로 번지기 전에 제압해 달라고 낮게 말했다.\",\"progress\":\"{{realm}} 길목의 발자국을 따라가 {{target}} 위협을 끊어내야 한다.\",\"finish\":\"{{target}} 위협이 사라지자 {{start_npc}}은 찢긴 울타리를 다시 묶고 {{realm}} 길목의 횃불을 세웠다.\",\"target\":\"black wolf pup\",\"count\":1,\"min_level\":1,\"max_level\":5,\"narrative_scenes\":[{\"node_id\":\"talk\",\"scene_type\":\"Intro\",\"title\":\"찢긴 울타리\",\"body\":\"{{start_npc}}은 {{realm}} 길목의 젖은 흙 위에 남은 {{target}} 발자국을 가리켰다. 부러진 울타리와 꺼진 횃불은 위협이 밤새 가까워졌음을 보여 주었다.\",\"journal_entry\":\"{{start_npc}}에게서 {{realm}} 길목의 {{target}} 흔적을 조사해 달라는 부탁을 받았다.\",\"mood\":\"ominous\",\"reveal_policy\":\"FirstSeenOnly\"},{\"node_id\":\"explore\",\"scene_type\":\"Discovery\",\"title\":\"젖은 발자국\",\"body\":\"발자국은 낮은 덤불과 버려진 수레바퀴 사이로 이어졌다. {{target}}을 지금 막지 못하면 {{realm}}의 밤길은 더 오래 비게 될 것이다.\",\"journal_entry\":\"{{target}} 흔적은 마을 가까이 이어졌다.\",\"mood\":\"urgent\",\"reveal_policy\":\"EveryInteraction\"},{\"node_id\":\"return\",\"scene_type\":\"Return\",\"title\":\"숨 돌린 길목\",\"body\":\"{{target}} 위협이 사라지자 길목의 횃불이 다시 곧게 섰다. {{start_npc}}에게 돌아가면 {{realm}} 사람들이 문을 덜 두드리게 될 것이다.\",\"journal_entry\":\"{{start_npc}}에게 {{target}} 처치 소식을 전해야 한다.\",\"mood\":\"relieved\",\"reveal_policy\":\"FirstSeenOnly\"}],\"presentation_beats\":[{\"node_id\":\"talk\",\"trigger\":\"OnNpcInteract\",\"speaker\":\"StartNpc\",\"text\":\"목소리를 낮추세요. 저 발자국은 방금 생긴 겁니다.\",\"emotion\":\"fear\",\"emote\":\"Shiver\",\"cinematic_action\":\"witness_point\",\"scene_role\":\"contract_witness\",\"formation\":\"escort\",\"actor_count\":3,\"delay_ms\":0},{\"node_id\":\"explore\",\"trigger\":\"OnExplore\",\"speaker\":\"System\",\"text\":\"망보던 자가 뒤로 물러나고 길가의 표식이 드러납니다.\",\"emotion\":\"suspicion\",\"emote\":\"Point\",\"cinematic_action\":\"scout_retreat\",\"scene_role\":\"lookout_escape\",\"formation\":\"escape\",\"actor_count\":4,\"delay_ms\":700},{\"node_id\":\"kill\",\"trigger\":\"OnKill\",\"speaker\":\"System\",\"text\":\"{{target}}이 쓰러지자 매복 병력이 모습을 드러내고 탈출로를 막습니다.\",\"emotion\":\"urgency\",\"emote\":\"Point\",\"cinematic_action\":\"ambush_reveal\",\"scene_role\":\"ambush_wave\",\"formation\":\"ambush\",\"actor_count\":8,\"delay_ms\":0},{\"node_id\":\"return\",\"trigger\":\"OnComplete\",\"speaker\":\"StartNpc\",\"text\":\"이제 길목의 아이들이 다시 불빛을 따라 걸을 수 있겠군요.\",\"emotion\":\"gratitude\",\"emote\":\"Bow\",\"cinematic_action\":\"fallback_guard\",\"scene_role\":\"watch_restored\",\"formation\":\"line\",\"actor_count\":4,\"delay_ms\":1000}]}";
         }
 
         private static string BuildUserPrompt(DynamicQuestStoryRequest request)
@@ -1603,6 +1889,7 @@ namespace DOL.GS.WorldAI
                 min_level = request.MinLevel,
                 max_level = request.MaxLevel,
                 story_seed = SanitizeStorySeed(request.StorySeed),
+                cinematic_catalog = DynamicQuestCinematicCatalog.DescribeCatalogForPrompt(),
                 local_anchor_requirement = "Use at least two concrete local anchors; if start_npc is present, mention that NPC by name in narrative or journal text. If start_npc contains English letters, include that exact original value at least once."
             };
             return "Create one deterministic story-only dynamic quest template. " +
@@ -1817,7 +2104,7 @@ namespace DOL.GS.WorldAI
                     ["presentation_beats"] = new
                     {
                         type = "array",
-                        minItems = 2,
+                        minItems = 4,
                         items = new
                         {
                             type = "object",
@@ -1829,9 +2116,14 @@ namespace DOL.GS.WorldAI
                                 ["speaker"] = new { type = "string", @enum = AllowedSpeakers.OrderBy(item => item, StringComparer.Ordinal).ToArray() },
                                 ["text"] = new { type = "string" },
                                 ["emotion"] = new { type = "string", @enum = AllowedEmotions.OrderBy(item => item, StringComparer.Ordinal).ToArray() },
-                                ["emote"] = new { type = "string", @enum = AllowedEmotes.OrderBy(item => item, StringComparer.Ordinal).ToArray() }
+                                ["emote"] = new { type = "string", @enum = AllowedEmotes.OrderBy(item => item, StringComparer.Ordinal).ToArray() },
+                                ["cinematic_action"] = new { type = "string", @enum = AllowedCinematicActions.OrderBy(item => item, StringComparer.Ordinal).ToArray() },
+                                ["scene_role"] = new { type = "string" },
+                                ["formation"] = new { type = "string", @enum = AllowedCinematicFormations.OrderBy(item => item, StringComparer.Ordinal).ToArray() },
+                                ["actor_count"] = new { type = "integer", minimum = 1, maximum = 100 },
+                                ["delay_ms"] = new { type = "integer", minimum = 0, maximum = 6000 }
                             },
-                            required = new[] { "node_id", "trigger", "speaker", "text", "emotion", "emote" }
+                            required = new[] { "node_id", "trigger", "speaker", "text", "emotion", "emote", "cinematic_action", "scene_role", "formation", "actor_count", "delay_ms" }
                         }
                     }
                 },
@@ -2050,11 +2342,28 @@ namespace DOL.GS.WorldAI
                     Speaker = GetString(item, "speaker", 40),
                     Text = GetString(item, "text", 240),
                     Emotion = GetString(item, "emotion", 40),
-                    Emote = GetString(item, "emote", 40)
+                    Emote = GetString(item, "emote", 40),
+                    CinematicAction = GetStringAny(item, 40, "cinematic_action", "cinematicAction"),
+                    SceneRole = GetStringAny(item, 40, "scene_role", "sceneRole"),
+                    Formation = GetString(item, "formation", 40),
+                    ActorCount = GetIntAny(item, 0, "actor_count", "actorCount"),
+                    DelayMs = GetIntAny(item, 0, "delay_ms", "delayMs")
                 });
             }
 
             return beats;
+        }
+
+        private static int GetIntAny(JsonElement root, int fallback, params string[] fields)
+        {
+            foreach (string field in fields)
+            {
+                int value = GetInt(root, field, int.MinValue);
+                if (value != int.MinValue)
+                    return value;
+            }
+
+            return fallback;
         }
 
         private static JsonElement GetArrayAny(JsonElement root, params string[] fields)

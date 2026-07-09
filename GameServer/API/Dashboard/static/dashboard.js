@@ -22,6 +22,10 @@ let latestDynamicQuestSeed = null;
 let latestDynamicQuestStoryCache = null;
 let latestDynamicQuestStoryConfig = null;
 let latestDynamicQuestDifficulty = null;
+let latestDynamicQuestProgressSummary = null;
+let latestDynamicQuestCleanupPlan = null;
+let latestDynamicQuestWorldImpact = null;
+let latestMobGrowthSummary = null;
 const latestClassHistory = new Map();
 const heraldDetailCache = new Map();
 let currentHeraldClassRange = "now";
@@ -499,12 +503,66 @@ function renderDynamicQuestDifficultyRuns(difficulty) {
   });
 }
 
+function renderDynamicQuestOpsList(progress, cleanup, impact, mobGrowth) {
+  const list = document.getElementById("dynamicQuestOpsList");
+  if (!list) {
+    return;
+  }
+
+  list.innerHTML = "";
+
+  const active = progress?.active || [];
+  const candidates = cleanup?.candidates || [];
+  const recentImpact = impact?.recent || [];
+  const topMobs = mobGrowth?.top || [];
+
+  active.slice(0, 3).forEach((item) => {
+    list.appendChild(createDynamicQuestRow(
+      item.title || item.questId,
+      `${item.player || "-"} · ${item.currentNodeId || "-"} · ${item.stalledReason || "진행중"}`,
+      `대기 ${formatNumber(item.currentNodeElapsedSeconds)}초 · 신호 ${(item.pendingWorldSignals || []).join(", ") || "없음"}`,
+      "진행"));
+  });
+
+  candidates.filter(item => item.shouldCancel || item.actionHint === "advance_timed_out_progress").slice(0, 3).forEach((item) => {
+    list.appendChild(createDynamicQuestRow(
+      item.title || item.questId,
+      `${item.player || "-"} · ${item.actionHint || "-"} · ${item.stalledReason || "-"}`,
+      `정체 ${formatNumber(item.currentNodeElapsedSeconds)}초 · stale ${item.stale ? "yes" : "no"}`,
+      item.shouldCancel ? "정리" : "대기"));
+  });
+
+  recentImpact.slice(0, 3).forEach((item) => {
+    list.appendChild(createDynamicQuestRow(
+      item.title || item.questId,
+      `${displayRealmName(item.realm || "Unknown")} · Region ${item.regionId || 0} · ${item.playerName || "-"}`,
+      `${item.impactType || "region_stabilized"} · ${(item.signals || []).join(", ")}`,
+      "영향"));
+  });
+
+  topMobs.slice(0, 3).forEach((item) => {
+    list.appendChild(createDynamicQuestRow(
+      item.name || item.mobId,
+      `${item.stage || "Normal"} · Region ${item.regionId || 0} · Lv ${formatNumber(item.effectiveLevel || item.baseLevel)}`,
+      `성장점수 ${formatNumber(item.growthScore)} · 전투 ${formatNumber(item.combatCount)} · 킬 ${formatNumber(item.playerKills)}`,
+      "성장"));
+  });
+
+  if (!list.children.length) {
+    setEmptyState("dynamicQuestOpsList", "진행/정리/월드 영향 기록이 아직 없습니다");
+  }
+}
+
 function applyDynamicQuestOps() {
   const quests = latestDynamicQuests?.quests || [];
   const seed = latestDynamicQuestSeed || {};
   const cache = latestDynamicQuestStoryCache || {};
   const config = latestDynamicQuestStoryConfig || {};
   const difficulty = latestDynamicQuestDifficulty || {};
+  const progress = latestDynamicQuestProgressSummary || {};
+  const cleanup = latestDynamicQuestCleanupPlan || {};
+  const impact = latestDynamicQuestWorldImpact || {};
+  const mobGrowth = latestMobGrowthSummary || {};
 
   setText("dynamicQuestSeedUpdatedAt", seed.startedAt || seed.completedAt ? `시드 ${formatTime(seed.completedAt || seed.startedAt)}` : "Seed");
   const seedMetrics = document.getElementById("dynamicQuestSeedMetrics");
@@ -522,6 +580,20 @@ function applyDynamicQuestOps() {
       createMetric("프리필", `${formatNumber(seed.storyCachePrefilled)}개`));
   }
   renderDynamicQuestOffers(latestDynamicQuests);
+
+  setText("dynamicQuestOpsUpdatedAt", progress.generatedAt || impact.generatedAt ? `갱신 ${formatTime(progress.generatedAt || impact.generatedAt)}` : "Ops");
+  const opsMetrics = document.getElementById("dynamicQuestOpsMetrics");
+  if (opsMetrics) {
+    opsMetrics.innerHTML = "";
+    opsMetrics.append(
+      createMetric("진행중", `${formatNumber(progress.activeProgressCount)}개`),
+      createMetric("정리 후보", `${formatNumber(cleanup.candidateCount)}개`),
+      createMetric("취소 후보", `${formatNumber(cleanup.cancelCandidateCount)}개`),
+      createMetric("월드 영향", `${formatNumber(impact.totalRecorded)}회`),
+      createMetric("성장몹", `${formatNumber(mobGrowth.activeCount)}개`),
+      createMetric("성장 보스", `${formatNumber(mobGrowth.activeBosses)}개`));
+  }
+  renderDynamicQuestOpsList(progress, cleanup, impact, mobGrowth);
 
   const providerOrder = config.providerOrder || "-";
   setText("dynamicQuestStoryProvider", providerOrder);
@@ -1653,7 +1725,11 @@ async function refresh() {
     dynamicQuestSeed,
     dynamicQuestStoryCache,
     dynamicQuestStoryConfig,
-    dynamicQuestDifficulty
+    dynamicQuestDifficulty,
+    dynamicQuestProgressSummary,
+    dynamicQuestCleanupPlan,
+    dynamicQuestWorldImpact,
+    mobGrowthSummary
   ] = await Promise.allSettled([
     getJson("/api/dashboard/live"),
     getJson("/api/dashboard/history?range=24h"),
@@ -1666,7 +1742,11 @@ async function refresh() {
     getJson("/api/world/dynamic-quests/seed/status"),
     getJson("/api/world/dynamic-quests/story-cache?limit=24"),
     getJson("/api/world/dynamic-quests/story-config"),
-    getJson("/api/dashboard/dynamic-quests/difficulty")
+    getJson("/api/dashboard/dynamic-quests/difficulty"),
+    getJson("/api/world/dynamic-quests/progress/summary?limit=20"),
+    getJson("/api/world/dynamic-quests/progress/cleanup-plan?limit=20"),
+    getJson("/api/world/dynamic-quests/world-impact?limit=20"),
+    getJson("/api/world/mob-growth/summary?limit=12")
   ]);
 
   if (live.status === "fulfilled") {
@@ -1735,15 +1815,22 @@ async function refresh() {
   latestDynamicQuestStoryCache = dynamicQuestStoryCache.status === "fulfilled" ? dynamicQuestStoryCache.value : null;
   latestDynamicQuestStoryConfig = dynamicQuestStoryConfig.status === "fulfilled" ? dynamicQuestStoryConfig.value : null;
   latestDynamicQuestDifficulty = dynamicQuestDifficulty.status === "fulfilled" ? dynamicQuestDifficulty.value : null;
+  latestDynamicQuestProgressSummary = dynamicQuestProgressSummary.status === "fulfilled" ? dynamicQuestProgressSummary.value : null;
+  latestDynamicQuestCleanupPlan = dynamicQuestCleanupPlan.status === "fulfilled" ? dynamicQuestCleanupPlan.value : null;
+  latestDynamicQuestWorldImpact = dynamicQuestWorldImpact.status === "fulfilled" ? dynamicQuestWorldImpact.value : null;
+  latestMobGrowthSummary = mobGrowthSummary.status === "fulfilled" ? mobGrowthSummary.value : null;
 
-  if (latestDynamicQuests || latestDynamicQuestSeed || latestDynamicQuestStoryCache || latestDynamicQuestStoryConfig || latestDynamicQuestDifficulty) {
+  if (latestDynamicQuests || latestDynamicQuestSeed || latestDynamicQuestStoryCache || latestDynamicQuestStoryConfig || latestDynamicQuestDifficulty || latestDynamicQuestProgressSummary || latestDynamicQuestCleanupPlan || latestDynamicQuestWorldImpact || latestMobGrowthSummary) {
     applyDynamicQuestOps();
   } else {
     setText("dynamicQuestSeedUpdatedAt", "-");
+    setText("dynamicQuestOpsUpdatedAt", "-");
     setText("dynamicQuestStoryProvider", "-");
     setText("dynamicQuestDifficultyUpdatedAt", "-");
     setEmptyState("dynamicQuestSeedMetrics", "동적 퀘스트 상태를 불러올 수 없습니다");
     setEmptyState("dynamicQuestOfferList", "활성 퀘스트를 불러올 수 없습니다");
+    setEmptyState("dynamicQuestOpsMetrics", "동적 퀘스트 운영 상태를 불러올 수 없습니다");
+    setEmptyState("dynamicQuestOpsList", "운영 목록을 불러올 수 없습니다");
     setEmptyState("dynamicQuestStoryMetrics", "스토리 캐시를 불러올 수 없습니다");
     setEmptyState("dynamicQuestStoryList", "스토리 캐시 목록을 불러올 수 없습니다");
     setEmptyState("dynamicQuestDifficultyMetrics", "난이도 리포트를 불러올 수 없습니다");

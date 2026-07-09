@@ -138,6 +138,34 @@ class DummyMovementSpeedDecoupleTests(unittest.TestCase):
         self.assertTrue(moved)
         self.assertEqual(client.z, 2495)
 
+    def test_move_towards_position_preserves_target_z_when_ground_sampler_spikes(self):
+        client = headless.HeadlessDaocClient("127.0.0.1", 10300, 1.0, verbose=False)
+        client.x = 349259
+        client.y = 533169
+        client.z = 4598
+        client.zone_id = 200
+        client.ground_z_sampler = lambda x, y, zone_id: 3787
+        client.last_local_move_at = time.monotonic() - 1.0
+        client.last_position_update_sent_at = time.monotonic() - 1.0
+
+        client.send_position_update = lambda *_args, **_kwargs: 0
+        client.send_heading = lambda *_args, **_kwargs: 0
+
+        moved = client.move_towards_position(
+            349158,
+            532766,
+            4598,
+            step=48.0,
+            stop_distance=12.0,
+            movement_speed=240.0,
+            packet_speed=240.0,
+            target_in_view=True,
+            prefer_target_z=True,
+        )
+
+        self.assertTrue(moved)
+        self.assertEqual(client.z, 4598)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -181,6 +181,81 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         self.assertEqual(args.api_url, "http://localhost:5000")
 
+    def test_support_crowd_control_profile_requests_cc_capability(self) -> None:
+        smoke = load_smoke()
+
+        args = smoke.apply_smoke_profile(
+            smoke.build_parser().parse_args(["--dry-run", "--smoke-profile", "support-crowd-control"])
+        )
+
+        self.assertEqual(args.roles, ["support"])
+        self.assertEqual(args.requested_capabilities, "crowd_control")
+        self.assertEqual(args.expect_companion_actions, ["crowd_control"])
+
+    def test_support_crowd_control_request_enables_preemptive_cc(self) -> None:
+        service = load_service()
+        request = {
+            "id": "req1",
+            "requesterName": "LiveLeader",
+            "requestedRole": "support",
+            "realm": 1,
+            "requestedCapabilities": "crowd_control",
+        }
+        args = mock.Mock(host="127.0.0.1", port=10300, api_port=5000)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            account_csv = Path(temp_dir) / "accounts.csv"
+            account_csv.write_text(
+                "username,password,realm,char_index,class_id,class_name,roles,home_x,home_y,home_z\n"
+                "albminstrel,dummy-pass,1,0,4,Minstrel,support|dps,531504,479073,2200\n",
+                encoding="utf-8",
+            )
+            command = service.build_behavior_command(
+                args,
+                request,
+                account_csv,
+                Path(temp_dir) / "run",
+                requester_state={"player": {"level": 50}},
+            )
+
+        self.assertIn("--startup-speed-song", command)
+        self.assertIn("--party-support-evasion", command)
+        self.assertEqual(command[command.index("--crowd-control-preemptive-min-threats") + 1], "1")
+
+    def test_live_companion_smoke_summarizes_external_service_request_logs(self) -> None:
+        smoke = load_smoke()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            run_dir = root / "case"
+            request_id = "req-external"
+            service_dir = root / "service-root" / request_id
+            service_dir.mkdir(parents=True)
+            (service_dir / "live-control.json").write_text(
+                json.dumps({"say_channel": "party", "intent_hint": "cc_add"}),
+                encoding="utf-8",
+            )
+            (service_dir / "companion.jsonl").write_text(
+                "\n".join(
+                    [
+                        json.dumps({"event": "live_control_applied"}),
+                        json.dumps({"event": "tick", "action_counts": {"validated_crowd_control_spell": 1}}),
+                        json.dumps({"event": "crowd_control_multi_aggro", "spell_type": "Mesmerize"}),
+                        json.dumps({"event": "tick", "action_counts": {"speed_song_spell": 1}}),
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            with mock.patch.object(smoke, "DEFAULT_COMPANION_SERVICE_RUN_DIR", root / "service-root"):
+                summary = smoke.summarize_encounters(run_dir, [request_id])
+                missing = smoke.missing_companion_metrics(run_dir, [request_id])
+
+        self.assertEqual(summary["crowd_control"], 2)
+        self.assertEqual(summary["speed_song"], 1)
+        self.assertEqual(summary["dialogue_cc_add"], 1)
+        self.assertEqual(summary["dialogue_live_control_applied"], 1)
+        self.assertEqual(missing, [])
+
     def test_live_companion_summary_tool_formats_operational_overview(self) -> None:
         summary = load_summary()
 
@@ -255,6 +330,110 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         self.assertEqual(command[command.index("--action-rotation") + 1], "caster-basic")
         self.assertIn("--party-support-evasion", command)
+
+    def test_support_crowd_control_selection_prefers_cc_caster_over_speed_hybrid(self) -> None:
+        service = load_service()
+        request = {
+            "id": "req1",
+            "requesterName": "LiveLeader",
+            "requestedRole": "support",
+            "realm": 1,
+            "requestedCapabilities": "crowd_control",
+        }
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            source_csv = Path(temp_dir) / "accounts.csv"
+            source_csv.write_text(
+                "username,password,realm,char_index,class_id,class_name,roles,home_x,home_y,home_z\n"
+                "albtheurg,dummy-pass,1,0,5,Theurgist,support|dps,531504,479073,2200\n"
+                "albminstrel,dummy-pass,1,0,4,Minstrel,support|dps,531504,479073,2200\n",
+                encoding="utf-8",
+            )
+            selected_csv = service.select_companion_accounts_csv(request, source_csv, Path(temp_dir) / "run")
+
+            with selected_csv.open(encoding="utf-8-sig", newline="") as handle:
+                row = next(csv.DictReader(handle))
+
+        self.assertEqual(row["class_name"], "Theurgist")
+
+    def test_support_crowd_control_command_does_not_wait_for_follow_anchor(self) -> None:
+        service = load_service()
+        request = {
+            "id": "req1",
+            "requesterName": "LiveLeader",
+            "requestedRole": "support",
+            "realm": 1,
+            "requestedCapabilities": "crowd_control",
+            "objectiveTarget": "moorlich",
+            "x": 332701,
+            "y": 669142,
+            "z": 2660,
+        }
+        args = mock.Mock(host="127.0.0.1", port=10300, api_port=5000)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            account_csv = Path(temp_dir) / "accounts.csv"
+            account_csv.write_text(
+                "username,password,realm,char_index,class_id,class_name,roles,home_x,home_y,home_z\n"
+                "albtheurg,dummy-pass,1,0,5,Theurgist,support|dps,531504,479073,2200\n",
+                encoding="utf-8",
+            )
+            command = service.build_behavior_command(
+                args,
+                request,
+                account_csv,
+                Path(temp_dir) / "run",
+                requester_state={"player": {"level": 50}},
+            )
+
+        self.assertEqual(command[command.index("--action-rotation") + 1], "caster-basic")
+        self.assertNotIn("--follow-player-required-for-objective-move", command)
+        self.assertNotIn("--party-require-leader-engaged", command)
+        self.assertNotIn("--required-target-home", command)
+        self.assertNotIn("--required-target-home-hunt-distance", command)
+        self.assertNotIn("--target-home-max-distance", command)
+
+    def test_caster_dps_command_does_not_wait_at_required_home(self) -> None:
+        service = load_service()
+        request = {
+            "id": "req1",
+            "requesterName": "LiveLeader",
+            "requestedRole": "dps",
+            "realm": 1,
+            "requestedCapabilities": "caster_dps",
+            "objectiveTarget": "moorlich",
+            "x": 332701,
+            "y": 669142,
+            "z": 2660,
+        }
+        args = mock.Mock(host="127.0.0.1", port=10300, api_port=5000)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            account_csv = Path(temp_dir) / "accounts.csv"
+            account_csv.write_text(
+                "username,password,realm,char_index,class_id,class_name,roles,home_x,home_y,home_z\n"
+                "albwizard,dummy-pass,1,0,7,Wizard,dps,531504,479073,2200\n",
+                encoding="utf-8",
+            )
+            command = service.build_behavior_command(
+                args,
+                request,
+                account_csv,
+                Path(temp_dir) / "run",
+                requester_state={"player": {"level": 50}},
+            )
+
+        self.assertEqual(command[command.index("--action-rotation") + 1], "caster-basic")
+        self.assertEqual(command[command.index("--party-encounter-mode") + 1], "standard")
+        self.assertEqual(command[command.index("--max-target-level") + 1], "50")
+        self.assertEqual(command[command.index("--max-target-level-delta") + 1], "0")
+        self.assertIn("--require-target-name", command)
+        self.assertEqual(command[command.index("--startup-delay") + 1], "15")
+        self.assertEqual(command[command.index("--crowd-control-interval") + 1], "0")
+        self.assertIn("--stationary-cast-actions", command)
+        self.assertEqual(command[command.index("--stationary-cast-min-hold") + 1], "3.4")
+        self.assertNotIn("--party-require-leader-engaged", command)
+        self.assertNotIn("--required-target-home", command)
 
     def test_stealth_companion_command_enables_startup_stealth(self) -> None:
         service = load_service()
@@ -378,6 +557,43 @@ class DummyCompanionServiceTests(unittest.TestCase):
         )
 
         self.assertEqual(ranked[0]["username"], "albminstrel")
+
+    def test_stealth_only_request_prefers_non_speed_stealth_dps(self) -> None:
+        service = load_service()
+        rows = [
+            {
+                "username": "albminstrel",
+                "realm": "1",
+                "class_name": "Minstrel",
+                "roles": "support|dps",
+                "home_x": "100",
+                "home_y": "100",
+                "home_z": "0",
+            },
+            {
+                "username": "albscout",
+                "realm": "1",
+                "class_name": "Scout",
+                "roles": "dps",
+                "home_x": "100",
+                "home_y": "100",
+                "home_z": "0",
+            },
+        ]
+
+        ranked = service.rank_companion_rows(
+            {
+                "realm": 1,
+                "requestedRole": "dps",
+                "requestedCapabilities": "stealth",
+                "x": 100,
+                "y": 100,
+                "z": 0,
+            },
+            rows,
+        )
+
+        self.assertEqual(ranked[0]["username"], "albscout")
 
     def test_owned_mercenary_request_prefers_matching_class_row(self) -> None:
         service = load_service()
@@ -928,7 +1144,7 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(command[command.index("--party-focus-target-max-age") + 1], "6")
         self.assertIn("--party-active-tank-last-known-stop-distance", command)
         self.assertEqual(command[command.index("--party-active-tank-last-known-stop-distance") + 1], "25")
-        self.assertIn("--party-require-leader-engaged", command)
+        self.assertNotIn("--party-require-leader-engaged", command)
         self.assertIn("--party-mark-pull-engaged", command)
         self.assertIn("--party-block-solo-required-retaliation", command)
         self.assertEqual(command[command.index("--party-rescue-assist-after") + 1], "3")
@@ -942,7 +1158,10 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(command[command.index("--party-assist-attack-delay") + 1], "0.3")
         self.assertGreaterEqual(int(command[command.index("--party-rescue-max-distance") + 1]), 6000)
         self.assertGreaterEqual(int(command[command.index("--flee-melee-counterattack-health-floor") + 1]), 40)
+        flee_pressure_indexes = [index for index, value in enumerate(command) if value == "--flee-pressure-health-percent"]
+        self.assertEqual(command[flee_pressure_indexes[-1] + 1], "40")
         self.assertEqual(command[command.index("--required-target-tank-commit-health-percent") + 1], "25")
+        self.assertEqual(command[command.index("--flee-critical-health-percent") + 1], "25")
         self.assertEqual(command[command.index("--party-survival-active-tank-health-percent") + 1], "25")
 
     def test_party_vacancy_clamps_to_available_slots(self) -> None:
@@ -1338,7 +1557,7 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(command[command.index("--party-follow-distance") + 1], "120")
         self.assertEqual(command[command.index("--party-follow-catchup-distance") + 1], "800")
         self.assertEqual(command[command.index("--party-follow-hard-catchup-distance") + 1], "1600")
-        self.assertEqual(command[command.index("--party-follow-teleport-distance") + 1], "2500")
+        self.assertEqual(command[command.index("--party-follow-teleport-distance") + 1], "0")
         self.assertEqual(command[command.index("--party-encounter-mode") + 1], "standard")
         self.assertNotIn("--boss-ranged-safe-distance", command)
         self.assertNotIn("--party-preengage-ranged-safe-distance", command)
@@ -1580,13 +1799,19 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(command[command.index("--action-rotation") + 1], "caster-basic")
         self.assertEqual(command[command.index("--party-assist-attack-delay") + 1], "1.0")
         self.assertEqual(command[command.index("--party-ranged-assist-extra-delay") + 1], "0")
+        self.assertEqual(command[command.index("--crowd-control-interval") + 1], "0")
         self.assertIn("--boss-ranged-safe-distance", command)
         self.assertEqual(command[command.index("--boss-ranged-safe-distance") + 1], "1400")
         self.assertEqual(command[command.index("--party-preengage-ranged-safe-distance") + 1], "1500")
-        self.assertEqual(command[command.index("--waypoint-stop-distance") + 1], "1500")
-        self.assertEqual(command[command.index("--required-target-home-stop-distance") + 1], "1400")
-        self.assertEqual(command[command.index("--required-target-home-hunt-distance") + 1], "3200")
+        self.assertNotIn("--waypoint-stop-distance", command)
+        self.assertNotIn("--required-target-home", command)
+        self.assertNotIn("--required-target-home-stop-distance", command)
+        self.assertNotIn("--required-target-home-hunt-distance", command)
+        self.assertNotIn("--target-home-max-distance", command)
         self.assertIn("--stationary-cast-actions", command)
+        self.assertIn("--party-assist-travel-leader-target", command)
+        self.assertNotIn("--party-require-leader-engaged", command)
+        self.assertEqual(command[command.index("--startup-delay") + 1], "15")
         self.assertNotIn("--party-boss-non-tank-melee-backoff", command)
         self.assertIn("--require-target-name", command)
         self.assertEqual(command[command.index("--require-target-name") + 1], "moorlich")
@@ -2765,6 +2990,43 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(query["objectiveTarget"], "")
         self.assertEqual((query["x"], query["y"], query["z"]), smoke.BARFOG_STAGING_HOME)
 
+    def test_live_companion_party_smoke_caster_dps_request_uses_objective_home(self) -> None:
+        smoke = load_smoke()
+        args = smoke.apply_smoke_profile(smoke.build_parser().parse_args(["--smoke-profile", "caster-dps"]))
+
+        with mock.patch.object(smoke, "api_json", return_value={"request": {"id": "req1"}}) as api_json:
+            request_id = smoke.create_companion_request(args, "Dummy300", "dps", "smoke")
+
+        self.assertEqual(request_id, "req1")
+        query = api_json.call_args.args[3]
+        self.assertEqual(query["objectiveTarget"], "moorlich")
+        self.assertEqual(query["requestedCapabilities"], "caster_dps")
+        self.assertEqual((query["x"], query["y"], query["z"]), smoke.BARFOG_HOME)
+
+    def test_live_companion_party_smoke_caster_dps_service_accounts_start_at_staging(self) -> None:
+        smoke = load_smoke()
+        args = smoke.apply_smoke_profile(smoke.build_parser().parse_args(["--smoke-profile", "caster-dps"]))
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            source = Path(temp_dir) / "companions.csv"
+            run_dir = Path(temp_dir) / "run"
+            source.write_text(
+                "username,password,realm,char_index,class_id,class_name,roles\n"
+                "albwizard,dummy-pass,1,0,12,Wizard,dps|caster\n",
+                encoding="utf-8",
+            )
+            args.companion_accounts_csv = source
+
+            filtered = smoke.prepare_service_accounts_csv(args, run_dir)
+            with filtered.open(encoding="utf-8-sig", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(
+            (rows[0]["start_x"], rows[0]["start_y"], rows[0]["start_z"]),
+            tuple(str(part) for part in smoke.BARFOG_STAGING_HOME),
+        )
+
     def test_live_companion_party_smoke_parses_expected_companion_actions(self) -> None:
         smoke = load_smoke()
 
@@ -2960,6 +3222,18 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(args.leader_party_command_start_delay, 1.0)
         self.assertEqual(args.leader_party_command_gap, 1.0)
 
+    def test_live_companion_party_smoke_stealth_passive_profile_uses_single_dps_request(self) -> None:
+        smoke = load_smoke()
+
+        args = smoke.apply_smoke_profile(smoke.build_parser().parse_args(["--smoke-profile", "stealth-passive"]))
+
+        self.assertEqual(args.roles, ["dps"])
+        self.assertEqual(args.requested_capabilities, "stealth")
+        self.assertEqual(args.expect_companion_actions, ["stealth"])
+        self.assertTrue(args.leader_chat_only)
+        self.assertEqual(args.leader_behavior_profile, "custom")
+        self.assertEqual(args.leader_action_rotation, "none")
+
     def test_live_companion_party_smoke_chat_only_leader_command_disables_hunter_and_combat(self) -> None:
         smoke = load_smoke()
 
@@ -2984,6 +3258,8 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(leader[leader.index("--behavior-profile") + 1], "custom")
         self.assertEqual(leader[leader.index("--action-rotation") + 1], "none")
         self.assertIn("--live-control-file", leader)
+        self.assertIn("--round-wall-timeout-seconds", leader)
+        self.assertIn("--allow-round-wall-timeout-success", leader)
         self.assertIn("--command", leader)
         self.assertEqual(leader[leader.index("--command") + 1], "")
 
@@ -3015,12 +3291,26 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         self.assertEqual(args.roles, ["support"])
         self.assertEqual(args.target_name, "")
+        self.assertTrue(args.leader_chat_only)
+        self.assertEqual(args.leader_behavior_profile, "custom")
+        self.assertEqual(args.leader_action_rotation, "none")
         self.assertEqual(args.requested_capabilities, "speed_song")
         self.assertEqual(args.expect_companion_actions, ["speed_song"])
         self.assertEqual(args.leader_hold, 55.0)
         self.assertEqual(args.companion_hold, 55.0)
         self.assertEqual(args.service_max_runtime, 90.0)
         self.assertEqual(args.leader_startup_delay, 25.0)
+
+    def test_live_companion_party_smoke_support_speed_song_leader_has_round_wall_success(self) -> None:
+        smoke = load_smoke()
+        args = smoke.apply_smoke_profile(smoke.build_parser().parse_args(["--smoke-profile", "support-speed-song"]))
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            leader = smoke.build_leader_command(args, "dummy300", "Dummy300", Path(temp_dir))
+
+        self.assertIn("--round-wall-timeout-seconds", leader)
+        self.assertEqual(leader[leader.index("--round-wall-timeout-seconds") + 1], "100.0")
+        self.assertIn("--allow-round-wall-timeout-success", leader)
 
     def test_live_companion_party_smoke_support_crowd_control_profile_sets_combat_defaults(self) -> None:
         smoke = load_smoke()
@@ -3029,8 +3319,8 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         self.assertEqual(args.roles, ["support"])
         self.assertEqual(args.target_name, "moorlich")
-        self.assertEqual(args.requested_capabilities, "speed_song")
-        self.assertEqual(args.expect_companion_actions, ["speed_song", "crowd_control"])
+        self.assertEqual(args.requested_capabilities, "crowd_control")
+        self.assertEqual(args.expect_companion_actions, ["crowd_control"])
         self.assertEqual(args.allow_leader_deaths, 1)
         self.assertEqual(args.leader_behavior_profile, "party-tank")
         self.assertEqual(args.leader_action_rotation, "melee-basic")
@@ -3038,6 +3328,8 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(args.companion_hold, 90.0)
         self.assertEqual(args.service_max_runtime, 120.0)
         self.assertEqual(args.leader_startup_delay, 35.0)
+        self.assertEqual(args.service_flee_pressure_health_percent, 50.0)
+        self.assertEqual(args.service_flee_health_percent, 32.0)
 
     def test_live_companion_party_smoke_support_crowd_control_profile_allows_companion_deaths(self) -> None:
         smoke = load_smoke()
@@ -3051,7 +3343,7 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         args = smoke.apply_smoke_profile(smoke.build_parser().parse_args(["--smoke-profile", "mixed-real-join"]))
 
-        self.assertEqual(args.allow_companion_deaths, smoke.ROLE_SMOKE_ALLOW_COMPANION_DEATHS)
+        self.assertEqual(args.allow_companion_deaths, 3)
 
     def test_live_companion_party_smoke_tank_protection_profile_sets_tank_defaults(self) -> None:
         smoke = load_smoke()
@@ -3060,8 +3352,8 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         self.assertEqual(args.roles, ["tank"])
         self.assertEqual(args.target_name, "moorlich")
-        self.assertEqual(args.requested_capabilities, "defensive_tank")
-        self.assertEqual(args.expect_companion_actions, ["taunt", "party_protection"])
+        self.assertEqual(args.requested_capabilities, "defensive_tank|group_support")
+        self.assertEqual(args.expect_companion_actions, ["literal_taunt_used", "party_protection"])
         self.assertEqual(args.allow_leader_deaths, 1)
         self.assertEqual(args.leader_behavior_profile, "party-dps")
         self.assertEqual(args.leader_action_rotation, "melee-burst")
@@ -3081,10 +3373,12 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(args.expect_companion_actions, ["damage_done"])
         self.assertEqual(args.leader_behavior_profile, "party-tank")
         self.assertEqual(args.leader_action_rotation, "melee-basic")
-        self.assertEqual(args.leader_hold, 80.0)
-        self.assertEqual(args.companion_hold, 90.0)
-        self.assertEqual(args.service_max_runtime, 120.0)
+        self.assertEqual(args.leader_hold, 110.0)
+        self.assertEqual(args.companion_hold, 135.0)
+        self.assertEqual(args.service_max_runtime, 180.0)
         self.assertEqual(args.leader_startup_delay, 35.0)
+        self.assertEqual(args.allow_leader_deaths, 1)
+        self.assertEqual(args.allow_companion_deaths, 3)
 
     def test_live_companion_party_smoke_healer_resurrection_profile_uses_safe_staging_defaults(self) -> None:
         smoke = load_smoke()
@@ -3125,6 +3419,10 @@ class DummyCompanionServiceTests(unittest.TestCase):
         )
 
         self.assertTrue(args.real_player_join)
+        self.assertEqual(args.target_name, "")
+        self.assertTrue(args.leader_chat_only)
+        self.assertEqual(args.leader_behavior_profile, "custom")
+        self.assertEqual(args.leader_action_rotation, "none")
         self.assertEqual(args.allow_joiner_deaths, 3)
         self.assertEqual(args.joiner_hold, 175.0)
         self.assertEqual(args.joiner_party_follow_distance, 450.0)
@@ -3135,6 +3433,7 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(args.service_healer_flee_health_percent, 32.0)
         self.assertEqual(args.service_flee_pressure_health_percent, 50.0)
         self.assertEqual(args.service_flee_health_percent, 32.0)
+        self.assertEqual(args.resurrection_victim_kill_delay, 5.0)
 
     def test_live_companion_party_smoke_healer_resurrection_real_join_profile_preserves_joiner_overrides(self) -> None:
         smoke = load_smoke()
@@ -3167,6 +3466,24 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(args.joiner_party_assist_attack_delay, 0.4)
         self.assertEqual(args.joiner_flee_pressure_health_percent, 75.0)
         self.assertEqual(args.joiner_flee_health_percent, 40.0)
+
+    def test_live_companion_party_smoke_healer_resurrection_real_join_builds_idle_joiner(self) -> None:
+        smoke = load_smoke()
+
+        args = smoke.apply_smoke_profile(
+            smoke.build_parser().parse_args(["--smoke-profile", "healer-resurrection", "--real-player-join"])
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            joiner = smoke.build_joiner_command(args, "albtest007", "Albtest007", "Dummy300", Path(temp_dir))
+
+        self.assertEqual(joiner[joiner.index("--behavior-profile") + 1], "custom")
+        self.assertEqual(joiner[joiner.index("--action-rotation") + 1], "none")
+        self.assertNotIn("--hunter", joiner)
+        self.assertNotIn("--combat", joiner)
+        self.assertNotIn("--use-skills", joiner)
+        self.assertIn("--auto-release-on-death", joiner)
+        self.assertEqual(joiner[joiner.index("--death-release-delay") + 1], "90.0")
 
     def test_live_companion_party_smoke_build_service_command_passes_healer_spacing_overrides(self) -> None:
         smoke = load_smoke()
@@ -3237,6 +3554,21 @@ class DummyCompanionServiceTests(unittest.TestCase):
         flee_health_indexes = [index for index, value in enumerate(leader) if value == "--flee-health-percent"]
         self.assertEqual(leader[flee_pressure_indexes[-1] + 1], "50")
         self.assertEqual(leader[flee_health_indexes[-1] + 1], "32")
+
+    def test_live_companion_party_smoke_caster_dps_builds_leader_form_up_gates(self) -> None:
+        smoke = load_smoke()
+        args = smoke.apply_smoke_profile(
+            smoke.build_parser().parse_args(["--smoke-profile", "caster-dps"])
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            leader = smoke.build_leader_command(args, "dummy300", "Dummy300", Path(temp_dir))
+
+        self.assertEqual(leader[leader.index("--party-min-ready") + 1], "2")
+        self.assertEqual(leader[leader.index("--party-ready-max-leader-distance") + 1], "2800.0")
+        self.assertEqual(leader[leader.index("--party-form-up-delay") + 1], "4.0")
+        self.assertEqual(leader[leader.index("--party-form-up-timeout") + 1], "75.0")
+        self.assertEqual(leader[leader.index("--party-pre-pull-home-stop-distance") + 1], "2800.0")
 
     def test_live_companion_party_smoke_choose_leader_prefers_pure_tank_for_party_tank_profile(self) -> None:
         smoke = load_smoke()
@@ -3366,8 +3698,8 @@ class DummyCompanionServiceTests(unittest.TestCase):
         args = smoke.apply_smoke_profile(smoke.build_parser().parse_args(["--smoke-profile", "mixed-real-join"]))
 
         self.assertTrue(args.real_player_join)
-        self.assertEqual(args.roles, ["tank", "healer", "dps"])
-        self.assertEqual(args.expect_companion_actions, ["party_follow", "party_assist"])
+        self.assertEqual(args.roles, ["tank"])
+        self.assertEqual(args.expect_companion_actions, ["party_protection"])
         self.assertEqual(args.leader_hold, 120.0)
         self.assertEqual(args.leader_startup_delay, 45.0)
         self.assertEqual(args.companion_hold, 125.0)
@@ -3375,6 +3707,28 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(args.joiner_hold, 85.0)
         self.assertEqual(args.release_timeout, 45.0)
         self.assertEqual(args.request_active_timeout, 60.0)
+        self.assertEqual(args.allow_companion_deaths, 3)
+
+    def test_live_companion_party_smoke_mixed_real_join_disables_party_resurrection_wait(self) -> None:
+        smoke = load_smoke()
+
+        args = smoke.apply_smoke_profile(smoke.build_parser().parse_args(["--smoke-profile", "mixed-real-join"]))
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with mock.patch.object(
+                smoke,
+                "resolve_joiner_row",
+                return_value={"roles": "tank", "class_name": "Armsman"},
+            ):
+                leader = smoke.build_leader_command(args, "dummy040", "Dummy040", Path(temp_dir))
+                joiner = smoke.build_joiner_command(args, "dummy300", "Dummy300", "Dummy040", Path(temp_dir))
+
+        self.assertEqual(leader[leader.index("--party-resurrect-interval") + 1], "0.0")
+        self.assertEqual(joiner[joiner.index("--party-resurrect-interval") + 1], "0.0")
+        self.assertEqual(leader[leader.index("--round-wall-timeout-seconds") + 1], "185.0")
+        self.assertIn("--allow-round-wall-timeout-success", leader)
+        self.assertEqual(joiner[joiner.index("--round-wall-timeout-seconds") + 1], "101.0")
+        self.assertIn("--allow-round-wall-timeout-success", joiner)
 
     def test_live_companion_party_smoke_mixed_real_join_profile_preserves_manual_overrides(self) -> None:
         smoke = load_smoke()
@@ -3508,6 +3862,7 @@ class DummyCompanionServiceTests(unittest.TestCase):
                         '{"event":"companion_command_clear_target","speaker":"Dummy300"}',
                         '{"event":"party_assist","target":"moorlich"}',
                         '{"event":"party_follow","leader":"Dummy300"}',
+                        '{"event":"combat_finish","damage_done":18}',
                     ]
                 )
                 + "\n",
@@ -3519,8 +3874,33 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(summary["companion_chat_reply"], 1)
         self.assertEqual(summary["companion_command_attack"], 1)
         self.assertEqual(summary["companion_command_clear_target"], 1)
+        self.assertEqual(summary["damage_done"], 18)
         self.assertEqual(summary["party_assist"], 1)
         self.assertEqual(summary["party_follow"], 1)
+
+    def test_live_companion_party_smoke_counts_preflight_taunt_spell_cast_message(self) -> None:
+        smoke = load_smoke()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "service" / "req").mkdir(parents=True)
+            (root / "service" / "req" / "companion-encounters.jsonl").write_text(
+                "\n".join(
+                    [
+                        '{"event":"combat_plan_preflight","character":"Albtest001","taunt_spell_names":["Infuriate"]}',
+                        '{"event":"server_message","character":"Albtest001","text":"Infuriate 주문을 시전했습니다!"}',
+                        '{"event":"server_message","character":"Albtest001","text":"Heal 주문을 시전했습니다!"}',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            summary = smoke.summarize_encounters(root)
+
+        self.assertEqual(summary["literal_taunt_used"], 1)
+        self.assertEqual(summary["taunt"], 1)
+        self.assertEqual(summary["tank_control_established"], 1)
 
     def test_live_companion_party_smoke_uses_custom_leader_profile_flags(self) -> None:
         smoke = load_smoke()
@@ -3564,6 +3944,74 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertEqual(summary["speed_song"], 1)
         self.assertEqual(summary["stealth"], 3)
 
+    def test_live_companion_party_smoke_counts_speed_song_server_message_from_preflight(self) -> None:
+        smoke = load_smoke()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            service_dir = root / "service" / "req"
+            service_dir.mkdir(parents=True)
+            (service_dir / "companion-encounters.jsonl").write_text(
+                "\n".join(
+                    [
+                        json.dumps(
+                            {
+                                "event": "combat_plan_preflight",
+                                "character": "Albtest012",
+                                "speed_song_spell_names": ["Motivational Anthem"],
+                            }
+                        ),
+                        json.dumps(
+                            {
+                                "event": "server_message",
+                                "character": "Albtest012",
+                                "text": "Motivational Anthem을 연주하기 시작합니다!",
+                            }
+                        ),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            summary = smoke.summarize_encounters(root)
+
+        self.assertEqual(summary["speed_song"], 1)
+
+    def test_live_companion_party_smoke_counts_stealth_server_message_from_preflight(self) -> None:
+        smoke = load_smoke()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            service_dir = root / "service" / "req"
+            service_dir.mkdir(parents=True)
+            (service_dir / "companion-encounters.jsonl").write_text(
+                "\n".join(
+                    [
+                        json.dumps(
+                            {
+                                "event": "combat_plan_preflight",
+                                "character": "Albtest029",
+                                "stealth_spell_names": ["스텔스"],
+                            }
+                        ),
+                        json.dumps(
+                            {
+                                "event": "server_message",
+                                "character": "Albtest029",
+                                "text": "이제 숨어 있습니다!",
+                            }
+                        ),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            summary = smoke.summarize_encounters(root)
+
+        self.assertEqual(summary["stealth"], 1)
+
     def test_live_companion_party_smoke_summarizes_validated_resurrection_actions(self) -> None:
         smoke = load_smoke()
 
@@ -3584,6 +4032,28 @@ class DummyCompanionServiceTests(unittest.TestCase):
             summary = smoke.summarize_encounters(root)
 
         self.assertEqual(summary["resurrect"], 1)
+
+    def test_live_companion_party_smoke_counts_resurrection_server_message(self) -> None:
+        smoke = load_smoke()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "service" / "req").mkdir(parents=True)
+            (root / "service" / "req" / "encounters.jsonl").write_text(
+                "\n".join(
+                    [
+                        '{"event":"server_message","character":"Albtest005","text":"Resurrection 주문을 시전하기 시작합니다!"}',
+                        '{"event":"server_message","character":"Albtest005","text":"Resurrection 주문을 시전했습니다!"}',
+                        '{"event":"server_message","character":"Albtest005","text":"Raise Fallen 주문을 시전했습니다!"}',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            summary = smoke.summarize_encounters(root)
+
+        self.assertEqual(summary["resurrect"], 2)
 
     def test_live_control_revision_uses_nanoseconds_to_avoid_fast_collisions(self) -> None:
         service = load_service()
@@ -3824,6 +4294,31 @@ class DummyCompanionServiceTests(unittest.TestCase):
 
         self.assertTrue(smoke.has_companion_activity(summary))
 
+    def test_live_companion_party_smoke_treats_expected_role_actions_as_activity(self) -> None:
+        smoke = load_smoke()
+
+        for action in (
+            "party_protection",
+            "resurrect",
+            "cure",
+            "crowd_control",
+            "speed_song",
+            "stealth",
+            "taunt",
+            "target_rejected",
+            "party_member_target_rejected",
+        ):
+            with self.subTest(action=action):
+                summary = {
+                    "damage_done": 0,
+                    "heal": 0,
+                    "party_assist": 0,
+                    "party_follow": 0,
+                    action: 1,
+                }
+
+                self.assertTrue(smoke.has_companion_activity(summary))
+
     def test_live_companion_party_smoke_exit_accepts_consumed_dialogue_live_control_when_applied(self) -> None:
         smoke = load_smoke()
 
@@ -3905,6 +4400,36 @@ class DummyCompanionServiceTests(unittest.TestCase):
         )
 
         self.assertEqual(exit_code, 0)
+        self.assertIn("return_codes=leader:0,service:0,joiner:0", notes)
+
+    def test_live_companion_party_smoke_exit_warns_on_leader_rc_after_expected_activity(self) -> None:
+        smoke = load_smoke()
+
+        exit_code, notes = smoke.smoke_exit_code(
+            active_statuses={"req1": "active"},
+            release_statuses={},
+            summary={
+                "damage_done": 0,
+                "heal": 0,
+                "party_assist": 0,
+                "party_follow": 0,
+                "party_protection": 2,
+                "death": 0,
+                "dialogue_live_control": 0,
+                "dialogue_live_control_applied": 1,
+            },
+            leader_errors=[],
+            joiner_errors=[],
+            leader_rc=1,
+            service_rc=0,
+            joiner_rc=0,
+            real_player_join=False,
+            dialogue_enabled=False,
+            expected_actions={"party_protection"},
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("leader_exit_warning=rc:1", notes)
         self.assertIn("return_codes=leader:0,service:0,joiner:0", notes)
 
     def test_live_companion_party_smoke_exit_requires_activity_without_real_join_release(self) -> None:
@@ -4396,6 +4921,53 @@ class DummyCompanionServiceTests(unittest.TestCase):
             )
 
         self.assertEqual(reason, "boss_defeated")
+
+    def test_completion_metrics_count_crowd_control_event_log(self) -> None:
+        service = load_service()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            run_dir = Path(temp_dir)
+            (run_dir / "req1-albcc-1-encounters.jsonl").write_text(
+                json.dumps({"event": "crowd_control_multi_aggro", "spell_type": "Mesmerize"}) + "\n",
+                encoding="utf-8",
+            )
+
+            metrics = service.live_companion_completion_metrics(run_dir)
+            reason = service.live_companion_success_close_reason({"id": "req1"}, run_dir)
+
+        self.assertEqual(metrics["crowd_control"], 1)
+        self.assertEqual(reason, "honorable_release")
+
+    def test_live_companion_party_smoke_summary_deduplicates_request_artifacts(self) -> None:
+        smoke = load_smoke()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            run_dir = Path(temp_dir)
+            request_dir = run_dir / "service" / "req1"
+            request_dir.mkdir(parents=True)
+            (request_dir / "req1-albcc-1-encounters.jsonl").write_text(
+                "\n".join(
+                    [
+                        json.dumps({"event": "crowd_control_multi_aggro", "spell_type": "Mesmerize"}),
+                        json.dumps({"event": "death_detected"}),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (request_dir / "req1-metrics.csv").write_text(
+                "username,damage_done,action_combat_damage_msg\nalbcc,10,1\n",
+                encoding="utf-8",
+            )
+            (request_dir / "live-control.json").write_text(
+                json.dumps({"say_channel": "party", "intent_hint": "cc_add"}),
+                encoding="utf-8",
+            )
+
+            summary = smoke.summarize_encounters(run_dir, ["req1"])
+
+        self.assertEqual(summary["crowd_control"], 1)
+        self.assertEqual(summary["death"], 1)
+        self.assertEqual(summary["damage_done"], 10)
+        self.assertEqual(summary["dialogue_live_control"], 1)
 
     def test_poll_active_completed_process_reports_metrics_close_reason(self) -> None:
         service = load_service()

@@ -8,7 +8,7 @@ namespace DOL.GS.Commands
     [CmdAttribute(
         "&dynamicquest",
         ePrivLevel.GM,
-        "KDAOC volatile dynamic quest controls. Quests are memory-only and disappear on server restart.",
+        "KDAOC dynamic quest runtime controls. GM-created offers are runtime-only; auto-seeded story templates and player progress use the DB-backed runtime.",
         "/dynamicquest fakekill <target mob name> [count]",
         "/dynamicquest llm [seed text]",
         "/dynamicquest list",
@@ -99,7 +99,7 @@ namespace DOL.GS.Commands
             var quests = DynamicQuestRuntimeService.Instance.GetQuests();
             if (quests.Count == 0)
             {
-                DisplayMessage(client, "메모리 동적 퀘스트가 없습니다.");
+                DisplayMessage(client, "현재 활성화된 런타임 동적 퀘스트 오퍼가 없습니다.");
                 return;
             }
 
@@ -110,7 +110,7 @@ namespace DOL.GS.Commands
         private void ClearQuests(GameClient client)
         {
             int count = DynamicQuestRuntimeService.Instance.ClearAll();
-            DisplayMessage(client, $"메모리 동적 퀘스트 {count}개를 삭제했습니다.");
+            DisplayMessage(client, $"런타임 동적 퀘스트 오퍼 {count}개를 삭제했습니다.");
         }
 
         private void DisplayStatus(GameClient client)
@@ -131,7 +131,7 @@ namespace DOL.GS.Commands
                 "/dynamicquest llm [seed text]",
                 "/dynamicquest list",
                 "/dynamicquest clear",
-                "주의: 동적 퀘스트는 DB에 저장되지 않으며 서버 재시작 시 사라집니다."
+                "주의: 이 GM 명령으로 만든 임시 오퍼는 런타임 상태입니다. 자동 시드 스토리 템플릿과 플레이어 진행은 DB-backed 런타임 경로를 사용합니다."
             });
         }
     }

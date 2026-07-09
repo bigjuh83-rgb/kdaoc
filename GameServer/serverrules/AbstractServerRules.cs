@@ -1161,6 +1161,21 @@ namespace DOL.GS.ServerRules
                     }
                 }
 
+                if (groupCountAndDamage != null)
+                {
+                    foreach (GamePlayer player in killedNpc.GetPlayersInRadius(WorldMgr.MAX_EXPFORKILL_DISTANCE))
+                    {
+                        if (player.ObjectState is not GameObject.eObjectState.Active || player.Group == null || playerCountAndDamage.ContainsKey(player))
+                            continue;
+
+                        if (!groupCountAndDamage.ContainsKey(player.Group))
+                            continue;
+
+                        ProcessDamage(player, 0, player, mostDamagingPlayer, playerCountAndDamage);
+                        ProcessDamage(player, 0, player.Group, mostDamagingGroup, groupCountAndDamage);
+                    }
+                }
+
                 return true;
 
                 static void ProcessDamage<T>(GamePlayer player, double damage, T entity, ItemOwnerTotalDamagePair mostDamagingEntity, Dictionary<T, EntityCountTotalDamagePair> entityDamage) where T : class, IGameStaticItemOwner

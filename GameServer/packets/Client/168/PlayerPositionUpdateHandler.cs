@@ -136,6 +136,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                 }
 
                 client.Player.LastPositionUpdatePacketReceivedTime = GameLoop.GameLoopTime;
+                MovementAudit.RecordPositionUpdate(client.Player, (int)x, (int)y, (int)z, heading, speed, zSpeed, zoneId, "1124+");
                 client.Player.X = (int) x;
                 client.Player.Y = (int) y;
                 client.Player.Z = (int) z;
@@ -278,6 +279,7 @@ namespace DOL.GS.PacketHandler.Client.v168
                 ushort flyingflag = packet.ReadShort();
                 ProcessActionFlags(client.Player, (ActionFlags) packet.ReadByte());
 
+                MovementAudit.RecordPositionUpdate(client.Player, realX, realY, realZ, headingflag, speed, 0, zoneId, "pre1124");
                 client.Player.Heading = headingflag;
                 client.Player.X = realX;
                 client.Player.Y = realY;

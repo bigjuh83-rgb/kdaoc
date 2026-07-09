@@ -30,14 +30,23 @@ $lastError = ""
 
 while ($true) {
     try {
-        $response = Invoke-WebRequest -Uri $probeUrl -Method Get -TimeoutSec 2 -UseBasicParsing
-        if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 500) {
-            Write-Host "[OpenDAoC] Companion API is ready; starting visible companion service."
-            $launcherPath = Join-Path $RepoRoot "start-live-companion-service-visible.bat"
-            Start-Process -FilePath $launcherPath -WorkingDirectory $RepoRoot
-            exit 0
+        $request = [System.Net.HttpWebRequest]::Create($probeUrl)
+        $request.Method = "GET"
+        $request.Timeout = 2000
+        $request.ReadWriteTimeout = 2000
+        $response = $request.GetResponse()
+        try {
+            $statusCode = [int]$response.StatusCode
+            if ($statusCode -ge 200 -and $statusCode -lt 500) {
+                Write-Host "[OpenDAoC] Companion API is ready; starting visible companion service."
+                $launcherPath = Join-Path $RepoRoot "start-live-companion-service-visible.bat"
+                Start-Process -FilePath $launcherPath -WorkingDirectory $RepoRoot
+                exit 0
+            }
+            $lastError = "HTTP $statusCode"
+        } finally {
+            $response.Close()
         }
-        $lastError = "HTTP $($response.StatusCode)"
     }
     catch {
         $lastError = $_.Exception.Message

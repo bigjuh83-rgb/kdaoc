@@ -37,7 +37,31 @@ namespace DOL.GS.Tests
                 Assert.That(rebound.Quest.TargetName, Is.EqualTo("forest spiderling"));
                 Assert.That(rebound.Quest.OfferText, Does.Contain("밤마다 숲의 소리가 달라졌습니다"));
                 Assert.That(rebound.Quest.Tags, Does.Contain("template:template-wolf-trouble"));
+                Assert.That(rebound.Quest.Tags, Does.Contain("story-family:template-wolf-trouble"));
                 Assert.That(rebound.Quest.Tags.Any(tag => tag.StartsWith("binding:", StringComparison.OrdinalIgnoreCase)), Is.True);
+            });
+        }
+
+        [Test]
+        public void BindTemplate_PreservesExplicitStoryFamilyForScaledVariants()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.TemplateId = "template-wolf-trouble-l50";
+            template.Tags = new[] { "story-family:template-wolf-trouble" };
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("Brother Penric", "penric-1", 1, 10, 518850, 494050, 3352),
+                SeedNpc("forest spiderling", "spider-1", 1, 1, 522000, 492000, 2954)
+            });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.Id, Is.EqualTo("template-wolf-trouble-l50"));
+                Assert.That(result.Quest.Tags, Does.Contain("story-family:template-wolf-trouble"));
+                Assert.That(result.Quest.Tags, Does.Not.Contain("story-family:template-wolf-trouble-l50"));
             });
         }
 
@@ -63,7 +87,7 @@ namespace DOL.GS.Tests
                 Assert.That(result.Quest.Title, Is.EqualTo("Albion의 forest spiderling 징조"));
                 Assert.That(result.Quest.OfferText, Is.EqualTo("Brother Penric가 forest spiderling 조사를 부탁합니다."));
                 Assert.That(result.Quest.ProgressText, Is.EqualTo("forest spiderling의 흔적은 아직 사라지지 않았습니다."));
-                Assert.That(result.Quest.FinishText, Is.EqualTo("forest spiderling 위협이 사라졌습니다."));
+                Assert.That(result.Quest.FinishText, Is.EqualTo("'forest spiderling'의 위협이 사라졌습니다."));
                 Assert.That(result.Quest.ProgressText, Does.Not.Contain("{{target}}"));
                 Assert.That(result.Quest.FinishText, Does.Not.Contain("{{target}}"));
             });
@@ -87,10 +111,53 @@ namespace DOL.GS.Tests
             {
                 Assert.That(result.Success, Is.True, result.Message);
                 Assert.That(result.Quest.StoryNarrativeJson, Does.Contain("Albion의 불안"));
-                Assert.That(result.Quest.StoryNarrativeJson, Does.Contain("Brother Penric가 forest spiderling 흔적을 말한다."));
+                Assert.That(result.Quest.StoryNarrativeJson, Does.Contain("Brother Penric가 'forest spiderling'의 흔적을 말한다."));
                 Assert.That(result.Quest.StoryNarrativeJson, Does.Not.Contain("{{target}}"));
-                Assert.That(result.Quest.StoryPresentationJson, Does.Contain("forest spiderling 때문에 모두가 떨고 있습니다."));
+                Assert.That(result.Quest.StoryPresentationJson, Does.Contain("'forest spiderling' 때문에 모두가 떨고 있습니다."));
                 Assert.That(result.Quest.StoryPresentationJson, Does.Not.Contain("{{target}}"));
+            });
+        }
+
+        [Test]
+        public void BindTemplate_NaturalizesBareEnglishTargetThreatPhrasesInStoryText()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.Realm = "Hibernia";
+            template.PreferredStartNpcName = "Ionhar";
+            template.PreferredRegionId = 200;
+            template.TargetNameHint = "water beetle larva";
+            template.OfferText = "{{target}} 위협이 번지기 전에 도와주세요.";
+            template.ProgressText = "{{target}} 흔적을 따라가세요.";
+            template.FinishText = "{{target}} 때문에 닫혔던 길이 다시 열렸습니다.";
+            template.StoryNarrativeJson = "[{\"nodeId\":\"talk\",\"body\":\"목격자 'Nessa'이 길을 가리켰고, 'Nessa'이라는 이름이 기록됐다.\"}]";
+            template.Tags = template.Tags.Concat(new[] { "world-signal:item-acquired" }).ToArray();
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("Ionhar", "ionhar-1", 200, 10, 344500, 474500, 5372),
+                SeedNpc("water beetle larva", "larva-1", 200, 1, 345000, 475000, 5372)
+            });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.TargetName, Is.EqualTo("water beetle larva"));
+                Assert.That(result.Quest.OfferText, Is.EqualTo("'water beetle larva'의 위협이 번지기 전에 도와주세요."));
+                Assert.That(result.Quest.ProgressText, Is.EqualTo("'water beetle larva'의 흔적을 따라가세요."));
+                Assert.That(result.Quest.FinishText, Is.EqualTo("'water beetle larva' 때문에 닫혔던 길이 다시 열렸습니다."));
+                Assert.That(result.Quest.OfferText, Does.Not.Contain("water beetle larva 위협"));
+                Assert.That(result.Quest.ProgressText, Does.Not.Contain("water beetle larva 흔적"));
+                DynamicQuestNode explore = result.Quest.Nodes.Single(node => node.Id == "explore");
+                Assert.That(explore.Text, Is.EqualTo("'water beetle larva'의 흔적을 조사하세요."));
+                Assert.That(explore.Objective.LocationName, Is.EqualTo("'water beetle larva'의 흔적"));
+                DynamicQuestNode observe = result.Quest.Nodes.Single(node => node.Id == "observe_signal");
+                Assert.That(observe.Text, Is.EqualTo("'water beetle larva' 주변에서 성장한 위협의 움직임을 지켜보세요."));
+                Assert.That(observe.Objective.LocationName, Is.EqualTo("'water beetle larva' 성장 징후"));
+                Assert.That(result.Quest.StoryNarrativeJson, Does.Contain("목격자 'Nessa'가 길을 가리켰고"));
+                Assert.That(result.Quest.StoryNarrativeJson, Does.Contain("'Nessa'라는 이름이 기록됐다"));
+                Assert.That(result.Quest.StoryNarrativeJson, Does.Not.Contain("'Nessa'이 "));
+                Assert.That(result.Quest.StoryNarrativeJson, Does.Not.Contain("'Nessa'이라는"));
             });
         }
 
@@ -174,6 +241,33 @@ namespace DOL.GS.Tests
                 Assert.That(result.Quest.StartNpcName, Is.EqualTo("Sir Lukas"));
                 Assert.That(result.Quest.TargetName, Is.EqualTo("boar piglet"));
                 Assert.That(explore.Objective.X, Is.EqualTo(532400));
+            });
+        }
+
+        [Test]
+        public void BindTemplate_StarterNpcOfferAvoidsSoftShelledCrabWhenSafeAlternativeExists()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.PreferredStartNpcName = "Gothi of Odin";
+            template.PreferredRegionId = 100;
+            template.TargetNameHint = "soft-shelled crab";
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("Gothi of Odin", "gothi-1", 100, 30, 802000, 720000, 4900),
+                SeedNpc("soft-shelled crab", "crab-1", 100, 1, 803000, 720300, 4900),
+                SeedNpc("young sveawolf", "sveawolf-1", 100, 1, 803800, 720600, 4900)
+            });
+
+            DynamicQuestNode kill = result.Quest.Nodes.Single(node => node.Type == DynamicQuestNodeType.Kill);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.StartNpcName, Is.EqualTo("Gothi of Odin"));
+                Assert.That(result.Quest.TargetName, Is.EqualTo("young sveawolf"));
+                Assert.That(kill.Objective.TargetName, Is.EqualTo("young sveawolf"));
             });
         }
 
@@ -457,14 +551,14 @@ namespace DOL.GS.Tests
         }
 
         [Test]
-        public void BindTemplate_AutoAcceptItemAcquiredBranchDoesNotUseItemAcquiredAsStartTrigger()
+        public void BindTemplate_AutoAcceptItemAcquiredBranchDoesNotUseItemAcquiredOrTimeWindowAsStartTrigger()
         {
             DynamicQuestTemplate template = StoryTemplate();
             template.TemplateId = "template-item-branch";
             template.PreferredStartNpcName = string.Empty;
             template.TargetNameHint = "forest spiderling";
             template.StartMode = DynamicQuestStartMode.AutoAccept;
-            template.Trigger = "item-acquired";
+            template.Trigger = "time-window:dawn";
             template.Tags = new[] { "llm-story", "starter", "branch:item-acquired", "world-signal:item-acquired" };
             DynamicQuestTemplateService service = new();
 
@@ -481,6 +575,50 @@ namespace DOL.GS.Tests
                 Assert.That(result.Quest.Tags, Does.Contain("world-signal:item-acquired"));
                 Assert.That(result.Quest.Tags, Does.Contain("region:1"));
                 Assert.That(result.Quest.Tags, Does.Not.Contain("trigger:item-acquired"));
+                Assert.That(result.Quest.Tags, Does.Not.Contain("trigger:time-window:dawn"));
+
+                DynamicQuestNode choice = result.Quest.Nodes.Single(node => node.Id == "choice");
+                DynamicQuestNode observe = result.Quest.Nodes.Single(node => node.Id == "observe_signal");
+                DynamicQuestEdge safe = choice.Edges.Single(edge => edge.ConditionValue == "safe");
+                DynamicQuestEdge signal = observe.Edges.Single(edge => edge.Condition == DynamicQuestEdgeCondition.WorldSignal);
+                Assert.That(safe.ToNodeId, Is.EqualTo("observe_signal"));
+                Assert.That(signal.ConditionValue, Is.EqualTo("item-acquired"));
+            });
+        }
+
+        [Test]
+        public void BindTemplate_NpcOfferTimeWindowBranchRoutesSafeChoiceThroughWorldSignal()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.TemplateId = "template-time-window-branch";
+            template.PreferredStartNpcName = "Gothi of Odin";
+            template.PreferredRegionId = 100;
+            template.TargetNameHint = "rattling skeleton";
+            template.StartMode = DynamicQuestStartMode.NpcOffer;
+            template.Trigger = "time-window:night";
+            template.Tags = new[] { "llm-story", "starter", "branch:time-window", "world-signal:time-window:night" };
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("Gothi of Odin", "gothi-1", 100, 10, 802000, 720000, 4900),
+                SeedNpc("rattling skeleton", "skeleton-1", 100, 1, 803000, 720500, 4900)
+            });
+
+            DynamicQuestNode choice = result.Quest.Nodes.Single(node => node.Id == "choice");
+            DynamicQuestNode observe = result.Quest.Nodes.Single(node => node.Id == "observe_signal");
+            DynamicQuestEdge safe = choice.Edges.Single(edge => edge.ConditionValue == "safe");
+            DynamicQuestEdge followup = choice.Edges.Single(edge => edge.ConditionValue == "followup");
+            DynamicQuestEdge signal = observe.Edges.Single(edge => edge.Condition == DynamicQuestEdgeCondition.WorldSignal);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.Tags, Does.Contain("branch:time-window"));
+                Assert.That(result.Quest.Tags, Does.Contain("world-signal:time-window:night"));
+                Assert.That(safe.ToNodeId, Is.EqualTo("observe_signal"));
+                Assert.That(followup.ToNodeId, Is.EqualTo("observe_signal"));
+                Assert.That(signal.ConditionValue, Is.EqualTo("time-window:night"));
             });
         }
 
@@ -518,6 +656,10 @@ namespace DOL.GS.Tests
                 Assert.That(kill.Objective.TargetCount, Is.EqualTo(2));
                 Assert.That(kill.Objective.MinLevel, Is.EqualTo(45));
                 Assert.That(kill.Objective.MaxLevel, Is.EqualTo(48));
+                Assert.That(kill.Objective.X, Is.EqualTo(618469));
+                Assert.That(kill.Objective.Y, Is.EqualTo(388858));
+                Assert.That(kill.Objective.Z, Is.EqualTo(5681));
+                Assert.That(kill.Objective.Radius, Is.EqualTo(6500));
             });
         }
 
@@ -742,6 +884,424 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void BindTemplate_AutoAcceptSkipsTargetMoreThanTwoLevelsAboveMinimum()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.TemplateId = "template-auto-solo-upper-bound";
+            template.Realm = "Midgard";
+            template.PreferredStartNpcName = "Gothi of Odin";
+            template.PreferredRegionId = 100;
+            template.TargetNameHint = "lava lizard";
+            template.StartMode = DynamicQuestStartMode.AutoAccept;
+            template.MinLevel = 19;
+            template.MaxLevel = 23;
+            template.Tags = new[] { "llm-story", "branch:time-window", "world-signal:time-window" };
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("Gothi of Odin", "gothi-1", 100, 50, 802000, 720000, 4900),
+                SeedNpc("lava lizard", "too-hard-target", 100, 22, 803000, 720500, 4900),
+                SeedNpc("young tomte", "safe-target", 100, 21, 803200, 720700, 4900)
+            });
+
+            DynamicQuestNode kill = result.Quest.Nodes.Single(node => node.Type == DynamicQuestNodeType.Kill);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.TargetName, Is.EqualTo("young tomte"));
+                Assert.That(kill.Objective.MinLevel, Is.EqualTo(21));
+                Assert.That(kill.Objective.MaxLevel, Is.EqualTo(21));
+            });
+        }
+
+        [Test]
+        public void BindTemplate_AutoAcceptSkipsUnverifiedProperNameTarget()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.TemplateId = "template-auto-proper-name-unverified";
+            template.Realm = "Midgard";
+            template.PreferredStartNpcName = string.Empty;
+            template.PreferredRegionId = 100;
+            template.TargetNameHint = "Asbjom";
+            template.StartMode = DynamicQuestStartMode.AutoAccept;
+            template.MinLevel = 20;
+            template.MaxLevel = 24;
+            template.Tags = new[] { "llm-story", "branch:time-window", "world-signal:time-window" };
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("Asbjom", "proper-name-target", 100, 20, 803000, 720500, 4900),
+                SeedNpc("young tomte", "safe-target", 100, 20, 803200, 720700, 4900)
+            });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.TargetName, Is.EqualTo("young tomte"));
+            });
+        }
+
+        [Test]
+        public void BindTemplate_AutoAcceptAllowsAggressiveProperNameTarget()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.TemplateId = "template-auto-proper-name-aggressive";
+            template.Realm = "Midgard";
+            template.PreferredStartNpcName = string.Empty;
+            template.PreferredRegionId = 100;
+            template.TargetNameHint = "Asbjom";
+            template.StartMode = DynamicQuestStartMode.AutoAccept;
+            template.MinLevel = 20;
+            template.MaxLevel = 24;
+            template.Tags = new[] { "llm-story", "branch:time-window", "world-signal:time-window" };
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc(
+                    "Asbjom",
+                    "proper-name-target",
+                    100,
+                    20,
+                    803000,
+                    720500,
+                    4900,
+                    hasSourceNpcMetadata: true,
+                    sourceRealm: eRealm.None,
+                    sourceAggroLevel: 50,
+                    sourceAggroRange: 1200)
+            });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.TargetName, Is.EqualTo("Asbjom"));
+            });
+        }
+
+        [Test]
+        public void BindTemplate_AutoAcceptStarterAvoidsLowLevelCadgerWhenSaferTargetExists()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.TemplateId = "template-auto-hibernia-low-cadger";
+            template.PreferredStartNpcName = string.Empty;
+            template.PreferredRegionId = 200;
+            template.TargetNameHint = "Ailbe";
+            template.StartMode = DynamicQuestStartMode.AutoAccept;
+            template.MinLevel = 36;
+            template.MaxLevel = 40;
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("lough wolf cadger", "low-risk-by-level-but-hard-cadger", 200, 2, 341081, 498817, 4771),
+                SeedNpc("water beetle larva", "starter-water-beetle", 200, 1, 337751, 594090, 5527)
+            });
+
+            DynamicQuestNode kill = result.Quest.Nodes.Single(node => node.Type == DynamicQuestNodeType.Kill);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.StartMode, Is.EqualTo(DynamicQuestStartMode.AutoAccept));
+                Assert.That(result.Quest.TargetName, Is.EqualTo("water beetle larva"));
+                Assert.That(kill.Objective.MinLevel, Is.EqualTo(1));
+                Assert.That(kill.Objective.MaxLevel, Is.EqualTo(1));
+            });
+        }
+
+        [Test]
+        public void BindTemplate_AutoAcceptStarterPrefersLevelOneTargetOverLevelTwoWhenBothAreSafe()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.TemplateId = "template-auto-starter-lowest-safe-level";
+            template.PreferredStartNpcName = string.Empty;
+            template.PreferredRegionId = 200;
+            template.TargetNameHint = "Amadan Dubh";
+            template.StartMode = DynamicQuestStartMode.AutoAccept;
+            template.MinLevel = 40;
+            template.MaxLevel = 44;
+            template.Tags = new[] { "llm-story", "starter", "branch:item-acquired", "world-signal:item-acquired" };
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("skeletal pawn", "starter-skeletal-pawn", 200, 2, 345461, 485969, 5280),
+                SeedNpc("water beetle larva", "starter-water-beetle", 200, 1, 337751, 594090, 5527)
+            });
+
+            DynamicQuestNode kill = result.Quest.Nodes.Single(node => node.Type == DynamicQuestNodeType.Kill);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.TargetName, Is.EqualTo("water beetle larva"));
+                Assert.That(kill.Objective.MinLevel, Is.EqualTo(1));
+                Assert.That(kill.Objective.MaxLevel, Is.EqualTo(1));
+            });
+        }
+
+        [Test]
+        public void BindTemplate_AutoAcceptStarterPrefersLevelOneOverHintedLevelTwoTarget()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.TemplateId = "template-auto-starter-lowest-safe-level-before-hint";
+            template.PreferredStartNpcName = string.Empty;
+            template.PreferredRegionId = 1;
+            template.TargetNameHint = "ant drone";
+            template.StartMode = DynamicQuestStartMode.AutoAccept;
+            template.MinLevel = 1;
+            template.MaxLevel = 4;
+            template.Tags = new[] { "llm-story", "starter" };
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("ant drone", "hinted-level-two-target", 1, 2, 518296, 629644, 1765),
+                SeedNpc("black wolf pup", "safe-level-one-target", 1, 1, 509819, 492466, 2763)
+            });
+
+            DynamicQuestNode kill = result.Quest.Nodes.Single(node => node.Type == DynamicQuestNodeType.Kill);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.StartMode, Is.EqualTo(DynamicQuestStartMode.AutoAccept));
+                Assert.That(result.Quest.TargetName, Is.EqualTo("black wolf pup"));
+                Assert.That(kill.Objective.TargetName, Is.EqualTo("black wolf pup"));
+                Assert.That(kill.Objective.MinLevel, Is.EqualTo(1));
+                Assert.That(kill.Objective.MaxLevel, Is.EqualTo(1));
+            });
+        }
+
+        [Test]
+        public void BindTemplate_AutoAcceptStarterAvoidsLowLevelLynxWhenSaferTargetExists()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.TemplateId = "template-auto-midgard-low-lynx";
+            template.PreferredStartNpcName = string.Empty;
+            template.PreferredRegionId = 100;
+            template.TargetNameHint = "aged boreal cockatrice";
+            template.StartMode = DynamicQuestStartMode.AutoAccept;
+            template.MinLevel = 47;
+            template.MaxLevel = 50;
+            template.Tags = new[] { "llm-story", "starter", "branch:time-window", "world-signal:time-window" };
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("young lynx", "low-risk-by-level-but-hard-lynx", 100, 2, 794522, 725022, 4684),
+                SeedNpc("young tomte", "starter-young-tomte", 100, 2, 795400, 725600, 4684)
+            });
+
+            DynamicQuestNode kill = result.Quest.Nodes.Single(node => node.Type == DynamicQuestNodeType.Kill);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.StartMode, Is.EqualTo(DynamicQuestStartMode.AutoAccept));
+                Assert.That(result.Quest.TargetName, Is.EqualTo("young tomte"));
+                Assert.That(kill.Objective.TargetName, Is.EqualTo("young tomte"));
+                Assert.That(result.Quest.Tags, Does.Contain("branch:time-window"));
+            });
+        }
+
+        [Test]
+        public void BindTemplate_AutoAcceptStarterAvoidsLowLevelWaterGoblinWhenSaferTargetExists()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.TemplateId = "template-auto-midgard-low-water-goblin";
+            template.PreferredStartNpcName = string.Empty;
+            template.PreferredRegionId = 100;
+            template.TargetNameHint = "Alfrigg";
+            template.StartMode = DynamicQuestStartMode.AutoAccept;
+            template.MinLevel = 47;
+            template.MaxLevel = 50;
+            template.Tags = new[] { "llm-story", "starter", "branch:time-window", "world-signal:time-window" };
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("little water goblin", "low-risk-by-level-but-hard-water-goblin", 100, 2, 815190, 917322, 4744),
+                SeedNpc("young tomte", "starter-young-tomte", 100, 2, 815900, 917700, 4744)
+            });
+
+            DynamicQuestNode kill = result.Quest.Nodes.Single(node => node.Type == DynamicQuestNodeType.Kill);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.StartMode, Is.EqualTo(DynamicQuestStartMode.AutoAccept));
+                Assert.That(result.Quest.TargetName, Is.EqualTo("young tomte"));
+                Assert.That(kill.Objective.TargetName, Is.EqualTo("young tomte"));
+                Assert.That(result.Quest.Tags, Does.Contain("branch:time-window"));
+            });
+        }
+
+        [Test]
+        public void BindTemplate_AutoAcceptStarterAvoidsLowLevelWildHogWhenSaferTargetExists()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.TemplateId = "template-auto-midgard-low-wild-hog";
+            template.PreferredStartNpcName = string.Empty;
+            template.PreferredRegionId = 100;
+            template.TargetNameHint = "Aimiliona";
+            template.StartMode = DynamicQuestStartMode.AutoAccept;
+            template.MinLevel = 48;
+            template.MaxLevel = 50;
+            template.Tags = new[] { "llm-story", "starter", "branch:time-window", "world-signal:time-window" };
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("wild hog", "low-risk-by-level-but-hard-wild-hog", 100, 2, 794522, 725022, 4684),
+                SeedNpc("young tomte", "starter-young-tomte", 100, 2, 795400, 725600, 4684)
+            });
+
+            DynamicQuestNode kill = result.Quest.Nodes.Single(node => node.Type == DynamicQuestNodeType.Kill);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.StartMode, Is.EqualTo(DynamicQuestStartMode.AutoAccept));
+                Assert.That(result.Quest.TargetName, Is.EqualTo("young tomte"));
+                Assert.That(kill.Objective.TargetName, Is.EqualTo("young tomte"));
+                Assert.That(result.Quest.Tags, Does.Contain("branch:time-window"));
+            });
+        }
+
+        [Test]
+        public void BindTemplate_AutoAcceptStarterAvoidsLowLevelVendoGruntWhenSaferTargetExists()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.TemplateId = "template-auto-midgard-low-vendo-grunt";
+            template.PreferredStartNpcName = string.Empty;
+            template.PreferredRegionId = 100;
+            template.TargetNameHint = "Anakol";
+            template.StartMode = DynamicQuestStartMode.AutoAccept;
+            template.MinLevel = 30;
+            template.MaxLevel = 34;
+            template.Tags = new[] { "llm-story", "starter", "branch:time-window", "world-signal:time-window" };
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("vendo grunt", "low-risk-by-level-but-hard-vendo-grunt", 100, 2, 794522, 725022, 4684),
+                SeedNpc("young tomte", "starter-young-tomte", 100, 2, 795400, 725600, 4684)
+            });
+
+            DynamicQuestNode kill = result.Quest.Nodes.Single(node => node.Type == DynamicQuestNodeType.Kill);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.StartMode, Is.EqualTo(DynamicQuestStartMode.AutoAccept));
+                Assert.That(result.Quest.TargetName, Is.EqualTo("young tomte"));
+                Assert.That(kill.Objective.TargetName, Is.EqualTo("young tomte"));
+                Assert.That(result.Quest.Tags, Does.Contain("branch:time-window"));
+            });
+        }
+
+        [Test]
+        public void BindTemplate_AutoAcceptStarterAvoidsLowLevelHobgoblinWhenSaferTargetExists()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.TemplateId = "template-auto-midgard-low-hobgoblin";
+            template.PreferredStartNpcName = string.Empty;
+            template.PreferredRegionId = 100;
+            template.TargetNameHint = "alpine cockatrice";
+            template.StartMode = DynamicQuestStartMode.AutoAccept;
+            template.MinLevel = 30;
+            template.MaxLevel = 34;
+            template.Tags = new[] { "llm-story", "starter", "branch:time-window", "world-signal:time-window" };
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("hobgoblin snake-finder", "low-risk-by-level-but-hard-hobgoblin", 100, 1, 794522, 725022, 4684),
+                SeedNpc("young tomte", "starter-young-tomte", 100, 2, 795400, 725600, 4684)
+            });
+
+            DynamicQuestNode kill = result.Quest.Nodes.Single(node => node.Type == DynamicQuestNodeType.Kill);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.StartMode, Is.EqualTo(DynamicQuestStartMode.AutoAccept));
+                Assert.That(result.Quest.TargetName, Is.EqualTo("young tomte"));
+                Assert.That(kill.Objective.TargetName, Is.EqualTo("young tomte"));
+                Assert.That(result.Quest.Tags, Does.Contain("branch:time-window"));
+            });
+        }
+
+        [Test]
+        public void BindTemplate_AutoAcceptStarterAvoidsLowLevelHulduOutcastWhenSaferTargetExists()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.TemplateId = "template-auto-midgard-low-huldu-outcast";
+            template.PreferredStartNpcName = string.Empty;
+            template.PreferredRegionId = 100;
+            template.TargetNameHint = "Alfrigg";
+            template.StartMode = DynamicQuestStartMode.AutoAccept;
+            template.MinLevel = 30;
+            template.MaxLevel = 34;
+            template.Tags = new[] { "llm-story", "starter", "branch:time-window", "world-signal:time-window" };
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("huldu outcast", "low-risk-by-level-but-hard-huldu-outcast", 100, 1, 794522, 725022, 4684),
+                SeedNpc("young tomte", "starter-young-tomte", 100, 2, 795400, 725600, 4684)
+            });
+
+            DynamicQuestNode kill = result.Quest.Nodes.Single(node => node.Type == DynamicQuestNodeType.Kill);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.StartMode, Is.EqualTo(DynamicQuestStartMode.AutoAccept));
+                Assert.That(result.Quest.TargetName, Is.EqualTo("young tomte"));
+                Assert.That(kill.Objective.TargetName, Is.EqualTo("young tomte"));
+                Assert.That(result.Quest.Tags, Does.Contain("branch:time-window"));
+            });
+        }
+
+        [Test]
+        public void BindTemplate_AutoAcceptStarterAvoidsLowLevelMeanderingSpiritWhenSaferTargetExists()
+        {
+            DynamicQuestTemplate template = StoryTemplate();
+            template.TemplateId = "template-auto-midgard-low-meandering-spirit";
+            template.PreferredStartNpcName = string.Empty;
+            template.PreferredRegionId = 100;
+            template.TargetNameHint = "arachite grymherre";
+            template.StartMode = DynamicQuestStartMode.AutoAccept;
+            template.MinLevel = 30;
+            template.MaxLevel = 34;
+            template.Tags = new[] { "llm-story", "starter", "branch:time-window", "world-signal:time-window" };
+            DynamicQuestTemplateService service = new();
+
+            DynamicQuestTemplateBindingResult result = service.BindTemplate(template, new[]
+            {
+                SeedNpc("meandering spirit", "low-risk-by-level-but-hard-meandering-spirit", 100, 1, 794522, 725022, 4684),
+                SeedNpc("young tomte", "starter-young-tomte", 100, 2, 795400, 725600, 4684)
+            });
+
+            DynamicQuestNode kill = result.Quest.Nodes.Single(node => node.Type == DynamicQuestNodeType.Kill);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Quest.StartMode, Is.EqualTo(DynamicQuestStartMode.AutoAccept));
+                Assert.That(result.Quest.TargetName, Is.EqualTo("young tomte"));
+                Assert.That(kill.Objective.TargetName, Is.EqualTo("young tomte"));
+                Assert.That(result.Quest.Tags, Does.Contain("branch:time-window"));
+            });
+        }
+
+        [Test]
         public void BindTemplate_AutoAcceptDoesNotTrustUnknownLevelHighBandStoryTarget()
         {
             DynamicQuestTemplate template = StoryTemplate();
@@ -872,6 +1432,7 @@ namespace DOL.GS.Tests
 
             DynamicQuestNode choice = result.Quest.Nodes.Single(node => node.Id == "choice");
             DynamicQuestNode observe = result.Quest.Nodes.Single(node => node.Id == "observe_signal");
+            DynamicQuestEdge safe = choice.Edges.Single(edge => edge.ConditionValue == "safe");
             DynamicQuestEdge followup = choice.Edges.Single(edge => edge.ConditionValue == "followup");
             DynamicQuestEdge signal = observe.Edges.Single(edge => edge.Condition == DynamicQuestEdgeCondition.WorldSignal);
             DynamicQuestEdge timeout = observe.Edges.Single(edge => edge.Condition == DynamicQuestEdgeCondition.TimedOut);
@@ -879,6 +1440,7 @@ namespace DOL.GS.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(safe.ToNodeId, Is.EqualTo("observe_signal"));
                 Assert.That(followup.ToNodeId, Is.EqualTo("observe_signal"));
                 Assert.That(observe.Type, Is.EqualTo(DynamicQuestNodeType.Explore));
                 Assert.That(observe.Objective.RegionId, Is.EqualTo(1));
@@ -1124,7 +1686,9 @@ namespace DOL.GS.Tests
             bool hasSourceNpcMetadata = false,
             eRealm sourceRealm = eRealm.None,
             GameNPC.eFlags sourceFlags = 0,
-            string sourceTypeName = "")
+            string sourceTypeName = "",
+            int sourceAggroLevel = 0,
+            int sourceAggroRange = 0)
         {
             return new DynamicQuestSeedNpc
             {
@@ -1139,6 +1703,8 @@ namespace DOL.GS.Tests
                 SourceRealm = sourceRealm,
                 SourceFlags = sourceFlags,
                 SourceTypeName = sourceTypeName,
+                SourceAggroLevel = sourceAggroLevel,
+                SourceAggroRange = sourceAggroRange,
                 SourceIsAlive = true
             };
         }

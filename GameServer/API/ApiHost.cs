@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging;
 
 namespace DOL.GS.API
 {
@@ -22,6 +23,18 @@ namespace DOL.GS.API
             #region Config
 
             var builder = WebApplication.CreateBuilder();
+            builder.Logging.SetMinimumLevel(LogLevel.Warning);
+            builder.Logging.AddFilter((category, level) =>
+            {
+                if (category != null &&
+                    (category.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal) ||
+                     category.StartsWith("Microsoft.Hosting", StringComparison.Ordinal)))
+                {
+                    return level >= LogLevel.Warning;
+                }
+
+                return true;
+            });
 
             var contentRoot = Directory.GetCurrentDirectory();
 

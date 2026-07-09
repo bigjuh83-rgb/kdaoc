@@ -310,7 +310,7 @@ namespace DOL.GS.Tests
         }
 
         [Test]
-        public void FrequentDeathsWithinConfiguredWindow_QueueMutantSpawn()
+        public void FrequentDeathsWithinConfiguredWindow_QueuesMutantSpawn()
         {
             FakeMobGrowthRepository growth = new();
             MobGrowthService service = CreateService(growth, 10);

@@ -226,6 +226,7 @@ BOSS_DPS_CAPABILITY_WEIGHTS = {
     "crowd_control": 10,
     "melee_dps": -15,
 }
+CASTER_DPS_STARTUP_DELAY_SECONDS = "15"
 CAPABILITY_ALIASES = {
     "groupspeed": "group_speed",
     "scout": "stealth",
@@ -268,6 +269,8 @@ LIVE_COMPANION_PARTY_COORDINATION_FLAGS = [
     "0.8",
     "--party-protection-interval",
     "4",
+    "--party-protection-close-distance",
+    "1600",
     "--party-focus-target-max-age",
     "6",
     "--party-target-loss-grace",
@@ -402,8 +405,14 @@ def live_companion_follow_hold_allows_waypoint(role: Any, action_rotation: str) 
     return not (normalize_role(role) == "healer" and action_rotation == "healer-support")
 
 
-def live_companion_requires_follow_anchor_before_objective(role: Any, action_rotation: str) -> bool:
+def live_companion_requires_follow_anchor_before_objective(
+    role: Any,
+    action_rotation: str,
+    request: dict[str, Any] | None = None,
+) -> bool:
     normalized_role = normalize_role(role)
+    if normalized_role == "support" and "crowd_control" in request_capabilities(request or {}):
+        return False
     return normalized_role in {"healer", "support"} or action_rotation.startswith("caster")
 
 
@@ -440,6 +449,27 @@ def live_companion_required_home_hunt_distance(role: Any, action_rotation: str) 
     return "2800"
 
 
+def live_companion_target_home_hunt_distance(
+    role: Any,
+    action_rotation: str,
+    request: dict[str, Any] | None = None,
+) -> str:
+    if normalize_role(role) == "support" and "crowd_control" in request_capabilities(request or {}):
+        return "9000"
+    return live_companion_required_home_hunt_distance(role, action_rotation)
+
+
+def live_companion_target_home_max_distance(
+    role: Any,
+    action_rotation: str,
+    request: dict[str, Any] | None = None,
+    args: argparse.Namespace | None = None,
+) -> str:
+    configured = arg_float(args, "combat_home_leash_distance", 4500.0) if args is not None else 4500.0
+    minimum = 9000.0 if normalize_role(role) == "support" and "crowd_control" in request_capabilities(request or {}) else 4500.0
+    return str(int(max(configured, minimum)))
+
+
 def live_companion_claims_objective_target(role: Any, action_rotation: str) -> bool:
     normalized_role = normalize_role(role)
     if normalized_role == "tank":
@@ -447,7 +477,24 @@ def live_companion_claims_objective_target(role: Any, action_rotation: str) -> b
     return normalized_role == "fill" and action_rotation in {"melee-basic", "hybrid"}
 
 
-def live_companion_boss_role_flags(role: Any, action_rotation: str, args: argparse.Namespace | None = None) -> list[str]:
+def live_companion_uses_required_target_home(
+    role: Any,
+    action_rotation: str,
+    request: dict[str, Any] | None = None,
+) -> bool:
+    if action_rotation.startswith("caster"):
+        return False
+    if normalize_role(role) == "support" and "crowd_control" in request_capabilities(request or {}):
+        return False
+    return True
+
+
+def live_companion_boss_role_flags(
+    role: Any,
+    action_rotation: str,
+    args: argparse.Namespace | None = None,
+    request: dict[str, Any] | None = None,
+) -> list[str]:
     normalized_role = normalize_role(role)
     healer_boss_ranged_safe_distance = "1800"
     healer_party_preengage_ranged_safe_distance = "2000"
@@ -472,7 +519,6 @@ def live_companion_boss_role_flags(role: Any, action_rotation: str, args: argpar
             healer_boss_non_tank_follow_distance = str(int(configured_boss_non_tank_follow_distance))
 
     flags = [
-        "--party-require-leader-engaged",
         "--party-mark-pull-engaged",
         "--party-pull-engage-distance",
         "1800",
@@ -497,9 +543,17 @@ def live_companion_boss_role_flags(role: Any, action_rotation: str, args: argpar
         "--party-survival-backoff-distance",
         "1200",
     ]
+    if not (
+        normalized_role == "tank"
+        or (normalized_role == "support" and "crowd_control" in request_capabilities(request or {}))
+        or action_rotation == "caster-basic"
+    ):
+        flags.insert(0, "--party-require-leader-engaged")
     if live_companion_claims_objective_target(role, action_rotation):
         flags.extend(
             [
+                "--flee-critical-health-percent",
+                "25",
                 "--party-rescue-assist-after",
                 "3",
                 "--party-rescue-emergency-assist-after",
@@ -539,6 +593,7 @@ def live_companion_boss_role_flags(role: Any, action_rotation: str, args: argpar
                 "--stationary-cast-actions",
                 "--stationary-cast-min-hold",
                 "3.4",
+                "--party-assist-travel-leader-target",
             ]
         )
     elif action_rotation == "healer-support" or normalized_role == "support":
@@ -580,8 +635,34 @@ def live_companion_field_role_flags(role: Any, action_rotation: str) -> list[str
     return []
 
 
-def live_companion_role_flags(role: Any, action_rotation: str, args: argparse.Namespace | None = None) -> list[str]:
+def live_companion_role_flags(
+    role: Any,
+    action_rotation: str,
+    args: argparse.Namespace | None = None,
+    request: dict[str, Any] | None = None,
+) -> list[str]:
     flags: list[str] = []
+    capabilities = request_capabilities(request or {})
+    if normalize_role(role) == "support" and "crowd_control" in capabilities:
+        flags.extend(
+            [
+                "--party-support-evasion",
+                "--crowd-control-preemptive-min-threats",
+                "1",
+            ]
+        )
+    if action_rotation == "caster-basic" and "caster_dps" in capabilities:
+        flags.extend(
+            [
+                "--startup-delay",
+                CASTER_DPS_STARTUP_DELAY_SECONDS,
+                "--crowd-control-interval",
+                "0",
+                "--stationary-cast-actions",
+                "--stationary-cast-min-hold",
+                "3.4",
+            ]
+        )
     if normalize_role(role) in {"healer", "support"} and action_rotation == "healer-support":
         flags.extend(
             [
@@ -1479,7 +1560,27 @@ def request_is_boss_or_objective_content(request: dict[str, Any]) -> bool:
     return prefix in {"boss", "objective"}
 
 
-def live_companion_party_encounter_mode(request: dict[str, Any]) -> str:
+def request_is_caster_dps_field_objective(request: dict[str, Any], role: Any = "", action_rotation: str = "") -> bool:
+    content_type = str(request_value(request, "contentType", "ContentType", default="") or "").strip()
+    prefix = content_type.split(":", 1)[0].strip().lower() if content_type else ""
+    if ":" in content_type or prefix not in {"", "pve"}:
+        return False
+    if not request_objective_target_name(request):
+        return False
+    capabilities = request_capabilities(request)
+    return (
+        "caster_dps" in capabilities
+        or (normalize_role(role) == "dps" and str(action_rotation or "") == "caster-basic")
+    )
+
+
+def live_companion_party_encounter_mode(
+    request: dict[str, Any],
+    role: Any = "",
+    action_rotation: str = "",
+) -> str:
+    if request_is_caster_dps_field_objective(request, role, action_rotation):
+        return "standard"
     return "boss" if request_is_boss_or_objective_content(request) else "standard"
 
 
@@ -1575,6 +1676,8 @@ def rank_companion_rows(request: dict[str, Any], rows: list[dict[str, Any]]) -> 
         if capability_rows:
             rows = capability_rows
 
+    prefer_pure_stealth = desired_capabilities == {"stealth"}
+
     if requested_role in {"tank", "dps"} and not desired_capabilities:
         indexed_rows = list(enumerate(rows))
         rows = [
@@ -1593,10 +1696,12 @@ def rank_companion_rows(request: dict[str, Any], rows: list[dict[str, Any]]) -> 
 
     def sort_key(item: tuple[int, dict[str, Any]]) -> tuple[int, int, int]:
         index, row = item
+        capabilities = companion_row_capabilities(row)
+        capability_penalty = 1 if prefer_pure_stealth and "speed_song" in capabilities else 0
         home = row_home_position(row)
         if home is None:
-            return (1, 0, index)
-        return (0, distance_squared(target_position, home), index)
+            return (capability_penalty, 1, 0, index)
+        return (capability_penalty, 0, distance_squared(target_position, home), index)
 
     return [row for _, row in sorted(indexed_rows, key=sort_key)]
 
@@ -1710,7 +1815,8 @@ def build_behavior_command(
     mercenary_record = dict(mercenary_state.get("record") or {})
     hostile_assist = live_companion_uses_hostile_assist(role, action_rotation, request)
     player_level = requester_player_level(request, requester_state)
-    encounter_mode = live_companion_party_encounter_mode(request)
+    encounter_mode = live_companion_party_encounter_mode(request, role, action_rotation)
+    caster_dps_field_objective = request_is_caster_dps_field_objective(request, role, action_rotation)
 
     command = [
         sys.executable,
@@ -1759,7 +1865,7 @@ def build_behavior_command(
         "--party-follow-hard-catchup-speed-multiplier",
         "2.3",
         "--party-follow-teleport-distance",
-        "2500",
+        "0",
         "--party-follow-teleport-stop-distance",
         "90",
         "--follow-nearby-player",
@@ -1803,6 +1909,16 @@ def build_behavior_command(
                 str(player_level),
                 "--min-target-level",
                 str(max(1, player_level - 8)),
+                *(
+                    [
+                        "--max-target-level",
+                        str(player_level),
+                        "--max-target-level-delta",
+                        "0",
+                    ]
+                    if caster_dps_field_objective
+                    else []
+                ),
             ]
             if player_level > 0
             else []
@@ -1872,7 +1988,7 @@ def build_behavior_command(
         "0.5",
         *LIVE_COMPANION_PARTY_COORDINATION_FLAGS,
         *(
-            live_companion_boss_role_flags(role, action_rotation, args)
+            live_companion_boss_role_flags(role, action_rotation, args, request)
             if encounter_mode == "boss"
             else live_companion_field_role_flags(role, action_rotation)
         ),
@@ -1888,7 +2004,7 @@ def build_behavior_command(
         "--trace-movement-log",
         str(run_path / f"{request_id}-{{username}}-{{round}}-movement.jsonl"),
     ]
-    if live_companion_requires_follow_anchor_before_objective(role, action_rotation):
+    if live_companion_requires_follow_anchor_before_objective(role, action_rotation, request):
         command.append("--follow-player-required-for-objective-move")
     if live_companion_follow_hold_allows_waypoint(role, action_rotation):
         command.append("--follow-player-hold-allows-waypoint")
@@ -1905,7 +2021,7 @@ def build_behavior_command(
     memory = str(mercenary_state.get("memory", "") or "").strip()
     if memory:
         command += ["--mercenary-adventure-memory", memory]
-    command.extend(live_companion_role_flags(role, action_rotation, args))
+    command.extend(live_companion_role_flags(role, action_rotation, args, request))
     command.extend(live_companion_contract_tier_flags(request))
     command.extend(live_companion_mercenary_state_flags(request, role, action_rotation))
     if objective_target_name and hostile_assist and (
@@ -1945,7 +2061,7 @@ def build_behavior_command(
         gateway_config = arg_string(args, "ai_gateway_config", "")
         if gateway_config:
             command += ["--ai-gateway-config", gateway_config, "--companion-guide-ai-gateway-config", gateway_config]
-    if leader_waypoint and objective_target_name:
+    if leader_waypoint and objective_target_name and live_companion_uses_required_target_home(role, action_rotation, request):
         command += [
             "--waypoints",
             leader_waypoint,
@@ -1960,9 +2076,9 @@ def build_behavior_command(
             "--required-target-home-stop-distance",
             live_companion_required_home_stop_distance(role, action_rotation),
             "--required-target-home-hunt-distance",
-            live_companion_required_home_hunt_distance(role, action_rotation),
+            live_companion_target_home_hunt_distance(role, action_rotation, request),
             "--target-home-max-distance",
-            str(max(arg_float(args, "combat_home_leash_distance", 4500.0), 4500.0)),
+            live_companion_target_home_max_distance(role, action_rotation, request, args),
         ]
     if companion_home_waypoint:
         command += [
@@ -2171,6 +2287,19 @@ def live_companion_completion_metrics(run_dir: str | Path) -> dict[str, int]:
                             counts["party_protection"] += amount
         except OSError:
             continue
+    for path in run_path.rglob("*encounters.jsonl"):
+        try:
+            for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if str(row.get("event") or "") == "crowd_control_multi_aggro":
+                    counts["crowd_control"] += 1
+        except OSError:
+            continue
     return counts
 
 
@@ -2330,7 +2459,7 @@ def companion_personality_behavior_flags(personality: str, role: Any, action_rot
             "--flee-health-percent",
             "40",
             "--flee-pressure-health-percent",
-            "75",
+            "40",
             "--required-target-tank-commit-health-percent",
             "35",
             "--party-survival-active-tank-health-percent",

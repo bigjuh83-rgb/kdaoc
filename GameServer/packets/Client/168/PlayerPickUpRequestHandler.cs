@@ -9,10 +9,8 @@ namespace DOL.GS.PacketHandler.Client.v168
 		{
 			if (client.Player == null)
 				return;
-			uint X = packet.ReadInt();
-			uint Y = packet.ReadInt();
-			ushort id = packet.ReadShort();
-			ushort obj = packet.ReadShort();
+
+			TryReadPickUpRequestFields(packet, out _, out _, out _, out _);
 
 			GameObject target = client.Player.TargetObject;
 			if (target == null)
@@ -27,6 +25,23 @@ namespace DOL.GS.PacketHandler.Client.v168
 			}
 
 			client.Player.PickupObject(target, false);
+		}
+
+		public static bool TryReadPickUpRequestFields(GSPacketIn packet, out uint x, out uint y, out ushort sessionId, out ushort objectId)
+		{
+			x = 0;
+			y = 0;
+			sessionId = 0;
+			objectId = 0;
+
+			if (packet.Length - packet.Position < 12)
+				return false;
+
+			x = packet.ReadInt();
+			y = packet.ReadInt();
+			sessionId = packet.ReadShort();
+			objectId = packet.ReadShort();
+			return true;
 		}
 	}
 }

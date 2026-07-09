@@ -47,6 +47,19 @@ namespace DOL.GS.WorldAI
                 StopTimerLocked();
         }
 
+        internal static void ResetForTest()
+        {
+            StopTimer();
+            LastTimeoutAdvancedCount = 0;
+            LastTickAt = default;
+            Interlocked.Exchange(ref TickInProgress, 0);
+        }
+
+        internal static void TickForTest()
+        {
+            Tick(null);
+        }
+
         private static void StopTimerLocked()
         {
             TimeoutTimer?.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);

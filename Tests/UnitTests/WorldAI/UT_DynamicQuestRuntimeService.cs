@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using DOL.Database;
+using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.GS.Quests;
 using DOL.GS.ServerProperties;
 using DOL.GS.WorldAI;
 using NUnit.Framework;
@@ -23,6 +26,8 @@ namespace DOL.GS.Tests
             Properties.KDAOC_DYNAMIC_QUEST_REWARD_XP_MULTIPLIER = 1.0;
             Properties.KDAOC_DYNAMIC_QUEST_REWARD_MONEY_MULTIPLIER = 1.0;
             Properties.KDAOC_DYNAMIC_QUEST_WORLD_REVISION = string.Empty;
+            Properties.KDAOC_DYNAMIC_QUEST_CINEMATIC_MAX_ACTORS_PER_ACTION = 100;
+            DynamicQuestCinematicCatalog.ClearCacheForTest();
             DynamicQuestRuntimeService.Instance.ClearAll();
         }
 
@@ -32,6 +37,8 @@ namespace DOL.GS.Tests
             DynamicQuestRuntimeService.Instance.ClearAll();
             Properties.KDAOC_DYNAMIC_QUEST_ENABLED = false;
             Properties.KDAOC_DYNAMIC_QUEST_WORLD_REVISION = string.Empty;
+            Properties.KDAOC_DYNAMIC_QUEST_CINEMATIC_MAX_ACTORS_PER_ACTION = 0;
+            DynamicQuestCinematicCatalog.ClearCacheForTest();
         }
 
         [Test]
@@ -71,6 +78,43 @@ namespace DOL.GS.Tests
             {
                 Assert.That(normalizedTagged.Realm, Is.EqualTo("Midgard"));
                 Assert.That(normalizedRegional.Realm, Is.EqualTo("Albion"));
+            });
+        }
+
+        [Test]
+        public void GetTimelineSnapshot_FallsBackToPlayerNameWhenRuntimeKeyChanged()
+        {
+            DynamicQuestRuntimeService service = new(new FakeDynamicQuestProgressRepository());
+            MethodInfo recordTimeline = typeof(DynamicQuestRuntimeService).GetMethod(
+                "RecordTimelineEventLocked",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            recordTimeline.Invoke(
+                service,
+                new object[]
+                {
+                    "online-runtime-key",
+                    "Dummy Quest",
+                    "quest-audit",
+                    "quest_rewarded",
+                    "complete",
+                    string.Empty,
+                    string.Empty,
+                    "rewarded",
+                    string.Empty,
+                    0
+                });
+
+            DynamicQuestTimelineSnapshot timeline = service.GetTimelineSnapshot(
+                "offline-character-key",
+                "Dummy Quest",
+                false);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(timeline.PlayerKey, Is.EqualTo("offline-character-key"));
+                Assert.That(timeline.Events.Select(item => item.EventType), Does.Contain("quest_rewarded"));
+                Assert.That(timeline.Events.Single(item => item.EventType == "quest_rewarded").PlayerKey, Is.EqualTo("online-runtime-key"));
             });
         }
 
@@ -121,6 +165,90 @@ namespace DOL.GS.Tests
             {
                 Assert.That(result.Success, Is.True);
                 Assert.That(DynamicQuestRuntimeService.Instance.GetQuests(), Has.Count.EqualTo(1));
+            });
+        }
+
+        [Test]
+        public void AddQuest_RejectsChoiceEdgeWithUnknownChoiceId()
+        {
+            DynamicQuestDefinition quest = GraphQuest();
+            DynamicQuestNode choice = quest.Nodes.Single(node => node.Id == "choice");
+            choice.Edges = new[]
+            {
+                new DynamicQuestEdge
+                {
+                    ToNodeId = "complete",
+                    Condition = DynamicQuestEdgeCondition.ChoiceSelected,
+                    ConditionValue = "missing"
+                }
+            };
+
+            DynamicQuestResult result = DynamicQuestRuntimeService.Instance.AddQuest(quest);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.False);
+                Assert.That(result.Message, Does.Contain("choice edge value"));
+            });
+        }
+
+        [Test]
+        public void GetValidationSnapshot_WarnsAboutUnreachableGraphNode()
+        {
+            DynamicQuestDefinition quest = GraphQuest();
+            quest.Id = "quest-unreachable";
+            quest.Nodes = quest.Nodes.Concat(new[]
+            {
+                new DynamicQuestNode
+                {
+                    Id = "orphan",
+                    Type = DynamicQuestNodeType.Talk,
+                    Title = "고립 노드",
+                    Text = "어디에서도 이어지지 않습니다.",
+                    Objective = new DynamicQuestObjective
+                    {
+                        NpcInternalId = "seed-npc-1",
+                        NpcName = "Brother Penric",
+                        RegionId = 1
+                    },
+                    Edges = new[]
+                    {
+                        new DynamicQuestEdge { ToNodeId = "complete", Condition = DynamicQuestEdgeCondition.ObjectiveComplete }
+                    }
+                }
+            }).ToArray();
+
+            DynamicQuestResult result = DynamicQuestRuntimeService.Instance.AddQuest(quest);
+            DynamicQuestValidationSnapshot snapshot = DynamicQuestRuntimeService.Instance.GetValidationSnapshot();
+            DynamicQuestValidationItem item = snapshot.Items.Single(entry => entry.QuestId == "quest-unreachable");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True);
+                Assert.That(item.Valid, Is.True);
+                Assert.That(item.Warnings.Any(warning => warning.Contains("unreachable")), Is.True);
+            });
+        }
+
+        [Test]
+        public void GetValidationSnapshot_ReportsLiveQuestValidationState()
+        {
+            DynamicQuestRuntimeService.Instance.AddQuest(GraphQuest());
+
+            DynamicQuestValidationSnapshot snapshot = DynamicQuestRuntimeService.Instance.GetValidationSnapshot();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(snapshot.TotalQuests, Is.EqualTo(1));
+                Assert.That(snapshot.ValidQuests, Is.EqualTo(1));
+                Assert.That(snapshot.InvalidQuests, Is.EqualTo(0));
+                Assert.That(snapshot.Items.Single().QuestId, Is.EqualTo("quest-graph"));
+                Assert.That(snapshot.Items.Single().Valid, Is.True);
+                Assert.That(snapshot.Items.Single().EstimatedPlayableSteps, Is.GreaterThanOrEqualTo(1));
+                Assert.That(snapshot.Items.Single().EstimatedMinutes, Is.GreaterThanOrEqualTo(1));
+                Assert.That(snapshot.Items.Single().RewardDifficultyIndex, Is.GreaterThanOrEqualTo(0));
+                Assert.That(snapshot.Items.Single().SuggestedRewardScale, Is.GreaterThan(0));
+                Assert.That(snapshot.Items.Single().SuggestedRewardTier, Is.Not.EqualTo(string.Empty));
             });
         }
 
@@ -193,6 +321,36 @@ namespace DOL.GS.Tests
                 Assert.That(timeline.Events.Any(evt =>
                     evt.EventType == "quest_accepted" &&
                     evt.Detail == "world_region_entered"), Is.True);
+            });
+        }
+
+        [Test]
+        public void AcceptAvailableWorldQuestForTest_AcceptsWorldSignalTaggedQuestWithoutNpc()
+        {
+            DynamicQuestDefinition quest = WorldOfferQuest();
+            quest.Id = "quest-world-signal-region";
+            quest.StartMode = DynamicQuestStartMode.WorldOffer;
+            quest.Tags = new[] { "world-signal:region-entered:1" };
+            DynamicQuestRuntimeService.Instance.AddQuest(quest);
+
+            bool ignored = DynamicQuestRuntimeService.Instance.AcceptAvailableWorldQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                "region-entered:2");
+            bool accepted = DynamicQuestRuntimeService.Instance.AcceptAvailableWorldQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                "region-entered:1");
+
+            DynamicQuestProgressSnapshot snapshot = DynamicQuestRuntimeService.Instance.GetProgressSnapshot("DummyQuest001", "DummyQuest001", true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(ignored, Is.False);
+                Assert.That(accepted, Is.True);
+                Assert.That(snapshot.Active.Single().QuestId, Is.EqualTo("quest-world-signal-region"));
             });
         }
 
@@ -359,6 +517,44 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void AcceptAvailableRegionalAutoQuestForTest_SkipsOutOfScopeCandidateWithSameTrigger()
+        {
+            DynamicQuestRuntimeService service = new(new FakeDynamicQuestProgressRepository());
+
+            DynamicQuestDefinition outside = WorldOfferQuest();
+            outside.Id = "quest-auto-region-outside";
+            outside.StartMode = DynamicQuestStartMode.AutoAccept;
+            outside.Tags = new[] { "region:1" };
+            outside.CreatedAt = DateTime.UtcNow.AddMinutes(-2);
+            outside.Nodes.Single(node => node.Id == "explore").Objective.X = 530000;
+            outside.Nodes.Single(node => node.Id == "explore").Objective.Y = 492000;
+            service.AddQuest(outside);
+
+            DynamicQuestDefinition inside = WorldOfferQuest();
+            inside.Id = "quest-auto-region-inside";
+            inside.StartMode = DynamicQuestStartMode.AutoAccept;
+            inside.Tags = new[] { "region:1" };
+            inside.CreatedAt = DateTime.UtcNow.AddMinutes(-1);
+            service.AddQuest(inside);
+
+            bool accepted = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                1,
+                521100,
+                492100);
+            DynamicQuestProgressSnapshot snapshot = service.GetProgressSnapshot("DummyQuest001", "DummyQuest001", true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(accepted, Is.True);
+                Assert.That(snapshot.Active.Single().QuestId, Is.EqualTo("quest-auto-region-inside"));
+                Assert.That(snapshot.Active.Select(item => item.QuestId), Does.Not.Contain("quest-auto-region-outside"));
+            });
+        }
+
+        [Test]
         public void AcceptAvailableRegionalAutoQuestForTest_DoesNotUseRegionMetadataWhenExplicitAutoAcceptTriggerExists()
         {
             DynamicQuestDefinition itemTriggered = WorldOfferQuest();
@@ -395,6 +591,274 @@ namespace DOL.GS.Tests
                 Assert.That(beforeItem.Active, Is.Empty);
                 Assert.That(itemAccepted, Is.True);
                 Assert.That(afterItem.Active.Single().QuestId, Is.EqualTo("quest-auto-item"));
+            });
+        }
+
+        [Test]
+        public void AcceptAvailableRegionalAutoQuestForTest_AllowsMultipleSameRegionAutoQuestsAtActiveLimit()
+        {
+            DynamicQuestRuntimeService service = new(new FakeDynamicQuestProgressRepository());
+
+            DynamicQuestDefinition first = WorldOfferQuest();
+            first.Id = "quest-auto-region-first";
+            first.StartMode = DynamicQuestStartMode.AutoAccept;
+            first.Tags = new[] { "region:1" };
+            first.CreatedAt = DateTime.UtcNow.AddMinutes(-2);
+            service.AddQuest(first);
+
+            DynamicQuestDefinition second = WorldOfferQuest();
+            second.Id = "quest-auto-region-second";
+            second.StartMode = DynamicQuestStartMode.AutoAccept;
+            second.Tags = new[] { "region:1" };
+            second.CreatedAt = DateTime.UtcNow.AddMinutes(-1);
+            service.AddQuest(second);
+
+            bool acceptedFirst = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                1,
+                521100,
+                492100);
+            bool acceptedSecond = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                1,
+                521100,
+                492100);
+            DynamicQuestProgressSnapshot snapshot = service.GetProgressSnapshot("DummyQuest001", "DummyQuest001", true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(acceptedFirst, Is.True);
+                Assert.That(acceptedSecond, Is.True);
+                Assert.That(snapshot.Active.Select(item => item.QuestId), Is.EquivalentTo(new[]
+                {
+                    "quest-auto-region-first",
+                    "quest-auto-region-second"
+                }));
+            });
+        }
+
+        [Test]
+        public void AcceptQuestForTest_BlocksDifferentRegionWhenActiveLimitReached()
+        {
+            DynamicQuestRuntimeService service = new(new FakeDynamicQuestProgressRepository());
+
+            DynamicQuestDefinition first = WorldOfferQuest();
+            first.Id = "quest-region-one";
+            first.StartRegionId = 1;
+            service.AddQuest(first);
+
+            DynamicQuestDefinition second = WorldOfferQuest();
+            second.Id = "quest-region-two";
+            second.StartRegionId = 2;
+            service.AddQuest(second);
+
+            bool acceptedFirst = service.AcceptQuestForTest("DummyQuest001", "DummyQuest001", first.Id);
+            bool acceptedSecond = service.AcceptQuestForTest("DummyQuest001", "DummyQuest001", second.Id);
+            DynamicQuestProgressSnapshot snapshot = service.GetProgressSnapshot("DummyQuest001", "DummyQuest001", true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(acceptedFirst, Is.True);
+                Assert.That(acceptedSecond, Is.False);
+                Assert.That(snapshot.Active.Select(item => item.QuestId), Is.EqualTo(new[] { "quest-region-one" }));
+            });
+        }
+
+        [Test]
+        public void GetAvailableWorldQuestIdsForTest_ExcludesAutoAcceptCandidateWhenIncludeAutoAcceptFalse()
+        {
+            DynamicQuestRuntimeService service = new(new FakeDynamicQuestProgressRepository());
+
+            DynamicQuestDefinition autoAccept = WorldOfferQuest();
+            autoAccept.Id = "quest-auto-region-signal";
+            autoAccept.StartMode = DynamicQuestStartMode.AutoAccept;
+            autoAccept.Tags = new[] { "region:1" };
+            service.AddQuest(autoAccept);
+
+            IList<string> withAutoAccept = service.GetAvailableWorldQuestIdsForTest(
+                "DummyQuest001",
+                1,
+                "region:1",
+                includeAutoAccept: true);
+            IList<string> withoutAutoAccept = service.GetAvailableWorldQuestIdsForTest(
+                "DummyQuest001",
+                1,
+                "region:1",
+                includeAutoAccept: false);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(withAutoAccept, Does.Contain("quest-auto-region-signal"));
+                Assert.That(withoutAutoAccept, Does.Not.Contain("quest-auto-region-signal"));
+                Assert.That(withoutAutoAccept, Is.Empty);
+            });
+        }
+
+        [Test]
+        public void TryAcceptWorldQuest_MovementOriginActiveLimitFailureIsSilent()
+        {
+            DynamicQuestRuntimeService service = DynamicQuestRuntimeService.Instance;
+            DynamicQuestDefinition first = WorldOfferQuest();
+            first.Id = "quest-active-limit-first";
+            first.StartRegionId = 1;
+            service.AddQuest(first);
+
+            DynamicQuestDefinition second = WorldOfferQuest();
+            second.Id = "quest-active-limit-second";
+            second.StartRegionId = 2;
+            service.AddQuest(second);
+
+            bool acceptedFirst = service.AcceptQuestForTest("DummyQuest001", "DummyQuest001", first.Id);
+            GamePlayer player = CreateJournalTestPlayer("DummyQuest001", out RecordingPacketLib recorder);
+
+            bool acceptedSecond = service.TryAcceptWorldQuest(
+                player,
+                second.Id,
+                "region-entered:2",
+                showFailureMessage: false);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(acceptedFirst, Is.True);
+                Assert.That(acceptedSecond, Is.False);
+                Assert.That(recorder.Messages, Is.Empty);
+            });
+        }
+
+        [Test]
+        public void BuildActiveJournalProgressIdsForTest_RemovesCompletedProgressFromJournalProjection()
+        {
+            DynamicQuestRuntimeService service = new(new FakeDynamicQuestProgressRepository());
+            DynamicQuestDefinition quest = WorldOfferQuest();
+            quest.Id = "quest-journal-projection";
+            service.AddQuest(quest);
+
+            bool accepted = service.AcceptQuestForTest("DummyQuest001", "Dummy Quest", quest.Id);
+            IList<string> activeJournalIds = service.BuildActiveJournalProgressIdsForTest("DummyQuest001", "Dummy Quest");
+            service.RecordExploreProgressForTest("DummyQuest001", 1, 521000, 492000);
+            service.RecordKillProgressForTest("DummyQuest001", "forest spiderling", 1, 1);
+            IList<string> completedJournalIds = service.BuildActiveJournalProgressIdsForTest("DummyQuest001", "Dummy Quest");
+            DynamicQuestProgressSnapshot snapshot = service.GetProgressSnapshot("DummyQuest001", "Dummy Quest", true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(accepted, Is.True);
+                Assert.That(activeJournalIds, Is.EqualTo(new[]
+                {
+                    DynamicQuestRuntimeService.BuildJournalProgressId("DummyQuest001", "quest-journal-projection")
+                }));
+                Assert.That(completedJournalIds, Is.Empty);
+                Assert.That(snapshot.CompletedQuestIds, Does.Contain("quest-journal-projection"));
+            });
+        }
+
+        [Test]
+        public void SyncDynamicQuestJournal_AddsUpdatesAndRemovesGamePlayerQuestListAdapter()
+        {
+            DynamicQuestRuntimeService service = DynamicQuestRuntimeService.Instance;
+            DynamicQuestDefinition quest = WorldOfferQuest();
+            quest.Id = "quest-journal-sync";
+            service.AddQuest(quest);
+
+            bool accepted = service.AcceptQuestForTest("DummyQuest001", "DummyQuest001", quest.Id);
+            GamePlayer player = CreateJournalTestPlayer("DummyQuest001", out RecordingPacketLib recorder);
+
+            service.SyncDynamicQuestJournal(player);
+            DynamicQuestJournalAdapter adapter = player.QuestList.Keys.OfType<DynamicQuestJournalAdapter>().Single();
+            string initialDescription = adapter.Description;
+            int updatesAfterAdd = recorder.QuestUpdates.Count;
+
+            service.RecordExploreProgressForTest("DummyQuest001", 1, 521000, 492000);
+            service.SyncDynamicQuestJournal(player);
+            DynamicQuestJournalAdapter updatedAdapter = player.QuestList.Keys.OfType<DynamicQuestJournalAdapter>().Single();
+            string killDescription = updatedAdapter.Description;
+
+            service.RecordKillProgressForTest("DummyQuest001", "forest spiderling", 1, 1);
+            service.SyncDynamicQuestJournal(player);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(accepted, Is.True);
+                Assert.That(updatesAfterAdd, Is.EqualTo(1));
+                Assert.That(updatedAdapter, Is.SameAs(adapter));
+                Assert.That(updatedAdapter.Description, Is.Not.EqualTo(initialDescription));
+                Assert.That(initialDescription, Does.Contain("목표: 숲의 균열 조사"));
+                Assert.That(initialDescription, Does.Contain("힌트: 퀘스트 지역 안에서 해당 위치로 이동하세요."));
+                Assert.That(killDescription, Does.Contain("목표: forest spiderling 처치"));
+                Assert.That(killDescription, Does.Contain("진행: 0/1"));
+                Assert.That(killDescription, Does.Contain("힌트: 이 동적 퀘스트가 시작된 지역 안에서 대상 몬스터를 찾으세요."));
+                Assert.That(recorder.QuestUpdates.Count, Is.GreaterThan(updatesAfterAdd));
+                Assert.That(player.QuestList.Keys.OfType<DynamicQuestJournalAdapter>(), Is.Empty);
+                Assert.That(recorder.QuestRemoves, Is.EqualTo(new byte[] { 0 }));
+                Assert.That(recorder.Messages, Is.Empty);
+            });
+        }
+
+        [Test]
+        public void DynamicQuestJournalAdapter_AbortCancelsRuntimeProgressAndRemovesQuestListEntry()
+        {
+            DynamicQuestRuntimeService service = DynamicQuestRuntimeService.Instance;
+            DynamicQuestDefinition quest = WorldOfferQuest();
+            quest.Id = "quest-journal-abort";
+            service.AddQuest(quest);
+
+            bool accepted = service.AcceptQuestForTest("DummyQuest001", "DummyQuest001", quest.Id);
+            GamePlayer player = CreateJournalTestPlayer("DummyQuest001", out RecordingPacketLib recorder);
+            service.SyncDynamicQuestJournal(player);
+
+            DynamicQuestJournalAdapter adapter = player.QuestList.Keys.OfType<DynamicQuestJournalAdapter>().Single();
+            adapter.AbortQuest();
+            DynamicQuestProgressSnapshot snapshot = service.GetProgressSnapshot("DummyQuest001", "DummyQuest001", true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(accepted, Is.True);
+                Assert.That(snapshot.Active, Is.Empty);
+                Assert.That(player.QuestList.Keys.OfType<DynamicQuestJournalAdapter>(), Is.Empty);
+                Assert.That(recorder.QuestRemoves, Is.EqualTo(new byte[] { 0 }));
+            });
+        }
+
+        [Test]
+        public void DynamicQuestJournalAdapterIdentity_MatchesOnlySameProgressId()
+        {
+            DynamicQuestJournalAdapter active = new(
+                "DummyQuest001",
+                "quest-journal-one",
+                1,
+                "Journal One",
+                "First active dynamic quest",
+                1,
+                1);
+            DynamicQuestJournalAdapter sameProgress = new(
+                "DummyQuest001",
+                "quest-journal-one",
+                1,
+                "Journal One Duplicate",
+                "Duplicate dynamic quest adapter",
+                1,
+                1);
+            DynamicQuestJournalAdapter differentProgress = new(
+                "DummyQuest001",
+                "quest-journal-two",
+                1,
+                "Journal Two",
+                "Second active dynamic quest",
+                1,
+                1);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(
+                    GamePlayer.DynamicQuestJournalAdaptersRepresentSameProgressForTest(active, sameProgress),
+                    Is.True);
+                Assert.That(
+                    GamePlayer.DynamicQuestJournalAdaptersRepresentSameProgressForTest(active, differentProgress),
+                    Is.False);
             });
         }
 
@@ -443,6 +907,7 @@ namespace DOL.GS.Tests
             DynamicQuestDefinition manualOffer = WorldOfferQuest();
             manualOffer.Id = "quest-manual-region";
             manualOffer.StartMode = DynamicQuestStartMode.WorldOffer;
+            manualOffer.StartRegionId = 2;
             DynamicQuestRuntimeService.Instance.AddQuest(manualOffer);
 
             bool autoAccepted = DynamicQuestRuntimeService.Instance.AcceptAvailableRegionalAutoQuestForTest(
@@ -522,6 +987,416 @@ namespace DOL.GS.Tests
             });
         }
 
+        [Test]
+        public void AcceptAvailableRegionalAutoQuestForTest_AllowsNextQuestWithSameTriggerAfterAutoAcceptCompletion()
+        {
+            FakeDynamicQuestProgressRepository repository = new();
+            DynamicQuestRuntimeService service = new(repository);
+
+            DynamicQuestDefinition first = WorldOfferQuest();
+            first.Id = "quest-auto-region-first";
+            first.StartMode = DynamicQuestStartMode.AutoAccept;
+            first.Tags = new[] { "region:1" };
+            first.CreatedAt = DateTime.UtcNow.AddMinutes(-2);
+            service.AddQuest(first);
+
+            DynamicQuestDefinition second = WorldOfferQuest();
+            second.Id = "quest-auto-region-second";
+            second.StartMode = DynamicQuestStartMode.AutoAccept;
+            second.Tags = new[] { "region:1" };
+            second.CreatedAt = DateTime.UtcNow.AddMinutes(-1);
+            service.AddQuest(second);
+
+            bool acceptedFirst = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                1);
+            bool explored = service.RecordExploreProgressForTest(
+                "DummyQuest001",
+                1,
+                521000,
+                492000);
+            bool killed = service.RecordKillProgressForTest(
+                "DummyQuest001",
+                "forest spiderling",
+                1,
+                1);
+            bool acceptedSecond = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                1);
+
+            DynamicQuestProgressSnapshot snapshot = service.GetProgressSnapshot("DummyQuest001", "DummyQuest001", true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(acceptedFirst, Is.True);
+                Assert.That(explored, Is.True);
+                Assert.That(killed, Is.True);
+                Assert.That(acceptedSecond, Is.True);
+                Assert.That(snapshot.Active.Single().QuestId, Is.EqualTo("quest-auto-region-second"));
+                Assert.That(snapshot.CompletedQuestIds, Does.Contain("quest-auto-region-first"));
+                Assert.That(snapshot.CompletedQuestIds, Does.Not.Contain("quest-auto-region-second"));
+            });
+        }
+
+        [Test]
+        public void AcceptAvailableRegionalAutoQuestForTest_BlocksCompletedStoryFamilyVariant()
+        {
+            FakeDynamicQuestProgressRepository repository = new();
+            DynamicQuestRuntimeService service = new(repository);
+
+            DynamicQuestDefinition lowLevelVariant = WorldOfferQuest();
+            lowLevelVariant.Id = "quest-family-low";
+            lowLevelVariant.StartMode = DynamicQuestStartMode.AutoAccept;
+            lowLevelVariant.Tags = new[] { "region:1", "story-family:haunted-road" };
+            lowLevelVariant.MinLevel = 1;
+            lowLevelVariant.MaxLevel = 10;
+            lowLevelVariant.CreatedAt = DateTime.UtcNow.AddMinutes(-3);
+            service.AddQuest(lowLevelVariant);
+
+            DynamicQuestDefinition highLevelVariant = WorldOfferQuest();
+            highLevelVariant.Id = "quest-family-high";
+            highLevelVariant.StartMode = DynamicQuestStartMode.AutoAccept;
+            highLevelVariant.Tags = new[] { "region:1", "story-family:haunted-road" };
+            highLevelVariant.MinLevel = 1;
+            highLevelVariant.MaxLevel = 50;
+            highLevelVariant.CreatedAt = DateTime.UtcNow.AddMinutes(-2);
+            service.AddQuest(highLevelVariant);
+
+            bool acceptedLow = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                1);
+            bool explored = service.RecordExploreProgressForTest(
+                "DummyQuest001",
+                1,
+                521000,
+                492000);
+            bool killed = service.RecordKillProgressForTest(
+                "DummyQuest001",
+                "forest spiderling",
+                1,
+                1);
+            bool acceptedSameFamily = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                30,
+                1);
+
+            DynamicQuestDefinition differentFamily = WorldOfferQuest();
+            differentFamily.Id = "quest-family-different";
+            differentFamily.StartMode = DynamicQuestStartMode.AutoAccept;
+            differentFamily.Tags = new[] { "region:1", "story-family:market-shadow" };
+            differentFamily.MinLevel = 1;
+            differentFamily.MaxLevel = 50;
+            differentFamily.CreatedAt = DateTime.UtcNow.AddMinutes(-1);
+            service.AddQuest(differentFamily);
+
+            bool acceptedDifferentFamily = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                30,
+                1);
+
+            DynamicQuestProgressSnapshot snapshot = service.GetProgressSnapshot("DummyQuest001", "DummyQuest001", true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(acceptedLow, Is.True);
+                Assert.That(explored, Is.True);
+                Assert.That(killed, Is.True);
+                Assert.That(acceptedSameFamily, Is.False);
+                Assert.That(acceptedDifferentFamily, Is.True);
+                Assert.That(snapshot.CompletedQuestIds, Does.Contain("quest-family-low"));
+                Assert.That(snapshot.Active.Single().QuestId, Is.EqualTo("quest-family-different"));
+            });
+        }
+
+        [Test]
+        public void AcceptAvailableRegionalAutoQuestForTest_BlocksActiveStoryFamilyVariant()
+        {
+            Properties.KDAOC_DYNAMIC_QUEST_MAX_ACTIVE_PER_PLAYER = 2;
+            FakeDynamicQuestProgressRepository repository = new();
+            DynamicQuestRuntimeService service = new(repository);
+
+            DynamicQuestDefinition first = WorldOfferQuest();
+            first.Id = "quest-family-active-first";
+            first.StartMode = DynamicQuestStartMode.AutoAccept;
+            first.Tags = new[] { "region:1", "story-family:haunted-road" };
+            first.CreatedAt = DateTime.UtcNow.AddMinutes(-3);
+            service.AddQuest(first);
+
+            DynamicQuestDefinition sameFamily = WorldOfferQuest();
+            sameFamily.Id = "quest-family-active-second";
+            sameFamily.StartMode = DynamicQuestStartMode.AutoAccept;
+            sameFamily.Tags = new[] { "region:1", "story-family:haunted-road" };
+            sameFamily.CreatedAt = DateTime.UtcNow.AddMinutes(-2);
+            service.AddQuest(sameFamily);
+
+            bool acceptedFirst = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                1);
+            bool acceptedSameFamily = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                1);
+
+            DynamicQuestDefinition differentFamily = WorldOfferQuest();
+            differentFamily.Id = "quest-family-active-different";
+            differentFamily.StartMode = DynamicQuestStartMode.AutoAccept;
+            differentFamily.Tags = new[] { "region:1", "story-family:market-shadow" };
+            differentFamily.CreatedAt = DateTime.UtcNow.AddMinutes(-1);
+            service.AddQuest(differentFamily);
+
+            bool acceptedDifferentFamily = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                1);
+            DynamicQuestProgressSnapshot snapshot = service.GetProgressSnapshot("DummyQuest001", "DummyQuest001", true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(acceptedFirst, Is.True);
+                Assert.That(acceptedSameFamily, Is.False);
+                Assert.That(acceptedDifferentFamily, Is.True);
+                Assert.That(snapshot.Active.Select(item => item.QuestId), Does.Contain("quest-family-active-first"));
+                Assert.That(snapshot.Active.Select(item => item.QuestId), Does.Contain("quest-family-active-different"));
+                Assert.That(snapshot.Active.Select(item => item.QuestId), Does.Not.Contain("quest-family-active-second"));
+            });
+        }
+
+        [Test]
+        public void AcceptAvailableRegionalAutoQuestForTest_LoadsCompletedStoryFamilyBeforeOfferingVariant()
+        {
+            DynamicQuestDefinition completedVariant = WorldOfferQuest();
+            completedVariant.Id = "quest-family-low";
+            completedVariant.StartMode = DynamicQuestStartMode.AutoAccept;
+            completedVariant.Tags = new[] { "region:1", "story-family:haunted-road" };
+
+            FakeDynamicQuestProgressRepository repository = new();
+            repository.Rows["dummyquest001:quest-family-low"] = new DbDynamicQuestProgress
+            {
+                ProgressId = "dummyquest001:quest-family-low",
+                PlayerKey = "DummyQuest001",
+                PlayerName = "DummyQuest001",
+                QuestId = "quest-family-low",
+                Completed = true,
+                IsComplete = true,
+                IsActive = false,
+                QuestSnapshotJson = JsonSerializer.Serialize(completedVariant),
+                AcceptedAt = DateTime.UtcNow.AddMinutes(-5),
+                UpdatedAt = DateTime.UtcNow.AddMinutes(-4),
+                CreatedAt = DateTime.UtcNow.AddMinutes(-5)
+            };
+
+            DynamicQuestRuntimeService service = new(repository);
+            DynamicQuestDefinition highLevelVariant = WorldOfferQuest();
+            highLevelVariant.Id = "quest-family-high";
+            highLevelVariant.StartMode = DynamicQuestStartMode.AutoAccept;
+            highLevelVariant.Tags = new[] { "region:1", "story-family:haunted-road" };
+            highLevelVariant.MinLevel = 1;
+            highLevelVariant.MaxLevel = 50;
+            service.AddQuest(highLevelVariant);
+
+            bool accepted = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                30,
+                1);
+            DynamicQuestProgressSnapshot snapshot = service.GetProgressSnapshot("DummyQuest001", "DummyQuest001", true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(accepted, Is.False);
+                Assert.That(snapshot.CompletedQuestIds, Does.Contain("quest-family-low"));
+                Assert.That(snapshot.Active, Is.Empty);
+            });
+        }
+
+        [Test]
+        public void AcceptAvailableRegionalAutoQuestForTest_UnlocksStoryEpisodeAfterRequiredFamily()
+        {
+            FakeDynamicQuestProgressRepository repository = new();
+            DynamicQuestRuntimeService service = new(repository);
+
+            DynamicQuestDefinition intro = WorldOfferQuest();
+            intro.Id = "quest-arc-intro";
+            intro.StartMode = DynamicQuestStartMode.AutoAccept;
+            intro.Tags = new[]
+            {
+                "region:1",
+                "story-family:haunted-road-intro",
+                "story-chain:haunted-road",
+                "story-episode:1/3",
+                "story-archetype:witness-conspiracy"
+            };
+            intro.CreatedAt = DateTime.UtcNow.AddMinutes(-3);
+            service.AddQuest(intro);
+
+            DynamicQuestDefinition sequel = WorldOfferQuest();
+            sequel.Id = "quest-arc-sequel";
+            sequel.StartMode = DynamicQuestStartMode.AutoAccept;
+            sequel.Tags = new[]
+            {
+                "region:1",
+                "story-family:haunted-road-sequel",
+                "story-chain:haunted-road",
+                "story-episode:2/3",
+                "requires-story-family:haunted-road-intro",
+                "requires-story-archetype:witness-conspiracy"
+            };
+            sequel.CreatedAt = DateTime.UtcNow.AddMinutes(-2);
+            service.AddQuest(sequel);
+
+            bool acceptedIntro = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                1);
+            bool explored = service.RecordExploreProgressForTest(
+                "DummyQuest001",
+                1,
+                521000,
+                492000);
+            bool killed = service.RecordKillProgressForTest(
+                "DummyQuest001",
+                "forest spiderling",
+                1,
+                1);
+            bool acceptedSequel = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                1);
+            DynamicQuestWorldMemorySnapshot memory = service.GetWorldMemorySnapshot("DummyQuest001", "DummyQuest001", true);
+            DynamicQuestProgressSnapshot snapshot = service.GetProgressSnapshot("DummyQuest001", "DummyQuest001", true);
+            DynamicQuestTimelineSnapshot timeline = service.GetTimelineSnapshot("DummyQuest001", "DummyQuest001", true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(acceptedIntro, Is.True);
+                Assert.That(explored, Is.True);
+                Assert.That(killed, Is.True);
+                Assert.That(acceptedSequel, Is.True);
+                Assert.That(snapshot.CompletedQuestIds, Does.Contain("quest-arc-intro"));
+                Assert.That(snapshot.Active.Single().QuestId, Is.EqualTo("quest-arc-sequel"));
+                Assert.That(memory.CompletedStoryFamilyIds, Does.Contain("haunted-road-intro"));
+                Assert.That(memory.Signals, Does.Contain("story-family:haunted-road-intro:completed"));
+                Assert.That(memory.Signals, Does.Contain("story-archetype:witness-conspiracy:completed"));
+                Assert.That(memory.Signals, Does.Contain("story-chain:haunted-road:progress"));
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "world_memory_marked" &&
+                    evt.QuestId == "quest-arc-intro"), Is.True);
+            });
+        }
+
+        [Test]
+        public void AcceptAvailableRegionalAutoQuestForTest_LoadsChoiceMemoryBeforeOfferingFollowup()
+        {
+            DynamicQuestDefinition completed = WorldOfferQuest();
+            completed.Id = "quest-choice-memory-intro";
+            completed.StartMode = DynamicQuestStartMode.AutoAccept;
+            completed.Tags = new[]
+            {
+                "region:1",
+                "story-family:choice-memory-intro",
+                "story-chain:choice-memory"
+            };
+
+            FakeDynamicQuestProgressRepository repository = new();
+            repository.Rows["dummyquest001:quest-choice-memory-intro"] = new DbDynamicQuestProgress
+            {
+                ProgressId = "dummyquest001:quest-choice-memory-intro",
+                PlayerKey = "DummyQuest001",
+                PlayerName = "DummyQuest001",
+                QuestId = "quest-choice-memory-intro",
+                Completed = true,
+                IsComplete = true,
+                IsActive = false,
+                ChoiceHistoryJson = JsonSerializer.Serialize(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["choice"] = "followup"
+                }),
+                QuestSnapshotJson = JsonSerializer.Serialize(completed),
+                AcceptedAt = DateTime.UtcNow.AddMinutes(-5),
+                UpdatedAt = DateTime.UtcNow.AddMinutes(-4),
+                CreatedAt = DateTime.UtcNow.AddMinutes(-5)
+            };
+
+            DynamicQuestRuntimeService service = new(repository);
+            DynamicQuestDefinition followup = WorldOfferQuest();
+            followup.Id = "quest-choice-memory-followup";
+            followup.StartMode = DynamicQuestStartMode.AutoAccept;
+            followup.Tags = new[]
+            {
+                "region:1",
+                "story-family:choice-memory-followup",
+                "story-chain:choice-memory",
+                "requires-memory:followup-observed",
+                "requires-choice:followup"
+            };
+            service.AddQuest(followup);
+
+            bool accepted = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                1);
+            DynamicQuestWorldMemorySnapshot memory = service.GetWorldMemorySnapshot("DummyQuest001", "DummyQuest001", true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(accepted, Is.True);
+                Assert.That(memory.Signals, Does.Contain("followup-observed"));
+                Assert.That(memory.Signals, Does.Contain("choice:followup"));
+                Assert.That(memory.Signals, Does.Contain("choice:choice:followup"));
+            });
+        }
+
+        [Test]
+        public void AcceptAvailableRegionalAutoQuestForTest_PrefersDummyEvaluationOfferOverOlderRegionalQuest()
+        {
+            FakeDynamicQuestProgressRepository repository = new();
+            DynamicQuestRuntimeService service = new(repository);
+
+            DynamicQuestDefinition olderRegional = WorldOfferQuest();
+            olderRegional.Id = "quest-auto-region-older";
+            olderRegional.StartMode = DynamicQuestStartMode.AutoAccept;
+            olderRegional.Tags = new[] { "region:1" };
+            olderRegional.CreatedAt = DateTime.UtcNow.AddMinutes(-2);
+            service.AddQuest(olderRegional);
+
+            DynamicQuestDefinition evaluationOffer = WorldOfferQuest();
+            evaluationOffer.Id = "quest-auto-region-evaluation";
+            evaluationOffer.StartMode = DynamicQuestStartMode.AutoAccept;
+            evaluationOffer.Tags = new[] { "region:1", "dummy-evaluation-offer" };
+            evaluationOffer.CreatedAt = DateTime.UtcNow.AddMinutes(-1);
+            service.AddQuest(evaluationOffer);
+
+            bool accepted = service.AcceptAvailableRegionalAutoQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                1);
+
+            DynamicQuestProgressSnapshot snapshot = service.GetProgressSnapshot("DummyQuest001", "DummyQuest001", true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(accepted, Is.True);
+                Assert.That(snapshot.Active.Single().QuestId, Is.EqualTo("quest-auto-region-evaluation"));
+                Assert.That(snapshot.Active.Select(item => item.QuestId), Does.Not.Contain("quest-auto-region-older"));
+            });
+        }
+
         [TestCase("", 1, 521000, 492000, 450, "location")]
         [TestCase("흔적", 0, 521000, 492000, 450, "region")]
         [TestCase("흔적", 1, 0, 492000, 450, "coordinate")]
@@ -591,9 +1466,21 @@ namespace DOL.GS.Tests
                 "DummyQuest001",
                 "DummyQuest001",
                 true,
-                20);
+                200);
             DynamicQuestProgressSnapshot progress = DynamicQuestRuntimeService.Instance.GetProgressSnapshot("DummyQuest001", "DummyQuest001", true);
             string[] eventTypes = timeline.Events.Select(item => item.EventType).ToArray();
+            string choiceOutcome = timeline.Events
+                .FirstOrDefault(item => item.EventType == "choice_outcome_scene")
+                ?.Detail ?? string.Empty;
+            string choiceSceneOutcome = timeline.Events
+                .FirstOrDefault(item =>
+                    item.EventType == "scene_beat_outcome" &&
+                    item.Detail.Contains("role:choice_containment", StringComparison.Ordinal))
+                ?.Detail ?? string.Empty;
+            string lastProgressEventType = timeline.Events
+                .Where(item => item.EventType is not "presentation_beat" and not "presentation_spotlight" and not "narrative_scene" and not "narrative_scene_presented" and not "journal_entry" and not "cinematic_action" and not "scene_beat_outcome" and not "scene_choreography_phase" and not "scene_actor_exchange" and not "scene_exchange_outcome" and not "scene_consequence" and not "scene_world_signal" and not "cinematic_cleanup" and not "choice_outcome_scene")
+                .Last()
+                .EventType;
 
             Assert.Multiple(() =>
             {
@@ -605,8 +1492,17 @@ namespace DOL.GS.Tests
                 Assert.That(eventTypes, Does.Contain("kill_progress"));
                 Assert.That(eventTypes, Does.Contain("npc_interaction"));
                 Assert.That(eventTypes, Does.Contain("choice_selected"));
+                Assert.That(eventTypes, Does.Contain("choice_outcome_scene"));
+                Assert.That(choiceOutcome, Does.Contain("outcome:containment"));
+                Assert.That(choiceOutcome, Does.Contain("tactic:screen"));
+                Assert.That(choiceSceneOutcome, Does.Contain("action:defender_intercept"));
+                Assert.That(timeline.Events.Any(item =>
+                    item.EventType == "scene_world_signal" &&
+                    item.NodeId == "choice" &&
+                    item.Detail == "scene:choice_containment"), Is.True);
                 Assert.That(eventTypes, Does.Contain("quest_completed"));
-                Assert.That(timeline.Events.Last().EventType, Is.EqualTo("quest_completed"));
+                Assert.That(eventTypes, Does.Contain("cinematic_action"));
+                Assert.That(lastProgressEventType, Is.EqualTo("quest_completed"));
             });
         }
 
@@ -638,7 +1534,7 @@ namespace DOL.GS.Tests
                 "DummyQuest001",
                 "DummyQuest001",
                 true,
-                20);
+                100);
             DynamicQuestProgressItem progress = DynamicQuestRuntimeService.Instance
                 .GetProgressSnapshot("DummyQuest001", "DummyQuest001", true)
                 .Active
@@ -738,9 +1634,13 @@ namespace DOL.GS.Tests
                 "DummyQuest001",
                 "DummyQuest001",
                 true,
-                50);
+                200);
             string[] beatDetails = timeline.Events
                 .Where(evt => evt.EventType == "presentation_beat")
+                .Select(evt => evt.Detail)
+                .ToArray();
+            string[] spotlightDetails = timeline.Events
+                .Where(evt => evt.EventType == "presentation_spotlight")
                 .Select(evt => evt.Detail)
                 .ToArray();
 
@@ -753,6 +1653,8 @@ namespace DOL.GS.Tests
                 Assert.That(beatDetails.Any(detail => detail.Contains("OnAccept") && detail.Contains("낡은 지도")), Is.True);
                 Assert.That(beatDetails.Any(detail => detail.Contains("OnChoiceSelected") && detail.Contains("선택의 여파")), Is.True);
                 Assert.That(beatDetails.Any(detail => detail.Contains("OnComplete") && detail.Contains("마지막 빛")), Is.True);
+                Assert.That(spotlightDetails.Any(detail => detail.Contains("OnChoiceSelected") && detail.Contains("선택의 여파")), Is.True);
+                Assert.That(spotlightDetails.Any(detail => detail.Contains("OnComplete") && detail.Contains("마지막 빛")), Is.True);
             });
         }
 
@@ -761,7 +1663,7 @@ namespace DOL.GS.Tests
         {
             DynamicQuestDefinition quest = WorldOfferQuest();
             quest.StoryPresentationJson = "[" +
-                "{\"nodeId\":\"explore\",\"trigger\":\"OnAccept\",\"speaker\":\"System\",\"text\":\"낡은 지도 위로 숲의 균열이 희미하게 떠오른다.\",\"emotion\":\"hope\",\"emote\":\"Cheer\"}" +
+                "{\"nodeId\":\"explore\",\"trigger\":\"OnAccept\",\"speaker\":\"System\",\"text\":\"낡은 지도 위로 숲의 균열이 희미하게 떠오른다.\",\"emotion\":\"hope\",\"emote\":\"Cheer\",\"cinematicAction\":\"guard_advance\",\"sceneRole\":\"escort_screen\",\"formation\":\"line\",\"actorCount\":6,\"delayMs\":900}" +
                 "]";
             DynamicQuestRuntimeService.Instance.AddQuest(quest);
 
@@ -792,6 +1694,103 @@ namespace DOL.GS.Tests
                 Assert.That(beat.GetType().GetProperty("Emotion")?.GetValue(beat), Is.EqualTo("hope"));
                 Assert.That(beat.GetType().GetProperty("Emote")?.GetValue(beat), Is.EqualTo("Cheer"));
                 Assert.That(beat.GetType().GetProperty("Text")?.GetValue(beat)?.ToString(), Does.Contain("낡은 지도"));
+                Assert.That(beat.GetType().GetProperty("CinematicAction")?.GetValue(beat), Is.EqualTo("guard_advance"));
+                Assert.That(beat.GetType().GetProperty("SceneRole")?.GetValue(beat), Is.EqualTo("escort_screen"));
+                Assert.That(beat.GetType().GetProperty("Formation")?.GetValue(beat), Is.EqualTo("line"));
+                Assert.That(beat.GetType().GetProperty("ActorCount")?.GetValue(beat), Is.EqualTo(6));
+                Assert.That(beat.GetType().GetProperty("DelayMs")?.GetValue(beat), Is.EqualTo(900));
+            });
+        }
+
+        [Test]
+        public void TimelineSnapshot_RecordsDefaultPresentationBeatsWhenStoryPresentationIsMissing()
+        {
+            DynamicQuestDefinition quest = WorldOfferQuest();
+            quest.StoryPresentationJson = string.Empty;
+            DynamicQuestNode exploreNode = quest.Nodes.Single(node => node.Id == "explore");
+            DynamicQuestNode killNode = quest.Nodes.Single(node => node.Id == "kill");
+            IList<string> explorePlan = DynamicQuestRuntimeService.BuildCinematicActionDetailsForTest(quest, exploreNode, "OnExplore");
+            IList<string> killPlan = DynamicQuestRuntimeService.BuildCinematicActionDetailsForTest(quest, killNode, "OnKill");
+            DynamicQuestRuntimeService.Instance.AddQuest(quest);
+
+            bool accepted = DynamicQuestRuntimeService.Instance.AcceptQuestForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                "quest-world-offer",
+                "world_region_entered");
+            bool explored = DynamicQuestRuntimeService.Instance.RecordExploreProgressForTest(
+                "DummyQuest001",
+                1,
+                521000,
+                492000);
+            bool killed = DynamicQuestRuntimeService.Instance.RecordKillProgressForTest(
+                "DummyQuest001",
+                "forest spiderling",
+                1,
+                1);
+
+            DynamicQuestTimelineSnapshot timeline = DynamicQuestRuntimeService.Instance.GetTimelineSnapshot(
+                "DummyQuest001",
+                "DummyQuest001",
+                true,
+                50);
+            string[] triggers = timeline.PresentationBeats.Select(beat => beat.Trigger).ToArray();
+            string[] cinematicDetails = timeline.Events
+                .Where(evt => evt.EventType == "cinematic_action")
+                .Select(evt => evt.Detail)
+                .ToArray();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(accepted, Is.True);
+                Assert.That(explored, Is.True);
+                Assert.That(killed, Is.True);
+                Assert.That(triggers, Does.Contain("OnAccept"));
+                Assert.That(triggers, Does.Contain("OnExplore"));
+                Assert.That(triggers, Does.Contain("OnKill"));
+                Assert.That(triggers, Does.Contain("OnComplete"));
+                Assert.That(cinematicDetails.Any(detail =>
+                    detail.Contains("scene_beat:OnExplore:explore", StringComparison.Ordinal) &&
+                    detail.Contains("action:witness_point", StringComparison.Ordinal)), Is.True);
+                Assert.That(explorePlan.Any(detail =>
+                    detail.Contains("scene_beat:OnExplore:explore", StringComparison.Ordinal) &&
+                    detail.Contains("action:witness_point", StringComparison.Ordinal) &&
+                    detail.Contains("actors:1", StringComparison.Ordinal)), Is.True);
+                Assert.That(killPlan.Any(detail =>
+                    detail.Contains("scene_beat:OnKill:kill", StringComparison.Ordinal) &&
+                    detail.Contains("action:ambush_reveal", StringComparison.Ordinal) &&
+                    detail.Contains("actors:5", StringComparison.Ordinal)), Is.True);
+            });
+        }
+
+        [Test]
+        public void TimelineSnapshot_RecordsDefaultPresentationBeatWhenWorldSignalIsConsumed()
+        {
+            DynamicQuestRuntimeService.Instance.AddQuest(WorldSignalGraphQuest());
+            DynamicQuestRuntimeService.Instance.RecordGraphProgressForTest(
+                "DummyQuest001",
+                "quest-signal",
+                "wait_for_signal",
+                Array.Empty<string>(),
+                new System.Collections.Generic.Dictionary<string, int>());
+
+            bool advanced = DynamicQuestRuntimeService.Instance.RecordWorldSignalForTest(
+                "DummyQuest001",
+                "DummyQuest001",
+                "region-entered:1");
+
+            DynamicQuestTimelineSnapshot timeline = DynamicQuestRuntimeService.Instance.GetTimelineSnapshot(
+                "DummyQuest001",
+                "DummyQuest001",
+                true,
+                50);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(advanced, Is.True);
+                Assert.That(timeline.PresentationBeats.Any(beat =>
+                    beat.NodeId == "wait_for_signal" &&
+                    beat.Trigger == "OnWorldSignal"), Is.True);
             });
         }
 
@@ -800,18 +1799,49 @@ namespace DOL.GS.Tests
         {
             DynamicQuestNarrativeScene scene = new()
             {
-                Title = "수도원 길목의 경고",
-                Body = "Brother Penric은 찢긴 짐가방을 내려놓고, 길목의 침묵이 너무 오래 이어졌다고 말합니다.",
+                Title = "##수도원 길목의 경고",
+                Body = "##Brother Penric은 찢긴 짐가방을 내려놓고, 길목의 침묵이 너무 오래 이어졌다고 말합니다.",
+                JournalEntry = "##수도원 길목의 찢긴 짐가방을 조사한다.",
                 Mood = "urgent"
             };
 
             string message = DynamicQuestRuntimeService.BuildNarrativeSceneMessageForTest(scene);
+            string title = DynamicQuestRuntimeService.BuildNarrativeSceneTitleMessageForTest(scene);
+            string journal = DynamicQuestRuntimeService.BuildNarrativeSceneJournalMessageForTest(scene);
 
             Assert.Multiple(() =>
             {
                 Assert.That(message, Does.Contain("수도원 길목의 경고"));
                 Assert.That(message, Does.Contain("찢긴 짐가방"));
                 Assert.That(message, Does.Contain("분위기: urgent"));
+                Assert.That(title, Is.EqualTo("[동적 퀘스트] 수도원 길목의 경고"));
+                Assert.That(journal, Is.EqualTo("저널 갱신: 수도원 길목의 찢긴 짐가방을 조사한다."));
+                Assert.That(message, Does.Not.Contain("##"));
+            });
+        }
+
+        [Test]
+        public void PresentationSpotlightForTest_HighlightsMajorStoryBeats()
+        {
+            DynamicQuestPresentationBeat choice = new()
+            {
+                Trigger = "OnChoiceSelected",
+                Text = "##좋습니다. 선택한 이유까지 기록하겠습니다. 언젠가 누군가 이 밤을 다시 읽게 될 테니까요.",
+                Emotion = "pride"
+            };
+            DynamicQuestPresentationBeat explore = new()
+            {
+                Trigger = "OnExplore",
+                Text = "흔적이 선명해집니다.",
+                Emotion = "suspicion"
+            };
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(DynamicQuestRuntimeService.ShouldSpotlightPresentationBeatForTest(choice), Is.True);
+                Assert.That(DynamicQuestRuntimeService.BuildPresentationSpotlightMessageForTest(choice), Does.Contain("선택한 이유까지"));
+                Assert.That(DynamicQuestRuntimeService.BuildPresentationSpotlightMessageForTest(choice), Does.Not.Contain("##"));
+                Assert.That(DynamicQuestRuntimeService.ShouldSpotlightPresentationBeatForTest(explore), Is.False);
             });
         }
 
@@ -835,6 +1865,1054 @@ namespace DOL.GS.Tests
                 Assert.That(fallbackResolved, Is.True);
                 Assert.That(fallbackEmote, Is.EqualTo(eEmote.Shiver));
                 Assert.That(unknownResolved, Is.False);
+            });
+        }
+
+        [Test]
+        public void CinematicActionPlanForTest_UsesMarkersNpcFocusAndCleanupForStoryNodes()
+        {
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            DynamicQuestNode talk = quest.Nodes.Single(node => node.Id == "talk");
+            DynamicQuestNode explore = quest.Nodes.Single(node => node.Id == "explore");
+            DynamicQuestNode kill = quest.Nodes.Single(node => node.Id == "kill");
+            DynamicQuestNode choice = quest.Nodes.Single(node => node.Id == "choice");
+            DynamicQuestNode complete = quest.Nodes.Single(node => node.Id == "complete");
+
+            IList<string> talkActions = DynamicQuestRuntimeService.BuildCinematicActionDetailsForTest(quest, talk);
+            IList<string> exploreActions = DynamicQuestRuntimeService.BuildCinematicActionDetailsForTest(quest, explore, "OnExplore");
+            IList<string> killActions = DynamicQuestRuntimeService.BuildCinematicActionDetailsForTest(quest, kill, "OnKill");
+            IList<string> choiceActions = DynamicQuestRuntimeService.BuildCinematicActionDetailsForTest(quest, choice, "OnChoiceSelected");
+            IList<string> completeActions = DynamicQuestRuntimeService.BuildCinematicActionDetailsForTest(quest, complete, "OnComplete");
+            ushort exploreModel = DynamicQuestRuntimeService.ResolveCinematicMarkerModelForTest(quest, explore, "OnExplore", "explore trace evidence");
+            ushort killModel = DynamicQuestRuntimeService.ResolveCinematicMarkerModelForTest(quest, kill, "OnKill", "threat battle sign");
+            ushort killNpcModel = DynamicQuestRuntimeService.ResolveCinematicNpcModelForTest(quest, kill, "OnKill", "combat_stance OnKill kill");
+            ushort talkNpcModel = DynamicQuestRuntimeService.ResolveCinematicNpcModelForTest(quest, talk, "OnNodeEnter", "challenge OnNodeEnter talk");
+            ushort choiceNpcModel = DynamicQuestRuntimeService.ResolveCinematicNpcModelForTest(quest, choice, "OnChoiceSelected", "guard_advance OnChoiceSelected choice");
+            string killNpcCategory = DynamicQuestCinematicCatalog.ResolveNpcCategoryForModel(killNpcModel);
+            string talkNpcCategory = DynamicQuestCinematicCatalog.ResolveNpcCategoryForModel(talkNpcModel);
+            string choiceNpcCategory = DynamicQuestCinematicCatalog.ResolveNpcCategoryForModel(choiceNpcModel);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(talkActions, Does.Contain($"npc_action:OnNodeEnter:talk:challenge:LetsGo:model:{talkNpcModel}:catalogRole:{talkNpcCategory}:actors:1:motion:challenge:stagger:45:focal:player:actorRole:brace:choreo:2:interact:none:tactic:pressure"));
+                Assert.That(exploreActions.Any(action =>
+                    action.StartsWith("marker:OnExplore:explore:Quest trace:", StringComparison.Ordinal) &&
+                    action.EndsWith($":model:{exploreModel}", StringComparison.Ordinal)), Is.True);
+                Assert.That(killActions.Any(action =>
+                    action.StartsWith("marker:OnKill:kill:Threat sign: black wolf pup", StringComparison.Ordinal) &&
+                    action.EndsWith($":model:{killModel}", StringComparison.Ordinal)), Is.True);
+                Assert.That(killActions, Does.Contain($"npc_action:OnKill:kill:combat_stance:PlayerPrepare:model:{killNpcModel}:catalogRole:{killNpcCategory}:actors:3:motion:brace:stagger:50:focal:player:actorRole:strike:choreo:3:interact:clash:tactic:flank"));
+                Assert.That(choiceActions, Does.Contain($"npc_action:OnChoiceSelected:choice:guard_advance:Point:model:{choiceNpcModel}:catalogRole:{choiceNpcCategory}:actors:2:motion:advance:stagger:70:focal:player:actorRole:defend:choreo:3:interact:block:tactic:screen"));
+                Assert.That(choiceActions.Any(action =>
+                    action.StartsWith("marker:OnChoiceSelected:choice:Decision echo:", StringComparison.Ordinal)), Is.True);
+                Assert.That(completeActions, Does.Contain("cleanup:OnComplete:complete"));
+                Assert.That(completeActions, Does.Contain("npc_action:OnComplete:complete:focus:Bow"));
+            });
+        }
+
+        [Test]
+        public void ResolveCinematicNpcModelForTest_UsesSceneRoleIntentForCatalogVariety()
+        {
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            quest.Title = "Witness route scout testimony";
+            quest.OfferText = "A witness fled through a route watched by scouts.";
+            quest.ProgressText = "Follow the witness route.";
+            quest.FinishText = "The witness route is sealed.";
+            DynamicQuestNode explore = quest.Nodes.Single(node => node.Id == "explore");
+            DynamicQuestNode kill = quest.Nodes.Single(node => node.Id == "kill");
+            DynamicQuestNode choice = quest.Nodes.Single(node => node.Id == "choice");
+
+            string witnessCategory = DynamicQuestCinematicCatalog.ResolveNpcCategoryForModel(
+                DynamicQuestRuntimeService.ResolveCinematicNpcModelForTest(quest, explore, "OnExplore", "broken_oath_witness witness_point escort"));
+            string scoutCategory = DynamicQuestCinematicCatalog.ResolveNpcCategoryForModel(
+                DynamicQuestRuntimeService.ResolveCinematicNpcModelForTest(quest, explore, "OnExplore", "oathbreaker_lookout scout_retreat patrol"));
+            string fighterCategory = DynamicQuestCinematicCatalog.ResolveNpcCategoryForModel(
+                DynamicQuestRuntimeService.ResolveCinematicNpcModelForTest(quest, kill, "OnKill", "traitor_signal_wave ambush_reveal ambush strike flank"));
+            string defenderCategory = DynamicQuestCinematicCatalog.ResolveNpcCategoryForModel(
+                DynamicQuestRuntimeService.ResolveCinematicNpcModelForTest(quest, choice, "OnChoiceSelected", "shield_oath_intercept defender_intercept shield line block"));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(witnessCategory, Is.EqualTo("witness"));
+                Assert.That(scoutCategory, Is.EqualTo("scout"));
+                Assert.That(fighterCategory, Is.EqualTo("fighter"));
+                Assert.That(defenderCategory, Is.EqualTo("defender"));
+                Assert.That(new[] { witnessCategory, scoutCategory, fighterCategory, defenderCategory }.Distinct().Count(), Is.EqualTo(4));
+            });
+        }
+
+        [Test]
+        public void CinematicActorSpawnPointForTest_UsesObjectiveAnchorWhenProvided()
+        {
+            Point3D playerPosition = new(1000, 2000, 300);
+            Point3D objectiveAnchor = new(5000, 7000, 450);
+
+            Point3D spawnPoint = DynamicQuestRuntimeService.BuildCinematicActorSpawnPointForTest(
+                objectiveAnchor,
+                heading: 0,
+                index: 0,
+                actorCount: 3,
+                formation: "line",
+                npcAction: "defender_intercept");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(spawnPoint.X, Is.EqualTo(4740));
+                Assert.That(spawnPoint.Y, Is.EqualTo(6955));
+                Assert.That(spawnPoint.Z, Is.EqualTo(450));
+                Assert.That(Math.Abs(spawnPoint.X - playerPosition.X), Is.GreaterThan(3000));
+                Assert.That(Math.Abs(spawnPoint.Y - playerPosition.Y), Is.GreaterThan(4000));
+            });
+        }
+
+        [Test]
+        public void CinematicActionTimelineDelayForTest_AppliesOnlyToSceneBeats()
+        {
+            Assert.Multiple(() =>
+            {
+                Assert.That(DynamicQuestRuntimeService.ResolveCinematicActionTimelineDelayMsForTest("scene_beat", 900), Is.EqualTo(900));
+                Assert.That(DynamicQuestRuntimeService.ResolveCinematicActionTimelineDelayMsForTest("scene_beat", 9000), Is.EqualTo(6000));
+                Assert.That(DynamicQuestRuntimeService.ResolveCinematicActionTimelineDelayMsForTest("scene_beat", 0), Is.EqualTo(0));
+                Assert.That(DynamicQuestRuntimeService.ResolveCinematicActionTimelineDelayMsForTest("marker", 900), Is.EqualTo(0));
+                Assert.That(DynamicQuestRuntimeService.ResolveCinematicActionTimelineDelayMsForTest("npc_action", 900), Is.EqualTo(0));
+            });
+        }
+
+        [Test]
+        public void CinematicActionPlanForTest_UsesStoryContextForPropsAndNpcActions()
+        {
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            quest.StoryPresentationJson = "[" +
+                "{\"nodeId\":\"explore\",\"trigger\":\"OnExplore\",\"speaker\":\"System\",\"text\":\"정찰병이 룬 토템 성물과 기록이 남은 흔적을 가리킵니다.\",\"emotion\":\"caution\",\"emote\":\"Point\"}," +
+                "{\"nodeId\":\"kill\",\"trigger\":\"OnKill\",\"speaker\":\"System\",\"text\":\"동료가 부러진 화살과 전투 흔적 앞에서 방어 자세를 잡습니다.\",\"emotion\":\"warning\",\"emote\":\"Point\"}," +
+                "{\"nodeId\":\"return\",\"trigger\":\"OnNodeEnter\",\"speaker\":\"StartNpc\",\"text\":\"경비가 뒤로 물러나며 횃불 옆을 지킵니다.\",\"emotion\":\"relief\",\"emote\":\"Bow\"}" +
+                "]";
+            quest.StoryNarrativeJson = "[" +
+                "{\"nodeId\":\"explore\",\"sceneType\":\"Discovery\",\"title\":\"룬 성물\",\"body\":\"룬 토템 성물 옆에 기록이 남아 있습니다.\",\"journalEntry\":\"룬 성물과 기록을 조사한다.\",\"mood\":\"ominous\",\"revealPolicy\":\"FirstSeenOnly\"}" +
+                "]";
+
+            DynamicQuestNode explore = quest.Nodes.Single(node => node.Id == "explore");
+            DynamicQuestNode kill = quest.Nodes.Single(node => node.Id == "kill");
+            DynamicQuestNode returnNode = quest.Nodes.Single(node => node.Id == "return");
+
+            IList<string> exploreActions = DynamicQuestRuntimeService.BuildCinematicActionDetailsForTest(quest, explore, "OnExplore");
+            IList<string> killActions = DynamicQuestRuntimeService.BuildCinematicActionDetailsForTest(quest, kill, "OnKill");
+            IList<string> returnActions = DynamicQuestRuntimeService.BuildCinematicActionDetailsForTest(quest, returnNode, "OnNodeEnter");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exploreActions.Any(action =>
+                    action.StartsWith("marker:OnExplore:explore:Written record:", StringComparison.Ordinal) ||
+                    action.StartsWith("marker:OnExplore:explore:Relic sign:", StringComparison.Ordinal)), Is.True);
+                Assert.That(exploreActions.Any(action => action.StartsWith("npc_action:OnExplore:explore:witness_point:Point:model:", StringComparison.Ordinal)), Is.True);
+                Assert.That(killActions.Any(action => action.StartsWith("marker:OnKill:kill:Battle sign:", StringComparison.Ordinal)), Is.True);
+                Assert.That(killActions.Any(action => action.StartsWith("npc_action:OnKill:kill:combat_stance:PlayerPrepare:model:", StringComparison.Ordinal)), Is.True);
+                Assert.That(returnActions.Any(action => action.StartsWith("npc_action:OnNodeEnter:returntonpc:fallback_guard:BangOnShield:model:", StringComparison.Ordinal)), Is.True);
+                Assert.That(returnActions.Any(action => action.StartsWith("marker:OnNodeEnter:returntonpc:Burning omen:", StringComparison.Ordinal)), Is.True);
+            });
+        }
+
+        [Test]
+        public void CinematicActionPlanForTest_PrefersScoutRetreatForLookoutEscapeRoute()
+        {
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            quest.StoryPresentationJson = "[" +
+                "{\"nodeId\":\"explore\",\"trigger\":\"OnExplore\",\"speaker\":\"System\",\"text\":\"목격자가 불씨를 가리키자 망보던 자가 탈출로로 후퇴합니다.\",\"emotion\":\"suspicion\",\"emote\":\"Point\"}" +
+                "]";
+            DynamicQuestNode explore = quest.Nodes.Single(node => node.Id == "explore");
+
+            IList<string> exploreActions = DynamicQuestRuntimeService.BuildCinematicActionDetailsForTest(quest, explore, "OnExplore");
+
+            Assert.That(exploreActions.Any(action =>
+                action.StartsWith("npc_action:OnExplore:explore:scout_retreat:Point:model:", StringComparison.Ordinal) &&
+                action.Contains(":actors:2:motion:retreat", StringComparison.Ordinal)), Is.True);
+        }
+
+        [Test]
+        public void CinematicActionPlanForTest_BuildsStagedAssassinationWitnessAmbushEscapeBeats()
+        {
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            quest.Tags = (quest.Tags ?? Array.Empty<string>())
+                .Concat(new[]
+                {
+                    "realm:Albion",
+                    "scene-director",
+                    "dark-brotherhood",
+                    "story-cinematic",
+                    "story-archetype:witness-conspiracy",
+                    "story-arc:motive",
+                    "story-arc:conflict",
+                    "story-arc:reversal",
+                    "story-arc:consequence",
+                    "cinematic-actors:scout_retreat:5",
+                    "cinematic-actors:defender_intercept:6",
+                    "cinematic-actors:ambush_reveal:8",
+                    "cinematic-actors:ritual_interrupt:5"
+                })
+                .ToArray();
+            quest.StoryPresentationJson = "[" +
+                "{\"nodeId\":\"talk\",\"trigger\":\"OnNodeEnter\",\"speaker\":\"StartNpc\",\"text\":\"조용한 암살 계약입니다. 목표를 본 목격자는 반드시 움직일 겁니다.\",\"emotion\":\"caution\",\"emote\":\"No\"}," +
+                "{\"nodeId\":\"explore\",\"trigger\":\"OnExplore\",\"speaker\":\"System\",\"text\":\"목격자가 골목 끝에서 단서를 가리키고, 망보던 자가 탈출로로 물러납니다.\",\"emotion\":\"suspicion\",\"emote\":\"Point\"}," +
+                "{\"nodeId\":\"kill\",\"trigger\":\"OnKill\",\"speaker\":\"System\",\"text\":\"암살 순간 매복 병력이 모습을 드러내고, 경비가 탈출 경로를 가로막습니다.\",\"emotion\":\"urgency\",\"emote\":\"LetsGo\"}," +
+                "{\"nodeId\":\"choice\",\"trigger\":\"OnChoiceShown\",\"speaker\":\"StartNpc\",\"text\":\"목격자를 살려 보낼지, 진실을 덮을지 선택해야 합니다.\",\"emotion\":\"suspicion\",\"emote\":\"Ponder\"}" +
+                "]";
+
+            DynamicQuestCinematicPlanSnapshot snapshot = DynamicQuestRuntimeService.BuildCinematicPlanSnapshotForTest(quest);
+            DynamicQuestCinematicPlanItem contract = snapshot.Actions.Single(item =>
+                item.NodeId == "talk" &&
+                item.Trigger == "OnNodeEnter" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "contract");
+            DynamicQuestCinematicPlanItem witness = snapshot.Actions.Single(item =>
+                item.NodeId == "explore" &&
+                item.Trigger == "OnExplore" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "witness");
+            DynamicQuestCinematicPlanItem lookout = snapshot.Actions.Single(item =>
+                item.NodeId == "explore" &&
+                item.Trigger == "OnExplore" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "lookout");
+            DynamicQuestCinematicPlanItem ambush = snapshot.Actions.Single(item =>
+                item.NodeId == "kill" &&
+                item.Trigger == "OnKill" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "ambush");
+            DynamicQuestCinematicPlanItem escape = snapshot.Actions.Single(item =>
+                item.NodeId == "kill" &&
+                item.Trigger == "OnKill" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "witness_escape");
+            DynamicQuestCinematicPlanItem counterline = snapshot.Actions.Single(item =>
+                item.NodeId == "kill" &&
+                item.Trigger == "OnKill" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "counterline");
+            DynamicQuestCinematicPlanItem shieldHold = snapshot.Actions.Single(item =>
+                item.NodeId == "kill" &&
+                item.Trigger == "OnKill" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "shield_hold");
+            DynamicQuestCinematicPlanItem confrontation = snapshot.Actions.Single(item =>
+                item.NodeId == "choice" &&
+                item.Trigger == "OnChoiceShown" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "confrontation");
+            DynamicQuestCinematicPlanItem choiceScreen = snapshot.Actions.Single(item =>
+                item.NodeId == "choice" &&
+                item.Trigger == "OnChoiceShown" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "choice_screen");
+            DynamicQuestCinematicPlanItem choiceFallback = snapshot.Actions.Single(item =>
+                item.NodeId == "choice" &&
+                item.Trigger == "OnChoiceShown" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "choice_fallback");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(contract.NpcAction, Is.EqualTo("witness_point"));
+                Assert.That(contract.SceneBeatIndex, Is.EqualTo(1));
+                Assert.That(contract.Formation, Is.EqualTo("escort"));
+                Assert.That(witness.NpcAction, Is.EqualTo("witness_point"));
+                Assert.That(witness.FocalPoint, Is.EqualTo("objective"));
+                Assert.That(witness.ActorRole, Is.EqualTo("spot"));
+                Assert.That(witness.ChoreographyPhases, Is.EqualTo(2));
+                Assert.That(witness.InteractionStyle, Is.EqualTo("none"));
+                Assert.That(witness.TacticalRole, Is.EqualTo("spot"));
+                Assert.That(lookout.NpcAction, Is.EqualTo("scout_retreat"));
+                Assert.That(lookout.ActorRole, Is.EqualTo("retreat"));
+                Assert.That(lookout.InteractionStyle, Is.EqualTo("pursuit"));
+                Assert.That(lookout.TacticalRole, Is.EqualTo("withdraw"));
+                Assert.That(lookout.SceneDelayMs, Is.EqualTo(900));
+                Assert.That(ambush.NpcAction, Is.EqualTo("ambush_reveal"));
+                Assert.That(ambush.Formation, Is.EqualTo("ambush"));
+                Assert.That(ambush.MotionPattern, Is.EqualTo("pincer"));
+                Assert.That(ambush.ActorRole, Is.EqualTo("strike"));
+                Assert.That(ambush.InteractionStyle, Is.EqualTo("clash"));
+                Assert.That(ambush.TacticalRole, Is.EqualTo("flank"));
+                Assert.That(ambush.MotionLateral, Is.GreaterThanOrEqualTo(120));
+                Assert.That(ambush.MotionStaggerMs, Is.GreaterThanOrEqualTo(90));
+                Assert.That(ambush.ActorCount, Is.GreaterThanOrEqualTo(5));
+                Assert.That(escape.NpcAction, Is.EqualTo("scout_retreat"));
+                Assert.That(escape.Formation, Is.EqualTo("escape"));
+                Assert.That(escape.MotionPattern, Is.EqualTo("retreat"));
+                Assert.That(escape.MotionDistance, Is.LessThanOrEqualTo(-150));
+                Assert.That(escape.MotionStaggerMs, Is.GreaterThanOrEqualTo(100));
+                Assert.That(escape.SceneDelayMs, Is.EqualTo(1700));
+                Assert.That(counterline.NpcAction, Is.EqualTo("combat_stance"));
+                Assert.That(counterline.SceneBeatIndex, Is.EqualTo(5));
+                Assert.That(counterline.ActorCount, Is.GreaterThanOrEqualTo(6));
+                Assert.That(counterline.InteractionStyle, Is.EqualTo("clash"));
+                Assert.That(counterline.TacticalRole, Is.EqualTo("flank"));
+                Assert.That(shieldHold.NpcAction, Is.EqualTo("hold_ground"));
+                Assert.That(shieldHold.SceneBeatIndex, Is.EqualTo(6));
+                Assert.That(shieldHold.ActorCount, Is.GreaterThanOrEqualTo(5));
+                Assert.That(shieldHold.InteractionStyle, Is.EqualTo("block"));
+                Assert.That(shieldHold.TacticalRole, Is.EqualTo("screen"));
+                Assert.That(confrontation.NpcAction, Is.EqualTo("threat_standoff"));
+                Assert.That(confrontation.MotionPattern, Is.EqualTo("standoff"));
+                Assert.That(confrontation.InteractionStyle, Is.EqualTo("standoff"));
+                Assert.That(confrontation.TacticalRole, Is.EqualTo("pressure"));
+                Assert.That(confrontation.MotionStaggerMs, Is.GreaterThanOrEqualTo(80));
+                Assert.That(choiceScreen.NpcAction, Is.EqualTo("defender_intercept"));
+                Assert.That(choiceScreen.InteractionStyle, Is.EqualTo("block"));
+                Assert.That(choiceFallback.NpcAction, Is.EqualTo("fallback_guard"));
+                Assert.That(choiceFallback.MotionPattern, Is.EqualTo("fall-back"));
+                Assert.That(snapshot.TotalActorCount, Is.GreaterThanOrEqualTo(40));
+                Assert.That(snapshot.Actions.Any(item => item.Detail.Contains("scene_beat:OnKill:kill:beat:1", StringComparison.Ordinal)), Is.True);
+            });
+        }
+
+        [Test]
+        public void CinematicActionPlanForTest_AddsRitualInterruptSetPieceWhenStorySignalsRitual()
+        {
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            quest.Tags = (quest.Tags ?? Array.Empty<string>())
+                .Concat(new[] { "scene-director", "story-cinematic", "cinematic-actors:ritual_interrupt:5" })
+                .ToArray();
+            quest.StoryPresentationJson = "[" +
+                "{\"nodeId\":\"explore\",\"trigger\":\"OnExplore\",\"speaker\":\"System\",\"text\":\"성물 옆 의식 표식이 흔들리자 경비들이 전열을 세우고 의식을 끊으려 다가갑니다.\",\"emotion\":\"urgency\",\"emote\":\"Point\"}," +
+                "{\"nodeId\":\"kill\",\"trigger\":\"OnKill\",\"speaker\":\"System\",\"text\":\"목표가 쓰러지자 남은 의식이 깨지고 경비가 성물 앞을 막아섭니다.\",\"emotion\":\"urgency\",\"emote\":\"Point\"}" +
+                "]";
+
+            DynamicQuestCinematicPlanSnapshot snapshot = DynamicQuestRuntimeService.BuildCinematicPlanSnapshotForTest(quest);
+            DynamicQuestCinematicPlanItem exploreRitual = snapshot.Actions.Single(item =>
+                item.NodeId == "explore" &&
+                item.Trigger == "OnExplore" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "ritual");
+            DynamicQuestCinematicPlanItem killRitual = snapshot.Actions.Single(item =>
+                item.NodeId == "kill" &&
+                item.Trigger == "OnKill" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "ritual_break");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exploreRitual.NpcAction, Is.EqualTo("ritual_interrupt"));
+                Assert.That(exploreRitual.SceneBeatIndex, Is.EqualTo(3));
+                Assert.That(exploreRitual.SceneDelayMs, Is.EqualTo(1500));
+                Assert.That(exploreRitual.ActorCount, Is.GreaterThanOrEqualTo(5));
+                Assert.That(killRitual.NpcAction, Is.EqualTo("ritual_interrupt"));
+                Assert.That(killRitual.SceneBeatIndex, Is.EqualTo(4));
+                Assert.That(killRitual.SceneDelayMs, Is.EqualTo(2400));
+                Assert.That(killRitual.ActorCount, Is.GreaterThanOrEqualTo(5));
+            });
+        }
+
+        [Test]
+        public void CinematicActionPlanForTest_UsesExplicitPresentationSetPieceFields()
+        {
+            Properties.KDAOC_DYNAMIC_QUEST_CINEMATIC_MAX_ACTORS_PER_ACTION = 100;
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            quest.StoryPresentationJson = "[" +
+                "{\"nodeId\":\"kill\",\"trigger\":\"OnKill\",\"speaker\":\"System\",\"text\":\"지정된 매복대가 목표 주변에서 동시에 모습을 드러냅니다.\",\"emotion\":\"urgency\",\"emote\":\"LetsGo\",\"cinematicAction\":\"ambush_reveal\",\"sceneRole\":\"ambush_wave\",\"formation\":\"ambush\",\"actorCount\":12,\"delayMs\":1200}" +
+                "]";
+
+            DynamicQuestCinematicPlanSnapshot snapshot = DynamicQuestRuntimeService.BuildCinematicPlanSnapshotForTest(quest);
+            DynamicQuestCinematicPlanItem explicitAmbush = snapshot.Actions.Single(item =>
+                item.NodeId == "kill" &&
+                item.Trigger == "OnKill" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "ambush_wave");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(explicitAmbush.NpcAction, Is.EqualTo("ambush_reveal"));
+                Assert.That(explicitAmbush.Formation, Is.EqualTo("ambush"));
+                Assert.That(explicitAmbush.ActorCount, Is.EqualTo(12));
+                Assert.That(explicitAmbush.SceneDelayMs, Is.EqualTo(1200));
+                Assert.That(explicitAmbush.Detail, Does.Contain("role:ambush_wave"));
+                Assert.That(explicitAmbush.Detail, Does.Contain("actors:12"));
+            });
+        }
+
+        [Test]
+        public void CinematicActionPlanForTest_PreservesExplicitPresentationHundredActorCount()
+        {
+            Properties.KDAOC_DYNAMIC_QUEST_CINEMATIC_MAX_ACTORS_PER_ACTION = 100;
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            quest.StoryPresentationJson = "[" +
+                "{\"nodeId\":\"kill\",\"trigger\":\"OnKill\",\"speaker\":\"System\",\"text\":\"전열 전체가 목표 주변을 포위합니다.\",\"emotion\":\"urgency\",\"emote\":\"LetsGo\",\"cinematicAction\":\"ambush_reveal\",\"sceneRole\":\"mass_ambush_wave\",\"formation\":\"ambush\",\"actorCount\":100,\"delayMs\":1200}" +
+                "]";
+
+            DynamicQuestCinematicPlanSnapshot snapshot = DynamicQuestRuntimeService.BuildCinematicPlanSnapshotForTest(quest);
+            DynamicQuestCinematicPlanItem explicitAmbush = snapshot.Actions.Single(item =>
+                item.NodeId == "kill" &&
+                item.Trigger == "OnKill" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "mass_ambush_wave");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(snapshot.MaxActorsPerAction, Is.EqualTo(100));
+                Assert.That(explicitAmbush.ActorCount, Is.EqualTo(100));
+                Assert.That(explicitAmbush.Detail, Does.Contain("actors:100"));
+                Assert.That(snapshot.TotalActorCount, Is.GreaterThanOrEqualTo(100));
+            });
+        }
+
+        [Test]
+        public void CinematicActionPlanForTest_DoesNotApplyHundredActorTagsToSupplementalNpcActions()
+        {
+            Properties.KDAOC_DYNAMIC_QUEST_CINEMATIC_MAX_ACTORS_PER_ACTION = 100;
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            quest.Tags = quest.Tags
+                .Concat(new[] { "cinematic-actors:ambush_reveal:100", "mass-cinematic" })
+                .ToArray();
+            quest.StoryPresentationJson = "[" +
+                "{\"nodeId\":\"kill\",\"trigger\":\"OnKill\",\"speaker\":\"System\",\"text\":\"전열 전체가 목표 주변을 포위합니다.\",\"emotion\":\"urgency\",\"emote\":\"LetsGo\",\"cinematicAction\":\"ambush_reveal\",\"sceneRole\":\"mass_ambush_wave\",\"formation\":\"ambush\",\"actorCount\":100,\"delayMs\":1200}" +
+                "]";
+
+            DynamicQuestCinematicPlanSnapshot snapshot = DynamicQuestRuntimeService.BuildCinematicPlanSnapshotForTest(quest);
+            DynamicQuestCinematicPlanItem explicitAmbush = snapshot.Actions.Single(item =>
+                item.NodeId == "kill" &&
+                item.Trigger == "OnKill" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "mass_ambush_wave");
+            DynamicQuestCinematicPlanItem supplementalAmbush = snapshot.Actions.First(item =>
+                item.NodeId == "kill" &&
+                item.Trigger == "OnKill" &&
+                item.Kind == "npc_action" &&
+                item.NpcAction == "ambush_reveal");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(explicitAmbush.ActorCount, Is.EqualTo(100));
+                Assert.That(supplementalAmbush.ActorCount, Is.LessThan(100));
+                Assert.That(supplementalAmbush.Detail, Does.Not.Contain("actors:100"));
+            });
+        }
+
+        [Test]
+        public void CinematicActionPlanForTest_SceneDirectorDoesNotDuplicateExplicitSetPieceActions()
+        {
+            Properties.KDAOC_DYNAMIC_QUEST_CINEMATIC_MAX_ACTORS_PER_ACTION = 100;
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            quest.Tags = quest.Tags
+                .Concat(new[] { "scene-director", "cinematic-actors:ambush_reveal:100", "mass-cinematic" })
+                .ToArray();
+            quest.StoryPresentationJson = "[" +
+                "{\"nodeId\":\"kill\",\"trigger\":\"OnKill\",\"speaker\":\"System\",\"text\":\"전열 전체가 목표 주변을 포위합니다.\",\"emotion\":\"urgency\",\"emote\":\"LetsGo\",\"cinematicAction\":\"ambush_reveal\",\"sceneRole\":\"mass_ambush_wave\",\"formation\":\"ambush\",\"actorCount\":100,\"delayMs\":1200}" +
+                "]";
+
+            DynamicQuestCinematicPlanSnapshot snapshot = DynamicQuestRuntimeService.BuildCinematicPlanSnapshotForTest(quest);
+            IList<DynamicQuestCinematicPlanItem> ambushes = snapshot.Actions
+                .Where(item => item.NodeId == "kill" && item.Kind == "scene_beat" && item.NpcAction == "ambush_reveal")
+                .ToArray();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(ambushes, Has.Count.EqualTo(1));
+                Assert.That(ambushes.Single().SceneRole, Is.EqualTo("mass_ambush_wave"));
+                Assert.That(ambushes.Single().ActorCount, Is.EqualTo(100));
+            });
+        }
+
+        [Test]
+        public void CinematicActionPlanForTest_DefersNodeEnterSceneDirectorWhenExplicitEventSetPieceExists()
+        {
+            Properties.KDAOC_DYNAMIC_QUEST_CINEMATIC_MAX_ACTORS_PER_ACTION = 100;
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            quest.Tags = quest.Tags
+                .Concat(new[] { "scene-director", "story-cinematic" })
+                .ToArray();
+            quest.StoryPresentationJson = "[" +
+                "{\"nodeId\":\"kill\",\"trigger\":\"OnKill\",\"speaker\":\"System\",\"text\":\"목표가 쓰러지는 순간 매복대가 모습을 드러냅니다.\",\"emotion\":\"urgency\",\"emote\":\"LetsGo\",\"cinematicAction\":\"ambush_reveal\",\"sceneRole\":\"ambush_wave\",\"formation\":\"ambush\",\"actorCount\":12,\"delayMs\":1200}" +
+                "]";
+
+            DynamicQuestCinematicPlanSnapshot snapshot = DynamicQuestRuntimeService.BuildCinematicPlanSnapshotForTest(quest);
+            IList<DynamicQuestCinematicPlanItem> nodeEnterSceneBeats = snapshot.Actions
+                .Where(item => item.NodeId == "kill" && item.Trigger == "OnNodeEnter" && item.Kind == "scene_beat")
+                .ToArray();
+            IList<DynamicQuestCinematicPlanItem> killSceneBeats = snapshot.Actions
+                .Where(item => item.NodeId == "kill" && item.Trigger == "OnKill" && item.Kind == "scene_beat")
+                .ToArray();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(nodeEnterSceneBeats, Is.Empty);
+                Assert.That(killSceneBeats, Is.Not.Empty);
+                Assert.That(killSceneBeats.Any(item => item.NpcAction == "ambush_reveal"), Is.True);
+            });
+        }
+
+        [Test]
+        public void CinematicFollowUpActionDelaysForTest_ExpandsChoreographyIntoBoundedPhases()
+        {
+            IList<int> noFollowUp = DynamicQuestRuntimeService.BuildCinematicFollowUpActionDelaysForTest(1, 0);
+            IList<int> threePhaseActor = DynamicQuestRuntimeService.BuildCinematicFollowUpActionDelaysForTest(3, 2);
+            IList<int> oversizedActor = DynamicQuestRuntimeService.BuildCinematicFollowUpActionDelaysForTest(100, 99);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(noFollowUp, Is.Empty);
+                Assert.That(threePhaseActor, Is.EqualTo(new[] { 886, 1586 }));
+                Assert.That(oversizedActor, Is.EqualTo(new[] { 2632, 3200, 3200 }));
+            });
+        }
+
+        [Test]
+        public void CinematicMotionCommandCountForTest_TracksInitialAndFollowUpMovement()
+        {
+            int staticFocus = DynamicQuestRuntimeService.ResolveCinematicMotionCommandCountForTest(
+                "",
+                "",
+                "",
+                1);
+            int ambushThreePhase = DynamicQuestRuntimeService.ResolveCinematicMotionCommandCountForTest(
+                "ambush_reveal",
+                "ambush",
+                "mass_ambush_wave",
+                3);
+            int retreatFourPhase = DynamicQuestRuntimeService.ResolveCinematicMotionCommandCountForTest(
+                "scout_retreat",
+                "escape",
+                "lookout_escape",
+                4);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(staticFocus, Is.EqualTo(0));
+                Assert.That(ambushThreePhase, Is.EqualTo(3));
+                Assert.That(retreatFourPhase, Is.EqualTo(4));
+            });
+        }
+
+        [Test]
+        public void CinematicEngagementPairCountForTest_TracksTacticalActorPairs()
+        {
+            int staticFocus = DynamicQuestRuntimeService.ResolveCinematicEngagementPairCountForTest(
+                "",
+                "",
+                "",
+                1);
+            int ambushPairs = DynamicQuestRuntimeService.ResolveCinematicEngagementPairCountForTest(
+                "ambush_reveal",
+                "ambush",
+                "mass_ambush_wave",
+                100);
+            int pursuitPairs = DynamicQuestRuntimeService.ResolveCinematicEngagementPairCountForTest(
+                "scout_retreat",
+                "escape",
+                "lookout_escape",
+                5);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(staticFocus, Is.EqualTo(0));
+                Assert.That(ambushPairs, Is.EqualTo(50));
+                Assert.That(pursuitPairs, Is.EqualTo(2));
+            });
+        }
+
+        [Test]
+        public void TimelineSnapshot_RecordsSceneDirectorBeatOutcomes()
+        {
+            DynamicQuestDefinition quest = WorldOfferQuest();
+            quest.Tags = (quest.Tags ?? Array.Empty<string>())
+                .Concat(new[]
+                {
+                    "scene-director",
+                    "dark-brotherhood",
+                    "story-cinematic",
+                    "story-archetype:witness-conspiracy",
+                    "story-arc:motive",
+                    "story-arc:conflict",
+                    "story-arc:reversal",
+                    "story-arc:consequence"
+                })
+                .ToArray();
+            quest.StoryNarrativeJson = "[" +
+                "{\"nodeId\":\"talk\",\"sceneType\":\"Intro\",\"title\":\"계약의 그림자\"}," +
+                "{\"nodeId\":\"explore\",\"sceneType\":\"Discovery\",\"title\":\"목격자의 단서\"}," +
+                "{\"nodeId\":\"explore\",\"sceneType\":\"Threat\",\"title\":\"탈출로의 망꾼\"}," +
+                "{\"nodeId\":\"choice\",\"sceneType\":\"Choice\",\"title\":\"증언과 침묵\"}," +
+                "{\"nodeId\":\"complete\",\"sceneType\":\"Completion\",\"title\":\"남은 흔적\"}" +
+                "]";
+            quest.StoryPresentationJson = "[" +
+                "{\"nodeId\":\"explore\",\"trigger\":\"OnAccept\",\"speaker\":\"System\",\"text\":\"계약의 그림자가 숲 가장자리에 모입니다.\",\"emotion\":\"suspicion\",\"emote\":\"Point\",\"cinematicAction\":\"ambush_reveal\",\"sceneRole\":\"contract_witness\",\"formation\":\"ring\",\"actorCount\":8,\"delayMs\":100}," +
+                "{\"nodeId\":\"explore\",\"trigger\":\"OnExplore\",\"speaker\":\"System\",\"text\":\"목격자가 단서를 가리킵니다.\",\"emotion\":\"suspicion\",\"emote\":\"Point\",\"cinematicAction\":\"witness_point\",\"sceneRole\":\"witness\",\"formation\":\"wedge\",\"actorCount\":4,\"delayMs\":150}," +
+                "{\"nodeId\":\"explore\",\"trigger\":\"OnExplore\",\"speaker\":\"System\",\"text\":\"망보던 자가 탈출로로 물러납니다.\",\"emotion\":\"alarm\",\"emote\":\"Point\",\"cinematicAction\":\"scout_retreat\",\"sceneRole\":\"lookout\",\"formation\":\"patrol\",\"actorCount\":5,\"delayMs\":250}," +
+                "{\"nodeId\":\"complete\",\"trigger\":\"OnComplete\",\"speaker\":\"System\",\"text\":\"남은 그림자들이 길목을 지키며 흔적을 정리합니다.\",\"emotion\":\"resolve\",\"emote\":\"Salute\",\"cinematicAction\":\"hold_ground\",\"sceneRole\":\"aftermath_guard\",\"formation\":\"line\",\"actorCount\":6,\"delayMs\":300}" +
+                "]";
+            DynamicQuestResult addResult = DynamicQuestRuntimeService.Instance.AddQuest(quest);
+            DynamicQuestRuntimeService.Instance.RecordGraphProgressForTest(
+                "DummyQuest001",
+                "quest-world-offer",
+                "explore",
+                Array.Empty<string>(),
+                new Dictionary<string, int>());
+
+            bool explored = DynamicQuestRuntimeService.Instance.RecordExploreProgressForTest(
+                "DummyQuest001",
+                1,
+                521000,
+                492000);
+
+            DynamicQuestTimelineSnapshot timeline = DynamicQuestRuntimeService.Instance.GetTimelineSnapshot(
+                "DummyQuest001",
+                "DummyQuest001",
+                true,
+                200);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(addResult.Success, Is.True, addResult.Message);
+                Assert.That(explored, Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "cinematic_action" &&
+                    evt.NodeId == "explore" &&
+                    evt.Detail.Contains("scene_beat:OnExplore:explore", StringComparison.Ordinal)), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "scene_beat_outcome" &&
+                    evt.NodeId == "explore" &&
+                    evt.Detail.Contains("role:witness", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("action:witness_point", StringComparison.Ordinal)), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "scene_beat_outcome" &&
+                    evt.NodeId == "explore" &&
+                    evt.Detail.Contains("role:lookout", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("formation:patrol", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("motion:retreat", StringComparison.Ordinal)), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "scene_choreography_phase" &&
+                    evt.NodeId == "explore" &&
+                    evt.Detail.Contains("role:lookout", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("phase:2", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("actors:5", StringComparison.Ordinal)), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "scene_actor_exchange" &&
+                    evt.NodeId == "explore" &&
+                    evt.Detail.Contains("role:lookout", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("exchange:pursuit_cutoff", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("interact:pursuit", StringComparison.Ordinal)), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "scene_exchange_outcome" &&
+                    evt.NodeId == "explore" &&
+                    evt.Detail.Contains("role:lookout", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("exchange:pursuit_cutoff", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("outcome:escape_cutoff", StringComparison.Ordinal)), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "scene_consequence" &&
+                    evt.NodeId == "explore" &&
+                    evt.Detail.Contains("outcome:escape_cutoff", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("consequence:escape_route_closed", StringComparison.Ordinal)), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "scene_world_signal" &&
+                    evt.NodeId == "explore" &&
+                    evt.Detail == "scene:witness"), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "scene_world_signal" &&
+                    evt.NodeId == "explore" &&
+                    evt.Detail == "scene:escape_cutoff"), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "world_signal_scene_shift" &&
+                    evt.NodeId == "explore" &&
+                    evt.Detail.Contains("signal:scene-witness", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("action:witness_point", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("role:witness", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("trigger:onexplore", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("phase:discovery", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("source:witness-witness_point", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("actors:4", StringComparison.Ordinal)), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "world_signal_scene_shift" &&
+                    evt.NodeId == "explore" &&
+                    evt.Detail.Contains("signal:scene-escape_cutoff", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("action:scout_retreat", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("role:lookout", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("phase:pursuit", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("source:lookout-scout_retreat", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("actors:5", StringComparison.Ordinal)), Is.True);
+            });
+        }
+
+        [Test]
+        public void TimelineSnapshot_ConsumesSceneExchangeOutcomeSignalOnFollowupNode()
+        {
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            quest.Tags = (quest.Tags ?? Array.Empty<string>())
+                .Concat(new[] { "scene-director", "dark-brotherhood", "story-cinematic" })
+                .ToArray();
+            DynamicQuestNode explore = quest.Nodes.Single(node => node.Id == "explore");
+            explore.Edges = new[]
+            {
+                new DynamicQuestEdge { ToNodeId = "wait_outcome", Condition = DynamicQuestEdgeCondition.ObjectiveComplete }
+            };
+            DynamicQuestNode complete = quest.Nodes.Single(node => node.Id == "complete");
+            quest.Nodes = quest.Nodes
+                .Where(node => !string.Equals(node.Id, "complete", StringComparison.OrdinalIgnoreCase))
+                .Concat(new[]
+                {
+                    new DynamicQuestNode
+                    {
+                        Id = "wait_outcome",
+                        Type = DynamicQuestNodeType.Explore,
+                        Title = "탈출로 차단 확인",
+                        Text = "추격 차단 결과를 확인합니다.",
+                        Objective = new DynamicQuestObjective
+                        {
+                            LocationName = "탈출로",
+                            RegionId = 1,
+                            X = 521000,
+                            Y = 492000,
+                            Z = 2954,
+                            Radius = 450
+                        },
+                        Edges = new[]
+                        {
+                            new DynamicQuestEdge
+                            {
+                                ToNodeId = "complete",
+                                Condition = DynamicQuestEdgeCondition.WorldSignal,
+                                ConditionValue = "scene:escape_cutoff"
+                            }
+                        }
+                    },
+                    complete
+                })
+                .ToArray();
+            quest.StoryPresentationJson = "[" +
+                "{\"nodeId\":\"explore\",\"trigger\":\"OnExplore\",\"speaker\":\"System\",\"text\":\"망보던 자가 탈출로로 물러나자 추격대가 길목을 잘라냅니다.\",\"emotion\":\"alarm\",\"emote\":\"Point\",\"cinematicAction\":\"scout_retreat\",\"sceneRole\":\"lookout_escape\",\"formation\":\"escape\",\"actorCount\":5,\"delayMs\":250}," +
+                "{\"nodeId\":\"explore\",\"trigger\":\"OnExplore\",\"speaker\":\"System\",\"text\":\"방패 든 전열이 좁은 길을 막아섭니다.\",\"emotion\":\"urgency\",\"emote\":\"Point\",\"cinematicAction\":\"defender_intercept\",\"sceneRole\":\"escape_intercept\",\"formation\":\"line\",\"actorCount\":6,\"delayMs\":700}," +
+                "{\"nodeId\":\"explore\",\"trigger\":\"OnExplore\",\"speaker\":\"System\",\"text\":\"덤불 뒤의 매복 병력이 한꺼번에 모습을 드러냅니다.\",\"emotion\":\"alarm\",\"emote\":\"Point\",\"cinematicAction\":\"ambush_reveal\",\"sceneRole\":\"ambush_wave\",\"formation\":\"ambush\",\"actorCount\":8,\"delayMs\":1100}," +
+                "{\"nodeId\":\"explore\",\"trigger\":\"OnExplore\",\"speaker\":\"System\",\"text\":\"의식 표식이 끊기며 도주로의 빛이 사라집니다.\",\"emotion\":\"shock\",\"emote\":\"Point\",\"cinematicAction\":\"ritual_interrupt\",\"sceneRole\":\"ritual_break\",\"formation\":\"ring\",\"actorCount\":5,\"delayMs\":1500}," +
+                "{\"nodeId\":\"wait_outcome\",\"trigger\":\"OnWorldSignal\",\"speaker\":\"System\",\"text\":\"탈출로 차단 신호가 닿자 방패선이 좁은 길을 밀고 들어갑니다.\",\"emotion\":\"urgency\",\"emote\":\"Point\",\"cinematicAction\":\"guard_advance\",\"sceneRole\":\"signal_counterline\",\"formation\":\"line\",\"actorCount\":7,\"delayMs\":600}" +
+                "]";
+            quest.StoryNarrativeJson = "[" +
+                "{\"nodeId\":\"explore\",\"sceneType\":\"Discovery\",\"title\":\"탈출로의 그림자\",\"body\":\"망보던 자의 후퇴가 매복의 신호였음을 확인합니다.\",\"journalEntry\":\"탈출로 차단 결과를 확인한다.\",\"mood\":\"urgent\",\"revealPolicy\":\"Always\"}," +
+                "{\"nodeId\":\"explore\",\"sceneType\":\"Threat\",\"title\":\"드러난 차단선\",\"body\":\"매복 병력이 길목을 좁히고 방패 전열이 퇴로를 압박합니다.\",\"journalEntry\":\"차단 병력의 움직임을 확인한다.\",\"mood\":\"alarm\",\"revealPolicy\":\"Always\"}," +
+                "{\"nodeId\":\"wait_outcome\",\"sceneType\":\"Reversal\",\"title\":\"잘린 길목\",\"body\":\"추격대가 탈출로를 선점했고 남은 자들은 방향을 잃었습니다.\",\"journalEntry\":\"탈출 차단 신호가 남았다.\",\"mood\":\"ominous\",\"revealPolicy\":\"Always\"}," +
+                "{\"nodeId\":\"complete\",\"sceneType\":\"Completion\",\"title\":\"닫힌 퇴로\",\"body\":\"도주로가 봉쇄되며 사건의 다음 실마리가 드러났습니다.\",\"journalEntry\":\"퇴로 봉쇄를 확인했다.\",\"mood\":\"relieved\",\"revealPolicy\":\"FirstSeenOnly\"}" +
+                "]";
+
+            DynamicQuestResult addResult = DynamicQuestRuntimeService.Instance.AddQuest(quest);
+            DynamicQuestRuntimeService.Instance.RecordGraphProgressForTest(
+                "DummyQuest001",
+                "quest-explore",
+                "explore",
+                Array.Empty<string>(),
+                new Dictionary<string, int>());
+
+            bool explored = DynamicQuestRuntimeService.Instance.RecordExploreProgressForTest(
+                "DummyQuest001",
+                1,
+                521000,
+                492000);
+
+            DynamicQuestTimelineSnapshot timeline = DynamicQuestRuntimeService.Instance.GetTimelineSnapshot(
+                "DummyQuest001",
+                "DummyQuest001",
+                true,
+                200);
+            DynamicQuestProgressSnapshot progress = DynamicQuestRuntimeService.Instance
+                .GetProgressSnapshot("DummyQuest001", "DummyQuest001", true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(addResult.Success, Is.True, addResult.Message);
+                Assert.That(explored, Is.True);
+                Assert.That(progress.CompletedQuestIds, Does.Contain("quest-explore"));
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "scene_exchange_outcome" &&
+                    evt.NodeId == "explore" &&
+                    evt.Detail.Contains("outcome:escape_cutoff", StringComparison.Ordinal)), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "scene_consequence" &&
+                    evt.NodeId == "explore" &&
+                    evt.Detail.Contains("consequence:escape_route_closed", StringComparison.Ordinal)), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "scene_world_signal" &&
+                    evt.NodeId == "explore" &&
+                    evt.Detail == "scene:escape_cutoff"), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "world_signal_pending" &&
+                    evt.NodeId == "explore" &&
+                    evt.Detail == "scene:escape_cutoff"), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "world_signal" &&
+                    evt.NodeId == "wait_outcome" &&
+                    evt.Detail == "scene:escape_cutoff"), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "world_signal_scene_shift" &&
+                    evt.NodeId == "wait_outcome" &&
+                    evt.Detail.Contains("signal:scene-escape_cutoff", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("action:guard_advance", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("trigger:onworldsignal", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("phase:blockade", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("source:scene-escape_cutoff", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("target:탈출로", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("region:1", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("actors:7", StringComparison.Ordinal)), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "node_advanced" &&
+                    evt.FromNodeId == "wait_outcome" &&
+                    evt.ToNodeId == "complete"), Is.True);
+            });
+        }
+
+        [Test]
+        public void TimelineSnapshot_RecordsHundredActorSceneBeatAndCleanup()
+        {
+            Properties.KDAOC_DYNAMIC_QUEST_CINEMATIC_MAX_ACTORS_PER_ACTION = 100;
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            quest.Tags = (quest.Tags ?? Array.Empty<string>())
+                .Concat(new[]
+                {
+                    "story-cinematic",
+                    "scene-director",
+                    "story-archetype:witness-conspiracy",
+                    "story-arc:motive",
+                    "story-arc:conflict",
+                    "story-arc:reversal",
+                    "story-arc:consequence"
+                })
+                .ToArray();
+            quest.StoryNarrativeJson = "[" +
+                "{\"nodeId\":\"talk\",\"sceneType\":\"Intro\",\"title\":\"증언\",\"body\":\"의뢰인은 마을 길목에 남은 증언과 표식을 보여 준다.\",\"journalEntry\":\"의뢰인에게서 증언을 들었다.\",\"mood\":\"ominous\",\"revealPolicy\":\"FirstSeenOnly\"}," +
+                "{\"nodeId\":\"explore\",\"sceneType\":\"Discovery\",\"title\":\"흔적\",\"body\":\"찢긴 울타리와 도망친 발자국이 매복의 동선을 드러낸다.\",\"journalEntry\":\"현장에서 매복 흔적을 찾았다.\",\"mood\":\"urgent\",\"revealPolicy\":\"FirstSeenOnly\"}," +
+                "{\"nodeId\":\"kill\",\"sceneType\":\"Threat\",\"title\":\"포위\",\"body\":\"전열 전체가 드러나며 목표 주변을 포위한다.\",\"journalEntry\":\"포위 전열 속에서 위협을 제거해야 한다.\",\"mood\":\"grim\",\"revealPolicy\":\"FirstSeenOnly\"}," +
+                "{\"nodeId\":\"return\",\"sceneType\":\"Return\",\"title\":\"보고\",\"body\":\"전투 뒤 남은 표식을 가지고 의뢰인에게 돌아간다.\",\"journalEntry\":\"전투 결과를 보고해야 한다.\",\"mood\":\"relieved\",\"revealPolicy\":\"FirstSeenOnly\"}," +
+                "{\"nodeId\":\"choice\",\"sceneType\":\"Choice\",\"title\":\"결정\",\"body\":\"마을의 안전과 더 깊은 추적 사이에서 선택한다.\",\"journalEntry\":\"마무리 방식을 선택해야 한다.\",\"mood\":\"mysterious\",\"revealPolicy\":\"FirstSeenOnly\"}," +
+                "{\"nodeId\":\"complete\",\"sceneType\":\"Completion\",\"title\":\"결말\",\"body\":\"마을은 즉각적인 안전을 얻고 사건의 기록이 남는다.\",\"journalEntry\":\"사건을 마무리했다.\",\"mood\":\"hopeful\",\"revealPolicy\":\"FirstSeenOnly\"}" +
+                "]";
+            quest.StoryPresentationJson = "[" +
+                "{\"nodeId\":\"talk\",\"trigger\":\"OnAccept\",\"speaker\":\"StartNpc\",\"text\":\"증언자가 길목을 가리킵니다.\",\"emotion\":\"fear\",\"emote\":\"Shiver\",\"cinematicAction\":\"witness_point\",\"sceneRole\":\"contract_witness\",\"formation\":\"escort\",\"actorCount\":4}," +
+                "{\"nodeId\":\"explore\",\"trigger\":\"OnExplore\",\"speaker\":\"System\",\"text\":\"망보던 자가 탈출로로 물러납니다.\",\"emotion\":\"suspicion\",\"emote\":\"Ponder\",\"cinematicAction\":\"scout_retreat\",\"sceneRole\":\"lookout_escape\",\"formation\":\"escape\",\"actorCount\":6,\"delayMs\":600}," +
+                "{\"nodeId\":\"kill\",\"trigger\":\"OnKill\",\"speaker\":\"System\",\"text\":\"전열 전체가 목표 주변을 포위합니다.\",\"emotion\":\"urgency\",\"emote\":\"LetsGo\",\"cinematicAction\":\"ambush_reveal\",\"sceneRole\":\"mass_ambush_wave\",\"formation\":\"ambush\",\"actorCount\":100,\"delayMs\":1200}," +
+                "{\"nodeId\":\"choice\",\"trigger\":\"OnChoiceShown\",\"speaker\":\"StartNpc\",\"text\":\"경비들이 길목을 막고 결정을 기다립니다.\",\"emotion\":\"caution\",\"emote\":\"Point\",\"cinematicAction\":\"threat_standoff\",\"sceneRole\":\"choice_confrontation\",\"formation\":\"line\",\"actorCount\":8,\"delayMs\":800}" +
+                "]";
+            DynamicQuestResult addResult = DynamicQuestRuntimeService.Instance.AddQuest(quest);
+            Assert.That(addResult.Success, Is.True, addResult.Message);
+            DynamicQuestRuntimeService.Instance.RecordGraphProgressForTest(
+                "DummyQuest001",
+                "quest-explore",
+                "explore",
+                new[] { "talk" },
+                new System.Collections.Generic.Dictionary<string, int>());
+
+            bool explored = DynamicQuestRuntimeService.Instance.RecordExploreProgressForTest(
+                "DummyQuest001",
+                1,
+                521000,
+                492000);
+            bool killed = DynamicQuestRuntimeService.Instance.RecordKillProgressForTest(
+                "DummyQuest001",
+                "black wolf pup",
+                1,
+                1);
+            bool returned = DynamicQuestRuntimeService.Instance.RecordNpcInteractionForTest(
+                "DummyQuest001",
+                "seed-npc-1",
+                1);
+            bool selected = DynamicQuestRuntimeService.Instance.SelectChoiceForTest(
+                "DummyQuest001",
+                "quest-explore",
+                "safe");
+
+            DynamicQuestTimelineSnapshot timeline = DynamicQuestRuntimeService.Instance.GetTimelineSnapshot(
+                "DummyQuest001",
+                "DummyQuest001",
+                true,
+                120);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(explored, Is.True);
+                Assert.That(killed, Is.True);
+                Assert.That(returned, Is.True);
+                Assert.That(selected, Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "world_signal_scene_shift" &&
+                    evt.NodeId == "kill" &&
+                    evt.Detail.Contains("role:mass_ambush_wave", StringComparison.Ordinal) &&
+                    evt.Detail.Contains("actors:100", StringComparison.Ordinal)), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "cinematic_cleanup" &&
+                    evt.Detail.StartsWith("cleanup:", StringComparison.Ordinal)), Is.True);
+                Assert.That(timeline.Events.Any(evt => evt.EventType == "quest_completed"), Is.True);
+            });
+        }
+
+        [Test]
+        public void CinematicActionPlanForTest_PreservesExplicitHundredActorCountInSnapshot()
+        {
+            Properties.KDAOC_DYNAMIC_QUEST_CINEMATIC_MAX_ACTORS_PER_ACTION = 100;
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            quest.Tags = (quest.Tags ?? Array.Empty<string>())
+                .Concat(new[] { "scene-director", "cinematic-actors:combat_stance:100" })
+                .ToArray();
+
+            DynamicQuestCinematicPlanSnapshot snapshot = DynamicQuestRuntimeService.BuildCinematicPlanSnapshotForTest(quest);
+            DynamicQuestCinematicPlanItem killActor = snapshot.Actions.Single(item =>
+                item.NodeId == "kill" &&
+                item.Trigger == "OnKill" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "counterline" &&
+                item.NpcAction == "combat_stance");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(snapshot.MaxActorsPerAction, Is.EqualTo(100));
+                Assert.That(killActor.ActorCount, Is.EqualTo(100));
+                Assert.That(killActor.MotionPattern, Is.EqualTo("brace"));
+                Assert.That(killActor.MotionStaggerMs, Is.GreaterThanOrEqualTo(50));
+                Assert.That(killActor.Detail, Does.Contain(":actors:100"));
+                Assert.That(killActor.Detail, Does.Contain(":stagger:75"));
+                Assert.That(snapshot.TotalActorCount, Is.GreaterThanOrEqualTo(100));
+            });
+        }
+
+        [Test]
+        public void CinematicActionPlanForTest_ClampsActorCountToOneHundred()
+        {
+            Properties.KDAOC_DYNAMIC_QUEST_CINEMATIC_MAX_ACTORS_PER_ACTION = 150;
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            quest.Tags = (quest.Tags ?? Array.Empty<string>())
+                .Concat(new[] { "scene-director", "cinematic-actors:combat_stance:150" })
+                .ToArray();
+
+            DynamicQuestCinematicPlanSnapshot snapshot = DynamicQuestRuntimeService.BuildCinematicPlanSnapshotForTest(quest);
+            DynamicQuestCinematicPlanItem killActor = snapshot.Actions.Single(item =>
+                item.NodeId == "kill" &&
+                item.Trigger == "OnKill" &&
+                item.Kind == "scene_beat" &&
+                item.SceneRole == "counterline" &&
+                item.NpcAction == "combat_stance");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(snapshot.MaxActorsPerAction, Is.EqualTo(100));
+                Assert.That(killActor.ActorCount, Is.EqualTo(100));
+                Assert.That(killActor.MotionStaggerMs, Is.GreaterThanOrEqualTo(50));
+                Assert.That(killActor.Detail, Does.Contain(":actors:100"));
+            });
+        }
+
+        [Test]
+        public void CinematicModelCatalogForTest_ResolvesPropAndNpcModelsFromQuestContext()
+        {
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            quest.Realm = "Midgard";
+            DynamicQuestNode explore = quest.Nodes.Single(node => node.Id == "explore");
+            explore.Title = "룬 토템 조사";
+            explore.Text = "룬이 새겨진 뼛조각 토템 주변의 흔적을 확인하세요.";
+            explore.Objective.LocationName = "룬 뼛조각 토템";
+            DynamicQuestNode kill = quest.Nodes.Single(node => node.Id == "kill");
+            kill.Text = "부러진 화살과 전투 흔적이 남은 길목에서 black wolf pup을 제압하세요.";
+
+            ushort totemModel = DynamicQuestRuntimeService.ResolveCinematicMarkerModelForTest(quest, explore, "OnExplore", "rune bone totem");
+            ushort recordModel = DynamicQuestRuntimeService.ResolveCinematicMarkerModelForTest(quest, explore, "OnExplore", "record journal tome written 기록 책");
+            ushort flameModel = DynamicQuestRuntimeService.ResolveCinematicMarkerModelForTest(quest, explore, "OnExplore", "flame fire torch campfire omen 횃불 불씨");
+            ushort battleActorModel = DynamicQuestRuntimeService.ResolveCinematicNpcModelForTest(quest, kill, "OnKill", "battle guard defense");
+            DynamicQuestCinematicModelEntry[] propCatalog = DynamicQuestCinematicCatalog.BuildPropCatalogForTest();
+            DynamicQuestCinematicModelEntry[] npcCatalog = DynamicQuestCinematicCatalog.BuildNpcCatalogForTest();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(totemModel, Is.EqualTo(104));
+                Assert.That(recordModel, Is.EqualTo(500));
+                Assert.That(flameModel, Is.EqualTo(601));
+                Assert.That(battleActorModel, Is.Not.EqualTo(0));
+                Assert.That(propCatalog.Length, Is.GreaterThanOrEqualTo(8));
+                Assert.That(propCatalog.Select(entry => entry.Model), Does.Contain(totemModel));
+                Assert.That(propCatalog.Single(entry => entry.Model == 104).Source, Is.EqualTo("default_prop"));
+                Assert.That(propCatalog.Single(entry => entry.Model == 104).Category, Is.EqualTo("relic"));
+                Assert.That(npcCatalog.Length, Is.GreaterThanOrEqualTo(8));
+                Assert.That(npcCatalog.Select(entry => entry.Model), Does.Contain(battleActorModel));
+                Assert.That(npcCatalog.Single(entry => entry.Model == 39).Category, Is.EqualTo("defender"));
+                Assert.That(npcCatalog.Single(entry => entry.Model == 342).Category, Is.EqualTo("scout"));
+                Assert.That(npcCatalog.Single(entry => entry.Model == 902).Category, Is.EqualTo("threat"));
+            });
+        }
+
+        [Test]
+        public void CinematicModelCatalogForTest_UsesSafeDefaultWhenPropContextIsWeak()
+        {
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            DynamicQuestNode talk = quest.Nodes.Single(node => node.Id == "talk");
+
+            ushort model = DynamicQuestRuntimeService.ResolveCinematicMarkerModelForTest(quest, talk, "OnNodeEnter", string.Empty);
+
+            Assert.That(model, Is.EqualTo(488));
+        }
+
+        [Test]
+        public void CinematicCatalogPromptDescription_ExplainsPropCategoriesForStoryGeneration()
+        {
+            string description = DynamicQuestCinematicCatalog.DescribeCatalogForPrompt();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(description, Does.Contain("model:label:category"));
+                Assert.That(description, Does.Contain("clue means tracks/evidence/path markers"));
+                Assert.That(description, Does.Contain("record means tomes/journals/written warnings"));
+                Assert.That(description, Does.Contain("relic means ritual stones/pendants/totems/realm symbols"));
+                Assert.That(description, Does.Contain("flame means torches/campfires/omens/fresh danger"));
+                Assert.That(description, Does.Contain("weapon means arrows/broken weapons/combat aftermath"));
+                Assert.That(description, Does.Contain("structure means doors/gates/portals/keeps/relic pads"));
+                Assert.That(description, Does.Contain("NPC role category intent"));
+                Assert.That(description, Does.Contain("defender means guards and shield lines"));
+            });
+        }
+
+        [Test]
+        public void CinematicCatalogSnapshot_ExposesLimitedReadOnlyModelCatalog()
+        {
+            DynamicQuestCinematicCatalogSnapshot snapshot = DynamicQuestRuntimeService.Instance.GetCinematicCatalogSnapshot(8);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(snapshot.Limit, Is.EqualTo(8));
+                Assert.That(snapshot.PropCount, Is.GreaterThanOrEqualTo(8));
+                Assert.That(snapshot.NpcCount, Is.GreaterThanOrEqualTo(8));
+                Assert.That(snapshot.Props, Has.Count.EqualTo(8));
+                Assert.That(snapshot.Npcs, Has.Count.EqualTo(8));
+                Assert.That(snapshot.Props.Select(item => item.Model), Does.Contain(488));
+                Assert.That(snapshot.Props.All(item => !string.IsNullOrWhiteSpace(item.Source)), Is.True);
+                Assert.That(snapshot.Props.All(item => !string.IsNullOrWhiteSpace(item.Category)), Is.True);
+                Assert.That(snapshot.Npcs.All(item => item.Model > 0), Is.True);
+            });
+        }
+
+        [Test]
+        public void CinematicPlanSnapshot_ExposesQuestActionModelsWithoutPlayingScene()
+        {
+            DynamicQuestDefinition quest = ExploreGraphQuest();
+            DynamicQuestCinematicPlanSnapshot snapshot = DynamicQuestRuntimeService.BuildCinematicPlanSnapshotForTest(quest);
+
+            DynamicQuestCinematicPlanItem exploreMarker = snapshot.Actions.First(item =>
+                item.NodeId == "explore" &&
+                item.Trigger == "OnExplore" &&
+                item.Kind == "marker");
+            DynamicQuestCinematicPlanItem talkActor = snapshot.Actions.Single(item =>
+                item.NodeId == "talk" &&
+                item.Trigger == "OnNodeEnter" &&
+                item.NpcAction == "challenge");
+            DynamicQuestCinematicPlanItem cleanup = snapshot.Actions.Single(item =>
+                item.NodeId == "complete" &&
+                item.Trigger == "OnComplete" &&
+                item.CleanupMarkers);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(snapshot.Found, Is.True);
+                Assert.That(snapshot.QuestId, Is.EqualTo("quest-explore"));
+                Assert.That(snapshot.NodeCount, Is.EqualTo(6));
+                Assert.That(snapshot.ActionCount, Is.EqualTo(snapshot.Actions.Count));
+                Assert.That(snapshot.MaxActorsPerAction, Is.EqualTo(100));
+                Assert.That(snapshot.TotalActorCount, Is.GreaterThan(0));
+                Assert.That(exploreMarker.SpawnMarker, Is.True);
+                Assert.That(exploreMarker.MarkerModel, Is.Not.EqualTo(0));
+                Assert.That(talkActor.SpawnNpcActor, Is.True);
+                Assert.That(talkActor.NpcModel, Is.Not.EqualTo(0));
+                Assert.That(talkActor.NpcRoleCategory, Is.Not.Empty);
+                Assert.That(talkActor.Detail, Does.Contain("catalogRole:"));
+                Assert.That(talkActor.ActorCount, Is.EqualTo(1));
+                Assert.That(talkActor.ActorName, Does.Contain("Quest Guard"));
+                Assert.That(cleanup.Detail, Is.EqualTo("cleanup:OnComplete:complete"));
             });
         }
 
@@ -1190,7 +3268,7 @@ namespace DOL.GS.Tests
                 "followup");
 
             DynamicQuestProgressSnapshot snapshot = DynamicQuestRuntimeService.Instance.GetProgressSnapshot("DummyQuest001", "Dummy Quest", true);
-            DynamicQuestTimelineSnapshot timeline = DynamicQuestRuntimeService.Instance.GetTimelineSnapshot("DummyQuest001", "Dummy Quest", true);
+            DynamicQuestTimelineSnapshot timeline = DynamicQuestRuntimeService.Instance.GetTimelineSnapshot("DummyQuest001", "Dummy Quest", true, 200);
             DynamicQuestProgressItem item = snapshot.Active.Single();
 
             Assert.Multiple(() =>
@@ -1208,6 +3286,101 @@ namespace DOL.GS.Tests
                     evt.EventType == "world_signal" &&
                     evt.NodeId == "observe_signal" &&
                     evt.Detail == "mob-growth:killed:region:1"), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "node_advanced" &&
+                    evt.FromNodeId == "observe_signal" &&
+                    evt.ToNodeId == "complete"), Is.True);
+            });
+        }
+
+        [Test]
+        public void RecordWorldSignalForTest_DeduplicatesRepeatedPendingWorldSignal()
+        {
+            DynamicQuestRuntimeService.Instance.AddQuest(ChoiceWorldSignalQuest());
+            DynamicQuestRuntimeService.Instance.RecordGraphProgressForTest(
+                "DummyQuest001",
+                "quest-choice-signal",
+                "return",
+                new[] { "talk", "kill" },
+                new Dictionary<string, int> { ["kill"] = 1 });
+
+            bool first = DynamicQuestRuntimeService.Instance.RecordWorldSignalForTest(
+                "DummyQuest001",
+                "Dummy Quest",
+                "mob-growth:killed:region:1");
+            bool second = DynamicQuestRuntimeService.Instance.RecordWorldSignalForTest(
+                "DummyQuest001",
+                "Dummy Quest",
+                "mob-growth:killed:region:1");
+            bool third = DynamicQuestRuntimeService.Instance.RecordWorldSignalForTest(
+                "DummyQuest001",
+                "Dummy Quest",
+                "mob-growth:killed:region:1");
+
+            DynamicQuestTimelineSnapshot timeline = DynamicQuestRuntimeService.Instance.GetTimelineSnapshot(
+                "DummyQuest001",
+                "Dummy Quest",
+                true,
+                200);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(first, Is.True);
+                Assert.That(second, Is.True);
+                Assert.That(third, Is.True);
+                Assert.That(timeline.Events.Count(evt =>
+                    evt.EventType == "world_signal_pending" &&
+                    evt.NodeId == "return" &&
+                    evt.Detail == "mob-growth:killed:region:1"), Is.EqualTo(1));
+            });
+        }
+
+        [Test]
+        public void SelectChoiceForTest_ConsumesBaseTimeWindowSignalForSpecificWindowEdge()
+        {
+            DynamicQuestDefinition quest = ChoiceWorldSignalQuest();
+            quest.Id = "quest-choice-time-window-signal";
+            DynamicQuestNode observe = quest.Nodes.Single(node => node.Id == "observe_signal");
+            observe.Edges.Single(edge => edge.Condition == DynamicQuestEdgeCondition.WorldSignal).ConditionValue = "time-window:night";
+            DynamicQuestRuntimeService.Instance.AddQuest(quest);
+            DynamicQuestRuntimeService.Instance.RecordGraphProgressForTest(
+                "DummyQuest001",
+                quest.Id,
+                "return",
+                new[] { "talk", "kill" },
+                new Dictionary<string, int> { ["kill"] = 1 });
+
+            bool pending = DynamicQuestRuntimeService.Instance.RecordWorldSignalForTest(
+                "DummyQuest001",
+                "Dummy Quest",
+                "time-window");
+            bool returned = DynamicQuestRuntimeService.Instance.RecordNpcInteractionForTest(
+                "DummyQuest001",
+                "seed-npc-1",
+                1);
+            bool selected = DynamicQuestRuntimeService.Instance.SelectChoiceForTest(
+                "DummyQuest001",
+                quest.Id,
+                "followup");
+
+            DynamicQuestProgressItem item = DynamicQuestRuntimeService.Instance
+                .GetProgressSnapshot("DummyQuest001", "Dummy Quest", true)
+                .Active
+                .Single();
+            DynamicQuestTimelineSnapshot timeline = DynamicQuestRuntimeService.Instance
+                .GetTimelineSnapshot("DummyQuest001", "Dummy Quest", true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(pending, Is.True);
+                Assert.That(returned, Is.True);
+                Assert.That(selected, Is.True);
+                Assert.That(item.CurrentNodeId, Is.EqualTo("complete"));
+                Assert.That(item.IsComplete, Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "world_signal" &&
+                    evt.NodeId == "observe_signal" &&
+                    evt.Detail == "time-window"), Is.True);
                 Assert.That(timeline.Events.Any(evt =>
                     evt.EventType == "node_advanced" &&
                     evt.FromNodeId == "observe_signal" &&
@@ -1285,6 +3458,44 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void SelectChoiceForTest_ConsumesPendingItemAcquiredSignalWhenSafeItemBranchObservesClue()
+        {
+            DynamicQuestRuntimeService service = new(new FakeDynamicQuestProgressRepository());
+            service.AddQuest(NpcLessItemAcquiredBranchQuest());
+            service.RecordGraphProgressForTest(
+                "DummyQuest001",
+                "quest-item-acquired-branch",
+                "choice",
+                new[] { "kill" },
+                new Dictionary<string, int> { ["kill"] = 1 });
+
+            bool pending = service.RecordWorldSignalForTest(
+                "DummyQuest001",
+                "Dummy Quest",
+                "item-acquired");
+            bool selected = service.SelectChoiceForTest(
+                "DummyQuest001",
+                "quest-item-acquired-branch",
+                "safe");
+
+            DynamicQuestProgressSnapshot snapshot = service.GetProgressSnapshot("DummyQuest001", "Dummy Quest", true);
+            DynamicQuestTimelineSnapshot timeline = service.GetTimelineSnapshot("DummyQuest001", "Dummy Quest", true, 200);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(pending, Is.True);
+                Assert.That(selected, Is.True);
+                Assert.That(snapshot.Active, Is.Empty);
+                Assert.That(snapshot.CompletedQuestIds, Does.Contain("quest-item-acquired-branch"));
+                Assert.That(timeline.Events.Any(evt => evt.EventType == "choice_selected" && evt.ChoiceId == "safe"), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "world_signal" &&
+                    evt.NodeId == "observe_signal" &&
+                    evt.Detail == "item-acquired"), Is.True);
+            });
+        }
+
+        [Test]
         public void SelectChoiceForTest_ClearsPendingWorldSignalWhenSafeBranchCompletes()
         {
             FakeDynamicQuestProgressRepository repository = new();
@@ -1311,7 +3522,7 @@ namespace DOL.GS.Tests
                 "safe");
 
             DbDynamicQuestProgress row = repository.Rows.Values.Single();
-            DynamicQuestTimelineSnapshot timeline = service.GetTimelineSnapshot("DummyQuest001", "Dummy Quest", true);
+            DynamicQuestTimelineSnapshot timeline = service.GetTimelineSnapshot("DummyQuest001", "Dummy Quest", true, 100);
 
             Assert.Multiple(() =>
             {
@@ -1384,7 +3595,7 @@ namespace DOL.GS.Tests
 
             bool advanced = service.RecordExploreProgressForTest("DummyQuest001", 1, 521000, 492000);
             DynamicQuestProgressSnapshot snapshot = service.GetProgressSnapshot("DummyQuest001", "Dummy Quest", true);
-            DynamicQuestTimelineSnapshot timeline = service.GetTimelineSnapshot("DummyQuest001", "Dummy Quest", true);
+            DynamicQuestTimelineSnapshot timeline = service.GetTimelineSnapshot("DummyQuest001", "Dummy Quest", true, 100);
             DynamicQuestProgressItem active = snapshot.Active.Single();
 
             Assert.Multiple(() =>
@@ -1507,6 +3718,19 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void BuildRegionEnteredSignalsForTest_UsesGenericAndSpecificRegionSignals()
+        {
+            IList<string> signals = DynamicQuestRuntimeService.BuildRegionEnteredSignalsForTest(181);
+
+            Assert.That(signals, Is.EqualTo(new[]
+            {
+                "region-entered",
+                "region-entered:181",
+                "region:181"
+            }));
+        }
+
+        [Test]
         public void RecordWorldSignalForTest_AdvancesItemAcquiredEdge()
         {
             DynamicQuestDefinition quest = WorldSignalGraphQuest();
@@ -1545,6 +3769,127 @@ namespace DOL.GS.Tests
                 Assert.That(ignored, Is.False);
                 Assert.That(advanced, Is.True);
                 Assert.That(item.CurrentNodeId, Is.EqualTo("return"));
+            });
+        }
+
+        [Test]
+        public void CompletedNpcLessQuest_RecordsWorldImpactSummaryAndTimeline()
+        {
+            DynamicQuestRuntimeService service = new(new FakeDynamicQuestProgressRepository());
+            DynamicQuestDefinition quest = WorldOfferQuest();
+            quest.StoryPresentationJson = "[" +
+                "{\"nodeId\":\"kill\",\"trigger\":\"OnKill\",\"speaker\":\"System\",\"text\":\"망보던 자가 탈출로로 물러나자 추격대가 길목을 잘라냅니다.\",\"emotion\":\"alarm\",\"emote\":\"Point\",\"cinematicAction\":\"scout_retreat\",\"sceneRole\":\"lookout_escape\",\"formation\":\"escape\",\"actorCount\":5,\"delayMs\":250}" +
+                "]";
+            service.AddQuest(quest);
+            service.AcceptQuestForTest("DummyQuest001", "Dummy Quest", quest.Id);
+
+            service.RecordExploreProgressForTest("DummyQuest001", 1, 521000, 492000);
+            service.RecordKillProgressForTest("DummyQuest001", "forest spiderling", 1, 1);
+
+            DynamicQuestWorldImpactSummary impact = service.GetWorldImpactSummary();
+            DynamicQuestTimelineSnapshot timeline = service.GetTimelineSnapshot("DummyQuest001", "Dummy Quest", false, 20);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(impact.TotalRecorded, Is.EqualTo(1));
+                Assert.That(impact.Recent.Single().QuestId, Is.EqualTo(quest.Id));
+                Assert.That(impact.Recent.Single().RegionId, Is.EqualTo(1));
+                Assert.That(impact.Recent.Single().Signals, Does.Contain("region-stabilized:1"));
+                Assert.That(impact.Recent.Single().Signals, Does.Contain("scene-consequence:escape_route_closed"));
+                Assert.That(impact.Recent.Single().Summary, Does.Contain("현장 여파=탈출로가 닫힘"));
+                Assert.That(impact.ByRegion.Single().CompletionCount, Is.EqualTo(1));
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "world_impact" &&
+                    evt.Detail.Contains("impact:region_stabilized")), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "world_impact_summary" &&
+                    evt.Detail.Contains("현장 여파=탈출로가 닫힘", StringComparison.Ordinal)), Is.True);
+            });
+        }
+
+        [Test]
+        public void CompletedFollowupQuest_RecordsChoiceAndSignalInWorldImpactSummary()
+        {
+            DynamicQuestRuntimeService service = new(new FakeDynamicQuestProgressRepository());
+            DynamicQuestDefinition quest = NpcLessChoiceWorldSignalQuest();
+            quest.Tags = new[] { "branch:mob-growth", "world-signal:mob-growth:killed:region:1" };
+            service.AddQuest(quest);
+            service.AcceptQuestForTest("DummyQuest001", "Dummy Quest", quest.Id);
+
+            Assert.That(service.RecordKillProgressForTest("DummyQuest001", "black wolf pup", 1, 1), Is.True);
+            Assert.That(service.SelectChoiceForTest("DummyQuest001", quest.Id, "followup"), Is.True);
+            Assert.That(service.RecordWorldSignalForTest("DummyQuest001", "mob-growth:killed:region:1"), Is.True);
+
+            DynamicQuestWorldImpactRecord impact = service.GetWorldImpactSummary().Recent.Single();
+            DynamicQuestTimelineSnapshot timeline = service.GetTimelineSnapshot("DummyQuest001", "Dummy Quest", false, 80);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(impact.ImpactType, Is.EqualTo("thread_uncovered"));
+                Assert.That(impact.ChoiceId, Is.EqualTo("followup"));
+                Assert.That(impact.ChoiceConsequence, Does.Contain("다음 세계 신호"));
+                Assert.That(impact.Summary, Does.Contain("선택=followup"));
+                Assert.That(impact.Signals, Does.Contain("branch:mob-growth"));
+                Assert.That(impact.Signals, Does.Contain("world-signal:mob-growth:killed:region:1"));
+                Assert.That(impact.Signals, Does.Contain("followup-observed"));
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "world_impact" &&
+                    evt.Detail.Contains("impact:thread_uncovered") &&
+                    evt.Detail.Contains("choice:followup")), Is.True);
+                Assert.That(timeline.Events.Any(evt =>
+                    evt.EventType == "world_impact_summary" &&
+                    evt.Detail.Contains("선택=followup")), Is.True);
+            });
+        }
+
+        [Test]
+        public void TimelineSnapshot_KeepsEarlyAcceptanceThroughPresentationHeavyQuest()
+        {
+            DynamicQuestRuntimeService service = new(new FakeDynamicQuestProgressRepository());
+            MethodInfo recorder = typeof(DynamicQuestRuntimeService).GetMethod(
+                "RecordTimelineEventLocked",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.That(recorder, Is.Not.Null);
+
+            recorder.Invoke(service, new object[]
+            {
+                "DummyQuest001",
+                "Dummy Quest",
+                "quest-heavy",
+                "quest_accepted",
+                "talk",
+                "",
+                "",
+                "test",
+                "",
+                0
+            });
+
+            for (int i = 0; i < 450; i++)
+            {
+                recorder.Invoke(service, new object[]
+                {
+                    "DummyQuest001",
+                    "Dummy Quest",
+                    "quest-heavy",
+                    "world_signal_pending",
+                    "return",
+                    "",
+                    "",
+                    $"time-window:pending:{i}",
+                    "",
+                    0
+                });
+            }
+
+            DynamicQuestTimelineSnapshot timeline = service.GetTimelineSnapshot("DummyQuest001", "Dummy Quest", false, 1000);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(timeline.Events.Count, Is.EqualTo(451));
+                Assert.That(timeline.Events.First().EventType, Is.EqualTo("quest_accepted"));
+                Assert.That(timeline.Events.Any(evt => evt.EventType == "world_signal_pending"), Is.True);
             });
         }
 
@@ -1799,7 +4144,7 @@ namespace DOL.GS.Tests
 
             bool advanced = service.RecordWorldSignalForTest("DummyQuest001", "Dummy Quest", "region-entered:1");
             DbDynamicQuestProgress row = repository.Rows.Values.Single();
-            DynamicQuestTimelineSnapshot timeline = service.GetTimelineSnapshot("DummyQuest001", "Dummy Quest", true);
+            DynamicQuestTimelineSnapshot timeline = service.GetTimelineSnapshot("DummyQuest001", "Dummy Quest", true, 100);
             DynamicQuestTimelineEvent signalEvent = timeline.Events.Single(evt => evt.EventType == "world_signal");
 
             Assert.Multiple(() =>
@@ -1959,7 +4304,7 @@ namespace DOL.GS.Tests
             DynamicQuestRuntimeService reloaded = new(repository);
             reloaded.AddQuest(ChoiceWorldSignalQuest());
             DynamicQuestProgressSnapshot snapshot = reloaded.GetProgressSnapshot("DummyQuest001", "Dummy Quest", true);
-            DynamicQuestTimelineSnapshot timeline = service.GetTimelineSnapshot("DummyQuest001", "Dummy Quest", true);
+            DynamicQuestTimelineSnapshot timeline = service.GetTimelineSnapshot("DummyQuest001", "Dummy Quest", true, 1000);
 
             Assert.Multiple(() =>
             {
@@ -2910,6 +5255,122 @@ namespace DOL.GS.Tests
             Assert.That(quest.Nodes.SelectMany(node => node.Edges).Select(edge => edge.Condition), Does.Contain(DynamicQuestEdgeCondition.PartySizeAtLeast));
         }
 
+        private static GamePlayer CreateJournalTestPlayer(string name, out RecordingPacketLib recorder)
+        {
+            EnsureJournalTestGameServer();
+            recorder = new RecordingPacketLib();
+            GamePlayer player = GamePlayer.CreateTestableGamePlayer();
+            player.Name = name;
+            GameClient client = new(null)
+            {
+                Out = recorder.PacketLib
+            };
+
+            typeof(GamePlayer)
+                .GetField("m_client", BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(player, client);
+
+            return player;
+        }
+
+        private static void EnsureJournalTestGameServer()
+        {
+            if (GameServer.Instance is JournalTestGameServer)
+                return;
+
+            GameServer.LoadTestDouble(new JournalTestGameServer(new EmptyObjectDatabase().Database));
+        }
+
+        private sealed class JournalTestGameServer : GameServer
+        {
+            public JournalTestGameServer(IObjectDatabase database)
+                : base(new GameServerConfiguration())
+            {
+                m_database = database;
+            }
+        }
+
+        private sealed class EmptyObjectDatabase
+        {
+            public EmptyObjectDatabase()
+            {
+                Database = DispatchProxy.Create<IObjectDatabase, EmptyObjectDatabaseProxy>();
+            }
+
+            public IObjectDatabase Database { get; }
+        }
+
+        private class EmptyObjectDatabaseProxy : DispatchProxy
+        {
+            protected override object Invoke(MethodInfo targetMethod, object[] args)
+            {
+                if (targetMethod.ReturnType == typeof(void))
+                    return null;
+
+                if (targetMethod.ReturnType == typeof(bool))
+                    return true;
+
+                if (targetMethod.ReturnType == typeof(int))
+                    return 0;
+
+                if (targetMethod.ReturnType == typeof(string))
+                    return args != null && args.Length > 0 ? args[0] as string ?? string.Empty : string.Empty;
+
+                if (targetMethod.ReturnType.IsGenericType &&
+                    targetMethod.ReturnType.GetGenericTypeDefinition() == typeof(IList<>))
+                {
+                    Type listType = typeof(List<>).MakeGenericType(targetMethod.ReturnType.GetGenericArguments()[0]);
+                    return Activator.CreateInstance(listType);
+                }
+
+                return targetMethod.ReturnType.IsValueType
+                    ? Activator.CreateInstance(targetMethod.ReturnType)
+                    : null;
+            }
+        }
+
+        private sealed class RecordingPacketLib
+        {
+            public RecordingPacketLib()
+            {
+                PacketLib = DispatchProxy.Create<IPacketLib, RecordingPacketLibProxy>();
+                ((RecordingPacketLibProxy)(object)PacketLib).Recorder = this;
+            }
+
+            public IPacketLib PacketLib { get; }
+            public List<AbstractQuest> QuestUpdates { get; } = new();
+            public List<byte> QuestRemoves { get; } = new();
+            public List<string> Messages { get; } = new();
+        }
+
+        private class RecordingPacketLibProxy : DispatchProxy
+        {
+            public RecordingPacketLib Recorder { get; set; }
+
+            protected override object Invoke(MethodInfo targetMethod, object[] args)
+            {
+                switch (targetMethod.Name)
+                {
+                    case nameof(IPacketLib.SendQuestUpdate):
+                        Recorder.QuestUpdates.Add((AbstractQuest)args[0]);
+                        break;
+                    case nameof(IPacketLib.SendQuestRemove):
+                        Recorder.QuestRemoves.Add((byte)args[0]);
+                        break;
+                    case nameof(IPacketLib.SendMessage):
+                        Recorder.Messages.Add((string)args[0]);
+                        break;
+                }
+
+                if (targetMethod.ReturnType == typeof(void))
+                    return null;
+
+                return targetMethod.ReturnType.IsValueType
+                    ? Activator.CreateInstance(targetMethod.ReturnType)
+                    : null;
+            }
+        }
+
         private static DynamicQuestDefinition LegacyQuest()
         {
             return new DynamicQuestDefinition
@@ -3000,7 +5461,7 @@ namespace DOL.GS.Tests
                         Choices = new[]
                         {
                             new DynamicQuestChoice { Id = "safe", Label = "마을 안전을 우선한다", Text = "마을 안전을 우선한다.", Consequence = "마을은 즉각적인 안전을 얻었지만 더 먼 흔적은 남았다." },
-                            new DynamicQuestChoice { Id = "followup", Label = "더 큰 위협을 추적한다", Text = "더 큰 위협을 추적한다.", Consequence = "마을은 불안해하지만 더 큰 위협의 꼬리를 잡았다." }
+                            new DynamicQuestChoice { Id = "followup", Label = "더 큰 위협을 추적한다", Text = "더 큰 위협을 추적한다.", Consequence = "다음 세계 신호를 기다리는 추적 기록이 열리고, 더 큰 위협의 꼬리를 잡았다." }
                         }
                     },
                     Edges = new[]
@@ -3237,7 +5698,7 @@ namespace DOL.GS.Tests
                         },
                         Edges = new[]
                         {
-                            new DynamicQuestEdge { ToNodeId = "complete", Condition = DynamicQuestEdgeCondition.ChoiceSelected, ConditionValue = "safe" },
+                            new DynamicQuestEdge { ToNodeId = "observe_signal", Condition = DynamicQuestEdgeCondition.ChoiceSelected, ConditionValue = "safe" },
                             new DynamicQuestEdge { ToNodeId = "observe_signal", Condition = DynamicQuestEdgeCondition.ChoiceSelected, ConditionValue = "followup" }
                         }
                     },

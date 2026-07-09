@@ -6,7 +6,7 @@ KDAOC 동적 퀘스트는 스토리 템플릿과 런타임 바인딩을 분리�
 
 | Key | 기본값 | 설명 |
 | --- | ---: | --- |
-| `kdaoc_dynamic_quest_enabled` | `false` | 메모리 동적 퀘스트 활성화 |
+| `kdaoc_dynamic_quest_enabled` | `false` | 동적 퀘스트 런타임 활성화 |
 | `kdaoc_dynamic_quest_max_active_per_player` | `1` | 플레이어당 동시에 진행 가능한 동적 퀘스트 수 |
 | `kdaoc_dynamic_quest_max_active_per_npc` | `1` | NPC 하나가 동시에 제공 가능한 동적 퀘스트 수 |
 | `kdaoc_dynamic_quest_max_kill_count` | `20` | 단일 동적 퀘스트 처치 목표 최대 수 |
@@ -37,6 +37,7 @@ KDAOC 동적 퀘스트는 스토리 템플릿과 런타임 바인딩을 분리�
 | `kdaoc_dynamic_quest_story_cache_world_prefill_max_candidates` | `60` | 한 번의 시드 패스에서 검토할 현재 월드 기반 추가 후보 최대 수 |
 | `kdaoc_dynamic_quest_story_cache_offer_enabled` | `true` | 자동 시드 슬롯이 남으면 DB의 active LLM 스토리 캐시를 현재 월드에 바인딩해 live offer로 승격 |
 | `kdaoc_dynamic_quest_story_cache_offer_min_slots` | `3` | LLM+캐시 offer가 켜진 운영에서 설정 seed가 슬롯을 다 써도 캐시 story offer를 최소 이 개수만큼 추가 승격 |
+| `kdaoc_dynamic_quest_cinematic_max_actors_per_action` | `100` | cinematic action 하나가 생성할 임시 NPC actor 최대 수. 0/미설정 또는 과거 기본값 8이면 기본 100으로 동작하고, 서버는 어떤 값이 들어와도 100을 넘기지 않는다. 작은 장면은 각 presentation beat의 `actorCount`와 cinematic tag로 직접 낮게 제어한다 |
 | `kdaoc_dynamic_quest_story_gemini_reset_delay_minutes` | `10` | Gemini RPD 리셋(Pacific midnight) 뒤 캐시 정리/보충을 시작하기 전 대기 시간 |
 | `kdaoc_dynamic_quest_story_gemini_reset_window_minutes` | `360` | 리셋 대기 후 캐시 정리/보충을 허용할 시간 창 |
 
@@ -100,6 +101,10 @@ LLM 스토리 캐시는 별도 테이블이 아니라 `dynamic_quest_template`�
 
 스토리 평가는 LLM 호출 없이 서버가 deterministic하게 계산한다. 구조, 한국어 텍스트, 목표 일치, 몰입감, narrative scene, presentation beat, 재바인딩 안전성, 금지 필드/원시 이모트 id 같은 safety 항목을 점수화한다. 캐시 정리는 총점이 낮은 row를 먼저 고르고, 총점이 같으면 safety/structure 점수가 낮은 row를 먼저 비활성화한다. 따라서 오래됐다는 이유만으로 양호한 스토리가 같은 점수의 위험한 스토리보다 먼저 지워지지 않는다.
 
+운영 안전성 평가는 스토리 품질 평가와 별도 단계다. `DynamicQuestOperationalEvaluator`는 바인딩된 `DynamicQuestDefinition`을 대상으로 완료 조건을 서버가 추적할 수 있는지, 시작/목표 NPC가 현재 월드에 존재하는지, 목표 수량이 주변 같은 이름 cluster 수를 넘지 않는지, starter/NpcOffer 목표 레벨이 안전선을 넘지 않는지, 시작/목표 위치가 알려진 zone 안에 있는지, 같은 zone 안에서 navmesh 경로를 찾을 수 있는지, 보상 multiplier가 정책 상한을 넘지 않는지, 너무 짧은 반복 보상 루프 위험이 있는지를 rule-based로 확인한다. 템플릿 바인딩 결과가 운영 평가를 통과하지 못하면 live offer로 승격하지 않고, 런타임에 직접 추가되는 퀘스트도 기본 보상/완료 조건 검사를 통과해야 등록된다.
+
+운영 평가는 현재 서버가 확실히 아는 정보만 hard fail로 사용한다. zone 미확인, target zone 누락, 같은 zone 안에서 확인한 navmesh 경로 실패는 폐기 사유가 되며, 서로 다른 zone 간 세부 이동성, 실제 지형 내부/벽 내부 여부, 직업별 장비 격차, 아이템 상점가 기반 악용 가능성은 현재 데이터가 충분하지 않으므로 경고 또는 후속 평가 항목으로 남긴다. NPC 없는 `AutoAccept` starter는 기존 템플릿 바인더가 안전 후보를 고르는 정책을 우선 사용하며, evaluator는 높은 레벨 후보를 추가 hard fail로 다시 막지 않고 난이도 경고로만 남긴다.
+
 `kdaoc_dynamic_quest_auto_seed_use_llm=true`이면 자동 시더는 실제 오퍼 생성 전에 seed 정의의 missing story template을 `kdaoc_dynamic_quest_story_cache_prefill_batch_size` 개수만큼 미리 채운다. 따라서 `kdaoc_dynamic_quest_auto_seed_max_quests` 때문에 이번 틱에 오퍼로 뜨지 않는 정의도 DB에 스토리만 선생성될 수 있다. `kdaoc_dynamic_quest_story_cache_world_prefill_enabled=true`이면 설정 seed뿐 아니라 현재 월드의 살아있는 공격 가능 NPC/몬스터 이름, 지역, 레벨대에서 `AutoAccept` 스토리 후보를 추가로 파생한다. 월드 프리필 후보는 스토리 텍스트와 별도로 `branch:mob-growth`, `world-signal:mob-growth:killed:region:<regionId>` 태그를 저장한다. 이 캐시가 나중에 live offer로 승격되면 템플릿 바인더가 현재 월드의 목표 위치에 맞춰 `observe_signal` 분기 노드를 만들고, 성장 몬스터 처치 신호가 들어왔을 때 followup 경로를 완료로 진행시킨다. 자동 시더는 먼저 설정 seed를 active offer로 만들고, `kdaoc_dynamic_quest_story_cache_offer_enabled=true`이면 DB의 active story cache를 점수/마지막 사용 시각/렐름 라운드로빈 기준으로 골라 현재 월드에 바인딩해 추가 offer로 만든다. LLM+캐시 offer 운영에서는 `kdaoc_dynamic_quest_story_cache_offer_min_slots`만큼 유효 seed 슬롯을 추가로 확보하므로, 기본 3렐름 NPC offer가 모두 생성되어도 NPC 없는 `AutoAccept` 캐시 offer가 같이 live offer로 뜬다. 캐시가 꽉 차면 Gemini RPD 리셋 이후 허용 창에서만 낮은 점수 row를 정리하고, 그 뒤 새 스토리 생성이 가능해진다.
 
 서버 시작 시 첫 자동 시드 패스는 월드/NPC 로딩이 끝날 시간을 주기 위해 짧은 지연 후 백그라운드에서 실행된다. 로컬 LLM이나 Gemini가 느리거나 꺼져 있어도 `GameServerStarted` 이벤트와 게임/API 리스너 부팅을 막지 않으며, 같은 시드 패스가 오래 걸리면 다음 타이머 틱과 중복 실행하지 않는다.
@@ -113,6 +118,14 @@ LLM 스토리 캐시는 별도 테이블이 아니라 `dynamic_quest_template`�
 진행 중인 퀘스트의 `WorldSignal` 엣지는 서버 내부 컨텐츠가 `DynamicQuestRuntimeService.Instance.RecordWorldSignal(player, signal)`을 호출해 진행시킨다. 이 경로는 진행 상태를 DB에 저장하고 `timeline`에 `world_signal`, `node_advanced`, 필요 시 `quest_completed`를 남긴다. 몬스터 성장 단계 변화, 지역 방어 성공, 동료 대화 완료 같은 시스템은 GM 명령 없이 이 메서드만 호출하면 현재 노드의 `WorldSignal` 조건과 일치하는 퀘스트를 다음 노드로 보낼 수 있다.
 
 LLM narrative/presentation 메타가 있는 퀘스트는 노드 진입 때 추가 timeline 이벤트를 남긴다. `narrative_scene`은 장면 제목/본문, `journal_entry`는 재접속 후에도 읽을 수 있는 짧은 저널 문장, `presentation_beat`는 speaker/emotion/emote/text 요약이다. 실제 `GamePlayer`가 있는 수락/상호작용/선택/탐험/처치/월드신호 경로에서는 `narrative_scene_presented`도 남기고 장면 제목과 본문을 플레이어 시스템창에 즉시 출력한다. 시작 NPC와 대화하는 노드에서는 서버 allowlist를 통과한 emote 이름만 `GameNPC.Emote(eEmote)`로 재생하고, 원시 emote id/opcode는 저장/실행하지 않는다. 이 연출은 진행 상태를 밀지 않는 cosmetic layer이며, 상태 변경은 기존 노드 objective/edge 처리에서만 일어난다.
+
+cinematic action layer는 presentation/narrative 문맥을 읽어 임시 marker object와 임시 NPC actor를 배치한다. marker는 clue/record/relic/flame/weapon/structure 카테고리 중 현재 장면에 맞는 모델을 카탈로그에서 고르고, NPC actor는 challenge, guard_advance, fallback_guard, combat_stance, hold_ground, witness_point, ambush_reveal, defender_intercept, scout_retreat, ritual_interrupt, threat_standoff 같은 액션으로 짧게 이동/방어/후퇴/대치한다. actor는 완료/정리 시 `cinematic_cleanup`으로 제거되고, 자체 보상/진행 상태를 바꾸지 않는다.
+
+Scene Director layer는 같은 actor/marker 시스템을 순차 beat로 묶는다. `scene-director`, `story-cinematic`, `dark-brotherhood` 태그 또는 암살/목격자/매복/탈출 문맥이 있으면 기존 Talk/Explore/Kill/Choice/Return 노드 안에서 `scene_beat` action을 만든다. 대표 beat는 contract, witness, lookout, ambush, intercept, witness_escape, confrontation, fallout, debrief이며, 각 beat는 `SceneBeatIndex`, `SceneDelayMs`, `SceneRole`, `Formation`을 가진다. formation은 escort/line/ambush/escape/patrol/ring을 사용해 단순 원형 스폰보다 더 장면 같은 배치를 만든다. 이 layer도 완료 조건을 직접 바꾸지 않고 timeline의 `cinematic_action`으로 기록된다.
+
+다중 actor는 action 단위로 `ActorCount`를 가진다. 기본 설정 `kdaoc_dynamic_quest_cinematic_max_actors_per_action=100`은 클라이맥스 장면을 최대 100명까지 허용하기 위한 상한이고, 일반 퀘스트의 부담은 각 presentation beat의 `actorCount`와 `cinematic-actors:<action>:<count>` 태그로 낮게 유지한다. 서버는 0/미설정 또는 과거 기본값 8이면 100으로 되돌리고 100 초과 값은 100으로 clamp한다. `mass-cinematic` 태그는 대규모 장면 의도를 나타내며, 실제 수는 서버 설정 상한을 넘지 않는다.
+
+더미 matrix는 `cinematic_density_score`를 별도로 계산한다. 이 점수는 narrative scene, presentation beat, cinematic action, scene director beat, choice/world signal, world impact, 완료/보상 관측을 합산해 스토리/연출 밀도를 본다. 더미 평가 API에 `cinematicDensityScore`와 `sceneDirectorBeat`가 들어오고 기준 미만이면 story cache row를 비활성화할 수 있으므로, 완료 가능성과 별개로 연출이 너무 빈약한 캐시를 걸러낼 수 있다.
 
 Choice 노드는 선택지가 `consequence` 문장을 가질 수 있다. 플레이어가 선택하면 `choice_selected`와 별도로 `choice_consequence` timeline 이벤트가 남고, 실제 플레이어가 있는 상호작용에서는 선택 결과 문장을 즉시 시스템창에 보여준다. 이 값은 보상 수치나 명령이 아니라 후속 스토리/관측 API가 참고할 수 있는 짧은 서사 결과만 담는다.
 
@@ -192,6 +205,8 @@ python3 tools/run-dummy-dynamic-quest-matrix.py \
 `--quest-start-mode autoaccept`에서는 시작 위치 리셋 대상이 퀘스트 NPC 근처가 아니라 현재 live quest의 시작 objective다. 더미는 위치 업데이트로 자동 수락/탐색 완료를 발생시키고, 목표 처치 후 읽기 API의 active 목록이 비는 `action_dynamic_quest_final_inactive`를 완료 지표로 기록한다.
 
 `--dry-run`을 붙이면 `test-output/dynamic-quest-matrix/commands.txt`에 실행 명령만 기록한다. 실제 난이도 판정은 각 case의 `metrics.csv`에서 `ok`, `target_removed`, `player_deaths`, `action_dynamic_quest_complete_verified`, `action_dynamic_quest_expected_active_node_verified`, `action_dynamic_quest_final_inactive`, `action_dynamic_quest_final_expected_active_node`를 집계한다. `--dynamic-quest-expected-final-node observe_signal`을 주면 followup 분기처럼 월드 신호를 기다리며 active 상태로 남는 퀘스트도 해당 노드에 도착한 것을 성공으로 본다. `action_dynamic_quest_timeline_choice_selected`, `action_dynamic_quest_timeline_world_signal`은 분기와 월드 신호 관측 지표다. `action_dynamic_quest_reward_observed`는 채팅 관측 기반 보조 지표로 리포트에 남기지만, 더미가 보상 채팅을 놓칠 수 있으므로 완료 성공의 필수 조건으로 쓰지 않는다.
+
+더미 매트릭스의 `evaluation_score`는 스토리/연출 핵심 점수다. 더미 레벨이 낮아서 죽거나 완료에 실패한 경우를 스카이림급 대화/연출 점수에 섞지 않기 위해, 운영 관측값은 별도 `operationalEvaluation` 블록과 `matrix-summary.md`의 `operational_score`, `operational_grade`, `operational_passed`, `operational_exploit_penalty`로 기록한다. 이 블록은 완료 관측, 보상 관측, 사망, 긴 동선, 매우 짧은 보상 완료 같은 운영 신호를 남기지만, 인프라/더미 준비 실패나 저레벨 더미 난이도 문제를 스토리 점수로 오염시키지 않는다.
 
 성장 몬스터 분기 스모크는 현재 live quest 중 `branch:mob-growth`와 특정 `world-signal:` 태그가 있는 offer를 고르고, 두 번째 선택지로 진입해 timeline을 확인한다.
 
