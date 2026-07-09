@@ -116,7 +116,7 @@ class OperationalScriptTests(unittest.TestCase):
 
         self.assertIn("--real-player-join", command)
         self.assertEqual(command[command.index("--joiner-account") + 1], "albtest007")
-        self.assertEqual(command[command.index("--roles") + 1], "healer,dps")
+        self.assertEqual(command[command.index("--roles") + 1], "healer")
 
     def test_live_companion_player_driver_smoke_wraps_command_profile(self) -> None:
         command = run_live_companion_player_driver_smoke.build_command(["--dry-run"])
@@ -261,11 +261,11 @@ class OperationalScriptTests(unittest.TestCase):
 
         for expected in [
             "용병 고용관",
-            "고용: [치유형 고용] [방어형 고용] [공격형 고용]",
-            "관리: [용병 상세] [휴식] [상태 확인] [소문] [요청 취소] [용병 해산]",
+            "고용: [추천 고용] [치유형 고용] [방어형 고용] [공격형 고용] [지원형 고용]",
+            "관리: [용병 상세] [용병 일지] [휴식] [상태 확인] [소문] [요청 취소] [용병 해산]",
             "용병에게 연락을 넣었습니다.",
             "지금 가능한 용병이 없습니다.",
-            "최근 용병 요청: 상태=",
+            "최근 용병 요청입니다.",
         ]:
             self.assertIn(expected, hire_npc)
         self.assertNotIn("[파티 용병]", hire_npc)
@@ -1314,7 +1314,8 @@ class OperationalScriptTests(unittest.TestCase):
         self.assertIn("Write-ProgressSnapshot", script)
         self.assertIn("Wait-Job -Job $jobs -Any -Timeout 5", script)
         self.assertIn("realm={2,-3}", script)
-        self.assertIn("$_.Realm -eq $lane.Realm", script)
+        self.assertIn("Get-RunningLaneRealmMap", script)
+        self.assertIn("$runningRealms.ContainsKey([string]$candidateLane.Realm)", script)
         self.assertIn("timeline.csv", script)
         self.assertIn('segment-*-metrics.csv', script)
 

@@ -522,7 +522,7 @@ class AccountCsvTests(unittest.TestCase):
                 rest_active=True,
             )
         )
-        self.assertTrue(
+        self.assertFalse(
             behavior.can_enable_hostile_attack_mode(
                 behavior.DummyBehaviorState.RestRecover,
                 10,
@@ -870,7 +870,7 @@ class AccountCsvTests(unittest.TestCase):
     def test_dynamic_quest_return_skips_api_when_cached_npc_is_interactable(self) -> None:
         cached_npc = FakeNpc(5252, "Brother Penric", 40, 120.0)
 
-        self.assertTrue(
+        self.assertFalse(
             behavior.dynamic_quest_return_should_query_npc_api(
                 cached_npc,
                 return_npc_distance=120.0,
@@ -881,7 +881,7 @@ class AccountCsvTests(unittest.TestCase):
     def test_dynamic_quest_return_queries_api_when_internal_id_is_required(self) -> None:
         cached_npc = FakeNpc(5252, "Master Elementalist", 40, 120.0)
 
-        self.assertFalse(
+        self.assertTrue(
             behavior.dynamic_quest_return_should_query_npc_api(
                 cached_npc,
                 return_npc_distance=120.0,
@@ -962,7 +962,7 @@ class AccountCsvTests(unittest.TestCase):
     def test_dynamic_quest_progress_completed_ids_match_expected_quest(self) -> None:
         args = SimpleNamespace(dynamic_quest_expected_quest_id="seed-100-ba989ad700b4b7b3")
 
-        self.assertFalse(
+        self.assertTrue(
             behavior.dynamic_quest_progress_has_completed_item(
                 {
                     "active": [],
@@ -4130,7 +4130,7 @@ class RequiredTargetApiTests(unittest.TestCase):
             require_target_name="\ub178\ub828\ud55c Vestus",
         )
 
-        self.assertFalse(
+        self.assertTrue(
             behavior.required_target_name_matches_for_args(
                 args,
                 "\ufffd\ufffd\ufffd\ufffd\ufffd Vestus",
@@ -4392,7 +4392,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 attack_enabled=True,
             )
         )
-        self.assertTrue(
+        self.assertFalse(
             behavior.should_start_combat_on_visible_attack(
                 active_combat={"target_id": 21083},
                 current_target=21083,
@@ -7806,6 +7806,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         threat_snapshot = {
             "flee_threat_active": True,
             "flee_threat_has_aggro": True,
+            "flee_threat_targets_dummy": True,
             "flee_threat_target": "GrowthMid701",
         }
 
@@ -8947,6 +8948,8 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             required_target_home=None,
             include_peace_npcs=True,
             hunter_target_max_ground_z_delta=220.0,
+            hunter_target_max_attack_z_delta=220.0,
+            attack_range=350.0,
         )
         bad = FakeNpc(1, "water beetle", 7, 100.0)
         bad.x = 292898
@@ -9785,7 +9788,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         )
         payload = (
             b'{"items":['
-            b'{"objectId":1,"name":"\\ub178\\ub828\\ud55c adder","level":8,"x":594457,"y":499932,"z":2057,'
+            b'{"objectId":1,"name":"adder","level":8,"x":594457,"y":499932,"z":2057,'
             b'"nearbyAvoidRadius":1800,"nearbyAvoidCount":2}'
             b"]}"
         )
@@ -9854,7 +9857,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         )
         payload = (
             b'{"items":['
-            b'{"objectId":1,"name":"\\ub178\\ub828\\ud55c adder","level":8,"x":594457,"y":499932,"z":2057,'
+            b'{"objectId":1,"name":"adder","level":8,"x":594457,"y":499932,"z":2057,'
             b'"nearbyAvoidRadius":1800,"nearbyAvoidCount":1}'
             b"]}"
         )
@@ -23083,7 +23086,12 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(party.snapshot()["leader_target_id"], 0)
 
     def test_last_known_shared_target_preserve_respects_fsm_gate(self):
-        snapshot = {"leader_target_id": 410}
+        snapshot = {
+            "leader_target_id": 410,
+            "leader_target_x": 123,
+            "leader_target_y": 456,
+            "leader_target_z": 7,
+        }
 
         self.assertFalse(
             behavior.should_chase_last_known_shared_target(
@@ -24495,7 +24503,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         )
 
         self.assertFalse(decision.allowed)
-        self.assertEqual(decision.reject_reason, "max_target_distance")
+        self.assertEqual(decision.reject_reason, "target_home_max_distance")
 
     def test_engagement_gate_allows_engaged_party_assist_target_inside_combat_home_leash(self):
         npc = FakeNpc(345, "moorlich", 48, 900.0)
@@ -25115,7 +25123,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertFalse(decision.allowed)
         self.assertEqual(decision.reject_reason, "leader_target_not_attackable")
 
-    def test_party_assist_leader_target_gate_blocks_travel_state(self):
+    def test_party_assist_leader_target_gate_allows_travel_state_for_engaged_leader(self):
         snapshot = {
             "leader_target_id": 602,
             "leader_target_name": "drakulv berserker",
@@ -25139,8 +25147,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
             client,
         )
 
-        self.assertFalse(decision.allowed)
-        self.assertEqual(decision.reject_reason, "state_blocks_party_assist")
+        self.assertTrue(decision.allowed)
 
     def test_party_assist_leader_target_allows_unknown_objective_position_when_leader_engaged(self):
         snapshot = {
@@ -26806,7 +26813,7 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 party_ready_for_objective=True,
             )
         )
-        self.assertTrue(
+        self.assertFalse(
             behavior.should_delay_target_selection_until_objective_ready(
                 args,
                 behavior.DummyBehaviorState.ReturnToObjective,
@@ -32174,7 +32181,12 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         )
 
     def test_last_known_chase_requires_matching_shared_target(self):
-        snapshot = {"leader_target_id": 77}
+        snapshot = {
+            "leader_target_id": 77,
+            "leader_target_x": 123,
+            "leader_target_y": 456,
+            "leader_target_z": 7,
+        }
 
         self.assertTrue(
             behavior.should_chase_last_known_shared_target(

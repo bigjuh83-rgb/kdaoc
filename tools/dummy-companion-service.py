@@ -651,7 +651,9 @@ def live_companion_role_flags(
                 "1",
             ]
         )
-    if action_rotation == "caster-basic" and "caster_dps" in capabilities:
+    if action_rotation == "caster-basic" and (
+        "caster_dps" in capabilities or request_objective_target_name(request or {})
+    ):
         flags.extend(
             [
                 "--startup-delay",

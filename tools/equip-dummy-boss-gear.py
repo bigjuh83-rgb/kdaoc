@@ -113,7 +113,7 @@ def writable_windows_client_defaults_dir(mysql_bin: str) -> str | None:
     if mysql_dir and os.path.isdir(mysql_dir) and os.access(mysql_dir, os.W_OK):
         return mysql_dir
 
-    cwd = str(Path.cwd())
+    cwd = os.getcwd()
     if re.match(r"^/mnt/[a-zA-Z]/", cwd) and os.access(cwd, os.W_OK):
         return cwd
 

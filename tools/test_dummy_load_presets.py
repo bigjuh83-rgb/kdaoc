@@ -119,6 +119,8 @@ class DummyLoadPresetTests(unittest.TestCase):
             start=100,
             count=None,
             password="dummy-pass",
+            template_account="dummy040",
+            template_character="Dummy040",
             character_name_mode=None,
             character_names="",
             character_name_file="",

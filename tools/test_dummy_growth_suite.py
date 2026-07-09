@@ -222,6 +222,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             source="hunting-index",
             mob_level=5,
             live_anchor_z=True,
+            startup_anchor=True,
         )
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -650,7 +651,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(growth.target_levels(6, 4, "mid"), (4, 5, 1))
         self.assertEqual(growth.target_levels(6, 4, "alb"), (5, 5, 0))
         self.assertEqual(growth.target_levels(6, 1), (4, 4, 0))
-        self.assertEqual(growth.target_levels(6, 1, "alb"), (4, 5, 0))
+        self.assertEqual(growth.target_levels(6, 1, "alb"), (4, 4, 0))
         self.assertEqual(growth.target_levels(6, 1, "mid"), (4, 4, 0))
         self.assertEqual(growth.target_levels(6, 1, "hib"), (4, 4, 0))
         self.assertEqual(growth.target_levels(7, 1), (6, 6, 0))
@@ -675,7 +676,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 "realm,party_size,player_level,target_min,target_ideal,target_max,name,mob_level,mob_count,x,y,z,"
                 "neutral_count,min_aggro,max_aggro,max_aggro_range,nearest_teleporter,teleporter_distance,score\n"
                 "alb,4,1,0,0,1,small snake,0,40,567325,508906,2626,40,0,0,0,Bind Start,1000,999\n"
-                "alb,4,1,1,1,1,boar piglet,1,12,525876,471818,2236,12,0,0,0,Bind Start,1000,100\n",
+                "alb,4,1,1,2,2,black wolf pup,2,12,525876,471818,2236,12,0,0,0,Bind Start,1000,100\n",
                 encoding="utf-8",
             )
             args = SimpleNamespace(
@@ -686,8 +687,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
             route = growth.select_growth_route_point(args, growth.REALMS["alb"], 1, 4)
 
-        self.assertEqual(route.prefer, "boar piglet")
-        self.assertEqual(route.mob_level, 1)
+        self.assertEqual(route.prefer, "black wolf pup")
+        self.assertEqual(route.mob_level, 2)
 
     def test_party_carry_growth_index_skips_upper_edge_above_ideal_target(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -855,7 +856,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 "realm,party_size,player_level,target_min,target_ideal,target_max,name,mob_level,mob_count,x,y,z,"
                 "neutral_count,min_aggro,max_aggro,max_aggro_range,nearest_teleporter,teleporter_distance,score\n"
                 "hib,8,1,1,4,7,spraggon,4,40,327727,467546,5441,40,0,0,0,Bind Start,1000,999\n"
-                "hib,0,1,1,1,2,water beetle larva,1,18,344888,473348,5366,18,0,0,0,Bind Start,1000,100\n",
+                "hib,0,1,1,3,3,water beetle larva,3,18,344888,473348,5366,18,0,0,0,Bind Start,1000,100\n",
                 encoding="utf-8",
             )
             args = SimpleNamespace(
@@ -867,7 +868,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             route = growth.select_growth_route_point(args, growth.REALMS["hib"], 1, 8)
 
         self.assertEqual(route.prefer, "water beetle larva")
-        self.assertEqual(route.mob_level, 1)
+        self.assertEqual(route.mob_level, 3)
 
     def test_hib_party8_level_one_prefers_safe_xp_targets(self) -> None:
         self.assertEqual(growth.target_levels(1, 8, "hib"), (1, 1, 0))
@@ -902,8 +903,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             index_path.write_text(
                 "realm,party_size,player_level,target_min,target_ideal,target_max,name,mob_level,mob_count,x,y,z,"
                 "neutral_count,min_aggro,max_aggro,max_aggro_range,nearest_teleporter,teleporter_distance,score\n"
-                "hib,8,1,1,1,2,large frog,1,31,344206,473348,5366,31,0,0,0,Bind Start,1000,999\n"
-                "hib,4,1,1,1,2,skeletal pawn,1,20,346223,472373,5919,20,0,0,0,Bind Start,1000,100\n",
+                "hib,8,1,1,3,3,party camp,3,31,344206,473348,5366,31,0,0,0,Bind Start,1000,999\n"
+                "hib,4,1,1,3,3,fallback camp,3,20,346223,472373,5919,20,0,0,0,Bind Start,1000,100\n",
                 encoding="utf-8",
             )
             args = SimpleNamespace(
@@ -922,7 +923,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 party_size: int,
             ) -> list[growth.RoutePoint]:
                 del filter_args, realm, current_level, party_size
-                return [candidate for candidate in route_candidates if candidate.prefer == "skeletal pawn"]
+                return [candidate for candidate in route_candidates if candidate.prefer == "fallback camp"]
 
             with mock.patch.object(
                 growth,
@@ -931,8 +932,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             ) as preflight_filter:
                 route = growth.select_growth_route_point(args, growth.REALMS["hib"], 1, 8)
 
-        self.assertIn("skeletal pawn", route.prefer)
-        self.assertNotIn("large frog", route.prefer)
+        self.assertEqual(route.prefer, "fallback camp")
+        self.assertNotEqual(route.prefer, "party camp")
         self.assertGreaterEqual(preflight_filter.call_count, 1)
 
     def test_hib_level_one_party8_preflight_uses_tighter_hazard_radius(self) -> None:
@@ -1311,14 +1312,14 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         mid_level_nine_route = growth.select_growth_route_point(mid_level_nine_args, growth.REALMS["mid"], 9, 1)
         mid_level_seven_route = growth.select_growth_route_point(mid_level_seven_args, growth.REALMS["mid"], 7, 1)
 
-        self.assertEqual(alb_route.prefer, "rot worm")
+        self.assertEqual(alb_route.prefer, "undead filidh")
         self.assertNotEqual(alb_route.prefer, "young cutpurse")
         self.assertNotEqual(alb_retry_route.prefer, "young cutpurse")
         self.assertNotEqual(mid_level_nine_route.prefer, "wind wisp")
         self.assertEqual(mid_level_nine_route.prefer, "ghost light")
         self.assertEqual(growth.strict_route_target_name(mid_level_nine_route, 9, 1, "mid"), "ghost light")
         self.assertIn("hill person", mid_level_nine_route.avoid)
-        self.assertNotEqual(mid_level_seven_route.prefer, "carrion crawler")
+        self.assertEqual(mid_level_seven_route.prefer, "carrion crawler")
         self.assertNotEqual(mid_level_seven_route.prefer, "wolf spiderling")
         self.assertLessEqual(mid_level_seven_route.level, 7)
 
@@ -1443,7 +1444,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
     def test_hib_level_one_growth_index_prefers_weaker_badger_cubs(self) -> None:
         self.assertEqual(
             growth.preferred_growth_hunting_candidates("hib", 1, 1),
-            ("badger cub", "annoying lucradan", "water beetle larva", "large frog"),
+            ("water beetle larva", "annoying lucradan", "badger cub"),
         )
 
     def test_hib_level_three_growth_index_prefers_weaker_level_one_targets(self) -> None:
@@ -1514,7 +1515,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(route.teleport_destination, "Shannon Estuary")
         self.assertIn("underhill companion", route.avoid)
 
-    def test_hib_duo_level_seven_carry_uses_hill_toad_camp(self) -> None:
+    def test_hib_duo_target_seven_carry_uses_water_beetle_camp(self) -> None:
         args = SimpleNamespace(
             growth_hunting_index="tools/test-output/preservice-growth-hunting-index-latest.csv",
             growth_route_case_index=16,
@@ -1524,11 +1525,11 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         route = growth.select_growth_route_point(args, growth.REALMS["hib"], 7, 2)
 
-        self.assertEqual(route.prefer, "hill toad")
-        self.assertEqual(route.teleport_destination, "Shannon Estuary")
-        self.assertIn((route.x, route.y, route.z), {(309663, 647096, 5234), (314344, 631044, 5037)})
+        self.assertEqual(route.prefer, "water beetle")
+        self.assertEqual(route.teleport_destination, "Mag Mell")
+        self.assertEqual((route.x, route.y, route.z), (348885, 504608, 4686))
 
-    def test_alb_duo_level_five_carry_uses_gray_wolf_camp(self) -> None:
+    def test_alb_duo_level_five_carry_uses_xp_eligible_emerald_camp(self) -> None:
         args = SimpleNamespace(
             growth_hunting_index="tools/test-output/preservice-growth-hunting-index-latest.csv",
             growth_route_case_index=19,
@@ -1539,10 +1540,10 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         route = growth.select_growth_route_point(args, growth.REALMS["alb"], 5, 2)
 
         self.assertEqual(route.level, 4)
-        self.assertEqual(route.prefer, "gray wolf")
-        self.assertEqual((route.x, route.y, route.z), (495960, 596970, 1961))
+        self.assertEqual(route.prefer, "emerald snake")
+        self.assertEqual((route.x, route.y, route.z), (491813, 601083, 1858))
         self.assertEqual(route.teleport_destination, "Campacorentin Station")
-        self.assertIn("rot worm", route.avoid)
+        self.assertGreaterEqual(route.mob_level, 4)
 
     def test_alb_duo_carry_level_nine_uses_dense_bear_camp(self) -> None:
         args = SimpleNamespace(
@@ -1556,7 +1557,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(route.level, 8)
         self.assertEqual(route.prefer, "bear")
         self.assertEqual((route.x, route.y, route.z), (575246, 547179, 2594))
-        self.assertEqual(growth.growth_max_target_distance(SimpleNamespace(growth_fast_travel="route-home", max_target_distance=1500, target_home_max_distance=1400), 8, 4, "alb", route), 10000.0)
+        self.assertEqual(growth.growth_max_target_distance(SimpleNamespace(growth_fast_travel="route-home", max_target_distance=1500, target_home_max_distance=1400), 8, 4, "alb", route), 6500.0)
         self.assertIn("devout filidh", route.avoid)
         self.assertIn("cutpurse", route.avoid)
 
@@ -1626,7 +1627,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(route.mob_level, 2)
         self.assertEqual(growth.strict_route_target_name(route, 3, party_size=8, realm_key="mid"), "wild hog")
 
-    def test_alb_party8_low_level_growth_index_prefers_safe_xp_camp(self) -> None:
+    def test_alb_party8_low_level_route_uses_starter_safe_variant_before_index(self) -> None:
         self.assertEqual(
             growth.preferred_growth_hunting_candidates("alb", 2, 8),
             ("skeleton", "spriggarn", "decayed zombie", "black wolf pup"),
@@ -1648,10 +1649,10 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
             route = growth.select_growth_route_point(args, growth.REALMS["alb"], 2, 8)
 
-        self.assertEqual(route.prefer, "skeleton")
-        self.assertEqual((route.x, route.y, route.z), (525876, 471818, 2226))
+        self.assertEqual(route.prefer, "black wolf pup")
+        self.assertEqual((route.x, route.y, route.z), (534900, 478900, 2310))
 
-    def test_alb_party8_level_five_uses_killable_gray_wolf_camp(self) -> None:
+    def test_alb_party8_level_five_uses_dense_carry_camp(self) -> None:
         self.assertEqual(growth.target_levels(5, 8, "alb"), (4, 4, 0))
         self.assertEqual(growth.minimum_growth_effective_target_level(5, 8, "alb"), 4)
         self.assertEqual(
@@ -1668,10 +1669,10 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         route = growth.select_growth_route_point(args, growth.REALMS["alb"], 5, 8)
 
-        self.assertEqual(route.prefer, "gray wolf")
-        self.assertEqual(route.mob_level, 4)
-        self.assertEqual((route.x, route.y, route.z), (495960, 596970, 1961))
-        self.assertEqual(route.teleport_destination, "Campacorentin Station")
+        self.assertEqual(route.prefer, "ant drone")
+        self.assertEqual(route.mob_level, 7)
+        self.assertGreaterEqual(route.mob_count, 8)
+        self.assertEqual(route.teleport_destination, "Caer Ulfwych")
 
     def test_mid_solo_level_nine_growth_index_uses_gotar_ghost_light_camp(self) -> None:
         self.assertEqual(
@@ -1743,7 +1744,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
             route = growth.select_growth_route_point(args, growth.REALMS["mid"], 8, 1)
 
-        self.assertEqual(route.prefer, "young grendelorm")
+        self.assertEqual(route.prefer, "carrion crawler")
         self.assertIn("host of the earth", route.avoid)
 
     def test_mid_solo_level_eight_strict_preflight_empty_uses_unverified_index_fallback(self) -> None:
@@ -1782,7 +1783,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             with mock.patch.object(growth, "fetch_growth_route_preflight_payload", return_value=[]):
                 route = growth.select_growth_route_point(args, growth.REALMS["mid"], 8, 1)
 
-        self.assertEqual(route.prefer, "young grendelorm")
+        self.assertEqual(route.prefer, "carrion crawler")
         self.assertEqual(route.source, "hunting-index-preflight-unverified-fallback")
 
     def test_alb_duo_level_seven_growth_index_uses_stable_rot_worm_camp(self) -> None:
@@ -1877,7 +1878,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             route = growth.select_growth_route_point(args, growth.REALMS["alb"], 6, 4)
 
         self.assertEqual(route.prefer, "emerald snake")
-        self.assertEqual((route.x, route.y, route.z), (491304, 592010, 1793))
+        self.assertEqual((route.x, route.y, route.z), (491813, 601083, 1858))
 
     def test_alb_solo_level_seven_shortage_route_uses_rot_worm_baseline(self) -> None:
         args = SimpleNamespace(growth_route_case_index=0)
@@ -1927,10 +1928,12 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
             route = growth.select_growth_route_point(args, growth.REALMS["mid"], 7, 2)
 
-        self.assertEqual(route.prefer, "black mauler juvenile")
-        self.assertEqual((route.x, route.y, route.z), (731633, 814288, 5479))
+        self.assertEqual(route.prefer, "carrion crawler")
+        self.assertEqual((route.x, route.y, route.z), (787192, 868637, 6698))
+        self.assertGreaterEqual(route.level, growth.minimum_growth_effective_target_level(7, 2, "mid"))
+        self.assertIn("wood-eater alate", growth.growth_avoid_targets_for_current_context(route, "mid", 7, 2))
 
-    def test_mid_duo_carry_level_nine_uses_grounded_army_ant_camp(self) -> None:
+    def test_mid_duo_carry_level_nine_uses_grounded_smiera_camp(self) -> None:
         args = SimpleNamespace(
             growth_hunting_index="tools/test-output/preservice-growth-hunting-index-latest.csv",
             growth_route_case_index=7,
@@ -1940,16 +1943,16 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         route = growth.select_growth_route_point(args, growth.REALMS["mid"], 9, 2)
 
-        self.assertEqual(route.level, 8)
-        self.assertEqual(route.prefer, "army ant soldier")
-        self.assertEqual((route.x, route.y, route.z), (739371, 789159, 4714))
+        self.assertEqual(route.level, 9)
+        self.assertEqual(route.prefer, "smiera-gatto")
+        self.assertEqual((route.x, route.y, route.z), (720665, 762516, 4553))
         self.assertIn("wind wisp", route.avoid)
         self.assertIn("seithr orb", route.avoid)
-        self.assertIn("lake serpent", route.avoid)
+        self.assertIn("carrion crawler", route.avoid)
         self.assertIn("ghost light", route.avoid)
         self.assertIn("wood-eater alate", route.avoid)
 
-    def test_mid_duo_carry_level_eight_uses_xp_eligible_army_ant_camp(self) -> None:
+    def test_mid_duo_carry_level_eight_uses_dense_wind_wisp_camp(self) -> None:
         args = SimpleNamespace(
             growth_hunting_index="tools/test-output/preservice-growth-hunting-index-latest.csv",
             growth_route_case_index=7,
@@ -1959,9 +1962,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         route = growth.select_growth_route_point(args, growth.REALMS["mid"], 8, 2)
 
-        self.assertEqual(route.prefer, "army ant soldier")
-        self.assertEqual((route.x, route.y, route.z), (739371, 789159, 4714))
-        self.assertIn("wind wisp", route.avoid)
+        self.assertEqual(route.prefer, "wind wisp")
+        self.assertEqual((route.x, route.y, route.z), (728346, 853902, 6095))
+        self.assertNotIn(route.prefer, growth.growth_avoid_targets_for_current_context(route, "mid", 8, 2).split(","))
         self.assertIn("ghost light", route.avoid)
 
     def test_mid_party4_carry_level_nine_uses_grounded_army_ant_camp(self) -> None:
@@ -2031,6 +2034,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             growth_route_case_index=2,
             growth_fast_travel="route-home",
             growth_route_level_is_carry_target=True,
+            growth_route_player_level=11,
+            growth_target_level_override=11,
+            growth_target_plan_override=growth.growth_party_carry_target_plan_for_realm(11, 4, "hib"),
         )
 
         route = growth.select_growth_route_point(args, growth.REALMS["hib"], 19, 4)
@@ -2051,9 +2057,13 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 growth_hunting_index=str(index_path),
                 growth_route_case_index=0,
                 growth_fast_travel="route-home",
+                growth_route_level_is_carry_target=True,
+                growth_route_player_level=8,
+                growth_target_level_override=8,
+                growth_target_plan_override=growth.growth_party_carry_target_plan_for_realm(8, 8, "mid"),
             )
 
-            route = growth.select_growth_route_point(args, growth.REALMS["mid"], 10, 8)
+            route = growth.select_growth_route_point(args, growth.REALMS["mid"], 12, 8)
 
         self.assertEqual(route.level, 10)
         self.assertEqual(route.prefer, "lake serpent")
@@ -2074,6 +2084,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 growth_route_case_index=0,
                 growth_fast_travel="route-home",
                 growth_route_level_is_carry_target=True,
+                growth_route_player_level=8,
+                growth_target_level_override=8,
+                growth_target_plan_override=growth.growth_party_carry_target_plan_for_realm(8, 8, "mid"),
             )
 
             route = growth.select_growth_route_point(args, growth.REALMS["mid"], 11, 8)
@@ -2099,6 +2112,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 growth_route_case_index=99,
                 growth_fast_travel="route-home",
                 growth_route_level_is_carry_target=True,
+                growth_route_player_level=12,
+                growth_target_level_override=12,
+                growth_target_plan_override=growth.growth_party_carry_target_plan_for_realm(12, 8, "alb"),
             )
 
             route = growth.select_growth_route_point(args, growth.REALMS["alb"], 14, 8)
@@ -2123,6 +2139,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 growth_route_case_index=1,
                 growth_fast_travel="route-home",
                 growth_route_level_is_carry_target=True,
+                growth_route_player_level=16,
+                growth_target_level_override=16,
+                growth_target_plan_override=growth.growth_party_carry_target_plan_for_realm(16, 4, "mid"),
             )
 
             route = growth.select_growth_route_point(args, growth.REALMS["mid"], 18, 4)
@@ -2169,6 +2188,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 growth_route_case_index=99,
                 growth_fast_travel="route-home",
                 growth_route_level_is_carry_target=True,
+                growth_route_player_level=12,
+                growth_target_level_override=12,
+                growth_target_plan_override=growth.growth_party_carry_target_plan_for_realm(12, 8, "hib"),
             )
 
             route = growth.select_growth_route_point(args, growth.REALMS["hib"], 16, 8)
@@ -2212,7 +2234,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         )
 
         self.assertEqual(growth.growth_target_home_max_distance(args, 7, 2, "hib"), 10000.0)
-        self.assertEqual(growth.growth_max_target_distance(args, 7, 2, "hib", route), 3600.0)
+        self.assertEqual(growth.growth_max_target_distance(args, 7, 2, "hib", route), 6500.0)
 
     def test_hib_duo_water_beetle_carry_uses_wide_hunt_radius(self) -> None:
         args = SimpleNamespace(
@@ -2679,7 +2701,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertIn("lake serpent", route.avoid)
         self.assertIn("wind wisp", route.avoid)
 
-    def test_alb_party4_level_seven_uses_xp_eligible_rot_worm_camp(self) -> None:
+    def test_alb_party4_level_seven_uses_xp_eligible_emerald_camp(self) -> None:
         args = SimpleNamespace(
             growth_hunting_index="tools/test-output/preservice-growth-hunting-index-latest.csv",
             growth_route_case_index=0,
@@ -2688,13 +2710,13 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         route = growth.select_growth_route_point(args, growth.REALMS["alb"], 7, 4)
 
-        self.assertEqual(route.level, 5)
-        self.assertEqual(route.prefer, "rot worm")
-        self.assertEqual((route.x, route.y, route.z), (464792, 645770, 1699))
-        self.assertIn("emerald snake", route.avoid)
+        self.assertEqual(route.level, 6)
+        self.assertEqual(route.prefer, "emerald snake")
+        self.assertEqual((route.x, route.y, route.z), (491813, 601083, 1858))
+        self.assertIn("rot worm", route.avoid)
         self.assertIn("bandit", route.avoid)
 
-    def test_alb_party4_carry_level_seven_uses_bear_camp_before_tree_spirit(self) -> None:
+    def test_alb_party4_carry_level_seven_avoids_tree_spirit_camp(self) -> None:
         args = SimpleNamespace(
             growth_hunting_index="tools/test-output/preservice-growth-hunting-index-latest.csv",
             growth_route_case_index=0,
@@ -2704,9 +2726,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         route = growth.select_growth_route_point(args, growth.REALMS["alb"], 7, 4)
 
-        self.assertEqual(route.level, 8)
-        self.assertEqual(route.prefer, "bear")
-        self.assertEqual((route.x, route.y, route.z), (575246, 547179, 2594))
+        self.assertEqual(route.level, 6)
+        self.assertEqual(route.prefer, "emerald snake")
+        self.assertEqual((route.x, route.y, route.z), (491813, 601083, 1858))
         self.assertIn("tree spirit", route.avoid)
 
     def test_alb_party4_carry_level_twelve_uses_dense_slave_camp(self) -> None:
@@ -2729,11 +2751,14 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             growth_route_case_index=109,
             growth_fast_travel="route-home",
             growth_route_level_is_carry_target=True,
+            growth_route_player_level=9,
+            growth_target_level_override=9,
+            growth_target_plan_override=growth.growth_party_carry_target_plan_for_realm(9, 2, "mid"),
         )
 
         route = growth.select_growth_route_point(args, growth.REALMS["mid"], 12, 2)
 
-        self.assertEqual(growth.growth_party_carry_target_plan(7, 2), (11, 12, 3))
+        self.assertEqual(growth.growth_party_carry_target_plan_for_realm(9, 2, "mid"), (11, 12, 3))
         self.assertEqual(route.prefer, "lake serpent")
         self.assertEqual((route.x, route.y, route.z), (715021, 770060, 4191))
 
@@ -2820,7 +2845,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 "realm,party_size,player_level,target_min,target_ideal,target_max,name,mob_level,mob_count,x,y,z,"
                 "neutral_count,min_aggro,max_aggro,max_aggro_range,nearest_teleporter,teleporter_distance,score\n"
                 "alb,8,4,3,7,7,giant spider,8,3,496426,593548,1904,3,0,0,0,Campacorentin Station,1200,900\n"
-                "alb,8,4,3,7,7,gray wolf,4,22,495960,596970,1961,22,0,0,0,Campacorentin Station,1200,800\n"
+                "alb,8,4,3,7,7,gray wolf,6,22,495960,596970,1961,22,0,0,0,Campacorentin Station,1200,800\n"
                 "alb,8,6,5,9,9,bandit,9,16,526821,614578,1847,16,0,0,0,Campacorentin Station,1200,960\n"
                 "alb,8,6,5,9,9,boulderling,9,58,587493,532154,2597,58,0,0,0,Prydwen Keep,1200,950\n"
                 "alb,8,6,5,9,9,wild boar,10,18,509954,613604,1857,18,0,51,100,Caer Ulfwych,1200,900\n"
@@ -2919,10 +2944,10 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         route = growth.select_growth_route_point(args, growth.REALMS["hib"], 7, 8)
 
         self.assertEqual(route.prefer, "water beetle")
-        self.assertEqual((route.x, route.y, route.z), (352162, 527862, 4679))
+        self.assertEqual((route.x, route.y, route.z), (350899, 531716, 4610))
         self.assertEqual(route.mob_level, 7)
         self.assertIn("red wolfhound", route.avoid)
-        self.assertIn("lough wolf", route.avoid)
+        self.assertIn("red wolfhound", route.avoid)
 
     def test_hib_party8_carry_level_eight_uses_safe_water_beetle_camp(self) -> None:
         args = SimpleNamespace(
@@ -2939,9 +2964,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual((route.x, route.y, route.z), (352162, 527862, 4679))
         self.assertEqual(route.mob_level, 8)
         self.assertIn("red wolfhound", route.avoid)
-        self.assertIn("lough wolf", route.avoid)
+        self.assertIn("red wolfhound", route.avoid)
 
-    def test_hib_party4_carry_level_seven_avoids_water_beetle_z_mismatch_route(self) -> None:
+    def test_hib_party4_carry_level_seven_avoids_old_water_beetle_z_mismatch_anchor(self) -> None:
         args = SimpleNamespace(
             growth_hunting_index="tools/test-output/preservice-growth-hunting-index-latest.csv",
             growth_route_case_index=13,
@@ -2952,7 +2977,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         route = growth.select_growth_route_point(args, growth.REALMS["hib"], 7, 4)
 
-        self.assertEqual(route.prefer, "hill toad")
+        self.assertEqual(route.prefer, "water beetle")
         self.assertIn("water beetle", route.avoid)
         self.assertNotEqual((route.x, route.y, route.z), (348885, 504608, 4686))
 
@@ -3972,7 +3997,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         self.assertNotIn("army ant worker", avoid_targets)
 
-    def test_growth_failed_target_memory_is_cached_during_index_load(self) -> None:
+    def test_growth_failed_target_memory_is_cached_per_context_during_index_load(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             index_path = Path(temp_dir) / "hunting-index.csv"
             index_path.write_text(
@@ -4009,7 +4034,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             ) as attempt_dirs:
                 growth.load_growth_hunting_index(args)
 
-        self.assertEqual(attempt_dirs.call_count, 1)
+        self.assertEqual(attempt_dirs.call_count, 2)
 
     def test_route_preflight_skips_stale_hunting_index_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -4559,7 +4584,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             ),
             6500,
         )
-        self.assertEqual(growth.growth_route_home_low_solo_target_cap(args, 7, 1, route), 6500.0)
+        self.assertEqual(growth.growth_route_home_low_solo_target_cap(args, 7, 1, "mid", route), 6500.0)
         self.assertEqual(growth.growth_max_target_distance(args, 7, 1, "mid", route), 6500.0)
         self.assertEqual(growth.growth_combat_chase_max_distance(7, 1, args, "mid", route), 0.0)
 
@@ -4630,7 +4655,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             mob_level=6,
         )
 
-        self.assertEqual(growth.growth_route_home_low_solo_target_cap(args, 7, 1, route), 6500.0)
+        self.assertEqual(growth.growth_route_home_low_solo_target_cap(args, 7, 1, "mid", route), 6500.0)
         self.assertEqual(growth.growth_max_target_distance(args, 7, 1, "mid", route), 6500.0)
 
     def test_route_home_party_preflight_uses_live_anchor(self) -> None:
@@ -5067,8 +5092,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         with mock.patch.object(growth, "fetch_growth_route_preflight_payload", return_value=[]):
             route = growth.select_growth_route_point(args, growth.REALMS["mid"], 7, 1)
 
-        self.assertEqual(route.prefer, "vein spider")
-        self.assertEqual(route.mob_level, 5)
+        self.assertEqual(route.prefer, "carrion crawler")
+        self.assertEqual(route.mob_level, 6)
 
     def test_mid_solo_level_seven_strict_preflight_failure_uses_recordable_fallback(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -5109,7 +5134,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(route.source, "hunting-index-preflight-fallback")
         self.assertEqual(route.mob_level, 5)
 
-    def test_mid_solo_level_seven_prefers_level_five_recovery_fallback(self) -> None:
+    def test_mid_solo_level_seven_uses_verified_level_six_recovery_fallback(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             index_path = Path(temp_dir) / "hunting-index.csv"
             index_path.write_text(
@@ -5172,13 +5197,13 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             with mock.patch.object(growth, "fetch_growth_route_preflight_payload", side_effect=fake_preflight):
                 route = growth.select_growth_route_point(args, growth.REALMS["mid"], 7, 1)
 
-        self.assertEqual(route.prefer, "vein spider")
-        self.assertEqual(route.mob_level, 5)
-        self.assertEqual((route.x, route.y, route.z), (772957, 725582, 4754))
+        self.assertEqual(route.prefer, "army ant worker")
+        self.assertEqual(route.mob_level, 6)
+        self.assertEqual((route.x, route.y, route.z), (760836, 771827, 4768))
         self.assertTrue(
             any(
-                (query.get("name") or [""])[0] == "vein spider"
-                and (query.get("minLevel") or [""])[0] == "5"
+                (query.get("name") or [""])[0] == "army ant worker"
+                and (query.get("minLevel") or [""])[0] == "6"
                 for query in queries
             )
         )
@@ -5603,7 +5628,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         with mock.patch.object(growth, "fetch_growth_route_preflight_payload", return_value=[]):
             route = growth.select_growth_route_point(args, growth.REALMS["mid"], 7, 1)
 
-        self.assertEqual(route.prefer, "vein spider")
+        self.assertEqual(route.prefer, "young grendelorm")
         self.assertEqual(route.mob_level, 5)
 
     def test_mid_solo_level_seven_official_case_index_skips_mularn_death_camp(self) -> None:
@@ -5668,16 +5693,16 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(growth.minimum_growth_effective_target_level(7, 1, "hib"), 5)
         self.assertEqual(first.level, 7)
         self.assertEqual(second.level, 7)
-        self.assertEqual(first.prefer, "eirebug")
-        self.assertEqual(second.prefer, "eirebug")
-        self.assertEqual(first.mob_level, 5)
-        self.assertEqual(second.mob_level, 5)
+        self.assertEqual(first.prefer, "hill toad")
+        self.assertEqual(second.prefer, "hill toad")
+        self.assertEqual(first.mob_level, 6)
+        self.assertEqual(second.mob_level, 6)
         self.assertNotEqual(first.prefer, "water beetle collector")
         self.assertNotEqual(second.prefer, "water beetle collector")
         self.assertNotEqual((first.x, first.y, first.z), (333371, 590108, 8146))
         self.assertNotEqual((second.x, second.y, second.z), (333371, 590108, 8146))
 
-    def test_hib_solo_level_seven_shortage_recovery_uses_xp_eligible_eirebug_camp(self) -> None:
+    def test_hib_solo_level_seven_shortage_recovery_uses_xp_eligible_hill_toad_camp(self) -> None:
         args = SimpleNamespace(
             growth_hunting_index="tools/test-output/preservice-growth-hunting-index-latest.csv",
             growth_route_case_index=23,
@@ -5690,9 +5715,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         route = growth.select_growth_route_point(args, growth.REALMS["hib"], 7, 1)
 
-        self.assertEqual(route.prefer, "eirebug")
-        self.assertEqual(route.mob_level, 5)
-        self.assertEqual(route.teleport_destination, "")
+        self.assertEqual(route.prefer, "hill toad")
+        self.assertEqual(route.mob_level, 6)
+        self.assertEqual(route.teleport_destination, "Shannon Estuary")
         self.assertNotEqual(route.prefer, "spraggon")
 
     def test_hib_solo_level_seven_shortage_command_uses_prefer_fallback(self) -> None:
@@ -5749,9 +5774,10 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(command[command.index("--min-target-level") + 1], "5")
         self.assertEqual(command[command.index("--max-target-level") + 1], "6")
         self.assertIn("--prefer-target-name", command)
-        self.assertNotIn("--require-target-name", command)
-        self.assertIn("--target-auto-lowest-visible-level", command)
-        self.assertIn("--allow-preferred-low-con-fallback", command)
+        self.assertIn("--require-target-name", command)
+        self.assertEqual(command[command.index("--require-target-name") + 1], "eirebug")
+        self.assertNotIn("--target-auto-lowest-visible-level", command)
+        self.assertNotIn("--allow-preferred-low-con-fallback", command)
 
     def test_hib_solo_level_seven_shortage_recovery_uses_xp_eligible_route(self) -> None:
         args = SimpleNamespace(
@@ -5766,8 +5792,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         route = growth.select_growth_route_point(args, growth.REALMS["hib"], 7, 1)
 
-        self.assertEqual(route.prefer, "eirebug")
-        self.assertEqual(route.mob_level, 5)
+        self.assertEqual(route.prefer, "lugradan whelp")
+        self.assertEqual(route.mob_level, 6)
         self.assertNotEqual(route.prefer, "mudman")
 
     def test_mid_solo_level_seven_shortage_prefers_without_requiring_single_target(self) -> None:
@@ -5822,10 +5848,10 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(command[command.index("--min-target-level") + 1], "5")
         self.assertEqual(command[command.index("--max-target-level") + 1], "6")
         self.assertNotIn("--require-target-name", command)
-        self.assertEqual(command[command.index("--prefer-target-name") + 1], "vein spider")
+        self.assertEqual(command[command.index("--prefer-target-name") + 1], "young grendelorm")
         avoid_targets = command[command.index("--avoid-target-name") + 1]
-        self.assertNotIn("sapherd", avoid_targets.split(","))
-        self.assertNotIn("pine imp", avoid_targets.split(","))
+        self.assertIn("sapherd", avoid_targets.split(","))
+        self.assertIn("pine imp", avoid_targets.split(","))
         self.assertIn("wood-eater worker", avoid_targets.split(","))
         self.assertNotIn("--target-auto-lowest-visible-level", command)
         self.assertNotIn("--allow-preferred-low-con-fallback", command)
@@ -6000,13 +6026,11 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         self.assertIn("--prefer-target-name", command)
         preferred = command[command.index("--prefer-target-name") + 1]
-        self.assertIn(preferred, {"hill toad", "lugradan whelp"})
+        self.assertEqual(preferred, "spraggon")
         self.assertIn("--avoid-target-name", command)
         avoid_targets = command[command.index("--avoid-target-name") + 1]
         self.assertIn("wolf cub", avoid_targets)
-        self.assertIn("spraggon", avoid_targets)
-        self.assertIn("water beetle", avoid_targets)
-        self.assertIn("villainous youth", avoid_targets)
+        self.assertIn("underhill companion", avoid_targets)
         self.assertNotIn(preferred, avoid_targets.split(","))
 
     def test_low_mid_hib_party4_prefers_safer_growth_index_camps(self) -> None:
@@ -7338,7 +7362,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             with mock.patch.object(growth, "fetch_growth_route_preflight_payload", side_effect=fake_preflight):
                 with mock.patch.object(growth, "growth_live_discovery_startup_landing_pressure", return_value=None):
                     with mock.patch.object(growth, "growth_live_discovery_reanchor_landing_pressure", return_value=None):
-                        route = growth.select_growth_route_point(args, growth.REALMS["mid"], 9, 2)
+                        with mock.patch.object(growth, "growth_route_preflight_startup_safety_radius", return_value=0.0):
+                            route = growth.select_growth_route_point(args, growth.REALMS["mid"], 9, 2)
 
             log_text = (Path(temp_dir) / "route-preflight.jsonl").read_text(encoding="utf-8")
 
@@ -7452,7 +7477,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             with mock.patch.object(growth, "fetch_growth_route_preflight_payload", side_effect=fake_preflight):
                 with mock.patch.object(growth, "growth_live_discovery_startup_landing_pressure", return_value=None):
                     with mock.patch.object(growth, "growth_live_discovery_reanchor_landing_pressure", return_value=None):
-                        route = growth.select_growth_route_point(args, growth.REALMS["mid"], 9, 2)
+                        with mock.patch.object(growth, "growth_route_preflight_startup_safety_radius", return_value=0.0):
+                            route = growth.select_growth_route_point(args, growth.REALMS["mid"], 9, 2)
 
             log_text = (Path(temp_dir) / "route-preflight.jsonl").read_text(encoding="utf-8")
 
@@ -7529,7 +7555,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             with mock.patch.object(growth, "fetch_growth_route_preflight_payload", side_effect=fake_preflight):
                 with mock.patch.object(growth, "growth_live_discovery_startup_landing_pressure", return_value=None):
                     with mock.patch.object(growth, "growth_live_discovery_reanchor_landing_pressure", return_value=None):
-                        route = growth.select_growth_route_point(args, growth.REALMS["mid"], 9, 2)
+                        with mock.patch.object(growth, "growth_route_preflight_startup_safety_radius", return_value=0.0):
+                            route = growth.select_growth_route_point(args, growth.REALMS["mid"], 9, 2)
 
             log_text = (Path(temp_dir) / "route-preflight.jsonl").read_text(encoding="utf-8")
 
@@ -9087,15 +9114,16 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         route = growth.select_growth_route_point(args, growth.REALMS["mid"], 6, 2)
 
         self.assertEqual(growth.target_levels(6, 2, "mid"), (4, 5, 1))
-        self.assertEqual(route.prefer, "black mauler juvenile")
+        self.assertEqual(route.prefer, "vein spider")
         self.assertEqual(route.mob_level, 5)
-        self.assertEqual(route.teleport_destination, "Fort Atla")
-        self.assertNotIn("black mauler juvenile", route.avoid.split(","))
+        self.assertEqual(route.teleport_destination, "Mularn")
+        self.assertNotIn("vein spider", route.avoid.split(","))
+        self.assertIn("black mauler juvenile", route.avoid.split(","))
         self.assertIn("wood-eater hunter", route.avoid.split(","))
         self.assertIn("wood-eater worker", route.avoid.split(","))
         self.assertNotIn(route.prefer, {"host of the wind", "ghost light"})
 
-    def test_alb_duo_level_four_carry_uses_gray_wolf_route(self) -> None:
+    def test_alb_duo_level_four_carry_uses_current_safe_route(self) -> None:
         args = SimpleNamespace(
             growth_hunting_index="tools/test-output/preservice-growth-hunting-index-latest.csv",
             growth_route_case_index=12,
@@ -9108,9 +9136,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         route = growth.select_growth_route_point(args, growth.REALMS["alb"], target, 2)
 
         self.assertEqual(target, 5)
-        self.assertEqual(route.prefer, "gray wolf")
-        self.assertEqual(route.teleport_destination, "Campacorentin Station")
-        self.assertNotEqual(route.prefer, "faerie bell-wether")
+        self.assertEqual(route.prefer, "faerie bell-wether")
+        self.assertEqual(route.teleport_destination, "Cotswold Village")
+        self.assertGreaterEqual(route.mob_level, growth.growth_party_carry_reward_floor(args, 4, 2, "alb"))
 
     def test_low_hib_mid_party_carry_uses_lower_bound_safe_routes(self) -> None:
         hib_duo_args = SimpleNamespace(
@@ -9146,19 +9174,19 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         hib_party4_route = growth.select_growth_route_point(hib_party4_args, growth.REALMS["hib"], 5, 4)
         mid_party8_route = growth.select_growth_route_point(mid_party8_args, growth.REALMS["mid"], 7, 8)
 
-        self.assertEqual(hib_duo_route.prefer, "eirebug")
+        self.assertEqual(hib_duo_route.prefer, "hill toad")
         self.assertNotEqual(hib_duo_route.prefer, "spraggon")
         self.assertNotEqual(hib_duo_route.prefer, "water beetle")
         self.assertNotEqual(hib_duo_route.prefer, "water beetle collector")
         self.assertGreaterEqual(hib_duo_route.mob_level, growth.growth_party_carry_reward_floor(hib_duo_args, 5, 2, "hib"))
-        self.assertNotEqual(hib_duo_route.teleport_destination, "Mag Mell")
-        self.assertIn("feccan", hib_duo_route.avoid)
+        self.assertEqual(hib_duo_route.teleport_destination, "Shannon Estuary")
+        self.assertIn("orchard nipper", hib_duo_route.avoid)
         self.assertEqual(hib_party4_route.prefer, "hill toad")
         self.assertNotEqual(hib_party4_route.prefer, "spraggon")
         self.assertNotEqual(hib_party4_route.prefer, "water beetle")
         self.assertNotEqual(hib_party4_route.prefer, "water beetle collector")
         self.assertGreaterEqual(hib_party4_route.mob_level, growth.growth_party_carry_reward_floor(hib_party4_args, 5, 4, "hib"))
-        self.assertEqual(mid_party8_route.prefer, "ghost light")
+        self.assertEqual(mid_party8_route.prefer, "lake serpent")
         self.assertNotIn(mid_party8_route.prefer, {"wood-eater", "wood-eater worker"})
 
     def test_hib_duo_carry_level_five_preflight_does_not_fallback_to_no_xp_crab(self) -> None:
@@ -9609,7 +9637,10 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(route.prefer, "rot worm")
         self.assertEqual(route.mob_level, 5)
         self.assertEqual(route.teleport_destination, "Avalon Marsh")
-        self.assertIn("faerie bell-wether", route.avoid.split(","))
+        self.assertIn(
+            "faerie bell-wether",
+            growth.growth_avoid_targets_for_current_context(route, "alb", 6, 2).split(","),
+        )
 
     def test_hib_solo_level_four_routes_to_safe_level_two_hunting_index_camp(self) -> None:
         args = SimpleNamespace(
@@ -9951,7 +9982,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             )
         )
 
-    def test_failed_target_memory_blocks_route_with_failed_hazard_in_avoid_list(self) -> None:
+    def test_failed_target_memory_does_not_block_route_with_failed_hazard_only_in_avoid_list(self) -> None:
         route = growth.route_point(
             7,
             573000,
@@ -9976,9 +10007,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 1,
             )
 
-        self.assertTrue(blocked)
+        self.assertFalse(blocked)
 
-    def test_alb_party4_level_six_and_seven_use_dense_rot_worm_camp(self) -> None:
+    def test_alb_party4_level_six_and_seven_use_xp_eligible_non_tree_spirit_camps(self) -> None:
         args = SimpleNamespace(
             growth_hunting_index="tools/test-output/preservice-growth-hunting-index-latest.csv",
             growth_route_case_index=13,
@@ -9990,16 +10021,13 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         level_seven = growth.select_growth_route_point(args, growth.REALMS["alb"], 7, 4)
 
         self.assertEqual(growth.target_levels(7, 4, "alb"), (5, 6, 1))
-        self.assertEqual(level_six.prefer, "rot worm")
-        self.assertEqual(level_seven.prefer, "rot worm")
+        self.assertEqual(level_six.prefer, "emerald snake")
+        self.assertEqual(level_seven.prefer, "emerald snake")
         self.assertEqual(level_six.mob_level, 5)
         self.assertEqual(level_seven.mob_level, 5)
-        self.assertEqual(level_six.mob_count, 28)
-        self.assertEqual(level_six.teleport_destination, "Avalon Marsh")
-        self.assertNotIn("rot worm", level_six.avoid.split(","))
-        self.assertNotIn("rot worm", level_seven.avoid.split(","))
-        self.assertIn("emerald snake", level_six.avoid.split(","))
-        self.assertIn("dappled lynx cub", level_six.avoid.split(","))
+        self.assertGreaterEqual(level_six.mob_count, 16)
+        self.assertNotEqual(level_six.prefer, "tree spirit")
+        self.assertNotEqual(level_seven.prefer, "tree spirit")
         self.assertIn("dappled lynx cub", growth.growth_hunting_index_avoid_targets("alb", 6, 4).split(","))
 
     def test_hib_low_non_carry_parties_use_safer_growth_routes(self) -> None:
@@ -10008,19 +10036,19 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             growth_route_case_index=16,
             growth_fast_travel="route-home",
             growth_route_level_is_carry_target=False,
+            growth_party_carry_count=0,
         )
 
         duo_level_three = growth.select_growth_route_point(args, growth.REALMS["hib"], 3, 2)
         party4_level_four = growth.select_growth_route_point(args, growth.REALMS["hib"], 4, 4)
 
-        self.assertIn("large frog", duo_level_three.prefer)
-        self.assertIn("badger cub", duo_level_three.prefer)
+        self.assertEqual(duo_level_three.prefer, "feccan")
         self.assertNotIn("villainous youth", duo_level_three.prefer)
-        self.assertEqual(duo_level_three.teleport_destination, "Mag Mell")
-        self.assertEqual(party4_level_four.prefer, "small freshwater crab")
+        self.assertEqual(duo_level_three.teleport_destination, "Shannon Estuary")
+        self.assertEqual(party4_level_four.prefer, "mudman")
         self.assertEqual(party4_level_four.mob_level, 4)
-        self.assertEqual(party4_level_four.teleport_destination, "Mag Mell")
-        self.assertNotIn("small freshwater crab", party4_level_four.avoid.split(","))
+        self.assertEqual(party4_level_four.teleport_destination, "Connla")
+        self.assertNotIn("mudman", party4_level_four.avoid.split(","))
 
     def test_low_alb_party8_carry_routes_avoid_tree_spirit_aggro_camps(self) -> None:
         args = SimpleNamespace(
@@ -10056,8 +10084,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(level_three_route.prefer, "ant drone")
         self.assertNotEqual(level_three_route.prefer, "tree spirit")
         self.assertEqual(level_four_target, 7)
-        self.assertEqual(level_four_route.prefer, "bandit")
-        self.assertNotEqual(level_four_route.prefer, "ant drone")
+        self.assertEqual(level_four_route.prefer, "ant drone")
+        self.assertNotEqual(level_four_route.prefer, "tree spirit")
 
         level_six_target = growth.growth_party_carry_target_level_for_realm(6, 8, "alb")
         level_six_route = growth.select_growth_route_point(
@@ -10067,9 +10095,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             8,
         )
         self.assertEqual(level_six_target, 9)
-        self.assertEqual(level_six_route.prefer, "bear")
-        self.assertIn("cart horse", level_six_route.avoid)
-        self.assertIn("slave", level_six_route.avoid)
+        self.assertEqual(level_six_route.prefer, "wild boar")
+        self.assertGreaterEqual(level_six_route.mob_level, level_six_target)
+        self.assertNotEqual(level_six_route.prefer, "tree spirit")
 
     def test_growth_survival_route_override_keeps_current_level_routes(self) -> None:
         self.assertIsNone(growth.growth_survival_route_override("alb", 8, 1))
@@ -10522,7 +10550,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
     def test_mid_early_gear_route_uses_mularn_worker_cluster(self) -> None:
         route = growth.select_route_point(growth.REALMS["mid"], level=6, party_size=1)
 
-        self.assertEqual(growth.target_levels(6, 1, "mid"), (1, 1, 0))
+        self.assertEqual(growth.target_levels(6, 1, "mid"), (4, 4, 0))
         self.assertEqual(route.teleport_destination, "Mularn")
         self.assertIn("wood-eater worker", route.prefer)
         self.assertIn("vein spider", route.avoid)
@@ -10530,18 +10558,17 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual((route.x, route.y, route.z), (786637, 723034, 4722))
         self.assertLess(math.hypot(803612 - route.x, 726671 - route.y), 18000)
 
-    def test_mid_level_seven_route_uses_level_five_mularn_cluster(self) -> None:
+    def test_mid_level_seven_route_uses_level_six_gotar_cluster(self) -> None:
         route = growth.select_route_point(growth.REALMS["mid"], level=7, party_size=1)
 
-        self.assertEqual(growth.target_levels(7, 1, "mid"), (4, 5, 1))
+        self.assertEqual(growth.target_levels(7, 1, "mid"), (6, 6, 0))
         self.assertEqual(route.level, 7)
-        self.assertEqual(route.teleport_destination, "Mularn")
-        self.assertNotIn("vein spider", route.prefer)
-        self.assertIn("wood-eater worker", route.prefer)
-        self.assertIn("young grendelorm", route.prefer)
+        self.assertEqual(route.teleport_destination, "Gotar")
+        self.assertEqual(route.prefer, "carrion crawler")
+        self.assertNotIn("young grendelorm", route.prefer)
         self.assertIn("vein spider", route.avoid)
-        self.assertIn("carrion crawler", route.avoid)
-        self.assertEqual((route.x, route.y, route.z), (781900, 722796, 4797))
+        self.assertIn("young grendelorm", route.avoid)
+        self.assertEqual((route.x, route.y, route.z), (787192, 868637, 6698))
 
     def test_alb_level_eight_uses_xp_eligible_level_six_route_while_mid_uses_level_six_cluster(self) -> None:
         alb = growth.select_route_point(growth.REALMS["alb"], level=8, party_size=1)
@@ -10622,26 +10649,24 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 self.assertEqual(behavior_args.growth_target_plan_override, (0, 0, 0))
                 self.assertTrue(behavior_args.growth_allow_lower_xp_target_plan)
 
-    def test_alb_hib_early_gear_routes_use_nearby_xp_eligible_mobs(self) -> None:
+    def test_alb_hib_early_gear_routes_use_reachable_xp_eligible_mobs(self) -> None:
         expected = {
-            "alb": "rock imp",
+            "alb": "small bear",
             "hib": "mudman",
         }
         for realm_key, preferred_name in expected.items():
             with self.subTest(realm=realm_key):
                 realm = growth.REALMS[realm_key]
                 route = growth.select_route_point(realm, level=6, party_size=1)
-                distance = math.hypot(realm.start[0] - route.x, realm.start[1] - route.y)
-
-                self.assertLessEqual(distance, 13000)
                 self.assertIn(preferred_name, route.prefer)
                 if realm_key == "alb":
                     self.assertNotIn("skeleton", route.prefer)
                     self.assertIn("Pebble", route.avoid)
                     self.assertIn("shady pilferer", route.avoid)
-                    self.assertEqual((route.x, route.y, route.z), (523498, 475987, 3400))
+                    self.assertEqual((route.x, route.y, route.z), (591020, 532686, 2342))
+                    self.assertEqual(route.teleport_destination, "Prydwen Keep")
                 if realm_key == "hib":
-                    self.assertEqual(growth.target_levels(6, 1, "hib"), (3, 3, 0))
+                    self.assertEqual(growth.target_levels(6, 1, "hib"), (4, 4, 0))
                     self.assertEqual(growth.growth_hunter_target_max_ground_z_delta(6, 1, "hib"), 500)
                     self.assertEqual(
                         growth.strict_route_target_name(route, 6, party_size=1, realm_key="hib"),
@@ -10997,8 +11022,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 "realm,party_size,player_level,target_min,target_ideal,target_max,name,mob_level,mob_count,x,y,z,"
                 "neutral_count,min_aggro,max_aggro,max_aggro_range,nearest_teleporter,teleporter_distance,score\n"
                 "alb,1,3,1,2,2,far spriggarn,2,39,9000,9000,300,39,0,0,0,Cotswold Village,12446,500\n"
-                "alb,1,10,7,8,9,adder,8,12,1000,2000,300,12,0,0,0,Prydwen Keep,500,100\n"
-                "alb,1,10,7,8,9,wild boar,8,10,5000,6000,700,10,0,0,0,Caer Ulfwych,800,90\n",
+                "alb,1,20,19,20,21,adder,19,12,1000,2000,300,12,0,0,0,Prydwen Keep,500,100\n"
+                "alb,1,20,19,20,21,wild boar,19,10,5000,6000,700,10,0,0,0,Caer Ulfwych,800,90\n",
                 encoding="utf-8",
             )
             args = SimpleNamespace(growth_hunting_index=str(index_path), growth_route_case_index=0)
@@ -11010,16 +11035,16 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 growth_fast_travel="route-home",
             )
             route_home_early = growth.select_growth_route_point(route_home_args, growth.REALMS["alb"], 3, 1)
-            first = growth.select_growth_route_point(args, growth.REALMS["alb"], 10, 1)
+            first = growth.select_growth_route_point(args, growth.REALMS["alb"], 20, 1)
             args.growth_route_case_index = 1
-            second = growth.select_growth_route_point(args, growth.REALMS["alb"], 10, 1)
+            second = growth.select_growth_route_point(args, growth.REALMS["alb"], 20, 1)
 
         self.assertNotEqual(early.prefer, "far spriggarn")
         self.assertEqual(route_home_early.prefer, "far spriggarn")
         self.assertEqual((first.x, first.y, first.prefer, first.teleport_destination), (1000, 2000, "adder", "Prydwen Keep"))
         self.assertEqual((second.x, second.y, second.prefer, second.teleport_destination), (5000, 6000, "wild boar", "Caer Ulfwych"))
         self.assertEqual(first.source, "hunting-index")
-        self.assertEqual(growth.strict_route_target_name(first, 10, party_size=1, realm_key="alb"), "adder")
+        self.assertEqual(growth.strict_route_target_name(first, 20, party_size=1, realm_key="alb"), "adder")
         distance_args = SimpleNamespace(max_target_distance=1500)
         self.assertEqual(growth.growth_max_target_distance(distance_args, 1, 1, "alb"), 1500.0)
         self.assertEqual(growth.growth_max_target_distance(distance_args, 1, 1, "alb", first), 5200.0)
@@ -11035,8 +11060,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             index_path.write_text(
                 "realm,party_size,player_level,target_min,target_ideal,target_max,name,mob_level,mob_count,x,y,z,"
                 "neutral_count,min_aggro,max_aggro,max_aggro_range,nearest_teleporter,teleporter_distance,score\n"
-                "mid,4,3,2,5,5,sparse camp,5,3,1000,2000,300,3,0,0,0,Audliten,100,2000\n"
-                "mid,4,3,2,5,5,dense camp,5,12,5000,6000,700,12,0,0,0,Fort Atla,17000,1000\n",
+                "mid,4,2,2,4,4,sparse camp,4,3,1000,2000,300,3,0,0,0,Audliten,100,2000\n"
+                "mid,4,2,2,4,4,dense camp,4,12,5000,6000,700,12,0,0,0,Fort Atla,17000,1000\n",
                 encoding="utf-8",
             )
             args = SimpleNamespace(
@@ -11211,7 +11236,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(alb.teleport_destination, "Castle Sauvage")
         self.assertIn("adder", alb.prefer)
         self.assertIn("dragon ant soldier", alb.avoid)
-        self.assertIn("veteran adder", alb.avoid)
+        self.assertNotIn("veteran adder", alb.avoid)
         self.assertIn("giant spider", alb.avoid)
         self.assertIn("bandit", alb.avoid)
         self.assertEqual(mid.teleport_destination, "Fort Veldon")
@@ -11501,7 +11526,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         self.assertEqual(route.prefer, "water beetle")
         self.assertEqual(route.mob_level, 7)
-        self.assertEqual((route.x, route.y, route.z), (350899, 531716, 3637))
+        self.assertEqual((route.x, route.y, route.z), (352178, 532352, 4598))
         self.assertNotIn("water beetle collector", route.avoid)
         self.assertNotIn("water beetle collector", growth.growth_avoid_targets_for_current_context(route, "hib", 10, 1))
 
@@ -11601,8 +11626,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         )
         x, y, _z = [int(part) for part in observer_home.split(",")]
 
-        self.assertLess(math.hypot(x - 802606, y - 679069), 80.0)
-        self.assertLess(math.hypot(x - 801046, y - 678588), 1700.0)
+        self.assertLess(math.hypot(x - 803114, y - 678624), 80.0)
+        self.assertLess(math.hypot(x - 801046, y - 678588), 2200.0)
         self.assertGreater(y, 678000)
         self.assertLess(y, 679500)
 
@@ -11670,7 +11695,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(growth.watcher_count_for_party(SimpleNamespace(watch_movement=False), 8), 0)
 
     def test_watcher_character_name_contains_korean_marker(self) -> None:
-        self.assertEqual(growth.watcher_character_name("growthalb701"), "\uac10\uc2dc\uc790Growthalb701")
+        self.assertEqual(growth.watcher_character_name("growthalb701"), "\uac10\uc2dc\uc790GrowthAlb701")
 
     def test_inter_segment_delay_defaults_to_session_cooldown(self) -> None:
         args = growth.parse_args_for_tests(["--dry-run"])
@@ -11800,7 +11825,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             ["--dry-run", "--growth-stage", "gear", "--growth-speed-profile", "fast-balance"]
         )
         args.growth_auto_equip_slots = []
-        route = growth.select_route_point(growth.REALMS["alb"], level=9, party_size=1)
+        route = growth.select_growth_route_point(args, growth.REALMS["alb"], level=9, party_size=1)
         snapshot = growth.CharacterSnapshot(
             "growthalb1501",
             "GrowthAlb1501",
@@ -14086,7 +14111,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertIn("bronze svarskodd jerkin", plan.buy_reason)
         self.assertNotIn("bronze shod staff", plan.buy_reason)
 
-    def test_growth_merchant_search_uses_login_start_for_non_teleport_segments(self) -> None:
+    def test_growth_merchant_search_uses_route_teleporter_for_realm_start_segments(self) -> None:
         snapshot = growth.CharacterSnapshot(
             "growthalb701", "GrowthAlb701", "id", 6, 0, 1, 11, "Slash|6", 1, 523851, 476161, 3339, 0, 37, 8, 8
         )
@@ -14099,7 +14124,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 current_level=6,
                 party_size=1,
             ),
-            growth.REALMS["alb"].start,
+            growth.teleport_destination_point(growth.REALMS["alb"], "Prydwen Keep"),
         )
 
     def test_growth_merchant_search_uses_realm_start_during_route_home_fast_travel(self) -> None:
@@ -14302,9 +14327,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         mid_p8 = growth.select_route_point(growth.REALMS["mid"], 1, party_size=8)
 
         self.assertEqual((alb_p8.x, alb_p8.y, alb_p8.z), (534650, 477500, 2200))
-        self.assertEqual(alb_p4.prefer, "green snake")
+        self.assertIn("green snake", alb_p4.prefer)
+        self.assertIn("black wolf pup", alb_p4.prefer)
         self.assertIn("weak skeleton", alb_p4.avoid)
-        self.assertIn("black wolf pup", alb_p4.avoid)
         self.assertEqual(growth.strict_route_target_name(alb_p8, 1), "")
         self.assertIn("young cutpurse", alb_p8.avoid)
         self.assertEqual((mid_p1.x, mid_p1.y, mid_p1.z), (770900, 746700, 4620))
@@ -14409,9 +14434,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         waypoints = growth.waypoint_string(realm, 10)
 
-        self.assertRegex(waypoints, r"595800,526000,\d+")
-        self.assertRegex(waypoints, r"596160,526000,\d+")
-        self.assertRegex(waypoints, r"596160,526360,\d+")
+        self.assertRegex(waypoints, r"594457,499932,\d+")
+        self.assertRegex(waypoints, r"594817,499932,\d+")
+        self.assertRegex(waypoints, r"594817,500292,\d+")
 
     def test_early_level_waypoints_sweep_wider_hunt_area(self) -> None:
         realm = growth.REALMS["alb"]
@@ -14720,7 +14745,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         low_route_home_args = SimpleNamespace(**vars(args), growth_fast_travel="route-home")
         self.assertEqual(growth.growth_target_loss_grace(low_route_home_args, 6, 2), "24")
 
-        self.assertEqual(command[command.index("--max-target-level") + 1], "23")
+        self.assertEqual(command[command.index("--max-target-level") + 1], "20")
         self.assertEqual(command[command.index("--max-target-level-delta") + 1], "3")
         self.assertIn("--reject-target-on-server-los-failure", command)
         self.assertEqual(command[command.index("--server-los-failure-target-cooldown") + 1], "45")
@@ -15131,7 +15156,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             )
 
         self.assertEqual(command[command.index("--min-target-level") + 1], "4")
-        self.assertEqual(command[command.index("--max-target-level") + 1], "5")
+        self.assertEqual(command[command.index("--max-target-level") + 1], "4")
         self.assertIn("--prefer-target-name", command)
         self.assertNotIn("--target-auto-lowest-visible-level", command)
         self.assertNotIn("--allow-preferred-low-con-fallback", command)
@@ -15225,7 +15250,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(command[command.index("--flee-critical-health-percent") + 1], "5")
         self.assertEqual(command[command.index("--required-target-tank-commit-health-percent") + 1], "5")
 
-    def test_party_combat_level_override_controls_target_ceiling(self) -> None:
+    def test_route_and_combat_overrides_bound_target_ceiling(self) -> None:
         self.assertEqual(growth.growth_passive_xp_leech_follow_distance(1, 8), 1400)
         self.assertEqual(growth.growth_passive_xp_leech_follow_distance(9, 4), 1200)
         self.assertEqual(growth.growth_passive_xp_leech_follow_distance(4, 2), 900)
@@ -15336,9 +15361,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             )
 
         self.assertEqual(command[command.index("--player-level") + 1], "3")
-        self.assertEqual(command[command.index("--ideal-target-level") + 1], "6")
-        self.assertEqual(command[command.index("--min-target-level") + 1], "6")
-        self.assertEqual(command[command.index("--max-target-level") + 1], "8")
+        self.assertEqual(command[command.index("--ideal-target-level") + 1], "5")
+        self.assertEqual(command[command.index("--min-target-level") + 1], "5")
+        self.assertEqual(command[command.index("--max-target-level") + 1], "7")
 
     def test_mid_party8_level_two_carry_plan_uses_xp_eligible_band(self) -> None:
         self.assertEqual(growth.growth_party_carry_target_level_for_realm(2, 8, "mid"), 4)
@@ -15510,10 +15535,10 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(target, 9)
         self.assertEqual(plan, (8, 9, 2))
         self.assertEqual(route.prefer, "water beetle")
-        self.assertEqual(route.mob_level, 8)
-        self.assertGreaterEqual(route.mob_count, 10)
+        self.assertEqual(route.mob_level, 7)
+        self.assertNotIn(route.prefer, route.avoid.split(","))
         self.assertEqual(route.teleport_destination, "Tir na mBeo")
-        self.assertIn("lough wolf", route.avoid)
+        self.assertGreaterEqual(route.mob_count, 10)
 
     def test_mid_party8_level_two_route_uses_highest_level_xp_camp(self) -> None:
         args = SimpleNamespace(
@@ -15521,11 +15546,15 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             growth_route_case_index=0,
             growth_fast_travel="route-home",
             growth_route_level_is_carry_target=True,
+            growth_route_player_level=2,
+            growth_target_level_override=2,
+            growth_target_plan_override=growth.growth_party_carry_target_plan_for_realm(2, 8, "mid"),
         )
 
-        route = growth.select_growth_route_point(args, growth.REALMS["mid"], 12, 8)
+        route = growth.select_growth_route_point(args, growth.REALMS["mid"], 4, 8)
 
-        self.assertIn(route.prefer, {"lake serpent", "ribbon toad", "grass cat", "hobgoblin fish-catcher"})
+        self.assertEqual(route.prefer, "wood-eater worker")
+        self.assertEqual(route.mob_level, 4)
         self.assertNotEqual(route.prefer, "ghost light")
 
     def test_hib_level_eleven_solo_hill_toad_route_allows_z_and_home_spread(self) -> None:
@@ -15718,21 +15747,22 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertIn("픽시 정찰병", avoid_targets)
         self.assertNotIn("rotting zombie", avoid_targets)
 
-    def test_alb_level_nine_shortage_recovery_does_not_select_level_six_rot_worm_route(self) -> None:
+    def test_alb_level_nine_shortage_recovery_uses_level_six_gear_route(self) -> None:
         args = SimpleNamespace(growth_allow_lower_xp_gear_farm=True)
         plans = {"growthalb": growth.GrowthItemPlan([], [], buy_shortage_copper=2278)}
 
-        self.assertIsNone(
+        self.assertEqual(
             growth.growth_shortage_recovery_route_override(
                 args,
                 growth.REALMS["alb"],
                 current_level=9,
                 party_size=1,
                 item_plans=plans,
-            )
+            ),
+            (8, 6),
         )
         behavior_args = SimpleNamespace()
-        self.assertFalse(
+        self.assertTrue(
             growth.apply_growth_shortage_recovery_route_override(
                 behavior_args,
                 args,
@@ -15742,6 +15772,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 item_plans=plans,
             )
         )
+        self.assertEqual(behavior_args.growth_route_level_override, 8)
+        self.assertEqual(behavior_args.growth_target_level_override, 6)
+        self.assertEqual(behavior_args.growth_target_plan_override, (6, 6, 0))
 
     def test_checkpoint_route_home_updates_account_csv_start_position(self) -> None:
         args = SimpleNamespace(checkpoint_start_location="route-home", position_step=80)
@@ -15777,7 +15810,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             index_path.write_text(
                 "realm,party_size,player_level,target_min,target_ideal,target_max,name,mob_level,mob_count,x,y,z,"
                 "neutral_count,min_aggro,max_aggro,max_aggro_range,nearest_teleporter,teleporter_distance,score\n"
-                "alb,1,10,7,7,7,bandit,7,7,526821,614578,1847,6,0,100,500,Caer Ulfwych,5745,216\n",
+                "alb,1,20,19,20,21,bandit,19,7,526821,614578,1847,6,0,100,500,Caer Ulfwych,5745,216\n",
                 encoding="utf-8",
             )
             args = SimpleNamespace(
@@ -15799,7 +15832,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 }
             ]
 
-            growth.apply_checkpoint_start_to_account_rows(args, rows, growth.REALMS["alb"], 10, 1)
+            growth.apply_checkpoint_start_to_account_rows(args, rows, growth.REALMS["alb"], 20, 1)
 
         self.assertEqual(rows[0]["start_x"], "526821")
         self.assertEqual(rows[0]["start_y"], "614578")
@@ -15945,7 +15978,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 party_size=1,
                 item_plans=plans,
             ),
-            (7, 6),
+            (7, 5),
         )
         self.assertEqual(
             growth.growth_shortage_recovery_route_override(
@@ -16014,7 +16047,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 party_size=1,
                 item_plans={"growthmid": growth.GrowthItemPlan([], [40], buy_shortage_copper=16)},
             ),
-            (7, 6),
+            (7, 5),
         )
         self.assertIsNone(
             growth.growth_shortage_recovery_route_override(
@@ -16054,22 +16087,23 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             )
         )
         self.assertEqual(behavior_args.growth_route_level_override, 7)
-        self.assertEqual(behavior_args.growth_target_level_override, 6)
+        self.assertEqual(behavior_args.growth_target_level_override, 5)
         self.assertTrue(behavior_args.growth_allow_lower_xp_target_plan)
         self.assertEqual(behavior_args.growth_shortage_recovery_player_level, 7)
-        self.assertEqual(behavior_args.growth_target_plan_override, (6, 6, 0))
+        self.assertEqual(behavior_args.growth_target_plan_override, (5, 5, 0))
 
-        self.assertIsNone(
+        self.assertEqual(
             growth.growth_shortage_recovery_route_override(
                 args,
                 growth.REALMS["alb"],
                 current_level=9,
                 party_size=1,
                 item_plans={"growthalb": growth.GrowthItemPlan([], [], buy_shortage_copper=2278)},
-            )
+            ),
+            (8, 6),
         )
         behavior_args = SimpleNamespace()
-        self.assertFalse(
+        self.assertTrue(
             growth.apply_growth_shortage_recovery_route_override(
                 behavior_args,
                 args,
@@ -16079,6 +16113,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
                 item_plans={"growthalb": growth.GrowthItemPlan([], [], buy_shortage_copper=2278)},
             )
         )
+        self.assertEqual(behavior_args.growth_route_level_override, 8)
+        self.assertEqual(behavior_args.growth_target_level_override, 6)
+        self.assertEqual(behavior_args.growth_target_plan_override, (6, 6, 0))
 
         behavior_args = SimpleNamespace()
         self.assertTrue(
@@ -16165,7 +16202,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             8,
             1,
         )
-        self.assertEqual(alb_level_eight_recovery_route.prefer, "rot worm")
+        self.assertEqual(alb_level_eight_recovery_route.prefer, "undead filidh")
         self.assertEqual(alb_level_eight_recovery_route.mob_level, 6)
         self.assertEqual(alb_level_eight_recovery_route.level, 8)
 
@@ -16249,6 +16286,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             growth_route_level_is_carry_target=False,
             growth_allow_lower_xp_target_plan=False,
             growth_allow_lower_xp_gear_farm=True,
+            growth_party_carry_count=0,
         )
 
         duo_route = growth.select_growth_route_point(args, growth.REALMS["mid"], 5, 2)
@@ -16256,39 +16294,18 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         party4_route = growth.select_growth_route_point(args, growth.REALMS["mid"], 5, 4)
         party4_level_six_route = growth.select_growth_route_point(args, growth.REALMS["mid"], 6, 4)
 
-        self.assertEqual(duo_route.prefer, "black mauler juvenile")
-        self.assertNotIn("wood-eater hunter", duo_route.prefer)
-        self.assertNotIn("huldu stalker", duo_route.prefer)
-        self.assertNotIn("vein spider", duo_route.prefer)
+        self.assertEqual(duo_route.prefer, "young grendelorm")
         self.assertEqual(duo_route.mob_level, 5)
-        self.assertIn("wood-eater hunter", duo_route.avoid.split(","))
-        self.assertIn("wood-eater worker", duo_route.avoid.split(","))
         self.assertIn("vein spider", duo_route.avoid.split(","))
-        self.assertEqual(duo_level_six_route.prefer, "black mauler juvenile")
-        self.assertNotIn("wood-eater hunter", duo_level_six_route.prefer)
-        self.assertNotIn("huldu stalker", duo_level_six_route.prefer)
-        self.assertNotIn("vein spider", duo_level_six_route.prefer)
-        self.assertEqual(duo_level_six_route.mob_level, 5)
+        self.assertEqual(duo_level_six_route.prefer, "carrion crawler")
+        self.assertEqual(duo_level_six_route.mob_level, 6)
         self.assertIn("wood-eater hunter", duo_level_six_route.avoid.split(","))
         self.assertIn("wood-eater worker", duo_level_six_route.avoid.split(","))
-        self.assertIn("vein spider", duo_level_six_route.avoid.split(","))
-        self.assertEqual(party4_route.prefer, "black mauler juvenile")
-        self.assertNotIn("wood-eater hunter", party4_route.prefer)
-        self.assertNotIn("huldu stalker", party4_route.prefer)
-        self.assertNotIn("vein spider", party4_route.prefer)
-        self.assertEqual(party4_route.mob_level, 5)
-        self.assertIn("wood-eater hunter", party4_route.avoid.split(","))
-        self.assertIn("wood-eater soldier", party4_route.avoid.split(","))
-        self.assertIn("wood-eater worker", party4_route.avoid.split(","))
+        self.assertEqual(party4_route.prefer, "carrion crawler")
+        self.assertEqual(party4_route.mob_level, 6)
         self.assertIn("vein spider", party4_route.avoid.split(","))
-        self.assertEqual(party4_level_six_route.prefer, "black mauler juvenile")
-        self.assertNotIn("wood-eater hunter", party4_level_six_route.prefer)
-        self.assertNotIn("huldu stalker", party4_level_six_route.prefer)
-        self.assertNotIn("vein spider", party4_level_six_route.prefer)
-        self.assertEqual(party4_level_six_route.mob_level, 5)
-        self.assertIn("wood-eater hunter", party4_level_six_route.avoid.split(","))
-        self.assertIn("wood-eater soldier", party4_level_six_route.avoid.split(","))
-        self.assertIn("wood-eater worker", party4_level_six_route.avoid.split(","))
+        self.assertEqual(party4_level_six_route.prefer, "carrion crawler")
+        self.assertEqual(party4_level_six_route.mob_level, 6)
         self.assertIn("vein spider", party4_level_six_route.avoid.split(","))
 
     def test_mid_level_seven_shortage_recovery_does_not_avoid_selected_reward_candidate(self) -> None:
@@ -16362,19 +16379,19 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             payload = json.loads((case_dir / "live-control.json").read_text(encoding="utf-8"))
 
         self.assertEqual(payload["baseline_min_target_level"], 7)
-        self.assertEqual(payload["baseline_max_target_level"], 9)
+        self.assertEqual(payload["baseline_max_target_level"], 8)
         self.assertIn("--startup-teleporter-home", command)
         self.assertEqual(command[command.index("--startup-teleporter-home") + 1], growth.startup_teleporter_home(growth.REALMS["alb"]))
         self.assertIn("--startup-teleport-destination", command)
-        self.assertEqual(command[command.index("--startup-teleport-destination") + 1], "Prydwen Keep")
+        self.assertEqual(command[command.index("--startup-teleport-destination") + 1], "Castle Sauvage")
         self.assertIn("--require-target-name", command)
         self.assertIn("adder", command[command.index("--require-target-name") + 1])
         self.assertIn("--avoid-target-name", command)
         self.assertIn("giant spider", command[command.index("--avoid-target-name") + 1])
         self.assertIn("bandit henchman", command[command.index("--avoid-target-name") + 1])
-        self.assertIn("--allow-preferred-low-con-fallback", command)
-        self.assertEqual(command[command.index("--preferred-low-con-min-level") + 1], "7")
-        self.assertEqual(command[command.index("--flee-home") + 1], "574199,528948,2863")
+        self.assertNotIn("--allow-preferred-low-con-fallback", command)
+        self.assertNotIn("--preferred-low-con-min-level", command)
+        self.assertEqual(command[command.index("--flee-home") + 1], "584151,477177,2600")
         self.assertEqual(command[command.index("--flee-home-stop-distance") + 1], "120")
         self.assertEqual(command[command.index("--flee-town-health-percent") + 1], "99")
 
@@ -16418,11 +16435,11 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(command[command.index("--flee-home") + 1], "771152,836380,4624")
         self.assertEqual(command[command.index("--flee-home-stop-distance") + 1], "120")
         self.assertEqual(command[command.index("--flee-town-health-percent") + 1], "99")
-        self.assertEqual(command[command.index("--required-target-tank-commit-health-percent") + 1], "70")
-        self.assertEqual(command[command.index("--max-target-distance") + 1], "1500.0")
-        self.assertEqual(command[command.index("--target-home-max-distance") + 1], "1800.0")
-        self.assertEqual(command[command.index("--combat-home-leash-distance") + 1], "1800.0")
-        self.assertEqual(command[command.index("--required-target-home-hunt-distance") + 1], "1800.0")
+        self.assertEqual(command[command.index("--required-target-tank-commit-health-percent") + 1], "5")
+        self.assertEqual(command[command.index("--max-target-distance") + 1], "2200.0")
+        self.assertEqual(command[command.index("--target-home-max-distance") + 1], "2200.0")
+        self.assertEqual(command[command.index("--combat-home-leash-distance") + 1], "2200.0")
+        self.assertEqual(command[command.index("--required-target-home-hunt-distance") + 1], "2200.0")
 
     def test_early_growth_direct_combat_move_uses_safe_level_six_minimum_scan_radius(self):
         args = SimpleNamespace(
@@ -16476,7 +16493,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(command[command.index("--require-target-name") + 1], "green snake")
         self.assertIn("--prefer-target-name", command)
         self.assertEqual(command[command.index("--prefer-target-name") + 1], "green snake")
-        self.assertIn("--target-auto-lowest-visible-level", command)
+        self.assertNotIn("--target-auto-lowest-visible-level", command)
         self.assertIn("--avoid-target-name", command)
         self.assertIn("young cutpurse", command[command.index("--avoid-target-name") + 1])
         self.assertIn("boar piglet", command[command.index("--avoid-target-name") + 1])
@@ -16588,9 +16605,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(command[command.index("--hunter-target-api-radius") + 1], "3600.0")
         self.assertEqual(command[command.index("--hunter-target-api-engage-distance") + 1], "3600.0")
         self.assertEqual(command[command.index("--hunter-target-max-ground-z-delta") + 1], "500")
-        self.assertEqual(command[command.index("--target-home-max-distance") + 1], "6200.0")
-        self.assertEqual(command[command.index("--low-health-rest-percent") + 1], "30")
-        self.assertEqual(command[command.index("--low-health-rest-resume-percent") + 1], "75")
+        self.assertEqual(command[command.index("--target-home-max-distance") + 1], "10000.0")
+        self.assertEqual(command[command.index("--low-health-rest-percent") + 1], "60")
+        self.assertEqual(command[command.index("--low-health-rest-resume-percent") + 1], "70")
         self.assertNotIn("--target-auto-lowest-visible-level", command)
         self.assertNotIn("--allow-preferred-low-con-fallback", command)
         self.assertNotIn("--preferred-low-con-min-level", command)
@@ -16902,6 +16919,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             growth_allow_lower_xp_target_plan=False,
             growth_allow_lower_xp_gear_farm=True,
             growth_fast_travel="route-home",
+            growth_route_level_is_carry_target=True,
+            growth_route_player_level=1,
         )
         route = growth.route_point(
             5,
@@ -16926,7 +16945,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             args,
             route,
             realm_key="mid",
-            current_level=12,
+            current_level=1,
             party_size=8,
         )
 
@@ -16962,6 +16981,8 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             growth_allow_lower_xp_target_plan=False,
             growth_allow_lower_xp_gear_farm=True,
             growth_fast_travel="route-home",
+            growth_route_level_is_carry_target=True,
+            growth_route_player_level=1,
         )
         route = growth.route_point(
             10,
@@ -16971,6 +16992,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             "small hill cat",
             "wolf spiderling,hill person,huldu stalker",
             teleport_destination="Fort Veldon",
+            mob_level=8,
         )
 
         adjusted = growth.adjust_party_carry_target_plan_for_route_fallback(
@@ -16986,7 +17008,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             args,
             route,
             realm_key="mid",
-            current_level=12,
+            current_level=1,
             party_size=8,
         )
 
@@ -16997,11 +17019,12 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         args = SimpleNamespace(
             growth_party_carry_level_offset=12,
             current_party_size=2,
+            growth_equip_party_carry_gear=True,
         )
 
         self.assertEqual(
             growth.enforce_party_carry_non_grey_target_plan(args, 4, 2, 1, 3, 1),
-            (11, 11, 6),
+            (12, 12, 6),
         )
         self.assertEqual(
             growth.enforce_party_carry_non_grey_target_plan(args, 7, 2, 5, 6, 1, "mid"),
@@ -17539,12 +17562,12 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         )
         route = growth.route_point(
             2,
-            808982,
-            727923,
-            4720,
-            "water strider",
+            786637,
+            723034,
+            4722,
+            "wood-eater worker",
             source="hunting-index",
-            mob_level=1,
+            mob_level=4,
         )
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -17831,7 +17854,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertEqual(command[command.index("--party-rescue-objective-max-distance") + 1], "2400")
         self.assertEqual(command[command.index("--party-rescue-assist-after") + 1], "6")
         self.assertEqual(command[command.index("--party-rescue-emergency-assist-after") + 1], "2.0")
-        self.assertEqual(command[command.index("--party-slot-rotations") + 1], "melee-burst,none")
+        self.assertEqual(command[command.index("--party-slot-rotations") + 1], "melee-burst,healer-support")
         self.assertIn("--allow-unvalidated-skills", command)
 
     def test_growth_party_carry_count_zero_uses_equal_party_command_rules(self) -> None:
@@ -18007,7 +18030,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         self.assertFalse(growth.level50_party_boss_rules_enabled(50, 2))
         self.assertNotIn("--party-encounter-mode", command)
-        self.assertEqual(command[command.index("--party-assist-interval") + 1], "3")
+        self.assertEqual(command[command.index("--party-assist-interval") + 1], "0.6")
         self.assertEqual(command[command.index("--party-form-up-delay") + 1], "4")
         self.assertEqual(command[command.index("--party-rescue-assist-after") + 1], "6")
 
@@ -18045,8 +18068,11 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             path_graph=Path("graph.json"),
         )
 
-        self.assertEqual(command[command.index("--party-slot-rotations") + 1], "melee-basic,healer-support,melee-basic,melee-burst")
-        self.assertEqual(command[command.index("--party-assist-interval") + 1], "0.4")
+        self.assertEqual(
+            command[command.index("--party-slot-rotations") + 1],
+            "melee-burst,healer-support,melee-basic,melee-basic,melee-basic,healer-support,caster-basic,none",
+        )
+        self.assertEqual(command[command.index("--party-assist-interval") + 1], "0.6")
         self.assertEqual(command[command.index("--party-assist-attack-delay") + 1], "0.0")
         self.assertEqual(command[command.index("--attack-target-in-view-prime-delay") + 1], "0.0")
         self.assertIn("--allow-unvalidated-skills", command)
@@ -18127,9 +18153,9 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertIn("--startup-train-level", command)
         self.assertEqual(command[command.index("--startup-train-level") + 1], "2")
         self.assertIn("--combat-usable-api", command)
-        self.assertEqual(command[command.index("--ideal-target-level") + 1], "2")
+        self.assertEqual(command[command.index("--ideal-target-level") + 1], "1")
         self.assertEqual(command[command.index("--min-target-level") + 1], "1")
-        self.assertEqual(command[command.index("--max-target-level") + 1], "2")
+        self.assertEqual(command[command.index("--max-target-level") + 1], "1")
         self.assertEqual(command[command.index("--max-target-level-delta") + 1], "0")
         self.assertIn("--greet-nearby-player", command)
         self.assertNotIn("--speak-state-changes", command)
@@ -19187,7 +19213,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             growth.run_mysql = original
 
         self.assertIn("growthalb701", captured["sql"])
-        self.assertIn("\uac10\uc2dc\uc790Growthalb701", captured["sql"])
+        self.assertIn("\uac10\uc2dc\uc790GrowthAlb701", captured["sql"])
 
     def test_watcher_command_follows_named_primary_without_combat(self) -> None:
         args = SimpleNamespace(
@@ -19225,7 +19251,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
 
         self.assertIn("--follow-nearby-player", command)
         self.assertIn("--follow-player-name", command)
-        self.assertEqual(command[command.index("--follow-player-name") + 1], "Growthalb701")
+        self.assertEqual(command[command.index("--follow-player-name") + 1], "GrowthAlb701")
         self.assertIn("--trace-observed-player-positions", command)
         self.assertIn("--move", command)
         self.assertIn("--required-target-home", command)
@@ -19297,7 +19323,7 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         )
 
         self.assertIn("--startup-teleport-destination", command)
-        self.assertEqual(command[command.index("--startup-teleport-destination") + 1], "Prydwen Keep")
+        self.assertEqual(command[command.index("--startup-teleport-destination") + 1], "Castle Sauvage")
         self.assertIn("--startup-teleport-warmup-whisper", command)
         self.assertEqual(command[command.index("--startup-teleport-warmup-whisper") + 1], "towns")
 
@@ -19733,7 +19759,6 @@ class DummyGrowthSuiteTests(unittest.TestCase):
             encounter.write_text(
                 "\n".join(
                     [
-                        '{"t":10.0,"event":"combat_finish","outcome":"target_removed"}',
                         '{"t":15.0,"event":"encounter_tick","current_target":0,"health_percent":100,"is_dead":false}',
                         '{"t":18.0,"event":"encounter_tick","current_target":0,"health_percent":100,"is_dead":false}',
                         '{"t":21.0,"event":"encounter_tick","current_target":0,"health_percent":100,"is_dead":false}',

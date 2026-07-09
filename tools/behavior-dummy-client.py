@@ -18840,6 +18840,8 @@ def smooth_movement_step(args: argparse.Namespace) -> float:
 
 def combat_chase_movement_speed(args: argparse.Namespace, action_rotation: str, distance: float) -> float:
     base_speed = float(dummy_state_movement_cap(args) or getattr(args, "movement_speed", 0.0) or 0.0)
+    if getattr(args, "base_movement_speed", None) is not None:
+        return base_speed
     if (
         is_melee_rotation(action_rotation)
         and distance > combat_chase_melee_stop_distance(args)
@@ -23250,7 +23252,8 @@ def dynamic_flee_candidate_destinations_from_npcs(
         return []
 
     directions = 16
-    candidates: list[tuple[float, MovementDestination]] = []
+    candidates: list[tuple[float, float, MovementDestination]] = []
+    clearance_limit = threat_radius + flee_distance
     for index in range(directions):
         angle = math.tau * index / directions
         candidate_x = int(origin_x + math.cos(angle) * flee_distance)
@@ -23259,16 +23262,29 @@ def dynamic_flee_candidate_destinations_from_npcs(
         if flee_destination_is_excluded(candidate, excluded_destinations):
             continue
         risk = flee_candidate_total_risk(args, origin_x, origin_y, candidate_x, candidate_y, npcs)
-        candidates.append((risk, candidate))
+        clearance = sum(
+            flee_threat_weight(args, npc)
+            * min(
+                horizontal_distance_between_points(
+                    candidate_x,
+                    candidate_y,
+                    int(getattr(npc, "x", 0) or 0),
+                    int(getattr(npc, "y", 0) or 0),
+                ),
+                clearance_limit,
+            )
+            for npc in npcs
+        )
+        candidates.append((risk, -clearance, candidate))
     if not candidates:
         return []
 
     current_risk = flee_candidate_risk(args, origin_x, origin_y, npcs)
-    candidates.sort(key=lambda item: item[0])
+    candidates.sort(key=lambda item: (item[0], item[1]))
     if require_risk_improvement:
-        candidates = [(risk, destination) for risk, destination in candidates if risk < current_risk]
+        candidates = [candidate for candidate in candidates if candidate[0] < current_risk]
 
-    return [destination for _risk, destination in candidates]
+    return [destination for _risk, _negative_clearance, destination in candidates]
 
 
 def collect_flee_safe_npcs(args: argparse.Namespace, client) -> list[object]:

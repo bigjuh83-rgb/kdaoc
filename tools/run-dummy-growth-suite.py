@@ -1025,12 +1025,12 @@ REALMS: dict[str, RealmProfile] = {
             ),
             route_point(
                 7,
-                781900,
-                722796,
-                4797,
-                "young grendelorm",
-                "wood-eater worker,wood-eater hunter,vein spider,huldu stalker,army ant worker,carrion crawler,black mauler juvenile,sveawolf mother",
-                teleport_destination="Mularn",
+                787192,
+                868637,
+                6698,
+                "carrion crawler",
+                "wood-eater worker,wood-eater hunter,vein spider,huldu stalker,army ant worker,young grendelorm,black mauler juvenile,sveawolf mother",
+                teleport_destination="Gotar",
             ),
             route_point(
                 8,
@@ -1325,7 +1325,7 @@ def writable_windows_client_defaults_dir(mysql_bin: str) -> str | None:
     if mysql_dir and os.path.isdir(mysql_dir) and os.access(mysql_dir, os.W_OK):
         return mysql_dir
 
-    cwd = str(Path.cwd())
+    cwd = os.getcwd()
     if re.match(r"^/mnt/[a-zA-Z]/", cwd) and os.access(cwd, os.W_OK):
         return cwd
 
@@ -7397,8 +7397,10 @@ def growth_hunting_index_avoid_targets(realm_key: str, level: int, party_size: i
         return "giant spider,tree spirit,worker ant,young cutpurse,large skeleton,sylvan goblin hunter,river sprite"
     if realm_key == "alb" and int(party_size or 0) == 2 and int(level or 0) == 7:
         return "tree spirit,bandit,ant drone,giant spider,adder,young cutpurse"
+    if realm_key == "alb" and int(party_size or 0) == 2 and int(level or 0) == 4:
+        return "dappled lynx cub"
     if realm_key == "alb" and int(party_size or 0) == 2 and int(level or 0) in {6, 8}:
-        return "faerie bell-wether,ant drone,tree spirit,giant spider,adder"
+        return "faerie bell-wether,ant drone,tree spirit,giant spider,adder,dappled lynx cub"
     if realm_key == "alb" and int(party_size or 0) <= 1 and int(level or 0) == 10:
         return "giant spider,bandit henchman,moldy skeleton,goblin scout,spectral hound,Slith,tree spirit,shady pilferer,spriggarn stalker,skeleton,rot worm,emerald snake,faerie bell-wether,young cutpurse"
     if realm_key == "mid" and int(party_size or 0) <= 1 and int(level or 0) == 9:
@@ -7425,8 +7427,10 @@ def growth_hunting_index_avoid_targets(realm_key: str, level: int, party_size: i
         return "water beetle,red wolfhound,ghostly siabra,roane maiden,anger sprite"
     if realm_key == "hib" and int(party_size or 0) == 2 and int(level or 0) == 8:
         return "water beetle,minor changeling,water beetle larva,large frog,badger cub"
+    if realm_key == "hib" and int(party_size or 0) == 2 and int(level or 0) == 7:
+        return "underhill companion,wolf cub,lough wolf"
     if realm_key == "hib" and int(party_size or 0) == 2 and int(level or 0) in {9, 10}:
-        return "water beetle,rat boy,red wolfhound,underhill companion,wolf cub,cluricaun trip,wild crouch"
+        return "water beetle,rat boy,red wolfhound,underhill companion,wolf cub,cluricaun trip,wild crouch,lough wolf"
     if realm_key == "mid" and int(party_size or 0) == 2 and int(level or 0) in {9, 10, 11}:
         return "seithr orb,black mauler juvenile,wind wisp,ghost light,host of the wind,carrion crawler,Svartmoln,wood-eater soldier,wood-eater alate,small hill cat"
     if realm_key == "hib" and int(party_size or 0) == 4 and int(level or 0) == 9:
@@ -8679,11 +8683,10 @@ def growth_avoid_targets_for_current_context(
         allowed.update({"carrion crawler", "sapherd", "pine imp"})
     if not allowed:
         return merged
-    allowed_tokens = {normalize_target_match_text(token) for token in allowed if normalize_target_match_text(token)}
     return ",".join(
         token.strip()
         for token in merged.split(",")
-        if token.strip() and normalize_target_match_text(token) not in allowed_tokens
+        if token.strip() and not target_name_csv_matches_any(route.prefer, [token])
     )
 
 
@@ -9747,26 +9750,24 @@ def select_growth_route_point(
         level=int(level or 0),
         party_size=int(party_size or 0),
     )
-    level_one_max_mob_level: int | None = None
+    level_one_target_band: tuple[int, int] | None = None
 
     def filter_level_one_party_candidates(route_candidates: Iterable[RoutePoint]) -> list[RoutePoint]:
-        nonlocal level_one_max_mob_level
-        if level_one_max_mob_level is None:
-            _, level_one_ideal_target, level_one_max_delta = target_levels(
-                int(level or 1),
-                int(party_size or 0),
-                realm.key,
+        nonlocal level_one_target_band
+        if level_one_target_band is None:
+            level_one_target_band = growth_hunting_index_candidate_target_band(
+                args,
+                realm_key=realm.key,
+                level=int(level or 1),
+                party_size=int(party_size or 0),
             )
-            level_one_max_mob_level = growth_command_max_target_level(
-                int(level or 1),
-                int(level_one_ideal_target),
-                int(level_one_max_delta),
-                int(party_size or 0),
-            )
+        level_one_min_mob_level, level_one_max_mob_level = level_one_target_band
         return [
             candidate
             for candidate in route_candidates
-            if 1 <= int(getattr(candidate, "mob_level", 0) or 0) <= int(level_one_max_mob_level)
+            if int(level_one_min_mob_level)
+            <= int(getattr(candidate, "mob_level", 0) or 0)
+            <= int(level_one_max_mob_level)
         ]
 
     if candidates and int(party_size or 0) >= 4 and int(level or 0) <= 1:
@@ -10102,7 +10103,7 @@ def growth_shortage_recovery_route_override(
         return 7, 5
     if realm.key == "mid" and int(current_level or 0) == 8:
         return 8, 6
-    if realm.key == "alb" and int(current_level or 0) == 8:
+    if realm.key == "alb" and int(current_level or 0) in {8, 9}:
         return 8, 6
     if realm.key == "hib" and int(current_level or 0) == 9:
         return 8, 8
@@ -10144,7 +10145,7 @@ def apply_growth_shortage_recovery_route_override(
         behavior_args.growth_target_plan_override = (5, 5, 0)
     elif realm.key == "mid" and int(current_level or 0) == 8:
         behavior_args.growth_target_plan_override = (6, 6, 1)
-    elif realm.key == "alb" and int(current_level or 0) == 8:
+    elif realm.key == "alb" and int(current_level or 0) in {8, 9}:
         behavior_args.growth_target_plan_override = (6, 6, 0)
     elif realm.key == "mid" and int(current_level or 0) == 9:
         behavior_args.growth_target_plan_override = (7, 7, 0)
@@ -13839,7 +13840,14 @@ def build_behavior_command(
             route=selected_route,
         )
 
-    if growth_route_blocked_by_failed_target_memory(args, route, realm.key, current_level, party_size):
+    route_blocked_by_failed_memory = growth_route_blocked_by_failed_target_memory(
+        args,
+        route,
+        realm.key,
+        current_level,
+        party_size,
+    )
+    if route_blocked_by_failed_memory:
         replacement_route = select_growth_hunting_index_point_for_target(
             args,
             realm.key,
@@ -13861,11 +13869,12 @@ def build_behavior_command(
                 f"from={route.prefer or route.source} to={replacement_route.prefer or replacement_route.source}"
             )
             route = replacement_route
+            route_blocked_by_failed_memory = False
 
     failure_avoid_targets = failure_avoid_targets_for_route(route)
     failure_avoid_tokens = preferred_target_tokens(failure_avoid_targets)
     route_prefer_tokens = preferred_target_tokens(route.prefer)
-    if route_prefer_tokens:
+    if route_prefer_tokens and not route_blocked_by_failed_memory:
         failure_avoid_targets = remove_matching_target_names_csv(failure_avoid_targets, route_prefer_tokens)
         failure_avoid_tokens = preferred_target_tokens(failure_avoid_targets)
     live_anchor_prefer_tokens = (
