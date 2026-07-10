@@ -2087,6 +2087,11 @@ def build_behavior_command(
             "--flee-home",
             companion_home_waypoint,
         ]
+    nav_api_url = arg_string(args, "nav_api_url", "") or arg_string(args, "api_url", "")
+    if nav_api_url:
+        command += ["--nav-api-url", nav_api_url]
+    if not arg_bool(args, "force_nav_target_routes", True):
+        command.append("--no-force-nav-target-routes")
 
     return [part for part in command if part != ""]
 
@@ -3394,6 +3399,7 @@ def poll_active(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run live companion behavior clients from server companion requests.")
     parser.add_argument("--api-url", default="http://localhost:5000")
+    parser.add_argument("--nav-api-url", default="")
     parser.add_argument("--api-timeout", type=float, default=2.0)
     parser.add_argument("--api-startup-wait", type=float, default=60.0)
     parser.add_argument("--api-startup-retry-interval", type=float, default=0.5)
@@ -3434,6 +3440,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--force-companion-personality", default="")
     parser.add_argument("--max-runtime", type=float, default=0.0, help="stop the service after this many seconds; 0 runs until interrupted")
     parser.add_argument("--party-size", type=int, default=1, help="effective party size to pass to companions")
+    parser.add_argument("--force-nav-target-routes", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--account-reuse-cooldown", type=float, default=75.0)
     parser.add_argument("--stop-file", default="", help="exit gracefully when this file exists")
     parser.add_argument("--once", action="store_true")

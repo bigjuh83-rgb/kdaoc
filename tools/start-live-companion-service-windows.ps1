@@ -49,6 +49,56 @@ function Import-EnvFile {
     }
 }
 
+function Import-LocalApiPasswordFromDatabase {
+    if (-not [string]::IsNullOrWhiteSpace((Get-EnvValue -Name "OPENDAOC_API_PASSWORD"))) {
+        return
+    }
+
+    $configPath = Join-Path $RepoRoot "CoreServer\config\serverconfig.xml"
+    if (-not (Test-Path -LiteralPath $configPath)) {
+        return
+    }
+    $configText = Get-Content -LiteralPath $configPath -Raw -Encoding UTF8
+    $passwordMatch = [regex]::Match($configText, "Password=([^;]+)")
+    if (-not $passwordMatch.Success) {
+        return
+    }
+
+    $mysqlCandidates = @(
+        "C:\Program Files\MariaDB 12.3\bin\mariadb.exe",
+        "C:\Program Files\MariaDB 12.2\bin\mariadb.exe",
+        "C:\Program Files\MariaDB 12.1\bin\mariadb.exe",
+        "C:\Program Files\MariaDB 11.8\bin\mariadb.exe"
+    )
+    $mysql = $mysqlCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    if ([string]::IsNullOrWhiteSpace($mysql)) {
+        return
+    }
+
+    $previousMysqlPassword = [Environment]::GetEnvironmentVariable("MYSQL_PWD", "Process")
+    try {
+        [Environment]::SetEnvironmentVariable("MYSQL_PWD", $passwordMatch.Groups[1].Value, "Process")
+        $sql = 'SELECT Value FROM ServerProperty WHERE `Key`=''api_password'' LIMIT 1;'
+        $previousErrorActionPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = "SilentlyContinue"
+            $rows = @(& $mysql --batch --raw --skip-column-names --protocol=tcp -h 127.0.0.1 -P 3306 -u root opendaoc -e $sql 2>$null)
+            $mysqlExitCode = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
+        if ($mysqlExitCode -ne 0) {
+            return
+        }
+        $apiPassword = $rows | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1
+        if (-not [string]::IsNullOrWhiteSpace($apiPassword)) {
+            [Environment]::SetEnvironmentVariable("OPENDAOC_API_PASSWORD", $apiPassword.Trim(), "Process")
+        }
+    } finally {
+        [Environment]::SetEnvironmentVariable("MYSQL_PWD", $previousMysqlPassword, "Process")
+    }
+}
+
 function Resolve-Python {
     $configured = Get-EnvValue -Name "OPENDAOC_COMPANION_PYTHON"
     if (-not [string]::IsNullOrWhiteSpace($configured) -and (Test-Path -LiteralPath $configured)) {
@@ -173,6 +223,7 @@ function Wait-CompanionApi {
 
 $envFile = Get-EnvValue -Name "OPENDAOC_COMPANION_ENV_FILE" -Default (Join-Path $RepoRoot ".env")
 Import-EnvFile -Path $envFile
+Import-LocalApiPasswordFromDatabase
 
 $python = Resolve-Python
 $apiUrl = Get-EnvValue -Name "OPENDAOC_COMPANION_API_URL" -Default "http://localhost:5000"

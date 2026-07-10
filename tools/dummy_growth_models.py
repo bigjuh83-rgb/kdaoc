@@ -119,6 +119,7 @@ class GrowthItemPlan:
     buy_inventory_slots: list[int] = field(default_factory=list)
     buy_reason: str = ""
     buy_shortage_copper: int = 0
+    buy_price_copper: int = 0
 
 
 @dataclass(frozen=True)

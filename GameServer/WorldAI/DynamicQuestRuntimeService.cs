@@ -1014,6 +1014,18 @@ namespace DOL.GS.WorldAI
                             hasProgress = HasProgress(playerKey, quest.Id),
                             hasActiveStoryFamily = HasActiveStoryFamily(playerKey, quest),
                             insideStartScope = IsInsideAutoAcceptStartScope(quest, regionId, x, y),
+                            startScopes = EnumerateAutoAcceptStartObjectives(NormalizeQuest(quest))
+                                .Where(objective => objective != null)
+                                .Select(objective => new
+                                {
+                                    regionId = objective.RegionId,
+                                    x = objective.X,
+                                    y = objective.Y,
+                                    z = objective.Z,
+                                    radius = objective.Radius,
+                                    locationName = objective.LocationName
+                                })
+                                .ToList(),
                             offerBlockedReasons = BuildAutoAcceptOfferBlockReasons(playerKey, quest, playerLevel, regionId, x, y, capturedTrigger),
                             tags = quest.Tags ?? Array.Empty<string>()
                         })
@@ -3136,6 +3148,26 @@ namespace DOL.GS.WorldAI
                 return HasQuestRewardedTimelineEventLocked(playerKey, questId);
         }
 
+        private void RecordQuestRewardAmount(
+            string playerKey,
+            string playerName,
+            string questId,
+            string nodeId,
+            long xp,
+            long money)
+        {
+            lock (m_lock)
+            {
+                RecordTimelineEventLocked(
+                    playerKey,
+                    playerName,
+                    questId,
+                    "quest_reward_amount",
+                    nodeId: nodeId,
+                    detail: $"xp={Math.Max(0, xp)};money_copper={Math.Max(0, money)}");
+            }
+        }
+
         private void FinishQuest(GamePlayer player, GameNPC npc, DynamicQuestDefinition quest, DynamicQuestProgress progress)
         {
             if (player == null || quest == null || progress == null)
@@ -3153,7 +3185,9 @@ namespace DOL.GS.WorldAI
             long xp = CalculateRewardXp(player, quest, progress);
             long money = CalculateRewardMoney(player, quest, progress);
 
-            if (!IsQuestRewarded(GetPlayerKey(player), quest.Id))
+            string playerKey = GetPlayerKey(player);
+            bool rewardedNow = !IsQuestRewarded(playerKey, quest.Id);
+            if (rewardedNow)
             {
                 if (xp > 0)
                     player.ForceGainExperience(xp);
@@ -3162,7 +3196,18 @@ namespace DOL.GS.WorldAI
                     player.AddMoney(money, "동적 퀘스트 보상으로 {0}을 받았습니다.");
             }
 
-            MarkCompletedQuestRewarded(GetPlayerKey(player), player.Name ?? string.Empty, quest, progress);
+            string playerName = player.Name ?? string.Empty;
+            MarkCompletedQuestRewarded(playerKey, playerName, quest, progress);
+            if (rewardedNow)
+            {
+                RecordQuestRewardAmount(
+                    playerKey,
+                    playerName,
+                    quest.Id,
+                    progress.CurrentNodeId ?? string.Empty,
+                    xp,
+                    money);
+            }
             SyncDynamicQuestJournal(player);
 
             if (npc != null)

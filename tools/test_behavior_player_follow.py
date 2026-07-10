@@ -2497,6 +2497,49 @@ class AccountCsvTests(unittest.TestCase):
         self.assertFalse(args.hunter_target_api_scout)
         self.assertEqual(updates["hunter_target_api_scout"], (True, False))
 
+    def test_progression_hunt_request_replaces_level_route_and_target_contract(self) -> None:
+        args = SimpleNamespace()
+        request = behavior.ProgressionServiceRequest(
+            request_id="alb-l6",
+            level=6,
+            service_location=behavior.ProgressionLocation(1, 100, 200, 300),
+            hunt_location=behavior.ProgressionLocation(1, 400, 500, 600),
+            prefer_target_name="river sprout",
+            require_target_name="river sprout",
+            avoid_target_name="named boss",
+            require_target_name_exact=True,
+            min_target_level=5,
+            max_target_level=6,
+            target_home_max_distance=2200.0,
+            combat_home_leash_distance=2600.0,
+            required_target_home_hunt_distance=350.0,
+        )
+
+        behavior.apply_progression_hunt_request(args, request)
+
+        self.assertEqual(args.player_level, 6)
+        self.assertEqual((args.required_target_home.x, args.required_target_home.y), (400, 500))
+        self.assertEqual(args.require_target_name, "river sprout")
+        self.assertEqual(args.min_target_level, 5)
+        self.assertEqual(args.max_target_level, 6)
+        self.assertEqual(args.max_target_level_delta, 0)
+
+    def test_progression_destination_region_overrides_stale_client_zone(self) -> None:
+        args = SimpleNamespace(nav_api_url="http://localhost:5000", path_region=100)
+        client = SimpleNamespace(
+            dummy_account_name="growthhib001",
+            dummy_character_name="GrowthHib001",
+            zone_id=200,
+            heading=0,
+        )
+        destination = behavior.MovementDestination("service", 1, 2, 3, region=1)
+
+        query = urllib.parse.parse_qs(
+            urllib.parse.urlparse(behavior.build_player_reset_api_url(args, client, destination)).query
+        )
+
+        self.assertEqual(query["region"], ["1"])
+
 
 class FakeClient:
     def __init__(self, players: list[FakePlayer] | None = None, npcs: list[FakeNpc] | None = None) -> None:
@@ -2562,6 +2605,71 @@ class FakeCombatClient:
 
 
 class StartupServiceTests(unittest.TestCase):
+    def test_progression_checkpoint_retries_service_npc_scan_after_reposition(self) -> None:
+        client = SimpleNamespace(startup_service_last_npc=None)
+        client.set_attack_mode = lambda enabled: 0
+        client.clear_target = lambda: 0
+        client.send_position_update = lambda speed=0.0, target_in_view=False: 0
+        client.read_packets_for = lambda seconds: []
+        client.drain = lambda seconds: []
+        service_scans: list[float] = []
+        service_dialog_flags: list[bool] = []
+
+        def run_service_actions(current_client, phase_args, *unused_args, **unused_kwargs):
+            if phase_args.startup_service_npc_name:
+                service_scans.append(float(phase_args.startup_service_scan_seconds))
+                service_dialog_flags.append(bool(phase_args.startup_service_accept_dialog))
+                current_client.startup_service_last_npc = (
+                    None if len(service_scans) == 1 else SimpleNamespace(name="Brother Penric")
+                )
+            return 1
+
+        request = behavior.ProgressionServiceRequest(
+            request_id="alb-level-02",
+            level=2,
+            service_location=behavior.ProgressionLocation(1, 100, 200, 300),
+            hunt_location=behavior.ProgressionLocation(1, 400, 500, 600),
+            service_npc_name="Brother Penric",
+            train=False,
+        )
+        account = behavior.DummyAccount("growthalb001", "pw", 1, 0)
+
+        with (
+            patch.object(
+                behavior,
+                "progression_reposition",
+                side_effect=[
+                    (True, "", "reset", 1),
+                    (True, "", "move", 1),
+                ],
+            ),
+            patch.object(behavior, "run_startup_service_actions", side_effect=run_service_actions),
+            patch.object(
+                behavior,
+                "fetch_combat_usable_payload",
+                side_effect=[{"player": {}}, {"player": {}}],
+            ),
+        ):
+            _, _, status = behavior.run_progression_service_checkpoint(
+                client,
+                SimpleNamespace(
+                    startup_service_scan_seconds=1.0,
+                    startup_train_command_delay=0.1,
+                ),
+                account,
+                request,
+                {},
+                SimpleNamespace(),
+                [],
+                None,
+                0,
+            )
+
+        self.assertEqual(service_scans, [1.0, 1.5])
+        self.assertEqual(service_dialog_flags, [False, False])
+        self.assertTrue(status["ok"])
+        self.assertEqual(status["errors"], [])
+
     def test_startup_service_targets_interacts_buys_sells_equips_and_accepts(self) -> None:
         client = FakeClient(npcs=[FakeNpc(10, "Brother Willem", 23, 120.0), FakeNpc(11, "Other NPC", 1, 40.0)])
         calls = []
@@ -16688,6 +16796,50 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
         self.assertEqual(client.moves[-1][:3], (500, 0, 80))
         self.assertEqual(action_counts["nav_path_plan"], 1)
 
+    def test_target_destination_can_use_allowed_direct_last_mile_without_forced_nav(self):
+        args = SimpleNamespace(
+            nav_api_url="http://127.0.0.1:5000",
+            force_nav_target_routes=False,
+            path_last_mile_distance=1500.0,
+            path_replan_interval=0.0,
+            path_max_node_distance=200.0,
+            path_node_arrival_distance=100.0,
+            path_max_edge_length=1500.0,
+            nav_segment_validate=False,
+            movement_speed=None,
+            movement_update_interval=0.0,
+        )
+        state = behavior.PathMovementState(
+            None,
+            1,
+            behavior.PathSafety(max_direct_distance=1500.0, max_edge_length=1500.0),
+        )
+        client = PathClient()
+        action_counts: dict[str, int] = {}
+        original_request_nav_path = behavior.request_nav_path
+
+        def fail_request_nav_path(_args, _region, _start, _goal):
+            raise AssertionError("short target route should not request a full nav path")
+
+        behavior.request_nav_path = fail_request_nav_path
+        try:
+            outcome = behavior.move_towards_destination(
+                client,
+                behavior.MovementDestination("target:near", 1000, 0, 0),
+                step=250.0,
+                stop_distance=100.0,
+                args=args,
+                path_state=state,
+                action_counts=action_counts,
+            )
+        finally:
+            behavior.request_nav_path = original_request_nav_path
+
+        self.assertTrue(outcome.moved)
+        self.assertEqual(client.moves[-1][:3], (1000, 0, 0))
+        self.assertEqual(action_counts["path_last_mile"], 1)
+        self.assertNotIn("nav_path_plan", action_counts)
+
     def test_graph_path_can_move_when_navmesh_is_unavailable(self):
         graph = behavior.PathGraph.from_payload(
             {
@@ -20777,6 +20929,18 @@ class BehaviorPlayerFollowTests(unittest.TestCase):
                 dynamic_quest_return_completed=False,
             )
         )
+
+    def test_continuous_supervisor_can_own_final_dynamic_quest_validation(self):
+        args = SimpleNamespace(
+            dynamic_quest_return_after_required_target=True,
+            dynamic_quest_return_npc_name="Brother Penric",
+            dynamic_quest_return_home=SimpleNamespace(x=518850, y=494050, z=3352),
+            dynamic_quest_observe_final_progress=False,
+            dynamic_quest_final_validation=False,
+        )
+
+        self.assertTrue(behavior.dynamic_quest_return_enabled(args))
+        self.assertFalse(behavior.dynamic_quest_final_progress_enabled(args))
 
     def test_dynamic_quest_followup_shared_completion_finishes_local_hunt_while_waiting_for_final_progress(self):
         args = SimpleNamespace(

@@ -119,6 +119,26 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void QuestRewardAmountTimelineEvent_RecordsExactXpAndMoney()
+        {
+            DynamicQuestRuntimeService service = new(new FakeDynamicQuestProgressRepository());
+            MethodInfo recordRewardAmount = typeof(DynamicQuestRuntimeService).GetMethod(
+                "RecordQuestRewardAmount",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            recordRewardAmount.Invoke(
+                service,
+                new object[] { "player-key", "Dummy Quest", "quest-reward", "complete", 1234L, 567L });
+
+            DynamicQuestTimelineEvent reward = service
+                .GetTimelineSnapshot("player-key", "Dummy Quest", true)
+                .Events
+                .Single(item => item.EventType == "quest_reward_amount");
+
+            Assert.That(reward.Detail, Is.EqualTo("xp=1234;money_copper=567"));
+        }
+
+        [Test]
         public void AddQuest_RejectsGraphWithMissingEdgeTarget()
         {
             DynamicQuestDefinition quest = LegacyQuest();
@@ -513,6 +533,38 @@ namespace DOL.GS.Tests
             {
                 Assert.That(accepted, Is.True);
                 Assert.That(snapshot.Active.Single().QuestId, Is.EqualTo("quest-auto-region"));
+            });
+        }
+
+        [Test]
+        public void GetAutoAcceptDiagnostics_IncludesCompactStartScopes()
+        {
+            DynamicQuestDefinition autoAccept = WorldOfferQuest();
+            autoAccept.Id = "quest-auto-diagnostics";
+            autoAccept.StartMode = DynamicQuestStartMode.AutoAccept;
+            autoAccept.Tags = new[] { "region:1" };
+            DynamicQuestRuntimeService.Instance.AddQuest(autoAccept);
+
+            object diagnostics = DynamicQuestRuntimeService.Instance.GetAutoAcceptDiagnostics(
+                "DummyQuest001",
+                "DummyQuest001",
+                1,
+                1,
+                520000,
+                492000);
+            using JsonDocument document = JsonDocument.Parse(JsonSerializer.Serialize(diagnostics));
+            JsonElement candidate = document.RootElement
+                .GetProperty("triggers")[0]
+                .GetProperty("candidates")[0];
+            JsonElement scope = candidate.GetProperty("startScopes")[0];
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(scope.GetProperty("regionId").GetInt32(), Is.EqualTo(1));
+                Assert.That(scope.GetProperty("x").GetInt32(), Is.EqualTo(521000));
+                Assert.That(scope.GetProperty("y").GetInt32(), Is.EqualTo(492000));
+                Assert.That(scope.GetProperty("radius").GetInt32(), Is.EqualTo(450));
+                Assert.That(candidate.TryGetProperty("offerText", out _), Is.False);
             });
         }
 

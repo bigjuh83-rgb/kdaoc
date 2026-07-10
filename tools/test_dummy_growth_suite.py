@@ -12250,6 +12250,288 @@ class DummyGrowthSuiteTests(unittest.TestCase):
         self.assertTrue(growth.segment_requires_kill(args, 10))
         self.assertTrue(growth.segment_requires_xp(args, 10))
 
+    def test_continuous_progression_forces_natural_party_and_single_session_defaults(self) -> None:
+        args = growth.parse_args_for_tests(
+            [
+                "--dry-run",
+                "--continuous-progression",
+                "--party-sizes",
+                "4",
+            ]
+        )
+
+        self.assertTrue(args.continuous_progression)
+        self.assertEqual(args.reset_level, 1)
+        self.assertEqual(args.growth_party_carry_count, 0)
+        self.assertFalse(args.growth_start_base_classes)
+        self.assertFalse(args.watch_movement)
+        self.assertFalse(args.live_supervisor)
+        self.assertEqual(args.growth_fast_travel, "route-home")
+        self.assertTrue(args.continuous_dynamic_quests)
+
+    def test_continuous_progression_rejects_forced_checkpoint_levels(self) -> None:
+        with self.assertRaisesRegex(SystemExit, "cannot be combined"):
+            growth.parse_args_for_tests(
+                [
+                    "--dry-run",
+                    "--continuous-progression",
+                    "--checkpoint-levels",
+                    "1,5,10",
+                ]
+            )
+
+    def test_continuous_service_point_uses_exact_live_npc_match(self) -> None:
+        args = SimpleNamespace(
+            dry_run=False,
+            nav_api_url="http://dummy-api:5000",
+            host="127.0.0.1",
+            api_port=5000,
+            continuous_api_timeout=2.0,
+        )
+        payload = [
+            {"name": "Auda", "region": 100, "x": 1, "y": 2, "z": 3, "objectId": 1},
+            {
+                "name": "Aud",
+                "region": 100,
+                "x": 774764,
+                "y": 757457,
+                "z": 4639,
+                "objectId": 3220,
+            },
+        ]
+
+        with mock.patch.object(
+            growth,
+            "fetch_growth_route_preflight_payload",
+            return_value=payload,
+        ) as fetch:
+            point = growth.resolve_continuous_service_point(args, growth.REALMS["mid"])
+
+        self.assertEqual((point.x, point.y, point.z), (774764, 757457, 4639))
+        self.assertEqual(point.source, "live-service-npc")
+        self.assertTrue(point.live_anchor_z)
+        self.assertIn("name=Aud", fetch.call_args.args[0])
+
+    def test_continuous_service_point_fails_before_login_when_npc_is_missing(self) -> None:
+        args = SimpleNamespace(
+            dry_run=False,
+            nav_api_url="http://dummy-api:5000",
+            host="127.0.0.1",
+            api_port=5000,
+            continuous_api_timeout=2.0,
+        )
+
+        with mock.patch.object(
+            growth,
+            "fetch_growth_route_preflight_payload",
+            return_value=[],
+        ):
+            with self.assertRaisesRegex(RuntimeError, "continuous service NPC not found"):
+                growth.resolve_continuous_service_point(args, growth.REALMS["alb"])
+
+    def test_continuous_api_password_falls_back_to_server_property_without_logging_it(self) -> None:
+        args = SimpleNamespace(continuous_api_password="", dry_run=False)
+
+        with mock.patch.object(
+            growth,
+            "run_mysql",
+            return_value="Value\nlocal-secret\n",
+        ):
+            growth.resolve_continuous_api_password(args)
+
+        self.assertEqual(args.continuous_api_password, "local-secret")
+
+    def test_continuous_case_starts_at_live_service_and_preserves_level_zero_hunt_band(self) -> None:
+        service_point = growth.RoutePoint(
+            level=0,
+            x=518933,
+            y=494112,
+            z=3352,
+            source="live-service-npc",
+            live_anchor_z=True,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            output_dir = Path(directory)
+            args = growth.parse_args_for_tests(
+                [
+                    "--dry-run",
+                    "--continuous-progression",
+                    "--realms",
+                    "alb",
+                    "--party-sizes",
+                    "1",
+                ]
+            )
+            with mock.patch.object(
+                growth,
+                "resolve_continuous_service_point",
+                return_value=service_point,
+            ):
+                rc = growth.run_continuous_case(
+                    args,
+                    growth.REALMS["alb"],
+                    1,
+                    0,
+                    output_dir,
+                    output_dir / "graph.json",
+                    output_dir / "timeline.csv",
+                )
+
+            case_dir = output_dir / "alb-p1"
+            metadata = json.loads(
+                (case_dir / "continuous-command.json").read_text(encoding="utf-8")
+            )
+            command = metadata["behaviorCommand"]
+            account = growth.read_accounts(case_dir / "primary-accounts.csv")[0]
+
+        self.assertEqual(rc, 0)
+        self.assertEqual(growth.command_option_value(command, "--ideal-target-level"), "0")
+        self.assertEqual(growth.command_option_value(command, "--min-target-level"), "0")
+        self.assertEqual(growth.command_option_value(command, "--max-target-level"), "1")
+        self.assertIn("--no-force-nav-target-routes", command)
+        self.assertNotIn("--dynamic-quest-observe-final-progress", command)
+        self.assertIn("--no-dynamic-quest-final-validation", command)
+        self.assertEqual(
+            growth.command_option_value(command, "--dynamic-quest-return-home"),
+            "518933,494112,3352",
+        )
+        self.assertEqual(
+            (account["start_x"], account["start_y"], account["start_z"]),
+            ("518933", "494112", "3352"),
+        )
+        self.assertEqual(metadata["servicePoint"]["source"], "live-service-npc")
+
+    def test_continuous_mercenary_requires_solo_owner_and_disables_model_service_flags(self) -> None:
+        args = growth.parse_args_for_tests(
+            [
+                "--dry-run",
+                "--continuous-progression",
+                "--continuous-mercenary",
+                "--party-sizes",
+                "1",
+            ]
+        )
+        service_command = growth.build_continuous_mercenary_service_command(
+            args,
+            accounts_csv=Path("mercenary.csv"),
+            run_directory=Path("service"),
+            max_runtime_seconds=600,
+        )
+
+        self.assertTrue(args.continuous_mercenary)
+        self.assertEqual(args.continuous_mercenary_contract_tier, "legendary")
+        self.assertNotIn("--dialogue-enabled", service_command)
+        self.assertNotIn("--ai-gateway-model-alias", service_command)
+        self.assertEqual(
+            growth.command_option_value(service_command, "--nav-api-url"),
+            growth.continuous_progression_api_base(args),
+        )
+        self.assertIn("--no-force-nav-target-routes", service_command)
+        self.assertEqual(
+            growth.command_option_value(service_command, "--party-size"),
+            "2",
+        )
+
+    def test_continuous_mercenary_keeps_owner_concurrency_separate_from_party_size(self) -> None:
+        service_point = growth.RoutePoint(
+            level=0,
+            x=518933,
+            y=494112,
+            z=3352,
+            source="live-service-npc",
+            live_anchor_z=True,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            output_dir = Path(directory)
+            args = growth.parse_args_for_tests(
+                [
+                    "--dry-run",
+                    "--continuous-progression",
+                    "--continuous-mercenary",
+                    "--realms",
+                    "alb",
+                    "--party-sizes",
+                    "1",
+                ]
+            )
+            with mock.patch.object(
+                growth,
+                "resolve_continuous_service_point",
+                return_value=service_point,
+            ):
+                rc = growth.run_continuous_case(
+                    args,
+                    growth.REALMS["alb"],
+                    1,
+                    0,
+                    output_dir,
+                    output_dir / "graph.json",
+                    output_dir / "timeline.csv",
+                )
+            metadata = json.loads(
+                (
+                    output_dir
+                    / "alb-p1-mercenary"
+                    / "continuous-command.json"
+                ).read_text(encoding="utf-8")
+            )
+            command = metadata["behaviorCommand"]
+
+        self.assertEqual(rc, 0)
+        self.assertEqual(growth.command_option_value(command, "--concurrency"), "1")
+        self.assertEqual(growth.command_option_value(command, "--party-size"), "2")
+
+    def test_continuous_mercenary_rejects_natural_party_size(self) -> None:
+        with self.assertRaisesRegex(SystemExit, "requires --party-sizes 1"):
+            growth.parse_args_for_tests(
+                [
+                    "--dry-run",
+                    "--continuous-progression",
+                    "--continuous-mercenary",
+                    "--party-sizes",
+                    "2",
+                ]
+            )
+
+    def test_continuous_summary_merges_case_timelines_and_quest_outcomes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            case = root / "alb-p1"
+            case.mkdir()
+            (case / "continuous-timeline.csv").write_text(
+                "case,account,level_service_end\nalb-p1,growthalb001,2\n",
+                encoding="utf-8",
+            )
+            (case / "dynamic-quest-timeline.csv").write_text(
+                "case,outcome\nalb-p1,difficulty_skip\nalb-p1,completed\n",
+                encoding="utf-8",
+            )
+            (case / "mercenary-timeline.csv").write_text(
+                "case,outcome,level_delta\nalb-p1,requested,0\nalb-p1,active,1\n",
+                encoding="utf-8",
+            )
+            (case / "continuous-result.json").write_text(
+                json.dumps(
+                    {
+                        "ok": True,
+                        "completed_level": 2,
+                        "checkpoints": 1,
+                        "anomalies": [],
+                        "error": "",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            growth.write_continuous_run_summary(root)
+
+            summary = (root / "continuous-summary.md").read_text(encoding="utf-8")
+
+        self.assertIn("difficulty_skip: `1`", summary)
+        self.assertIn("completed: `1`", summary)
+        self.assertIn("active: `1`", summary)
+        self.assertIn("Maximum owner/mercenary level delta: `1`", summary)
+
     def test_growth_segment_xp_regression_fails_when_required_xp_is_zero(self) -> None:
         self.assertFalse(growth.segment_xp_regression_passed(0, require_xp=True))
         self.assertTrue(growth.segment_xp_regression_passed(1, require_xp=True))

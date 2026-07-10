@@ -658,6 +658,13 @@ namespace DOL.GS.API.DummyCombat
         {
             int maxHealth = Math.Max(1, player.MaxHealth);
             int maxMana = Math.Max(0, player.MaxMana);
+            long experienceForCurrentLevel = player.ExperienceForCurrentLevel;
+            long experienceForNextLevel = player.ExperienceForNextLevel;
+            long experienceNeededForLevel = Math.Max(0, experienceForNextLevel - experienceForCurrentLevel);
+            long experienceIntoLevel = Math.Clamp(
+                player.Experience - experienceForCurrentLevel,
+                0,
+                experienceNeededForLevel);
             string companionRole = CompanionRequestService.ActiveCompanionRoleFor(player.Name);
 
             return new
@@ -670,6 +677,57 @@ namespace DOL.GS.API.DummyCombat
                 @class = player.CharacterClass?.Name ?? string.Empty,
                 classId = player.CharacterClass?.ID ?? 0,
                 realm = player.Realm.ToString(),
+                experience = player.Experience,
+                experienceForCurrentLevel,
+                experienceForNextLevel,
+                experienceIntoLevel,
+                experienceNeededForLevel,
+                experiencePercent = experienceNeededForLevel <= 0
+                    ? 100
+                    : Math.Round(experienceIntoLevel * 100.0 / experienceNeededForLevel, 4),
+                moneyCopper = player.GetCurrentMoney(),
+                specialtyPoints = player.SkillSpecialtyPoints,
+                specializations = player.GetSpecList()
+                    .Where(spec => spec != null)
+                    .OrderBy(spec => spec.Name)
+                    .Select(spec => new
+                    {
+                        spec.Name,
+                        spec.KeyName,
+                        spec.Level,
+                        spec.Trainable
+                    })
+                    .ToArray(),
+                inventory = player.Inventory.AllItems
+                    .Where(item => item != null)
+                    .OrderBy(item => item.SlotPosition)
+                    .Select(item => new
+                    {
+                        slot = item.SlotPosition,
+                        item.ITemplate_Id,
+                        item.UTemplate_Id,
+                        item.Name,
+                        item.Level,
+                        item.Count,
+                        item.SellPrice,
+                        item.Price,
+                        item.DPS_AF,
+                        item.SPD_ABS,
+                        item.Object_Type,
+                        item.Item_Type,
+                        item.Quality,
+                        item.Bonus,
+                        item.Type_Damage,
+                        item.Realm,
+                        item.AllowedClasses,
+                        item.IsCrafted,
+                        item.IsROG,
+                        item.Creator,
+                        equipped = item.SlotPosition < (int)eInventorySlot.FirstBackpack,
+                        backpack = item.SlotPosition >= (int)eInventorySlot.FirstBackpack &&
+                                   item.SlotPosition <= (int)eInventorySlot.LastBackpack
+                    })
+                    .ToArray(),
                 region = player.CurrentRegionID,
                 x = player.X,
                 y = player.Y,

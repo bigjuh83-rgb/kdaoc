@@ -45,6 +45,14 @@ try:
         dummy_state_movement_cap,
         dummy_travel_movement_speed,
     )
+    from tools.dummy_progression_audit import (
+        ProgressionLocation,
+        ProgressionHuntRequest,
+        ProgressionServiceRequest,
+        parse_progression_hunt_request,
+        parse_progression_service_request,
+        parse_progression_snapshot,
+    )
 except ModuleNotFoundError:
     from dummy_behavior_flee import (
         flee_candidate_path_risk as flee_candidate_path_risk_policy,
@@ -61,6 +69,14 @@ except ModuleNotFoundError:
         dummy_packet_movement_speed,
         dummy_state_movement_cap,
         dummy_travel_movement_speed,
+    )
+    from dummy_progression_audit import (
+        ProgressionLocation,
+        ProgressionHuntRequest,
+        ProgressionServiceRequest,
+        parse_progression_hunt_request,
+        parse_progression_service_request,
+        parse_progression_snapshot,
     )
 
 
@@ -3828,6 +3844,7 @@ class MovementDestination:
     x: int
     y: int
     z: int
+    region: int = 0
 
 
 @dataclass
@@ -21053,7 +21070,13 @@ def dynamic_quest_return_enabled(args: argparse.Namespace) -> bool:
 
 
 def dynamic_quest_final_progress_enabled(args: argparse.Namespace) -> bool:
-    return bool(dynamic_quest_return_enabled(args) or getattr(args, "dynamic_quest_observe_final_progress", False))
+    return bool(
+        getattr(args, "dynamic_quest_final_validation", True)
+        and (
+            dynamic_quest_return_enabled(args)
+            or getattr(args, "dynamic_quest_observe_final_progress", False)
+        )
+    )
 
 
 def dynamic_quest_observe_final_completion_verified(
@@ -22738,9 +22761,9 @@ def parse_combat_usable_plan(payload: object) -> CombatUsablePlan:
     )
 
 
-def fetch_combat_usable_plan(args: argparse.Namespace, account: DummyAccount) -> CombatUsablePlan:
+def fetch_combat_usable_payload(args: argparse.Namespace, account: DummyAccount) -> dict[str, object]:
     if not args.combat_usable_api:
-        return CombatUsablePlan()
+        return {}
 
     request = urllib.request.Request(build_combat_usable_api_url(args, account), headers={"Accept": "application/json"})
     attempts = max(int(getattr(args, "combat_usable_api_retries", 1) or 1), 1)
@@ -22751,7 +22774,7 @@ def fetch_combat_usable_plan(args: argparse.Namespace, account: DummyAccount) ->
         try:
             with urllib.request.urlopen(request, timeout=args.combat_usable_api_timeout) as response:
                 payload = json.loads(response.read().decode("utf-8"))
-            return parse_combat_usable_plan(payload)
+            return payload if isinstance(payload, dict) else {}
         except Exception as exc:
             last_error = exc
             if attempt + 1 < attempts and delay > 0:
@@ -22760,7 +22783,11 @@ def fetch_combat_usable_plan(args: argparse.Namespace, account: DummyAccount) ->
     if last_error is not None:
         raise last_error
 
-    return CombatUsablePlan()
+    return {}
+
+
+def fetch_combat_usable_plan(args: argparse.Namespace, account: DummyAccount) -> CombatUsablePlan:
+    return parse_combat_usable_plan(fetch_combat_usable_payload(args, account))
 
 
 def combat_plan_missing_startup_utility(args: argparse.Namespace, combat_plan: CombatUsablePlan) -> bool:
@@ -25147,7 +25174,10 @@ def should_force_nav_route(args: argparse.Namespace, destination: MovementDestin
     if not args.nav_api_url:
         return False
 
-    return destination_kind(destination) in {"target", "follow-player", "party-leader"}
+    if destination_kind(destination) == "target":
+        return bool(getattr(args, "force_nav_target_routes", True))
+
+    return destination_kind(destination) in {"follow-player", "party-leader"}
 
 
 def route_home_fast_travel_enabled(args: argparse.Namespace) -> bool:
@@ -25214,7 +25244,13 @@ def forced_destination_target_z_kwargs(args: argparse.Namespace, destination: Mo
     return {"force_target_z": True} if should_force_destination_target_z(args, destination) and int(destination.z or 0) != 0 else {}
 
 
-def player_move_api_region(args: argparse.Namespace, client) -> int:
+def player_move_api_region(
+    args: argparse.Namespace,
+    client,
+    destination: MovementDestination | None = None,
+) -> int:
+    if destination is not None and int(getattr(destination, "region", 0) or 0) > 0:
+        return int(destination.region)
     for owner, names in (
         (client, ("region", "region_id", "zone_id")),
         (args, ("path_region", "region")),
@@ -25232,7 +25268,7 @@ def player_move_api_region(args: argparse.Namespace, client) -> int:
 def build_player_move_api_url(args: argparse.Namespace, client, destination: MovementDestination) -> str:
     account = str(getattr(client, "dummy_account_name", "") or "")
     name = str(getattr(client, "dummy_character_name", "") or character_name_from_account(account))
-    region = player_move_api_region(args, client)
+    region = player_move_api_region(args, client, destination)
     heading = int(getattr(client, "heading", 0) or 0)
     query = urllib.parse.urlencode(
         {
@@ -25251,7 +25287,7 @@ def build_player_move_api_url(args: argparse.Namespace, client, destination: Mov
 def build_player_reset_api_url(args: argparse.Namespace, client, destination: MovementDestination) -> str:
     account = str(getattr(client, "dummy_account_name", "") or "")
     name = str(getattr(client, "dummy_character_name", "") or character_name_from_account(account))
-    region = player_move_api_region(args, client)
+    region = player_move_api_region(args, client, destination)
     heading = int(getattr(client, "heading", 0) or 0)
     query = urllib.parse.urlencode(
         {
@@ -27546,6 +27582,346 @@ def run_startup_service_actions(
     return actions
 
 
+def progression_status_snapshot(payload: object) -> dict[str, object]:
+    snapshot = parse_progression_snapshot(payload)
+    return {
+        "name": snapshot.name,
+        "account": snapshot.account,
+        "level": snapshot.level,
+        "className": snapshot.class_name,
+        "classId": snapshot.class_id,
+        "experience": snapshot.experience,
+        "experienceIntoLevel": snapshot.experience_into_level,
+        "experienceNeededForLevel": snapshot.experience_needed_for_level,
+        "moneyCopper": snapshot.money_copper,
+        "specialtyPoints": snapshot.specialty_points,
+        "specializations": snapshot.specialization_levels,
+        "inventoryItemCount": snapshot.inventory_item_count,
+        "backpackSellValue": snapshot.backpack_sell_value,
+        "usableSkillCount": len(snapshot.usable_skills),
+        "usableSpellCount": len(snapshot.usable_spells),
+        "isCompanion": snapshot.is_companion,
+        "companionRole": snapshot.companion_role,
+    }
+
+
+def progression_service_status_path(
+    request: ProgressionServiceRequest,
+    account: DummyAccount,
+) -> Path | None:
+    if not request.status_directory:
+        return None
+
+    def safe_component(value: str) -> str:
+        normalized = re.sub(r"[^A-Za-z0-9_.-]+", "-", str(value or "").strip())
+        return normalized.strip("-.") or "unknown"
+
+    return Path(request.status_directory) / (
+        f"{safe_component(request.request_id)}--{safe_component(account.username)}.json"
+    )
+
+
+def write_progression_service_status(
+    request: ProgressionServiceRequest,
+    account: DummyAccount,
+    payload: dict[str, object],
+) -> None:
+    path = progression_service_status_path(request, account)
+    if path is None:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + f".{os.getpid()}.{threading.get_ident()}.tmp")
+    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(path)
+
+
+def progression_location_destination(
+    kind: str,
+    request: ProgressionServiceRequest | ProgressionHuntRequest,
+    *,
+    service: bool,
+) -> MovementDestination:
+    location = request.service_location if service and isinstance(request, ProgressionServiceRequest) else request.hunt_location
+    destination = destination_from_point(kind, location.x, location.y, location.z)
+    return replace(destination, region=location.region)
+
+
+def apply_progression_hunt_request(
+    args: argparse.Namespace,
+    request: ProgressionServiceRequest | ProgressionHuntRequest,
+) -> None:
+    location = request.hunt_location
+    args.player_level = request.level
+    args.path_region = location.region
+    args.required_target_home = Waypoint(location.x, location.y, location.z)
+    args.flee_home = Waypoint(location.x, location.y, location.z)
+    args.prefer_target_name = request.prefer_target_name
+    args.require_target_name = request.require_target_name
+    args.avoid_target_name = request.avoid_target_name
+    args.require_target_name_exact = request.require_target_name_exact
+    if request.min_target_level > 0:
+        args.min_target_level = request.min_target_level
+    if request.max_target_level > 0:
+        args.max_target_level = request.max_target_level
+        args.max_target_level_delta = request.max_target_level - request.level
+    args.target_home_max_distance = request.target_home_max_distance
+    args.combat_home_leash_distance = request.combat_home_leash_distance
+    args.required_target_home_hunt_distance = request.required_target_home_hunt_distance
+
+
+def progression_reposition(
+    client,
+    args: argparse.Namespace,
+    destination: MovementDestination,
+    *,
+    reset: bool,
+) -> tuple[bool, str, str, int]:
+    if reset:
+        moved, error, method, attempts = request_player_reset_or_move_api_with_retries(
+            args,
+            client,
+            destination,
+        )
+    else:
+        moved, error, attempts = request_player_move_api_with_retries(args, client, destination)
+        method = "move" if moved else ""
+    if not moved:
+        return False, error, method, attempts
+
+    clear_client_spatial_cache_after_reposition(client)
+    client.x = int(destination.x)
+    client.y = int(destination.y)
+    client.z = int(destination.z)
+    if not bool(getattr(args, "route_home_preserve_z", False)):
+        client.refresh_ground_z_here()
+    client.send_position_update(speed=0.0, target_in_view=False)
+    return True, "", method, attempts
+
+
+def progression_service_phase_args(
+    args: argparse.Namespace,
+    request: ProgressionServiceRequest,
+    *,
+    merchant: bool,
+) -> argparse.Namespace:
+    phase_args = argparse.Namespace(**vars(args))
+    phase_args.startup_teleport_destination = ""
+    phase_args.startup_service_buy_slot = []
+    phase_args.startup_service_sell_slot = []
+    phase_args.startup_service_equip_party_slot = []
+    phase_args.startup_service_equip_party_slot_map = []
+    phase_args.startup_merchant_sell_party_slot = []
+    phase_args.startup_merchant_buy_party_slot = []
+    phase_args.startup_merchant_equip_party_slot = []
+    if merchant:
+        phase_args.startup_service_npc_name = ""
+        phase_args.startup_service_interact = False
+        phase_args.startup_service_accept_dialog = False
+        phase_args.startup_service_equip_slot = []
+        phase_args.startup_merchant_npc_name = request.merchant_npc_name
+        phase_args.startup_merchant_sell_slot = [list(request.sell_slots)] if request.sell_slots else []
+        phase_args.startup_merchant_buy_slot = [list(request.buy_slots)] if request.buy_slots else []
+        phase_args.startup_merchant_equip_slot = (
+            [list(request.merchant_equip_slots)] if request.merchant_equip_slots else []
+        )
+    else:
+        phase_args.startup_service_npc_name = request.service_npc_name
+        phase_args.startup_service_interact = bool(request.service_npc_name)
+        phase_args.startup_service_accept_dialog = False
+        phase_args.startup_service_scan_seconds = max(
+            1.0,
+            float(getattr(args, "startup_service_scan_seconds", 0.0) or 0.0),
+        )
+        phase_args.startup_service_equip_slot = [list(request.equip_slots)] if request.equip_slots else []
+        phase_args.startup_merchant_npc_name = ""
+        phase_args.startup_merchant_sell_slot = []
+        phase_args.startup_merchant_buy_slot = []
+        phase_args.startup_merchant_equip_slot = []
+    return phase_args
+
+
+def run_progression_service_checkpoint(
+    client,
+    args: argparse.Namespace,
+    account: DummyAccount,
+    request: ProgressionServiceRequest,
+    action_counts: dict[str, int],
+    path_state: PathMovementState,
+    movement_failures: list[MovementFailure],
+    party_state: PartyState | None,
+    party_slot: int,
+) -> tuple[int, CombatUsablePlan, dict[str, object]]:
+    actions = 0
+    errors: list[str] = []
+    before_payload: dict[str, object] = {}
+    after_payload: dict[str, object] = {}
+    training_commands: list[str] = []
+    service_method = ""
+    merchant_method = ""
+    hunt_method = ""
+    has_merchant_actions = bool(
+        request.sell_slots or request.buy_slots or request.merchant_equip_slots
+    )
+
+    try:
+        before_payload = fetch_combat_usable_payload(args, account)
+    except Exception as exc:
+        errors.append(f"before snapshot: {exc}")
+
+    client.set_attack_mode(False)
+    client.clear_target()
+    client.send_position_update(speed=0.0, target_in_view=False)
+    actions += add_action(action_counts, "progression_service_pause_combat")
+
+    service_destination = progression_location_destination(
+        "progression-service",
+        request,
+        service=True,
+    )
+    moved, move_error, service_method, service_attempts = progression_reposition(
+        client,
+        args,
+        service_destination,
+        reset=True,
+    )
+    if service_attempts > 1:
+        actions += add_action_value(action_counts, "progression_service_reposition_retry", service_attempts - 1)
+    if moved:
+        actions += add_action(action_counts, "progression_service_reposition")
+        client.read_packets_for(0.5)
+        service_args = progression_service_phase_args(args, request, merchant=False)
+        actions += run_startup_service_actions(
+            client,
+            service_args,
+            action_counts,
+            path_state,
+            movement_failures,
+            party_state,
+            party_slot=party_slot,
+        )
+        if request.service_npc_name and getattr(client, "startup_service_last_npc", None) is None:
+            service_retry_args = argparse.Namespace(**vars(service_args))
+            service_retry_args.startup_service_scan_seconds = max(
+                1.5,
+                float(service_args.startup_service_scan_seconds),
+            )
+            service_retry_args.startup_service_equip_slot = []
+            actions += run_startup_service_actions(
+                client,
+                service_retry_args,
+                action_counts,
+                path_state,
+                movement_failures,
+                party_state,
+                party_slot=party_slot,
+            )
+
+        if request.train:
+            specs = request.specs or account.specs
+            for command in auto_train_commands_from_specs(specs, request.level, full_spec=True):
+                client.send_command(command)
+                training_commands.append(command)
+                actions += add_action(action_counts, "progression_service_train")
+                client.read_packets_for(
+                    max(0.05, float(getattr(args, "startup_train_command_delay", 0.1) or 0.1))
+                )
+            if request.level >= 2 and not training_commands:
+                errors.append("training requested but no spec commands were generated")
+
+        if has_merchant_actions and not request.merchant_location.configured:
+            errors.append("merchant actions requested without a merchant location")
+        elif has_merchant_actions:
+            merchant_destination = replace(
+                destination_from_point(
+                    "progression-merchant",
+                    request.merchant_location.x,
+                    request.merchant_location.y,
+                    request.merchant_location.z,
+                ),
+                region=request.merchant_location.region,
+            )
+            merchant_moved, merchant_error, merchant_method, merchant_attempts = progression_reposition(
+                client,
+                args,
+                merchant_destination,
+                reset=False,
+            )
+            if merchant_attempts > 1:
+                actions += add_action_value(
+                    action_counts,
+                    "progression_merchant_reposition_retry",
+                    merchant_attempts - 1,
+                )
+            if merchant_moved:
+                actions += add_action(action_counts, "progression_merchant_reposition")
+                client.read_packets_for(0.5)
+            else:
+                errors.append(f"merchant reposition: {merchant_error}")
+
+        merchant_args = progression_service_phase_args(args, request, merchant=True)
+        actions += run_startup_service_actions(
+            client,
+            merchant_args,
+            action_counts,
+            path_state,
+            movement_failures,
+            party_state,
+            party_slot=party_slot,
+        )
+        client.drain(0.5)
+        try:
+            after_payload = fetch_combat_usable_payload(args, account)
+        except Exception as exc:
+            errors.append(f"after snapshot: {exc}")
+    else:
+        errors.append(f"service reposition: {move_error}")
+
+    if request.service_npc_name and getattr(client, "startup_service_last_npc", None) is None:
+        errors.append("service NPC was not observed")
+    if request.merchant_npc_name and has_merchant_actions and getattr(client, "startup_merchant_last_npc", None) is None:
+        errors.append("merchant NPC was not observed")
+
+    apply_progression_hunt_request(args, request)
+    hunt_destination = progression_location_destination(
+        "progression-hunt",
+        request,
+        service=False,
+    )
+    hunted, hunt_error, hunt_method, hunt_attempts = progression_reposition(
+        client,
+        args,
+        hunt_destination,
+        reset=False,
+    )
+    if hunt_attempts > 1:
+        actions += add_action_value(action_counts, "progression_hunt_reposition_retry", hunt_attempts - 1)
+    if hunted:
+        actions += add_action(action_counts, "progression_hunt_reposition")
+    else:
+        errors.append(f"hunt reposition: {hunt_error}")
+
+    refreshed_plan = parse_combat_usable_plan(after_payload) if after_payload else CombatUsablePlan()
+    status = {
+        "schemaVersion": 1,
+        "requestId": request.request_id,
+        "account": account.username,
+        "level": request.level,
+        "ok": not errors,
+        "errors": errors,
+        "trainingCommands": training_commands,
+        "expectedSaleCopper": request.expected_sale_copper,
+        "expectedPurchaseCopper": request.expected_purchase_copper,
+        "serviceRepositionMethod": service_method,
+        "merchantRepositionMethod": merchant_method,
+        "huntRepositionMethod": hunt_method,
+        "usedPlayerReset": service_method == "reset",
+        "before": progression_status_snapshot(before_payload),
+        "after": progression_status_snapshot(after_payload),
+    }
+    write_progression_service_status(request, account, status)
+    return actions, refreshed_plan, status
+
+
 def write_jsonl(path: str, payload: dict[str, object]) -> None:
     if not path:
         return
@@ -28051,6 +28427,8 @@ def run_dummy_round(
         next_hunter_scan_log = 0.0
         next_live_control_check = 0.0
         last_live_control_revision = ""
+        handled_progression_service_requests: set[str] = set()
+        handled_progression_hunt_requests: set[str] = set()
         live_control_quit_requested = False
         live_control_quit_sent = False
         live_control_quit_at = 0.0
@@ -32471,6 +32849,188 @@ def run_dummy_round(
                     if revision != last_live_control_revision:
                         last_live_control_revision = revision
                         updates = apply_live_control_overrides(args, live_payload)
+                        progression_request = parse_progression_service_request(
+                            live_payload,
+                            account=account.username,
+                        )
+                        if progression_request is not None:
+                            progression_key = f"{progression_request.request_id}:{account.username.lower()}"
+                            if progression_key not in handled_progression_service_requests:
+                                handled_progression_service_requests.add(progression_key)
+                                if active_combat is not None:
+                                    finish_combat("progression_service_checkpoint", now)
+                                current_target = 0
+                                current_target_intent = TargetIntent.none
+                                client.set_attack_mode(False)
+                                client.clear_target()
+                                if party_state is not None:
+                                    party_state.clear_leader_target()
+                                try:
+                                    checkpoint_actions, refreshed_plan, checkpoint_status = (
+                                        run_progression_service_checkpoint(
+                                            client,
+                                            args,
+                                            account,
+                                            progression_request,
+                                            action_counts,
+                                            path_state,
+                                            movement_failures,
+                                            party_state,
+                                            party_slot,
+                                        )
+                                    )
+                                    actions += checkpoint_actions
+                                except Exception as exc:
+                                    checkpoint_status = {
+                                        "schemaVersion": 1,
+                                        "requestId": progression_request.request_id,
+                                        "account": account.username,
+                                        "level": progression_request.level,
+                                        "ok": False,
+                                        "errors": [f"checkpoint execution: {exc}"],
+                                    }
+                                    write_progression_service_status(
+                                        progression_request,
+                                        account,
+                                        checkpoint_status,
+                                    )
+                                    refreshed_plan = CombatUsablePlan()
+                                    actions += add_action(action_counts, "progression_service_failed")
+
+                                after_status = checkpoint_status.get("after", {})
+                                if isinstance(after_status, dict) and after_status.get("account"):
+                                    combat_plan = refreshed_plan
+                                    combat_plan_loaded = True
+                                    actions += add_action(action_counts, "progression_combat_plan_refreshed")
+                                args.player_level = progression_request.level
+                                requested_action_rotation = resolve_action_rotation(
+                                    args,
+                                    party_slot,
+                                    account=account,
+                                )
+                                action_rotation = resolve_effective_action_rotation(
+                                    args,
+                                    requested_action_rotation,
+                                    combat_plan,
+                                    combat_plan_loaded,
+                                    account=account,
+                                )
+                                is_party_support_healer = is_party_support_healer_member(
+                                    party_state,
+                                    action_rotation,
+                                )
+                                passive_party_follower = bool(
+                                    is_party_follower
+                                    and party_rotation_is_passive_xp_leech(action_rotation)
+                                )
+                                if party_state is not None:
+                                    party_state.update_member_role(party_member_name, action_rotation)
+
+                                latest_required_target_api_observation = None
+                                server_target_observations.clear()
+                                rejected_targets.clear()
+                                rejected_target_kinds.clear()
+                                sent_target_start_command_targets.clear()
+                                path_state.follower.clear()
+                                path_state.destination_key = ""
+                                pending_required_target_complete_id = 0
+                                pending_required_target_complete_name = ""
+                                pending_required_target_complete_level = 0
+                                pending_required_target_complete_since = 0.0
+                                objective_complete_at = 0.0
+                                dynamic_quest_progress_seen = False
+                                dynamic_quest_return_pending = False
+                                dynamic_quest_return_completed = False
+                                dynamic_quest_return_started_at = 0.0
+                                dynamic_quest_return_interacted_at = 0.0
+                                dynamic_quest_return_last_progress_at = 0.0
+                                dynamic_quest_return_last_npc_api_at = 0.0
+                                dynamic_quest_return_expected_npc_internal_id = ""
+                                dynamic_quest_followup_hunt_started = False
+                                dynamic_quest_choice_dialog_answered = False
+                                dynamic_quest_explore_last_progress_at = 0.0
+                                dynamic_quest_explore_next_move_at = 0.0
+                                dynamic_quest_explore_cached_destination = None
+                                dynamic_quest_explore_cached_quest_id = ""
+                                dynamic_quest_explore_cached_location = ""
+                                transition_to(
+                                    DummyBehaviorState.HuntObjective,
+                                    "progression_service_complete"
+                                    if checkpoint_status.get("ok")
+                                    else "progression_service_failed",
+                                    time.monotonic(),
+                                )
+                                log_encounter_event(
+                                    "progression_service_checkpoint",
+                                    time.monotonic(),
+                                    request_id=progression_request.request_id,
+                                    level=progression_request.level,
+                                    ok=bool(checkpoint_status.get("ok")),
+                                    errors=checkpoint_status.get("errors", []),
+                                )
+                        progression_hunt_request = parse_progression_hunt_request(
+                            live_payload,
+                            account=account.username,
+                        )
+                        if progression_hunt_request is not None:
+                            hunt_key = f"{progression_hunt_request.request_id}:{account.username.lower()}"
+                            if hunt_key not in handled_progression_hunt_requests:
+                                handled_progression_hunt_requests.add(hunt_key)
+                                if active_combat is not None:
+                                    finish_combat("progression_hunt_route_change", now)
+                                current_target = 0
+                                current_target_intent = TargetIntent.none
+                                client.set_attack_mode(False)
+                                client.clear_target()
+                                if party_state is not None:
+                                    party_state.clear_leader_target()
+                                apply_progression_hunt_request(args, progression_hunt_request)
+                                hunt_destination = progression_location_destination(
+                                    "progression-hunt-update",
+                                    progression_hunt_request,
+                                    service=False,
+                                )
+                                moved, hunt_error, _hunt_method, hunt_attempts = progression_reposition(
+                                    client,
+                                    args,
+                                    hunt_destination,
+                                    reset=False,
+                                )
+                                if hunt_attempts > 1:
+                                    actions += add_action_value(
+                                        action_counts,
+                                        "progression_hunt_update_retry",
+                                        hunt_attempts - 1,
+                                    )
+                                actions += add_action(
+                                    action_counts,
+                                    "progression_hunt_update"
+                                    if moved
+                                    else "progression_hunt_update_failed",
+                                )
+                                latest_required_target_api_observation = None
+                                server_target_observations.clear()
+                                rejected_targets.clear()
+                                rejected_target_kinds.clear()
+                                sent_target_start_command_targets.clear()
+                                path_state.follower.clear()
+                                path_state.destination_key = ""
+                                transition_to(
+                                    DummyBehaviorState.HuntObjective,
+                                    "progression_hunt_route_change"
+                                    if moved
+                                    else "progression_hunt_route_change_failed",
+                                    time.monotonic(),
+                                )
+                                log_encounter_event(
+                                    "progression_hunt_route_change",
+                                    time.monotonic(),
+                                    request_id=progression_hunt_request.request_id,
+                                    level=progression_hunt_request.level,
+                                    moved=moved,
+                                    error=hunt_error,
+                                    target_name=progression_hunt_request.require_target_name,
+                                )
                         commands_to_send = live_payload.get("commands", live_payload.get("command", []))
                         if isinstance(commands_to_send, str):
                             commands_to_send = [commands_to_send]
@@ -42634,6 +43194,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--nav-api-snap", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--nav-api-avoid-blocking-doors", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--nav-segment-validate", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument(
+        "--force-nav-target-routes",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="force visible combat targets through nav routing instead of using an allowed direct last mile",
+    )
     parser.add_argument("--attack-range", type=float, default=350.0)
     parser.add_argument(
         "--combat-direct-move-distance",
@@ -43122,6 +43688,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--dynamic-quest-observe-final-progress",
         action="store_true",
         help="check the read-only dynamic quest progress API at round end even when no return NPC flow is configured",
+    )
+    parser.add_argument(
+        "--dynamic-quest-final-validation",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="let the behavior round own final dynamic quest success validation",
     )
     parser.add_argument(
         "--dynamic-quest-target-api-scout",

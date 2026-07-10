@@ -115,6 +115,8 @@ LLM 스토리 캐시는 별도 테이블이 아니라 `dynamic_quest_template`�
 
 플레이어 위치 업데이트는 `AutoAccept`만 지역 기반으로 자동 수락한다. `WorldOffer`는 같은 `region:<id>` 태그가 있어도 자동 수락되지 않으며, 월드 이벤트나 동료/몬스터 성장 컨텐츠가 명시적으로 호출해야 시작된다.
 
+`/api/world/dynamic-quests/autoaccept-diagnostics`는 각 후보의 `startScopes`에 region, X/Y/Z, radius, locationName만 반환한다. 스토리 본문은 넣지 않으므로 연속 성장 감사가 작은 응답으로 현재 live 시작 반경을 찾을 수 있다. 감사기는 파티원이 실제 반경에 들어오기 전에는 자동수락 activation timeout을 시작하지 않는다.
+
 진행 중인 퀘스트의 `WorldSignal` 엣지는 서버 내부 컨텐츠가 `DynamicQuestRuntimeService.Instance.RecordWorldSignal(player, signal)`을 호출해 진행시킨다. 이 경로는 진행 상태를 DB에 저장하고 `timeline`에 `world_signal`, `node_advanced`, 필요 시 `quest_completed`를 남긴다. 몬스터 성장 단계 변화, 지역 방어 성공, 동료 대화 완료 같은 시스템은 GM 명령 없이 이 메서드만 호출하면 현재 노드의 `WorldSignal` 조건과 일치하는 퀘스트를 다음 노드로 보낼 수 있다.
 
 LLM narrative/presentation 메타가 있는 퀘스트는 노드 진입 때 추가 timeline 이벤트를 남긴다. `narrative_scene`은 장면 제목/본문, `journal_entry`는 재접속 후에도 읽을 수 있는 짧은 저널 문장, `presentation_beat`는 speaker/emotion/emote/text 요약이다. 실제 `GamePlayer`가 있는 수락/상호작용/선택/탐험/처치/월드신호 경로에서는 `narrative_scene_presented`도 남기고 장면 제목과 본문을 플레이어 시스템창에 즉시 출력한다. 시작 NPC와 대화하는 노드에서는 서버 allowlist를 통과한 emote 이름만 `GameNPC.Emote(eEmote)`로 재생하고, 원시 emote id/opcode는 저장/실행하지 않는다. 이 연출은 진행 상태를 밀지 않는 cosmetic layer이며, 상태 변경은 기존 노드 objective/edge 처리에서만 일어난다.
@@ -171,7 +173,7 @@ GET http://127.0.0.1:5000/api/world/dynamic-quests/seed/status
 
 `story-config`는 비밀키 없이 auto seed의 설정/유효 live offer 수, provider 순서, 최소 품질 점수, provider 비교 모드, 메인컴/세컨컴 로컬 모델, OpenAI/Gemini 모델명, provider별 RPM/RPD/일일 토큰 가드, 현재 일일 호출/토큰 사용량, 캐시 최대치/정리 정책만 반환한다. 현재 운영 기본 우선순위는 `openai -> main-local -> secondary-local`이며, OpenAI 기능 cap이 남아 있으면 먼저 스토리를 만들고, 실패하거나 쿼터가 막히면 로컬 LLM으로 fallback한다. Gemini는 무료 할당량 보호를 위해 기본 비활성이고, 실제 무료 한도보다 낮은 서버 cap을 명시했을 때만 provider order에 넣어 사용한다.
 
-`timeline`은 `quest_accepted`, `explore_complete`, `kill_progress`, `npc_interaction`, `choice_selected`, `choice_consequence`, `node_advanced`, `quest_completed`, `quest_rewarded`, `world_signal`, `narrative_scene`, `narrative_scene_presented`, `journal_entry`, `presentation_beat` 같은 관측 이벤트를 반환한다. 이 API는 진행 상태를 바꾸지 않으며, 더미 난이도 테스트 실패 원인 분석용이다.
+`timeline`은 `quest_accepted`, `explore_complete`, `kill_progress`, `npc_interaction`, `choice_selected`, `choice_consequence`, `node_advanced`, `quest_completed`, `quest_rewarded`, `quest_reward_amount`, `world_signal`, `narrative_scene`, `narrative_scene_presented`, `journal_entry`, `presentation_beat` 같은 관측 이벤트를 반환한다. `quest_reward_amount`의 detail은 서버가 실제 지급한 `xp=<value>;money_copper=<value>`를 담아 연속 성장 감사에서 사냥 보상과 퀘스트 보상을 분리할 수 있게 한다. 이 API는 진행 상태를 바꾸지 않으며, 더미 난이도 테스트 실패 원인 분석용이다.
 
 더미는 완료 목표 처치 후 시작 NPC에게 돌아갈 때 서버 상호작용 거리(`WorldMgr.INTERACT_DISTANCE = 192`)보다 작은 180 거리 안에서만 `interact_object`를 보낸다. 커스텀 다이얼로그 응답 패킷은 `messageType=0x06`(CustomDialog)을 사용한다. 기본 `--dynamic-quest-return-dialog-response accept`는 `response=0x01`로 첫 번째 선택지를 고르고, `decline`은 `response=0x00`으로 두 번째 선택지를 고른다.
 

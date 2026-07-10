@@ -222,6 +222,40 @@ class DummyCompanionServiceTests(unittest.TestCase):
         self.assertIn("--party-support-evasion", command)
         self.assertEqual(command[command.index("--crowd-control-preemptive-min-threats") + 1], "1")
 
+    def test_companion_behavior_receives_nav_api_for_progression_checkpoints(self) -> None:
+        service = load_service()
+        args = service.build_parser().parse_args(
+            [
+                "--api-url",
+                "http://api:5000",
+                "--nav-api-url",
+                "http://nav:5000",
+                "--no-force-nav-target-routes",
+            ]
+        )
+        request = {
+            "id": "req-nav",
+            "requesterName": "LiveLeader",
+            "requestedRole": "fill",
+            "realm": 1,
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            account_csv = Path(temp_dir) / "accounts.csv"
+            account_csv.write_text(
+                "username,password,realm,char_index,class_id,class_name,roles,home_x,home_y,home_z\n"
+                "albtank,dummy-pass,1,0,2,Armsman,tank,531504,479073,2200\n",
+                encoding="utf-8",
+            )
+            command = service.build_behavior_command(
+                args,
+                request,
+                account_csv,
+                Path(temp_dir) / "run",
+            )
+
+        self.assertEqual(command[command.index("--nav-api-url") + 1], "http://nav:5000")
+        self.assertIn("--no-force-nav-target-routes", command)
+
     def test_live_companion_smoke_summarizes_external_service_request_logs(self) -> None:
         smoke = load_smoke()
 

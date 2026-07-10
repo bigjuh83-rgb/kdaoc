@@ -69,7 +69,17 @@ from dummy_growth_policy import (
     uses_low_solo_flee_tuning,
 )
 from dummy_mysql_compat import windows_argument_path_for_wsl, writable_windows_client_defaults_dir
+from dummy_continuous_growth import (
+    ContinuousSupervisorOptions,
+    command_has_flag,
+    command_option_value,
+    remove_command_option,
+    replace_command_option,
+    supervise_continuous_progression,
+)
+from dummy_progression_audit import ProgressionSnapshot
 DEFAULT_REPORT_ROOT = TOOLS / "reports" / "dummy-growth"
+DEFAULT_CONTINUOUS_MERCENARY_ACCOUNTS = TOOLS / "dummy-live-companions.csv"
 DEFAULT_DUMMY_HOST = os.environ.get("OPENDAOC_DUMMY_HOST", "192.168.0.42")
 DEFAULT_MYSQL_CANDIDATES = [
     "/home/bigjuh/.local/opendaoc-mariadb/current/bin/mariadb",
@@ -1829,6 +1839,7 @@ def copy_growth_item_plan(
     buy_inventory_slots: list[int] | None = None,
     buy_reason: str | None = None,
     buy_shortage_copper: int | None = None,
+    buy_price_copper: int | None = None,
     sell_reason: str | None = None,
     party_share_slots: list[int] | None = None,
     party_share_transfers: list[GrowthPartyShareTransfer] | None = None,
@@ -1873,6 +1884,7 @@ def copy_growth_item_plan(
         buy_inventory_slots=list(plan.buy_inventory_slots if buy_inventory_slots is None else buy_inventory_slots),
         buy_reason=plan.buy_reason if buy_reason is None else buy_reason,
         buy_shortage_copper=plan.buy_shortage_copper if buy_shortage_copper is None else buy_shortage_copper,
+        buy_price_copper=plan.buy_price_copper if buy_price_copper is None else buy_price_copper,
     )
 
 
@@ -2317,6 +2329,7 @@ def build_growth_merchant_item_plan(
         buy_inventory_slots=[predicted_slot],
         buy_reason=reason,
         buy_shortage_copper=0,
+        buy_price_copper=candidate.price,
     )
 
 
@@ -12942,18 +12955,28 @@ def build_provision_command(
     count: int,
     start: int,
     party_size: int = 1,
+    *,
+    start_point: RoutePoint | None = None,
 ) -> list[str]:
-    start_point = RoutePoint(level=1, x=realm.start[0], y=realm.start[1], z=realm.start[2])
+    start_point = start_point or RoutePoint(
+        level=1,
+        x=realm.start[0],
+        y=realm.start[1],
+        z=realm.start[2],
+    )
     target_class_cycle = growth_cycle(realm.growth_class_cycle, realm.class_cycle)
     provision_class_cycle = base_class_cycle_for_growth(target_class_cycle) if should_provision_base_classes(args) else target_class_cycle
-    start_z = sample_route_z(
-        realm,
-        build_realm_height_samplers(),
-        start_point.x,
-        start_point.y,
-        start_point.z,
-        ground_z_offset=getattr(args, "ground_z_offset", 0),
-    )
+    if start_point.live_anchor_z:
+        start_z = start_point.z + int(getattr(args, "ground_z_offset", 0) or 0)
+    else:
+        start_z = sample_route_z(
+            realm,
+            build_realm_height_samplers(),
+            start_point.x,
+            start_point.y,
+            start_point.z,
+            ground_z_offset=getattr(args, "ground_z_offset", 0),
+        )
     command = [
         sys.executable,
         str(TOOLS / "provision-dummy-accounts.py"),
@@ -14291,7 +14314,7 @@ def build_live_supervisor_command(
     ]
 
 
-def command_for_metadata(command: list[str]) -> str:
+def redacted_command_parts(command: list[str]) -> list[str]:
     redacted: list[str] = []
     skip_next = False
     secret_flags = {"--db-password", "--password", "--api-password"}
@@ -14306,7 +14329,11 @@ def command_for_metadata(command: list[str]) -> str:
             continue
         else:
             redacted.append(part)
-    return shlex.join(redacted)
+    return redacted
+
+
+def command_for_metadata(command: list[str]) -> str:
+    return shlex.join(redacted_command_parts(command))
 
 
 def build_failure_reproduction_command(
@@ -16289,6 +16316,115 @@ def write_case_summary(path: Path, timeline_csv: Path) -> None:
             )
 
 
+def merge_continuous_case_csvs(output_dir: Path, filename: str) -> Path:
+    destination = output_dir / filename
+    sources = sorted(
+        path
+        for path in output_dir.glob(f"*/{filename}")
+        if path.resolve() != destination.resolve()
+    )
+    rows: list[dict[str, str]] = []
+    fieldnames: list[str] = []
+    for source in sources:
+        with source.open(encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle)
+            for name in reader.fieldnames or []:
+                if name not in fieldnames:
+                    fieldnames.append(name)
+            rows.extend(reader)
+    if not rows:
+        return destination
+    with destination.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    return destination
+
+
+def write_continuous_run_summary(output_dir: Path) -> None:
+    progression_timeline = merge_continuous_case_csvs(output_dir, "continuous-timeline.csv")
+    quest_timeline = merge_continuous_case_csvs(output_dir, "dynamic-quest-timeline.csv")
+    mercenary_timeline = merge_continuous_case_csvs(output_dir, "mercenary-timeline.csv")
+    case_rows: list[dict[str, object]] = []
+    total_anomalies = 0
+    for result_path in sorted(output_dir.glob("*/continuous-result.json")):
+        try:
+            result = json.loads(result_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(result, dict):
+            continue
+        result_anomalies = result.get("anomalies", [])
+        anomaly_count = len(result_anomalies) if isinstance(result_anomalies, list) else 0
+        total_anomalies += anomaly_count
+        case_rows.append(
+            {
+                "case": result_path.parent.name,
+                "mode": str(result.get("mode", "") or ""),
+                "realm": str(result.get("realm", "") or ""),
+                "party_size": to_int(result.get("party_size")),
+                "ok": bool(result.get("ok")),
+                "completed_level": to_int(result.get("completed_level")),
+                "checkpoints": to_int(result.get("checkpoints")),
+                "anomalies": anomaly_count,
+                "error": str(result.get("error", "") or ""),
+            }
+        )
+    case_summary = output_dir / "continuous-case-summary.csv"
+    if case_rows:
+        with case_summary.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=list(case_rows[0]))
+            writer.writeheader()
+            writer.writerows(case_rows)
+
+    quest_outcomes: dict[str, int] = {}
+    if quest_timeline.exists():
+        with quest_timeline.open(encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle):
+                outcome = str(row.get("outcome", "") or "")
+                if outcome:
+                    quest_outcomes[outcome] = quest_outcomes.get(outcome, 0) + 1
+    mercenary_outcomes: dict[str, int] = {}
+    max_mercenary_level_delta = 0
+    if mercenary_timeline.exists():
+        with mercenary_timeline.open(encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle):
+                outcome = str(row.get("outcome", "") or "")
+                if outcome:
+                    mercenary_outcomes[outcome] = mercenary_outcomes.get(outcome, 0) + 1
+                max_mercenary_level_delta = max(
+                    max_mercenary_level_delta,
+                    abs(to_int(row.get("level_delta"))),
+                )
+    lines = [
+        "# Continuous Dummy Growth Summary",
+        "",
+        f"- Cases: `{len(case_rows)}`",
+        f"- Passed cases: `{sum(1 for row in case_rows if row['ok'])}`",
+        f"- Highest completed level: `{max((to_int(row['completed_level']) for row in case_rows), default=0)}`",
+        f"- Checkpoints: `{sum(to_int(row['checkpoints']) for row in case_rows)}`",
+        f"- Deterministic anomalies: `{total_anomalies}`",
+        f"- Progression timeline: `{progression_timeline}`",
+        f"- Dynamic quest timeline: `{quest_timeline}`",
+        f"- Mercenary timeline: `{mercenary_timeline}`",
+        f"- Case summary: `{case_summary}`",
+        "",
+        "## Dynamic Quest Outcomes",
+        "",
+    ]
+    if quest_outcomes:
+        lines.extend(f"- {name}: `{count}`" for name, count in sorted(quest_outcomes.items()))
+    else:
+        lines.append("- No dynamic quest outcomes recorded.")
+    lines.extend(["", "## Mercenary Outcomes", ""])
+    if mercenary_outcomes:
+        lines.extend(f"- {name}: `{count}`" for name, count in sorted(mercenary_outcomes.items()))
+        lines.append(f"- Maximum owner/mercenary level delta: `{max_mercenary_level_delta}`")
+    else:
+        lines.append("- No mercenary outcomes recorded.")
+    (output_dir / "continuous-summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def next_segment_index(case_dir: Path) -> int:
     indexes: list[int] = []
     for path in case_dir.glob("segment-*-metrics.csv"):
@@ -16303,6 +16439,904 @@ def growth_case_name(realm: RealmProfile, party_size: int, repeat_index: int = 0
     if case_repeats <= 1:
         return base
     return f"{base}-r{repeat_index + 1:03d}"
+
+
+def continuous_progression_api_base(args: argparse.Namespace) -> str:
+    for value in (
+        getattr(args, "nav_api_url", ""),
+        getattr(args, "live_api_url", ""),
+    ):
+        text = str(value or "").strip().rstrip("/")
+        if text:
+            return text
+    return f"http://{args.host}:{args.api_port}"
+
+
+def resolve_continuous_service_point(
+    args: argparse.Namespace,
+    realm: RealmProfile,
+) -> RoutePoint:
+    fallback = RoutePoint(
+        level=0,
+        x=realm.start[0],
+        y=realm.start[1],
+        z=realm.start[2],
+        source="static-service-fallback",
+    )
+    if bool(getattr(args, "dry_run", False)):
+        return fallback
+
+    service_name = str(realm.startup_service_npc_name or "").strip()
+    if not service_name:
+        raise RuntimeError(f"continuous service NPC is not configured for realm={realm.key}")
+    query = urllib.parse.urlencode(
+        {
+            "region": realm.region,
+            "name": service_name,
+            "limit": 200,
+        }
+    )
+    url = f"{growth_route_preflight_endpoint(args)}?{query}"
+    payload = fetch_growth_route_preflight_payload(
+        url,
+        float(getattr(args, "continuous_api_timeout", 5.0) or 5.0),
+    )
+    if payload is None:
+        raise RuntimeError(
+            f"continuous service NPC preflight API unavailable: realm={realm.key} url={url}"
+        )
+    exact_matches = [
+        item
+        for item in growth_route_preflight_payload_items(payload)
+        if str(item.get("name", "") or "").strip().casefold() == service_name.casefold()
+        and to_int(item.get("region")) == realm.region
+    ]
+    if not exact_matches:
+        raise RuntimeError(
+            f"continuous service NPC not found: realm={realm.key} name={service_name}"
+        )
+    exact_matches.sort(
+        key=lambda item: (
+            (to_int(item.get("x")) - realm.start[0]) ** 2
+            + (to_int(item.get("y")) - realm.start[1]) ** 2,
+            to_int(item.get("objectId")),
+        )
+    )
+    selected = exact_matches[0]
+    return RoutePoint(
+        level=0,
+        x=to_int(selected.get("x")),
+        y=to_int(selected.get("y")),
+        z=to_int(selected.get("z")),
+        source="live-service-npc",
+        live_anchor_z=True,
+    )
+
+
+def resolve_continuous_api_password(args: argparse.Namespace) -> None:
+    if str(getattr(args, "continuous_api_password", "") or ""):
+        return
+    if bool(getattr(args, "dry_run", False)):
+        return
+    rows = parse_mysql_rows(
+        run_mysql(
+            args,
+            "SELECT Value FROM ServerProperty WHERE `Key` = 'api_password' LIMIT 1;",
+        )
+    )
+    password = str(rows[0].get("Value", "") if rows else "").strip()
+    if not password:
+        raise RuntimeError(
+            "continuous mutation API password is missing; set OPENDAOC_API_PASSWORD "
+            "or ServerProperty.api_password"
+        )
+    args.continuous_api_password = password
+
+
+def select_continuous_mercenary_row(
+    args: argparse.Namespace,
+    realm: RealmProfile,
+) -> dict[str, str]:
+    path = Path(args.continuous_mercenary_accounts_csv)
+    rows = [
+        row
+        for row in read_accounts(path)
+        if to_int(row.get("realm")) == realm.realm_id and row.get("username")
+    ]
+    role = str(args.continuous_mercenary_role or "fill").strip().lower()
+    if role != "fill":
+        rows = [
+            row
+            for row in rows
+            if role
+            in {
+                value.strip().lower()
+                for value in re.split(r"[|,;]", str(row.get("roles", "") or ""))
+                if value.strip()
+            }
+        ]
+    if not rows:
+        raise RuntimeError(
+            f"no continuous mercenary account for realm={realm.key} role={role} in {path}"
+        )
+    return rows[0]
+
+
+def build_continuous_mercenary_service_command(
+    args: argparse.Namespace,
+    *,
+    accounts_csv: Path,
+    run_directory: Path,
+    max_runtime_seconds: int,
+) -> list[str]:
+    command = [
+        sys.executable,
+        "tools/dummy-companion-service.py",
+        "--api-url",
+        continuous_progression_api_base(args),
+        "--nav-api-url",
+        continuous_progression_api_base(args),
+        "--repo-root",
+        str(ROOT),
+        "--run-dir",
+        str(run_directory),
+        "--accounts-csv",
+        str(accounts_csv),
+        "--host",
+        str(args.host),
+        "--port",
+        str(args.port),
+        "--api-port",
+        str(args.api_port),
+        "--hold",
+        str(max_runtime_seconds),
+        "--party-size",
+        "2",
+        "--poll-interval",
+        str(args.continuous_mercenary_service_poll_interval),
+        "--attach-timeout",
+        str(args.continuous_mercenary_attach_timeout),
+        "--max-runtime",
+        str(max_runtime_seconds + 120),
+        "--no-recover-orphaned-active-requests",
+        "--no-force-nav-target-routes",
+    ]
+    if str(getattr(args, "continuous_api_password", "") or ""):
+        command.extend(["--api-password", str(args.continuous_api_password)])
+    return command
+
+
+def stop_continuous_mercenary_service(
+    process: subprocess.Popen[object] | None,
+    run_directory: Path,
+) -> None:
+    if process is None or process.poll() is not None:
+        return
+    stop_file = run_directory / "companion-service.stop"
+    stop_file.parent.mkdir(parents=True, exist_ok=True)
+    stop_file.write_text("continuous progression finished\n", encoding="utf-8")
+    try:
+        process.wait(timeout=30.0)
+    except subprocess.TimeoutExpired:
+        process.terminate()
+        try:
+            process.wait(timeout=10.0)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=10.0)
+
+
+def progression_specs_string(snapshot: ProgressionSnapshot) -> str:
+    return ";".join(
+        f"{spec.key_name or spec.name}|{spec.level}"
+        for spec in snapshot.specializations
+        if spec.key_name or spec.name
+    )
+
+
+def continuous_character_snapshot(
+    account: str,
+    snapshot: ProgressionSnapshot,
+    fallback: CharacterSnapshot | None,
+    realm: RealmProfile,
+) -> CharacterSnapshot:
+    return CharacterSnapshot(
+        account=account,
+        name=snapshot.name,
+        character_id=fallback.character_id if fallback is not None else "",
+        level=snapshot.level,
+        experience=snapshot.experience,
+        realm=realm.realm_id,
+        class_id=snapshot.class_id,
+        specs=progression_specs_string(snapshot),
+        region=snapshot.region,
+        x=snapshot.x,
+        y=snapshot.y,
+        z=snapshot.z,
+        deaths=fallback.deaths if fallback is not None else 0,
+        money_copper=snapshot.money_copper,
+        inventory_rows=len(snapshot.inventory),
+        inventory_items=snapshot.inventory_item_count,
+        serialized_abilities=fallback.serialized_abilities if fallback is not None else "",
+    )
+
+
+def continuous_inventory_items(
+    account: str,
+    snapshot: ProgressionSnapshot,
+) -> list[InventoryItem]:
+    return [
+        InventoryItem(
+            account=account,
+            slot=item.slot,
+            template_id=item.unique_template_id or item.template_id,
+            name=item.name,
+            level=item.level,
+            dps_af=item.dps_af,
+            spd_abs=item.spd_abs,
+            object_type=item.object_type,
+            item_type=item.item_type,
+            quality=item.quality,
+            bonus=item.bonus,
+            allowed_classes=item.allowed_classes,
+            count=item.count,
+            sell_price=item.sell_price,
+            realm=item.realm,
+            type_damage=item.type_damage,
+        )
+        for item in snapshot.inventory
+    ]
+
+
+def build_continuous_growth_item_plans(
+    args: argparse.Namespace,
+    realm: RealmProfile,
+    snapshots: dict[str, ProgressionSnapshot],
+    *,
+    current_level: int,
+    party_size: int,
+) -> tuple[dict[str, GrowthItemPlan], dict[str, list[InventoryItem]], dict[str, CharacterSnapshot]]:
+    fallback_snapshots = snapshot_characters(args, snapshots)
+    plans: dict[str, GrowthItemPlan] = {}
+    inventory_by_account: dict[str, list[InventoryItem]] = {}
+    character_snapshots: dict[str, CharacterSnapshot] = {}
+    for account, live_snapshot in snapshots.items():
+        character = continuous_character_snapshot(
+            account,
+            live_snapshot,
+            fallback_snapshots.get(account),
+            realm,
+        )
+        items = continuous_inventory_items(account, live_snapshot)
+        plan = build_growth_item_plan(
+            items,
+            class_id=character.class_id,
+            level=character.level,
+            realm_id=character.realm,
+            serialized_abilities=character.serialized_abilities,
+            specs=character.specs,
+        )
+        if bool(getattr(args, "growth_auto_buy_merchant_gear", True)):
+            plan = build_growth_merchant_item_plan(
+                args,
+                realm,
+                character,
+                items,
+                plan,
+                current_level=current_level,
+                party_size=party_size,
+            )
+        plans[account] = plan
+        inventory_by_account[account] = items
+        character_snapshots[account] = character
+    return plans, inventory_by_account, character_snapshots
+
+
+def configure_continuous_behavior_item_args(
+    behavior_args: argparse.Namespace,
+    plans: dict[str, GrowthItemPlan],
+    account_rows: list[dict[str, str]],
+    party_size: int,
+) -> None:
+    party_slot_by_account = party_slot_by_account_from_rows(account_rows, party_size)
+    equip_mode = getattr(behavior_args, "growth_auto_equip_mode", "candidate")
+    if equip_mode == "off":
+        behavior_args.growth_auto_equip_slots = []
+        behavior_args.growth_auto_equip_party_slot_maps = []
+    elif equip_mode == "slots":
+        behavior_args.growth_auto_equip_slots = list(
+            getattr(behavior_args, "growth_auto_equip_slots", [])
+        )
+        behavior_args.growth_auto_equip_party_slot_maps = []
+    elif party_size > 1:
+        behavior_args.growth_auto_equip_slots = []
+        behavior_args.growth_auto_equip_party_slot_maps = party_slot_slot_maps(
+            plans,
+            "equip_slots",
+            party_slot_by_account,
+        )
+    else:
+        behavior_args.growth_auto_equip_slots = union_plan_slots(plans, "equip_slots")
+        behavior_args.growth_auto_equip_party_slot_maps = []
+
+    behavior_args.growth_merchant_npc_name = first_growth_merchant_name(plans)
+    if getattr(behavior_args, "growth_auto_sell_junk", True) and party_size > 1:
+        behavior_args.growth_auto_sell_slots = []
+        behavior_args.growth_merchant_sell_party_slot_maps = party_slot_slot_maps(
+            plans,
+            "sell_slots",
+            party_slot_by_account,
+            merchant_name=behavior_args.growth_merchant_npc_name,
+        )
+    elif getattr(behavior_args, "growth_auto_sell_junk", True):
+        behavior_args.growth_auto_sell_slots = union_plan_slots(plans, "sell_slots")
+        behavior_args.growth_merchant_sell_party_slot_maps = []
+    else:
+        behavior_args.growth_auto_sell_slots = []
+        behavior_args.growth_merchant_sell_party_slot_maps = []
+
+    if party_size > 1:
+        behavior_args.growth_merchant_buy_slots = []
+        behavior_args.growth_merchant_equip_slots = []
+        behavior_args.growth_merchant_buy_party_slot_maps = party_slot_slot_maps(
+            plans,
+            "buy_slots",
+            party_slot_by_account,
+            merchant_name=behavior_args.growth_merchant_npc_name,
+        )
+        behavior_args.growth_merchant_equip_party_slot_maps = party_slot_slot_maps(
+            plans,
+            "buy_inventory_slots",
+            party_slot_by_account,
+            merchant_name=behavior_args.growth_merchant_npc_name,
+        )
+    else:
+        behavior_args.growth_merchant_buy_slots = union_plan_slots(plans, "buy_slots")
+        behavior_args.growth_merchant_equip_slots = union_plan_slots(plans, "buy_inventory_slots")
+        behavior_args.growth_merchant_buy_party_slot_maps = []
+        behavior_args.growth_merchant_equip_party_slot_maps = []
+
+
+def continuous_command_waypoint(
+    command: list[str],
+    option: str,
+    fallback: RoutePoint,
+) -> tuple[int, int, int]:
+    value = command_option_value(command, option)
+    parts = [part.strip() for part in value.split(",")]
+    if len(parts) == 3:
+        try:
+            return int(parts[0]), int(parts[1]), int(parts[2])
+        except ValueError:
+            pass
+    return fallback.x, fallback.y, fallback.z
+
+
+def continuous_checkpoint_payload(
+    *,
+    args: argparse.Namespace,
+    realm: RealmProfile,
+    party_size: int,
+    account_rows: list[dict[str, str]],
+    accounts_csv: Path,
+    planner_dir: Path,
+    path_graph: Path,
+    service_point: RoutePoint,
+    current_level: int,
+    snapshots: dict[str, ProgressionSnapshot],
+) -> dict[str, object]:
+    plans, inventory_by_account, _characters = build_continuous_growth_item_plans(
+        args,
+        realm,
+        snapshots,
+        current_level=current_level,
+        party_size=party_size,
+    )
+    behavior_args = argparse.Namespace(**vars(args))
+    behavior_args.case_name = str(getattr(args, "case_name", "") or planner_dir.parent.name)
+    behavior_args.run_dir = str(planner_dir.parent.parent)
+    behavior_args.current_realm_key = realm.key
+    behavior_args.growth_party_carry_count = 0
+    behavior_args.growth_route_player_level = current_level
+    behavior_args.growth_target_level_override = current_level
+    behavior_args.growth_route_level_override = current_level
+    behavior_args.growth_current_segment_index = current_level
+    configure_continuous_behavior_item_args(behavior_args, plans, account_rows, party_size)
+    route = select_growth_segment_route(
+        behavior_args,
+        realm,
+        current_level,
+        party_size,
+        current_level=current_level,
+        segment_index=current_level,
+    )
+    level_planner_dir = planner_dir / f"level-{current_level:02d}"
+    level_planner_dir.mkdir(parents=True, exist_ok=True)
+    command = build_behavior_command(
+        behavior_args,
+        realm,
+        accounts_csv,
+        level_planner_dir,
+        current_level,
+        party_size,
+        current_level,
+        path_graph,
+        selected_route=route,
+    )
+    hunt_x, hunt_y, hunt_z = continuous_command_waypoint(
+        command,
+        "--required-target-home",
+        route,
+    )
+    row_by_account = {row.get("username", ""): row for row in account_rows}
+    sell_ratio = int(getattr(args, "growth_merchant_sell_ratio_percent", 50) or 50)
+    members: dict[str, dict[str, object]] = {}
+    for account, snapshot in snapshots.items():
+        plan = plans.get(account, GrowthItemPlan([], []))
+        merchant_point = growth_merchant_npc_point(args, realm, plan.merchant_npc_name)
+        row = row_by_account.get(account, {})
+        member: dict[str, object] = {
+            "level": snapshot.level,
+            "specs": row.get("specs", ""),
+            "train": snapshot.level >= 2,
+            "sellSlots": plan.sell_slots if getattr(args, "growth_auto_sell_junk", True) else [],
+            "buySlots": plan.buy_slots,
+            "equipSlots": plan.equip_slots,
+            "merchantEquipSlots": plan.buy_inventory_slots,
+            "merchantNpcName": plan.merchant_npc_name,
+            "expectedSaleCopper": estimated_growth_sell_value(
+                inventory_by_account.get(account, []),
+                plan.sell_slots,
+                sell_ratio,
+            ),
+            "expectedPurchaseCopper": plan.buy_price_copper,
+        }
+        if merchant_point is not None:
+            member["merchantLocation"] = {
+                "region": realm.region,
+                "x": merchant_point.x,
+                "y": merchant_point.y,
+                "z": merchant_point.z,
+            }
+        members[account] = member
+
+    def option_float(option: str, default: float = 0.0) -> float:
+        try:
+            return float(command_option_value(command, option, str(default)))
+        except ValueError:
+            return default
+
+    def option_int(option: str, default: int = 0) -> int:
+        try:
+            return int(command_option_value(command, option, str(default)))
+        except ValueError:
+            return default
+
+    min_target_level = max(0, option_int("--min-target-level", max(0, current_level - 1)))
+    max_target_level = max(
+        min_target_level,
+        option_int("--max-target-level", current_level + 1),
+    )
+
+    return {
+        "progressionService": {
+            "level": current_level,
+            "serviceLocation": {
+                "region": realm.region,
+                "x": service_point.x,
+                "y": service_point.y,
+                "z": service_point.z,
+            },
+            "huntLocation": {
+                "region": realm.region,
+                "x": hunt_x,
+                "y": hunt_y,
+                "z": hunt_z,
+            },
+            "serviceNpcName": realm.startup_service_npc_name,
+            "preferTargetName": command_option_value(command, "--prefer-target-name"),
+            "requireTargetName": command_option_value(command, "--require-target-name"),
+            "avoidTargetName": command_option_value(command, "--avoid-target-name"),
+            "requireTargetNameExact": command_has_flag(command, "--require-target-name-exact"),
+            "minTargetLevel": min_target_level,
+            "maxTargetLevel": max_target_level,
+            "targetHomeMaxDistance": option_float("--target-home-max-distance"),
+            "combatHomeLeashDistance": option_float("--combat-home-leash-distance"),
+            "requiredTargetHomeHuntDistance": option_float(
+                "--required-target-home-hunt-distance"
+            ),
+            "members": members,
+        }
+    }
+
+
+def run_continuous_case(
+    args: argparse.Namespace,
+    realm: RealmProfile,
+    party_size: int,
+    case_index: int,
+    output_dir: Path,
+    path_graph: Path,
+    timeline_csv: Path,
+    repeat_index: int = 0,
+    case_repeats: int = 1,
+) -> int:
+    del timeline_csv
+    case_args = argparse.Namespace(**vars(args))
+    mercenary_mode = bool(getattr(case_args, "continuous_mercenary", False))
+    if mercenary_mode and party_size != 1:
+        raise ValueError("continuous mercenary mode requires --party-sizes 1")
+    if bool(getattr(case_args, "continuous_dynamic_quests", False)) or mercenary_mode:
+        resolve_continuous_api_password(case_args)
+    effective_party_size = 2 if mercenary_mode else party_size
+    case_args.growth_start_base_classes = False
+    case_args.growth_party_carry_count = 0
+    case_args.watch_movement = False
+    case_args.live_supervisor = False
+    case_args.growth_fast_travel = "route-home"
+    case_args.reset_level = 1
+    case_name = case_args.case_name or growth_case_name(
+        realm,
+        party_size,
+        repeat_index,
+        case_repeats,
+    )
+    if mercenary_mode and not case_args.case_name:
+        case_name += "-mercenary"
+    case_args.case_name = case_name
+    case_dir = output_dir / case_name
+    case_dir.mkdir(parents=True, exist_ok=True)
+    accounts_csv = case_dir / "accounts.csv"
+    primary_accounts_csv = case_dir / "primary-accounts.csv"
+    service_point = resolve_continuous_service_point(case_args, realm)
+    start = case_args.start + case_index * case_args.start_stride
+    provision_command = build_provision_command(
+        case_args,
+        realm,
+        accounts_csv,
+        party_size,
+        start,
+        party_size,
+        start_point=service_point,
+    )
+    if not case_args.skip_provision:
+        rc = run_command(provision_command, case_args.dry_run)
+        if rc != 0:
+            return rc
+    elif not case_args.dry_run and not accounts_csv.exists():
+        raise FileNotFoundError(f"--skip-provision needs existing accounts csv: {accounts_csv}")
+
+    if case_args.dry_run and not accounts_csv.exists():
+        account_rows = [
+            {
+                "username": f"{realm.prefix}{start + offset:03d}",
+                "password": case_args.password,
+                "realm": str(realm.realm_id),
+                "char_index": "0",
+                "specs": split_spec_cycle(
+                    growth_cycle(realm.growth_spec_cycle, realm.spec_cycle)
+                )[offset % len(split_spec_cycle(growth_cycle(realm.growth_spec_cycle, realm.spec_cycle)))],
+            }
+            for offset in range(party_size)
+        ]
+    else:
+        account_rows = read_accounts(accounts_csv)[:party_size]
+    if len(account_rows) != party_size:
+        raise RuntimeError(
+            f"continuous progression needs {party_size} primary accounts, found {len(account_rows)}"
+        )
+    companion_row: dict[str, str] = {}
+    companion_accounts_csv = case_dir / "mercenary-accounts.csv"
+    if mercenary_mode:
+        companion_row = dict(select_continuous_mercenary_row(case_args, realm))
+        companion_row["home_x"] = str(service_point.x)
+        companion_row["home_y"] = str(service_point.y)
+        companion_row["home_z"] = str(service_point.z)
+        write_accounts(companion_accounts_csv, [companion_row])
+    account_names = [row.get("username", "") for row in account_rows if row.get("username")]
+    account_roles = {account: "tracked" for account in account_names}
+    mark_growth_party_account_roles(account_rows, account_roles)
+    apply_checkpoint_start_to_account_rows(
+        case_args,
+        account_rows,
+        realm,
+        1,
+        effective_party_size,
+        start_point=service_point,
+    )
+    write_accounts(primary_accounts_csv, account_rows)
+
+    if case_args.reset_progress and not case_args.dry_run:
+        reset_growth_characters(
+            case_args,
+            account_names,
+            level=1,
+            realm=realm,
+            party_size=effective_party_size,
+            start_point=service_point,
+        )
+        write_accounts(primary_accounts_csv, account_rows)
+        if mercenary_mode:
+            companion_account = companion_row.get("username", "")
+            reset_growth_characters(
+                case_args,
+                [companion_account],
+                level=1,
+                realm=realm,
+                party_size=effective_party_size,
+                start_point=service_point,
+            )
+            if companion_account not in snapshot_characters(case_args, [companion_account]):
+                raise RuntimeError(
+                    f"continuous mercenary account is missing from DOLCharacters: {companion_account}"
+                )
+
+    behavior_args = argparse.Namespace(**vars(case_args))
+    behavior_args.run_dir = str(output_dir)
+    behavior_args.current_realm_key = realm.key
+    behavior_args.growth_runtime_failure_memory_csv = str(case_dir / "runtime-failure-memory.csv")
+    behavior_args.growth_route_case_index = int(
+        getattr(case_args, "growth_route_case_index", 0) or 0
+    ) + case_index
+    behavior_args.growth_current_segment_index = 1
+    behavior_args.growth_route_player_level = 1
+    behavior_args.growth_route_level_override = 1
+    behavior_args.growth_target_level_override = 1
+    initial_snapshots = {} if case_args.dry_run else snapshot_characters(case_args, account_names)
+    initial_plans: dict[str, GrowthItemPlan] = {}
+    if not case_args.dry_run:
+        for account in account_names:
+            initial_plans.update(
+                build_growth_item_plans(
+                    case_args,
+                    [account],
+                    initial_snapshots,
+                    realm=realm,
+                    current_level=1,
+                    party_size=effective_party_size,
+                )
+            )
+    configure_continuous_behavior_item_args(
+        behavior_args,
+        initial_plans,
+        account_rows,
+        effective_party_size,
+    )
+    selected_route = select_growth_segment_route(
+        behavior_args,
+        realm,
+        1,
+        effective_party_size,
+        current_level=1,
+        segment_index=1,
+    )
+    behavior_command = build_behavior_command(
+        behavior_args,
+        realm,
+        primary_accounts_csv,
+        case_dir,
+        1,
+        effective_party_size,
+        1,
+        path_graph,
+        selected_route=selected_route,
+    )
+    max_runtime_seconds = max(600, int(float(case_args.continuous_max_hours) * 3600.0))
+    behavior_command = replace_command_option(
+        behavior_command,
+        "--hold",
+        max_runtime_seconds,
+    )
+    behavior_command = replace_command_option(
+        behavior_command,
+        "--round-wall-timeout-seconds",
+        max_runtime_seconds + 600,
+    )
+    behavior_command = remove_command_option(
+        behavior_command,
+        "--stop-after-required-target-removed",
+        takes_value=False,
+    )
+    if "--no-force-nav-target-routes" not in behavior_command:
+        behavior_command.append("--no-force-nav-target-routes")
+    if mercenary_mode:
+        behavior_command = replace_command_option(behavior_command, "--concurrency", 1)
+        behavior_command = replace_command_option(behavior_command, "--party-size", 2)
+        behavior_command = replace_command_option(
+            behavior_command,
+            "--startup-delay",
+            max(
+                20.0,
+                float(command_option_value(behavior_command, "--startup-delay", "0") or 0.0),
+            ),
+        )
+    api_base = continuous_progression_api_base(case_args)
+    if case_args.continuous_dynamic_quests:
+        behavior_command = remove_command_option(
+            behavior_command,
+            "--dynamic-quest-observe-final-progress",
+            takes_value=False,
+        )
+        if "--no-dynamic-quest-final-validation" not in behavior_command:
+            behavior_command.append("--no-dynamic-quest-final-validation")
+        for option in (
+            "--dynamic-quest-return-npc-name",
+            "--dynamic-quest-return-home",
+            "--dynamic-quest-progress-api-url",
+            "--dynamic-quest-timeline-api-url",
+            "--startup-service-progress-wait-seconds",
+        ):
+            behavior_command = remove_command_option(behavior_command, option)
+        for flag in (
+            "--dynamic-quest-return-after-required-target",
+            "--dynamic-quest-return-accept-dialog",
+            "--no-startup-service-progress-timeout-hard-fail",
+        ):
+            if flag not in behavior_command:
+                behavior_command.append(flag)
+        behavior_command.extend(
+            [
+                "--dynamic-quest-return-npc-name",
+                realm.startup_service_npc_name,
+                "--dynamic-quest-return-home",
+                f"{service_point.x},{service_point.y},{service_point.z}",
+                "--dynamic-quest-progress-api-url",
+                f"{api_base}/api/world/dynamic-quests/progress",
+                "--dynamic-quest-timeline-api-url",
+                f"{api_base}/api/world/dynamic-quests/timeline",
+                "--startup-service-progress-wait-seconds",
+                "3",
+            ]
+        )
+
+    live_control_path = case_dir / "live-control.json"
+    status_directory = case_dir / "progression-status"
+    planner_dir = case_dir / "planner"
+    mercenary_service_directory = case_dir / "mercenary-service"
+    mercenary_service_command = (
+        build_continuous_mercenary_service_command(
+            case_args,
+            accounts_csv=companion_accounts_csv,
+            run_directory=mercenary_service_directory,
+            max_runtime_seconds=max_runtime_seconds,
+        )
+        if mercenary_mode
+        else []
+    )
+    (case_dir / "continuous-command.json").write_text(
+        json.dumps(
+            {
+                "command": redacted_command_parts(behavior_command),
+                "behaviorCommand": redacted_command_parts(behavior_command),
+                "mercenaryServiceCommand": redacted_command_parts(mercenary_service_command),
+                "servicePoint": {
+                    "source": service_point.source,
+                    "region": realm.region,
+                    "x": service_point.x,
+                    "y": service_point.y,
+                    "z": service_point.z,
+                },
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    if case_args.dry_run:
+        print("DRY RUN continuous behavior: " + command_for_metadata(behavior_command))
+        if mercenary_service_command:
+            print(
+                "DRY RUN continuous mercenary service: "
+                + command_for_metadata(mercenary_service_command)
+            )
+        return 0
+
+    account_characters = {
+        row["username"]: row.get("character_name", "") or row.get("character", "")
+        for row in account_rows
+        if row.get("username")
+    }
+
+    def build_checkpoint(
+        level: int,
+        _raw_payloads: dict[str, dict[str, object]],
+        live_snapshots: dict[str, ProgressionSnapshot],
+    ) -> dict[str, object]:
+        return continuous_checkpoint_payload(
+            args=case_args,
+            realm=realm,
+            party_size=effective_party_size,
+            account_rows=account_rows,
+            accounts_csv=primary_accounts_csv,
+            planner_dir=planner_dir,
+            path_graph=path_graph,
+            service_point=service_point,
+            current_level=level,
+            snapshots=live_snapshots,
+        )
+
+    mercenary_service_process: subprocess.Popen[object] | None = None
+    try:
+        if mercenary_service_command:
+            mercenary_service_process = subprocess.Popen(mercenary_service_command, cwd=ROOT)
+        process = subprocess.Popen(behavior_command, cwd=ROOT)
+    except Exception:
+        stop_continuous_mercenary_service(
+            mercenary_service_process,
+            mercenary_service_directory,
+        )
+        raise
+    supervisor_options = ContinuousSupervisorOptions(
+        api_base_url=api_base,
+        api_password=str(case_args.continuous_api_password or ""),
+        poll_interval=float(case_args.continuous_poll_interval),
+        online_timeout=float(case_args.continuous_online_timeout),
+        level_timeout=float(case_args.continuous_level_timeout),
+        service_timeout=float(case_args.continuous_service_timeout),
+        request_timeout=float(case_args.continuous_api_timeout),
+        max_level=int(case_args.max_level),
+        fail_on_checkpoint_error=bool(case_args.continuous_fail_on_checkpoint_error),
+        dynamic_quests=bool(case_args.continuous_dynamic_quests),
+        dynamic_quest_poll_interval=float(case_args.continuous_dynamic_quest_poll_interval),
+        dynamic_quest_timeout=float(case_args.continuous_dynamic_quest_timeout),
+        dynamic_quest_max_target_count=int(case_args.continuous_dynamic_quest_max_target_count),
+        dynamic_quest_max_level_delta=int(case_args.continuous_dynamic_quest_max_level_delta),
+        dynamic_quest_max_distance=float(case_args.continuous_dynamic_quest_max_distance),
+    )
+    integrity_flags = [
+        "continuous_login",
+        "player_reset_at_service_checkpoint",
+        "target_class_seeded_at_level_1",
+    ]
+    if case_args.continuous_dynamic_quests:
+        integrity_flags.append("dynamic_quests_included_with_difficulty_skip")
+    if mercenary_mode:
+        integrity_flags.extend(
+            [
+                "actual_live_companion_service",
+                "mercenary_seeded_at_level_1",
+                "mercenary_training_checkpointed",
+                "mercenary_dialogue_model_disabled",
+            ]
+        )
+    try:
+        result = supervise_continuous_progression(
+            process=process,
+            options=supervisor_options,
+            accounts=account_characters,
+            case_name=case_name,
+            mode=(
+                "mercenary"
+                if mercenary_mode
+                else "solo"
+                if party_size == 1
+                else "natural_party"
+            ),
+            realm=realm.key,
+            party_size=effective_party_size,
+            live_control_path=live_control_path,
+            status_directory=status_directory,
+            output_directory=case_dir,
+            build_checkpoint_payload=build_checkpoint,
+            data_integrity_flags=integrity_flags,
+            mercenary_service_process=mercenary_service_process,
+            mercenary_service_run_directory=(
+                mercenary_service_directory if mercenary_mode else None
+            ),
+            mercenary_account=companion_row.get("username", ""),
+            mercenary_specs=companion_row.get("specs", ""),
+            mercenary_role=str(case_args.continuous_mercenary_role),
+            mercenary_contract_tier=str(case_args.continuous_mercenary_contract_tier),
+            mercenary_poll_interval=float(case_args.continuous_mercenary_poll_interval),
+            mercenary_attach_timeout=float(case_args.continuous_mercenary_attach_timeout),
+        )
+    finally:
+        stop_continuous_mercenary_service(
+            mercenary_service_process,
+            mercenary_service_directory,
+        )
+    return 0 if result.ok else 1
 
 
 def run_case(
@@ -17315,10 +18349,11 @@ def run_case_plan(
     path_graph: Path,
     timeline_csv: Path,
 ) -> int:
+    case_runner = run_continuous_case if getattr(args, "continuous_progression", False) else run_case
     if args.parallel_cases <= 1 or len(cases) <= 1:
         exit_code = 0
         for realm, party_size, case_index, repeat_index, case_repeats in cases:
-            rc = run_case(
+            rc = case_runner(
                 args,
                 realm,
                 party_size,
@@ -17340,7 +18375,7 @@ def run_case_plan(
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
             executor.submit(
-                run_case,
+                case_runner,
                 args,
                 realm,
                 party_size,
@@ -17509,6 +18544,61 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default="debug",
         help="debug keeps strict timing; fast-balance shortens batch collection overhead while preserving real combat/economy loops",
     )
+    parser.add_argument(
+        "--continuous-progression",
+        action="store_true",
+        help="keep one login session from level 1 to max level and service training/economy checkpoints on each natural level-up",
+    )
+    parser.add_argument("--continuous-max-hours", type=float, default=24.0)
+    parser.add_argument("--continuous-poll-interval", type=float, default=0.5)
+    parser.add_argument("--continuous-online-timeout", type=float, default=120.0)
+    parser.add_argument("--continuous-level-timeout", type=float, default=3600.0)
+    parser.add_argument("--continuous-service-timeout", type=float, default=180.0)
+    parser.add_argument("--continuous-api-timeout", type=float, default=3.0)
+    parser.add_argument(
+        "--continuous-api-password",
+        default=os.environ.get("OPENDAOC_API_PASSWORD", ""),
+    )
+    parser.add_argument(
+        "--continuous-fail-on-checkpoint-error",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
+        "--continuous-dynamic-quests",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="include accepted dynamic quests in progression and cancel them with an explicit difficulty_skip outcome when deterministic limits are exceeded",
+    )
+    parser.add_argument("--continuous-dynamic-quest-poll-interval", type=float, default=2.0)
+    parser.add_argument("--continuous-dynamic-quest-timeout", type=float, default=240.0)
+    parser.add_argument("--continuous-dynamic-quest-max-target-count", type=int, default=8)
+    parser.add_argument("--continuous-dynamic-quest-max-level-delta", type=int, default=2)
+    parser.add_argument("--continuous-dynamic-quest-max-distance", type=float, default=60000.0)
+    parser.add_argument(
+        "--continuous-mercenary",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="run one naturally leveling owner with an actual live-companion service mercenary",
+    )
+    parser.add_argument(
+        "--continuous-mercenary-accounts-csv",
+        type=Path,
+        default=DEFAULT_CONTINUOUS_MERCENARY_ACCOUNTS,
+    )
+    parser.add_argument(
+        "--continuous-mercenary-role",
+        choices=["fill", "tank", "healer", "dps", "support"],
+        default="fill",
+    )
+    parser.add_argument(
+        "--continuous-mercenary-contract-tier",
+        choices=["common", "skilled", "elite", "legendary"],
+        default="legendary",
+    )
+    parser.add_argument("--continuous-mercenary-poll-interval", type=float, default=2.0)
+    parser.add_argument("--continuous-mercenary-service-poll-interval", type=float, default=1.0)
+    parser.add_argument("--continuous-mercenary-attach-timeout", type=float, default=60.0)
     parser.add_argument("--checkpoint-levels", default="", help="comma-separated forced levels for fast 1-50 checkpoint probes, e.g. 1,5,6,10,20,35,49")
     parser.add_argument("--checkpoint-seed-copper", type=int, default=-1, help="forced checkpoint starting money in copper; -1 uses the suite default policy")
     parser.add_argument(
@@ -17641,6 +18731,32 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         args.max_segments = explicit_max_segments_value
     apply_growth_speed_profile(args, explicit_options)
     args.checkpoint_levels_parsed = parse_checkpoint_levels(args.checkpoint_levels)
+    if args.continuous_progression:
+        if args.checkpoint_levels_parsed:
+            raise SystemExit("--continuous-progression cannot be combined with --checkpoint-levels")
+        if args.resume:
+            raise SystemExit("--continuous-progression does not support --resume; reuse --skip-provision instead")
+        if args.once:
+            raise SystemExit("--continuous-progression cannot be combined with --once")
+        args.reset_level = 1
+        args.growth_party_carry_count = 0
+        args.growth_start_base_classes = False
+        args.watch_movement = False
+        args.live_supervisor = False
+        args.growth_fast_travel = "route-home"
+        args.inter_segment_delay = 0.0
+    if args.continuous_mercenary:
+        if not args.continuous_progression:
+            raise SystemExit("--continuous-mercenary requires --continuous-progression")
+        if parse_int_list(args.party_sizes) != [1]:
+            raise SystemExit("--continuous-mercenary requires --party-sizes 1")
+        if args.parallel_cases != 1:
+            raise SystemExit("--continuous-mercenary requires --parallel-cases 1")
+        if not Path(args.continuous_mercenary_accounts_csv).exists():
+            raise SystemExit(
+                "--continuous-mercenary-accounts-csv does not exist: "
+                f"{args.continuous_mercenary_accounts_csv}"
+            )
     if args.checkpoint_levels_parsed:
         if args.resume:
             raise SystemExit("--checkpoint-levels cannot be combined with --resume")
@@ -17680,6 +18796,21 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         args.startup_delay = min(args.startup_delay, 4.0)
     if args.parallel_cases < 1:
         raise SystemExit("--parallel-cases must be positive")
+    if args.continuous_max_hours <= 0:
+        raise SystemExit("--continuous-max-hours must be positive")
+    if args.continuous_poll_interval <= 0 or args.continuous_dynamic_quest_poll_interval <= 0:
+        raise SystemExit("continuous poll intervals must be positive")
+    if (
+        args.continuous_mercenary_poll_interval <= 0
+        or args.continuous_mercenary_service_poll_interval <= 0
+    ):
+        raise SystemExit("continuous mercenary poll intervals must be positive")
+    if args.continuous_mercenary_attach_timeout <= 0:
+        raise SystemExit("--continuous-mercenary-attach-timeout must be positive")
+    if args.continuous_level_timeout <= 0 or args.continuous_service_timeout <= 0:
+        raise SystemExit("continuous timeouts must be positive")
+    if args.continuous_dynamic_quest_max_target_count < 1:
+        raise SystemExit("--continuous-dynamic-quest-max-target-count must be positive")
     if args.case_repeats < 1:
         raise SystemExit("--case-repeats must be positive")
     if args.reset_level < 1:
@@ -17741,6 +18872,10 @@ def main() -> int:
         "max_level": args.max_level,
         "growth_stage": args.growth_stage,
         "growth_speed_profile": args.growth_speed_profile,
+        "continuous_progression": bool(args.continuous_progression),
+        "continuous_dynamic_quests": bool(args.continuous_dynamic_quests),
+        "continuous_mercenary": bool(args.continuous_mercenary),
+        "continuous_mercenary_role": str(args.continuous_mercenary_role),
         "growth_hunting_index": getattr(args, "growth_hunting_index", ""),
         "growth_fast_travel": getattr(args, "growth_fast_travel", "off"),
         "checkpoint_levels": getattr(args, "checkpoint_levels_parsed", []),
@@ -17760,7 +18895,10 @@ def main() -> int:
         timeline_csv=timeline_csv,
     )
 
-    write_case_summary(output_dir / "case-summary.csv", timeline_csv)
+    if args.continuous_progression:
+        write_continuous_run_summary(output_dir)
+    else:
+        write_case_summary(output_dir / "case-summary.csv", timeline_csv)
     write_summary(output_dir / "summary.md", timeline_csv, metadata)
     print(f"growth suite output: {output_dir}")
     return exit_code
